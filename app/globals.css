@@ -54,11 +54,9 @@
   --shadow-card: 0 4px 40px 0 rgba(16, 56, 56, 0.08);
   --shadow-hover: 0 8px 50px 0 rgba(16, 56, 56, 0.12);
 
-  /* ─── Transiciones ───────────────────────────────────────── */
-  --ease-elegant: cubic-bezier(0.4, 0, 0.2, 1);
-  --duration-fast: 150ms;
-  --duration-base: 300ms;
-  --duration-slow: 500ms;
+  /* ─── Max width ───────────────────────────────────────── */
+  --max-width-9xl: 96rem;
+  --max-width-10xl: 104rem;
 }
 
 /* ─── Estilos base ─────────────────────────────────────────── */
@@ -69,29 +67,8 @@
     background-color: var(--color-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-display);
-    font-weight: var(--font-weight-light);
-    line-height: var(--line-height-tight);
-    letter-spacing: var(--letter-spacing-wide);
-    color: var(--color-petroleo);
-  }
-
-  p {
-    font-family: var(--font-body);
-    line-height: var(--line-height-relaxed);
-    color: var(--color-muted);
-  }
-
-  ::selection {
-    background-color: var(--color-beige);
-    color: var(--color-petroleo);
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: none;
   }
 }

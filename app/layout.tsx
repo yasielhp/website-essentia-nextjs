@@ -49,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${jedira.variable} ${dmSans.variable} antialiased`}>
+    <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
+      <body className="antialiased">
         <Header />
         <main>{children}</main>
         <Footer />
