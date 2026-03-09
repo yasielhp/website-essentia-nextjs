@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─── Theme Essentia ───────────────────────────────────────── */
+@theme {
+  /* ─── Tipografía ─────────────────────────────────────────── */
+  --font-display: var(--font-jedira), Georgia, serif;
+  --font-body: var(--font-dm-sans), system-ui, sans-serif;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.05em;
+  --letter-spacing-wider: 0.1em;
+  --letter-spacing-widest: 0.2em;
+
+  /* ─── Colores de marca ───────────────────────────────────── */
+  --color-beige: #a9997d;
+  --color-beige-light: #c9bba5;
+  --color-beige-dark: #8c7e65;
+
+  --color-arena: #c2baa5;
+  --color-arena-light: #dad4c5;
+  --color-arena-dark: #a09888;
+
+  --color-petroleo: #103838;
+  --color-petroleo-light: #1c5252;
+  --color-petroleo-dark: #0a2424;
+
+  /* ─── Neutros ────────────────────────────────────────────── */
+  --color-cream: #f5f2ec;
+  --color-cream-dark: #ede8df;
+  --color-white: #ffffff;
+  --color-charcoal: #1a1a1a;
+  --color-muted: #6b6458;
+
+  /* ─── Semánticos ─────────────────────────────────────────── */
+  --color-primary: var(--color-petroleo);
+  --color-secondary: var(--color-beige);
+  --color-accent: var(--color-arena);
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-charcoal);
+  --color-surface: var(--color-white);
+
+  /* ─── Sombras ────────────────────────────────────────────── */
+  --shadow-soft: 0 2px 20px 0 rgba(16, 56, 56, 0.06);
+  --shadow-card: 0 4px 40px 0 rgba(16, 56, 56, 0.08);
+  --shadow-hover: 0 8px 50px 0 rgba(16, 56, 56, 0.12);
+
+  /* ─── Transiciones ───────────────────────────────────────── */
+  --ease-elegant: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+  --duration-slow: 500ms;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Estilos base ─────────────────────────────────────────── */
+@layer base {
+  html {
+    font-family: var(--font-body);
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-light);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-wide);
+    color: var(--color-petroleo);
+  }
+
+  p {
+    font-family: var(--font-body);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-muted);
+  }
+
+  ::selection {
+    background-color: var(--color-beige);
+    color: var(--color-petroleo);
+  }
 }
