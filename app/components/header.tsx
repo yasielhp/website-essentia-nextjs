@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Logo from "./logo";
 import Link from "next/link";
 import { MobileMenu } from "./mobile-menu";
@@ -30,9 +33,36 @@ const itemsRight = [
 ];
 
 export const Header = () => {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const headerY = 80;
+      const sections = document.querySelectorAll<HTMLElement>(
+        "[data-header-theme]",
+      );
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const rect = sections[i].getBoundingClientRect();
+        if (rect.top <= headerY && rect.bottom > headerY) {
+          setIsDark(sections[i].dataset.headerTheme === "dark");
+          return;
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <header className="fixed top-10 z-50 mx-auto flex w-full justify-center">
-      <div className="max-w-10xl hidden w-full items-center justify-between px-4 py-8 text-white uppercase md:flex">
+      <div
+        className={`max-w-10xl hidden w-full items-center justify-between px-4 py-8 uppercase transition-colors duration-500 md:flex ${
+          isDark ? "text-primary" : "text-white"
+        }`}
+      >
         <div className="flex items-center justify-center gap-6">
           {itemsLeft.map((item) => {
             return (
@@ -66,13 +96,13 @@ export const Header = () => {
           })}
           <Link
             href="/book"
-            className="bg-secondary hover:shadow-hover rounded-md px-4 py-2 font-medium text-black transition-all hover:scale-105"
+            className="bg-primary hover:shadow-hover rounded-md px-4 py-2 font-medium text-white transition-all hover:scale-105"
           >
             Book Now
           </Link>
         </div>
       </div>
-      <MobileMenu />
+      <MobileMenu isDark={isDark} />
     </header>
   );
 };
