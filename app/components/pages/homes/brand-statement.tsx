@@ -164,7 +164,7 @@ export default function BrandStatement() {
           </p>
           <p
             ref={descRef}
-            className="text-muted leading-relaxed text-pretty md:max-w-3xl"
+            className="text-primary/70 leading-relaxed text-pretty md:max-w-3xl"
           >
             Essentia is more than a massage brand — it&apos;s a transformative
             experience combining wellness, exclusivity and personalization.
