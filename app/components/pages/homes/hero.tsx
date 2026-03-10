@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -12,6 +16,7 @@ export default function Hero() {
   const isPausedByUserRef = useRef(false);
   const [vimeoVisible, setVimeoVisible] = useState(false);
   const [showIcon, setShowIcon] = useState<"play" | "pause" | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
   const iconTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const vimeoCommand = useCallback((method: string, value?: number) => {
@@ -37,6 +42,16 @@ export default function Hero() {
     iconTimeoutRef.current = setTimeout(() => setShowIcon(null), 800);
   }, [vimeoCommand]);
 
+  const handleToggleMute = useCallback(() => {
+    if (isMuted) {
+      vimeoCommand("setVolume", 1);
+      setIsMuted(false);
+    } else {
+      vimeoCommand("setVolume", 0);
+      setIsMuted(true);
+    }
+  }, [isMuted, vimeoCommand]);
+
   useEffect(() => {
     const video = videoRef.current;
     const text = textRef.current;
@@ -44,45 +59,86 @@ export default function Hero() {
     const vimeoContainer = vimeoContainerRef.current;
     if (!video || !text || !wrapper || !vimeoContainer) return;
 
-    const handleScroll = () => {
-      const rect = wrapper.getBoundingClientRect();
-      const scrollable = wrapper.offsetHeight - window.innerHeight;
-      const rawProgress = Math.min(Math.max(-rect.top / scrollable, 0), 1);
+    const scrollDistance = () =>
+      (wrapper.offsetHeight - window.innerHeight) * 0.4;
 
-      // Phase 1: padding/radius/text animation (first 40% of scroll)
-      const phase1 = Math.min(rawProgress / 0.4, 1);
-      const padding = 24 * (1 - phase1);
-      const radius = 32 * (1 - phase1);
-      video.style.padding = `${padding}px`;
-      video.style.borderRadius = `${radius}px`;
-      text.style.opacity = `${1 - phase1 * 2.5}`;
-      text.style.transform = `translateY(${phase1 * -40}px)`;
+    const ctx = gsap.context(() => {
+      // Phase 1: video padding/radius + text animations (first 40% of scroll)
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: wrapper,
+          start: "top top",
+          end: () => `+=${scrollDistance()}`,
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
 
-      // Phase 2: show Vimeo and unmute
-      const shouldShow = phase1 >= 1 && rawProgress < 1;
-      vimeoContainer.style.opacity = shouldShow ? "1" : "0";
-      vimeoContainer.style.pointerEvents = shouldShow ? "auto" : "none";
-      setVimeoVisible(shouldShow);
+      tl.fromTo(
+        video,
+        { padding: 24, borderRadius: 32 },
+        { padding: 0, borderRadius: 0, ease: "none", duration: 1 },
+        0,
+      );
 
-      if (shouldShow && !isUnmutedRef.current) {
-        isUnmutedRef.current = true;
-        vimeoCommand("setVolume", 1);
-        if (!isPausedByUserRef.current) {
-          vimeoCommand("play");
+      // Text fades out at 40% of phase 1 (matching original 2.5x multiplier)
+      tl.to(text, { opacity: 0, ease: "none", duration: 0.4 }, 0);
+      tl.to(text, { y: -40, ease: "none", duration: 1 }, 0);
+
+      // Phase 2: Vimeo show/hide + audio control
+      const showVimeo = () => {
+        gsap.to(vimeoContainer, {
+          opacity: 1,
+          duration: 0.7,
+          ease: "power2.out",
+        });
+        vimeoContainer.style.pointerEvents = "auto";
+        setVimeoVisible(true);
+
+        if (!isUnmutedRef.current) {
+          isUnmutedRef.current = true;
+          vimeoCommand("setVolume", 1);
+          setIsMuted(false);
+          if (!isPausedByUserRef.current) {
+            vimeoCommand("play");
+          }
         }
-      } else if (!shouldShow && isUnmutedRef.current) {
-        isUnmutedRef.current = false;
-        vimeoCommand("setVolume", 0);
-      }
-    };
+      };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+      const hideVimeo = () => {
+        gsap.to(vimeoContainer, {
+          opacity: 0,
+          duration: 0.7,
+          ease: "power2.in",
+        });
+        vimeoContainer.style.pointerEvents = "none";
+        setVimeoVisible(false);
+
+        if (isUnmutedRef.current) {
+          isUnmutedRef.current = false;
+          vimeoCommand("setVolume", 0);
+          setIsMuted(true);
+        }
+      };
+
+      ScrollTrigger.create({
+        trigger: wrapper,
+        start: () => `+=${scrollDistance()}`,
+        end: "bottom bottom",
+        invalidateOnRefresh: true,
+        onEnter: showVimeo,
+        onLeave: hideVimeo,
+        onEnterBack: showVimeo,
+        onLeaveBack: hideVimeo,
+      });
+    }, wrapper);
+
+    return () => ctx.revert();
   }, [vimeoCommand]);
 
   return (
-    <div ref={wrapperRef} className="h-[300dvh]">
-      <section className="sticky top-0 flex h-dvh items-center justify-center overflow-hidden">
+    <section ref={wrapperRef} className="h-[300dvh]" data-header-theme="light">
+      <div className="sticky top-0 flex h-dvh items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
           className="absolute h-full w-full rounded-4xl object-cover p-6"
@@ -100,7 +156,7 @@ export default function Hero() {
         </video>
         <div
           ref={vimeoContainerRef}
-          className="absolute inset-0 z-20 overflow-hidden opacity-0 transition-opacity duration-700"
+          className="absolute inset-0 z-20 overflow-hidden opacity-0"
           style={{ pointerEvents: "none" }}
         >
           <iframe
@@ -117,35 +173,62 @@ export default function Hero() {
             title="Essentia - branded film"
           />
           {vimeoVisible && (
-            <button
-              onClick={handleTogglePlay}
-              className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
-              aria-label="Toggle video playback"
-            >
-              <span
-                className={`rounded-full bg-black/40 p-5 backdrop-blur-sm transition-opacity duration-500 ${showIcon ? "opacity-100" : "opacity-0"}`}
+            <>
+              <button
+                onClick={handleTogglePlay}
+                className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
+                aria-label="Toggle video playback"
               >
-                {showIcon === "pause" ? (
+                <span
+                  className={`rounded-full bg-black/40 p-5 backdrop-blur-sm transition-opacity duration-500 ${showIcon ? "opacity-100" : "opacity-0"}`}
+                >
+                  {showIcon === "pause" ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="white"
+                      className="h-8 w-8"
+                    >
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="white"
+                      className="h-8 w-8"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+              <button
+                onClick={handleToggleMute}
+                className="absolute right-6 bottom-6 z-40 flex cursor-pointer items-center justify-center rounded-full bg-black/40 p-3 backdrop-blur-sm transition-opacity duration-300 hover:bg-black/60"
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+              >
+                {isMuted ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                     fill="white"
-                    className="h-8 w-8"
+                    className="h-5 w-5"
                   >
-                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
                   </svg>
                 ) : (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                     fill="white"
-                    className="h-8 w-8"
+                    className="h-5 w-5"
                   >
-                    <path d="M8 5v14l11-7z" />
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
                   </svg>
                 )}
-              </span>
-            </button>
+              </button>
+            </>
           )}
         </div>
         <div ref={textRef} className="relative z-10 px-6 text-center">
@@ -155,7 +238,7 @@ export default function Hero() {
             for body, mind and spirit.
           </h1>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
