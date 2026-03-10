@@ -111,7 +111,7 @@ export function MobileMenu({ isDark }: { isDark: boolean }) {
             </Link>
           ))}
           <Link
-            href="/book"
+            href="/booking"
             onClick={close}
             className="bg-primary mt-4 w-full rounded-md px-8 py-3 text-center text-lg font-medium tracking-wide text-white uppercase"
             style={{ opacity: 0, transform: "translateY(12px)" }}

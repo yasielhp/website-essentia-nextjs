@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Logo from "./logo";
 import Link from "next/link";
 import { MobileMenu } from "./mobile-menu";
@@ -33,6 +34,8 @@ const itemsRight = [
 ];
 
 export const Header = () => {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export const Header = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname]);
 
   return (
     <header className="fixed top-10 z-50 mx-auto flex w-full justify-center">
@@ -76,12 +79,21 @@ export const Header = () => {
             );
           })}
         </div>
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="mx-6 w-40 cursor-pointer transition-transform hover:scale-105"
-        >
-          <Logo />
-        </button>
+        {isHome ? (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="mx-6 w-40 cursor-pointer transition-transform hover:scale-105"
+          >
+            <Logo />
+          </button>
+        ) : (
+          <Link
+            href="/"
+            className="mx-6 block w-40 transition-transform hover:scale-105"
+          >
+            <Logo />
+          </Link>
+        )}
         <div className="flex items-center justify-center gap-6">
           {itemsRight.map((item) => {
             return (
@@ -95,7 +107,7 @@ export const Header = () => {
             );
           })}
           <Link
-            href="/book"
+            href="/booking"
             className="bg-primary hover:shadow-hover rounded-md px-4 py-2 font-medium text-white transition-all hover:scale-105"
           >
             Book Now
