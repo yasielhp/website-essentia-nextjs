@@ -76,12 +76,12 @@ export const Header = () => {
             );
           })}
         </div>
-        <Link
-          href="/"
-          className="mx-6 w-40 transition-transform hover:scale-105"
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="mx-6 w-40 cursor-pointer transition-transform hover:scale-105"
         >
           <Logo />
-        </Link>
+        </button>
         <div className="flex items-center justify-center gap-6">
           {itemsRight.map((item) => {
             return (
