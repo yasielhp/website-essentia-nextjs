@@ -1,9 +1,119 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function BrandStatement() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLParagraphElement>(null);
+  const descRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const grid = gridRef.current;
+    if (!section || !grid) return;
+
+    const title = titleRef.current;
+    const desc = descRef.current;
+
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
+
+      // Desktop
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(grid, {
+          gridTemplateColumns: "0fr 1fr 1fr 1fr 0fr",
+          gridTemplateRows: "0fr 1fr 1fr 1fr 0fr",
+        });
+        gsap.set([title, desc], { opacity: 0, y: 30 });
+
+        const onUpdate = (self: ScrollTrigger) => {
+          const theme = self.progress > 0.5 ? "light" : "dark";
+          section.dataset.headerTheme = theme;
+        };
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: grid,
+            onUpdate,
+          },
+        });
+
+        // Text fades in first (0% – 20% of scroll)
+        tl.to(title, { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 });
+        tl.to(
+          desc,
+          { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 },
+          "<0.05",
+        );
+
+        // Grid opens (20% – 100% of scroll)
+        tl.to(grid, {
+          gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+          gridTemplateRows: "1fr 1fr 1fr 1fr 1fr",
+          ease: "none",
+          duration: 0.8,
+        });
+      });
+
+      // Mobile
+      mm.add("(max-width: 767px)", () => {
+        gsap.set(grid, { gridTemplateRows: "0fr 1fr 1fr 0fr" });
+        gsap.set([title, desc], { opacity: 0, y: 30 });
+
+        const onUpdate = (self: ScrollTrigger) => {
+          const theme = self.progress > 0.5 ? "light" : "dark";
+          section.dataset.headerTheme = theme;
+        };
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: grid,
+            onUpdate,
+          },
+        });
+
+        tl.to(title, { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 });
+        tl.to(
+          desc,
+          { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 },
+          "<0.05",
+        );
+
+        tl.to(grid, {
+          gridTemplateRows: "0.6fr 1fr 1fr 0.6fr",
+          ease: "none",
+          duration: 0.8,
+        });
+      });
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section data-header-theme="light" className="text-primary">
-      <div className="grid min-h-dvh w-full grid-cols-2 grid-rows-[180px_auto_auto_180px] md:grid-cols-5 md:grid-rows-5">
+    <section
+      ref={sectionRef}
+      data-header-theme="dark"
+      className="text-primary h-[200vh]"
+    >
+      <div
+        ref={gridRef}
+        className="grid h-dvh w-full grid-cols-2 md:grid-cols-5"
+      >
         {/* Img 1 — mobile: top-left / desktop: col-1 row-1-2 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">
           <Image
@@ -45,11 +155,17 @@ export default function BrandStatement() {
         </div>
 
         {/* CENTER CONTENT */}
-        <div className="col-span-2 row-span-2 row-start-2 mx-auto flex w-full flex-col items-center justify-center gap-5 px-6 py-10 text-center md:col-span-3 md:col-start-2 md:row-span-3 md:row-start-2 md:min-h-0 md:w-3/5 md:px-10">
-          <p className="font-display text-3xl text-balance md:text-4xl lg:text-5xl">
+        <div className="col-span-2 row-span-2 row-start-2 flex flex-col items-center justify-center gap-5 px-6 py-10 text-center md:col-span-3 md:col-start-2 md:row-span-3 md:row-start-2 md:px-10">
+          <p
+            ref={titleRef}
+            className="font-display text-3xl text-balance md:max-w-lg md:text-4xl lg:text-5xl"
+          >
             More than massage. A holistic journey.
           </p>
-          <p className="text-muted leading-relaxed text-pretty">
+          <p
+            ref={descRef}
+            className="text-muted leading-relaxed text-pretty md:max-w-3xl"
+          >
             Essentia is more than a massage brand — it&apos;s a transformative
             experience combining wellness, exclusivity and personalization.
             Rooted in Tenerife, we integrate the serenity of the ocean and the
