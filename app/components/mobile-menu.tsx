@@ -60,7 +60,7 @@ export function MobileMenu({ isDark }: { isDark: boolean }) {
   const lineColor = isOpen || isDark ? "bg-primary" : "bg-white";
 
   return (
-    <div className="flex w-full items-center justify-between px-10 md:hidden">
+    <div className="xs:hidden flex w-full items-center justify-between px-10">
       <Link
         href="/"
         className={`relative z-50 block w-36 transition-colors duration-500 ${

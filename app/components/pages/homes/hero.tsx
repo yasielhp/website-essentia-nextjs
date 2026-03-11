@@ -232,7 +232,7 @@ export default function Hero() {
           )}
         </div>
         <div ref={textRef} className="relative z-10 px-6 text-center">
-          <h1 className="font-display text-3xl tracking-wide text-white md:text-6xl lg:text-7xl">
+          <h1 className="font-display xs:text-6xl text-3xl tracking-wide text-white lg:text-7xl">
             A transformative experience
             <br />
             for body, mind and spirit.

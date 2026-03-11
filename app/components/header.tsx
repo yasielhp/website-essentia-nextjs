@@ -62,17 +62,17 @@ export const Header = () => {
   return (
     <header className="fixed top-10 z-50 mx-auto flex w-full justify-center">
       <div
-        className={`max-w-10xl hidden w-full items-center justify-between px-4 py-8 uppercase transition-colors duration-500 md:flex ${
+        className={`max-w-10xl xs:flex hidden w-full items-center justify-between px-14 py-8 uppercase transition-colors duration-500 ${
           isDark ? "text-primary" : "text-white"
         }`}
       >
-        <div className="flex items-center justify-center gap-6">
+        <div className="xs:gap-6 flex items-center justify-center gap-0">
           {itemsLeft.map((item) => {
             return (
               <Link
                 key={item.slug}
                 href={item.slug}
-                className="px-4 py-2 font-medium transition-transform hover:scale-105"
+                className="py-2 font-medium transition-transform hover:scale-105"
               >
                 {item.title}
               </Link>
@@ -94,13 +94,13 @@ export const Header = () => {
             <Logo />
           </Link>
         )}
-        <div className="flex items-center justify-center gap-6">
+        <div className="xs:gap-6 flex items-center justify-center gap-0">
           {itemsRight.map((item) => {
             return (
               <Link
                 key={item.slug}
                 href={item.slug}
-                className="px-4 py-2 font-medium transition-transform hover:scale-105"
+                className="py-2 font-medium transition-transform hover:scale-105"
               >
                 {item.title}
               </Link>

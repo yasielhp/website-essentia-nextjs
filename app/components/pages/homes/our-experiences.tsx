@@ -207,19 +207,25 @@ export default function OurExperiences() {
       data-header-theme="dark"
       className="text-primary overflow-hidden"
     >
-      <div ref={contentRef} className="flex h-dvh w-full flex-col justify-center gap-6 px-4 md:gap-14 md:px-8">
-        <div className="max-w-10xl mx-auto w-full">
-          <h2 ref={headingRef} className="font-display mt-20 px-6 text-4xl md:mt-20 md:text-8xl">
+      <div
+        ref={contentRef}
+        className="xs:gap-14 xs:px-8 flex h-dvh w-full flex-col justify-start gap-6 px-4"
+      >
+        <div className="max-w-10xl mx-auto w-full px-8">
+          <h2
+            ref={headingRef}
+            className="font-display xs:text-8xl mt-30 text-4xl md:mt-50"
+          >
             Our Experiences
           </h2>
         </div>
-        <div ref={trackRef} className="flex w-max gap-10 md:gap-20">
+        <div ref={trackRef} className="xs:gap-20 flex w-max gap-10">
           {experiences.map((exp, index) => (
             <div
               key={index}
-              className="border-primary/20 flex w-[85vw] flex-col rounded-lg border md:w-[60vw] md:flex-row md:gap-8 lg:w-[45vw]"
+              className="border-primary/20 xs:w-[60vw] xs:flex-row xs:gap-8 flex w-[85vw] flex-col rounded-lg border lg:w-[45vw]"
             >
-              <div className="relative aspect-3/4 h-80 shrink-0 overflow-hidden rounded-lg md:h-full md:w-1/2">
+              <div className="xs:h-full xs:w-1/2 relative aspect-3/4 h-80 shrink-0 overflow-hidden rounded-lg">
                 <Image
                   data-img
                   src={exp.image}
@@ -231,7 +237,7 @@ export default function OurExperiences() {
               <div className="flex flex-col justify-start gap-4 px-4 py-6">
                 <h3
                   data-title
-                  className="font-display text-2xl font-semibold text-balance md:mt-20 md:text-3xl"
+                  className="font-display xs:mt-20 xs:text-3xl text-2xl font-semibold text-balance"
                 >
                   {exp.title}
                 </h3>

@@ -4,9 +4,9 @@ export default function Services() {
       className="text-primary min-h-dvh overflow-hidden"
       data-header-theme="dark"
     >
-      <div className="flex h-dvh w-full flex-col justify-center gap-6 px-4 md:gap-14 md:px-8">
+      <div className="xs:gap-14 xs:px-8 flex h-dvh w-full flex-col justify-center gap-6 px-4">
         <div className="max-w-10xl mx-auto w-full">
-          <h2 className="font-display mt-20 px-6 text-center text-4xl md:mt-20 md:text-8xl">
+          <h2 className="font-display xs:mt-20 xs:text-8xl mt-20 px-6 text-center text-4xl">
             Services
           </h2>
         </div>
