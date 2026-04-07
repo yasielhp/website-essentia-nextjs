@@ -112,7 +112,7 @@ export default function BrandStatement() {
     >
       <div
         ref={gridRef}
-        className="grid h-dvh w-full grid-cols-2 md:grid-cols-5"
+        className="grid h-screen w-full grid-cols-2 md:grid-cols-5"
       >
         {/* Img 1 — mobile: top-left / desktop: col-1 row-1-2 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">

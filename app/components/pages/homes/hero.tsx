@@ -137,8 +137,8 @@ export default function Hero() {
   }, [vimeoCommand]);
 
   return (
-    <section ref={wrapperRef} className="h-[300dvh]" data-header-theme="light">
-      <div className="sticky top-0 flex h-dvh items-center justify-center overflow-hidden">
+    <section ref={wrapperRef} data-header-theme="light" className="h-[300vh]">
+      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
           className="absolute h-full w-full rounded-4xl object-cover p-6"
