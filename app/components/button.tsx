@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
-import gsap from "gsap";
+import { type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { SplitText, useTextAnimation } from "./animated-text";
 
 // ─── Variantes y Tamaños ──────────────────────────────────────
 
@@ -48,41 +48,6 @@ function buildClassName(variant: Variant, size: Size, className?: string) {
     .join(" ");
 }
 
-// ─── Animación de texto por caracteres ───────────────────────
-
-function SplitText({ children }: { children: ReactNode }) {
-  if (typeof children !== "string") return <>{children}</>;
-  return (
-    <>
-      <span className="sr-only">{children}</span>
-      <span className="inline-flex" aria-hidden="true">
-        {children.split("").map((char, i) => (
-          <span key={i} data-char>
-            {char === " " ? "\u00A0" : char}
-          </span>
-        ))}
-      </span>
-    </>
-  );
-}
-
-function useTextAnimation() {
-  const ref = useRef<HTMLButtonElement & HTMLAnchorElement>(null);
-
-  const handleMouseEnter = () => {
-    if (!ref.current) return;
-    const chars = ref.current.querySelectorAll("[data-char]");
-    if (!chars.length) return;
-    gsap.fromTo(
-      chars,
-      { y: 4, opacity: 0.4 },
-      { y: 0, opacity: 1, stagger: 0.025, duration: 0.3, ease: "power2.out" },
-    );
-  };
-
-  return { ref, handleMouseEnter };
-}
-
 // ─── Tipos del componente ─────────────────────────────────────
 
 type ButtonBaseProps = {
@@ -110,7 +75,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = buildClassName(variant, size, className);
-  const { ref, handleMouseEnter } = useTextAnimation();
+  const { ref, handleMouseEnter } = useTextAnimation<HTMLButtonElement & HTMLAnchorElement>();
 
   if ("href" in props && props.href !== undefined) {
     const { href, ...linkProps } = props as AsLink;
