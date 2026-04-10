@@ -37,6 +37,7 @@ export const Header = () => {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [isDark, setIsDark] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,6 +45,11 @@ export const Header = () => {
       const sections = document.querySelectorAll<HTMLElement>(
         "[data-header-theme]",
       );
+
+      // Detecta si ya salimos completamente del hero (primera sección)
+      if (sections[0]) {
+        setPastHero(sections[0].getBoundingClientRect().bottom <= 0);
+      }
 
       for (let i = sections.length - 1; i >= 0; i--) {
         const rect = sections[i].getBoundingClientRect();
@@ -114,7 +120,7 @@ export const Header = () => {
           </Link>
         </div>
       </div>
-      <MobileMenu isDark={isDark} />
+      <MobileMenu isDark={isDark} pastHero={pastHero} />
     </header>
   );
 };

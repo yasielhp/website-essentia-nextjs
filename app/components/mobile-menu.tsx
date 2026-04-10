@@ -13,7 +13,7 @@ const navItems = [
   { title: "Contact", slug: "/contact" },
 ];
 
-export function MobileMenu({ isDark }: { isDark: boolean }) {
+export function MobileMenu({ isDark, pastHero }: { isDark: boolean; pastHero: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const tweenRef = useRef<gsap.core.Timeline | null>(null);
@@ -60,7 +60,10 @@ export function MobileMenu({ isDark }: { isDark: boolean }) {
   const lineColor = isOpen || isDark ? "bg-primary" : "bg-white";
 
   return (
-    <div className="xs:hidden flex w-full items-center justify-between px-10">
+    <div
+      className="xs:hidden flex w-full items-center justify-between transition-[padding] duration-500"
+      style={{ paddingLeft: pastHero ? "1.25rem" : "2.5rem", paddingRight: pastHero ? "1.25rem" : "2.5rem" }}
+    >
       <Link
         href="/"
         className={`relative z-50 block w-36 transition-colors duration-500 ${
