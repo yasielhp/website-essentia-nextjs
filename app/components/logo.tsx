@@ -2,14 +2,14 @@
 import { useRef } from "react";
 import gsap from "gsap";
 
-export default function Logo() {
+export function Logo() {
   const svgRef = useRef<SVGSVGElement>(null);
 
   const handleEnter = () => {
     gsap.fromTo(
       svgRef.current!.querySelectorAll("path"),
       { y: 4, opacity: 0.4 },
-      { y: 0, opacity: 1, stagger: 0.04, duration: 0.3, ease: "power2.out" }
+      { y: 0, opacity: 1, stagger: 0.04, duration: 0.3, ease: "power2.out" },
     );
   };
 
