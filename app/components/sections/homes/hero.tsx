@@ -81,9 +81,27 @@ export default function Hero() {
         0,
       );
 
-      // Text fades out at 40% of phase 1 (matching original 2.5x multiplier)
+      // Text fades out at 40% of phase 1
       tl.to(text, { opacity: 0, ease: "none", duration: 0.4 }, 0);
       tl.to(text, { y: -40, ease: "none", duration: 1 }, 0);
+
+      // Padding reduce sincronizado con el video (ScrollTrigger independiente)
+      gsap.fromTo(
+        text,
+        { paddingLeft: 56, paddingRight: 56 },
+        {
+          paddingLeft: 20,
+          paddingRight: 20,
+          ease: "none",
+          scrollTrigger: {
+            trigger: wrapper,
+            start: "top top",
+            end: () => `+=${scrollDistance()}`,
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
 
       // Phase 2: Vimeo show/hide + audio control
       const showVimeo = () => {
@@ -205,7 +223,7 @@ export default function Hero() {
               </button>
               <button
                 onClick={handleToggleMute}
-                className="absolute right-6 bottom-6 z-40 flex cursor-pointer items-center justify-center rounded-full bg-black/40 p-3 backdrop-blur-sm transition-opacity duration-300 hover:bg-black/60"
+                className="absolute right-6 bottom-6  z-40 flex cursor-pointer items-center justify-center rounded-full bg-black/40 p-3 backdrop-blur-sm transition-opacity duration-300 hover:bg-black/60"
                 aria-label={isMuted ? "Unmute video" : "Mute video"}
               >
                 {isMuted ? (
@@ -231,7 +249,7 @@ export default function Hero() {
             </>
           )}
         </div>
-        <div ref={textRef} className="relative z-10 px-6 text-center">
+        <div ref={textRef} className="max-w-10xl relative z-10 mx-auto w-full text-center">
           <h1 className="font-display xs:text-6xl text-3xl tracking-wide text-white lg:text-7xl">
             A transformative experience
             <br />

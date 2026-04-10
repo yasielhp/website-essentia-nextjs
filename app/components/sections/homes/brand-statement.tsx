@@ -12,6 +12,7 @@ export default function BrandStatement() {
   const gridRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const descRef = useRef<HTMLParagraphElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -33,7 +34,9 @@ export default function BrandStatement() {
         gsap.set([title, desc], { opacity: 0, y: 30 });
 
         const onUpdate = (self: ScrollTrigger) => {
-          const theme = self.progress > 0.5 ? "light" : "dark";
+          const p = self.progress;
+          // Over images → white header; over cream overlay → dark header
+          const theme = p > 0.85 ? "dark" : p > 0.5 ? "light" : "dark";
           section.dataset.headerTheme = theme;
         };
 
@@ -61,8 +64,15 @@ export default function BrandStatement() {
           gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
           gridTemplateRows: "1fr 1fr 1fr 1fr 1fr",
           ease: "none",
-          duration: 0.8,
+          duration: 0.65,
         });
+
+        // Overlay fades in at the end (last ~15% of scroll)
+        tl.to(
+          overlayRef.current,
+          { opacity: 1, ease: "power1.in", duration: 0.15 },
+          ">",
+        );
       });
 
       // Mobile
@@ -71,7 +81,9 @@ export default function BrandStatement() {
         gsap.set([title, desc], { opacity: 0, y: 30 });
 
         const onUpdate = (self: ScrollTrigger) => {
-          const theme = self.progress > 0.5 ? "light" : "dark";
+          const p = self.progress;
+          // Over images → white header; over cream overlay → dark header
+          const theme = p > 0.85 ? "dark" : p > 0.5 ? "light" : "dark";
           section.dataset.headerTheme = theme;
         };
 
@@ -96,8 +108,15 @@ export default function BrandStatement() {
         tl.to(grid, {
           gridTemplateRows: "0.6fr 1fr 1fr 0.6fr",
           ease: "none",
-          duration: 0.8,
+          duration: 0.65,
         });
+
+        // Overlay fades in at the end (last ~15% of scroll)
+        tl.to(
+          overlayRef.current,
+          { opacity: 1, ease: "power1.in", duration: 0.15 },
+          ">",
+        );
       });
     }, section);
 
@@ -112,8 +131,13 @@ export default function BrandStatement() {
     >
       <div
         ref={gridRef}
-        className="grid h-screen w-full grid-cols-2 md:grid-cols-5"
+        className="relative grid h-screen w-full grid-cols-2 md:grid-cols-5"
       >
+        {/* Fade-out overlay — fades in before section exits */}
+        <div
+          ref={overlayRef}
+          className="bg-background pointer-events-none absolute inset-0 z-10 opacity-0"
+        />
         {/* Img 1 — mobile: top-left / desktop: col-1 row-1-2 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">
           <Image

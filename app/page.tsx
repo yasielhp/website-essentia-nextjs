@@ -1,7 +1,7 @@
-import BrandStatement from "./components/pages/homes/brand-statement";
-import Hero from "./components/pages/homes/hero";
-import OurExperiences from "./components/pages/homes/our-experiences";
-import Services from "./components/pages/homes/services";
+import BrandStatement from "./components/sections/homes/brand-statement";
+import Hero from "./components/sections/homes/hero";
+import OurExperiences from "./components/sections/homes/our-experiences";
+import Services from "./components/sections/homes/services";
 
 export default function Home() {
   return (
