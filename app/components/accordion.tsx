@@ -136,21 +136,22 @@ function AccordionRoot({
 
 export type AccordionGroupHandle = { close: () => void };
 
-const Group = forwardRef<AccordionGroupHandle, { children: ReactNode; className?: string }>(
-  function Group({ children, className }, ref) {
-    const [openId, setOpenId] = useState<string | null>(null);
+const Group = forwardRef<
+  AccordionGroupHandle,
+  { children: ReactNode; className?: string }
+>(function Group({ children, className }, ref) {
+  const [openId, setOpenId] = useState<string | null>(null);
 
-    useImperativeHandle(ref, () => ({
-      close: () => setOpenId(null),
-    }));
+  useImperativeHandle(ref, () => ({
+    close: () => setOpenId(null),
+  }));
 
-    return (
-      <AccordionGroupContext.Provider value={{ openId, setOpenId }}>
-        <div className={className}>{children}</div>
-      </AccordionGroupContext.Provider>
-    );
-  },
-);
+  return (
+    <AccordionGroupContext.Provider value={{ openId, setOpenId }}>
+      <div className={className}>{children}</div>
+    </AccordionGroupContext.Provider>
+  );
+});
 
 // ─── Export compuesto ─────────────────────────────────────────
 
