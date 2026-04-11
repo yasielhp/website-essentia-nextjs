@@ -77,6 +77,39 @@ export function useTextAnimation<T extends HTMLElement>() {
   return { ref, handleMouseEnter };
 }
 
+// ─── AnimatedIconLink ─────────────────────────────────────────
+// Link de Next.js con animación de icono (SVG) al hover.
+
+export function AnimatedIconLink({
+  children,
+  className,
+  ...props
+}: AnimatedLinkProps) {
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  const handleMouseEnter = () => {
+    if (!ref.current) return;
+    const icon = ref.current.querySelector("svg");
+    if (!icon) return;
+    gsap.fromTo(
+      icon,
+      { y: 4, opacity: 0.5, scale: 0.85 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" },
+    );
+  };
+
+  return (
+    <Link
+      ref={ref}
+      className={className}
+      onMouseEnter={handleMouseEnter}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+}
+
 // ─── AnimatedLink ─────────────────────────────────────────────
 // Link de Next.js con animación de texto por caracteres al hover.
 
