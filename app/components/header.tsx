@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import gsap from "gsap";
 import Link from "next/link";
+import gsap from "gsap";
 
 import { maiMenu } from "@/constants/menu";
+import { contact } from "@/constants/contact";
 
 import { Button } from "@components/button";
 import { Logo } from "@components/logo";
@@ -120,6 +121,7 @@ export const Header = () => {
   }, [activeMenu]);
 
   // Animar título y descripción al cambiar el item o el menú activo
+  const activeCardHref = activeItem?.href ?? displayedMenu?.href;
   useEffect(() => {
     if (!cardTextRef.current) return;
     gsap.fromTo(
@@ -127,7 +129,7 @@ export const Header = () => {
       { y: 10, opacity: 0 },
       { y: 0, opacity: 1, stagger: 0.08, duration: 0.3, ease: "power2.out" },
     );
-  }, [activeItem?.href ?? displayedMenu?.href]);
+  }, [activeCardHref]);
 
   // ─── Animación menú móvil ─────────────────────────────────────
   useEffect(() => {
@@ -183,14 +185,16 @@ export const Header = () => {
   return (
     <header className="text-petroleum-500 bg-sand-50 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl md:mt-10 md:rounded-2xl">
       {/* Barra principal: logo, nav desktop, acciones */}
-      <div className="flex w-full items-center justify-between px-5 py-4 md:px-6">
+      <section
+        className={`flex w-full items-center justify-between px-5 py-4 md:px-6 ${activeMenu ? "border-sand-100 border-b" : ""}`}
+      >
         <Link className="mb-1" href="/" aria-label="Home">
           <Logo />
         </Link>
 
         <nav className="hidden md:flex">
           <ul className="flex gap-2">
-            {maiMenu.map((menu) => {
+            {maiMenu.slice(0, 3).map((menu) => {
               const isActive = activeMenu?.href === menu.href;
               const isDimmed = activeMenu !== null && !isActive;
               return (
@@ -228,10 +232,10 @@ export const Header = () => {
             className="md:hidden"
           />
         </div>
-      </div>
+      </section>
 
       {/* Área expandible: dropdown desktop + menú móvil */}
-      <div className="w-full">
+      <section className="w-full">
         {/* Desktop dropdown — siempre en el DOM para animar cierre */}
         <div
           ref={desktopMenuRef}
@@ -320,7 +324,7 @@ export const Header = () => {
           className="border-petroleum-100 flex flex-col overflow-hidden border-t md:hidden"
         >
           <Accordion.Group>
-            {maiMenu.map((menu) => (
+            {maiMenu.slice(0, 3).map((menu) => (
               <nav
                 key={menu.href}
                 data-menu-item
@@ -355,10 +359,10 @@ export const Header = () => {
             ))}
           </Accordion.Group>
           <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
-            Baobab Suites, Costa Adeje — Tenerife
+            {contact.address}
           </p>
         </div>
-      </div>
+      </section>
     </header>
   );
 };
