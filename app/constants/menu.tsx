@@ -145,4 +145,54 @@ export const maiMenu = [
       },
     ],
   },
+  {
+    name: "Essentia",
+    href: "/",
+    card: {
+      title: null,
+      description: null,
+      imagen: null,
+    },
+    itemMenu: [
+      {
+        itemName: "About us",
+        href: "/about",
+        card: null,
+      },
+      {
+        itemName: "Blog",
+        href: "/blog",
+        card: null,
+      },
+      {
+        itemName: "Shop",
+        href: "/shop",
+        card: null,
+      },
+      {
+        itemName: "Contact",
+        href: "/contact",
+        card: null,
+      },
+    ],
+  },
+];
+
+export const legalMenu = [
+  {
+    name: "Legal",
+    href: "/legal",
+  },
+  {
+    name: "Privacy",
+    href: "/privacy",
+  },
+  {
+    name: "Terms",
+    href: "/terms",
+  },
+  {
+    name: "Cookies",
+    href: "/cookies",
+  },
 ];
