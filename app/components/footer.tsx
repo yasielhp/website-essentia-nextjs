@@ -8,6 +8,7 @@ import { legalMenu, maiMenu } from "@/constants/menu";
 import LanguageSelector from "@components/languageSelector";
 import { contact } from "@/constants/contact";
 import { Accordion, type AccordionGroupHandle } from "@components/accordion";
+import { AnimatedLink, AnimatedIconLink } from "@components/animated-text";
 
 export const Footer = () => {
   const accordionRef = useRef<AccordionGroupHandle>(null);
@@ -26,7 +27,9 @@ export const Footer = () => {
               <ul className="flex flex-col gap-1 text-sm md:gap-1">
                 {item.itemMenu.map((subItem) => (
                   <li key={subItem.itemName}>
-                    <Link href={subItem.href}>{subItem.itemName}</Link>
+                    <AnimatedLink href={subItem.href}>
+                      {subItem.itemName}
+                    </AnimatedLink>
                   </li>
                 ))}
               </ul>
@@ -54,7 +57,7 @@ export const Footer = () => {
                             key={item.href}
                             className="border-petroleum-500 border-l pr-5 pl-3"
                           >
-                            <Link
+                            <AnimatedLink
                               href={item.href}
                               className="flex flex-col pb-2"
                               onClick={() => accordionRef.current?.close()}
@@ -62,7 +65,7 @@ export const Footer = () => {
                               <span className="text-sand-700 text-sm font-medium">
                                 {item.itemName}
                               </span>
-                            </Link>
+                            </AnimatedLink>
                           </li>
                         ))}
                       </ul>
@@ -88,24 +91,24 @@ export const Footer = () => {
           </div>
           {/*Contact Email and Phone*/}
           <div className="border-petroleum-500 flex w-full flex-col items-center text-center md:border-r">
-            <Link href={`mailto:${contact.email}`} target="_blank">
+            <AnimatedLink href={`mailto:${contact.email}`} target="_blank">
               {contact.email}
-            </Link>
-            <Link href={`tel:${contact.phone}`} target="_blank">
+            </AnimatedLink>
+            <AnimatedLink href={`tel:${contact.phone}`} target="_blank">
               {contact.phone}
-            </Link>
+            </AnimatedLink>
           </div>
           {/*Contact Social Media*/}
           <div className="flex w-full justify-center gap-5 md:justify-end">
             {contact.socialMedia.map((social) => (
-              <Link
+              <AnimatedIconLink
                 key={social.name}
                 href={social.url}
                 target="_blank"
                 className="border-petroleum-500 rounded-full border p-2 text-center"
               >
                 <social.icon />
-              </Link>
+              </AnimatedIconLink>
             ))}
           </div>
         </div>
@@ -117,9 +120,9 @@ export const Footer = () => {
           <ul className="flex gap-8 md:gap-6">
             {legalMenu.map((item) => (
               <li key={item.name}>
-                <Link href={item.href} className="text-sm">
+                <AnimatedLink href={item.href} className="text-sm">
                   {item.name}
-                </Link>
+                </AnimatedLink>
               </li>
             ))}
           </ul>
