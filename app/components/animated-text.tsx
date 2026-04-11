@@ -50,7 +50,7 @@ export function SplitText({ children }: { children: ReactNode }) {
             </span>
           ) : (
             child
-          )
+          ),
         )}
       </span>
     </>
@@ -84,7 +84,12 @@ type AnimatedLinkProps = ComponentPropsWithoutRef<typeof Link> & {
   children: ReactNode;
 };
 
-export function AnimatedLink({ children, onMouseEnter, className, ...props }: AnimatedLinkProps) {
+export function AnimatedLink({
+  children,
+  onMouseEnter,
+  className,
+  ...props
+}: AnimatedLinkProps) {
   const { ref, handleMouseEnter } = useTextAnimation<HTMLAnchorElement>();
 
   return (

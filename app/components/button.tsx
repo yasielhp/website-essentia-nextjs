@@ -75,7 +75,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = buildClassName(variant, size, className);
-  const { ref, handleMouseEnter } = useTextAnimation<HTMLButtonElement & HTMLAnchorElement>();
+  const { ref, handleMouseEnter } = useTextAnimation<
+    HTMLButtonElement & HTMLAnchorElement
+  >();
 
   if ("href" in props && props.href !== undefined) {
     const { href, ...linkProps } = props as AsLink;
