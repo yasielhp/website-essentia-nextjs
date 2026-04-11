@@ -5,8 +5,12 @@ import {
   useContext,
   useState,
   useId,
+  useImperativeHandle,
+  forwardRef,
   type ReactNode,
 } from "react";
+
+import { IconChevronDown } from "@components/icons";
 
 // ─── Contexto de grupo ────────────────────────────────────────
 
@@ -15,8 +19,9 @@ type AccordionGroupContextValue = {
   setOpenId: (id: string | null) => void;
 };
 
-const AccordionGroupContext = createContext<AccordionGroupContextValue | null>(null);
-import { IconChevronDown } from "@components/icons";
+const AccordionGroupContext = createContext<AccordionGroupContextValue | null>(
+  null,
+);
 
 // ─── Contexto interno ─────────────────────────────────────────
 
@@ -40,7 +45,13 @@ function useAccordion() {
 
 // ─── Subcomponentes ───────────────────────────────────────────
 
-function Header({ children }: { children: ReactNode }) {
+function Header({
+  children,
+  iconClassName,
+}: {
+  children: ReactNode;
+  iconClassName?: string;
+}) {
   const { isOpen, toggle, triggerId, panelId } = useAccordion();
   return (
     <button
@@ -52,7 +63,7 @@ function Header({ children }: { children: ReactNode }) {
     >
       <span>{children}</span>
       <span
-        className="text-petroleum-400 shrink-0 transition-transform duration-300 ease-in-out"
+        className={`shrink-0 transition-transform duration-300 ease-in-out ${iconClassName ?? "text-petroleum-400"}`}
         style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
         aria-hidden="true"
       >
@@ -105,7 +116,12 @@ function AccordionRoot({
 
   return (
     <AccordionContext.Provider
-      value={{ isOpen, toggle, triggerId: `${id}-trigger`, panelId: `${id}-panel` }}
+      value={{
+        isOpen,
+        toggle,
+        triggerId: `${id}-trigger`,
+        panelId: `${id}-panel`,
+      }}
     >
       <div
         className={`border-petroleum-100 border-b last:border-b-0 ${className ?? ""}`}
@@ -116,14 +132,25 @@ function AccordionRoot({
   );
 }
 
-function Group({ children, className }: { children: ReactNode; className?: string }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  return (
-    <AccordionGroupContext.Provider value={{ openId, setOpenId }}>
-      <div className={className}>{children}</div>
-    </AccordionGroupContext.Provider>
-  );
-}
+// ─── Group con ref imperativo ─────────────────────────────────
+
+export type AccordionGroupHandle = { close: () => void };
+
+const Group = forwardRef<AccordionGroupHandle, { children: ReactNode; className?: string }>(
+  function Group({ children, className }, ref) {
+    const [openId, setOpenId] = useState<string | null>(null);
+
+    useImperativeHandle(ref, () => ({
+      close: () => setOpenId(null),
+    }));
+
+    return (
+      <AccordionGroupContext.Provider value={{ openId, setOpenId }}>
+        <div className={className}>{children}</div>
+      </AccordionGroupContext.Provider>
+    );
+  },
+);
 
 // ─── Export compuesto ─────────────────────────────────────────
 
