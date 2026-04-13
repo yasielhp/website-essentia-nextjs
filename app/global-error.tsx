@@ -42,7 +42,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         >
           {/* Label */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ height: "1px", width: "32px", background: "#c2baa5" }} />
+            <span
+              style={{ height: "1px", width: "32px", background: "#c2baa5" }}
+            />
             <p
               style={{
                 fontSize: "11px",
@@ -54,7 +56,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             >
               Critical error
             </p>
-            <span style={{ height: "1px", width: "32px", background: "#c2baa5" }} />
+            <span
+              style={{ height: "1px", width: "32px", background: "#c2baa5" }}
+            />
           </div>
 
           {/* Headline */}

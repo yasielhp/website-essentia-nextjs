@@ -18,7 +18,7 @@ export default function Error({ error, reset }: ErrorProps) {
       {/* Textura tipográfica de fondo */}
       <span
         aria-hidden
-        className="font-display text-petroleum-800 pointer-events-none absolute inset-0 flex select-none items-center justify-center text-[28vw] leading-none opacity-40"
+        className="font-display text-petroleum-800 pointer-events-none absolute inset-0 flex items-center justify-center text-[28vw] leading-none opacity-40 select-none"
       >
         500
       </span>
@@ -33,7 +33,7 @@ export default function Error({ error, reset }: ErrorProps) {
           <span className="bg-sand-500 h-px w-8" />
         </div>
 
-        <h1 className="font-display text-sand-50 max-w-sm text-balance text-4xl md:max-w-lg md:text-6xl">
+        <h1 className="font-display text-sand-50 max-w-sm text-4xl text-balance md:max-w-lg md:text-6xl">
           An unexpected
           <br />
           error occurred.
