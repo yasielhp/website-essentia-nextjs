@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Header } from "./components/header";
 import { Footer } from "./components/footer";
+import { contact } from "@/constants/contact";
 
 const jedira = localFont({
   src: [
@@ -38,9 +39,19 @@ const dmSans = localFont({
   display: "swap",
 });
 
+const siteUrl = `https://${contact.domain}`;
+
 export const metadata: Metadata = {
-  title: "Essentia Wellness Club",
-  description: "Essentia Wellness Club",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Essentia — Longevity Center & Social Wellness Club in Tenerife",
+    template: "%s | Essentia",
+  },
+  description:
+    "Longevity center & social wellness club in Tenerife. Science-backed protocols, medical therapies, and an exclusive community for a longer life.",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
