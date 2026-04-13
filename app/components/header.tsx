@@ -7,12 +7,12 @@ import gsap from "gsap";
 import { maiMenu } from "@/constants/menu";
 import { contact } from "@/constants/contact";
 
-import { Button } from "@components/button";
-import { Logo } from "@components/logo";
-import { HamburgerButton } from "@components/hamburger-button";
-import { Accordion } from "@components/accordion";
-import { IconChevronDown } from "@components/icons";
-import { AnimatedLink } from "@components/animated-text";
+import { Button } from "@components/ui/button";
+import { Logo } from "@components/ui/logo";
+import { HamburgerButton } from "@components/ui/hamburger-button";
+import { Accordion } from "@components/ui/accordion";
+import { IconChevronDown } from "@components/ui/icons";
+import { AnimatedLink } from "@components/ui/animated-text";
 
 type MenuItem = (typeof maiMenu)[0];
 type ItemMenu = (typeof maiMenu)[0]["itemMenu"][0];

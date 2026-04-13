@@ -1,9 +1,13 @@
-import { IconFacebook, IconInstagram, IconYouTube } from "@/components/icons";
+import {
+  IconFacebook,
+  IconInstagram,
+  IconYouTube,
+} from "@/components/ui/icons";
 
 export const contact = {
   address: "Baobab Suites, Costa Adeje, Tenerife, Islas Canarias, España",
   phone: "+34 922 123 456",
-  email: "info@essentia.com",
+  email: "info@essentiawellnessclub.com",
   socialMedia: [
     {
       name: "Instagram",

@@ -1,4 +1,4 @@
-import { IconChevronDown, IconWorld } from "@components/icons";
+import { IconChevronDown, IconWorld } from "@components/ui/icons";
 
 export default function LanguageSelector() {
   return (

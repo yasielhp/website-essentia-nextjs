@@ -7,14 +7,14 @@ import { legalMenu, maiMenu } from "@/constants/menu";
 
 import LanguageSelector from "@components/languageSelector";
 import { contact } from "@/constants/contact";
-import { Accordion, type AccordionGroupHandle } from "@components/accordion";
-import { AnimatedLink, AnimatedIconLink } from "@components/animated-text";
+import { Accordion, type AccordionGroupHandle } from "@components/ui/accordion";
+import { AnimatedLink, AnimatedIconLink } from "@components/ui/animated-text";
 
 export const Footer = () => {
   const accordionRef = useRef<AccordionGroupHandle>(null);
 
   return (
-    <footer className="bg-petroleum-700 text-sand-500 flex w-full flex-col rounded-tl-3xl rounded-tr-3xl">
+    <footer className="bg-petroleum-700 text-sand-500 z-10 -mt-6 flex w-full flex-col rounded-tl-3xl rounded-tr-3xl">
       {/* Link */}
       <section className="flex w-full items-center justify-center pt-10 md:px-5 md:py-10">
         <div className="mx-auto flex w-full max-w-4xl flex-col items-start justify-between gap-3 md:flex-row">
@@ -131,7 +131,7 @@ export const Footer = () => {
       {/* Copyright */}
       <section className="pt-4 pb-5 md:py-5">
         <p className="text-center text-xs">
-          © {new Date().getFullYear()} Essentia Social Wellness Club. All rights
+          © {new Date().getFullYear()} Essentia Wellness Club. All rights
           reserved.
         </p>
       </section>
