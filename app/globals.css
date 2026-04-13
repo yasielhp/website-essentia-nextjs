@@ -41,12 +41,12 @@
 @layer base {
   html {
     font-family: var(--font-body);
-    color: var(--color-foreground);
-    background-color: var(--color-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
     overscroll-behavior-y: none;
+    /* Coincide con el fondo del footer para que el overscroll en mobile no muestre blanco */
+    background-color: var(--color-petroleum-700);
   }
 }

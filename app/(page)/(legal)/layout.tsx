@@ -4,7 +4,7 @@ export default function LegalLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <section className="text-primary min-h-dvh" data-header-theme="dark">
+    <section className="text-primary min-h-dvh">
       <div className="mx-auto max-w-3xl px-4 pt-32 pb-16">
         <article className="prose prose-neutral max-w-none">{children}</article>
       </div>

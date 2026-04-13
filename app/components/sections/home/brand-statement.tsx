@@ -33,12 +33,6 @@ export default function BrandStatement() {
         });
         gsap.set([title, desc], { opacity: 0, y: 30 });
 
-        const onUpdate = (self: ScrollTrigger) => {
-          const p = self.progress;
-          const theme = p > 0.85 ? "dark" : p > 0.5 ? "light" : "dark";
-          section.dataset.headerTheme = theme;
-        };
-
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
@@ -46,7 +40,6 @@ export default function BrandStatement() {
             end: "bottom bottom",
             scrub: 0.6,
             pin: grid,
-            onUpdate,
           },
         });
 
@@ -76,12 +69,6 @@ export default function BrandStatement() {
         gsap.set(grid, { gridTemplateRows: "0fr 1fr 1fr 0fr" });
         gsap.set([title, desc], { opacity: 0, y: 30 });
 
-        const onUpdate = (self: ScrollTrigger) => {
-          const p = self.progress;
-          const theme = p > 0.85 ? "dark" : p > 0.5 ? "light" : "dark";
-          section.dataset.headerTheme = theme;
-        };
-
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
@@ -89,7 +76,6 @@ export default function BrandStatement() {
             end: "bottom bottom",
             scrub: 0.6,
             pin: grid,
-            onUpdate,
           },
         });
 
@@ -120,8 +106,8 @@ export default function BrandStatement() {
   return (
     <section
       ref={sectionRef}
-      data-header-theme="dark"
-      className="text-petroleum-700 h-[200vh]"
+     
+      className="text-petroleum-700 bg-sand-100 h-[200vh]"
     >
       <div
         ref={gridRef}
