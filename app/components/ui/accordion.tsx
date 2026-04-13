@@ -55,11 +55,12 @@ function Header({
   const { isOpen, toggle, triggerId, panelId } = useAccordion();
   return (
     <button
+      type="button"
       id={triggerId}
       aria-expanded={isOpen}
       aria-controls={panelId}
       onClick={toggle}
-      className="text-petroleum-700 flex w-full cursor-pointer items-center justify-between gap-4 py-5 transition-colors duration-200"
+      className="text-petroleum-700 flex w-full cursor-pointer items-center justify-between gap-4 py-2.5 transition-colors duration-200"
     >
       <span>{children}</span>
       <span
@@ -123,11 +124,7 @@ function AccordionRoot({
         panelId: `${id}-panel`,
       }}
     >
-      <div
-        className={`border-petroleum-100 border-b last:border-b-0 ${className ?? ""}`}
-      >
-        {children}
-      </div>
+      <div className={`${className ?? ""}`}>{children}</div>
     </AccordionContext.Provider>
   );
 }

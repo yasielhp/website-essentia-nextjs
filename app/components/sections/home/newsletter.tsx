@@ -120,45 +120,33 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
             className="mx-auto flex max-w-lg flex-col gap-5"
             aria-label="Newsletter subscription"
           >
-            {/* Email + botón en línea */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-              <div className="flex-1">
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  placeholder="Your email address"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email)
-                      setErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
-                  disabled={state === "loading"}
-                  aria-required="true"
-                  aria-invalid={!!errors.email}
-                  aria-describedby={errors.email ? "email-error" : undefined}
-                  className={`${errors.email ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : t.input} h-10 w-full rounded-full border bg-transparent px-5 py-2.5 text-sm transition-all duration-200 outline-none focus:ring-2 disabled:opacity-50`}
-                />
-                {errors.email && (
-                  <p
-                    id="email-error"
-                    className="mt-1.5 px-2 text-xs text-red-500"
-                  >
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                variant={t.button}
-                size="md"
+            {/* Email */}
+            <div>
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder="Your email address"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email)
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
                 disabled={state === "loading"}
-                aria-busy={state === "loading"}
-                className="shrink-0"
-              >
-                {state === "loading" ? "Subscribing…" : "Subscribe"}
-              </Button>
+                aria-required="true"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
+                className={`${errors.email ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : t.input} h-10 w-full rounded-full border bg-transparent px-5 py-2.5 text-sm transition-all duration-200 outline-none focus:ring-2 disabled:opacity-50`}
+              />
+              {errors.email && (
+                <p
+                  id="email-error"
+                  className="mt-1.5 px-2 text-xs text-red-500"
+                >
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Consentimiento explícito — RGPD art. 7 / LOPDGDD art. 6 */}
@@ -187,10 +175,23 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
               }
             />
 
+            <Button
+              type="submit"
+              variant={t.button}
+              size="md"
+              disabled={state === "loading"}
+              aria-busy={state === "loading"}
+              className="w-full"
+            >
+              {state === "loading" ? "Subscribing…" : "Subscribe"}
+            </Button>
+
             {/* Toggle de información RGPD art. 13 */}
-            <Accordion className="border-none">
+            <Accordion className="border-sand-200 rounded-2xl border px-6">
               <Accordion.Header iconClassName={t.accordion}>
-                <span className={`${t.accordion} text-xs`}>
+                <span
+                  className={`${t.accordion} w-full text-center text-xs tracking-wide uppercase`}
+                >
                   Data protection information
                 </span>
               </Accordion.Header>
