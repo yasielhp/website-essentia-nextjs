@@ -155,7 +155,7 @@ export const maiMenu = [
     },
     itemMenu: [
       {
-        itemName: "About us",
+        itemName: "About",
         href: "/about",
         card: null,
       },

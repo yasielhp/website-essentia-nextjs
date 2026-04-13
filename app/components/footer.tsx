@@ -16,7 +16,7 @@ export const Footer = () => {
   return (
     <footer className="bg-petroleum-700 text-sand-500 z-10 -mt-6 flex w-full flex-col rounded-tl-3xl rounded-tr-3xl">
       {/* Link */}
-      <section className="flex w-full items-center justify-center pt-10 md:px-5 md:py-10">
+      <section className="flex w-full items-center justify-center pt-4 md:px-5 md:py-10">
         <div className="mx-auto flex w-full max-w-4xl flex-col items-start justify-between gap-3 md:flex-row">
           {/* Desktop Menu */}
           {maiMenu.map((item) => (

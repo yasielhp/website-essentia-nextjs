@@ -115,7 +115,7 @@ export default function BrandStatement() {
         {/* Fade-out overlay */}
         <div
           ref={overlayRef}
-          className="bg-sand-50 pointer-events-none absolute inset-0 z-10 opacity-0"
+          className="bg-sand-100 pointer-events-none absolute inset-0 z-10 opacity-0"
         />
         {/* Img 1 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">
