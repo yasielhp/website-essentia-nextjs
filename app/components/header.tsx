@@ -27,7 +27,6 @@ export const Header = () => {
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const cardTextRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileFirstRender = useRef(true);
 
   // ─── Timer helpers ────────────────────────────────────────────
   const cancelClose = () => {
@@ -137,12 +136,6 @@ export const Header = () => {
 
     const items = mobileMenuRef.current.querySelectorAll("[data-menu-item]");
 
-    if (mobileFirstRender.current) {
-      gsap.set(mobileMenuRef.current, { height: 0, opacity: 0 });
-      mobileFirstRender.current = false;
-      return;
-    }
-
     if (openMobileMenu) {
       gsap
         .timeline()
@@ -183,7 +176,7 @@ export const Header = () => {
   }, [openMobileMenu]);
 
   return (
-    <header className="text-petroleum-500 bg-sand-50 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl md:mt-10 md:rounded-2xl">
+    <header className="text-petroleum-500 bg-sand-50 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl md:mt-16 md:rounded-2xl">
       {/* Barra principal: logo, nav desktop, acciones */}
       <section
         className={`flex w-full items-center justify-between px-5 py-4 md:px-6 ${activeMenu ? "border-sand-100 border-b" : ""}`}
@@ -322,6 +315,7 @@ export const Header = () => {
         <div
           ref={mobileMenuRef}
           className="border-petroleum-100 flex flex-col overflow-hidden border-t md:hidden"
+          style={{ height: 0, opacity: 0 }}
         >
           <Accordion.Group>
             {maiMenu.slice(0, 3).map((menu) => (
