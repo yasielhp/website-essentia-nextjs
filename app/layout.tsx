@@ -39,8 +39,8 @@ const dmSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Essentia Massage Therapy",
-  description: "Essentia Massage Therapy",
+  title: "Essentia Wellness Club",
+  description: "Essentia Wellness Club",
 };
 
 export default function RootLayout({
