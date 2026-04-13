@@ -106,7 +106,6 @@ export default function BrandStatement() {
   return (
     <section
       ref={sectionRef}
-     
       className="text-petroleum-700 bg-sand-100 h-[200vh]"
     >
       <div
