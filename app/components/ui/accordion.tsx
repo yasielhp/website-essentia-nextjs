@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { IconChevronDown } from "@components/icons";
+import { IconChevronDown } from "@components/ui/icons";
 
 // ─── Contexto de grupo ────────────────────────────────────────
 
