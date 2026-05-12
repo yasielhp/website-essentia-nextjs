@@ -26,7 +26,7 @@ const services = [
     img: "/images/menu/medicine.webp",
     title: "Medicine",
     description:
-      "Regenerative protocols, IV therapy, and hyperbaric oxygen — clinical science in service of longevity.",
+      "Regenerative protocols, IV therapy, and hyperbaric oxygen — clinical science and precision care in service of longevity.",
     cta: "Explore Medicine",
   },
   {
