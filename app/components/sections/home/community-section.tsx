@@ -27,33 +27,51 @@ export default function CommunitySection() {
     if (!section || !inner || !header || !cardLeft || !cardsRight) return;
 
     const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
       const headerChildren = Array.from(header.children);
-      gsap.set(headerChildren, { opacity: 0, y: 30 });
-      gsap.set(cardLeft, { opacity: 0, y: 40 });
-      gsap.set(Array.from(cardsRight.children), { opacity: 0, y: 40 });
+      const rightCards = Array.from(cardsRight.children);
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.6,
-          pin: inner,
-        },
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(headerChildren, { opacity: 0, y: 30 });
+        gsap.set(cardLeft, { opacity: 0, y: 40 });
+        gsap.set(rightCards, { opacity: 0, y: 40 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: inner,
+          },
+        });
+        tl.to(headerChildren, { opacity: 1, y: 0, stagger: 0.1, duration: 0.25, ease: "power3.out" });
+        tl.to(cardLeft, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, "-=0.05");
+        tl.to(rightCards, { opacity: 1, y: 0, stagger: 0.12, duration: 0.3, ease: "power3.out" }, "-=0.2");
       });
 
-      tl.to(headerChildren, { opacity: 1, y: 0, stagger: 0.1, duration: 0.25, ease: "power3.out" });
-      tl.to(cardLeft, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, "-=0.05");
-      tl.to(Array.from(cardsRight.children), { opacity: 1, y: 0, stagger: 0.12, duration: 0.3, ease: "power3.out" }, "-=0.2");
+      mm.add("(max-width: 767px)", () => {
+        gsap.from(headerChildren, {
+          opacity: 0, y: 20, stagger: 0.08, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: header, start: "top 85%", once: true },
+        });
+        gsap.from(cardLeft, {
+          opacity: 0, y: 30, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: cardLeft, start: "top 80%", once: true },
+        });
+        gsap.from(rightCards, {
+          opacity: 0, y: 30, stagger: 0.1, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: cardsRight, start: "top 80%", once: true },
+        });
+      });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-100 h-[260vh]">
-      <div ref={innerRef} className="h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 h-full flex flex-col justify-center py-20">
+    <section ref={sectionRef} className="bg-sand-100 md:h-[260vh]">
+      <div ref={innerRef} className="md:h-screen overflow-hidden">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="text-center md:text-left mb-10">
             <p className="text-xs tracking-widest uppercase text-petroleum-400">

@@ -20,41 +20,52 @@ export default function TheSpace() {
     if (!section || !inner) return;
 
     const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
       const headerEls = inner.querySelectorAll("[data-space-header]");
       const imgEls = inner.querySelectorAll("[data-space-img]");
       const statEls = inner.querySelectorAll("[data-space-stat]");
 
-      gsap.set(headerEls, { opacity: 0, y: 40 });
-      gsap.set(imgEls, { opacity: 0, scale: 0.97 });
-      gsap.set(statEls, { opacity: 0, y: 20 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.6,
-          pin: inner,
-        },
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(headerEls, { opacity: 0, y: 40 });
+        gsap.set(imgEls, { opacity: 0, scale: 0.97 });
+        gsap.set(statEls, { opacity: 0, y: 20 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: inner,
+          },
+        });
+        tl.to(headerEls, { opacity: 1, y: 0, stagger: 0.08, duration: 0.3, ease: "power3.out" });
+        tl.to(imgEls, { opacity: 1, scale: 1, stagger: 0.1, duration: 0.35, ease: "power2.out", transformOrigin: "center" }, "-=0.1");
+        tl.to(statEls, { opacity: 1, y: 0, stagger: 0.08, duration: 0.25, ease: "power2.out" }, "-=0.1");
       });
 
-      // Fase 1: Header editorial aparece
-      tl.to(headerEls, { opacity: 1, y: 0, stagger: 0.08, duration: 0.3, ease: "power3.out" });
-
-      // Fase 2: Imágenes aparecen con scale
-      tl.to(imgEls, { opacity: 1, scale: 1, stagger: 0.1, duration: 0.35, ease: "power2.out", transformOrigin: "center" }, "-=0.1");
-
-      // Fase 3: Stats aparecen
-      tl.to(statEls, { opacity: 1, y: 0, stagger: 0.08, duration: 0.25, ease: "power2.out" }, "-=0.1");
+      mm.add("(max-width: 767px)", () => {
+        gsap.from(headerEls, {
+          opacity: 0, y: 20, stagger: 0.08, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: inner, start: "top 80%", once: true },
+        });
+        gsap.from(imgEls, {
+          opacity: 0, scale: 0.97, stagger: 0.1, duration: 0.6, ease: "power2.out",
+          scrollTrigger: { trigger: inner, start: "top 75%", once: true },
+        });
+        gsap.from(statEls, {
+          opacity: 0, y: 15, stagger: 0.08, duration: 0.5, ease: "power2.out",
+          scrollTrigger: { trigger: inner, start: "top 70%", once: true },
+        });
+      });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 h-[280vh]">
-      <div ref={innerRef} className="h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 h-full flex flex-col justify-center gap-10 py-20">
+    <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
+      <div ref={innerRef} className="md:h-screen overflow-hidden">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col gap-8 pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:py-20">
 
           {/* ─── Header editorial ── */}
           <div>

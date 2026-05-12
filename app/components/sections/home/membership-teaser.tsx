@@ -179,31 +179,44 @@ export default function MembershipTeaser() {
     if (!section || !inner || !header || !cards) return;
 
     const ctx = gsap.context(() => {
-      gsap.set(header, { opacity: 0, y: 30 });
+      const mm = gsap.matchMedia();
       const cardEls = Array.from(cards.children);
-      gsap.set(cardEls, { opacity: 0, y: 50 });
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.6,
-          pin: inner,
-        },
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(header, { opacity: 0, y: 30 });
+        gsap.set(cardEls, { opacity: 0, y: 50 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: inner,
+          },
+        });
+        tl.to(header, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" });
+        tl.to(cardEls, { opacity: 1, y: 0, stagger: 0.15, duration: 0.4, ease: "power3.out" }, "-=0.05");
       });
 
-      tl.to(header, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" });
-      tl.to(cardEls, { opacity: 1, y: 0, stagger: 0.15, duration: 0.4, ease: "power3.out" }, "-=0.05");
+      mm.add("(max-width: 767px)", () => {
+        gsap.from(header, {
+          opacity: 0, y: 20, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: header, start: "top 85%", once: true },
+        });
+        gsap.from(cardEls, {
+          opacity: 0, y: 30, stagger: 0.08, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: cards, start: "top 80%", once: true },
+        });
+      });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 h-[280vh]">
-      <div ref={innerRef} className="h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 h-full flex flex-col justify-center py-20">
+    <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
+      <div ref={innerRef} className="md:h-screen overflow-hidden">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Header ── */}
           <div ref={headerRef} className="flex flex-col items-center text-center">
             <span className="text-xs tracking-widest uppercase text-sand-600">

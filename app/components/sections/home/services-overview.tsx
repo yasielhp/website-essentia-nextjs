@@ -53,35 +53,44 @@ export default function ServicesOverview() {
     if (!section || !inner) return;
 
     const ctx = gsap.context(() => {
-      // Estado inicial
-      gsap.set(headerRef.current, { opacity: 0, y: 40 });
+      const mm = gsap.matchMedia();
       const cards = inner.querySelectorAll("[data-service-card]");
-      gsap.set(cards, { opacity: 0, y: 60 });
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.6,
-          pin: inner,
-        },
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(headerRef.current, { opacity: 0, y: 40 });
+        gsap.set(cards, { opacity: 0, y: 60 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: inner,
+          },
+        });
+        tl.to(headerRef.current, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" });
+        tl.to(cards, { opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: "power3.out" }, "-=0.1");
       });
 
-      // Header aparece primero
-      tl.to(headerRef.current, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" });
-
-      // Cards aparecen en stagger
-      tl.to(cards, { opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: "power3.out" }, "-=0.1");
+      mm.add("(max-width: 767px)", () => {
+        gsap.from(headerRef.current, {
+          opacity: 0, y: 20, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: headerRef.current, start: "top 85%", once: true },
+        });
+        gsap.from(cards, {
+          opacity: 0, y: 30, stagger: 0.08, duration: 0.6, ease: "power3.out",
+          scrollTrigger: { trigger: inner, start: "top 80%", once: true },
+        });
+      });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-50 h-[300vh]">
-      <div ref={innerRef} className="h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 h-full flex flex-col justify-center py-20">
+    <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
+      <div ref={innerRef} className="md:h-screen overflow-hidden">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
