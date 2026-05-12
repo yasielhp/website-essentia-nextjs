@@ -13,7 +13,7 @@ const testimonials = [
     quote:
       "Essentia changed how I think about time. Not just living longer — living better, right now.",
     name: "Marcus V.",
-    role: "Entrepreneur, London",
+    age: "Age 47",
     initials: "MV",
     bgColor: "bg-petroleum-700",
     textColor: "text-sand-50",
@@ -25,7 +25,7 @@ const testimonials = [
     quote:
       "The combination of medical protocols and the community here is unlike anything I've experienced. It's become part of my weekly rhythm.",
     name: "Claudia R.",
-    role: "Physician, Berlin",
+    age: "Age 39",
     initials: "CR",
     bgColor: "bg-sand-50",
     textColor: "text-petroleum-700",
@@ -37,7 +37,7 @@ const testimonials = [
     quote:
       "I came for the therapies. I stayed for the people. The running club alone has transformed my relationship with movement.",
     name: "James H.",
-    role: "Architect, Amsterdam",
+    age: "Age 52",
     initials: "JH",
     bgColor: "bg-sand-50",
     textColor: "text-petroleum-700",
@@ -49,7 +49,7 @@ const testimonials = [
     quote:
       "The hyperbaric sessions combined with the personalized protocols have made a measurable difference in my recovery and focus.",
     name: "Dr. Sofia M.",
-    role: "Researcher, Madrid",
+    age: "Age 44",
     initials: "SM",
     bgColor: "bg-petroleum-700",
     textColor: "text-sand-50",
@@ -152,7 +152,7 @@ export default function Testimonials() {
                   <p className={`${t.textColor} text-sm font-medium`}>
                     {t.name}
                   </p>
-                  <p className={`${t.mutedColor} text-xs`}>{t.role}</p>
+                  <p className={`${t.mutedColor} text-xs`}>{t.age}</p>
                 </div>
               </div>
             </div>
