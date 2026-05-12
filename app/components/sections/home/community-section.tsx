@@ -154,7 +154,7 @@ export default function CommunitySection() {
                   Every Saturday morning, 7:30am
                 </h3>
                 <p className="mt-1 text-sm text-white/70">
-                  Curated routes through Costa Adeje — all levels welcome.
+                  Curated routes through Costa Adeje, all levels welcome.
                 </p>
                 <Link
                   href="/community/running-club"
@@ -177,7 +177,7 @@ export default function CommunitySection() {
                 </h3>
                 <p className="text-sand-500 mt-2 text-sm leading-relaxed">
                   Monthly deep-dives with leading researchers, clinicians, and
-                  practitioners — open to all members.
+                  practitioners, open to all members.
                 </p>
                 <Button
                   variant="outline-white"
@@ -198,8 +198,8 @@ export default function CommunitySection() {
                   Member Gatherings
                 </h3>
                 <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                  Private dinners, wellness retreats, and seasonal celebrations
-                  — moments that make the club feel like home.
+                  Private dinners, wellness retreats, and seasonal celebrations:
+                  moments that make the club feel like home.
                 </p>
                 <Button
                   variant="outline"

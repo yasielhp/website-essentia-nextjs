@@ -255,7 +255,7 @@ export default function MembershipTeaser() {
               level of access.
             </h2>
             <p className="text-sand-500 mx-auto mt-4 max-w-lg text-center leading-relaxed">
-              Every tier includes full access to the Essentia space — what
+              Every tier includes full access to the Essentia space: what
               changes is depth, priority, and belonging.
             </p>
           </div>

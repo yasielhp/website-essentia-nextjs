@@ -135,7 +135,7 @@ export default function ServicesOverview() {
               one intention.
             </h2>
             <p className="text-petroleum-400 mt-2">
-              Science, body, and community — working as one.
+              Science, body, and community: working as one.
             </p>
           </div>
 

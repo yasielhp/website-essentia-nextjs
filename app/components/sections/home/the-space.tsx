@@ -138,7 +138,7 @@ export default function TheSpace() {
               className="text-sand-500 mt-5 max-w-2xl leading-relaxed"
             >
               Perched on the cliffs of Costa Adeje in Tenerife, Essentia is a
-              place where architecture, light, and purpose align — designed to
+              place where architecture, light, and purpose align, designed to
               slow you down in all the right ways.
             </p>
 
