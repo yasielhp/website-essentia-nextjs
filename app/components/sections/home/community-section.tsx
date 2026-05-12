@@ -44,30 +44,72 @@ export default function CommunitySection() {
             pin: inner,
           },
         });
-        tl.to(headerChildren, { opacity: 1, y: 0, stagger: 0.1, duration: 0.25, ease: "power3.out" });
-        tl.to(cardLeft, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, "-=0.05");
-        tl.to(rightCards, { opacity: 1, y: 0, stagger: 0.12, duration: 0.3, ease: "power3.out" }, "-=0.2");
+        tl.to(headerChildren, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.1,
+          duration: 0.25,
+          ease: "power3.out",
+        });
+        tl.to(
+          cardLeft,
+          { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" },
+          "-=0.05",
+        );
+        tl.to(
+          rightCards,
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.12,
+            duration: 0.3,
+            ease: "power3.out",
+          },
+          "-=0.2",
+        );
       });
 
       mm.add("(max-width: 767px)", () => {
         gsap.from(headerChildren, {
-          opacity: 0, y: 30, stagger: 0.08, duration: 0.7, ease: "power3.out",
+          opacity: 0,
+          y: 30,
+          stagger: 0.08,
+          duration: 0.7,
+          ease: "power3.out",
           scrollTrigger: { trigger: header, start: "top 85%", once: true },
         });
-        gsap.fromTo(cardLeft,
+        gsap.fromTo(
+          cardLeft,
           { opacity: 0, y: 50, scale: 0.96 },
           {
-            opacity: 1, y: 0, scale: 1, ease: "none",
-            scrollTrigger: { trigger: cardLeft, start: "top 88%", end: "top 35%", scrub: 0.7 },
-          }
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: cardLeft,
+              start: "top 88%",
+              end: "top 35%",
+              scrub: 0.7,
+            },
+          },
         );
         rightCards.forEach((card) => {
-          gsap.fromTo(card,
+          gsap.fromTo(
+            card,
             { opacity: 0, y: 50, scale: 0.96 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: card, start: "top 88%", end: "top 35%", scrub: 0.7 },
-            }
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
           );
         });
       });
@@ -78,11 +120,11 @@ export default function CommunitySection() {
 
   return (
     <section ref={sectionRef} className="bg-sand-100 md:h-[260vh]">
-      <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
+      <div ref={innerRef} className="overflow-hidden md:h-screen">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Header ───────────────────────────────────────── */}
-          <div ref={headerRef} className="text-center md:text-left mb-10">
-            <h2 className="font-display text-3xl md:text-5xl text-petroleum-700 mt-3 md:max-w-lg">
+          <div ref={headerRef} className="mb-10 text-center md:text-left">
+            <h2 className="font-display text-petroleum-700 mt-3 text-3xl md:max-w-lg md:text-5xl">
               A life well-lived
               <br />
               is rarely lived alone.
@@ -90,11 +132,11 @@ export default function CommunitySection() {
           </div>
 
           {/* ─── Main Grid ────────────────────────────────────── */}
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid gap-5 md:grid-cols-2">
             {/* ─── Left Card — Running Club ──────────────────── */}
             <div
               ref={cardLeftRef}
-              className="relative rounded-2xl overflow-hidden h-64 md:h-full min-h-60"
+              className="relative h-64 min-h-60 overflow-hidden rounded-2xl md:h-full"
             >
               <Image
                 src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-4.webp"
@@ -103,20 +145,20 @@ export default function CommunitySection() {
                 sizes="(max-width: 767px) 100vw, 50vw"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-petroleum-900/90 via-petroleum-800/40 to-transparent" />
+              <div className="from-petroleum-900/90 via-petroleum-800/40 absolute inset-0 bg-gradient-to-t to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 text-white">
-                <span className="text-xs uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full mb-3 inline-block">
+                <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs tracking-wider uppercase backdrop-blur-sm">
                   Running Club
                 </span>
                 <h3 className="font-display text-xl text-white">
                   Every Saturday morning, 7:30am
                 </h3>
-                <p className="text-sm text-white/70 mt-1">
+                <p className="mt-1 text-sm text-white/70">
                   Curated routes through Costa Adeje — all levels welcome.
                 </p>
                 <Link
                   href="/community/running-club"
-                  className="text-sm text-sand-300 hover:text-white transition-colors duration-150 mt-3 inline-block"
+                  className="text-sand-300 mt-3 inline-block text-sm transition-colors duration-150 hover:text-white"
                 >
                   Join the run →
                 </Link>
@@ -127,13 +169,13 @@ export default function CommunitySection() {
             <div ref={cardsRightRef} className="flex flex-col gap-4">
               {/* ─── Education Programs Card ───────────────── */}
               <div className="bg-petroleum-700 rounded-2xl p-5">
-                <p className="text-xs uppercase tracking-wider text-sand-600">
+                <p className="text-sand-600 text-xs tracking-wider uppercase">
                   Programs
                 </p>
-                <h3 className="font-display text-xl text-sand-50 mt-2">
+                <h3 className="font-display text-sand-50 mt-2 text-xl">
                   Longevity Masterclass Series
                 </h3>
-                <p className="text-sand-500 text-sm mt-2 leading-relaxed">
+                <p className="text-sand-500 mt-2 text-sm leading-relaxed">
                   Monthly deep-dives with leading researchers, clinicians, and
                   practitioners — open to all members.
                 </p>
@@ -141,7 +183,7 @@ export default function CommunitySection() {
                   variant="outline-white"
                   size="sm"
                   href="/community/education-programs"
-                  className="mt-4"
+                  className="mt-4 w-full md:w-auto"
                 >
                   View Programs
                 </Button>
@@ -149,21 +191,21 @@ export default function CommunitySection() {
 
               {/* ─── Events Card ───────────────────────────── */}
               <div className="bg-sand-50 rounded-2xl p-5">
-                <p className="text-xs uppercase tracking-wider text-petroleum-400">
+                <p className="text-petroleum-400 text-xs tracking-wider uppercase">
                   Events
                 </p>
-                <h3 className="font-display text-xl text-petroleum-700 mt-2">
+                <h3 className="font-display text-petroleum-700 mt-2 text-xl">
                   Member Gatherings
                 </h3>
-                <p className="text-petroleum-400 text-sm mt-2 leading-relaxed">
-                  Private dinners, wellness retreats, and seasonal celebrations —
-                  moments that make the club feel like home.
+                <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
+                  Private dinners, wellness retreats, and seasonal celebrations
+                  — moments that make the club feel like home.
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   href="/community"
-                  className="mt-4"
+                  className="mt-4 w-full md:w-auto"
                 >
                   Explore Events
                 </Button>

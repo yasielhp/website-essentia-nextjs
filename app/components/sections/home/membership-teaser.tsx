@@ -3,7 +3,6 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Link from "next/link";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -100,15 +99,15 @@ function TierCard({ tier }: { tier: Tier }) {
   return (
     <article
       className={[
-        "rounded-2xl p-7 flex flex-col gap-4",
+        "flex flex-col gap-4 rounded-2xl p-7",
         isDark
-          ? "bg-petroleum-800 border border-petroleum-500"
-          : "bg-sand-100 border-2 border-sand-200",
+          ? "bg-petroleum-800 border-petroleum-500 border"
+          : "bg-sand-100 border-sand-200 border-2",
       ].join(" ")}
     >
       <span
         className={[
-          "self-start text-xs px-3 py-1 rounded-full",
+          "self-start rounded-full px-3 py-1 text-xs",
           isDark
             ? "bg-petroleum-500/30 text-sand-500"
             : "bg-petroleum-700 text-sand-50",
@@ -119,7 +118,7 @@ function TierCard({ tier }: { tier: Tier }) {
 
       <h3
         className={[
-          "font-display text-2xl mt-4",
+          "font-display mt-4 text-2xl",
           isDark ? "text-sand-50" : "text-petroleum-700",
         ].join(" ")}
       >
@@ -128,14 +127,14 @@ function TierCard({ tier }: { tier: Tier }) {
 
       <p
         className={[
-          "text-sm mt-2 leading-relaxed",
+          "mt-2 text-sm leading-relaxed",
           isDark ? "text-sand-500" : "text-petroleum-400",
         ].join(" ")}
       >
         {tier.description}
       </p>
 
-      <ul className="flex flex-col gap-2 mt-2">
+      <ul className="mt-2 flex flex-col gap-2">
         {tier.features.map((feature) => (
           <li
             key={feature}
@@ -155,6 +154,7 @@ function TierCard({ tier }: { tier: Tier }) {
           variant={tier.ctaVariant}
           size="md"
           href="/community/memberships"
+          className="w-full md:w-auto"
         >
           {tier.ctaLabel}
         </Button>
@@ -195,21 +195,43 @@ export default function MembershipTeaser() {
           },
         });
         tl.to(header, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" });
-        tl.to(cardEls, { opacity: 1, y: 0, stagger: 0.15, duration: 0.4, ease: "power3.out" }, "-=0.05");
+        tl.to(
+          cardEls,
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.15,
+            duration: 0.4,
+            ease: "power3.out",
+          },
+          "-=0.05",
+        );
       });
 
       mm.add("(max-width: 767px)", () => {
         gsap.from(header, {
-          opacity: 0, y: 30, duration: 0.7, ease: "power3.out",
+          opacity: 0,
+          y: 30,
+          duration: 0.7,
+          ease: "power3.out",
           scrollTrigger: { trigger: header, start: "top 85%", once: true },
         });
         cardEls.forEach((card) => {
-          gsap.fromTo(card,
+          gsap.fromTo(
+            card,
             { opacity: 0, y: 50, scale: 0.96 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: card, start: "top 88%", end: "top 35%", scrub: 0.7 },
-            }
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
           );
         });
       });
@@ -220,25 +242,28 @@ export default function MembershipTeaser() {
 
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
-      <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+      <div ref={innerRef} className="overflow-hidden md:h-screen">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
           {/* ─── Header ── */}
-          <div ref={headerRef} className="flex flex-col items-center text-center">
-            <h2 className="font-display text-3xl md:text-5xl text-sand-50 text-center mt-3 text-balance">
+          <div
+            ref={headerRef}
+            className="flex flex-col items-center text-center"
+          >
+            <h2 className="font-display text-sand-50 mt-3 text-center text-3xl text-balance md:text-5xl">
               Choose your
               <br />
               level of access.
             </h2>
-            <p className="text-sand-500 text-center mt-4 max-w-lg mx-auto leading-relaxed">
-              Every tier includes full access to the Essentia space — what changes
-              is depth, priority, and belonging.
+            <p className="text-sand-500 mx-auto mt-4 max-w-lg text-center leading-relaxed">
+              Every tier includes full access to the Essentia space — what
+              changes is depth, priority, and belonging.
             </p>
           </div>
 
           {/* ─── Cards ── */}
           <div
             ref={cardsRef}
-            className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5"
+            className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3"
           >
             {tiers.map((tier) => (
               <TierCard key={tier.name} tier={tier} />
