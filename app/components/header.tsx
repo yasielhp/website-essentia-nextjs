@@ -27,7 +27,7 @@ type DesktopDropdownProps = {
   setActiveMenu: (menu: MenuItem | null) => void;
   cancelClose: () => void;
   scheduleClose: () => void;
-  cardTextRef: RefObject<HTMLDivElement>;
+  cardTextRef: RefObject<HTMLDivElement | null>;
 };
 
 function DesktopDropdown({
