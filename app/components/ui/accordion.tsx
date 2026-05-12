@@ -2,11 +2,11 @@
 
 import {
   createContext,
-  useContext,
+  use,
   useState,
   useId,
   useImperativeHandle,
-  forwardRef,
+  type Ref,
   type ReactNode,
 } from "react";
 
@@ -35,7 +35,7 @@ type AccordionContextValue = {
 const AccordionContext = createContext<AccordionContextValue | null>(null);
 
 function useAccordion() {
-  const ctx = useContext(AccordionContext);
+  const ctx = use(AccordionContext);
   if (!ctx)
     throw new Error(
       "Accordion.Header y Accordion.Content deben usarse dentro de <Accordion>",
@@ -104,7 +104,7 @@ function AccordionRoot({
 }: AccordionProps) {
   const [localOpen, setLocalOpen] = useState(defaultOpen);
   const id = useId();
-  const group = useContext(AccordionGroupContext);
+  const group = use(AccordionGroupContext);
 
   const isOpen = group ? group.openId === id : localOpen;
   const toggle = () => {
@@ -133,10 +133,15 @@ function AccordionRoot({
 
 export type AccordionGroupHandle = { close: () => void };
 
-const Group = forwardRef<
-  AccordionGroupHandle,
-  { children: ReactNode; className?: string }
->(function Group({ children, className }, ref) {
+function Group({
+  children,
+  className,
+  ref,
+}: {
+  children: ReactNode;
+  className?: string;
+  ref?: Ref<AccordionGroupHandle>;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -148,7 +153,7 @@ const Group = forwardRef<
       <div className={className}>{children}</div>
     </AccordionGroupContext.Provider>
   );
-});
+}
 
 // ─── Export compuesto ─────────────────────────────────────────
 
