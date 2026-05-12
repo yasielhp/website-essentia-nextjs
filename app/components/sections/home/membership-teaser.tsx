@@ -221,7 +221,7 @@ export default function MembershipTeaser() {
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ── */}
           <div ref={headerRef} className="flex flex-col items-center text-center">
             <span className="text-xs tracking-widest uppercase text-sand-600">

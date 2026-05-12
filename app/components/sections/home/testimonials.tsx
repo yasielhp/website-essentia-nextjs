@@ -117,7 +117,7 @@ export default function Testimonials() {
   return (
     <section ref={sectionRef} className="bg-sand-100 md:h-[280vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="mb-12 text-center">
             <p className="text-petroleum-400 text-xs tracking-widest uppercase">

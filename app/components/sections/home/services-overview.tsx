@@ -95,7 +95,7 @@ export default function ServicesOverview() {
   return (
     <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">

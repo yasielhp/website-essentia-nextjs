@@ -79,7 +79,7 @@ export default function CommunitySection() {
   return (
     <section ref={sectionRef} className="bg-sand-100 md:h-[260vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="text-center md:text-left mb-10">
             <p className="text-xs tracking-widest uppercase text-petroleum-400">
