@@ -63,49 +63,43 @@ const testimonials = [
 
 export default function Testimonials() {
   const sectionRef = useRef<HTMLElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
+    const inner = innerRef.current;
     const header = headerRef.current;
     const grid = gridRef.current;
-    if (!section || !header || !grid) return;
+    if (!section || !inner || !header || !grid) return;
 
     const ctx = gsap.context(() => {
-      gsap.from(header, {
-        opacity: 0,
-        y: 30,
-        duration: 0.6,
-        ease: "power3.out",
+      gsap.set(header, { opacity: 0, y: 30 });
+      const cards = grid.querySelectorAll("[data-testimonial-card]");
+      gsap.set(cards, { opacity: 0, y: 50 });
+
+      const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: header,
-          start: "top 75%",
-          once: true,
+          trigger: section,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 0.6,
+          pin: inner,
         },
       });
 
-      const cards = grid.querySelectorAll("[data-testimonial-card]");
-      gsap.from(cards, {
-        opacity: 0,
-        y: 50,
-        duration: 0.7,
-        ease: "power3.out",
-        stagger: 0.1,
-        scrollTrigger: {
-          trigger: grid,
-          start: "top 75%",
-          once: true,
-        },
-      });
+      tl.to(header, { opacity: 1, y: 0, duration: 0.2, ease: "power3.out" });
+      tl.to(cards, { opacity: 1, y: 0, stagger: 0.12, duration: 0.4, ease: "power3.out" }, "-=0.05");
     }, section);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-100 py-20 md:py-32">
-      <div className="mx-auto max-w-4xl px-5">
+    <section ref={sectionRef} className="bg-sand-100 h-[280vh]">
+      <div ref={innerRef} className="h-screen overflow-hidden">
+        <div className="mx-auto max-w-4xl px-5 h-full flex flex-col justify-center py-20">
         {/* ─── Header ───────────────────────────────────────── */}
         <div ref={headerRef} className="mb-12 text-center">
           <p className="text-petroleum-400 text-xs tracking-widest uppercase">
@@ -163,6 +157,7 @@ export default function Testimonials() {
               </div>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </section>
