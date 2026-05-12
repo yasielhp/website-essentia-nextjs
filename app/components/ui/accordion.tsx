@@ -102,7 +102,7 @@ function AccordionRoot({
   defaultOpen = false,
   className,
 }: AccordionProps) {
-  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  const [localOpen, setLocalOpen] = useState<boolean>(() => defaultOpen);
   const id = useId();
   const group = use(AccordionGroupContext);
 

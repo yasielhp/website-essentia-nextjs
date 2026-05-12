@@ -18,24 +18,10 @@ function splitChars(text: string) {
 }
 
 export function SplitText({ children }: { children: ReactNode }) {
-  // String puro — caso más común (botones, items del dropdown)
-  if (typeof children === "string") {
-    return (
-      <>
-        <span className="sr-only">{children}</span>
-        <span className="inline-flex" aria-hidden="true">
-          {splitChars(children)}
-        </span>
-      </>
-    );
-  }
-
-  // Children mixtos (texto + iconos) — nav del header
   const childArray = Children.toArray(children);
   const hasStrings = childArray.some((c) => typeof c === "string");
   if (!hasStrings) return <>{children}</>;
 
-  // Texto plano para lectores de pantalla
   const srText = childArray.filter((c) => typeof c === "string").join("");
 
   return (

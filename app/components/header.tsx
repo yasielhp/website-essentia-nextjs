@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type Ref, type RefObject } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 
@@ -17,6 +17,161 @@ import { AnimatedLink } from "@components/ui/animated-text";
 type MenuItem = (typeof maiMenu)[0];
 type ItemMenu = (typeof maiMenu)[0]["itemMenu"][0];
 
+// ─── DesktopDropdown ──────────────────────────────────────────
+
+type DesktopDropdownProps = {
+  ref: Ref<HTMLDivElement>;
+  displayedMenu: MenuItem | null;
+  activeItem: ItemMenu | null;
+  setActiveItem: (item: ItemMenu | null) => void;
+  setActiveMenu: (menu: MenuItem | null) => void;
+  cancelClose: () => void;
+  scheduleClose: () => void;
+  cardTextRef: RefObject<HTMLDivElement>;
+};
+
+function DesktopDropdown({
+  ref,
+  displayedMenu,
+  activeItem,
+  setActiveItem,
+  setActiveMenu,
+  cancelClose,
+  scheduleClose,
+  cardTextRef,
+}: DesktopDropdownProps) {
+  return (
+    <div
+      ref={ref}
+      className="hidden overflow-hidden md:block"
+      onMouseEnter={cancelClose}
+      onMouseLeave={scheduleClose}
+    >
+      {displayedMenu && (
+        <div className="flex min-h-64 justify-between p-6">
+          <div className="flex flex-col">
+            {displayedMenu.itemMenu.map((item) => (
+              <AnimatedLink
+                key={item.href}
+                href={item.href}
+                data-desktop-item
+                className="block py-1.5 transition-opacity duration-150"
+                style={{
+                  opacity:
+                    activeItem && activeItem.href !== item.href ? 0.6 : 1,
+                }}
+                onMouseEnter={() => setActiveItem(item)}
+                onMouseLeave={() => setActiveItem(null)}
+                onClick={() => {
+                  setActiveMenu(null);
+                  setActiveItem(null);
+                }}
+              >
+                {item.itemName}
+              </AnimatedLink>
+            ))}
+          </div>
+          <div data-desktop-item className="flex items-end justify-end">
+            {(() => {
+              const card = activeItem?.card ?? displayedMenu?.card;
+              if (!card) return null;
+              return (
+                <div
+                  className="relative flex min-h-50 w-112.5 flex-col justify-end overflow-hidden rounded-2xl p-5"
+                  style={
+                    card.imagen
+                      ? {
+                          backgroundImage: `url(${card.imagen})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : undefined
+                  }
+                >
+                  {!card.imagen && (
+                    <div className="bg-petroleum-500 absolute inset-0" />
+                  )}
+                  {card.imagen && (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to top, rgb(9 33 33 / 0.9), rgb(12 44 44 / 0.4), transparent)",
+                      }}
+                    />
+                  )}
+                  <div ref={cardTextRef} className="relative z-10 text-white">
+                    <p className="text-2xl font-medium">{card.title}</p>
+                    <p className="text-sm opacity-80">{card.description}</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MobileMenu ───────────────────────────────────────────────
+
+type MobileMenuProps = {
+  ref: Ref<HTMLDivElement>;
+  setOpenMobileMenu: (open: boolean) => void;
+};
+
+function MobileMenu({ ref, setOpenMobileMenu }: MobileMenuProps) {
+  return (
+    <div
+      ref={ref}
+      className="border-petroleum-100 flex flex-col overflow-hidden border-t md:hidden"
+      style={{ height: 0, opacity: 0 }}
+    >
+      <Accordion.Group>
+        {maiMenu.slice(0, 3).map((menu) => (
+          <nav
+            key={menu.href}
+            data-menu-item
+            className="border-petroleum-100 border-b px-5"
+          >
+            <Accordion>
+              <Accordion.Header>
+                <div className="font-medium">{menu.name}</div>
+              </Accordion.Header>
+              <Accordion.Content>
+                <ul className="pb-3">
+                  {menu.itemMenu.map((item) => (
+                    <li
+                      key={item.href}
+                      className="border-sand-200 border-l pr-5 pl-3"
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobileMenu(false)}
+                        className="flex flex-col pb-2"
+                      >
+                        <span className="text-sand-700 text-sm font-medium">
+                          {item.itemName}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </Accordion.Content>
+            </Accordion>
+          </nav>
+        ))}
+      </Accordion.Group>
+      <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
+        {contact.address}
+      </p>
+    </div>
+  );
+}
+
+// ─── Header ───────────────────────────────────────────────────
+
 export const Header = () => {
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuItem | null>(null);
@@ -28,7 +183,6 @@ export const Header = () => {
   const cardTextRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // ─── Timer helpers ────────────────────────────────────────────
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
   };
@@ -52,7 +206,7 @@ export const Header = () => {
     if (activeMenu !== null) setDisplayedMenu(activeMenu);
   }, [activeMenu]);
 
-  // Animar apertura — se dispara después del re-render con contenido en el DOM
+  // Animar apertura del dropdown
   useEffect(() => {
     if (!displayedMenu || !desktopMenuRef.current) return;
 
@@ -63,7 +217,6 @@ export const Header = () => {
     gsap.killTweensOf(el);
 
     if (isAlreadyOpen) {
-      // Cambio entre menús: solo animar los items, sin colapsar
       gsap.fromTo(
         items,
         { y: 4, opacity: 0 },
@@ -93,7 +246,7 @@ export const Header = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayedMenu?.href]);
 
-  // Animar cierre — se dispara cuando activeMenu vuelve a null
+  // Animar cierre del dropdown
   useEffect(() => {
     if (activeMenu !== null || !desktopMenuRef.current || !displayedMenu)
       return;
@@ -119,7 +272,7 @@ export const Header = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu]);
 
-  // Animar título y descripción al cambiar el item o el menú activo
+  // Animar texto de la card al cambiar el item activo
   const activeCardHref = activeItem?.href ?? displayedMenu?.href;
   useEffect(() => {
     if (!cardTextRef.current) return;
@@ -130,7 +283,7 @@ export const Header = () => {
     );
   }, [activeCardHref]);
 
-  // ─── Animación menú móvil ─────────────────────────────────────
+  // Animar menú móvil
   useEffect(() => {
     if (!mobileMenuRef.current) return;
 
@@ -227,135 +380,19 @@ export const Header = () => {
         </div>
       </section>
 
-      {/* Área expandible: dropdown desktop + menú móvil */}
+      {/* Dropdown desktop + menú móvil */}
       <section className="w-full">
-        {/* Desktop dropdown — siempre en el DOM para animar cierre */}
-        <div
+        <DesktopDropdown
           ref={desktopMenuRef}
-          className="hidden overflow-hidden md:block"
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
-        >
-          {displayedMenu && (
-            <div className="flex min-h-64 justify-between p-6">
-              {/* Links del submenú */}
-              <div className="flex flex-col">
-                {displayedMenu.itemMenu.map((item) => (
-                  <AnimatedLink
-                    key={item.href}
-                    href={item.href}
-                    data-desktop-item
-                    className="block py-1.5 transition-opacity duration-150"
-                    style={{
-                      opacity:
-                        activeItem && activeItem.href !== item.href ? 0.6 : 1,
-                    }}
-                    onMouseEnter={() => setActiveItem(item)}
-                    onMouseLeave={() => setActiveItem(null)}
-                    onClick={() => {
-                      setActiveMenu(null);
-                      setActiveItem(null);
-                    }}
-                  >
-                    {item.itemName}
-                  </AnimatedLink>
-                ))}
-              </div>
-              {/* Card: prioridad al item hovered, sino muestra la del menú principal */}
-              <div data-desktop-item className="flex items-end justify-end">
-                {(() => {
-                  const card = activeItem?.card ?? displayedMenu?.card;
-                  if (!card) return null;
-                  return (
-                    <div
-                      className="relative flex min-h-50 w-112.5 flex-col justify-end overflow-hidden rounded-2xl p-5"
-                      style={
-                        card.imagen
-                          ? {
-                              backgroundImage: `url(${card.imagen})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : undefined
-                      }
-                    >
-                      {/* Fondo sólido de fallback cuando no hay imagen */}
-                      {!card.imagen && (
-                        <div className="bg-petroleum-500 absolute inset-0" />
-                      )}
-
-                      {/* Degradado sobre la imagen */}
-                      {card.imagen && (
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background:
-                              "linear-gradient(to top, rgb(9 33 33 / 0.9), rgb(12 44 44 / 0.4), transparent)",
-                          }}
-                        />
-                      )}
-
-                      {/* Texto */}
-                      <div
-                        ref={cardTextRef}
-                        className="relative z-10 text-white"
-                      >
-                        <p className="text-2xl font-medium">{card.title}</p>
-                        <p className="text-sm opacity-80">{card.description}</p>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile menu */}
-        <div
-          ref={mobileMenuRef}
-          className="border-petroleum-100 flex flex-col overflow-hidden border-t md:hidden"
-          style={{ height: 0, opacity: 0 }}
-        >
-          <Accordion.Group>
-            {maiMenu.slice(0, 3).map((menu) => (
-              <nav
-                key={menu.href}
-                data-menu-item
-                className="border-petroleum-100 border-b px-5"
-              >
-                <Accordion>
-                  <Accordion.Header>
-                    <div className="font-medium">{menu.name}</div>
-                  </Accordion.Header>
-                  <Accordion.Content>
-                    <ul className="pb-3">
-                      {menu.itemMenu.map((item) => (
-                        <li
-                          key={item.href}
-                          className="border-sand-200 border-l pr-5 pl-3"
-                        >
-                          <Link
-                            href={item.href}
-                            onClick={() => setOpenMobileMenu(false)}
-                            className="flex flex-col pb-2"
-                          >
-                            <span className="text-sand-700 text-sm font-medium">
-                              {item.itemName}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </Accordion.Content>
-                </Accordion>
-              </nav>
-            ))}
-          </Accordion.Group>
-          <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
-            {contact.address}
-          </p>
-        </div>
+          displayedMenu={displayedMenu}
+          activeItem={activeItem}
+          setActiveItem={setActiveItem}
+          setActiveMenu={setActiveMenu}
+          cancelClose={cancelClose}
+          scheduleClose={scheduleClose}
+          cardTextRef={cardTextRef}
+        />
+        <MobileMenu ref={mobileMenuRef} setOpenMobileMenu={setOpenMobileMenu} />
       </section>
     </header>
   );
