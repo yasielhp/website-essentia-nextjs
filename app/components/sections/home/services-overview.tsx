@@ -95,7 +95,7 @@ export default function ServicesOverview() {
   return (
     <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <h2 className="font-display text-petroleum-700 text-3xl md:text-5xl">

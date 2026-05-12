@@ -76,7 +76,7 @@ export default function TheSpace() {
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col gap-8 pt-24 pb-16 md:h-full md:gap-10 md:pt-40 md:pb-16">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col gap-8 pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:py-20">
 
           {/* ─── Header editorial ── */}
           <div>
