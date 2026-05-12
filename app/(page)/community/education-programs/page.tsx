@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Education Programs | Essentia Community",
+  description:
+    "Deepen your wellness journey with Essentia's educational programs and resources on longevity, health, and performance.",
+};
+
 export default function EducationPage() {
   return (
     <section className="text-primary min-h-dvh">

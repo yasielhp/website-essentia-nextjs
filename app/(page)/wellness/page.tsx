@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Wellness | Essentia Social Wellness Club",
+  description:
+    "Discover Essentia's comprehensive wellness programs in Tenerife — from contrast therapy to breathwork and red light therapy.",
+};
+
 export default function WellnessPage() {
   return (
     <section className="text-primary min-h-dvh">

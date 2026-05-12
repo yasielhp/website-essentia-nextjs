@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Community | Essentia Social Wellness Club",
+  description:
+    "Join Essentia's exclusive community of like-minded individuals committed to wellness, longevity, and personal growth in Tenerife.",
+};
+
 export default function CommunityPage() {
   return (
     <section className="text-primary min-h-dvh">

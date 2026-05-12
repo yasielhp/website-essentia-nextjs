@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Red Light Therapy | Essentia Wellness",
+  description:
+    "Photobiomodulation and red light therapy at Essentia Tenerife for cellular regeneration, recovery, and skin health.",
+};
+
 export default function RedLightTherapyPage() {
   return (
     <section className="text-primary min-h-dvh">

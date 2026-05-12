@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Regenerative Medicine | Essentia Tenerife",
+  description:
+    "Cutting-edge regenerative medicine treatments to restore and optimize your health at Essentia Longevity Center, Tenerife.",
+};
+
 export default function RegenerativePage() {
   return (
     <section className="text-primary min-h-dvh">

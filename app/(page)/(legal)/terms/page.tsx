@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms \& Conditions | Essentia",
+  description:
+    "Read Essentia's terms and conditions for use of our longevity center and wellness services.",
+};
+
 export default function TermsPage() {
   return (
     <>

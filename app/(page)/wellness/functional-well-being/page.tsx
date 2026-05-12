@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Functional Well-being | Essentia Wellness",
+  description:
+    "Functional wellness programs at Essentia designed to optimize your physical performance, health, and longevity.",
+};
+
 export default function FunctionalWellnessPage() {
   return (
     <section className="text-primary min-h-dvh">

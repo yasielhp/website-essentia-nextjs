@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contrast Therapy | Essentia Wellness",
+  description:
+    "Thermal contrast therapy at Essentia Tenerife — alternating hot and cold for accelerated recovery and enhanced wellbeing.",
+};
+
 export default function ContrastTherapyPage() {
   return (
     <section className="text-primary min-h-dvh">

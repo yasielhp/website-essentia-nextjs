@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Manual Therapies | Essentia Wellness",
+  description:
+    "Expert manual therapy sessions at Essentia to relieve tension, improve mobility, and restore your body's natural balance.",
+};
+
 export default function ManualTherapiesPage() {
   return (
     <section className="text-primary min-h-dvh">

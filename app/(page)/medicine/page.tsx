@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Medicine | Essentia Longevity Center",
+  description:
+    "Advanced preventive medicine and longevity protocols at Essentia in Tenerife. Science-backed treatments designed to extend healthspan.",
+};
+
 export default function MedicinePage() {
   return (
     <section className="text-primary min-h-dvh">

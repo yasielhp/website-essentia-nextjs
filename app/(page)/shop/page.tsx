@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Shop | Essentia Wellness",
+  description:
+    "Shop premium wellness and longevity products curated by Essentia's expert team to enhance your health routine.",
+};
+
 export default function StorePage() {
   return (
     <section className="text-primary min-h-dvh">

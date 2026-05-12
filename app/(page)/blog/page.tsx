@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Blog | Essentia Longevity & Wellness",
+  description:
+    "Articles, guides, and resources on longevity, wellness, and health from Essentia's team of experts in Tenerife.",
+};
+
 export default function BlogPage() {
   return (
     <section className="text-primary min-h-dvh">

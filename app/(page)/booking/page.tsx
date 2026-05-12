@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Book Your Visit | Essentia Tenerife",
+  description:
+    "Schedule your appointment at Essentia Longevity Center and Social Wellness Club in Tenerife. Begin your path to optimal health.",
+};
+
 export default function BookPage() {
   return (
     <section className="text-primary min-h-dvh">

@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Running Club | Essentia Community",
+  description:
+    "Join Essentia's running club in Tenerife and become part of our active, health-focused community.",
+};
+
 export default function RunningClubPage() {
   return (
     <section className="text-primary min-h-dvh">

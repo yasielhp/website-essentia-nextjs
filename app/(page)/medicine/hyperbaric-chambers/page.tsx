@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hyperbaric Chambers | Essentia Medicine",
+  description:
+    "Hyperbaric oxygen therapy at Essentia Tenerife. Accelerate recovery, reduce inflammation, and enhance cellular regeneration.",
+};
+
 export default function HyperbaricChambersPage() {
   return (
     <section className="text-primary min-h-dvh">

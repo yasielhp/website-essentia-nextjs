@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Breathing Sessions | Essentia Wellness",
+  description:
+    "Guided breathwork sessions at Essentia to balance body and mind, reduce stress, and enhance performance.",
+};
+
 export default function BreathworkPage() {
   return (
     <section className="text-primary min-h-dvh">

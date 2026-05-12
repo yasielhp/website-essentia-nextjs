@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "IV Therapy | Essentia Medicine",
+  description:
+    "Personalized intravenous infusion therapy for optimal nutrition and recovery at Essentia, Tenerife's premier longevity center.",
+};
+
 export default function IvTherapyPage() {
   return (
     <section className="text-primary min-h-dvh">

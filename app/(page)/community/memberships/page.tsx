@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Memberships | Essentia Social Wellness Club",
+  description:
+    "Exclusive membership plans at Essentia giving you full access to our longevity center, wellness programs, and community events.",
+};
+
 export default function MembershipsPage() {
   return (
     <section className="text-primary min-h-dvh">
