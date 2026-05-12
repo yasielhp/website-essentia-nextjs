@@ -35,7 +35,7 @@ const services = [
     img: "/images/menu/community.webp",
     title: "Community",
     description:
-      "Running club, education programs, and exclusive memberships — belonging to something meaningful.",
+      "Running club, education programs, and exclusive memberships — belonging to something truly meaningful.",
     cta: "Explore Community",
   },
 ];
@@ -68,22 +68,53 @@ export default function ServicesOverview() {
             pin: inner,
           },
         });
-        tl.to(headerRef.current, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" });
-        tl.to(cards, { opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: "power3.out" }, "-=0.1");
+        tl.to(headerRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: 0.3,
+          ease: "power3.out",
+        });
+        tl.to(
+          cards,
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.15,
+            duration: 0.5,
+            ease: "power3.out",
+          },
+          "-=0.1",
+        );
       });
 
       mm.add("(max-width: 767px)", () => {
         gsap.from(headerRef.current, {
-          opacity: 0, y: 30, duration: 0.7, ease: "power3.out",
-          scrollTrigger: { trigger: headerRef.current, start: "top 85%", once: true },
+          opacity: 0,
+          y: 30,
+          duration: 0.7,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            once: true,
+          },
         });
         Array.from(cards).forEach((card) => {
-          gsap.fromTo(card,
+          gsap.fromTo(
+            card,
             { opacity: 0, y: 50, scale: 0.96 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: card, start: "top 88%", end: "top 35%", scrub: 0.7 },
-            }
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
           );
         });
       });
@@ -94,8 +125,8 @@ export default function ServicesOverview() {
 
   return (
     <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
-      <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
+      <div ref={innerRef} className="overflow-hidden md:h-screen">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <h2 className="font-display text-petroleum-700 text-3xl md:text-5xl">
@@ -135,7 +166,7 @@ export default function ServicesOverview() {
                   {service.number}
                 </span>
                 <div className="absolute bottom-0 left-0 p-6">
-                  <h3 className="font-display text-2xl text-white">
+                  <h3 className="font-body text-2xl text-white">
                     {service.title}
                   </h3>
                   <p className="mt-1 text-sm text-white/70">
