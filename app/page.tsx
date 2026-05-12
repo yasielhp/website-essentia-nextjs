@@ -6,7 +6,6 @@ import MembershipTeaser from "@components/sections/home/membership-teaser";
 import Testimonials from "@components/sections/home/testimonials";
 import TheSpace from "@components/sections/home/the-space";
 import CommunitySection from "@components/sections/home/community-section";
-import Newsletter from "@components/sections/home/newsletter";
 
 export const metadata: Metadata = {
   title: "Essentia | Longevity Center & Social Wellness Club — Tenerife",
@@ -24,7 +23,6 @@ export default function Home() {
       <Testimonials />
       <TheSpace />
       <CommunitySection />
-      <Newsletter />
     </>
   );
 }
