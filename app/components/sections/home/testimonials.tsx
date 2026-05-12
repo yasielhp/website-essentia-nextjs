@@ -215,6 +215,136 @@ function TestimonialCard({
   );
 }
 
+// ─── DesktopSlider ─────────────────────────────────────────────
+
+type DesktopSliderProps = {
+  sliderRef: { current: HTMLDivElement | null };
+  groupRefs: { current: (HTMLDivElement | null)[] };
+};
+
+function DesktopSlider({ sliderRef, groupRefs }: DesktopSliderProps) {
+  return (
+    <div
+      ref={sliderRef}
+      className="relative hidden h-64 overflow-hidden md:block"
+    >
+      {GROUPS.map((group, gi) => (
+        <div
+          key={gi}
+          ref={(el) => {
+            groupRefs.current[gi] = el;
+          }}
+          className="absolute inset-0 flex flex-row gap-4 px-5"
+        >
+          {group.map((t) => (
+            <TestimonialCard key={t.name} t={t} compact />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── MobileSlider ──────────────────────────────────────────────
+
+type MobileSliderProps = {
+  mobileTrackRef: { current: HTMLDivElement | null };
+};
+
+function MobileSlider({ mobileTrackRef }: MobileSliderProps) {
+  return (
+    <div className="px-5 md:hidden">
+      <div
+        ref={mobileTrackRef}
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {testimonials.map((t) => (
+          <div
+            key={t.name}
+            className="shrink-0 snap-center"
+            style={{ width: "calc(100vw - 60px)" }}
+          >
+            <TestimonialCard t={t} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── SliderDots ────────────────────────────────────────────────
+
+type SliderDotsProps = {
+  dotsRef: { current: HTMLDivElement | null };
+  mobileActiveCard: number;
+  activeGroup: number;
+  mobileTrackRef: { current: HTMLDivElement | null };
+  transitionTo: (idx: number) => void;
+  resetAutoplay: () => void;
+};
+
+function SliderDots({
+  dotsRef,
+  mobileActiveCard,
+  activeGroup,
+  mobileTrackRef,
+  transitionTo,
+  resetAutoplay,
+}: SliderDotsProps) {
+  return (
+    <div ref={dotsRef}>
+      {/* Mobile: 1 dot per testimonial */}
+      <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
+        {testimonials.map((t, i) => (
+          <button
+            key={t.name}
+            aria-label={`Go to testimonial ${i + 1}`}
+            className="cursor-pointer p-1"
+            onClick={() => {
+              const track = mobileTrackRef.current;
+              if (!track) return;
+              const cardWidth = track.scrollWidth / testimonials.length;
+              track.scrollTo({ left: i * cardWidth, behavior: "smooth" });
+            }}
+          >
+            <span
+              className={`block h-2 w-2 rounded-full transition-colors duration-300 ${
+                mobileActiveCard === i
+                  ? "bg-petroleum-500"
+                  : "bg-petroleum-500/10"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Desktop: 1 dot per group */}
+      <div className="mt-8 hidden items-center justify-center gap-3 md:flex">
+        {GROUPS.map((_, gi) => (
+          <button
+            key={gi}
+            aria-label={`Go to slide ${gi + 1}`}
+            className="cursor-pointer p-2"
+            onClick={() => {
+              transitionTo(gi);
+              resetAutoplay();
+            }}
+          >
+            <span
+              className={`block h-3 w-3 rounded-full transition-colors duration-300 ${
+                activeGroup === gi
+                  ? "bg-petroleum-500"
+                  : "bg-petroleum-500/10"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Testimonials ──────────────────────────────────────────────
 
 export default function Testimonials() {
@@ -436,94 +566,20 @@ export default function Testimonials() {
           </div>
 
           {/* Desktop slider — FULL WIDTH, no horizontal padding */}
-          <div
-            ref={sliderRef}
-            className="relative hidden h-64 overflow-hidden md:block"
-          >
-            {GROUPS.map((group, gi) => (
-              <div
-                key={gi}
-                ref={(el) => {
-                  groupRefs.current[gi] = el;
-                }}
-                className="absolute inset-0 flex flex-row gap-4 px-5"
-              >
-                {group.map((t) => (
-                  <TestimonialCard key={t.name} t={t} compact />
-                ))}
-              </div>
-            ))}
-          </div>
+          <DesktopSlider sliderRef={sliderRef} groupRefs={groupRefs} />
 
           {/* Mobile slider — padded */}
-          <div className="px-5 md:hidden">
-            <div
-              ref={mobileTrackRef}
-              className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {testimonials.map((t) => (
-                <div
-                  key={t.name}
-                  className="shrink-0 snap-center"
-                  style={{ width: "calc(100vw - 60px)" }}
-                >
-                  <TestimonialCard t={t} />
-                </div>
-              ))}
-            </div>
-          </div>
+          <MobileSlider mobileTrackRef={mobileTrackRef} />
 
           {/* Dots — hidden until animation reveals them */}
-          <div ref={dotsRef}>
-            {/* Mobile: 1 dot per testimonial */}
-            <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
-              {testimonials.map((_, i) => (
-                <button
-                  key={i}
-                  aria-label={`Go to testimonial ${i + 1}`}
-                  className="cursor-pointer p-1"
-                  onClick={() => {
-                    const track = mobileTrackRef.current;
-                    if (!track) return;
-                    const cardWidth = track.scrollWidth / testimonials.length;
-                    track.scrollTo({ left: i * cardWidth, behavior: "smooth" });
-                  }}
-                >
-                  <span
-                    className={`block h-2 w-2 rounded-full transition-colors duration-300 ${
-                      mobileActiveCard === i
-                        ? "bg-petroleum-500"
-                        : "bg-petroleum-500/10"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-
-            {/* Desktop: 1 dot per group */}
-            <div className="mt-8 hidden items-center justify-center gap-3 md:flex">
-              {GROUPS.map((_, gi) => (
-                <button
-                  key={gi}
-                  aria-label={`Go to slide ${gi + 1}`}
-                  className="cursor-pointer p-2"
-                  onClick={() => {
-                    transitionTo(gi);
-                    resetAutoplay();
-                  }}
-                >
-                  <span
-                    className={`block h-3 w-3 rounded-full transition-colors duration-300 ${
-                      activeGroup === gi
-                        ? "bg-petroleum-500"
-                        : "bg-petroleum-500/10"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
+          <SliderDots
+            dotsRef={dotsRef}
+            mobileActiveCard={mobileActiveCard}
+            activeGroup={activeGroup}
+            mobileTrackRef={mobileTrackRef}
+            transitionTo={transitionTo}
+            resetAutoplay={resetAutoplay}
+          />
         </div>
       </div>
     </section>
