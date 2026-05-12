@@ -11,7 +11,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 function splitChars(text: string) {
   return text.split("").map((char, i) => (
-    <span key={i} data-char>
+    <span key={char + i} data-char>
       {char === " " ? "\u00A0" : char}
     </span>
   ));
@@ -43,9 +43,9 @@ export function SplitText({ children }: { children: ReactNode }) {
       <span className="sr-only">{srText}</span>
       {/* contents: no genera caja, los hijos participan en el flex del padre */}
       <span style={{ display: "contents" }} aria-hidden="true">
-        {childArray.map((child, i) =>
+        {childArray.map((child) =>
           typeof child === "string" ? (
-            <span key={i} className="inline-flex">
+            <span key={child} className="inline-flex">
               {splitChars(child)}
             </span>
           ) : (

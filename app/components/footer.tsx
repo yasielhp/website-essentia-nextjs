@@ -130,7 +130,7 @@ export const Footer = () => {
       </section>
       {/* Copyright */}
       <section className="pt-4 pb-5 md:py-5">
-        <p className="text-center text-xs">
+        <p className="text-center text-xs" suppressHydrationWarning>
           © {new Date().getFullYear()} Essentia Wellness Club. All rights
           reserved.
         </p>

@@ -100,7 +100,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
             Intelligence for those who take their health seriously.
           </p>
           <p className={`${t.subheading} mt-2 text-balance`}>
-            Protocols, insights, and community updates — sent when it&apos;s
+            Protocols, insights, and community updates: sent when it&apos;s
             worth your attention.
           </p>
         </div>
@@ -205,7 +205,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
                   consent (GDPR art. 6.1.a) <br />
                   <strong className="font-medium">Your rights:</strong> access,
                   rectification, erasure, restriction, portability, and
-                  objection — write to{" "}
+                  objection: write to{" "}
                   <a
                     href={`mailto:${contact.email}`}
                     className="underline underline-offset-2"

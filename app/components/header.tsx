@@ -194,7 +194,7 @@ export const Header = () => {
                 <li key={menu.href} className="relative">
                   <AnimatedLink
                     href={menu.href}
-                    className="flex items-center gap-1 px-4 py-4 font-medium transition-opacity duration-200"
+                    className="flex items-center gap-1 p-4 font-medium transition-opacity duration-200"
                     style={{ opacity: isDimmed ? 0.5 : 1 }}
                     onMouseEnter={() => handleMenuEnter(menu)}
                     onMouseLeave={scheduleClose}

@@ -123,6 +123,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-1.webp"
             alt="Essentia wellness space"
             fill
+            sizes="(max-width: 767px) 50vw, 20vw"
             className="object-cover"
           />
         </div>
@@ -133,6 +134,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-2.webp"
             alt="Essentia treatment"
             fill
+            sizes="(max-width: 767px) 50vw, 20vw"
             className="object-cover"
           />
         </div>
@@ -143,6 +145,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-3.webp"
             alt="Essentia longevity protocol"
             fill
+            sizes="(max-width: 767px) 50vw, 40vw"
             className="object-cover"
           />
         </div>
@@ -153,6 +156,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-4.webp"
             alt="Essentia community"
             fill
+            sizes="40vw"
             className="object-cover"
           />
         </div>
@@ -170,7 +174,7 @@ export default function BrandStatement() {
             className="text-petroleum-400 leading-relaxed text-pretty md:max-w-3xl"
           >
             Essentia brings together regenerative medicine, longevity protocols,
-            and an exclusive community in one intentional space — rooted in
+            and an exclusive community in one intentional space, rooted in
             Tenerife, designed for those who understand that how you live
             matters as much as how long.
           </p>
@@ -182,6 +186,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-5.webp"
             alt="Essentia Tenerife"
             fill
+            sizes="20vw"
             className="object-cover"
           />
         </div>
@@ -192,6 +197,7 @@ export default function BrandStatement() {
             src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-6.webp"
             alt="Essentia wellness club"
             fill
+            sizes="(max-width: 767px) 50vw, 60vw"
             className="object-cover"
           />
         </div>
