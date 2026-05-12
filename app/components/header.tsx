@@ -329,12 +329,17 @@ export const Header = () => {
   }, [openMobileMenu]);
 
   return (
-    <header className="text-petroleum-500 bg-sand-50 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl md:mt-16 md:rounded-2xl">
+    <header className="text-petroleum-500 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl bg-white md:mt-16 md:rounded-2xl">
       {/* Barra principal: logo, nav desktop, acciones */}
       <section
         className={`flex w-full items-center justify-between px-5 py-4 md:px-6 ${activeMenu ? "border-sand-100 border-b" : ""}`}
       >
-        <Link className="mb-1" href="/" aria-label="Home">
+        <Link
+          className="mb-1"
+          href="/"
+          aria-label="Home"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
           <Logo />
         </Link>
 
