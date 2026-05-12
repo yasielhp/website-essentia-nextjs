@@ -44,17 +44,28 @@ export default function TheSpace() {
       });
 
       mm.add("(max-width: 767px)", () => {
-        gsap.from(headerEls, {
-          opacity: 0, y: 20, stagger: 0.08, duration: 0.6, ease: "power3.out",
+        gsap.from(Array.from(headerEls), {
+          opacity: 0, y: 30, stagger: 0.08, duration: 0.7, ease: "power3.out",
           scrollTrigger: { trigger: inner, start: "top 80%", once: true },
         });
-        gsap.from(imgEls, {
-          opacity: 0, scale: 0.97, stagger: 0.1, duration: 0.6, ease: "power2.out",
-          scrollTrigger: { trigger: inner, start: "top 75%", once: true },
-        });
-        gsap.from(statEls, {
-          opacity: 0, y: 15, stagger: 0.08, duration: 0.5, ease: "power2.out",
-          scrollTrigger: { trigger: inner, start: "top 70%", once: true },
+        const mainImg = imgEls[0];
+        if (mainImg) {
+          gsap.fromTo(mainImg,
+            { opacity: 0, scale: 0.97 },
+            {
+              opacity: 1, scale: 1, ease: "none",
+              scrollTrigger: { trigger: mainImg, start: "top 88%", end: "top 30%", scrub: 0.7 },
+            }
+          );
+        }
+        Array.from(statEls).forEach((stat) => {
+          gsap.fromTo(stat,
+            { opacity: 0, y: 20 },
+            {
+              opacity: 1, y: 0, ease: "none",
+              scrollTrigger: { trigger: stat, start: "top 90%", end: "top 50%", scrub: 0.7 },
+            }
+          );
         });
       });
     }, section);
@@ -65,7 +76,7 @@ export default function TheSpace() {
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col gap-8 pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:py-20">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col gap-8 pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:pt-36 md:pb-16">
 
           {/* ─── Header editorial ── */}
           <div>

@@ -200,12 +200,17 @@ export default function MembershipTeaser() {
 
       mm.add("(max-width: 767px)", () => {
         gsap.from(header, {
-          opacity: 0, y: 20, duration: 0.6, ease: "power3.out",
+          opacity: 0, y: 30, duration: 0.7, ease: "power3.out",
           scrollTrigger: { trigger: header, start: "top 85%", once: true },
         });
-        gsap.from(cardEls, {
-          opacity: 0, y: 30, stagger: 0.08, duration: 0.6, ease: "power3.out",
-          scrollTrigger: { trigger: cards, start: "top 80%", once: true },
+        cardEls.forEach((card) => {
+          gsap.fromTo(card,
+            { opacity: 0, y: 50, scale: 0.96 },
+            {
+              opacity: 1, y: 0, scale: 1, ease: "none",
+              scrollTrigger: { trigger: card, start: "top 88%", end: "top 35%", scrub: 0.7 },
+            }
+          );
         });
       });
     }, section);
@@ -216,7 +221,7 @@ export default function MembershipTeaser() {
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
           {/* ─── Header ── */}
           <div ref={headerRef} className="flex flex-col items-center text-center">
             <span className="text-xs tracking-widest uppercase text-sand-600">

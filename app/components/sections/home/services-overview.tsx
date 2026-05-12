@@ -74,12 +74,17 @@ export default function ServicesOverview() {
 
       mm.add("(max-width: 767px)", () => {
         gsap.from(headerRef.current, {
-          opacity: 0, y: 20, duration: 0.6, ease: "power3.out",
+          opacity: 0, y: 30, duration: 0.7, ease: "power3.out",
           scrollTrigger: { trigger: headerRef.current, start: "top 85%", once: true },
         });
-        gsap.from(cards, {
-          opacity: 0, y: 30, stagger: 0.08, duration: 0.6, ease: "power3.out",
-          scrollTrigger: { trigger: inner, start: "top 80%", once: true },
+        Array.from(cards).forEach((card) => {
+          gsap.fromTo(card,
+            { opacity: 0, y: 50, scale: 0.96 },
+            {
+              opacity: 1, y: 0, scale: 1, ease: "none",
+              scrollTrigger: { trigger: card, start: "top 88%", end: "top 35%", scrub: 0.7 },
+            }
+          );
         });
       });
     }, section);
@@ -90,7 +95,7 @@ export default function ServicesOverview() {
   return (
     <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
       <div ref={innerRef} className="md:h-screen overflow-hidden">
-        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:py-20">
+        <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
