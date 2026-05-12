@@ -120,9 +120,6 @@ export default function Testimonials() {
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="mb-12 text-center">
-            <p className="text-petroleum-400 text-xs tracking-widest uppercase">
-              Members
-            </p>
             <h2 className="font-display text-petroleum-700 mt-3 text-3xl md:text-5xl">
               Heard from
               <br />

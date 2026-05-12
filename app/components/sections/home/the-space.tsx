@@ -80,12 +80,6 @@ export default function TheSpace() {
 
           {/* ─── Header editorial ── */}
           <div>
-            <span
-              data-space-header
-              className="text-sand-600 text-xs tracking-widest uppercase"
-            >
-              The Space
-            </span>
 
             <h2
               data-space-header

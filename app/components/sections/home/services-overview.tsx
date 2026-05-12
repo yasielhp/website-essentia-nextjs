@@ -98,9 +98,6 @@ export default function ServicesOverview() {
         <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
-            <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-              What we offer
-            </p>
             <h2 className="font-display text-petroleum-700 text-3xl md:text-5xl">
               Three pillars,
               <br />

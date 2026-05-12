@@ -224,9 +224,6 @@ export default function MembershipTeaser() {
         <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ── */}
           <div ref={headerRef} className="flex flex-col items-center text-center">
-            <span className="text-xs tracking-widest uppercase text-sand-600">
-              Membership
-            </span>
             <h2 className="font-display text-3xl md:text-5xl text-sand-50 text-center mt-3 text-balance">
               Choose your
               <br />

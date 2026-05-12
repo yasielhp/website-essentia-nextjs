@@ -82,9 +82,6 @@ export default function CommunitySection() {
         <div className="mx-auto max-w-4xl px-5 flex flex-col pt-24 pb-16 md:h-full md:pt-40 md:pb-16">
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="text-center md:text-left mb-10">
-            <p className="text-xs tracking-widest uppercase text-petroleum-400">
-              Community
-            </p>
             <h2 className="font-display text-3xl md:text-5xl text-petroleum-700 mt-3 md:max-w-lg">
               A life well-lived
               <br />
