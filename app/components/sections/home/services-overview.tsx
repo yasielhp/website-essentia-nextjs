@@ -17,7 +17,7 @@ const services = [
     img: "/images/menu/wellness.webp",
     title: "Wellness",
     description:
-      "Thermal contrast, breathwork, manual therapies, and red light — a full spectrum of body restoration.",
+      "Thermal contrast, manual therapies, breathwork, and red light — a full spectrum of restoration.",
     cta: "Explore Wellness",
   },
   {
@@ -35,7 +35,7 @@ const services = [
     img: "/images/menu/community.webp",
     title: "Community",
     description:
-      "Running club, education programs, and exclusive memberships — belonging to something truly meaningful.",
+      "Running club, education programs, and exclusive memberships — true belonging to something meaningful.",
     cta: "Explore Community",
   },
 ];
