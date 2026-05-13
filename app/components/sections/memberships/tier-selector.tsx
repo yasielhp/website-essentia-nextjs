@@ -147,8 +147,8 @@ function TierDisplay({
 // ─── TierSelector ─────────────────────────────────────────────
 
 function TierSelectorInner() {
-  const { get } = useSearchParams();
-  const paramValue = get("tier") as TierId | null;
+  const searchParams = useSearchParams();
+  const paramValue = searchParams.get("tier") as TierId | null;
   const initialTier: TierId =
     paramValue && VALID_TIERS.includes(paramValue) ? paramValue : "essential";
   const hasTierParam = useRef(false);
