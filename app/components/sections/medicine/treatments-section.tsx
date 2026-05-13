@@ -11,7 +11,11 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── TreatmentCard ────────────────────────────────────────────
 
-function TreatmentCard({ treatment }: { treatment: (typeof treatments)[number] }) {
+function TreatmentCard({
+  treatment,
+}: {
+  treatment: (typeof treatments)[number];
+}) {
   return (
     <Link
       href={treatment.href}
@@ -156,7 +160,7 @@ export default function TreatmentsSection() {
       className="bg-sand-50 md:h-[260vh]"
     >
       <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-5xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
           <div ref={bodyRef} className="flex flex-col gap-8">
             {/* ── Header ── */}
             <div>
