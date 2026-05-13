@@ -112,6 +112,46 @@ export default function RunningClubSection() {
       <section className="bg-sand-50">
         <div className="mx-auto max-w-4xl px-5 py-24">
           <div ref={contentRef} className="flex flex-col gap-20">
+            {/* ── Next run ── */}
+            <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
+              {/* Image */}
+              <div className="relative h-56 md:h-auto md:min-h-72">
+                <Image
+                  src="/images/menu/running-club.webp"
+                  alt="Next Essentia run"
+                  fill
+                  sizes="(max-width: 767px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
+              {/* Info */}
+              <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
+                <div className="flex flex-col gap-4">
+                  <p className="text-petroleum-400 text-xs tracking-widest uppercase">
+                    Next run
+                  </p>
+                  <div>
+                    <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                      Saturday,
+                      <br />
+                      24 May 2026
+                    </h2>
+                    <p className="text-petroleum-400 mt-1 text-sm">
+                      7:30 am · Baobab Suites lobby
+                    </p>
+                  </div>
+                  <p className="text-petroleum-500 text-sm leading-relaxed">
+                    This week: the Fanabe coastal path. 10 km along the
+                    seafront promenade with Atlantic views from start to
+                    finish. Ends with breakfast at the club.
+                  </p>
+                </div>
+                <Button variant="solid" size="md" href="/contact" className="w-full md:w-auto md:self-start">
+                  Register for this run
+                </Button>
+              </div>
+            </div>
+
             {/* ── Details grid ── */}
             <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
               {details.map((d) => (
