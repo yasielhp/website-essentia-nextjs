@@ -1,20 +1,12 @@
 import type { Metadata } from "next";
+import RunningClubSection from "@components/sections/community/running-club-section";
 
 export const metadata: Metadata = {
   title: "Running Club | Essentia Community",
   description:
-    "Join Essentia's running club in Tenerife and become part of our active, health-focused community.",
+    "Join Essentia's running club in Tenerife. Every Saturday at 7:30 am — curated coastal routes, paced groups, and shared breakfast.",
 };
 
 export default function RunningClubPage() {
-  return (
-    <section className="text-primary min-h-dvh">
-      <div className="max-w-10xl mx-auto flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display xs:text-7xl text-4xl">Running Club</h1>
-        <p className="text-primary/70 mt-4 text-lg">
-          Corre con nosotros y forma parte de nuestra comunidad activa.
-        </p>
-      </div>
-    </section>
-  );
+  return <RunningClubSection />;
 }
