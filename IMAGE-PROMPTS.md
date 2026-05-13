@@ -45,6 +45,19 @@ Small group of sophisticated adults gathered at a premium outdoor terrace in Ten
 
 ---
 
+### `running-club-next.webp`
+
+**Uso:** Imagen de la card "Next run" en `/community/running-club`  
+**Carpeta destino:** `public/images/community/`  
+**Tamaño:** `900 × 600 px` — ratio 3:2 (landscape)  
+**Midjourney:** añadir `--ar 3:2` al final del prompt
+
+```
+Group of runners on a coastal promenade in Tenerife at early morning, golden sunrise light over the Atlantic ocean, relaxed pace, athletic wear in neutral earth tones, wide promenade with palm trees and sea in the background, warm editorial lifestyle photography, sense of community and movement --ar 3:2
+```
+
+---
+
 ### `running-club-hero.webp`
 
 **Uso:** Hero de la página `/community/running-club` — imagen de fondo full-screen con overlay oscuro  
