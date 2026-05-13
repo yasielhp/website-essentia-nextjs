@@ -405,7 +405,7 @@ export default function RunningClubSection() {
                 Choose your tier and join the community.
               </p>
               <Button variant="solid" size="md" href="/community/memberships">
-                View memberships
+                Join memberships
               </Button>
             </div>
           </div>
