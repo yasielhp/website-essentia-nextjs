@@ -55,7 +55,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
           {data.intro}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button variant="white" size="md" href="/booking">
+          <Button variant="white" size="md" href={`/booking?service=${data.slug}`}>
             Book a session
           </Button>
           <Button
@@ -347,7 +347,7 @@ function CtaSection({ data }: { data: TreatmentData }) {
               {data.ctaBody}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button variant="solid" size="md" href="/booking">
+              <Button variant="solid" size="md" href={`/booking?service=${data.slug}`}>
                 Book a session
               </Button>
               <Button

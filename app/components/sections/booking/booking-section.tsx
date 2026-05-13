@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { bookableServices, type BookableService } from "./services-data";
 
@@ -107,52 +107,183 @@ function StepIndicator({ current }: { current: number }) {
 
 // ─── Step 1: Service ──────────────────────────────────────────
 
-function ServiceCard({
-  service,
+function ServiceSelect({
   selected,
   onSelect,
 }: {
-  service: BookableService;
-  selected: boolean;
-  onSelect: () => void;
+  selected: BookableService | null;
+  onSelect: (s: BookableService | null) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const wellness = bookableServices.filter((s) => s.category === "wellness");
+  const medicine = bookableServices.filter((s) => s.category === "medicine");
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const handleSelect = (s: BookableService) => {
+    onSelect(s);
+    setIsOpen(false);
+  };
+
   return (
-    <button
-      onClick={onSelect}
-      className={[
-        "group relative flex flex-col overflow-hidden rounded-2xl text-left transition-all duration-200",
-        selected
-          ? "ring-2 ring-petroleum-700 shadow-md"
-          : "ring-1 ring-sand-200 hover:ring-petroleum-300 hover:shadow-sm",
-      ].join(" ")}
-    >
-      <div className="relative h-28 w-full overflow-hidden">
-        <Image
-          src={service.image}
-          alt={service.title}
-          fill
-          sizes="(max-width: 640px) 50vw, 33vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        {selected && (
-          <div className="bg-petroleum-700 absolute top-2 right-2 flex size-6 items-center justify-center rounded-full">
-            <Check className="text-sand-50" size={12} />
-          </div>
+    <div ref={containerRef} className="relative">
+      {/* Trigger */}
+      <button
+        onClick={() => setIsOpen((o) => !o)}
+        className={[
+          "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          isOpen
+            ? "border-petroleum-400 ring-2 ring-petroleum-200"
+            : "border-sand-300 hover:border-petroleum-300",
+          "bg-sand-50",
+        ].join(" ")}
+      >
+        {selected ? (
+          <>
+            <div className="relative size-20 shrink-0 overflow-hidden rounded-xl">
+              <Image
+                src={selected.image}
+                alt={selected.title}
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
+              <p className="text-petroleum-700 font-medium">
+                {selected.title}
+              </p>
+              <p className="text-petroleum-400 line-clamp-2 text-sm">
+                {selected.description}
+              </p>
+              <p className="text-petroleum-500 text-sm">{selected.duration}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(null);
+                  setIsOpen(false);
+                }}
+                className="text-petroleum-300 hover:text-petroleum-600 rounded-full p-1 transition-colors"
+                aria-label="Clear selection"
+              >
+                <X size={14} />
+              </button>
+              <ChevronDown
+                className={[
+                  "text-petroleum-400 shrink-0 transition-transform duration-200",
+                  isOpen ? "rotate-180" : "",
+                ].join(" ")}
+                size={16}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-sand-200 flex size-20 shrink-0 items-center justify-center rounded-xl">
+              <span className="text-petroleum-300 text-lg">+</span>
+            </div>
+            <p className="text-petroleum-300 flex-1 text-sm">
+              Select a service
+            </p>
+            <ChevronDown
+              className={[
+                "text-petroleum-300 shrink-0 transition-transform duration-200",
+                isOpen ? "rotate-180" : "",
+              ].join(" ")}
+              size={16}
+            />
+          </>
         )}
-      </div>
-      <div className="bg-sand-50 flex flex-col gap-1 p-3">
-        <p className="text-petroleum-700 text-sm font-medium leading-snug">
-          {service.title}
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-petroleum-400 text-xs">{service.duration}</span>
-          <span className="text-petroleum-200 text-xs">·</span>
-          <span className="text-petroleum-600 text-xs font-medium">
-            {service.price}
-          </span>
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="border-sand-300 absolute top-full right-0 left-0 z-10 mt-2 max-h-96 overflow-y-auto rounded-2xl border bg-sand-50 shadow-lg">
+          <div className="p-3">
+            <p className="text-petroleum-300 px-2 py-2 text-xs tracking-widest uppercase">
+              Wellness
+            </p>
+            {wellness.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => handleSelect(s)}
+                className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-sand-100"
+              >
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
+                  <Image
+                    src={s.image}
+                    alt={s.title}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+                  <p className="text-petroleum-700 text-sm font-medium">
+                    {s.title}
+                  </p>
+                  <p className="text-petroleum-400 line-clamp-1 text-xs">
+                    {s.description}
+                  </p>
+                  <p className="text-petroleum-500 text-xs">{s.duration}</p>
+                </div>
+                {selected?.id === s.id && (
+                  <Check className="text-petroleum-700 shrink-0" size={14} />
+                )}
+              </button>
+            ))}
+
+            <p className="text-petroleum-300 mt-2 px-2 py-2 text-xs tracking-widest uppercase">
+              Medicine
+            </p>
+            {medicine.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => handleSelect(s)}
+                className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-sand-100"
+              >
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
+                  <Image
+                    src={s.image}
+                    alt={s.title}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+                  <p className="text-petroleum-700 text-sm font-medium">
+                    {s.title}
+                  </p>
+                  <p className="text-petroleum-400 line-clamp-1 text-xs">
+                    {s.description}
+                  </p>
+                  <p className="text-petroleum-500 text-xs">{s.duration}</p>
+                </div>
+                {selected?.id === s.id && (
+                  <Check className="text-petroleum-700 shrink-0" size={14} />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    </button>
+      )}
+    </div>
   );
 }
 
@@ -163,62 +294,12 @@ function ServiceStep({
   selected: BookableService | null;
   onSelect: (s: BookableService | null) => void;
 }) {
-  const wellness = bookableServices.filter((s) => s.category === "wellness");
-  const medicine = bookableServices.filter((s) => s.category === "medicine");
-
   return (
-    <div className="flex flex-col gap-8">
-      {selected && (
-        <div className="bg-sand-100 flex items-center justify-between rounded-xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Check className="text-petroleum-700 shrink-0" size={14} />
-            <p className="text-petroleum-700 text-sm font-medium">
-              {selected.title} selected
-            </p>
-          </div>
-          <button
-            onClick={() => onSelect(null)}
-            className="text-petroleum-400 hover:text-petroleum-700 flex items-center gap-1 text-xs transition-colors"
-          >
-            <X size={13} />
-            Clear
-          </button>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-6">
-        <div>
-          <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-            Wellness
-          </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {wellness.map((s) => (
-              <ServiceCard
-                key={s.id}
-                service={s}
-                selected={selected?.id === s.id}
-                onSelect={() => onSelect(selected?.id === s.id ? null : s)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-            Medicine
-          </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {medicine.map((s) => (
-              <ServiceCard
-                key={s.id}
-                service={s}
-                selected={selected?.id === s.id}
-                onSelect={() => onSelect(selected?.id === s.id ? null : s)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col gap-3 md:max-w-lg">
+      <p className="text-petroleum-400 text-sm">
+        Which service would you like to book?
+      </p>
+      <ServiceSelect selected={selected} onSelect={onSelect} />
     </div>
   );
 }
