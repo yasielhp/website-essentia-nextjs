@@ -112,7 +112,12 @@ export default function RunningClubSection() {
       {/* ── Next run ── */}
       <section className="bg-sand-50">
         <div className="mx-auto max-w-4xl px-5 py-24">
-          <div ref={contentRef} className="flex flex-col gap-16">
+          <div ref={contentRef} className="flex flex-col gap-8">
+            {/* Section title */}
+            <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+              Next run.
+            </h2>
+
             {/* Card */}
             <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
               <div className="relative h-56 md:h-auto md:min-h-72">
@@ -126,9 +131,6 @@ export default function RunningClubSection() {
               </div>
               <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
                 <div className="flex flex-col gap-4">
-                  <p className="text-petroleum-400 text-xs tracking-widest uppercase">
-                    Next run
-                  </p>
                   <div>
                     <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
                       Saturday,
