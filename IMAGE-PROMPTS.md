@@ -32,6 +32,19 @@ Exclusive premium wellness club interior, elegant reception or lounge area, Tene
 
 ---
 
+### `community/hero.webp`
+
+**Uso:** Hero de la página `/community` — imagen de fondo full-screen con overlay oscuro  
+**Carpeta destino:** `public/images/community/`  
+**Tamaño:** `2560 × 1440 px` — ratio 16:9 (landscape)  
+**Midjourney:** añadir `--ar 16:9` al final del prompt
+
+```
+Small group of sophisticated adults gathered at a premium outdoor terrace in Tenerife, golden late-afternoon light, Atlantic ocean and volcanic coastline visible in background, relaxed social atmosphere, neutral athletic and resort wear, sense of belonging and shared purpose, wide editorial lifestyle photography, no faces clearly visible, warm sand and deep teal tones, cinematic composition --ar 16:9
+```
+
+---
+
 ### `medicine/hero.webp`
 
 **Uso:** Hero de la página `/medicine` — imagen de fondo full-screen con overlay oscuro  

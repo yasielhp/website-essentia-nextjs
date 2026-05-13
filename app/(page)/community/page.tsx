@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import HeroSection from "@components/sections/community/hero-section";
+import ProgramsSection from "@components/sections/community/programs-section";
+import ValuesSection from "@components/sections/community/values-section";
+import CtaSection from "@components/sections/community/cta-section";
 
 export const metadata: Metadata = {
   title: "Community | Essentia Social Wellness Club",
@@ -8,13 +12,11 @@ export const metadata: Metadata = {
 
 export default function CommunityPage() {
   return (
-    <section className="text-primary min-h-dvh">
-      <div className="max-w-10xl mx-auto flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display xs:text-7xl text-4xl">Comunidad</h1>
-        <p className="text-primary/70 mt-4 text-lg">
-          Únete a una comunidad comprometida con el bienestar y el crecimiento.
-        </p>
-      </div>
-    </section>
+    <>
+      <HeroSection />
+      <ProgramsSection />
+      <ValuesSection />
+      <CtaSection />
+    </>
   );
 }
