@@ -333,9 +333,7 @@ function SliderDots({
           >
             <span
               className={`block h-3 w-3 rounded-full transition-colors duration-300 ${
-                activeGroup === gi
-                  ? "bg-petroleum-500"
-                  : "bg-petroleum-500/10"
+                activeGroup === gi ? "bg-petroleum-500" : "bg-petroleum-500/10"
               }`}
             />
           </button>

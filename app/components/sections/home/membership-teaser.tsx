@@ -7,6 +7,65 @@ import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
+// ─── Types ────────────────────────────────────────────────────
+
+type Tier = {
+  badge: string;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
+  ctaLabel: string;
+  ctaVariant: "outline" | "solid";
+};
+
+// ─── Datos de tiers ───────────────────────────────────────────
+
+const tiers: Tier[] = [
+  {
+    badge: "Entry",
+    name: "Essential",
+    price: 199,
+    description:
+      "Full access to all wellness facilities, group sessions, and community events.",
+    features: ["Wellness facilities", "Group sessions", "Community events"],
+    ctaLabel: "Learn more",
+    ctaVariant: "outline",
+  },
+  {
+    badge: "Most popular",
+    name: "Premium",
+    price: 349,
+    description:
+      "All Essential benefits plus priority booking, personalized protocols, and medical consultations.",
+    features: [
+      "Everything in Essential",
+      "Priority booking",
+      "Personalized protocols",
+      "Medical consultations",
+      "Guest privileges (2/month)",
+    ],
+    ctaLabel: "Explore Premium",
+    ctaVariant: "solid",
+  },
+  {
+    badge: "Exclusive",
+    name: "Founder",
+    price: 699,
+    description:
+      "Full ecosystem access with a dedicated health advisor, unlimited guest privileges, and founding member status.",
+    features: [
+      "Everything in Premium",
+      "Dedicated health advisor",
+      "Unlimited guest privileges",
+      "Founding member events",
+      "Priority treatment access",
+    ],
+    ctaLabel: "Learn more",
+    ctaVariant: "outline",
+  },
+];
+
 // ─── Checkmark ────────────────────────────────────────────────
 
 function Checkmark({ className }: { className?: string }) {
@@ -30,118 +89,38 @@ function Checkmark({ className }: { className?: string }) {
   );
 }
 
-// ─── Tipos ────────────────────────────────────────────────────
-
-type TierVariant = "dark" | "light";
-
-type Tier = {
-  variant: TierVariant;
-  badge: string;
-  name: string;
-  description: string;
-  features: string[];
-  ctaLabel: string;
-  ctaVariant: "outline-white" | "solid";
-};
-
-// ─── Datos de tiers ───────────────────────────────────────────
-
-const tiers: Tier[] = [
-  {
-    variant: "dark",
-    badge: "Entry",
-    name: "Essential",
-    description:
-      "Full access to all wellness facilities, group sessions, and community events.",
-    features: ["Wellness facilities", "Group sessions", "Community events"],
-    ctaLabel: "Learn more",
-    ctaVariant: "outline-white",
-  },
-  {
-    variant: "light",
-    badge: "Most popular",
-    name: "Premium",
-    description:
-      "All Essential benefits plus priority booking, personalized protocols, and medical consultations.",
-    features: [
-      "Everything in Essential",
-      "Priority booking",
-      "Personalized protocols",
-      "Medical consultations",
-      "Guest privileges (2/month)",
-    ],
-    ctaLabel: "Explore Premium",
-    ctaVariant: "solid",
-  },
-  {
-    variant: "dark",
-    badge: "Exclusive",
-    name: "Founder",
-    description:
-      "Full ecosystem access with a dedicated health advisor, unlimited guest privileges, and founding member status.",
-    features: [
-      "Everything in Premium",
-      "Dedicated health advisor",
-      "Unlimited guest privileges",
-      "Founding member events",
-      "Priority treatment access",
-    ],
-    ctaLabel: "Learn more",
-    ctaVariant: "outline-white",
-  },
-];
-
 // ─── Card ─────────────────────────────────────────────────────
 
 function TierCard({ tier }: { tier: Tier }) {
-  const isDark = tier.variant === "dark";
+  const tierId = tier.name.toLowerCase();
 
   return (
-    <article
-      className={[
-        "flex flex-col gap-4 rounded-2xl p-7",
-        isDark
-          ? "bg-petroleum-800 border-petroleum-500 border"
-          : "bg-sand-100 border-sand-200 border-2",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "self-start rounded-full px-3 py-1 text-xs",
-          isDark
-            ? "bg-petroleum-500/30 text-sand-500"
-            : "bg-petroleum-700 text-sand-50",
-        ].join(" ")}
-      >
+    <article className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-7">
+      <span className="bg-petroleum-100 text-petroleum-500 self-start rounded-full px-3 py-1 text-xs tracking-wider uppercase">
         {tier.badge}
       </span>
 
-      <h3
-        className={[
-          "font-display mt-4 text-2xl",
-          isDark ? "text-sand-50" : "text-petroleum-700",
-        ].join(" ")}
-      >
-        {tier.name}
-      </h3>
+      <div>
+        <h3 className="font-display text-petroleum-700 text-2xl">
+          {tier.name}
+        </h3>
+        <div className="mt-3 flex items-end gap-1">
+          <span className="font-display text-petroleum-700 text-3xl leading-none">
+            €{tier.price}
+          </span>
+          <span className="text-petroleum-400 mb-0.5 text-xs">/month</span>
+        </div>
+      </div>
 
-      <p
-        className={[
-          "mt-2 text-sm leading-relaxed",
-          isDark ? "text-sand-500" : "text-petroleum-400",
-        ].join(" ")}
-      >
+      <p className="text-petroleum-500 text-sm leading-relaxed">
         {tier.description}
       </p>
 
-      <ul className="mt-2 flex flex-col gap-2">
+      <ul className="flex flex-col gap-2">
         {tier.features.map((feature) => (
           <li
             key={feature}
-            className={[
-              "flex items-start gap-2 text-sm",
-              isDark ? "text-sand-500" : "text-petroleum-500",
-            ].join(" ")}
+            className="text-petroleum-600 flex items-start gap-2 text-sm"
           >
             <Checkmark />
             {feature}
@@ -153,7 +132,7 @@ function TierCard({ tier }: { tier: Tier }) {
         <Button
           variant={tier.ctaVariant}
           size="md"
-          href="/community/memberships"
+          href={`/community/memberships?tier=${tierId}#tiers`}
           className="w-full md:w-auto"
         >
           {tier.ctaLabel}
@@ -243,18 +222,18 @@ export default function MembershipTeaser() {
   return (
     <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
       <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-32 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
           {/* ─── Header ── */}
           <div
             ref={headerRef}
-            className="flex flex-col items-center text-center"
+            className="flex flex-col items-center gap-5 text-center"
           >
             <h2 className="font-display text-sand-50 mt-3 text-center text-3xl text-balance md:text-5xl">
               Choose your
               <br />
               level of access.
             </h2>
-            <p className="text-sand-500 mx-auto mt-4 max-w-lg text-center leading-relaxed">
+            <p className="text-sand-500 mx-auto max-w-lg text-center leading-relaxed">
               Every tier includes full access to the Essentia space: what
               changes is depth, priority, and belonging.
             </p>
@@ -263,7 +242,7 @@ export default function MembershipTeaser() {
           {/* ─── Cards ── */}
           <div
             ref={cardsRef}
-            className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3"
+            className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3"
           >
             {tiers.map((tier) => (
               <TierCard key={tier.name} tier={tier} />

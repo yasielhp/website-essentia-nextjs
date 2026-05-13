@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Newsletter from "@components/sections/home/newsletter";
+import Newsletter from "@/components/sections/newsletter";
 
 export const metadata: Metadata = {
   title: "Blog | Essentia Longevity & Wellness",
