@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <p>
-        Essentia Social Wellness Club ("Essentia", "we", "us", or "our") is
+        Essentia Social Wellness Club (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is
         committed to protecting your personal data. This Privacy Policy explains
         how we collect, use, store, and protect your information when you visit
         our website or use our services, in accordance with Regulation (EU)
@@ -127,7 +127,7 @@ export default function PrivacyPolicyPage() {
           <strong>Rectify</strong> inaccurate or incomplete data.
         </li>
         <li>
-          <strong>Erase</strong> your data ("right to be forgotten") where no
+          <strong>Erase</strong> your data (&quot;right to be forgotten&quot;) where no
           legal basis remains for retention.
         </li>
         <li>
