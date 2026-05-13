@@ -48,9 +48,6 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
         }}
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
-        <p className="text-sand-400 mb-4 text-xs tracking-widest uppercase">
-          {data.tagline}
-        </p>
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           {data.title}
         </h1>
@@ -58,7 +55,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
           {data.intro}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button variant="white" size="md" href="/contact">
+          <Button variant="white" size="md" href="/booking">
             Book a session
           </Button>
           <Button
@@ -350,7 +347,7 @@ function CtaSection({ data }: { data: TreatmentData }) {
               {data.ctaBody}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button variant="solid" size="md" href="/contact">
+              <Button variant="solid" size="md" href="/booking">
                 Book a session
               </Button>
               <Button
