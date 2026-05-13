@@ -4,7 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { Clock, MapPin, Route, Users } from "lucide-react";
+import { MapPin, Route, Users } from "lucide-react";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
