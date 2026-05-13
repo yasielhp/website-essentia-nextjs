@@ -108,13 +108,12 @@ export default function RunningClubSection() {
         </div>
       </section>
 
-      {/* ── Content ── */}
+      {/* ── Next run ── */}
       <section className="bg-sand-50">
         <div className="mx-auto max-w-4xl px-5 py-24">
-          <div ref={contentRef} className="flex flex-col gap-20">
-            {/* ── Next run ── */}
+          <div ref={contentRef} className="flex flex-col gap-16">
+            {/* Card */}
             <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
-              {/* Image */}
               <div className="relative h-56 md:h-auto md:min-h-72">
                 <Image
                   src="/images/menu/running-club.webp"
@@ -124,7 +123,6 @@ export default function RunningClubSection() {
                   className="object-cover"
                 />
               </div>
-              {/* Info */}
               <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
                 <div className="flex flex-col gap-4">
                   <p className="text-petroleum-400 text-xs tracking-widest uppercase">
@@ -146,13 +144,18 @@ export default function RunningClubSection() {
                     finish. Ends with breakfast at the club.
                   </p>
                 </div>
-                <Button variant="solid" size="md" href="/contact" className="w-full md:w-auto md:self-start">
+                <Button
+                  variant="solid"
+                  size="md"
+                  href="/contact"
+                  className="w-full md:w-auto md:self-start"
+                >
                   Register for this run
                 </Button>
               </div>
             </div>
 
-            {/* ── Details grid ── */}
+            {/* Details grid */}
             <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
               {details.map((d) => (
                 <div key={d.label} className="flex flex-col gap-1">
@@ -165,57 +168,57 @@ export default function RunningClubSection() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* ── Divider ── */}
-            <div className="bg-sand-200 h-px w-full" />
-
-            {/* ── What to expect ── */}
-            <div className="flex flex-col gap-12">
-              <div className="md:max-w-lg">
-                <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                  What to expect.
-                </h2>
-                <p className="text-petroleum-400 mt-4 leading-relaxed">
-                  The Saturday run is open to all Essentia members. No
-                  sign-up needed — just show up at 7:30, ready to move.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                {expects.map((e) => (
-                  <div key={e.number}>
-                    <span className="font-display text-petroleum-200 text-5xl">
-                      {e.number}
-                    </span>
-                    <h3 className="text-petroleum-700 mt-3 text-lg font-medium">
-                      {e.title}
-                    </h3>
-                    <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                      {e.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
+      {/* ── What to expect ── */}
+      <section className="bg-petroleum-700">
+        <div className="mx-auto max-w-4xl px-5 py-24">
+          <div className="flex flex-col gap-12">
+            <div className="md:max-w-lg">
+              <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
+                What to expect.
+              </h2>
+              <p className="text-sand-500 mt-4 leading-relaxed">
+                The Saturday run is open to all Essentia members. No
+                sign-up needed — just show up at 7:30, ready to move.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {expects.map((e) => (
+                <div key={e.number}>
+                  <span className="font-display text-petroleum-500 text-5xl">
+                    {e.number}
+                  </span>
+                  <h3 className="text-sand-100 mt-3 text-lg font-medium">
+                    {e.title}
+                  </h3>
+                  <p className="text-sand-500 mt-2 text-sm leading-relaxed">
+                    {e.description}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-petroleum-700">
+      <section className="bg-sand-50">
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 py-24 text-center">
-          <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
+          <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
             See you Saturday.
           </h2>
-          <p className="text-sand-500 mx-auto mt-4 max-w-md leading-relaxed">
+          <p className="text-petroleum-400 mx-auto mt-4 max-w-md leading-relaxed">
             Running Club access is included with every Essentia membership.
             Contact us if you have any questions before your first run.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button variant="white" size="md" href="/community/memberships">
+            <Button variant="solid" size="md" href="/community/memberships">
               View memberships
             </Button>
-            <Button variant="outline-white" size="md" href="/contact">
+            <Button variant="outline" size="md" href="/contact">
               Get in touch
             </Button>
           </div>
