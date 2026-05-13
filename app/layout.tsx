@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Header } from "./components/header";
 import { Footer } from "./components/footer";
+import { ScrollReset } from "./components/scroll-reset";
 import { contact } from "@/constants/contact";
 
 const jedira = localFont({
@@ -62,6 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
       <body className="antialiased">
+        <ScrollReset />
         <Header />
         <main>{children}</main>
         <Footer />
