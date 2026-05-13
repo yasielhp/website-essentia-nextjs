@@ -10,14 +10,14 @@ export default function LegalNoticePage() {
   return (
     <>
       <h1>Legal Notice</h1>
-      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+      <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
         Last updated: May 2026
       </p>
 
       <p>
-        In compliance with Law 34/2002 of 11 July on Information Society Services
-        and Electronic Commerce (LSSI-CE), we provide the following identifying
-        information.
+        In compliance with Law 34/2002 of 11 July on Information Society
+        Services and Electronic Commerce (LSSI-CE), we provide the following
+        identifying information.
       </p>
 
       <h2>1. Identifying Information</h2>
@@ -32,8 +32,7 @@ export default function LegalNoticePage() {
           info@essentiawellnessclub.com
         </a>
         <br />
-        <strong>Phone:</strong>{" "}
-        <a href="tel:+34922123456">+34 922 123 456</a>
+        <strong>Phone:</strong> <a href="tel:+34922123456">+34 922 123 456</a>
         <br />
         <strong>Website:</strong> essentiawellnessclub.com
       </p>
@@ -78,16 +77,17 @@ export default function LegalNoticePage() {
         accept no liability for any errors or omissions.
       </p>
       <p>
-        We are not liable for any direct, indirect, or consequential loss arising
-        from the use of, or inability to use, this website or its content.
+        We are not liable for any direct, indirect, or consequential loss
+        arising from the use of, or inability to use, this website or its
+        content.
       </p>
 
       <h2>5. Third-Party Links</h2>
       <p>
         This website may contain links to third-party websites. These links are
         provided for convenience only. Essentia Social Wellness Club has no
-        control over the content of those sites and accepts no responsibility for
-        them or for any loss or damage that may arise from your use of them.
+        control over the content of those sites and accepts no responsibility
+        for them or for any loss or damage that may arise from your use of them.
       </p>
 
       <h2>6. Governing Law and Jurisdiction</h2>

@@ -10,22 +10,23 @@ export default function CookiePolicyPage() {
   return (
     <>
       <h1>Cookie Policy</h1>
-      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+      <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
         Last updated: May 2026
       </p>
 
       <p>
-        This Cookie Policy explains how Essentia Social Wellness Club ("Essentia",
-        "we", "us") uses cookies and similar tracking technologies on our website
-        (essentiawellnessclub.com), and how you can manage your preferences.
+        This Cookie Policy explains how Essentia Social Wellness Club
+        ("Essentia", "we", "us") uses cookies and similar tracking technologies
+        on our website (essentiawellnessclub.com), and how you can manage your
+        preferences.
       </p>
 
       <h2>1. What Are Cookies</h2>
       <p>
         Cookies are small text files placed on your device when you visit a
-        website. They allow the site to remember your actions and preferences over
-        a period of time, so you do not have to re-enter them each time you visit.
-        Cookies can be "session" (deleted when you close your browser) or
+        website. They allow the site to remember your actions and preferences
+        over a period of time, so you do not have to re-enter them each time you
+        visit. Cookies can be "session" (deleted when you close your browser) or
         "persistent" (remain on your device for a set period).
       </p>
 
@@ -35,8 +36,8 @@ export default function CookiePolicyPage() {
       <p>
         These cookies are essential for the website to function properly. They
         enable core features such as page navigation, secure areas, and form
-        submissions. Without these cookies, the website cannot operate correctly.
-        No consent is required for these cookies.
+        submissions. Without these cookies, the website cannot operate
+        correctly. No consent is required for these cookies.
       </p>
 
       <h3>2.2 Analytics Cookies</h3>
@@ -131,12 +132,13 @@ export default function CookiePolicyPage() {
       <h2>4. Managing Your Cookie Preferences</h2>
       <p>
         You can manage your cookie preferences at any time by clicking the
-        "Cookie Settings" link in the footer. You can also control cookies through
-        your browser settings:
+        "Cookie Settings" link in the footer. You can also control cookies
+        through your browser settings:
       </p>
       <ul>
         <li>
-          <strong>Chrome:</strong> Settings &gt; Privacy and Security &gt; Cookies
+          <strong>Chrome:</strong> Settings &gt; Privacy and Security &gt;
+          Cookies
         </li>
         <li>
           <strong>Firefox:</strong> Preferences &gt; Privacy &amp; Security
@@ -149,8 +151,8 @@ export default function CookiePolicyPage() {
         </li>
       </ul>
       <p>
-        Please note that disabling certain cookies may affect the functionality of
-        our website.
+        Please note that disabling certain cookies may affect the functionality
+        of our website.
       </p>
 
       <h2>5. Third-Party Cookies</h2>
@@ -183,8 +185,8 @@ export default function CookiePolicyPage() {
       <h2>6. Updates to This Policy</h2>
       <p>
         We may update this Cookie Policy from time to time to reflect changes in
-        technology or applicable law. We will notify you of significant changes by
-        posting a notice on our website.
+        technology or applicable law. We will notify you of significant changes
+        by posting a notice on our website.
       </p>
 
       <h2>7. Contact</h2>

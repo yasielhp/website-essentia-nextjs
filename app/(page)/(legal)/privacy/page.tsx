@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage() {
   return (
     <>
       <h1>Privacy Policy</h1>
-      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+      <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
         Last updated: May 2026
       </p>
 
@@ -44,17 +44,17 @@ export default function PrivacyPolicyPage() {
           address.
         </li>
         <li>
-          <strong>Health data:</strong> relevant health information you voluntarily
-          provide prior to using certain wellness services (treated as special
-          category data with explicit consent).
+          <strong>Health data:</strong> relevant health information you
+          voluntarily provide prior to using certain wellness services (treated
+          as special category data with explicit consent).
         </li>
         <li>
           <strong>Booking and transaction data:</strong> session bookings,
           membership details, payment records.
         </li>
         <li>
-          <strong>Communications data:</strong> messages sent via our contact form
-          or email.
+          <strong>Communications data:</strong> messages sent via our contact
+          form or email.
         </li>
         <li>
           <strong>Technical data:</strong> IP address, browser type, device
@@ -94,15 +94,13 @@ export default function PrivacyPolicyPage() {
       <h2>5. Data Retention</h2>
       <p>
         We retain personal data only for as long as necessary for the purposes
-        described above. Membership and booking records are kept for a minimum of
-        five years to meet tax obligations. Communications data is retained for
-        two years. Marketing data is retained until you withdraw consent.
+        described above. Membership and booking records are kept for a minimum
+        of five years to meet tax obligations. Communications data is retained
+        for two years. Marketing data is retained until you withdraw consent.
       </p>
 
       <h2>6. Data Sharing</h2>
-      <p>
-        We do not sell your personal data. We may share your data with:
-      </p>
+      <p>We do not sell your personal data. We may share your data with:</p>
       <ul>
         <li>
           <strong>Service providers:</strong> payment processors, booking
@@ -133,7 +131,8 @@ export default function PrivacyPolicyPage() {
           legal basis remains for retention.
         </li>
         <li>
-          <strong>Restrict</strong> processing while a complaint is investigated.
+          <strong>Restrict</strong> processing while a complaint is
+          investigated.
         </li>
         <li>
           <strong>Data portability:</strong> receive your data in a structured,
@@ -155,11 +154,7 @@ export default function PrivacyPolicyPage() {
         </a>
         . We will respond within 30 days. You also have the right to lodge a
         complaint with the Spanish Data Protection Agency (
-        <a
-          href="https://www.aepd.es"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">
           aepd.es
         </a>
         ).
@@ -167,16 +162,16 @@ export default function PrivacyPolicyPage() {
 
       <h2>8. Cookies</h2>
       <p>
-        We use cookies and similar technologies on our website. For full details,
-        please read our <a href="/cookies">Cookie Policy</a>.
+        We use cookies and similar technologies on our website. For full
+        details, please read our <a href="/cookies">Cookie Policy</a>.
       </p>
 
       <h2>9. Updates to This Policy</h2>
       <p>
         We may update this Privacy Policy from time to time. We will notify you
         of significant changes by email or by posting a notice on our website.
-        Continued use of our services after such changes constitutes acceptance of
-        the updated policy.
+        Continued use of our services after such changes constitutes acceptance
+        of the updated policy.
       </p>
 
       <h2>10. Contact</h2>
