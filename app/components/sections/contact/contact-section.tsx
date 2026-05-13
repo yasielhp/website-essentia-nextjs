@@ -64,7 +64,7 @@ export default function ContactSection() {
 
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-5xl px-5 pt-32 pb-24">
+      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-40">
         <div ref={wrapperRef} className="flex flex-col gap-16">
           {/* ── Header ── */}
           <div className="md:max-w-xl">
@@ -137,7 +137,7 @@ export default function ContactSection() {
                   />
                 </Field>
 
-                <Field label="I&apos;m interested in" id="interest">
+                <Field label="I'm interested in" id="interest">
                   <select
                     id="interest"
                     name="interest"
@@ -162,7 +162,7 @@ export default function ContactSection() {
                     name="message"
                     required
                     rows={5}
-                    placeholder="Tell us a bit about what you&apos;re looking for..."
+                    placeholder="Tell us a bit about what you're looking for..."
                     className={[inputClass, "resize-none"].join(" ")}
                   />
                 </Field>
@@ -230,15 +230,16 @@ export default function ContactSection() {
                 <p className="text-petroleum-400 text-xs tracking-widest uppercase">
                   Follow us
                 </p>
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   {contact.socialMedia.map((social) => (
                     <Link
                       key={social.name}
                       href={social.url}
                       target="_blank"
-                      className="text-petroleum-500 hover:text-petroleum-700 text-sm transition-colors"
+                      aria-label={social.name}
+                      className="text-petroleum-500 hover:text-petroleum-700 border-petroleum-200 rounded-full border p-2 transition-colors"
                     >
-                      {social.name}
+                      <social.icon />
                     </Link>
                   ))}
                 </div>
