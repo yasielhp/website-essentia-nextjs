@@ -5,8 +5,7 @@ export const treatments = [
     img: "/images/menu/thermal-contrast.webp",
     title: "Contrast Therapy",
     tagline: "Heat & Cold",
-    description:
-      "Alternating thermal environments activate deep recovery, reduce inflammation, and sharpen mental clarity through controlled physiological stress.",
+    description: "Heat and cold to activate recovery and reduce inflammation.",
   },
   {
     number: "02",
@@ -14,8 +13,7 @@ export const treatments = [
     img: "/images/menu/breathing-sessions.webp",
     title: "Breathing Sessions",
     tagline: "Breathwork",
-    description:
-      "Guided breathwork protocols calibrate the autonomic nervous system — shifting from chronic stress to active recovery.",
+    description: "Guided breathwork to shift from stress to active recovery.",
   },
   {
     number: "03",
@@ -24,7 +22,7 @@ export const treatments = [
     title: "Red Light Therapy",
     tagline: "Photobiomodulation",
     description:
-      "Near-infrared and red light stimulate mitochondrial function, accelerate tissue repair, and support cellular regeneration at the source.",
+      "Red and infrared light to stimulate cellular repair and regeneration.",
   },
   {
     number: "04",
@@ -32,8 +30,7 @@ export const treatments = [
     img: "/images/menu/manual-therapies.webp",
     title: "Manual Therapies",
     tagline: "Touch & Restoration",
-    description:
-      "Expert hands that read your body — releasing tension, restoring mobility, and resetting the nervous system through precise manual work.",
+    description: "Precise manual work to release tension and restore mobility.",
   },
   {
     number: "05",
@@ -41,8 +38,7 @@ export const treatments = [
     img: "/images/menu/functional-wellbeing.webp",
     title: "Functional Well-being",
     tagline: "Movement & Performance",
-    description:
-      "Functional training designed around longevity — building the movement quality, strength, and resilience that supports everything else.",
+    description: "Movement and strength training designed around longevity.",
   },
 ] as const;
 

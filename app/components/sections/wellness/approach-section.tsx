@@ -74,7 +74,7 @@ export default function ApproachSection() {
   return (
     <section ref={sectionRef} className="bg-sand-100 md:h-[260vh]">
       <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-5xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
             {/* ── Header ── */}
             <div className="md:max-w-lg">

@@ -81,11 +81,7 @@ export default function CtaSection() {
               the priority of your bookings.
             </p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button
-                variant="white"
-                size="md"
-                href="/community/memberships"
-              >
+              <Button variant="white" size="md" href="/community/memberships">
                 View memberships
               </Button>
               <Button variant="outline-white" size="md" href="/contact">

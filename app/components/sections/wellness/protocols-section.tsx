@@ -21,9 +21,10 @@ function TreatmentCard({
   return (
     <Link
       href={treatment.href}
+      data-card
       className={[
         "group relative overflow-hidden rounded-2xl",
-        tall ? "h-80 md:h-96" : "h-72 md:h-80",
+        tall ? "h-72 md:h-72" : "h-64 md:h-64",
       ].join(" ")}
     >
       <Image
@@ -40,22 +41,11 @@ function TreatmentCard({
             "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.3), transparent)",
         }}
       />
-      <span className="absolute top-4 right-4 text-xs text-white/40">
-        {treatment.number}
-      </span>
       <div className="absolute bottom-0 left-0 p-6">
-        <p className="text-sand-500 text-xs tracking-widest uppercase">
-          {treatment.tagline}
-        </p>
-        <h3 className="font-display mt-1 text-xl text-white">
-          {treatment.title}
-        </h3>
+        <h3 className="font-body text-xl text-white">{treatment.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65 md:max-w-xs">
           {treatment.description}
         </p>
-        <span className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-full border border-white/40 bg-transparent px-3 text-xs font-medium text-white transition-all duration-200 group-hover:border-white group-hover:bg-white/10">
-          Explore
-        </span>
       </div>
     </Link>
   );
@@ -74,12 +64,33 @@ export default function ProtocolsSection() {
     const body = bodyRef.current;
     if (!section || !inner || !body) return;
 
+    const revealAll = () => {
+      if (!bodyRef.current) return;
+      const header = bodyRef.current.children[0] as HTMLElement;
+      const cards = Array.from(
+        bodyRef.current.querySelectorAll("[data-card]"),
+      ) as HTMLElement[];
+      gsap.to([header, ...cards], {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "power3.out",
+        overwrite: true,
+      });
+    };
+    window.addEventListener("reveal-protocols", revealAll);
+
     const ctx = gsap.context(() => {
-      const children = Array.from(body.children) as HTMLElement[];
+      const header = body.children[0] as HTMLElement;
+      const cards = Array.from(
+        body.querySelectorAll("[data-card]"),
+      ) as HTMLElement[];
       const mm = gsap.matchMedia();
 
       mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
+        gsap.set(header, { opacity: 0, y: 40 });
+        gsap.set(cards, { opacity: 0, y: 30 });
+
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
@@ -89,23 +100,40 @@ export default function ProtocolsSection() {
             pin: inner,
           },
         });
-        tl.to(children[0], {
-          opacity: 1,
-          y: 0,
-          duration: 0.25,
-          ease: "power3.out",
-        });
+
+        tl.to(header, { opacity: 1, y: 0, duration: 0.2, ease: "power3.out" });
         tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          cards,
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.12,
+            duration: 0.25,
+            ease: "power3.out",
+          },
           "-=0.05",
         );
       });
 
       mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
+        gsap.fromTo(
+          header,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: "none",
+            scrollTrigger: {
+              trigger: header,
+              start: "top 88%",
+              end: "top 35%",
+              scrub: 0.7,
+            },
+          },
+        );
+        cards.forEach((card) => {
           gsap.fromTo(
-            child,
+            card,
             { opacity: 0, y: 40, scale: 0.97 },
             {
               opacity: 1,
@@ -113,7 +141,7 @@ export default function ProtocolsSection() {
               scale: 1,
               ease: "none",
               scrollTrigger: {
-                trigger: child,
+                trigger: card,
                 start: "top 88%",
                 end: "top 35%",
                 scrub: 0.7,
@@ -124,7 +152,10 @@ export default function ProtocolsSection() {
       });
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      window.removeEventListener("reveal-protocols", revealAll);
+    };
   }, []);
 
   const [first, second, third, fourth, fifth] = treatments;
@@ -136,7 +167,7 @@ export default function ProtocolsSection() {
       className="bg-sand-50 md:h-[320vh]"
     >
       <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-5xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
           <div ref={bodyRef} className="flex flex-col gap-8">
             {/* ── Header ── */}
             <div>

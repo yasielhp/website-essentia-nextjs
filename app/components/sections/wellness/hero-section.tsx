@@ -39,7 +39,7 @@ export default function HeroSection() {
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
           Every protocol is designed to work with your body&apos;s natural
-          intelligence — activating recovery, building resilience, and
+          intelligence: activating recovery, building resilience, and
           calibrating your system from the inside out.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -51,6 +51,7 @@ export default function HeroSection() {
               if (el) {
                 const top = el.getBoundingClientRect().top + window.scrollY;
                 window.scrollTo({ top, behavior: "smooth" });
+                window.dispatchEvent(new CustomEvent("reveal-protocols"));
               }
             }}
           >
