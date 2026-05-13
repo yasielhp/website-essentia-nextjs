@@ -6,6 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Route, Lock, Calendar } from "lucide-react";
 import { Button } from "@components/ui/button";
+import { Checkbox } from "@components/ui/input";
+import { Accordion } from "@components/ui/accordion";
+import { contact } from "@/constants/contact";
 
 const runDetails = {
   date: "Saturday, 24 May 2026",
@@ -57,6 +60,8 @@ export default function RunRegisterSection() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState<string | undefined>();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -76,6 +81,11 @@ export default function RunRegisterSection() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!consent) {
+      setConsentError("You must accept the terms and privacy policy to register.");
+      return;
+    }
+    setConsentError(undefined);
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -218,6 +228,39 @@ export default function RunRegisterSection() {
                       />
                     </Field>
 
+                    {/* Consentimiento — RGPD art. 7 / LOPDGDD art. 6 */}
+                    <Checkbox
+                      name="consent"
+                      checked={consent}
+                      onChange={(e) => {
+                        setConsent(e.target.checked);
+                        if (consentError) setConsentError(undefined);
+                      }}
+                      disabled={loading}
+                      error={consentError}
+                      label={
+                        <span className="text-petroleum-400 text-sm">
+                          I accept the{" "}
+                          <Link
+                            href="/terms"
+                            className="text-petroleum-600 underline underline-offset-2 hover:text-petroleum-800 transition-colors"
+                            target="_blank"
+                          >
+                            Terms
+                          </Link>{" "}
+                          and{" "}
+                          <Link
+                            href="/privacy"
+                            className="text-petroleum-600 underline underline-offset-2 hover:text-petroleum-800 transition-colors"
+                            target="_blank"
+                          >
+                            Privacy Policy
+                          </Link>
+                          .
+                        </span>
+                      }
+                    />
+
                     <Button
                       variant="solid"
                       size="md"
@@ -227,6 +270,32 @@ export default function RunRegisterSection() {
                     >
                       {loading ? "Registering…" : "Confirm registration"}
                     </Button>
+
+                    {/* Información RGPD art. 13 */}
+                    <Accordion className="border-sand-500 rounded-2xl border px-6">
+                      <Accordion.Header iconClassName="text-petroleum-400">
+                        <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
+                          Data protection information
+                        </span>
+                      </Accordion.Header>
+                      <Accordion.Content>
+                        <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
+                          <strong className="font-medium">Data controller:</strong>{" "}
+                          Essentia Social Wellness Club<br />
+                          <strong className="font-medium">Purpose:</strong> managing your run registration<br />
+                          <strong className="font-medium">Legal basis:</strong> your consent (GDPR art. 6.1.a)<br />
+                          <strong className="font-medium">Your rights:</strong> access, rectification, erasure, restriction, portability, and objection: write to{" "}
+                          <a href={`mailto:${contact.email}`} className="underline underline-offset-2">
+                            {contact.email}
+                          </a>
+                          . Full details in our{" "}
+                          <Link href="/privacy" className="underline underline-offset-2" target="_blank">
+                            Privacy Policy
+                          </Link>
+                          .
+                        </p>
+                      </Accordion.Content>
+                    </Accordion>
                   </form>
                 </div>
               )}
