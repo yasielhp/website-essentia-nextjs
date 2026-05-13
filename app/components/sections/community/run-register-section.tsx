@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Route, Lock, Calendar, ArrowLeft } from "lucide-react";
+import { MapPin, Route, Lock, Calendar } from "lucide-react";
 import { Button } from "@components/ui/button";
 
 const runDetails = {
@@ -85,24 +85,12 @@ export default function RunRegisterSection() {
 
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-5xl px-5 pt-32 pb-24 md:pt-40">
+      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-40">
         <div ref={wrapperRef} className="flex flex-col gap-12">
-          {/* ── Back link ── */}
-          <Link
-            href="/community/running-club"
-            className="text-petroleum-400 hover:text-petroleum-700 flex w-fit items-center gap-2 text-sm transition-colors"
-          >
-            <ArrowLeft size={15} />
-            Back to Running Club
-          </Link>
-
           {/* ── Header ── */}
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16">
             <div className="flex flex-col gap-8">
               <div>
-                <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-                  Register
-                </p>
                 <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
                   {runDetails.date}.
                 </h1>
@@ -165,8 +153,8 @@ export default function RunRegisterSection() {
                   </p>
                   <p className="text-petroleum-400 text-sm leading-relaxed">
                     We&apos;ve received your registration for the{" "}
-                    {runDetails.date} run. See you at {runDetails.time} at
-                    the Baobab Suites lobby.
+                    {runDetails.date} run. See you at {runDetails.time} at the
+                    Baobab Suites lobby.
                   </p>
                   <Link
                     href="/community/running-club"
@@ -218,31 +206,15 @@ export default function RunRegisterSection() {
                       />
                     </Field>
 
-                    <Field label="Pace (min/km)" id="pace">
-                      <select
-                        id="pace"
-                        name="pace"
+                    <Field label="Phone" id="phone">
+                      <input
+                        id="phone"
+                        name="phone"
+                        type="tel"
                         required
-                        defaultValue=""
+                        autoComplete="tel"
+                        placeholder="+34 600 000 000"
                         className={inputClass}
-                      >
-                        <option value="" disabled>
-                          Select your pace
-                        </option>
-                        <option value="under-5">Under 5:00</option>
-                        <option value="5-6">5:00 – 6:00</option>
-                        <option value="6-7">6:00 – 7:00</option>
-                        <option value="over-7">Over 7:00</option>
-                      </select>
-                    </Field>
-
-                    <Field label="Notes (optional)" id="notes">
-                      <textarea
-                        id="notes"
-                        name="notes"
-                        rows={3}
-                        placeholder="Injuries, questions, anything we should know..."
-                        className={[inputClass, "resize-none"].join(" ")}
                       />
                     </Field>
 
