@@ -9,7 +9,7 @@ export default function LegalLayout({
         pt-28 on mobile (header ~56px fixed at top, 112px gives clear breathing room).
         pt-44 on desktop (header is fixed + mt-16 offset, ~128px total, 176px gives clear breathing room).
       */}
-      <div className="mx-auto max-w-4xl px-5 pt-28 pb-28 md:pt-44">
+      <div className="mx-auto max-w-4xl px-5 pt-36 pb-28 md:pt-52">
         <article
           className={[
             "prose max-w-none",
