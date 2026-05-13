@@ -64,7 +64,7 @@ export default function ContactSection() {
 
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-40">
+      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-52">
         <div ref={wrapperRef} className="flex flex-col gap-16">
           {/* ── Header ── */}
           <div className="md:max-w-xl">
