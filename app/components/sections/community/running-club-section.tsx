@@ -49,6 +49,18 @@ export default function RunningClubSection() {
   const ctaBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const revealNextRun = () => {
+      if (!nextRunBodyRef.current) return;
+      gsap.to(Array.from(nextRunBodyRef.current.children), {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "power3.out",
+        overwrite: true,
+      });
+    };
+    window.addEventListener("reveal-next-run", revealNextRun);
+
     const ctx = gsap.context(() => {
       // Hero entrance
       if (heroRef.current) {
@@ -221,7 +233,10 @@ export default function RunningClubSection() {
       });
     });
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      window.removeEventListener("reveal-next-run", revealNextRun);
+    };
   }, []);
 
   return (
@@ -261,6 +276,7 @@ export default function RunningClubSection() {
                 if (el) {
                   const top = el.getBoundingClientRect().top + window.scrollY;
                   window.scrollTo({ top, behavior: "smooth" });
+                  window.dispatchEvent(new CustomEvent("reveal-next-run"));
                 }
               }}
             >
