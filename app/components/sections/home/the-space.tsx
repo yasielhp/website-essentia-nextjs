@@ -161,7 +161,7 @@ export default function TheSpace() {
               className="relative h-48 overflow-hidden rounded-2xl md:h-64"
             >
               <Image
-                src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-3.webp"
+                src="/images/home/bento-img-3.webp"
                 alt="Essentia wellness space in Tenerife"
                 fill
                 sizes="(max-width: 767px) 100vw, 50vw"
@@ -176,7 +176,7 @@ export default function TheSpace() {
                 className="relative h-30 overflow-hidden rounded-2xl"
               >
                 <Image
-                  src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-1.webp"
+                  src="/images/home/bento-img-1.webp"
                   alt="Essentia treatment room"
                   fill
                   sizes="50vw"
@@ -189,7 +189,7 @@ export default function TheSpace() {
                 className="relative h-30 overflow-hidden rounded-2xl"
               >
                 <Image
-                  src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-5.webp"
+                  src="/images/home/bento-img-5.webp"
                   alt="Essentia outdoor area Tenerife"
                   fill
                   sizes="50vw"

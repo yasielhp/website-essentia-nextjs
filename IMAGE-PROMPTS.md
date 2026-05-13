@@ -1,0 +1,163 @@
+# Image Prompts — Essentia Website
+
+Imágenes para la home page. Una vez generadas, subir a `/public/images/home/`.
+
+**Estilo global:** fotografía de arquitectura y lifestyle de lujo, luz natural difusa, paleta cálida arena/crema con toques de verde petróleo, sin personas salvo donde se indique, tono editorial premium. Sin bordes, sin marcos, sin texto.
+
+---
+
+## Bento Images (Home)
+
+### `bento-img-1.webp`
+
+**Uso:** Brand Statement (columna izquierda, arriba) · The Space (sala de tratamiento, desktop)
+**Ratio recomendado:** 3:4 (portrait)
+
+```
+Luxury wellness treatment room interior, high-end longevity clinic, warm natural light through tall windows, minimalist architecture, cream and warm sand tones with deep teal accents, a single treatment bed with white linen, polished concrete floor, indoor plants, soft shadows, editorial photography style, no people, clean composition, shot on medium format camera
+```
+
+---
+
+### `bento-img-2.webp`
+
+**Uso:** Brand Statement (columna izquierda, abajo — imagen alta)
+**Ratio recomendado:** 2:5 (portrait muy vertical)
+
+```
+Skilled therapist performing manual therapy massage on a client, luxurious wellness spa setting, warm soft lighting, cream and white tones, linen draping, close-up of hands working on the back, high-end editorial photography, serene atmosphere, subtle depth of field, no visible faces, professional wellness clinic aesthetic
+```
+
+---
+
+### `bento-img-3.webp`
+
+**Uso:** Brand Statement (fila superior, ancha) · The Space (imagen principal)
+**Ratio recomendado:** 16:9 (landscape)
+
+```
+Wide interior shot of a premium wellness and longevity center, open-plan space with double-height ceilings, natural stone walls, large windows overlooking a Mediterranean coastline in Tenerife, warm afternoon light flooding in, minimalist furniture in cream and sand tones, architectural photography, no people, sophisticated and serene atmosphere, Canon R5 editorial style
+```
+
+---
+
+### `bento-img-4.webp`
+
+**Uso:** Brand Statement (fila superior derecha) · Community — Running Club card
+**Ratio recomendado:** 16:9 (landscape)
+
+```
+Small group of athletes running along a dramatic coastal cliff path at sunrise, Tenerife Canary Islands, volcanic black rock and deep blue Atlantic ocean, golden morning light, athletic wear in neutral earth tones, sense of community and motion, wide shot, editorial lifestyle photography, cinematic composition, 3-4 runners silhouetted against the sea
+```
+
+---
+
+### `bento-img-5.webp`
+
+**Uso:** Brand Statement (columna derecha, muy alta) · The Space (área exterior)
+**Ratio recomendado:** 2:5 (portrait muy vertical)
+
+```
+Luxury outdoor terrace of a high-end wellness resort in Tenerife, dramatic cliff views over the Atlantic ocean, infinity pool or cold plunge pool with still water reflecting the sky, volcanic rock landscaping, sun loungers in cream linen, lush subtropical plants, golden hour light, architectural photography, no people, Costa Adeje Tenerife aesthetic, premium resort style
+```
+
+---
+
+### `bento-img-6.webp`
+
+**Uso:** Brand Statement (fila inferior, muy ancha)
+**Ratio recomendado:** 21:9 (ultrawide landscape)
+
+```
+Elegant wellness club lounge and social area, panoramic windows with views of Tenerife coastline, a small group of sophisticated adults in relaxed conversation, warm evening light, minimalist interior design with natural materials — stone, linen, warm wood — cream and deep green tones, lifestyle editorial photography, sense of belonging and calm luxury, premium social wellness club atmosphere
+```
+
+---
+
+## Menu Images
+
+Todas las imágenes del menú ya existen en `/public/images/menu/`. Prompts de referencia por si necesitas regenerarlas:
+
+### `wellness.webp`
+
+```
+Aerial or wide shot of a contrast therapy area — sauna and cold plunge pools side by side, luxury spa setting, warm steam, minimal architecture, no people, editorial product photography
+```
+
+### `thermal-contrast.webp`
+
+```
+Ice cold plunge pool inside a luxury wellness spa, minimalist design, frosted glass, steam rising from adjacent sauna, dramatic lighting, no people, high-end editorial photography
+```
+
+### `manual-therapies.webp`
+
+```
+Close-up of expert hands performing a deep tissue massage on a client's back, warm spa lighting, white linen, cream tones, shallow depth of field, editorial lifestyle photography
+```
+
+### `breathing-sessions.webp`
+
+```
+Person seated in meditation and breathwork pose on a yoga mat, floor-to-ceiling window overlooking ocean, soft morning light, minimalist studio space, serene atmosphere, editorial photography
+```
+
+### `red-light-therapy.webp`
+
+```
+Person standing in front of a professional red light therapy panel, warm red-orange glow filling the room, modern clinical aesthetic, dark background, therapeutic light, premium wellness photography
+```
+
+### `functional-wellbeing.webp`
+
+```
+Functional movement assessment or personal training session in a minimal gym studio, natural light, clean equipment, one person and trainer, editorial style, cream and petroleum tones
+```
+
+### `medicine.webp`
+
+```
+Modern integrative medicine consultation room, clean clinical aesthetic with warm natural materials, doctor with patient in relaxed setting, large window, soft daylight, premium healthcare editorial photography
+```
+
+### `regenerative-medicine.webp`
+
+```
+Close-up of a medical professional preparing a regenerative treatment, high-end clinical setting, clean white surfaces, precision instruments, shallow depth of field, premium medical photography
+```
+
+### `intravenous-therapy.webp`
+
+```
+IV drip infusion in a luxurious private clinic room, crystal-clear bag with golden liquid, soft ambient lighting, elegant reclining chair, editorial wellness photography, no face visible
+```
+
+### `hyperbaric-chambers.webp`
+
+```
+Modern hyperbaric oxygen therapy chamber in a premium wellness clinic, sleek cylindrical chamber, soft interior lighting, clinical yet warm aesthetic, no people, high-end medical photography
+```
+
+### `running-club.webp`
+
+```
+Group of runners jogging along the coastal promenade in Costa Adeje Tenerife at sunrise, volcanic cliffs and ocean in background, athletic lifestyle photography, golden light, community feel
+```
+
+### `education-programs.webp`
+
+```
+Intimate health and longevity talk or workshop, a small engaged audience listening to a speaker in a modern minimalist venue, warm lighting, notepad on table, editorial lifestyle photography
+```
+
+### `community.webp`
+
+```
+Diverse group of wellness-focused adults socializing and connecting at a premium club terrace, Tenerife coastline in background, golden hour, lifestyle editorial photography, authentic warmth
+```
+
+### `memberships.webp`
+
+```
+Exclusive membership card and welcome kit on a marble surface, luxury wellness brand aesthetic, cream tones, embossed details, botanical element, flat lay editorial photography
+```

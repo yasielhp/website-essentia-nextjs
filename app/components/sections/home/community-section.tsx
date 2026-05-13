@@ -139,7 +139,7 @@ export default function CommunitySection() {
               className="relative h-64 min-h-60 overflow-hidden rounded-2xl md:h-full"
             >
               <Image
-                src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-4.webp"
+                src="/images/home/bento-img-4.webp"
                 alt="Running club members on a coastal route in Costa Adeje"
                 fill
                 sizes="(max-width: 767px) 100vw, 50vw"

@@ -120,7 +120,7 @@ export default function BrandStatement() {
         {/* Img 1 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-1.webp"
+            src="/images/home/bento-img-1.webp"
             alt="Essentia wellness space"
             fill
             sizes="(max-width: 767px) 50vw, 20vw"
@@ -131,7 +131,7 @@ export default function BrandStatement() {
         {/* Img 2 */}
         <div className="relative col-start-2 row-start-1 overflow-hidden md:col-start-1 md:row-span-3 md:row-start-3">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-2.webp"
+            src="/images/home/bento-img-2.webp"
             alt="Essentia treatment"
             fill
             sizes="(max-width: 767px) 50vw, 20vw"
@@ -142,7 +142,7 @@ export default function BrandStatement() {
         {/* Img 3 */}
         <div className="relative col-start-1 row-start-4 overflow-hidden md:col-span-2 md:col-start-2 md:row-span-1 md:row-start-1">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-3.webp"
+            src="/images/home/bento-img-3.webp"
             alt="Essentia longevity protocol"
             fill
             sizes="(max-width: 767px) 50vw, 40vw"
@@ -153,7 +153,7 @@ export default function BrandStatement() {
         {/* Img 4 — desktop only */}
         <div className="relative hidden overflow-hidden md:col-span-2 md:col-start-4 md:row-span-1 md:row-start-1 md:block">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-4.webp"
+            src="/images/home/bento-img-4.webp"
             alt="Essentia community"
             fill
             sizes="40vw"
@@ -183,7 +183,7 @@ export default function BrandStatement() {
         {/* Img 5 — desktop only */}
         <div className="relative hidden overflow-hidden md:col-start-5 md:row-span-4 md:row-start-2 md:block">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-5.webp"
+            src="/images/home/bento-img-5.webp"
             alt="Essentia Tenerife"
             fill
             sizes="20vw"
@@ -194,7 +194,7 @@ export default function BrandStatement() {
         {/* Img 6 */}
         <div className="relative col-start-2 row-start-4 overflow-hidden md:col-span-3 md:col-start-2 md:row-span-1 md:row-start-5">
           <Image
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/bento-img-6.webp"
+            src="/images/home/bento-img-6.webp"
             alt="Essentia wellness club"
             fill
             sizes="(max-width: 767px) 50vw, 60vw"
