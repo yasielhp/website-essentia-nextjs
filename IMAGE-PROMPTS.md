@@ -32,6 +32,19 @@ Exclusive premium wellness club interior, elegant reception or lounge area, Tene
 
 ---
 
+### `medicine/hero.webp`
+
+**Uso:** Hero de la página `/medicine` — imagen de fondo full-screen con overlay oscuro  
+**Carpeta destino:** `public/images/medicine/`  
+**Tamaño:** `2560 × 1440 px` — ratio 16:9 (landscape)  
+**Midjourney:** añadir `--ar 16:9` al final del prompt
+
+```
+Premium longevity medicine clinic interior, modern integrative health centre in Tenerife, clean clinical aesthetic with warm natural materials — polished stone, warm wood, cream walls — large windows with soft diffused daylight, state-of-the-art equipment visible in background, empty treatment space, editorial architecture photography, deep teal and warm sand tones, no people, sophisticated and precise atmosphere --ar 16:9
+```
+
+---
+
 ---
 
 ## Home Images
