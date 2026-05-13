@@ -42,6 +42,12 @@ export default function RunningClubSection() {
   const nextRunSectionRef = useRef<HTMLElement>(null);
   const nextRunInnerRef = useRef<HTMLDivElement>(null);
   const nextRunBodyRef = useRef<HTMLDivElement>(null);
+  const expectSectionRef = useRef<HTMLElement>(null);
+  const expectInnerRef = useRef<HTMLDivElement>(null);
+  const expectBodyRef = useRef<HTMLDivElement>(null);
+  const ctaSectionRef = useRef<HTMLElement>(null);
+  const ctaInnerRef = useRef<HTMLDivElement>(null);
+  const ctaBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -92,6 +98,110 @@ export default function RunningClubSection() {
 
       mm.add("(max-width: 767px)", () => {
         children.forEach((child) => {
+          gsap.fromTo(
+            child,
+            { opacity: 0, y: 40, scale: 0.97 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
+          );
+        });
+      });
+
+      // What to expect pinned scroll
+      const eSection = expectSectionRef.current;
+      const eInner = expectInnerRef.current;
+      const eBody = expectBodyRef.current;
+      if (!eSection || !eInner || !eBody) return;
+
+      const eChildren = Array.from(eBody.children) as HTMLElement[];
+      const mm2 = gsap.matchMedia();
+
+      mm2.add("(min-width: 768px)", () => {
+        gsap.set(eChildren, { opacity: 0, y: 40 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: eSection,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: eInner,
+          },
+        });
+        tl.to(eChildren[0], {
+          opacity: 1,
+          y: 0,
+          duration: 0.25,
+          ease: "power3.out",
+        });
+        tl.to(
+          eChildren[1],
+          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          "-=0.05",
+        );
+      });
+
+      mm2.add("(max-width: 767px)", () => {
+        eChildren.forEach((child) => {
+          gsap.fromTo(
+            child,
+            { opacity: 0, y: 40, scale: 0.97 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
+          );
+        });
+      });
+
+      // CTA pinned scroll
+      const cSection = ctaSectionRef.current;
+      const cInner = ctaInnerRef.current;
+      const cBody = ctaBodyRef.current;
+      if (!cSection || !cInner || !cBody) return;
+
+      const cChildren = Array.from(cBody.children) as HTMLElement[];
+      const mm3 = gsap.matchMedia();
+
+      mm3.add("(min-width: 768px)", () => {
+        gsap.set(cChildren, { opacity: 0, y: 40 });
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: cSection,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: cInner,
+          },
+        });
+        tl.to(cChildren, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.15,
+          duration: 0.35,
+          ease: "power3.out",
+        });
+      });
+
+      mm3.add("(max-width: 767px)", () => {
+        cChildren.forEach((child) => {
           gsap.fromTo(
             child,
             { opacity: 0, y: 40, scale: 0.97 },
@@ -249,54 +359,55 @@ export default function RunningClubSection() {
       </section>
 
       {/* ── What to expect ── */}
-      <section className="bg-petroleum-700">
-        <div className="mx-auto max-w-4xl px-5 py-24">
-          <div className="flex flex-col gap-12">
-            <div className="md:max-w-lg">
-              <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                What to expect.
-              </h2>
-              <p className="text-sand-500 mt-4 leading-relaxed">
-                The Saturday run is open to all Essentia members. No sign-up
-                needed — just show up at 7:30, ready to move.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {expects.map((e) => (
-                <div key={e.number}>
-                  <span className="font-display text-petroleum-500 text-5xl">
-                    {e.number}
-                  </span>
-                  <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {e.title}
-                  </h3>
-                  <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {e.description}
-                  </p>
-                </div>
-              ))}
+      <section ref={expectSectionRef} className="bg-petroleum-700 md:h-[260vh]">
+        <div ref={expectInnerRef} className="overflow-hidden md:h-screen">
+          <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
+            <div ref={expectBodyRef} className="flex flex-col gap-12 md:gap-16">
+              <div className="md:max-w-lg">
+                <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
+                  What to expect.
+                </h2>
+                <p className="text-sand-500 mt-4 leading-relaxed">
+                  The Saturday run is open to all Essentia members. No sign-up
+                  needed — just show up at 7:30, ready to move.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                {expects.map((e) => (
+                  <div key={e.number}>
+                    <span className="font-display text-petroleum-500 text-5xl">
+                      {e.number}
+                    </span>
+                    <h3 className="text-sand-100 mt-3 text-lg font-medium">
+                      {e.title}
+                    </h3>
+                    <p className="text-sand-500 mt-2 text-sm leading-relaxed">
+                      {e.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-sand-50">
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 py-24 text-center">
-          <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-            See you Saturday.
-          </h2>
-          <p className="text-petroleum-400 mx-auto mt-4 max-w-md leading-relaxed">
-            Running Club access is included with every Essentia membership.
-            Contact us if you have any questions before your first run.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button variant="solid" size="md" href="/community/memberships">
-              View memberships
-            </Button>
-            <Button variant="outline" size="md" href="/contact">
-              Get in touch
-            </Button>
+      <section ref={ctaSectionRef} className="bg-sand-50 md:h-[220vh]">
+        <div ref={ctaInnerRef} className="overflow-hidden md:h-screen">
+          <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
+            <div ref={ctaBodyRef} className="flex flex-col items-center gap-6">
+              <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
+                See you Saturday.
+              </h2>
+              <p className="text-petroleum-400 max-w-md leading-relaxed">
+                Running Club access is included with every Essentia membership.
+                Choose your tier and join the community.
+              </p>
+              <Button variant="solid" size="md" href="/community/memberships">
+                View memberships
+              </Button>
+            </div>
           </div>
         </div>
       </section>
