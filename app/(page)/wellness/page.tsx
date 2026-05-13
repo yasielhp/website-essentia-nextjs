@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
+import HeroSection from "@components/sections/wellness/hero-section";
+import ProtocolsSection from "@components/sections/wellness/protocols-section";
+import ApproachSection from "@components/sections/wellness/approach-section";
+import CtaSection from "@components/sections/wellness/cta-section";
 
 export const metadata: Metadata = {
   title: "Wellness | Essentia Social Wellness Club",
   description:
-    "Discover Essentia's comprehensive wellness programs in Tenerife — from contrast therapy to breathwork and red light therapy.",
+    "Discover Essentia's comprehensive wellness protocols in Tenerife — contrast therapy, breathwork, red light therapy, manual therapies, and functional well-being.",
 };
 
 export default function WellnessPage() {
   return (
-    <section className="text-primary min-h-dvh">
-      <div className="max-w-10xl mx-auto flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display xs:text-7xl text-4xl">Bienestar</h1>
-        <p className="text-primary/70 mt-4 text-lg">
-          Descubre nuestros programas de bienestar integrales.
-        </p>
-      </div>
-    </section>
+    <>
+      <HeroSection />
+      <ProtocolsSection />
+      <ApproachSection />
+      <CtaSection />
+    </>
   );
 }
