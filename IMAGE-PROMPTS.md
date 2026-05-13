@@ -11,7 +11,8 @@ Imágenes para la home page. Una vez generadas, subir a `/public/images/home/`.
 ### `bento-img-1.webp`
 
 **Uso:** Brand Statement (columna izquierda, arriba) · The Space (sala de tratamiento, desktop)
-**Ratio recomendado:** 3:4 (portrait)
+**Tamaño:** `800 × 1067 px` — ratio 3:4 (portrait)
+**Midjourney:** añadir `--ar 3:4` al final del prompt
 
 ```
 Luxury wellness treatment room interior, high-end longevity clinic, warm natural light through tall windows, minimalist architecture, cream and warm sand tones with deep teal accents, a single treatment bed with white linen, polished concrete floor, indoor plants, soft shadows, editorial photography style, no people, clean composition, shot on medium format camera
@@ -21,8 +22,9 @@ Luxury wellness treatment room interior, high-end longevity clinic, warm natural
 
 ### `bento-img-2.webp`
 
-**Uso:** Brand Statement (columna izquierda, abajo — imagen alta)
-**Ratio recomendado:** 2:5 (portrait muy vertical)
+**Uso:** Brand Statement (columna izquierda, abajo — imagen muy alta)
+**Tamaño:** `800 × 2000 px` — ratio 2:5 (portrait vertical)
+**Midjourney:** añadir `--ar 2:5` al final del prompt
 
 ```
 Skilled therapist performing manual therapy massage on a client, luxurious wellness spa setting, warm soft lighting, cream and white tones, linen draping, close-up of hands working on the back, high-end editorial photography, serene atmosphere, subtle depth of field, no visible faces, professional wellness clinic aesthetic
@@ -33,7 +35,8 @@ Skilled therapist performing manual therapy massage on a client, luxurious welln
 ### `bento-img-3.webp`
 
 **Uso:** Brand Statement (fila superior, ancha) · The Space (imagen principal)
-**Ratio recomendado:** 16:9 (landscape)
+**Tamaño:** `1920 × 1080 px` — ratio 16:9 (landscape)
+**Midjourney:** añadir `--ar 16:9` al final del prompt
 
 ```
 Wide interior shot of a premium wellness and longevity center, open-plan space with double-height ceilings, natural stone walls, large windows overlooking a Mediterranean coastline in Tenerife, warm afternoon light flooding in, minimalist furniture in cream and sand tones, architectural photography, no people, sophisticated and serene atmosphere, Canon R5 editorial style
@@ -44,7 +47,8 @@ Wide interior shot of a premium wellness and longevity center, open-plan space w
 ### `bento-img-4.webp`
 
 **Uso:** Brand Statement (fila superior derecha) · Community — Running Club card
-**Ratio recomendado:** 16:9 (landscape)
+**Tamaño:** `1920 × 1080 px` — ratio 16:9 (landscape)
+**Midjourney:** añadir `--ar 16:9` al final del prompt
 
 ```
 Small group of athletes running along a dramatic coastal cliff path at sunrise, Tenerife Canary Islands, volcanic black rock and deep blue Atlantic ocean, golden morning light, athletic wear in neutral earth tones, sense of community and motion, wide shot, editorial lifestyle photography, cinematic composition, 3-4 runners silhouetted against the sea
@@ -55,7 +59,8 @@ Small group of athletes running along a dramatic coastal cliff path at sunrise, 
 ### `bento-img-5.webp`
 
 **Uso:** Brand Statement (columna derecha, muy alta) · The Space (área exterior)
-**Ratio recomendado:** 2:5 (portrait muy vertical)
+**Tamaño:** `800 × 2000 px` — ratio 2:5 (portrait vertical)
+**Midjourney:** añadir `--ar 2:5` al final del prompt
 
 ```
 Luxury outdoor terrace of a high-end wellness resort in Tenerife, dramatic cliff views over the Atlantic ocean, infinity pool or cold plunge pool with still water reflecting the sky, volcanic rock landscaping, sun loungers in cream linen, lush subtropical plants, golden hour light, architectural photography, no people, Costa Adeje Tenerife aesthetic, premium resort style
@@ -66,7 +71,8 @@ Luxury outdoor terrace of a high-end wellness resort in Tenerife, dramatic cliff
 ### `bento-img-6.webp`
 
 **Uso:** Brand Statement (fila inferior, muy ancha)
-**Ratio recomendado:** 21:9 (ultrawide landscape)
+**Tamaño:** `1920 × 823 px` — ratio 21:9 (ultrawide landscape)
+**Midjourney:** añadir `--ar 7:3` al final del prompt
 
 ```
 Elegant wellness club lounge and social area, panoramic windows with views of Tenerife coastline, a small group of sophisticated adults in relaxed conversation, warm evening light, minimalist interior design with natural materials — stone, linen, warm wood — cream and deep green tones, lifestyle editorial photography, sense of belonging and calm luxury, premium social wellness club atmosphere
@@ -76,7 +82,10 @@ Elegant wellness club lounge and social area, panoramic windows with views of Te
 
 ## Menu Images
 
-Todas las imágenes del menú ya existen en `/public/images/menu/`. Prompts de referencia por si necesitas regenerarlas:
+Todas las imágenes del menú ya existen en `/public/images/menu/`. Prompts de referencia por si necesitas regenerarlas.
+
+**Tamaño para todas las del menú:** `900 × 600 px` — ratio 3:2 (landscape)
+**Midjourney:** añadir `--ar 3:2` al final del prompt
 
 ### `wellness.webp`
 
