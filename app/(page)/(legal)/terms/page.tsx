@@ -15,10 +15,11 @@ export default function TermsPage() {
       </p>
 
       <p>
-        These Terms and Conditions (&quot;Terms&quot;) govern your access to and use of
-        the facilities, services, and website of Essentia Social Wellness Club
-        (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;). By becoming a member, making a booking, or
-        using our services, you agree to be bound by these Terms.
+        These Terms and Conditions (&quot;Terms&quot;) govern your access to and
+        use of the facilities, services, and website of Essentia Social Wellness
+        Club (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;). By becoming
+        a member, making a booking, or using our services, you agree to be bound
+        by these Terms.
       </p>
 
       <h2>1. Services</h2>
@@ -53,8 +54,8 @@ export default function TermsPage() {
       <p>
         Monthly memberships may be cancelled with 30 days written notice. Annual
         memberships may not be cancelled mid-term except in exceptional
-        circumstances at Essentia&apos;s sole discretion. Cancellation requests must
-        be sent to{" "}
+        circumstances at Essentia&apos;s sole discretion. Cancellation requests
+        must be sent to{" "}
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
         </a>
@@ -116,10 +117,10 @@ export default function TermsPage() {
 
       <h2>7. Limitation of Liability</h2>
       <p>
-        To the fullest extent permitted by law, Essentia&apos;s total liability to
-        you for any claim arising out of or in connection with these Terms shall
-        not exceed the total membership fees paid by you in the three months
-        preceding the event giving rise to the claim.
+        To the fullest extent permitted by law, Essentia&apos;s total liability
+        to you for any claim arising out of or in connection with these Terms
+        shall not exceed the total membership fees paid by you in the three
+        months preceding the event giving rise to the claim.
       </p>
 
       <h2>8. Changes to Terms</h2>

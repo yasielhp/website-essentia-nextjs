@@ -16,11 +16,12 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <p>
-        Essentia Social Wellness Club (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is
-        committed to protecting your personal data. This Privacy Policy explains
-        how we collect, use, store, and protect your information when you visit
-        our website or use our services, in accordance with Regulation (EU)
-        2016/679 (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD).
+        Essentia Social Wellness Club (&quot;Essentia&quot;, &quot;we&quot;,
+        &quot;us&quot;, or &quot;our&quot;) is committed to protecting your
+        personal data. This Privacy Policy explains how we collect, use, store,
+        and protect your information when you visit our website or use our
+        services, in accordance with Regulation (EU) 2016/679 (GDPR) and Spanish
+        Organic Law 3/2018 (LOPDGDD).
       </p>
 
       <h2>1. Data Controller</h2>
@@ -128,8 +129,8 @@ export default function PrivacyPolicyPage() {
           <strong>Rectify</strong> inaccurate or incomplete data.
         </li>
         <li>
-          <strong>Erase</strong> your data (&quot;right to be forgotten&quot;) where no
-          legal basis remains for retention.
+          <strong>Erase</strong> your data (&quot;right to be forgotten&quot;)
+          where no legal basis remains for retention.
         </li>
         <li>
           <strong>Restrict</strong> processing while a complaint is

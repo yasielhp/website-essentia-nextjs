@@ -16,9 +16,9 @@ export default function CookiePolicyPage() {
 
       <p>
         This Cookie Policy explains how Essentia Social Wellness Club
-        (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;) uses cookies and similar tracking technologies
-        on our website (essentiawellnessclub.com), and how you can manage your
-        preferences.
+        (&quot;Essentia&quot;, &quot;we&quot;, &quot;us&quot;) uses cookies and
+        similar tracking technologies on our website (essentiawellnessclub.com),
+        and how you can manage your preferences.
       </p>
 
       <h2>1. What Are Cookies</h2>
@@ -26,8 +26,9 @@ export default function CookiePolicyPage() {
         Cookies are small text files placed on your device when you visit a
         website. They allow the site to remember your actions and preferences
         over a period of time, so you do not have to re-enter them each time you
-        visit. Cookies can be &quot;session&quot; (deleted when you close your browser) or
-        &quot;persistent&quot; (remain on your device for a set period).
+        visit. Cookies can be &quot;session&quot; (deleted when you close your
+        browser) or &quot;persistent&quot; (remain on your device for a set
+        period).
       </p>
 
       <h2>2. Types of Cookies We Use</h2>
@@ -132,8 +133,8 @@ export default function CookiePolicyPage() {
       <h2>4. Managing Your Cookie Preferences</h2>
       <p>
         You can manage your cookie preferences at any time by clicking the
-        &quot;Cookie Settings&quot; link in the footer. You can also control cookies
-        through your browser settings:
+        &quot;Cookie Settings&quot; link in the footer. You can also control
+        cookies through your browser settings:
       </p>
       <ul>
         <li>
