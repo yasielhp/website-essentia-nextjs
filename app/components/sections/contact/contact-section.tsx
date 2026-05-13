@@ -172,7 +172,7 @@ export default function ContactSection() {
                   size="md"
                   type="submit"
                   disabled={loading}
-                  className="self-start"
+                  className="w-full md:w-auto md:self-start"
                 >
                   {loading ? "Sending…" : "Send message"}
                 </Button>
