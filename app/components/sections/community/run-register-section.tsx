@@ -85,7 +85,7 @@ export default function RunRegisterSection() {
 
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-40">
+      <div className="mx-auto max-w-4xl px-5 pt-36 pb-24 md:pt-52">
         <div ref={wrapperRef} className="flex flex-col gap-12">
           {/* ── Header ── */}
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16">
