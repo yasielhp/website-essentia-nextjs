@@ -1,12 +1,40 @@
 # Image Prompts — Essentia Website
 
-Imágenes para la home page. Una vez generadas, subir a `/public/images/home/`.
-
 **Estilo global:** fotografía de arquitectura y lifestyle de lujo, luz natural difusa, paleta cálida arena/crema con toques de verde petróleo, sin personas salvo donde se indique, tono editorial premium. Sin bordes, sin marcos, sin texto.
 
 ---
 
-## Bento Images (Home)
+## Hero Images
+
+### `wellness/hero.webp`
+
+**Uso:** Hero de la página `/wellness` — imagen de fondo full-screen con overlay oscuro  
+**Carpeta destino:** `public/images/wellness/`  
+**Tamaño:** `2560 × 1440 px` — ratio 16:9 (landscape)  
+**Midjourney:** añadir `--ar 16:9` al final del prompt
+
+```
+Luxury thermal wellness space interior, premium longevity club in Tenerife, warm low-lit sauna room with polished wood and stone, gentle steam, a plunge pool edge visible in background, dramatic warm light cutting through haze, moody editorial photography, no people, deep teal and warm amber tones, cinematic composition, shot on medium format camera --ar 16:9
+```
+
+---
+
+### `memberships/hero.webp`
+
+**Uso:** Hero de la página `/community/memberships` — imagen de fondo full-screen con overlay oscuro  
+**Carpeta destino:** `public/images/memberships/`  
+**Tamaño:** `2560 × 1440 px` — ratio 16:9 (landscape)  
+**Midjourney:** añadir `--ar 16:9` al final del prompt
+
+```
+Exclusive premium wellness club interior, elegant reception or lounge area, Tenerife luxury resort aesthetic, warm ambient lighting, polished concrete and natural stone, tropical indoor plants, deep teal accents against cream walls, empty and serene, editorial architecture photography, cinematic wide angle, no people --ar 16:9
+```
+
+---
+
+---
+
+## Home Images
 
 ### `bento-img-1.webp`
 

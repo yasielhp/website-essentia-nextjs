@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -27,8 +28,23 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="bg-petroleum-700 flex min-h-dvh flex-col items-center justify-center px-5 text-center">
-      <div ref={contentRef} className="mx-auto max-w-3xl">
+    <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
+      <Image
+        src="/images/memberships/hero.webp"
+        alt="Essentia Membership"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgb(9 33 33 / 0.65), rgb(9 33 33 / 0.75))",
+        }}
+      />
+      <div ref={contentRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-4xl leading-tight tracking-tight text-balance md:text-6xl">
           Membership
         </h1>
