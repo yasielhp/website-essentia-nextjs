@@ -4,15 +4,15 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { MapPin, Route, Users } from "lucide-react";
+import { MapPin, Route, Lock } from "lucide-react";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const details = [
-  { icon: MapPin, value: "Baobab Suites lobby, Costa Adeje" },
   { icon: Route, value: "12 km" },
-  { icon: Users, value: "All levels welcome" },
+  { icon: Lock, value: "Members only" },
+  { icon: MapPin, value: "Baobab Suites lobby, Costa Adeje" },
 ];
 
 const expects = [
