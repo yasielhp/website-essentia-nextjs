@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import TreatmentSection from "@components/sections/medicine/treatment/treatment-section";
+import { treatments } from "@components/sections/medicine/treatment/data";
 
 export const metadata: Metadata = {
   title: "Hyperbaric Chambers | Essentia Medicine",
@@ -7,17 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function HyperbaricChambersPage() {
-  return (
-    <section className="text-primary min-h-dvh">
-      <div className="max-w-10xl mx-auto flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display xs:text-7xl text-4xl">
-          Cámaras Hiperbáricas
-        </h1>
-        <p className="text-primary/70 mt-4 text-lg">
-          Oxigenoterapia hiperbárica para acelerar la recuperación y mejorar el
-          bienestar.
-        </p>
-      </div>
-    </section>
-  );
+  return <TreatmentSection data={treatments["hyperbaric-chambers"]} />;
 }

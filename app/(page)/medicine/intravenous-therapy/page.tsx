@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import TreatmentSection from "@components/sections/medicine/treatment/treatment-section";
+import { treatments } from "@components/sections/medicine/treatment/data";
 
 export const metadata: Metadata = {
   title: "IV Therapy | Essentia Medicine",
@@ -7,15 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function IvTherapyPage() {
-  return (
-    <section className="text-primary min-h-dvh">
-      <div className="max-w-10xl mx-auto flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display xs:text-7xl text-4xl">Terapia IV</h1>
-        <p className="text-primary/70 mt-4 text-lg">
-          Infusiones intravenosas personalizadas para nutrición y recuperación
-          óptima.
-        </p>
-      </div>
-    </section>
-  );
+  return <TreatmentSection data={treatments["intravenous-therapy"]} />;
 }
