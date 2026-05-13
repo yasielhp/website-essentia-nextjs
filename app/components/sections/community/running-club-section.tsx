@@ -151,8 +151,17 @@ function NextRunSection() {
             pin: inner,
           },
         });
-        tl.to(children[0], { opacity: 1, y: 0, duration: 0.2, ease: "power3.out" });
-        tl.to(children[1], { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, "-=0.05");
+        tl.to(children[0], {
+          opacity: 1,
+          y: 0,
+          duration: 0.2,
+          ease: "power3.out",
+        });
+        tl.to(
+          children[1],
+          { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
+          "-=0.05",
+        );
       });
 
       mm.add("(max-width: 767px)", () => {
@@ -161,8 +170,16 @@ function NextRunSection() {
             child,
             { opacity: 0, y: 40, scale: 0.97 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: child, start: "top 88%", end: "top 35%", scrub: 0.7 },
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
             },
           );
         });
@@ -212,15 +229,20 @@ function NextRunSection() {
                   </div>
                   <p className="text-petroleum-500 text-sm leading-relaxed">
                     This week: the Fanabe coastal path. 10 km along the seafront
-                    promenade with Atlantic views from start to finish. Ends with
-                    breakfast at the club.
+                    promenade with Atlantic views from start to finish. Ends
+                    with breakfast at the club.
                   </p>
                 </div>
                 <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
                   {details.map(({ icon: Icon, value }) => (
                     <div key={value} className="flex items-start gap-2">
-                      <Icon className="text-petroleum-400 mt-0.5 shrink-0" size={15} />
-                      <p className="text-petroleum-600 text-sm leading-snug">{value}</p>
+                      <Icon
+                        className="text-petroleum-400 mt-0.5 shrink-0"
+                        size={15}
+                      />
+                      <p className="text-petroleum-600 text-sm leading-snug">
+                        {value}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -269,8 +291,17 @@ function ExpectSection() {
             pin: inner,
           },
         });
-        tl.to(children[0], { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" });
-        tl.to(children[1], { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, "-=0.05");
+        tl.to(children[0], {
+          opacity: 1,
+          y: 0,
+          duration: 0.25,
+          ease: "power3.out",
+        });
+        tl.to(
+          children[1],
+          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          "-=0.05",
+        );
       });
 
       mm.add("(max-width: 767px)", () => {
@@ -279,8 +310,16 @@ function ExpectSection() {
             child,
             { opacity: 0, y: 40, scale: 0.97 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: child, start: "top 88%", end: "top 35%", scrub: 0.7 },
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
             },
           );
         });
@@ -354,7 +393,13 @@ function CtaSection() {
             pin: inner,
           },
         });
-        tl.to(children, { opacity: 1, y: 0, stagger: 0.15, duration: 0.35, ease: "power3.out" });
+        tl.to(children, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.15,
+          duration: 0.35,
+          ease: "power3.out",
+        });
       });
 
       mm.add("(max-width: 767px)", () => {
@@ -363,8 +408,16 @@ function CtaSection() {
             child,
             { opacity: 0, y: 40, scale: 0.97 },
             {
-              opacity: 1, y: 0, scale: 1, ease: "none",
-              scrollTrigger: { trigger: child, start: "top 88%", end: "top 35%", scrub: 0.7 },
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
             },
           );
         });
