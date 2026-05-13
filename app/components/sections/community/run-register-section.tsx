@@ -82,7 +82,9 @@ export default function RunRegisterSection() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!consent) {
-      setConsentError("You must accept the terms and privacy policy to register.");
+      setConsentError(
+        "You must accept the terms and privacy policy to register.",
+      );
       return;
     }
     setConsentError(undefined);
@@ -146,7 +148,7 @@ export default function RunRegisterSection() {
                       key={item}
                       className="text-petroleum-600 flex items-center gap-2 text-sm"
                     >
-                      <span className="bg-petroleum-200 h-1 w-1 shrink-0 rounded-full" />
+                      <span className="bg-petroleum-200 size-1 shrink-0 rounded-full" />
                       {item}
                     </li>
                   ))}
@@ -243,7 +245,7 @@ export default function RunRegisterSection() {
                           I accept the{" "}
                           <Link
                             href="/terms"
-                            className="text-petroleum-600 underline underline-offset-2 hover:text-petroleum-800 transition-colors"
+                            className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                             target="_blank"
                           >
                             Terms
@@ -251,7 +253,7 @@ export default function RunRegisterSection() {
                           and{" "}
                           <Link
                             href="/privacy"
-                            className="text-petroleum-600 underline underline-offset-2 hover:text-petroleum-800 transition-colors"
+                            className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                             target="_blank"
                           >
                             Privacy Policy
@@ -280,16 +282,36 @@ export default function RunRegisterSection() {
                       </Accordion.Header>
                       <Accordion.Content>
                         <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
-                          <strong className="font-medium">Data controller:</strong>{" "}
-                          Essentia Social Wellness Club<br />
-                          <strong className="font-medium">Purpose:</strong> managing your run registration<br />
-                          <strong className="font-medium">Legal basis:</strong> your consent (GDPR art. 6.1.a)<br />
-                          <strong className="font-medium">Your rights:</strong> access, rectification, erasure, restriction, portability, and objection: write to{" "}
-                          <a href={`mailto:${contact.email}`} className="underline underline-offset-2">
+                          <strong className="font-medium">
+                            Data controller:
+                          </strong>{" "}
+                          Essentia Social Wellness Club
+                          <br />
+                          <strong className="font-medium">Purpose:</strong>{" "}
+                          managing your run registration
+                          <br />
+                          <strong className="font-medium">
+                            Legal basis:
+                          </strong>{" "}
+                          your consent (GDPR art. 6.1.a)
+                          <br />
+                          <strong className="font-medium">
+                            Your rights:
+                          </strong>{" "}
+                          access, rectification, erasure, restriction,
+                          portability, and objection: write to{" "}
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="underline underline-offset-2"
+                          >
                             {contact.email}
                           </a>
                           . Full details in our{" "}
-                          <Link href="/privacy" className="underline underline-offset-2" target="_blank">
+                          <Link
+                            href="/privacy"
+                            className="underline underline-offset-2"
+                            target="_blank"
+                          >
                             Privacy Policy
                           </Link>
                           .
