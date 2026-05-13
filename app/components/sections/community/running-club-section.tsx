@@ -345,7 +345,7 @@ export default function RunningClubSection() {
                   <Button
                     variant="solid"
                     size="md"
-                    href="/contact"
+                    href="/community/running-club/register"
                     className="w-full md:w-auto md:self-start"
                   >
                     Register for this run
