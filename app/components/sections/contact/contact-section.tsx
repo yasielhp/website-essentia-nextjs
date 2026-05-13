@@ -73,7 +73,7 @@ export default function ContactSection() {
             </h1>
             <p className="text-petroleum-400 mt-4 leading-relaxed">
               Whether you want to learn more about membership, book a session,
-              or just ask a question — we&apos;d love to hear from you.
+              or just ask a question: we&apos;d love to hear from you.
             </p>
           </div>
 
