@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Essentia",
@@ -163,7 +164,7 @@ export default function PrivacyPolicyPage() {
       <h2>8. Cookies</h2>
       <p>
         We use cookies and similar technologies on our website. For full
-        details, please read our <a href="/cookies">Cookie Policy</a>.
+        details, please read our <Link href="/cookies">Cookie Policy</Link>.
       </p>
 
       <h2>9. Updates to This Policy</h2>

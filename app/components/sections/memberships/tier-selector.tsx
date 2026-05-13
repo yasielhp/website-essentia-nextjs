@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -146,9 +146,9 @@ function TierDisplay({
 
 // ─── TierSelector ─────────────────────────────────────────────
 
-export default function TierSelector() {
-  const searchParams = useSearchParams();
-  const paramValue = searchParams.get("tier") as TierId | null;
+function TierSelectorInner() {
+  const { get } = useSearchParams();
+  const paramValue = get("tier") as TierId | null;
   const initialTier: TierId =
     paramValue && VALID_TIERS.includes(paramValue) ? paramValue : "essential";
   const hasTierParam = useRef(false);
@@ -303,5 +303,13 @@ export default function TierSelector() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function TierSelector() {
+  return (
+    <Suspense fallback={null}>
+      <TierSelectorInner />
+    </Suspense>
   );
 }

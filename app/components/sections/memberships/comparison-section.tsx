@@ -168,14 +168,14 @@ export default function ComparisonSection() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-sand-50 border-petroleum-100 border-b">
-                      <th className="text-petroleum-400 w-1/2 px-4 py-4 text-left text-xs font-medium tracking-wider uppercase">
+                      <th className="text-petroleum-400 w-1/2 p-4 text-left text-xs font-medium tracking-wider uppercase">
                         Feature
                       </th>
                       {(["Essential", "Premium", "Founder"] as const).map(
                         (name) => (
                           <th
                             key={name}
-                            className="text-petroleum-700 font-display px-4 py-4 text-center text-base font-normal"
+                            className="text-petroleum-700 font-display p-4 text-center text-base font-normal"
                           >
                             {name}
                           </th>
