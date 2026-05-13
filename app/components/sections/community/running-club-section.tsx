@@ -2,11 +2,12 @@
 
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { Clock, MapPin, Route, Users } from "lucide-react";
 import { Button } from "@components/ui/button";
 
-gsap.registerPlugin();
+gsap.registerPlugin(ScrollTrigger);
 
 const details = [
   { icon: Clock, value: "Every Saturday, 7:30 am" },
@@ -38,10 +39,13 @@ const expects = [
 
 export default function RunningClubSection() {
   const heroRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const nextRunSectionRef = useRef<HTMLElement>(null);
+  const nextRunInnerRef = useRef<HTMLDivElement>(null);
+  const nextRunBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Hero entrance
       if (heroRef.current) {
         gsap.from(Array.from(heroRef.current.children), {
           opacity: 0,
@@ -52,21 +56,62 @@ export default function RunningClubSection() {
           delay: 0.1,
         });
       }
-      if (contentRef.current) {
-        gsap.from(Array.from(contentRef.current.children), {
-          opacity: 0,
-          y: 30,
-          stagger: 0.1,
-          duration: 0.7,
-          ease: "power3.out",
+
+      // Next run pinned scroll
+      const section = nextRunSectionRef.current;
+      const inner = nextRunInnerRef.current;
+      const body = nextRunBodyRef.current;
+      if (!section || !inner || !body) return;
+
+      const children = Array.from(body.children) as HTMLElement[];
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 768px)", () => {
+        gsap.set(children, { opacity: 0, y: 40 });
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: contentRef.current,
-            start: "top 85%",
-            once: true,
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.6,
+            pin: inner,
           },
         });
-      }
+        tl.to(children[0], {
+          opacity: 1,
+          y: 0,
+          duration: 0.2,
+          ease: "power3.out",
+        });
+        tl.to(
+          children[1],
+          { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
+          "-=0.05",
+        );
+      });
+
+      mm.add("(max-width: 767px)", () => {
+        children.forEach((child) => {
+          gsap.fromTo(
+            child,
+            { opacity: 0, y: 40, scale: 0.97 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: child,
+                start: "top 88%",
+                end: "top 35%",
+                scrub: 0.7,
+              },
+            },
+          );
+        });
+      });
     });
+
     return () => ctx.revert();
   }, []);
 
@@ -112,7 +157,11 @@ export default function RunningClubSection() {
             >
               Next run
             </Button>
-            <Button variant="outline-white" size="md" href="/community/memberships">
+            <Button
+              variant="outline-white"
+              size="md"
+              href="/community/memberships"
+            >
               Join the community
             </Button>
           </div>
@@ -120,63 +169,79 @@ export default function RunningClubSection() {
       </section>
 
       {/* ── Next run ── */}
-      <section id="next-run" className="bg-sand-50">
-        <div className="mx-auto max-w-4xl px-5 py-24">
-          <div ref={contentRef} className="flex flex-col gap-8">
-            {/* Section title */}
-            <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-              Next run.
-            </h2>
-
-            {/* Card */}
-            <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
-              <div className="relative h-56 md:h-auto md:min-h-72">
-                <Image
-                  src="/images/menu/running-club.webp"
-                  alt="Next Essentia run"
-                  fill
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                  className="object-cover"
-                />
+      <section
+        ref={nextRunSectionRef}
+        id="next-run"
+        className="bg-sand-50 md:h-[280vh]"
+      >
+        <div ref={nextRunInnerRef} className="overflow-hidden md:h-screen">
+          <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
+            <div ref={nextRunBodyRef} className="flex flex-col gap-8">
+              {/* Header */}
+              <div>
+                <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                  Next run.
+                </h2>
+                <p className="text-petroleum-400 mt-2 leading-relaxed">
+                  Show up, run, share breakfast. Every Saturday without
+                  exception.
+                </p>
               </div>
-              <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      Saturday,
-                      <br />
-                      24 May 2026
-                    </h2>
-                    <p className="text-petroleum-400 mt-1 text-sm">
-                      7:30 am · Baobab Suites lobby
-                    </p>
-                  </div>
-                  <p className="text-petroleum-500 text-sm leading-relaxed">
-                    This week: the Fanabe coastal path. 10 km along the
-                    seafront promenade with Atlantic views from start to
-                    finish. Ends with breakfast at the club.
-                  </p>
+
+              {/* Card */}
+              <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
+                <div className="relative h-56 md:h-auto md:min-h-72">
+                  <Image
+                    src="/images/menu/running-club.webp"
+                    alt="Next Essentia run"
+                    fill
+                    sizes="(max-width: 767px) 100vw, 50vw"
+                    className="object-cover"
+                  />
                 </div>
-                {/* Details */}
-                <div className="border-sand-300 grid grid-cols-2 gap-4 border-t pt-6">
-                  {details.map(({ icon: Icon, value }) => (
-                    <div key={value} className="flex items-start gap-2">
-                      <Icon className="text-petroleum-400 mt-0.5 shrink-0" size={15} />
-                      <p className="text-petroleum-600 text-sm leading-snug">
-                        {value}
+                <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                        Saturday,
+                        <br />
+                        24 May 2026
+                      </h3>
+                      <p className="text-petroleum-400 mt-1 text-sm">
+                        7:30 am · Baobab Suites lobby
                       </p>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-petroleum-500 text-sm leading-relaxed">
+                      This week: the Fanabe coastal path. 10 km along the
+                      seafront promenade with Atlantic views from start to
+                      finish. Ends with breakfast at the club.
+                    </p>
+                  </div>
 
-                <Button
-                  variant="solid"
-                  size="md"
-                  href="/contact"
-                  className="w-full md:w-auto md:self-start"
-                >
-                  Register for this run
-                </Button>
+                  {/* Details */}
+                  <div className="border-sand-300 grid grid-cols-2 gap-4 border-t pt-6">
+                    {details.map(({ icon: Icon, value }) => (
+                      <div key={value} className="flex items-start gap-2">
+                        <Icon
+                          className="text-petroleum-400 mt-0.5 shrink-0"
+                          size={15}
+                        />
+                        <p className="text-petroleum-600 text-sm leading-snug">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="solid"
+                    size="md"
+                    href="/contact"
+                    className="w-full md:w-auto md:self-start"
+                  >
+                    Register for this run
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -192,8 +257,8 @@ export default function RunningClubSection() {
                 What to expect.
               </h2>
               <p className="text-sand-500 mt-4 leading-relaxed">
-                The Saturday run is open to all Essentia members. No
-                sign-up needed — just show up at 7:30, ready to move.
+                The Saturday run is open to all Essentia members. No sign-up
+                needed — just show up at 7:30, ready to move.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
