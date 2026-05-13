@@ -95,9 +95,6 @@ function AboutHero() {
         }}
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
-        <p className="text-sand-400 mb-4 text-xs tracking-widest uppercase">
-          About Essentia
-        </p>
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           Built for people
           <br />
