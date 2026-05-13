@@ -3,15 +3,16 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
+import { Clock, MapPin, Route, Users } from "lucide-react";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin();
 
 const details = [
-  { label: "When", value: "Every Saturday, 7:30 am" },
-  { label: "Meeting point", value: "Baobab Suites lobby, Costa Adeje" },
-  { label: "Distance", value: "8 – 12 km depending on route" },
-  { label: "Level", value: "All levels welcome" },
+  { icon: Clock, value: "Every Saturday, 7:30 am" },
+  { icon: MapPin, value: "Baobab Suites lobby, Costa Adeje" },
+  { icon: Route, value: "8 – 12 km depending on route" },
+  { icon: Users, value: "All levels welcome" },
 ];
 
 const expects = [
@@ -144,6 +145,18 @@ export default function RunningClubSection() {
                     finish. Ends with breakfast at the club.
                   </p>
                 </div>
+                {/* Details */}
+                <div className="border-sand-300 grid grid-cols-2 gap-4 border-t pt-6">
+                  {details.map(({ icon: Icon, value }) => (
+                    <div key={value} className="flex items-start gap-2">
+                      <Icon className="text-petroleum-400 mt-0.5 shrink-0" size={15} />
+                      <p className="text-petroleum-600 text-sm leading-snug">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
                 <Button
                   variant="solid"
                   size="md"
@@ -153,20 +166,6 @@ export default function RunningClubSection() {
                   Register for this run
                 </Button>
               </div>
-            </div>
-
-            {/* Details grid */}
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-              {details.map((d) => (
-                <div key={d.label} className="flex flex-col gap-1">
-                  <p className="text-petroleum-400 text-xs tracking-widest uppercase">
-                    {d.label}
-                  </p>
-                  <p className="text-petroleum-700 text-sm font-medium leading-snug">
-                    {d.value}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
         </div>
