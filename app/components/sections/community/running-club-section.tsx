@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 const details = [
   { icon: Clock, value: "Every Saturday, 7:30 am" },
   { icon: MapPin, value: "Baobab Suites lobby, Costa Adeje" },
-  { icon: Route, value: "8 – 12 km depending on route" },
+  { icon: Route, value: "12 km" },
   { icon: Users, value: "All levels welcome" },
 ];
 
