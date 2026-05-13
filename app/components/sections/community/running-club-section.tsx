@@ -99,18 +99,28 @@ export default function RunningClubSection() {
             just movement and good company.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button variant="white" size="md" href="/contact">
-              Join the run
+            <Button
+              variant="white"
+              size="md"
+              onClick={() => {
+                const el = document.getElementById("next-run");
+                if (el) {
+                  const top = el.getBoundingClientRect().top + window.scrollY;
+                  window.scrollTo({ top, behavior: "smooth" });
+                }
+              }}
+            >
+              Next run
             </Button>
-            <Button variant="outline-white" size="md" href="/community">
-              Back to community
+            <Button variant="outline-white" size="md" href="/community/memberships">
+              Join the community
             </Button>
           </div>
         </div>
       </section>
 
       {/* ── Next run ── */}
-      <section className="bg-sand-50">
+      <section id="next-run" className="bg-sand-50">
         <div className="mx-auto max-w-4xl px-5 py-24">
           <div ref={contentRef} className="flex flex-col gap-8">
             {/* Section title */}
