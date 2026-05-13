@@ -10,7 +10,9 @@ export default function LegalNoticePage() {
   return (
     <>
       <h1>Legal Notice</h1>
-      <p className="text-petroleum-400 text-sm">Last updated: May 2026</p>
+      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+        Last updated: May 2026
+      </p>
 
       <p>
         In compliance with Law 34/2002 of 11 July on Information Society Services
@@ -38,10 +40,10 @@ export default function LegalNoticePage() {
 
       <h2>2. Intellectual Property</h2>
       <p>
-        All content on this website — including but not limited to text, images,
-        graphics, logos, icons, audio clips, and software — is the exclusive
-        property of Essentia Social Wellness Club or its content suppliers and is
-        protected by applicable intellectual property laws.
+        All content on this website (including text, images, graphics, logos,
+        icons, audio clips, and software) is the exclusive property of Essentia
+        Social Wellness Club or its content suppliers and is protected by
+        applicable intellectual property laws.
       </p>
       <p>
         Reproduction, distribution, public communication, or transformation of

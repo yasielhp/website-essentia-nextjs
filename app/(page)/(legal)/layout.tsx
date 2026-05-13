@@ -1,12 +1,3 @@
-import Link from "next/link";
-
-const legalLinks = [
-  { href: "/legal", label: "Legal Notice" },
-  { href: "/privacy", label: "Privacy Policy" },
-  { href: "/terms", label: "Terms & Conditions" },
-  { href: "/cookies", label: "Cookie Policy" },
-];
-
 export default function LegalLayout({
   children,
 }: Readonly<{
@@ -14,24 +5,30 @@ export default function LegalLayout({
 }>) {
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-3xl px-5 pt-32 pb-24">
-        {/* Nav between legal pages */}
-        <nav
-          aria-label="Legal pages"
-          className="mb-12 flex flex-wrap gap-x-6 gap-y-2 border-b border-petroleum-100 pb-6"
+      {/*
+        pt-28 on mobile (header ~56px fixed at top, 112px gives clear breathing room).
+        pt-44 on desktop (header is fixed + mt-16 offset, ~128px total, 176px gives clear breathing room).
+      */}
+      <div className="mx-auto max-w-4xl px-5 pt-28 pb-28 md:pt-44">
+        <article
+          className={[
+            "prose max-w-none",
+            // headings: display font, normal weight, brand dark
+            "prose-headings:font-display prose-headings:font-normal prose-headings:text-petroleum-700",
+            // H1: large, tight, generous space below
+            "prose-h1:text-4xl prose-h1:leading-tight prose-h1:tracking-tight prose-h1:mb-2 md:prose-h1:text-5xl",
+            // H2: section markers, clear top margin
+            "prose-h2:text-2xl prose-h2:mt-14 prose-h2:mb-5",
+            // H3: small caps style
+            "prose-h3:text-sm prose-h3:font-semibold prose-h3:uppercase prose-h3:tracking-widest prose-h3:text-petroleum-400 prose-h3:mt-8 prose-h3:mb-2",
+            // body paragraphs
+            "prose-p:text-base prose-p:leading-7",
+            // links
+            "prose-a:font-medium prose-a:underline-offset-2",
+            // lists
+            "prose-li:leading-7",
+          ].join(" ")}
         >
-          {legalLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors duration-150"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <article className="prose max-w-none prose-headings:font-display prose-headings:text-petroleum-700 prose-headings:font-normal prose-p:text-petroleum-500 prose-p:leading-relaxed prose-a:text-petroleum-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-petroleum-700 prose-li:text-petroleum-500 prose-h1:text-3xl prose-h1:md:text-4xl prose-h2:text-xl prose-h2:mt-10 prose-h3:text-base prose-h3:font-medium">
           {children}
         </article>
       </div>

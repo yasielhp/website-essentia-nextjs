@@ -10,7 +10,9 @@ export default function CookiePolicyPage() {
   return (
     <>
       <h1>Cookie Policy</h1>
-      <p className="text-petroleum-400 text-sm">Last updated: May 2026</p>
+      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+        Last updated: May 2026
+      </p>
 
       <p>
         This Cookie Policy explains how Essentia Social Wellness Club ("Essentia",
@@ -40,7 +42,7 @@ export default function CookiePolicyPage() {
       <h3>2.2 Analytics Cookies</h3>
       <p>
         We use analytics tools (such as Google Analytics) to understand how
-        visitors interact with our website — which pages are visited, how long
+        visitors interact with our website: which pages are visited, how long
         users stay, and what actions they take. This data is aggregated and
         anonymised where possible and is used solely to improve our website.
       </p>

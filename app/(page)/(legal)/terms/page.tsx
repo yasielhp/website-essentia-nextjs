@@ -10,7 +10,9 @@ export default function TermsPage() {
   return (
     <>
       <h1>Terms &amp; Conditions</h1>
-      <p className="text-petroleum-400 text-sm">Last updated: May 2026</p>
+      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+        Last updated: May 2026
+      </p>
 
       <p>
         These Terms and Conditions ("Terms") govern your access to and use of the
@@ -45,11 +47,11 @@ export default function TermsPage() {
       <p>
         Membership fees are billed monthly or annually as selected at sign-up.
         Fees are non-refundable except where required by applicable law. We
-        reserve the right to adjust pricing with 30 days' prior written notice.
+        reserve the right to adjust pricing with 30 days prior written notice.
       </p>
       <h3>2.4 Cancellation</h3>
       <p>
-        Monthly memberships may be cancelled with 30 days' written notice. Annual
+        Monthly memberships may be cancelled with 30 days written notice. Annual
         memberships may not be cancelled mid-term except in exceptional
         circumstances at Essentia's sole discretion. Cancellation requests must be
         sent to{" "}
@@ -123,7 +125,7 @@ export default function TermsPage() {
       <h2>8. Changes to Terms</h2>
       <p>
         We may update these Terms from time to time. Material changes will be
-        communicated with at least 30 days' notice by email or via our website.
+        communicated with at least 30 days notice by email or via our website.
         Continued use of our services after the effective date constitutes
         acceptance of the revised Terms.
       </p>
@@ -141,8 +143,7 @@ export default function TermsPage() {
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
         </a>{" "}
-        or by phone at{" "}
-        <a href="tel:+34922123456">+34 922 123 456</a>.
+        or by phone at <a href="tel:+34922123456">+34 922 123 456</a>.
       </p>
     </>
   );

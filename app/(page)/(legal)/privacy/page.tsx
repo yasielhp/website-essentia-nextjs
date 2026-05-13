@@ -10,7 +10,9 @@ export default function PrivacyPolicyPage() {
   return (
     <>
       <h1>Privacy Policy</h1>
-      <p className="text-petroleum-400 text-sm">Last updated: May 2026</p>
+      <p className="mt-1 mb-8 text-xs tracking-widest text-petroleum-400 uppercase">
+        Last updated: May 2026
+      </p>
 
       <p>
         Essentia Social Wellness Club ("Essentia", "we", "us", or "our") is
@@ -68,7 +70,7 @@ export default function PrivacyPolicyPage() {
         </li>
         <li>
           <strong>Consent:</strong> marketing communications and processing of
-          health data — you may withdraw consent at any time.
+          health data; you may withdraw consent at any time.
         </li>
         <li>
           <strong>Legitimate interest:</strong> improving our services, website
@@ -166,8 +168,7 @@ export default function PrivacyPolicyPage() {
       <h2>8. Cookies</h2>
       <p>
         We use cookies and similar technologies on our website. For full details,
-        please read our{" "}
-        <a href="/cookies">Cookie Policy</a>.
+        please read our <a href="/cookies">Cookie Policy</a>.
       </p>
 
       <h2>9. Updates to This Policy</h2>
