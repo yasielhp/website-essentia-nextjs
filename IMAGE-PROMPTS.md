@@ -45,6 +45,19 @@ Small group of sophisticated adults gathered at a premium outdoor terrace in Ten
 
 ---
 
+### `running-club-hero.webp`
+
+**Uso:** Hero de la página `/community/running-club` — imagen de fondo full-screen con overlay oscuro  
+**Carpeta destino:** `public/images/community/`  
+**Tamaño:** `2560 × 1440 px` — ratio 16:9 (landscape)  
+**Midjourney:** añadir `--ar 16:9` al final del prompt
+
+```
+Small group of athletes running along a dramatic volcanic coastal cliff path at sunrise in Tenerife, Canary Islands, deep blue Atlantic ocean and black lava rock below, golden morning light breaking over the horizon, athletic wear in neutral earth tones, sense of motion and community, wide cinematic shot, editorial lifestyle photography --ar 16:9
+```
+
+---
+
 ### `medicine/hero.webp`
 
 **Uso:** Hero de la página `/medicine` — imagen de fondo full-screen con overlay oscuro  

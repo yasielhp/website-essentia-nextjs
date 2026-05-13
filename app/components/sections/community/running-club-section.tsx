@@ -74,7 +74,7 @@ export default function RunningClubSection() {
       {/* ── Hero ── */}
       <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
         <Image
-          src="/images/home/bento-img-4.webp"
+          src="/images/community/running-club-hero.webp"
           alt="Essentia Running Club — coastal route in Costa Adeje"
           fill
           priority
@@ -89,9 +89,6 @@ export default function RunningClubSection() {
           }}
         />
         <div ref={heroRef} className="relative mx-auto max-w-3xl">
-          <p className="text-sand-400 mb-4 text-xs tracking-widest uppercase">
-            Community
-          </p>
           <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
             Running Club.
           </h1>
