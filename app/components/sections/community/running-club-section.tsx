@@ -344,7 +344,7 @@ export default function RunningClubSection() {
                   </div>
 
                   {/* Details */}
-                  <div className="border-sand-300 grid grid-cols-2 gap-4 border-t pt-6">
+                  <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
                     {details.map(({ icon: Icon, value }) => (
                       <div key={value} className="flex items-start gap-2">
                         <Icon
