@@ -17,8 +17,7 @@ export const treatments = [
     href: "/medicine/regenerative-medicine",
     img: "/images/menu/regenerative-medicine.webp",
     title: "Regenerative Medicine",
-    description:
-      "Protocols that activate your body's own repair mechanisms.",
+    description: "Protocols that activate your body's own repair mechanisms.",
   },
 ] as const;
 

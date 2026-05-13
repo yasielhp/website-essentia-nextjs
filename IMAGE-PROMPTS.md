@@ -40,7 +40,7 @@ Exclusive premium wellness club interior, elegant reception or lounge area, Tene
 **Midjourney:** añadir `--ar 16:9` al final del prompt
 
 ```
-Small group of sophisticated adults gathered at a premium outdoor terrace in Tenerife, golden late-afternoon light, Atlantic ocean and volcanic coastline visible in background, relaxed social atmosphere, neutral athletic and resort wear, sense of belonging and shared purpose, wide editorial lifestyle photography, no faces clearly visible, warm sand and deep teal tones, cinematic composition --ar 16:9
+Small group of sophisticated adults gathered at a premium outdoor terrace in Tenerife, golden late-afternoon light, Atlantic ocean and volcanic coastline visible in background, relaxed social atmosphere, neutral athletic and resort wear, sense of belonging and shared purpose, wide editorial lifestyle photography, warm sand and deep teal tones, cinematic composition --ar 16:9
 ```
 
 ---

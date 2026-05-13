@@ -150,11 +150,7 @@ export default function ProgramsSection() {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      id="programs"
-      className="bg-sand-50 md:h-[240vh]"
-    >
+    <section ref={sectionRef} id="programs" className="bg-sand-50 md:h-[240vh]">
       <div ref={innerRef} className="overflow-hidden md:h-screen">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
           <div ref={bodyRef} className="flex flex-col gap-8">
