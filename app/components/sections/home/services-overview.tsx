@@ -172,9 +172,6 @@ export default function ServicesOverview() {
                   <p className="mt-1 text-sm text-white/70">
                     {service.description}
                   </p>
-                  <span className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-full border border-white bg-transparent px-3 text-sm font-medium text-white transition-all duration-200 group-hover:bg-white/10">
-                    {service.cta}
-                  </span>
                 </div>
               </Link>
             ))}
