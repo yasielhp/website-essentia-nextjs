@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useReducer, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@components/ui/button";
 import { bookableServices, type BookableService } from "@/data/services-data";
@@ -27,42 +27,104 @@ const EMPTY_DETAILS: DetailsState = {
   consent: false,
 };
 
-export function BookingContent() {
-  const searchParams = useSearchParams();
-  const slug = searchParams.get("wellness") ?? searchParams.get("medicine");
+type BookingState = {
+  step: number;
+  selectedService: BookableService | null;
+  selectedDuration: string | null;
+  selectedDate: Date | null;
+  selectedTime: string | null;
+  details: DetailsState;
+  submitted: boolean;
+  loading: boolean;
+};
 
-  const [step, setStep] = useState<number>(() => {
-    if (slug) return 0;
-    return readStorage().step ?? 0;
-  });
+type BookingAction =
+  | { type: "SELECT_SERVICE"; service: BookableService | null }
+  | { type: "SELECT_DURATION"; duration: string | null }
+  | { type: "SELECT_DATE"; date: Date | null }
+  | { type: "SELECT_TIME"; time: string }
+  | { type: "SET_STEP"; step: number }
+  | { type: "SET_DETAILS"; details: DetailsState }
+  | { type: "CONFIRM_START" }
+  | { type: "CONFIRM_SUCCESS" };
 
-  const [selectedService, setSelectedService] = useState<BookableService | null>(() => {
-    const id = slug ?? readStorage().serviceId ?? null;
-    return id ? (bookableServices.find((s) => s.id === id) ?? null) : null;
-  });
+function bookingReducer(
+  state: BookingState,
+  action: BookingAction,
+): BookingState {
+  switch (action.type) {
+    case "SELECT_SERVICE":
+      return {
+        ...state,
+        selectedService: action.service,
+        selectedDuration:
+          action.service?.durations.length === 1
+            ? action.service.durations[0]
+            : null,
+      };
+    case "SELECT_DURATION":
+      return { ...state, selectedDuration: action.duration };
+    case "SELECT_DATE":
+      return { ...state, selectedDate: action.date };
+    case "SELECT_TIME":
+      return { ...state, selectedTime: action.time };
+    case "SET_STEP":
+      return { ...state, step: action.step };
+    case "SET_DETAILS":
+      return { ...state, details: action.details };
+    case "CONFIRM_START":
+      return { ...state, loading: true };
+    case "CONFIRM_SUCCESS":
+      return { ...state, loading: false, submitted: true };
+  }
+}
 
-  const [selectedDuration, setSelectedDuration] = useState<string | null>(() => {
-    if (slug) {
-      const service = bookableServices.find((s) => s.id === slug);
-      return service?.durations.length === 1 ? service.durations[0] : null;
-    }
-    return readStorage().selectedDuration ?? null;
-  });
+function initState(slug: string | null): BookingState {
+  const saved = readStorage();
+  if (slug) {
+    const service = bookableServices.find((s) => s.id === slug) ?? null;
+    return {
+      step: 0,
+      selectedService: service,
+      selectedDuration:
+        service?.durations.length === 1 ? service.durations[0] : null,
+      selectedDate: null,
+      selectedTime: null,
+      details: saved.details ?? EMPTY_DETAILS,
+      submitted: false,
+      loading: false,
+    };
+  }
+  const service = saved.serviceId
+    ? (bookableServices.find((s) => s.id === saved.serviceId) ?? null)
+    : null;
+  return {
+    step: saved.step ?? 0,
+    selectedService: service,
+    selectedDuration: saved.selectedDuration ?? null,
+    selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
+    selectedTime: saved.selectedTime ?? null,
+    details: saved.details ?? EMPTY_DETAILS,
+    submitted: false,
+    loading: false,
+  };
+}
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
-    if (slug) return null;
-    const d = readStorage().selectedDate;
-    return d ? new Date(d) : null;
-  });
+function BookingContentInner() {
+  const { get } = useSearchParams();
+  const slug = get("wellness") ?? get("medicine");
 
-  const [selectedTime, setSelectedTime] = useState<string | null>(() => {
-    if (slug) return null;
-    return readStorage().selectedTime ?? null;
-  });
-
-  const [details, setDetails] = useState<DetailsState>(() => readStorage().details ?? EMPTY_DETAILS);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [state, dispatch] = useReducer(bookingReducer, slug, initState);
+  const {
+    step,
+    selectedService,
+    selectedDuration,
+    selectedDate,
+    selectedTime,
+    details,
+    submitted,
+    loading,
+  } = state;
 
   useEffect(() => {
     writeStorage({
@@ -82,14 +144,10 @@ export function BookingContent() {
     details,
   ]);
 
-  const handleSelectService = (s: BookableService | null) => {
-    setSelectedService(s);
-    setSelectedDuration(s && s.durations.length === 1 ? s.durations[0] : null);
-  };
-
   const activeSteps = buildSteps();
   const currentStepId = activeSteps[step]?.id ?? "service";
   const isLastStep = step === activeSteps.length - 1;
+  const nextStepLabel = activeSteps[step + 1]?.label;
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
@@ -106,10 +164,9 @@ export function BookingContent() {
   };
 
   const handleConfirm = () => {
-    setLoading(true);
+    dispatch({ type: "CONFIRM_START" });
     setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
+      dispatch({ type: "CONFIRM_SUCCESS" });
       clearStorage();
     }, 1200);
   };
@@ -142,26 +199,29 @@ export function BookingContent() {
         {currentStepId === "service" && (
           <ServiceStep
             selected={selectedService}
-            onSelect={handleSelectService}
+            onSelect={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
           />
         )}
         {currentStepId === "duration" && selectedService && (
           <DurationStep
             service={selectedService}
             selectedDuration={selectedDuration}
-            onSelect={setSelectedDuration}
+            onSelect={(d) => dispatch({ type: "SELECT_DURATION", duration: d })}
           />
         )}
         {currentStepId === "details" && (
-          <DetailsStep details={details} onChange={setDetails} />
+          <DetailsStep
+            details={details}
+            onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
+          />
         )}
         {currentStepId === "datetime" && selectedService && (
           <DateTimeStep
             service={selectedService}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
-            onSelectDate={setSelectedDate}
-            onSelectTime={setSelectedTime}
+            onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
+            onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
           />
         )}
         {currentStepId === "confirm" &&
@@ -184,7 +244,7 @@ export function BookingContent() {
           <Button
             variant="outline"
             size="md"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => dispatch({ type: "SET_STEP", step: step - 1 })}
             disabled={loading}
             className="flex-1 sm:flex-none"
           >
@@ -195,11 +255,11 @@ export function BookingContent() {
           <Button
             variant="solid"
             size="md"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => dispatch({ type: "SET_STEP", step: step + 1 })}
             disabled={!canProceed[currentStepId]}
             className="flex-1 sm:flex-none"
           >
-            Continue
+            {nextStepLabel ? `Next: ${nextStepLabel}` : "Next step"}
           </Button>
         ) : (
           <Button
@@ -214,5 +274,13 @@ export function BookingContent() {
         )}
       </div>
     </div>
+  );
+}
+
+export function BookingContent() {
+  return (
+    <Suspense>
+      <BookingContentInner />
+    </Suspense>
   );
 }
