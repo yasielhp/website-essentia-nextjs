@@ -5,6 +5,7 @@ import { Header } from "./components/header";
 import { Footer } from "./components/footer";
 import { ScrollReset } from "./components/scroll-reset";
 import { contact } from "@/constants/contact";
+import { ConsentManager } from "./components/consent-manager";
 
 const jedira = localFont({
   src: [
@@ -63,10 +64,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
       <body className="antialiased">
-        <ScrollReset />
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <ConsentManager>
+          <ScrollReset />
+          <Header />
+          <main>{children}</main>
+          <Footer />
+        </ConsentManager>
       </body>
     </html>
   );
