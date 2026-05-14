@@ -10,7 +10,7 @@ export const maiMenu = [
     },
     itemMenu: [
       {
-        itemName: "Thermal contrast zone",
+        itemName: "Thermal contrast",
         href: "/wellness/contrast-therapy",
         card: {
           title: "Thermal contrast",

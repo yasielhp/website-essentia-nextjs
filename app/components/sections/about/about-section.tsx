@@ -187,14 +187,17 @@ function StorySection() {
     <section ref={sectionRef} className="bg-sand-50 md:h-[260vh]">
       <div ref={innerRef} className="overflow-hidden md:h-screen">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-20">
+          <div
+            ref={bodyRef}
+            className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-20"
+          >
             <div className="flex flex-col gap-6">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
                 Why we exist.
               </h2>
               <p className="text-petroleum-500 leading-relaxed">
                 Essentia was founded with one question: what does it actually
-                take to live well for longer? Not in theory — in practice, every
+                take to live well for longer? Not in theory, but in practice, every
                 day.
               </p>
               <p className="text-petroleum-500 leading-relaxed">
@@ -204,8 +207,8 @@ function StorySection() {
                 roof.
               </p>
               <p className="text-petroleum-500 leading-relaxed">
-                Membership is not a gym pass. It is access to a medical team,
-                a community of people with the same standards, and the protocols
+                Membership is not a gym pass. It is access to a medical team, a
+                community of people with the same standards, and the protocols
                 to match.
               </p>
             </div>
@@ -387,16 +390,22 @@ function TeamSection() {
           </p>
         </div>
 
-        <div ref={wrapperRef} className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
+        <div
+          ref={wrapperRef}
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4"
+        >
           {team.map((member) => (
-            <div key={member.name} className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-6">
+            <div
+              key={member.name}
+              className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-6"
+            >
               <div className="bg-petroleum-100 flex size-12 items-center justify-center rounded-full">
                 <span className="text-petroleum-700 text-sm font-semibold">
                   {member.initials}
                 </span>
               </div>
               <div>
-                <p className="text-petroleum-700 font-medium leading-snug">
+                <p className="text-petroleum-700 leading-snug font-medium">
                   {member.name}
                 </p>
                 <p className="text-petroleum-500 mt-0.5 text-sm font-medium">
@@ -489,11 +498,7 @@ function CtaSection() {
               education. Choose your tier and begin.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button
-                variant="white"
-                size="md"
-                href="/community/memberships"
-              >
+              <Button variant="white" size="md" href="/community/memberships">
                 View memberships
               </Button>
               <Button variant="outline-white" size="md" href="/contact">

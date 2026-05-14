@@ -1,5 +1,9 @@
 export type Benefit = { title: string; description: string };
-export type SessionDetail = { number: string; title: string; description: string };
+export type SessionDetail = {
+  number: string;
+  title: string;
+  description: string;
+};
 
 export type MedicineTreatmentData = {
   slug: string;
