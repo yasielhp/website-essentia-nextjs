@@ -150,8 +150,8 @@ function StorySection() {
               </h2>
               <p className="text-petroleum-500 leading-relaxed">
                 Essentia was founded with one question: what does it actually
-                take to live well for longer? Not in theory, but in practice, every
-                day.
+                take to live well for longer? Not in theory, but in practice,
+                every day.
               </p>
               <p className="text-petroleum-500 leading-relaxed">
                 We brought together the best of longevity medicine,
