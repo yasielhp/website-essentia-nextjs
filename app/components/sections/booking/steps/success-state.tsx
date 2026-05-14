@@ -22,7 +22,7 @@ export function SuccessState({
         <h2 className="font-display text-petroleum-700 text-3xl">
           Booking confirmed.
         </h2>
-        <p className="text-petroleum-500">
+        <p className="text-petroleum-500 text-balance">
           {service.title} on{" "}
           {date.toLocaleDateString("en-GB", {
             weekday: "long",

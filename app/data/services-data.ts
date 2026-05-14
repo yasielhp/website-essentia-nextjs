@@ -83,7 +83,7 @@ export const bookableServices: BookableService[] = [
     category: "medicine",
     title: "Regenerative Medicine",
     description: "Protocols that activate your body's own repair mechanisms.",
-    durations: ["Consultation + protocol"],
+    durations: ["30 min", "60 min", "90 min"],
     price: "From €250",
     image: "/images/menu/regenerative-medicine.webp",
   },

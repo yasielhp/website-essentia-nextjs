@@ -46,7 +46,7 @@ function DurationSelect({
             <p className="text-petroleum-700 font-medium">{selected}</p>
           </div>
         ) : (
-          <p className="text-petroleum-100 flex-1 text-sm">Select a duration</p>
+          <p className="text-petroleum-400 flex-1 text-sm">Select a duration</p>
         )}
         <ChevronDown
           className={[
