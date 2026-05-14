@@ -1,9 +1,6 @@
-export type Benefit = { title: string; description: string };
-export type SessionDetail = {
-  number: string;
-  title: string;
-  description: string;
-};
+import type { Benefit, SessionDetail } from "@/types";
+
+export type { Benefit, SessionDetail };
 
 export type MedicineTreatmentData = {
   slug: string;

@@ -7,3 +7,11 @@ export type DetailsState = {
 };
 
 export type Step = { id: string; label: string };
+
+export type Benefit = { title: string; description: string };
+
+export type SessionDetail = {
+  number: string;
+  title: string;
+  description: string;
+};
