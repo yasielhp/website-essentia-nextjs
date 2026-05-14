@@ -13,7 +13,9 @@ type Variant =
   | "soft"
   | "white"
   | "outline-white"
-  | "ghost-white";
+  | "ghost-white"
+  | "danger"
+  | "outline-danger";
 
 type Size = "sm" | "md" | "lg";
 
@@ -31,6 +33,10 @@ const variantClasses: Record<Variant, string> = {
     "bg-transparent text-white border border-white hover:bg-white/10 active:bg-white/20",
   "ghost-white":
     "bg-transparent text-white border border-transparent hover:bg-white/10 active:bg-white/20",
+  danger:
+    "bg-red-500 text-white border border-transparent hover:bg-red-600 active:bg-red-700",
+  "outline-danger":
+    "bg-transparent text-red-500 border border-red-300 hover:bg-red-50 active:bg-red-100",
 };
 
 const sizeClasses: Record<Size, string> = {

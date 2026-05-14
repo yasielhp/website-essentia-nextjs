@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@components/ui/button";
@@ -98,6 +99,12 @@ export default function CtaSection() {
                 Talk to us first
               </Button>
             </div>
+            <Link
+              href="/sign-in"
+              className="text-sand-500 hover:text-sand-50 text-sm underline underline-offset-4 transition-colors"
+            >
+              Already a member? Sign in
+            </Link>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type Ref, type RefObject } from "react";
+import { useReducer, useEffect, useRef, type Ref, type RefObject } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 
@@ -11,11 +11,84 @@ import { Button } from "@components/ui/button";
 import { Logo } from "@components/ui/logo";
 import { HamburgerButton } from "@components/ui/hamburger-button";
 import { Accordion } from "@components/ui/accordion";
-import { IconChevronDown } from "@components/ui/icons";
+import { IconChevronDown, IconUserCircle } from "@components/ui/icons";
 import { AnimatedLink } from "@components/ui/animated-text";
+import { useAuth } from "@/components/auth-provider";
+
+const memberMenuItems = [
+  { href: "/account", label: "Overview" },
+  { href: "/account/bookings", label: "My Bookings" },
+  { href: "/account/races", label: "My Races" },
+  { href: "/account/education", label: "My Sessions" },
+];
+
+const adminMenuItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/bookings", label: "Bookings" },
+  { href: "/dashboard/races", label: "Races" },
+  { href: "/dashboard/education", label: "Education" },
+  { href: "/dashboard/contacts", label: "Contacts" },
+];
 
 type MenuItem = (typeof maiMenu)[0];
 type ItemMenu = (typeof maiMenu)[0]["itemMenu"][0];
+
+// ─── Header state ─────────────────────────────────────────────
+
+type HeaderState = {
+  openMobileMenu: boolean;
+  activeMenu: MenuItem | null;
+  displayedMenu: MenuItem | null;
+  activeItem: ItemMenu | null;
+  openAccountMenu: boolean;
+};
+
+type HeaderAction =
+  | { type: "TOGGLE_MOBILE_MENU" }
+  | { type: "SET_MOBILE_MENU"; open: boolean }
+  | { type: "SET_ACTIVE_MENU"; menu: MenuItem | null }
+  | { type: "SET_DISPLAYED_MENU"; menu: MenuItem | null }
+  | { type: "SET_ACTIVE_ITEM"; item: ItemMenu | null }
+  | { type: "TOGGLE_ACCOUNT_MENU" }
+  | { type: "CLOSE_ACCOUNT_MENU" }
+  | { type: "MENU_ENTER"; menu: MenuItem }
+  | { type: "SCHEDULE_CLOSE" };
+
+function headerReducer(state: HeaderState, action: HeaderAction): HeaderState {
+  switch (action.type) {
+    case "TOGGLE_MOBILE_MENU":
+      return { ...state, openMobileMenu: !state.openMobileMenu };
+    case "SET_MOBILE_MENU":
+      return { ...state, openMobileMenu: action.open };
+    case "SET_ACTIVE_MENU":
+      return { ...state, activeMenu: action.menu };
+    case "SET_DISPLAYED_MENU":
+      return { ...state, displayedMenu: action.menu };
+    case "SET_ACTIVE_ITEM":
+      return { ...state, activeItem: action.item };
+    case "TOGGLE_ACCOUNT_MENU":
+      return { ...state, openAccountMenu: !state.openAccountMenu };
+    case "CLOSE_ACCOUNT_MENU":
+      return { ...state, openAccountMenu: false };
+    case "MENU_ENTER":
+      return {
+        ...state,
+        activeMenu: action.menu,
+        activeItem: null,
+        openAccountMenu: false,
+      };
+    case "SCHEDULE_CLOSE":
+      return { ...state, activeMenu: null, activeItem: null };
+  }
+}
+
+const initialHeaderState: HeaderState = {
+  openMobileMenu: false,
+  activeMenu: null,
+  displayedMenu: null,
+  activeItem: null,
+  openAccountMenu: false,
+};
 
 // ─── DesktopDropdown ──────────────────────────────────────────
 
@@ -119,9 +192,20 @@ function DesktopDropdown({
 type MobileMenuProps = {
   ref: Ref<HTMLDivElement>;
   setOpenMobileMenu: (open: boolean) => void;
+  onSignOut?: () => void;
+  isLoggedIn?: boolean;
+  userRole?: string;
 };
 
-function MobileMenu({ ref, setOpenMobileMenu }: MobileMenuProps) {
+function MobileMenu({
+  ref,
+  setOpenMobileMenu,
+  onSignOut,
+  isLoggedIn,
+  userRole,
+}: MobileMenuProps) {
+  const isAdmin = userRole === "admin" || userRole === "staff";
+  const mobileAccountItems = isAdmin ? adminMenuItems : memberMenuItems;
   return (
     <div
       ref={ref}
@@ -162,6 +246,49 @@ function MobileMenu({ ref, setOpenMobileMenu }: MobileMenuProps) {
             </Accordion>
           </nav>
         ))}
+        {isLoggedIn && (
+          <nav data-menu-item className="border-petroleum-100 border-b px-5">
+            <Accordion>
+              <Accordion.Header>
+                <div className="font-medium">Account</div>
+              </Accordion.Header>
+              <Accordion.Content>
+                <ul className="pb-3">
+                  {mobileAccountItems.map((item) => (
+                    <li
+                      key={item.href}
+                      className="border-sand-200 border-l pr-5 pl-3"
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobileMenu(false)}
+                        className="flex flex-col pb-2"
+                      >
+                        <span className="text-sand-700 text-sm font-medium">
+                          {item.label}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                  {onSignOut && (
+                    <li className="border-sand-200 border-l pr-5 pl-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSignOut();
+                          setOpenMobileMenu(false);
+                        }}
+                        className="text-petroleum-400 flex flex-col pb-2 text-sm font-medium"
+                      >
+                        Sign out
+                      </button>
+                    </li>
+                  )}
+                </ul>
+              </Accordion.Content>
+            </Accordion>
+          </nav>
+        )}
       </Accordion.Group>
       <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
         {contact.address}
@@ -170,18 +297,78 @@ function MobileMenu({ ref, setOpenMobileMenu }: MobileMenuProps) {
   );
 }
 
+// ─── AccountDropdown ──────────────────────────────────────────
+
+type AccountDropdownProps = {
+  ref: Ref<HTMLDivElement>;
+  isAdmin: boolean;
+  menuItems: { href: string; label: string }[];
+  onClose: () => void;
+  onSignOut: () => void;
+};
+
+function AccountDropdown({
+  ref,
+  isAdmin,
+  menuItems,
+  onClose,
+  onSignOut,
+}: AccountDropdownProps) {
+  return (
+    <div
+      ref={ref}
+      className="border-sand-200 absolute top-full right-0 mt-2 w-48 overflow-hidden rounded-2xl border bg-white shadow-lg"
+    >
+      <ul className="py-2">
+        {isAdmin && (
+          <li className="px-4 pt-0.5 pb-1.5">
+            <span className="text-petroleum-300 text-xs font-semibold tracking-widest uppercase">
+              Admin
+            </span>
+          </li>
+        )}
+        {menuItems.map((item) => (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              onClick={onClose}
+              className="text-petroleum-600 hover:bg-sand-50 block px-4 py-2.5 text-sm font-medium transition-colors"
+            >
+              {item.label}
+            </Link>
+          </li>
+        ))}
+        <li className="border-sand-100 mx-4 mt-1 border-t pt-1">
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="text-petroleum-400 hover:text-petroleum-600 w-full py-2.5 text-left text-sm font-medium transition-colors"
+          >
+            Sign out
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 // ─── Header ───────────────────────────────────────────────────
 
 export const Header = () => {
-  const [openMobileMenu, setOpenMobileMenu] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<MenuItem | null>(null);
-  const [displayedMenu, setDisplayedMenu] = useState<MenuItem | null>(null);
-  const [activeItem, setActiveItem] = useState<ItemMenu | null>(null);
+  const { user, signOut } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "staff";
+  const desktopMenuItems = isAdmin ? adminMenuItems : memberMenuItems;
+  const [
+    { openMobileMenu, activeMenu, displayedMenu, activeItem, openAccountMenu },
+    dispatch,
+  ] = useReducer(headerReducer, initialHeaderState);
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const cardTextRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
 
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -190,20 +377,19 @@ export const Header = () => {
   const scheduleClose = () => {
     cancelClose();
     closeTimer.current = setTimeout(() => {
-      setActiveMenu(null);
-      setActiveItem(null);
+      dispatch({ type: "SCHEDULE_CLOSE" });
     }, 400);
   };
 
   const handleMenuEnter = (menu: MenuItem) => {
     cancelClose();
-    setActiveMenu(menu);
-    setActiveItem(null);
+    dispatch({ type: "MENU_ENTER", menu });
   };
 
   // Sincroniza displayedMenu con activeMenu (solo al abrir)
   useEffect(() => {
-    if (activeMenu !== null) setDisplayedMenu(activeMenu);
+    if (activeMenu !== null)
+      dispatch({ type: "SET_DISPLAYED_MENU", menu: activeMenu });
   }, [activeMenu]);
 
   // Animar apertura del dropdown
@@ -268,7 +454,7 @@ export const Header = () => {
         { height: 0, opacity: 0, duration: 0.25, ease: "power3.in" },
         "-=0.05",
       )
-      .call(() => setDisplayedMenu(null));
+      .call(() => dispatch({ type: "SET_DISPLAYED_MENU", menu: null }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu]);
 
@@ -282,6 +468,42 @@ export const Header = () => {
       { y: 0, opacity: 1, stagger: 0.08, duration: 0.3, ease: "power2.out" },
     );
   }, [activeCardHref]);
+
+  // Click-outside para cerrar el dropdown de cuenta
+  useEffect(() => {
+    if (!openAccountMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(e.target as Node)
+      ) {
+        dispatch({ type: "CLOSE_ACCOUNT_MENU" });
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openAccountMenu]);
+
+  // Animar apertura/cierre del dropdown de cuenta
+  useEffect(() => {
+    const el = accountDropdownRef.current;
+    if (!el) return;
+    if (openAccountMenu) {
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: -6, scale: 0.97 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: "power2.out" },
+      );
+    } else {
+      gsap.to(el, {
+        opacity: 0,
+        y: -6,
+        scale: 0.97,
+        duration: 0.15,
+        ease: "power2.in",
+      });
+    }
+  }, [openAccountMenu]);
 
   // Animar menú móvil
   useEffect(() => {
@@ -374,12 +596,37 @@ export const Header = () => {
         </nav>
 
         <div className="gap flex items-center justify-between gap-3">
-          <Button variant="solid" size="md" href="/booking">
-            Booking
-          </Button>
+          {user ? (
+            <div ref={accountMenuRef} className="relative hidden md:block">
+              <button
+                type="button"
+                aria-label="My account"
+                onClick={() => dispatch({ type: "TOGGLE_ACCOUNT_MENU" })}
+                className="text-petroleum-500 hover:text-petroleum-700 flex items-center rounded-full border border-current p-2 transition-colors"
+              >
+                <IconUserCircle />
+              </button>
+              {openAccountMenu && (
+                <AccountDropdown
+                  ref={accountDropdownRef}
+                  isAdmin={isAdmin}
+                  menuItems={desktopMenuItems}
+                  onClose={() => dispatch({ type: "CLOSE_ACCOUNT_MENU" })}
+                  onSignOut={() => {
+                    void signOut();
+                    dispatch({ type: "CLOSE_ACCOUNT_MENU" });
+                  }}
+                />
+              )}
+            </div>
+          ) : (
+            <Button variant="solid" size="md" href="/booking">
+              Booking
+            </Button>
+          )}
           <HamburgerButton
             setOpenMobileMenu={openMobileMenu}
-            onClick={() => setOpenMobileMenu((v) => !v)}
+            onClick={() => dispatch({ type: "TOGGLE_MOBILE_MENU" })}
             className="md:hidden"
           />
         </div>
@@ -391,13 +638,21 @@ export const Header = () => {
           ref={desktopMenuRef}
           displayedMenu={displayedMenu}
           activeItem={activeItem}
-          setActiveItem={setActiveItem}
-          setActiveMenu={setActiveMenu}
+          setActiveItem={(item) => dispatch({ type: "SET_ACTIVE_ITEM", item })}
+          setActiveMenu={(menu) => dispatch({ type: "SET_ACTIVE_MENU", menu })}
           cancelClose={cancelClose}
           scheduleClose={scheduleClose}
           cardTextRef={cardTextRef}
         />
-        <MobileMenu ref={mobileMenuRef} setOpenMobileMenu={setOpenMobileMenu} />
+        <MobileMenu
+          ref={mobileMenuRef}
+          setOpenMobileMenu={(open) =>
+            dispatch({ type: "SET_MOBILE_MENU", open })
+          }
+          isLoggedIn={!!user}
+          onSignOut={signOut}
+          userRole={user?.role}
+        />
       </section>
     </header>
   );

@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -72,6 +73,15 @@ export default function HeroSection() {
             Talk to us first
           </Button>
         </div>
+        <p className="text-sand-500/70 mt-6 text-sm">
+          Already a member?{" "}
+          <Link
+            href="/sign-in"
+            className="text-sand-400 underline underline-offset-2 transition-opacity hover:opacity-80"
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
     </section>
   );

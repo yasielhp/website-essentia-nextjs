@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Header } from "./components/header";
-import { Footer } from "./components/footer";
-import { ScrollReset } from "./components/scroll-reset";
 import { contact } from "@/constants/contact";
 import { ConsentManager } from "./components/consent-manager";
+import { AuthProvider } from "./components/auth-provider";
 
 const jedira = localFont({
   src: [
@@ -64,12 +62,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
       <body className="antialiased">
-        <ConsentManager>
-          <ScrollReset />
-          <Header />
-          <main>{children}</main>
-          <Footer />
-        </ConsentManager>
+        <AuthProvider>
+          <ConsentManager>{children}</ConsentManager>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,19 +1,43 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { MapPin, Route, Lock } from "lucide-react";
+import { MapPin, Route, Lock, Globe } from "lucide-react";
 import { Button } from "@components/ui/button";
+import { insforge } from "@/lib/insforge";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const details = [
-  { icon: Route, value: "12 km" },
-  { icon: Lock, value: "Members only" },
-  { icon: MapPin, value: "Baobab Suites lobby, Costa Adeje" },
-];
+type NextRace = {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string | null;
+  location: string | null;
+  distance_km: number | null;
+  max_participants: number | null;
+  image_url: string | null;
+  access: "members" | "open" | null;
+};
+
+function formatRaceDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatRaceTime(iso: string | null): string {
+  if (!iso) return "";
+  const match = iso.match(/[T ](\d{2}:\d{2})/);
+  if (!match) return "";
+  return match[1] === "00:00" ? "" : match[1];
+}
 
 const expects = [
   {
@@ -113,10 +137,28 @@ function RunningClubHero() {
 
 // ─── Next run ─────────────────────────────────────────────────
 
-function NextRunSection() {
+function NextRunSection({ race }: { race: NextRace | null }) {
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  const raceTime = formatRaceTime(race?.date ?? null);
+
+  const details = [
+    {
+      id: "distance",
+      icon: Route,
+      value: race?.distance_km ? `${race.distance_km} km` : "—",
+      wide: false,
+    },
+    {
+      id: "access",
+      icon: race?.access === "open" ? Globe : Lock,
+      value: race?.access === "open" ? "Open to all" : "Members only",
+      wide: false,
+    },
+    { id: "location", icon: MapPin, value: race?.location ?? "—", wide: true },
+  ];
 
   useEffect(() => {
     const revealAll = () => {
@@ -207,35 +249,82 @@ function NextRunSection() {
             </div>
             <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
               <div className="relative h-56 md:h-auto md:min-h-72">
-                <Image
-                  src="/images/community/running-club-next.webp"
-                  alt="Next Essentia run"
-                  fill
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                  className="object-cover"
-                />
+                {race?.image_url ? (
+                  <Image
+                    src={race.image_url}
+                    alt={race.title}
+                    fill
+                    sizes="(max-width: 767px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="bg-petroleum-700 flex h-full w-full flex-col items-center justify-center gap-4">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      className="text-petroleum-500 opacity-60"
+                    >
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="22"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 3"
+                      />
+                      <path
+                        d="M16 32 C18 26 22 22 24 20 C26 18 27 15 29 14"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M29 14 C30 18 31 20 33 22 M29 14 L32 11"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle
+                        cx="29"
+                        cy="11"
+                        r="2.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                    <span className="text-petroleum-400 text-xs tracking-widest uppercase">
+                      No image yet
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
                 <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      Saturday,
-                      <br />
-                      24 May 2026
+                      {race ? formatRaceDate(race.date) : "Coming soon."}
                     </h3>
-                    <p className="text-petroleum-400 mt-1 text-sm">
-                      7:30 am · Baobab Suites lobby
-                    </p>
+                    {raceTime && (
+                      <p className="text-petroleum-400 mt-1 text-sm">
+                        {raceTime}
+                      </p>
+                    )}
                   </div>
                   <p className="text-petroleum-500 text-sm leading-relaxed">
-                    This week: the Fanabe coastal path. 10 km along the seafront
-                    promenade with Atlantic views from start to finish. Ends
-                    with breakfast at the club.
+                    {race
+                      ? `${race.title}. ${race.description ?? ""}`
+                      : "Details for the next run will be announced soon."}
                   </p>
                 </div>
                 <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
-                  {details.map(({ icon: Icon, value }) => (
-                    <div key={value} className="flex items-start gap-2">
+                  {details.map(({ id, icon: Icon, value, wide }) => (
+                    <div
+                      key={id}
+                      className={`flex items-start gap-2${wide ? "col-span-2" : ""}`}
+                    >
                       <Icon
                         className="text-petroleum-400 mt-0.5 shrink-0"
                         size={15}
@@ -249,7 +338,11 @@ function NextRunSection() {
                 <Button
                   variant="solid"
                   size="md"
-                  href="/community/running-club/register"
+                  href={
+                    race
+                      ? `/community/running-club/register?id=${race.id}`
+                      : "/community/running-club/register"
+                  }
                   className="w-full md:w-auto md:self-start"
                 >
                   Register for this run
@@ -452,10 +545,27 @@ function CtaSection() {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function RunningClubSection() {
+  const [nextRace, setNextRace] = useState<NextRace | null>(null);
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    void insforge.database
+      .from("races")
+      .select(
+        "id, title, description, date, location, distance_km, max_participants, image_url, access",
+      )
+      .gte("date", today)
+      .order("date", { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) setNextRace(data[0] as NextRace);
+      });
+  }, []);
+
   return (
     <>
       <RunningClubHero />
-      <NextRunSection />
+      <NextRunSection race={nextRace} />
       <ExpectSection />
       <CtaSection />
     </>

@@ -32,6 +32,11 @@ export const Footer = () => {
                     </AnimatedLink>
                   </li>
                 ))}
+                {item.name === "Community" && (
+                  <li>
+                    <AnimatedLink href="/sign-in">Member login</AnimatedLink>
+                  </li>
+                )}
               </ul>
             </div>
           ))}
@@ -68,6 +73,19 @@ export const Footer = () => {
                             </AnimatedLink>
                           </li>
                         ))}
+                        {menu.name === "Community" && (
+                          <li className="border-petroleum-500 border-l pr-5 pl-3">
+                            <AnimatedLink
+                              href="/sign-in"
+                              className="flex flex-col pb-2"
+                              onClick={() => accordionRef.current?.close()}
+                            >
+                              <span className="text-sand-700 text-sm font-medium">
+                                Member login
+                              </span>
+                            </AnimatedLink>
+                          </li>
+                        )}
                       </ul>
                     </Accordion.Content>
                   </Accordion>

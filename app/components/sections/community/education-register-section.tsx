@@ -1,41 +1,150 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useReducer, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Clock, Lock, Users } from "lucide-react";
+import { Calendar, Clock, Lock, Users, type LucideIcon } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
+import { insforge } from "@/lib/insforge";
+import { useAuth } from "@/components/auth-provider";
 
-const sessionDetails = {
-  date: "Thursday, 5 June 2026",
-  time: "19:00 – 21:00",
-  access: "Members only",
-  seats: "Limited to 20 seats",
-  speaker: "Dr. Elena Voss",
-  topic: "Neuroscience & Recovery",
-  title: "The Science of Sleep",
-  description:
-    "Why sleep is the single highest-leverage intervention for longevity, and what the latest research says about optimising it for your biology. The first hour is a structured talk with slides; the second is open Q&A.",
-  whatToBring: [
-    "Essentia membership card",
-    "Notebook and pen",
-    "Your questions",
-  ],
+type Session = {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string | null;
+  duration_minutes: number | null;
+  location: string | null;
+  max_participants: number | null;
+  speaker: string | null;
+  speaker_role: string | null;
+  price_cents: number | null;
 };
 
-const details = [
-  { icon: Calendar, value: `${sessionDetails.date} · ${sessionDetails.time}` },
-  { icon: Clock, value: sessionDetails.time },
-  { icon: Lock, value: sessionDetails.access },
-  { icon: Users, value: sessionDetails.seats },
-];
+type Stage = "form" | "member-blocker" | "success";
+type FormFields = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
+
+type RegisterState = {
+  session: Session | null;
+  stage: Stage;
+  loading: boolean;
+  checking: boolean;
+  consent: boolean;
+  consentError: string | undefined;
+  form: FormFields;
+};
+
+type RegisterAction =
+  | { type: "SET_SESSION"; session: Session }
+  | { type: "SET_STAGE"; stage: Stage }
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_SUCCESS" }
+  | { type: "SUBMIT_MEMBER_BLOCKER" }
+  | { type: "CONFIRM_START" }
+  | { type: "CONFIRM_SUCCESS" }
+  | { type: "SET_CONSENT"; value: boolean }
+  | { type: "SET_CONSENT_ERROR"; error: string }
+  | { type: "SET_FIELD"; field: keyof FormFields; value: string };
+
+function registerReducer(
+  state: RegisterState,
+  action: RegisterAction,
+): RegisterState {
+  switch (action.type) {
+    case "SET_SESSION":
+      return { ...state, session: action.session };
+    case "SET_STAGE":
+      return { ...state, stage: action.stage };
+    case "SUBMIT_START":
+      return { ...state, checking: true };
+    case "SUBMIT_SUCCESS":
+      return { ...state, checking: false, stage: "success" };
+    case "SUBMIT_MEMBER_BLOCKER":
+      return { ...state, checking: false, stage: "member-blocker" };
+    case "CONFIRM_START":
+      return { ...state, loading: true };
+    case "CONFIRM_SUCCESS":
+      return { ...state, loading: false, stage: "success" };
+    case "SET_CONSENT":
+      return { ...state, consent: action.value, consentError: undefined };
+    case "SET_CONSENT_ERROR":
+      return { ...state, consentError: action.error };
+    case "SET_FIELD":
+      return {
+        ...state,
+        form: { ...state.form, [action.field]: action.value },
+      };
+  }
+}
+
+const initialState: RegisterState = {
+  session: null,
+  stage: "form",
+  loading: false,
+  checking: false,
+  consent: false,
+  consentError: undefined,
+  form: { firstName: "", lastName: "", email: "", phone: "" },
+};
+
+function formatSessionDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Atlantic/Canary",
+  });
+}
+
+function formatSessionTimeRange(
+  iso: string | null,
+  durationMinutes: number | null,
+): string {
+  if (!iso) return "—";
+  const start = new Date(iso);
+  const startStr = start.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Atlantic/Canary",
+  });
+  if (durationMinutes) {
+    const end = new Date(start.getTime() + durationMinutes * 60_000);
+    const endStr = end.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Atlantic/Canary",
+    });
+    return `${startStr} – ${endStr}`;
+  }
+  return startStr;
+}
+
+function formatPrice(priceCents: number | null): string {
+  if (priceCents === null) return "Members only";
+  if (priceCents === 0) return "Free";
+  return `€${(priceCents / 100).toFixed(2)}`;
+}
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-300 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-200";
+
+const whatToBring = [
+  "Essentia membership card",
+  "Notebook and pen",
+  "Your questions",
+];
 
 function Field({
   label,
@@ -56,12 +165,296 @@ function Field({
   );
 }
 
-export default function EducationRegisterSection() {
+type SessionDetail = { id: string; icon: LucideIcon; value: string };
+
+function SessionInfoPanel({
+  session,
+  sessionDetails,
+  displayTitle,
+}: {
+  session: Session | null;
+  sessionDetails: SessionDetail[];
+  displayTitle: string;
+}) {
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
+          {displayTitle}.
+        </h1>
+        {session?.speaker && (
+          <p className="text-petroleum-400 mt-2 text-sm">
+            {session.speaker}
+            {session.speaker_role ? ` · ${session.speaker_role}` : ""}
+          </p>
+        )}
+      </div>
+
+      <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
+        <Image
+          src="/images/menu/education-programs.webp"
+          alt="Essentia Education Programs"
+          fill
+          sizes="(max-width: 767px) 100vw, 50vw"
+          className="object-cover"
+        />
+      </div>
+
+      {sessionDetails.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {sessionDetails.map(({ id, icon: Icon, value }) => (
+            <div key={id} className="flex items-center gap-3">
+              <Icon className="text-petroleum-400 shrink-0" size={15} />
+              <p className="text-petroleum-600 text-sm">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {session?.description && (
+        <p className="text-petroleum-500 text-sm leading-relaxed">
+          {session.description}
+        </p>
+      )}
+
+      <div>
+        <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
+          What to bring
+        </p>
+        <ul className="flex flex-col gap-2">
+          {whatToBring.map((item) => (
+            <li
+              key={item}
+              className="text-petroleum-600 flex items-center gap-2 text-sm"
+            >
+              <span className="bg-petroleum-200 size-1 shrink-0 rounded-full" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MemberBlockerModal({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex flex-col gap-1">
+          <h3 className="font-display text-petroleum-700 text-xl">
+            Active membership found
+          </h3>
+          <p className="text-petroleum-400 text-sm">
+            This email is linked to an active Essentia membership. Sign in to
+            register with your member benefits.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button variant="solid" size="md" href="/sign-in" className="w-full">
+            Sign in to my account
+          </Button>
+          <Button variant="ghost" size="md" onClick={onBack} className="w-full">
+            Continue as guest
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type GuestFormProps = {
+  form: FormFields;
+  consent: boolean;
+  consentError: string | undefined;
+  checking: boolean;
+  onField: (field: keyof FormFields, value: string) => void;
+  onConsent: (value: boolean) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+};
+
+function GuestRegistrationForm({
+  form,
+  consent,
+  consentError,
+  checking,
+  onField,
+  onConsent,
+  onSubmit,
+}: GuestFormProps) {
+  return (
+    <div className="bg-sand-100 rounded-2xl p-8">
+      <h2 className="font-display text-petroleum-700 mb-6 text-2xl">
+        Your details.
+      </h2>
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Field label="First name" id="first-name">
+            <input
+              id="first-name"
+              name="firstName"
+              type="text"
+              required
+              autoComplete="given-name"
+              placeholder="Jane"
+              value={form.firstName}
+              onChange={(e) => onField("firstName", e.target.value)}
+              disabled={checking}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Last name" id="last-name">
+            <input
+              id="last-name"
+              name="lastName"
+              type="text"
+              required
+              autoComplete="family-name"
+              placeholder="Smith"
+              value={form.lastName}
+              onChange={(e) => onField("lastName", e.target.value)}
+              disabled={checking}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+
+        <Field label="Email" id="email">
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="jane@example.com"
+            value={form.email}
+            onChange={(e) => onField("email", e.target.value)}
+            disabled={checking}
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Phone" id="phone">
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            required
+            autoComplete="tel"
+            placeholder="+34 600 000 000"
+            value={form.phone}
+            onChange={(e) => onField("phone", e.target.value)}
+            disabled={checking}
+            className={inputClass}
+          />
+        </Field>
+
+        {/* Consentimiento — RGPD art. 7 / LOPDGDD art. 6 */}
+        <Checkbox
+          name="consent"
+          checked={consent}
+          onChange={(e) => onConsent(e.target.checked)}
+          disabled={checking}
+          error={consentError}
+          label={
+            <span className="text-petroleum-400 text-sm">
+              I accept the{" "}
+              <Link
+                href="/terms"
+                className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
+                target="_blank"
+              >
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
+                target="_blank"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          }
+        />
+
+        <Button
+          variant="solid"
+          size="md"
+          type="submit"
+          disabled={checking}
+          className="w-full"
+        >
+          {checking ? "Checking…" : "Confirm registration"}
+        </Button>
+
+        {/* Información RGPD art. 13 */}
+        <Accordion className="border-sand-500 rounded-2xl border px-6">
+          <Accordion.Header iconClassName="text-petroleum-400">
+            <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
+              Data protection information
+            </span>
+          </Accordion.Header>
+          <Accordion.Content>
+            <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
+              <strong className="font-medium">Data controller:</strong> Essentia
+              Social Wellness Club
+              <br />
+              <strong className="font-medium">Purpose:</strong> managing your
+              session registration
+              <br />
+              <strong className="font-medium">Legal basis:</strong> your consent
+              (GDPR art. 6.1.a)
+              <br />
+              <strong className="font-medium">Your rights:</strong> access,
+              rectification, erasure, restriction, portability, and objection:
+              write to{" "}
+              <a
+                href={`mailto:${contact.email}`}
+                className="underline underline-offset-2"
+              >
+                {contact.email}
+              </a>
+              . Full details in our{" "}
+              <Link
+                href="/privacy"
+                className="underline underline-offset-2"
+                target="_blank"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </Accordion.Content>
+        </Accordion>
+      </form>
+    </div>
+  );
+}
+
+function EducationRegisterContent() {
+  const { get } = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [consent, setConsent] = useState(false);
-  const [consentError, setConsentError] = useState<string | undefined>();
+  const [state, dispatch] = useReducer(registerReducer, initialState);
+  const { session, stage, loading, checking, consent, consentError, form } =
+    state;
+
+  useEffect(() => {
+    const id = get("id");
+    if (!id) return;
+    void insforge.database
+      .from("education_sessions")
+      .select(
+        "id, title, description, date, duration_minutes, location, max_participants, speaker, speaker_role, price_cents",
+      )
+      .eq("id", id)
+      .single()
+      .then(({ data }) => {
+        if (data) dispatch({ type: "SET_SESSION", session: data as Session });
+      });
+  }, [get]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -79,20 +472,71 @@ export default function EducationRegisterSection() {
     return () => ctx.revert();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const displayTitle = session?.title ?? "Reserve your seat.";
+  const displayDate = session ? formatSessionDate(session.date) : "";
+
+  const sessionDetails: SessionDetail[] = session
+    ? [
+        { id: "date", icon: Calendar, value: formatSessionDate(session.date) },
+        {
+          id: "time",
+          icon: Clock,
+          value: formatSessionTimeRange(session.date, session.duration_minutes),
+        },
+        { id: "access", icon: Lock, value: formatPrice(session.price_cents) },
+        {
+          id: "seats",
+          icon: Users,
+          value: session.max_participants
+            ? `Limited to ${session.max_participants} seats`
+            : "Open seats",
+        },
+      ]
+    : [];
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!consent) {
-      setConsentError(
-        "You must accept the terms and privacy policy to register.",
-      );
+      dispatch({
+        type: "SET_CONSENT_ERROR",
+        error: "You must accept the terms and privacy policy to register.",
+      });
       return;
     }
-    setConsentError(undefined);
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 1200);
+    dispatch({ type: "SUBMIT_START" });
+
+    const { data: roleData } = await insforge.database.rpc("check_email_role", {
+      p_email: form.email,
+    });
+
+    if (roleData === "member") {
+      dispatch({ type: "SUBMIT_MEMBER_BLOCKER" });
+      return;
+    }
+
+    const { data: contactId } = await insforge.database.rpc("upsert_contact", {
+      p_email: form.email,
+      p_first_name: form.firstName,
+      p_last_name: form.lastName,
+      p_phone: form.phone,
+    });
+
+    await insforge.database.rpc("register_for_education", {
+      p_session_id: session?.id ?? "",
+      p_contact_id: (contactId as string) ?? undefined,
+    });
+
+    dispatch({ type: "SUBMIT_SUCCESS" });
+  };
+
+  const handleConfirm = async () => {
+    if (!user || !session) return;
+    dispatch({ type: "CONFIRM_START" });
+    await insforge.database.rpc("register_for_education", {
+      p_session_id: session.id,
+      p_user_id: user.id,
+    });
+    dispatch({ type: "CONFIRM_SUCCESS" });
   };
 
   return (
@@ -100,69 +544,24 @@ export default function EducationRegisterSection() {
       <div className="mx-auto max-w-4xl px-5 pt-36 pb-24 md:pt-52">
         <div ref={wrapperRef} className="flex flex-col gap-12">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16">
-            {/* ── Left: session info ── */}
-            <div className="flex flex-col gap-8">
-              <div>
-                <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-                  {sessionDetails.title}.
-                </h1>
-                <p className="text-petroleum-400 mt-2 text-sm">
-                  {sessionDetails.speaker} · {sessionDetails.topic}
-                </p>
-              </div>
+            <SessionInfoPanel
+              session={session}
+              sessionDetails={sessionDetails}
+              displayTitle={displayTitle}
+            />
 
-              <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
-                <Image
-                  src="/images/menu/education-programs.webp"
-                  alt="Essentia Education Programs"
-                  fill
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {details.map(({ icon: Icon, value }) => (
-                  <div key={value} className="flex items-center gap-3">
-                    <Icon className="text-petroleum-400 shrink-0" size={15} />
-                    <p className="text-petroleum-600 text-sm">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-petroleum-500 text-sm leading-relaxed">
-                {sessionDetails.description}
-              </p>
-
-              <div>
-                <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-                  What to bring
-                </p>
-                <ul className="flex flex-col gap-2">
-                  {sessionDetails.whatToBring.map((item) => (
-                    <li
-                      key={item}
-                      className="text-petroleum-600 flex items-center gap-2 text-sm"
-                    >
-                      <span className="bg-petroleum-200 size-1 shrink-0 rounded-full" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* ── Right: form ── */}
             <div>
-              {submitted ? (
+              {stage === "success" ? (
                 <div className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-8">
                   <p className="font-display text-petroleum-700 text-2xl">
                     You&apos;re registered.
                   </p>
                   <p className="text-petroleum-400 text-sm leading-relaxed">
                     We&apos;ve received your registration for{" "}
-                    {sessionDetails.title} on {sessionDetails.date}. See you at{" "}
-                    {sessionDetails.time}.
+                    <strong className="text-petroleum-600 font-medium">
+                      {displayTitle}
+                    </strong>
+                    {displayDate ? ` on ${displayDate}` : ""}.
                   </p>
                   <Link
                     href="/community/education-programs"
@@ -171,156 +570,62 @@ export default function EducationRegisterSection() {
                     Back to Education Programs
                   </Link>
                 </div>
-              ) : (
-                <div className="bg-sand-100 rounded-2xl p-8">
-                  <h2 className="font-display text-petroleum-700 mb-6 text-2xl">
-                    Your details.
-                  </h2>
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                      <Field label="First name" id="first-name">
-                        <input
-                          id="first-name"
-                          name="firstName"
-                          type="text"
-                          required
-                          autoComplete="given-name"
-                          placeholder="Jane"
-                          className={inputClass}
-                        />
-                      </Field>
-                      <Field label="Last name" id="last-name">
-                        <input
-                          id="last-name"
-                          name="lastName"
-                          type="text"
-                          required
-                          autoComplete="family-name"
-                          placeholder="Smith"
-                          className={inputClass}
-                        />
-                      </Field>
-                    </div>
-
-                    <Field label="Email" id="email">
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        autoComplete="email"
-                        placeholder="jane@example.com"
-                        className={inputClass}
-                      />
-                    </Field>
-
-                    <Field label="Phone" id="phone">
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        required
-                        autoComplete="tel"
-                        placeholder="+34 600 000 000"
-                        className={inputClass}
-                      />
-                    </Field>
-
-                    {/* Consentimiento — RGPD art. 7 / LOPDGDD art. 6 */}
-                    <Checkbox
-                      name="consent"
-                      checked={consent}
-                      onChange={(e) => {
-                        setConsent(e.target.checked);
-                        if (consentError) setConsentError(undefined);
-                      }}
-                      disabled={loading}
-                      error={consentError}
-                      label={
-                        <span className="text-petroleum-400 text-sm">
-                          I accept the{" "}
-                          <Link
-                            href="/terms"
-                            className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
-                            target="_blank"
-                          >
-                            Terms
-                          </Link>{" "}
-                          and{" "}
-                          <Link
-                            href="/privacy"
-                            className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
-                            target="_blank"
-                          >
-                            Privacy Policy
-                          </Link>
-                          .
-                        </span>
-                      }
-                    />
-
-                    <Button
-                      variant="solid"
-                      size="md"
-                      type="submit"
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading ? "Registering…" : "Confirm registration"}
-                    </Button>
-
-                    {/* Información RGPD art. 13 */}
-                    <Accordion className="border-sand-500 rounded-2xl border px-6">
-                      <Accordion.Header iconClassName="text-petroleum-400">
-                        <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
-                          Data protection information
-                        </span>
-                      </Accordion.Header>
-                      <Accordion.Content>
-                        <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
-                          <strong className="font-medium">
-                            Data controller:
-                          </strong>{" "}
-                          Essentia Social Wellness Club
-                          <br />
-                          <strong className="font-medium">Purpose:</strong>{" "}
-                          managing your session registration
-                          <br />
-                          <strong className="font-medium">
-                            Legal basis:
-                          </strong>{" "}
-                          your consent (GDPR art. 6.1.a)
-                          <br />
-                          <strong className="font-medium">
-                            Your rights:
-                          </strong>{" "}
-                          access, rectification, erasure, restriction,
-                          portability, and objection: write to{" "}
-                          <a
-                            href={`mailto:${contact.email}`}
-                            className="underline underline-offset-2"
-                          >
-                            {contact.email}
-                          </a>
-                          . Full details in our{" "}
-                          <Link
-                            href="/privacy"
-                            className="underline underline-offset-2"
-                            target="_blank"
-                          >
-                            Privacy Policy
-                          </Link>
-                          .
-                        </p>
-                      </Accordion.Content>
-                    </Accordion>
-                  </form>
+              ) : !authLoading && user ? (
+                <div className="bg-sand-100 flex flex-col gap-6 rounded-2xl p-8">
+                  <div>
+                    <h2 className="font-display text-petroleum-700 text-2xl">
+                      Confirm your registration.
+                    </h2>
+                    <p className="text-petroleum-400 mt-2 text-sm">
+                      Registering as{" "}
+                      <span className="text-petroleum-600 font-medium">
+                        {user.email}
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="solid"
+                    size="md"
+                    onClick={() => void handleConfirm()}
+                    disabled={loading || !session}
+                    className="w-full"
+                  >
+                    {loading ? "Confirming…" : "Confirm registration"}
+                  </Button>
                 </div>
+              ) : (
+                <GuestRegistrationForm
+                  form={form}
+                  consent={consent}
+                  consentError={consentError}
+                  checking={checking}
+                  onField={(field, value) =>
+                    dispatch({ type: "SET_FIELD", field, value })
+                  }
+                  onConsent={(value) =>
+                    dispatch({ type: "SET_CONSENT", value })
+                  }
+                  onSubmit={(e) => void handleSubmit(e)}
+                />
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {stage === "member-blocker" && (
+        <MemberBlockerModal
+          onBack={() => dispatch({ type: "SET_STAGE", stage: "form" })}
+        />
+      )}
     </section>
+  );
+}
+
+export default function EducationRegisterSection() {
+  return (
+    <Suspense>
+      <EducationRegisterContent />
+    </Suspense>
   );
 }

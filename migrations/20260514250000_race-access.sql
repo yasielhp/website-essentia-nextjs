@@ -1,0 +1,1 @@
+ALTER TABLE public.races ADD COLUMN IF NOT EXISTS access TEXT NOT NULL DEFAULT 'members';

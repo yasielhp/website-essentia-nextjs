@@ -69,6 +69,25 @@ export const IconYouTube = () => (
   </svg>
 );
 
+export const IconUserCircle = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="1.5" />
+    <path
+      d="M6.168 18.849A4.001 4.001 0 0 1 10 16h4a4.001 4.001 0 0 1 3.832 2.849"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 export const IconWorld = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
