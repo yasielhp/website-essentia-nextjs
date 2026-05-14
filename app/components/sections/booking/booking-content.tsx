@@ -111,7 +111,8 @@ function initState(slug: string | null): BookingState {
 }
 
 function BookingContentInner() {
-  const { get } = useSearchParams();
+  const searchParams = useSearchParams();
+  const get = searchParams.get.bind(searchParams);
   const slug = get("wellness") ?? get("medicine");
 
   const [state, dispatch] = useReducer(bookingReducer, slug, initState);

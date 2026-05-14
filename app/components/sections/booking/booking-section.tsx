@@ -1,4 +1,12 @@
-import { BookingContent } from "./booking-content";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const BookingContent = dynamic(
+  () =>
+    import("./booking-content").then((m) => ({ default: m.BookingContent })),
+  { ssr: false },
+);
 
 export default function BookingSection() {
   return (
