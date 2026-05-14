@@ -14,7 +14,8 @@ export const bookableServices: BookableService[] = [
     id: "contrast-therapy",
     category: "wellness",
     title: "Contrast Therapy",
-    description: "Alternating heat and cold to activate recovery and reduce inflammation.",
+    description:
+      "Alternating heat and cold to activate recovery and reduce inflammation.",
     durations: ["60 min"],
     price: "€45",
     image: "/images/menu/thermal-contrast.webp",
@@ -32,7 +33,8 @@ export const bookableServices: BookableService[] = [
     id: "red-light-therapy",
     category: "wellness",
     title: "Red Light Therapy",
-    description: "Red and infrared light to stimulate cellular repair and regeneration.",
+    description:
+      "Red and infrared light to stimulate cellular repair and regeneration.",
     durations: ["20 min"],
     price: "€25",
     image: "/images/menu/red-light-therapy.webp",
@@ -60,7 +62,8 @@ export const bookableServices: BookableService[] = [
     id: "hyperbaric-chambers",
     category: "medicine",
     title: "Hyperbaric Oxygen",
-    description: "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
+    description:
+      "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
     durations: ["60 min"],
     price: "€120",
     image: "/images/menu/hyperbaric-chambers.webp",
@@ -69,7 +72,8 @@ export const bookableServices: BookableService[] = [
     id: "intravenous-therapy",
     category: "medicine",
     title: "IV Therapy",
-    description: "Direct nutrient delivery for rapid absorption and cellular support.",
+    description:
+      "Direct nutrient delivery for rapid absorption and cellular support.",
     durations: ["45 min"],
     price: "€95",
     image: "/images/menu/intravenous-therapy.webp",
