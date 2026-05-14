@@ -172,17 +172,26 @@ function ServiceSelect({
               <p className="text-petroleum-500 text-sm">{selected.duration}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Clear selection"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(null);
                   setIsOpen(false);
                 }}
-                className="text-petroleum-300 hover:text-petroleum-600 rounded-full p-1 transition-colors"
-                aria-label="Clear selection"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    onSelect(null);
+                    setIsOpen(false);
+                  }
+                }}
+                className="text-petroleum-300 hover:text-petroleum-600 cursor-pointer rounded-full p-1 transition-colors"
               >
                 <X size={14} />
-              </button>
+              </div>
               <ChevronDown
                 className={[
                   "text-petroleum-400 shrink-0 transition-transform duration-200",
@@ -709,7 +718,8 @@ function SuccessState({
 
 function BookingContent() {
   const searchParams = useSearchParams();
-  const serviceParam = searchParams.get("service");
+  const wellnessParam = searchParams.get("wellness");
+  const medicineParam = searchParams.get("medicine");
 
   const [step, setStep] = useState(0);
   const [selectedService, setSelectedService] =
@@ -727,11 +737,12 @@ function BookingContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (serviceParam) {
-      const service = bookableServices.find((s) => s.id === serviceParam);
+    const slug = wellnessParam ?? medicineParam;
+    if (slug) {
+      const service = bookableServices.find((s) => s.id === slug);
       if (service) setSelectedService(service);
     }
-  }, [serviceParam]);
+  }, [wellnessParam, medicineParam]);
 
   const canProceed = [
     !!selectedService,
