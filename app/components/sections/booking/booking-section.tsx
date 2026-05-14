@@ -163,43 +163,21 @@ function ServiceSelect({
               />
             </div>
             <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
-              <p className="text-petroleum-700 font-medium">
-                {selected.title}
-              </p>
+              <p className="text-petroleum-700 font-medium">{selected.title}</p>
               <p className="text-petroleum-400 line-clamp-2 text-sm">
                 {selected.description}
               </p>
-              <p className="text-petroleum-500 text-sm">{selected.duration}</p>
+              <p className="text-petroleum-500 text-sm">
+                {selected.durations.join(" | ")}
+              </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Clear selection"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect(null);
-                  setIsOpen(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    onSelect(null);
-                    setIsOpen(false);
-                  }
-                }}
-                className="text-petroleum-300 hover:text-petroleum-600 cursor-pointer rounded-full p-1 transition-colors"
-              >
-                <X size={14} />
-              </div>
-              <ChevronDown
-                className={[
-                  "text-petroleum-400 shrink-0 transition-transform duration-200",
-                  isOpen ? "rotate-180" : "",
-                ].join(" ")}
-                size={16}
-              />
-            </div>
+            <ChevronDown
+              className={[
+                "text-petroleum-400 shrink-0 transition-transform duration-200",
+                isOpen ? "rotate-180" : "",
+              ].join(" ")}
+              size={16}
+            />
           </>
         ) : (
           <>
@@ -249,7 +227,9 @@ function ServiceSelect({
                   <p className="text-petroleum-400 line-clamp-1 text-xs">
                     {s.description}
                   </p>
-                  <p className="text-petroleum-500 text-xs">{s.duration}</p>
+                  <p className="text-petroleum-500 text-xs">
+                    {s.durations.join(" | ")}
+                  </p>
                 </div>
                 {selected?.id === s.id && (
                   <Check className="text-petroleum-700 shrink-0" size={14} />
@@ -282,7 +262,9 @@ function ServiceSelect({
                   <p className="text-petroleum-400 line-clamp-1 text-xs">
                     {s.description}
                   </p>
-                  <p className="text-petroleum-500 text-xs">{s.duration}</p>
+                  <p className="text-petroleum-500 text-xs">
+                    {s.durations.join(" | ")}
+                  </p>
                 </div>
                 {selected?.id === s.id && (
                   <Check className="text-petroleum-700 shrink-0" size={14} />
@@ -299,16 +281,42 @@ function ServiceSelect({
 function ServiceStep({
   selected,
   onSelect,
+  selectedDuration,
+  onSelectDuration,
 }: {
   selected: BookableService | null;
   onSelect: (s: BookableService | null) => void;
+  selectedDuration: string | null;
+  onSelectDuration: (d: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 md:max-w-lg">
+    <div className="flex flex-col gap-4 md:max-w-lg">
       <p className="text-petroleum-400 text-sm">
         Which service would you like to book?
       </p>
       <ServiceSelect selected={selected} onSelect={onSelect} />
+
+      {selected && selected.durations.length > 1 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-petroleum-600 text-sm font-medium">Duration</p>
+          <div className="flex gap-2">
+            {selected.durations.map((d) => (
+              <button
+                key={d}
+                onClick={() => onSelectDuration(d)}
+                className={[
+                  "rounded-xl border px-5 py-2.5 text-sm transition-all",
+                  selectedDuration === d
+                    ? "border-petroleum-700 bg-petroleum-700 text-sand-50 font-medium"
+                    : "border-petroleum-200 text-petroleum-600 hover:border-petroleum-400",
+                ].join(" ")}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -592,11 +600,13 @@ function DetailsStep({
 
 function ConfirmStep({
   service,
+  duration,
   date,
   time,
   details,
 }: {
   service: BookableService;
+  duration: string;
   date: Date;
   time: string;
   details: DetailsState;
@@ -617,7 +627,7 @@ function ConfirmStep({
           <div>
             <p className="text-petroleum-700 font-medium">{service.title}</p>
             <p className="text-petroleum-400 text-sm">
-              {service.duration} · {service.price}
+              {duration} · {service.price}
             </p>
           </div>
         </div>
@@ -724,6 +734,7 @@ function BookingContent() {
   const [step, setStep] = useState(0);
   const [selectedService, setSelectedService] =
     useState<BookableService | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [details, setDetails] = useState<DetailsState>({
@@ -740,12 +751,25 @@ function BookingContent() {
     const slug = wellnessParam ?? medicineParam;
     if (slug) {
       const service = bookableServices.find((s) => s.id === slug);
-      if (service) setSelectedService(service);
+      if (service) {
+        setSelectedService(service);
+        if (service.durations.length === 1) setSelectedDuration(service.durations[0]);
+      }
     }
   }, [wellnessParam, medicineParam]);
 
+  const handleSelectService = (s: BookableService | null) => {
+    setSelectedService(s);
+    if (s && s.durations.length === 1) {
+      setSelectedDuration(s.durations[0]);
+    } else {
+      setSelectedDuration(null);
+    }
+  };
+
   const canProceed = [
-    !!selectedService,
+    !!selectedService &&
+      (selectedService.durations.length === 1 || !!selectedDuration),
     !!(selectedDate && selectedTime),
     !!(
       details.firstName &&
@@ -792,7 +816,9 @@ function BookingContent() {
         {step === 0 && (
           <ServiceStep
             selected={selectedService}
-            onSelect={setSelectedService}
+            onSelect={handleSelectService}
+            selectedDuration={selectedDuration}
+            onSelectDuration={setSelectedDuration}
           />
         )}
         {step === 1 && selectedService && (
@@ -810,9 +836,11 @@ function BookingContent() {
         {step === 3 &&
           selectedService &&
           selectedDate &&
-          selectedTime && (
+          selectedTime &&
+          selectedDuration && (
             <ConfirmStep
               service={selectedService}
+              duration={selectedDuration}
               date={selectedDate}
               time={selectedTime}
               details={details}
