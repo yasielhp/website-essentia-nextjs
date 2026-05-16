@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/ui/image-upload";
 
 type RaceAccess = "members" | "open";
 
@@ -61,47 +60,11 @@ function IconPlus() {
   );
 }
 
-function IconClose() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M18 6L6 18M6 6l12 12"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-const inputClass =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
 export default function RacesPage() {
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const [formTitle, setFormTitle] = useState("");
-  const [formDesc, setFormDesc] = useState("");
-  const [formDate, setFormDate] = useState("");
-  const [formTime, setFormTime] = useState("07:00");
-  const [formLocation, setFormLocation] = useState("");
-  const [formDistance, setFormDistance] = useState("");
-  const [formMax, setFormMax] = useState("");
-  const [formAccess, setFormAccess] = useState<"members" | "open">("members");
-  const [formImageUrl, setFormImageUrl] = useState("");
-
-  const router = useRouter();
+  const { push } = useRouter();
 
   const fetchRaces = useCallback(async () => {
     setLoading(true);
@@ -148,67 +111,6 @@ export default function RacesPage() {
     void fetchRaces();
   }, [fetchRaces]);
 
-  function openCreate() {
-    setFormTitle("");
-    setFormDesc("");
-    setFormDate("");
-    setFormTime("07:00");
-    setFormLocation("");
-    setFormDistance("");
-    setFormMax("");
-    setFormAccess("members");
-    setFormImageUrl("");
-    setFormError(null);
-    setCreateOpen(true);
-  }
-
-  function closeCreate() {
-    if (submitting) return;
-    setCreateOpen(false);
-  }
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setFormError(null);
-
-    const title = formTitle.trim();
-    const date = formDate.trim();
-
-    if (!title || !date) {
-      setFormError("Title and date are required.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    const dateTime = formTime ? `${date}T${formTime}:00` : date;
-
-    const { error } = await insforge.database.from("races").insert([
-      {
-        title,
-        description: formDesc.trim() || null,
-        date: dateTime,
-        location: formLocation.trim() || null,
-        distance_km: formDistance ? parseFloat(formDistance) || null : null,
-        max_participants: formMax ? parseInt(formMax) || null : null,
-        access: formAccess,
-        image_url: formImageUrl || null,
-      },
-    ]);
-
-    setSubmitting(false);
-
-    if (error) {
-      setFormError(
-        (error as { message?: string })?.message ?? "Failed to create race.",
-      );
-      return;
-    }
-
-    setCreateOpen(false);
-    void fetchRaces();
-  }
-
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -219,7 +121,7 @@ export default function RacesPage() {
         <Button
           variant="solid"
           size="md"
-          onClick={openCreate}
+          href="/dashboard/races/new"
           className="gap-2 self-start"
         >
           <IconPlus />
@@ -277,13 +179,16 @@ export default function RacesPage() {
                 races.map((race) => (
                   <tr
                     key={race.id}
-                    onClick={() =>
-                      router.push(`/dashboard/races/${race.id}/edit`)
-                    }
+                    onClick={() => push(`/dashboard/races/${race.id}/edit`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        push(`/dashboard/races/${race.id}/edit`);
+                    }}
+                    tabIndex={0}
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="bg-sand-100 relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                      <div className="bg-sand-100 relative size-10 shrink-0 overflow-hidden rounded-lg">
                         {race.image_url ? (
                           <Image
                             src={race.image_url}
@@ -293,7 +198,7 @@ export default function RacesPage() {
                             sizes="40px"
                           />
                         ) : (
-                          <div className="bg-petroleum-700/10 flex h-full w-full items-center justify-center">
+                          <div className="bg-petroleum-700/10 flex size-full items-center justify-center">
                             <svg
                               width="16"
                               height="16"
@@ -349,7 +254,7 @@ export default function RacesPage() {
                       {race.distance_km != null ? (
                         `${race.distance_km} km`
                       ) : (
-                        <span className="text-petroleum-400">—</span>
+                        <span className="text-petroleum-400">{"—"}</span>
                       )}
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
@@ -369,7 +274,7 @@ export default function RacesPage() {
                           / {race.max_participants}
                         </span>
                       ) : (
-                        <span className="text-petroleum-400"> / —</span>
+                        <span className="text-petroleum-400">{" / —"}</span>
                       )}
                     </td>
                   </tr>
@@ -379,201 +284,6 @@ export default function RacesPage() {
           </table>
         </div>
       </div>
-
-      {createOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={closeCreate}
-        >
-          <div
-            className="mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-petroleum-700 text-xl">
-                Create Race
-              </h2>
-              <button
-                onClick={closeCreate}
-                disabled={submitting}
-                className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 rounded-lg p-1.5 transition-colors disabled:opacity-50"
-                aria-label="Close"
-              >
-                <IconClose />
-              </button>
-            </div>
-
-            <form onSubmit={(e) => void handleCreate(e)} noValidate>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Title <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="Essentia Marathon 2025"
-                    disabled={submitting}
-                    className={inputClass}
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Description
-                  </label>
-                  <textarea
-                    value={formDesc}
-                    onChange={(e) => setFormDesc(e.target.value)}
-                    placeholder="Brief description of the race…"
-                    disabled={submitting}
-                    rows={3}
-                    className={`${inputClass} resize-none`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Date <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formDate}
-                      onChange={(e) => setFormDate(e.target.value)}
-                      disabled={submitting}
-                      className={inputClass}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Time
-                    </label>
-                    <input
-                      type="time"
-                      value={formTime}
-                      onChange={(e) => setFormTime(e.target.value)}
-                      disabled={submitting}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={formLocation}
-                    onChange={(e) => setFormLocation(e.target.value)}
-                    placeholder="Barcelona, Spain"
-                    disabled={submitting}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Distance
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={formDistance}
-                        onChange={(e) => setFormDistance(e.target.value)}
-                        placeholder="42.2"
-                        min="0"
-                        step="0.1"
-                        disabled={submitting}
-                        className={inputClass + " pr-12"}
-                      />
-                      <span className="text-petroleum-400 pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">
-                        km
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Max participants
-                    </label>
-                    <input
-                      type="number"
-                      value={formMax}
-                      onChange={(e) => setFormMax(e.target.value)}
-                      placeholder="500"
-                      min="1"
-                      disabled={submitting}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Access
-                  </label>
-                  <select
-                    value={formAccess}
-                    onChange={(e) =>
-                      setFormAccess(e.target.value as "members" | "open")
-                    }
-                    disabled={submitting}
-                    className={inputClass}
-                  >
-                    <option value="members">Members only</option>
-                    <option value="open">Open · free for everyone</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Cover Image
-                  </label>
-                  <ImageUpload
-                    bucket="events"
-                    folder="races"
-                    value={formImageUrl}
-                    onChange={setFormImageUrl}
-                  />
-                </div>
-              </div>
-
-              {formError && (
-                <p className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                  {formError}
-                </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={closeCreate}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="solid"
-                  size="md"
-                  disabled={submitting}
-                >
-                  {submitting ? "Creating…" : "Create Race"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

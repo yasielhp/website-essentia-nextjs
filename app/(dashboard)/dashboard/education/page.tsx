@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/ui/image-upload";
 
 type AccessType = "members_only" | "open" | "paid" | "paid_members_free";
 
@@ -70,50 +69,11 @@ function IconPlus() {
   );
 }
 
-function IconClose() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M18 6L6 18M6 6l12 12"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-const TEXTAREA_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full resize-none min-h-[80px] disabled:opacity-60";
-
 export default function EducationPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const [formTitle, setFormTitle] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formDate, setFormDate] = useState("");
-  const [formTime, setFormTime] = useState("");
-  const [formDuration, setFormDuration] = useState("");
-  const [formLocation, setFormLocation] = useState("");
-  const [formMax, setFormMax] = useState("");
-  const [formImageUrl, setFormImageUrl] = useState("");
-  const [formAccess, setFormAccess] = useState<AccessType>("members_only");
-
-  const router = useRouter();
+  const { push } = useRouter();
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -160,67 +120,6 @@ export default function EducationPage() {
     void fetchSessions();
   }, [fetchSessions]);
 
-  function openCreate() {
-    setFormTitle("");
-    setFormDescription("");
-    setFormDate("");
-    setFormTime("");
-    setFormDuration("");
-    setFormLocation("");
-    setFormMax("");
-    setFormImageUrl("");
-    setFormAccess("members_only");
-    setFormError(null);
-    setCreateOpen(true);
-  }
-
-  function closeCreate() {
-    if (submitting) return;
-    setCreateOpen(false);
-  }
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setFormError(null);
-
-    const title = formTitle.trim();
-    if (!title || !formDate || !formTime) {
-      setFormError("Title, date and time are required.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    const isoDateTime = new Date(formDate + "T" + formTime).toISOString();
-
-    const { error } = await insforge.database
-      .from("education_sessions")
-      .insert([
-        {
-          title,
-          description: formDescription.trim() || null,
-          date: isoDateTime,
-          duration_minutes: parseInt(formDuration) || null,
-          location: formLocation.trim() || null,
-          max_participants: parseInt(formMax) || null,
-          image_url: formImageUrl || null,
-          access: formAccess,
-        },
-      ]);
-
-    setSubmitting(false);
-
-    if (error) {
-      setFormError(
-        (error as { message?: string }).message ?? "Failed to create session.",
-      );
-      return;
-    }
-
-    setCreateOpen(false);
-    void fetchSessions();
-  }
-
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -233,7 +132,7 @@ export default function EducationPage() {
         <Button
           variant="solid"
           size="md"
-          onClick={openCreate}
+          href="/dashboard/education/new"
           className="gap-2 self-start"
         >
           <IconPlus />
@@ -295,13 +194,13 @@ export default function EducationPage() {
                   <tr
                     key={session.id}
                     onClick={() =>
-                      router.push(`/dashboard/education/${session.id}/edit`)
+                      push(`/dashboard/education/${session.id}/edit`)
                     }
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
                     <td className="px-5 py-3">
                       {session.image_url ? (
-                        <div className="bg-sand-100 relative h-10 w-10 overflow-hidden rounded-lg">
+                        <div className="bg-sand-100 relative size-10 overflow-hidden rounded-lg">
                           <Image
                             src={session.image_url}
                             alt={session.title}
@@ -311,7 +210,7 @@ export default function EducationPage() {
                           />
                         </div>
                       ) : (
-                        <div className="bg-sand-100 flex h-10 w-10 items-center justify-center rounded-lg">
+                        <div className="bg-sand-100 flex size-10 items-center justify-center rounded-lg">
                           <svg
                             width="16"
                             height="16"
@@ -383,203 +282,6 @@ export default function EducationPage() {
           </table>
         </div>
       </div>
-
-      {/* Create session modal */}
-      {createOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={closeCreate}
-        >
-          <div
-            className="mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-petroleum-700 text-xl">
-                Create Session
-              </h2>
-              <button
-                onClick={closeCreate}
-                disabled={submitting}
-                className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 rounded-lg p-1.5 transition-colors disabled:opacity-50"
-                aria-label="Close"
-              >
-                <IconClose />
-              </button>
-            </div>
-
-            <form onSubmit={(e) => void handleCreate(e)} noValidate>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="Introduction to Breathwork"
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Description
-                  </label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="A brief overview of the session…"
-                    disabled={submitting}
-                    className={TEXTAREA_CLASS}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formDate}
-                      onChange={(e) => setFormDate(e.target.value)}
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                      required
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={formTime}
-                      onChange={(e) => setFormTime(e.target.value)}
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={formLocation}
-                    onChange={(e) => setFormLocation(e.target.value)}
-                    placeholder="Studio A"
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Duration
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={formDuration}
-                        onChange={(e) => setFormDuration(e.target.value)}
-                        placeholder="60"
-                        min="1"
-                        disabled={submitting}
-                        className={INPUT_CLASS + " pr-12"}
-                      />
-                      <span className="text-petroleum-400 pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">
-                        min
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Max participants
-                    </label>
-                    <input
-                      type="number"
-                      value={formMax}
-                      onChange={(e) => setFormMax(e.target.value)}
-                      placeholder="20"
-                      min="1"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Access
-                  </label>
-                  <select
-                    value={formAccess}
-                    onChange={(e) =>
-                      setFormAccess(e.target.value as AccessType)
-                    }
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  >
-                    <option value="members_only">Members only</option>
-                    <option value="open">Open · free for everyone</option>
-                    <option value="paid">Paid</option>
-                    <option value="paid_members_free">
-                      Paid · free for members
-                    </option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Cover Image
-                  </label>
-                  <ImageUpload
-                    bucket="events"
-                    folder="education"
-                    value={formImageUrl}
-                    onChange={setFormImageUrl}
-                  />
-                </div>
-              </div>
-
-              {formError && (
-                <p className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                  {formError}
-                </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={closeCreate}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="solid"
-                  size="md"
-                  disabled={submitting}
-                >
-                  {submitting ? "Creating…" : "Create Session"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
