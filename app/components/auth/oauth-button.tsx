@@ -16,7 +16,7 @@ const providerLabel: Record<Props["provider"], string> = {
 export function OAuthButton({ provider, redirectTo }: Props) {
   const [loading, setLoading] = useState(false);
 
-  const handleClick = async () => {
+  const handleOAuthSignIn = async () => {
     setLoading(true);
     await insforge.auth.signInWithOAuth({ provider, redirectTo });
   };
@@ -27,7 +27,7 @@ export function OAuthButton({ provider, redirectTo }: Props) {
       variant="outline"
       size="md"
       disabled={loading}
-      onClick={handleClick}
+      onClick={handleOAuthSignIn}
       className="w-full"
     >
       {loading ? "Redirecting…" : providerLabel[provider]}

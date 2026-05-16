@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
+import NextImage from "next/image";
 import { insforge } from "@/lib/insforge";
 
 async function compressImage(
@@ -121,7 +122,14 @@ export function ImageUpload({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => !uploading && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            if (!uploading) inputRef.current?.click();
+          }
+        }}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
@@ -134,11 +142,12 @@ export function ImageUpload({
         }`}
       >
         {value ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <NextImage
             src={value}
             alt="Preview"
-            className="h-full w-full object-cover"
+            fill
+            sizes="100%"
+            className="object-cover"
           />
         ) : (
           <div className="flex flex-col items-center gap-1 px-4 py-6 text-center">
@@ -188,7 +197,7 @@ export function ImageUpload({
 
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-            <div className="border-petroleum-700 h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
+            <div className="border-petroleum-700 size-6 animate-spin rounded-full border-2 border-t-transparent" />
           </div>
         )}
 

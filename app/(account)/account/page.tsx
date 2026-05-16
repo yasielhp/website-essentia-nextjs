@@ -82,19 +82,23 @@ function SummaryCard({
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { push } = router;
 
-  const [counts, setCounts] = useState<SummaryCounts>({
-    bookings: 0,
-    races: 0,
-    sessions: 0,
+  const [dataState, setDataState] = useState<{
+    counts: SummaryCounts;
+    upcomingBookings: Booking[];
+    dataLoading: boolean;
+  }>({
+    counts: { bookings: 0, races: 0, sessions: 0 },
+    upcomingBookings: [],
+    dataLoading: true,
   });
-  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const { counts, upcomingBookings, dataLoading } = dataState;
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/sign-in");
+      push("/sign-in");
       return;
     }
 
@@ -127,17 +131,19 @@ export default function AccountPage() {
             .limit(5),
         ]);
 
-      setCounts({
-        bookings: (bookingsCountRes as { count: number | null }).count ?? 0,
-        races: (racesCountRes as { count: number | null }).count ?? 0,
-        sessions: (sessionsCountRes as { count: number | null }).count ?? 0,
+      setDataState({
+        counts: {
+          bookings: (bookingsCountRes as { count: number | null }).count ?? 0,
+          races: (racesCountRes as { count: number | null }).count ?? 0,
+          sessions: (sessionsCountRes as { count: number | null }).count ?? 0,
+        },
+        upcomingBookings: (upcomingRes.data as Booking[] | null) ?? [],
+        dataLoading: false,
       });
-      setUpcomingBookings((upcomingRes.data as Booking[] | null) ?? []);
-      setDataLoading(false);
     }
 
     void load();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   if (authLoading) return null;
   if (!user) return null;

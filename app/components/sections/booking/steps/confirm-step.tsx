@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
 
@@ -65,21 +66,21 @@ export function ConfirmStep({
 
       <p className="text-petroleum-400 text-center text-xs leading-relaxed">
         By confirming you agree to our{" "}
-        <a
+        <Link
           href="/terms"
           className="underline underline-offset-2"
           target="_blank"
         >
           Terms
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a
+        <Link
           href="/privacy"
           className="underline underline-offset-2"
           target="_blank"
         >
           Privacy Policy
-        </a>
+        </Link>
         . A confirmation email will be sent to {details.email}.
       </p>
     </div>

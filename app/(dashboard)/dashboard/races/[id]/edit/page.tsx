@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useRef, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -115,26 +115,475 @@ function IconSpinner() {
   );
 }
 
+// ─── State ────────────────────────────────────────────────────
+
+type PageState = {
+  loading: boolean;
+  notFound: boolean;
+  saving: boolean;
+  deleting: boolean;
+  confirmDelete: boolean;
+  error: string | null;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  location: string;
+  distance: string;
+  maxParticipants: string;
+  access: "members" | "open";
+  imageUrl: string;
+};
+
+type PageAction =
+  | {
+      type: "LOAD_SUCCESS";
+      payload: {
+        title: string;
+        description: string;
+        date: string;
+        time: string;
+        location: string;
+        distance: string;
+        maxParticipants: string;
+        access: "members" | "open";
+        imageUrl: string;
+      };
+    }
+  | { type: "LOAD_NOT_FOUND" }
+  | { type: "SET_SAVING"; value: boolean }
+  | { type: "SET_DELETING"; value: boolean }
+  | { type: "OPEN_CONFIRM_DELETE" }
+  | { type: "CLOSE_CONFIRM_DELETE" }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_TITLE"; value: string }
+  | { type: "SET_DESCRIPTION"; value: string }
+  | { type: "SET_DATE"; value: string }
+  | { type: "SET_TIME"; value: string }
+  | { type: "SET_LOCATION"; value: string }
+  | { type: "SET_DISTANCE"; value: string }
+  | { type: "SET_MAX_PARTICIPANTS"; value: string }
+  | { type: "SET_ACCESS"; value: "members" | "open" }
+  | { type: "SET_IMAGE_URL"; value: string };
+
+const initialState: PageState = {
+  loading: true,
+  notFound: false,
+  saving: false,
+  deleting: false,
+  confirmDelete: false,
+  error: null,
+  title: "",
+  description: "",
+  date: "",
+  time: "07:00",
+  location: "",
+  distance: "",
+  maxParticipants: "",
+  access: "members",
+  imageUrl: "",
+};
+
+function reducer(state: PageState, action: PageAction): PageState {
+  switch (action.type) {
+    case "LOAD_SUCCESS":
+      return { ...state, loading: false, ...action.payload };
+    case "LOAD_NOT_FOUND":
+      return { ...state, loading: false, notFound: true };
+    case "SET_SAVING":
+      return { ...state, saving: action.value };
+    case "SET_DELETING":
+      return { ...state, deleting: action.value };
+    case "OPEN_CONFIRM_DELETE":
+      return { ...state, confirmDelete: true };
+    case "CLOSE_CONFIRM_DELETE":
+      return { ...state, confirmDelete: false };
+    case "SET_ERROR":
+      return { ...state, error: action.error };
+    case "SET_TITLE":
+      return { ...state, title: action.value };
+    case "SET_DESCRIPTION":
+      return { ...state, description: action.value };
+    case "SET_DATE":
+      return { ...state, date: action.value };
+    case "SET_TIME":
+      return { ...state, time: action.value };
+    case "SET_LOCATION":
+      return { ...state, location: action.value };
+    case "SET_DISTANCE":
+      return { ...state, distance: action.value };
+    case "SET_MAX_PARTICIPANTS":
+      return { ...state, maxParticipants: action.value };
+    case "SET_ACCESS":
+      return { ...state, access: action.value };
+    case "SET_IMAGE_URL":
+      return { ...state, imageUrl: action.value };
+  }
+}
+
+// ─── ConfirmDeleteModal ───────────────────────────────────────
+
+type ConfirmDeleteModalProps = {
+  title: string;
+  deleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+function ConfirmDeleteModal({
+  title,
+  deleting,
+  onCancel,
+  onConfirm,
+}: ConfirmDeleteModalProps) {
+  return (
+    <div
+      role="button"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={() => !deleting && onCancel()}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && !deleting) onCancel();
+      }}
+    >
+      <div
+        role="dialog"
+        className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-display text-petroleum-700 text-xl">
+          Delete race?
+        </h2>
+        <p className="text-petroleum-400 mt-2 text-sm">
+          This will permanently delete{" "}
+          <span className="text-petroleum-600 font-medium">{title}</span> and
+          all its registrations. This action cannot be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
+            onClick={onCancel}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            className="gap-2"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? <IconSpinner /> : <IconTrash />}
+            {deleting ? "Deleting…" : "Yes, delete"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DetailsForm ──────────────────────────────────────────────
+
+type DetailsFormProps = {
+  state: PageState;
+  dispatch: Dispatch<PageAction>;
+};
+
+function DetailsForm({ state, dispatch }: DetailsFormProps) {
+  const {
+    loading,
+    saving,
+    title,
+    description,
+    date,
+    time,
+    location,
+    distance,
+    maxParticipants,
+    access,
+  } = state;
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Details</h2>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="race-edit-title"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Title <span className="text-red-400">*</span>
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <input
+              id="race-edit-title"
+              type="text"
+              value={title}
+              onChange={(e) =>
+                dispatch({ type: "SET_TITLE", value: e.target.value })
+              }
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="race-edit-description"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Description
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+          ) : (
+            <textarea
+              id="race-edit-description"
+              value={description}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_DESCRIPTION",
+                  value: e.target.value,
+                })
+              }
+              disabled={saving}
+              className={TEXTAREA_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="race-edit-date"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Date <span className="text-red-400">*</span>
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <input
+                id="race-edit-date"
+                type="date"
+                value={date}
+                onChange={(e) =>
+                  dispatch({ type: "SET_DATE", value: e.target.value })
+                }
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="race-edit-time"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Time
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <input
+                id="race-edit-time"
+                type="time"
+                value={time}
+                onChange={(e) =>
+                  dispatch({ type: "SET_TIME", value: e.target.value })
+                }
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="race-edit-location"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Location
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <input
+              id="race-edit-location"
+              type="text"
+              value={location}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_LOCATION",
+                  value: e.target.value,
+                })
+              }
+              placeholder="Barcelona, Spain"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="race-edit-distance"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Distance
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <div className="relative">
+                <input
+                  id="race-edit-distance"
+                  type="number"
+                  value={distance}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_DISTANCE",
+                      value: e.target.value,
+                    })
+                  }
+                  placeholder="42.2"
+                  min="0"
+                  step="0.1"
+                  disabled={saving}
+                  className={INPUT_CLASS + " pr-12"}
+                />
+                <span className="text-petroleum-400 pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">
+                  km
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="race-edit-max-participants"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Max participants
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <input
+                id="race-edit-max-participants"
+                type="number"
+                value={maxParticipants}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_MAX_PARTICIPANTS",
+                    value: e.target.value,
+                  })
+                }
+                placeholder="500"
+                min="1"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="race-edit-access"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Access
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <select
+              id="race-edit-access"
+              value={access}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_ACCESS",
+                  value: e.target.value as "members" | "open",
+                })
+              }
+              disabled={saving}
+              className={INPUT_CLASS}
+            >
+              <option value="members">Members only</option>
+              <option value="open">Open · free for everyone</option>
+            </select>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SidebarCard ──────────────────────────────────────────────
+
+type SidebarCardProps = {
+  loading: boolean;
+  imageUrl: string;
+  dispatch: Dispatch<PageAction>;
+};
+
+function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Cover Image
+      </h2>
+      {loading ? (
+        <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
+      ) : (
+        <ImageUpload
+          bucket="events"
+          folder="races"
+          value={imageUrl}
+          onChange={(value) => dispatch({ type: "SET_IMAGE_URL", value })}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function EditRacePage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { push, back } = useRouter();
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    loading,
+    notFound,
+    saving,
+    deleting,
+    confirmDelete,
+    error,
+    title,
+    description,
+    date,
+    time,
+    location,
+    distance,
+    maxParticipants,
+    access,
+    imageUrl,
+  } = state;
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("07:00");
-  const [location, setLocation] = useState("");
-  const [distance, setDistance] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState("");
-  const [access, setAccess] = useState<"members" | "open">("members");
-  const [imageUrl, setImageUrl] = useState("");
+  // useRef for tracking whether the save/delete is in-flight
+  // (not read in render — used only inside async handlers)
+  const savingRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -148,23 +597,25 @@ export default function EditRacePage() {
 
       const row = (data as Race[] | null)?.[0];
       if (!row) {
-        setNotFound(true);
-        setLoading(false);
+        dispatch({ type: "LOAD_NOT_FOUND" });
         return;
       }
 
-      setTitle(row.title);
-      setDescription(row.description ?? "");
-      setDate(row.date ? row.date.split("T")[0] : "");
-      setTime(row.date?.split("T")[1]?.slice(0, 5) ?? "07:00");
-      setLocation(row.location ?? "");
-      setDistance(row.distance_km != null ? String(row.distance_km) : "");
-      setMaxParticipants(
-        row.max_participants != null ? String(row.max_participants) : "",
-      );
-      setAccess(row.access ?? "members");
-      setImageUrl(row.image_url ?? "");
-      setLoading(false);
+      dispatch({
+        type: "LOAD_SUCCESS",
+        payload: {
+          title: row.title,
+          description: row.description ?? "",
+          date: row.date ? row.date.split("T")[0] : "",
+          time: row.date?.split("T")[1]?.slice(0, 5) ?? "07:00",
+          location: row.location ?? "",
+          distance: row.distance_km != null ? String(row.distance_km) : "",
+          maxParticipants:
+            row.max_participants != null ? String(row.max_participants) : "",
+          access: row.access ?? "members",
+          imageUrl: row.image_url ?? "",
+        },
+      });
     }
 
     void load();
@@ -172,15 +623,16 @@ export default function EditRacePage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatch({ type: "SET_ERROR", error: null });
 
     const trimmedTitle = title.trim();
     if (!trimmedTitle || !date) {
-      setError("Title and date are required.");
+      dispatch({ type: "SET_ERROR", error: "Title and date are required." });
       return;
     }
 
-    setSaving(true);
+    savingRef.current = true;
+    dispatch({ type: "SET_SAVING", value: true });
 
     const { error: updateError } = await insforge.database
       .from("races")
@@ -196,26 +648,29 @@ export default function EditRacePage() {
       })
       .eq("id", id);
 
-    setSaving(false);
+    savingRef.current = false;
+    dispatch({ type: "SET_SAVING", value: false });
 
     if (updateError) {
-      setError(
-        (updateError as { message?: string })?.message ?? "Failed to save.",
-      );
+      dispatch({
+        type: "SET_ERROR",
+        error:
+          (updateError as { message?: string })?.message ?? "Failed to save.",
+      });
       return;
     }
 
-    router.push("/dashboard/races");
+    push("/dashboard/races");
   }
 
   async function handleDelete() {
-    setDeleting(true);
+    dispatch({ type: "SET_DELETING", value: true });
     await insforge.database
       .from("race_registrations")
       .delete()
       .eq("race_id", id);
     await insforge.database.from("races").delete().eq("id", id);
-    router.push("/dashboard/races");
+    push("/dashboard/races");
   }
 
   if (notFound) {
@@ -223,7 +678,10 @@ export default function EditRacePage() {
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
         <p className="text-sm">Race not found.</p>
         <button
-          onClick={() => router.back()}
+          onClick={() => back()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") back();
+          }}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
           Go back
@@ -235,7 +693,10 @@ export default function EditRacePage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <button
-        onClick={() => router.back()}
+        onClick={() => back()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") back();
+        }}
         className="text-petroleum-400 hover:text-petroleum-700 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
       >
         <IconArrowLeft />
@@ -246,11 +707,7 @@ export default function EditRacePage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              {loading ? (
-                <span className="bg-sand-100 inline-block h-8 w-56 animate-pulse rounded-lg" />
-              ) : (
-                title || "Edit Race"
-              )}
+              Edit Race
             </h1>
           </div>
 
@@ -270,7 +727,7 @@ export default function EditRacePage() {
               variant="outline-danger"
               size="md"
               className="gap-2"
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => dispatch({ type: "OPEN_CONFIRM_DELETE" })}
               disabled={loading}
             >
               <IconTrash />
@@ -298,227 +755,26 @@ export default function EditRacePage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Details
-              </h2>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Title <span className="text-red-400">*</span>
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Description
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
-                  ) : (
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      disabled={saving}
-                      className={TEXTAREA_CLASS}
-                    />
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Date <span className="text-red-400">*</span>
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Time
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Location
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Barcelona, Spain"
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Distance
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={distance}
-                          onChange={(e) => setDistance(e.target.value)}
-                          placeholder="42.2"
-                          min="0"
-                          step="0.1"
-                          disabled={saving}
-                          className={INPUT_CLASS + " pr-12"}
-                        />
-                        <span className="text-petroleum-400 pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">
-                          km
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-petroleum-500 text-xs font-medium">
-                      Max participants
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <input
-                        type="number"
-                        value={maxParticipants}
-                        onChange={(e) => setMaxParticipants(e.target.value)}
-                        placeholder="500"
-                        min="1"
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Access
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <select
-                      value={access}
-                      onChange={(e) =>
-                        setAccess(e.target.value as "members" | "open")
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    >
-                      <option value="members">Members only</option>
-                      <option value="open">Open · free for everyone</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-            </div>
+            <DetailsForm state={state} dispatch={dispatch} />
           </div>
 
           <div className="space-y-5">
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Cover Image
-              </h2>
-              {loading ? (
-                <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
-              ) : (
-                <ImageUpload
-                  bucket="events"
-                  folder="races"
-                  value={imageUrl}
-                  onChange={setImageUrl}
-                />
-              )}
-            </div>
+            <SidebarCard
+              loading={loading}
+              imageUrl={imageUrl}
+              dispatch={dispatch}
+            />
           </div>
         </div>
       </form>
 
       {confirmDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => !deleting && setConfirmDelete(false)}
-        >
-          <div
-            className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="font-display text-petroleum-700 text-xl">
-              Delete race?
-            </h2>
-            <p className="text-petroleum-400 mt-2 text-sm">
-              This will permanently delete{" "}
-              <span className="text-petroleum-600 font-medium">{title}</span>{" "}
-              and all its registrations. This action cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                onClick={() => setConfirmDelete(false)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                size="md"
-                className="gap-2"
-                onClick={() => void handleDelete()}
-                disabled={deleting}
-              >
-                {deleting ? <IconSpinner /> : <IconTrash />}
-                {deleting ? "Deleting…" : "Yes, delete"}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteModal
+          title={title}
+          deleting={deleting}
+          onCancel={() => dispatch({ type: "CLOSE_CONFIRM_DELETE" })}
+          onConfirm={() => void handleDelete()}
+        />
       )}
     </div>
   );

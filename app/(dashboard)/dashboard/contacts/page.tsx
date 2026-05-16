@@ -171,7 +171,7 @@ export default function ContactsPage() {
                       {last ? (
                         <StatusBadge status={last.status} />
                       ) : (
-                        <span className="text-petroleum-200">—</span>
+                        <span className="text-petroleum-200">{"—"}</span>
                       )}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">

@@ -11,6 +11,7 @@ import { useAuth } from "@/components/auth-provider";
 
 export default function SignInForm() {
   const router = useRouter();
+  const { push } = router;
   const { refreshUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,9 +50,9 @@ export default function SignInForm() {
       await refreshUser();
 
       if (role === "admin" || role === "staff") {
-        router.push("/dashboard");
+        push("/dashboard");
       } else {
-        router.push("/account");
+        push("/account");
       }
     }
   };

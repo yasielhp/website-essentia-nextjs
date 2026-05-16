@@ -367,7 +367,7 @@ function BookingContentInner() {
     dispatch({ type: "CONFIRM_SUCCESS" });
     clearStorage();
 
-    await sendEmail({
+    const { error: emailError } = await sendEmail({
       to: details.email,
       subject: "Your Essentia booking is confirmed",
       html: bookingConfirmationEmail({
@@ -382,6 +382,10 @@ function BookingContentInner() {
         duration: selectedDuration,
       }),
     });
+
+    if (emailError) {
+      console.error("[booking] Confirmation email failed:", emailError);
+    }
   };
 
   if (submitted && selectedService && selectedDate && selectedTime) {

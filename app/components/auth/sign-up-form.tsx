@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
@@ -18,24 +18,70 @@ async function createProfile(userId: string, fullName: string, email: string) {
 
 type Stage = "register" | "verify";
 
+type State = {
+  stage: Stage;
+  email: string;
+  password: string;
+  name: string;
+  otp: string;
+  error: string | null;
+  loading: boolean;
+};
+
+type Action =
+  | { type: "SET_STAGE"; payload: Stage }
+  | { type: "SET_EMAIL"; payload: string }
+  | { type: "SET_PASSWORD"; payload: string }
+  | { type: "SET_NAME"; payload: string }
+  | { type: "SET_OTP"; payload: string }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_LOADING"; payload: boolean };
+
+const initialState: State = {
+  stage: "register",
+  email: "",
+  password: "",
+  name: "",
+  otp: "",
+  error: null,
+  loading: false,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_STAGE":
+      return { ...state, stage: action.payload };
+    case "SET_EMAIL":
+      return { ...state, email: action.payload };
+    case "SET_PASSWORD":
+      return { ...state, password: action.payload };
+    case "SET_NAME":
+      return { ...state, name: action.payload };
+    case "SET_OTP":
+      return { ...state, otp: action.payload };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    default:
+      return state;
+  }
+}
+
 const inputClass =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2";
 
 export default function SignUpForm() {
   const router = useRouter();
+  const { push, refresh } = router;
 
-  const [stage, setStage] = useState<Stage>("register");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { stage, email, password, name, otp, error, loading } = state;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    dispatch({ type: "SET_ERROR", payload: null });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     const { data, error: signUpError } = await insforge.auth.signUp({
       email,
@@ -44,52 +90,61 @@ export default function SignUpForm() {
       redirectTo: `${window.location.origin}/sign-in`,
     });
 
-    setLoading(false);
+    dispatch({ type: "SET_LOADING", payload: false });
 
     if (signUpError) {
-      setError(signUpError.message ?? "Sign up failed. Please try again.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: signUpError.message ?? "Sign up failed. Please try again.",
+      });
       return;
     }
 
     if (data?.requireEmailVerification) {
-      setStage("verify");
+      dispatch({ type: "SET_STAGE", payload: "verify" });
     } else if (data?.accessToken && data.user) {
       await createProfile(data.user.id, name, email);
-      router.push("/booking");
-      router.refresh();
+      push("/booking");
+      refresh();
     }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    dispatch({ type: "SET_ERROR", payload: null });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     const { data, error: verifyError } = await insforge.auth.verifyEmail({
       email,
       otp,
     });
 
-    setLoading(false);
+    dispatch({ type: "SET_LOADING", payload: false });
 
     if (verifyError) {
       if (verifyError.statusCode === 400) {
-        setError("Invalid or expired code. Please try again.");
+        dispatch({
+          type: "SET_ERROR",
+          payload: "Invalid or expired code. Please try again.",
+        });
       } else {
-        setError(verifyError.message ?? "Verification failed.");
+        dispatch({
+          type: "SET_ERROR",
+          payload: verifyError.message ?? "Verification failed.",
+        });
       }
       return;
     }
 
     if (data?.user) {
       await createProfile(data.user.id, name, email);
-      router.push("/booking");
-      router.refresh();
+      push("/booking");
+      refresh();
     }
   };
 
   const handleResend = async () => {
-    setError(null);
+    dispatch({ type: "SET_ERROR", payload: null });
     await insforge.auth.resendVerificationEmail({
       email,
       redirectTo: `${window.location.origin}/sign-in`,
@@ -124,7 +179,12 @@ export default function SignUpForm() {
               pattern="[0-9]{6}"
               maxLength={6}
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_OTP",
+                  payload: e.target.value.replace(/\D/g, ""),
+                })
+              }
               required
               autoComplete="one-time-code"
               placeholder="123456"
@@ -186,7 +246,9 @@ export default function SignUpForm() {
             id="name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              dispatch({ type: "SET_NAME", payload: e.target.value })
+            }
             autoComplete="name"
             placeholder="Jane Doe"
             className={inputClass}
@@ -204,7 +266,9 @@ export default function SignUpForm() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              dispatch({ type: "SET_EMAIL", payload: e.target.value })
+            }
             required
             autoComplete="email"
             placeholder="you@example.com"
@@ -222,7 +286,9 @@ export default function SignUpForm() {
           <PasswordInput
             id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) =>
+              dispatch({ type: "SET_PASSWORD", payload: e.target.value })
+            }
             required
             autoComplete="new-password"
             placeholder="••••••••"

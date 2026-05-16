@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useReducer, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,92 @@ type Contact = {
   email: string | null;
   phone: string | null;
 };
+
+type State = {
+  race: Race | null;
+  registrations: Registration[];
+  contacts: Contact[];
+  loading: boolean;
+  notFound: boolean;
+  contactsLoading: boolean;
+  removingId: string | null;
+  addingId: string | null;
+  removeOpen: string | null;
+  addOpen: boolean;
+  search: string;
+};
+
+type Action =
+  | { type: "LOAD_START" }
+  | { type: "NOT_FOUND" }
+  | { type: "LOAD_SUCCESS"; race: Race }
+  | { type: "SET_REGISTRATIONS"; registrations: Registration[] }
+  | { type: "OPEN_ADD"; contacts: Contact[] }
+  | { type: "CONTACTS_LOADING" }
+  | { type: "CLOSE_ADD" }
+  | { type: "SET_SEARCH"; search: string }
+  | { type: "SET_REMOVE_OPEN"; id: string | null }
+  | { type: "REMOVING_START"; id: string }
+  | { type: "REMOVING_DONE" }
+  | { type: "ADDING_START"; id: string }
+  | { type: "ADDING_DONE" };
+
+const initialState: State = {
+  race: null,
+  registrations: [],
+  contacts: [],
+  loading: true,
+  notFound: false,
+  contactsLoading: false,
+  removingId: null,
+  addingId: null,
+  removeOpen: null,
+  addOpen: false,
+  search: "",
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "LOAD_START":
+      return { ...state, loading: true, notFound: false };
+    case "NOT_FOUND":
+      return { ...state, loading: false, notFound: true };
+    case "LOAD_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        race: action.race,
+      };
+    case "SET_REGISTRATIONS":
+      return { ...state, registrations: action.registrations };
+    case "CONTACTS_LOADING":
+      return { ...state, contactsLoading: true };
+    case "OPEN_ADD":
+      return {
+        ...state,
+        addOpen: true,
+        contactsLoading: false,
+        contacts: action.contacts,
+        search: "",
+      };
+    case "CLOSE_ADD":
+      return { ...state, addOpen: false, search: "" };
+    case "SET_SEARCH":
+      return { ...state, search: action.search };
+    case "SET_REMOVE_OPEN":
+      return { ...state, removeOpen: action.id };
+    case "REMOVING_START":
+      return { ...state, removingId: action.id };
+    case "REMOVING_DONE":
+      return { ...state, removingId: null, removeOpen: null };
+    case "ADDING_START":
+      return { ...state, addingId: action.id };
+    case "ADDING_DONE":
+      return { ...state, addingId: null, addOpen: false };
+    default:
+      return state;
+  }
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -116,23 +202,251 @@ function IconSearch() {
   );
 }
 
+// Sub-components
+
+type PageHeaderProps = {
+  title: string | null | undefined;
+  loading: boolean;
+  onBack: () => void;
+  onAddOpen: () => void;
+};
+
+function PageHeader({ title, loading, onBack, onAddOpen }: PageHeaderProps) {
+  return (
+    <div className="mb-8">
+      <button
+        onClick={onBack}
+        className="text-petroleum-400 hover:text-petroleum-700 mb-4 inline-flex items-center gap-1.5 text-sm transition-colors"
+      >
+        <IconArrowLeft />
+        Back to Races
+      </button>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-display text-petroleum-700 text-3xl">
+          {loading ? (
+            <span className="bg-sand-100 inline-block h-8 w-64 animate-pulse rounded-lg" />
+          ) : (
+            title
+          )}
+        </h1>
+
+        <Button
+          variant="solid"
+          size="md"
+          onClick={() => void onAddOpen()}
+          disabled={loading}
+          className="gap-2 self-start sm:self-auto"
+        >
+          <IconPlus />
+          Add to race
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type RegistrationRowProps = {
+  reg: Registration;
+  index: number;
+  removeOpen: string | null;
+  removingId: string | null;
+  onConfirmOpen: (id: string) => void;
+  onConfirmClose: () => void;
+  onRemove: (id: string) => void;
+};
+
+function RegistrationRow({
+  reg,
+  index,
+  removeOpen,
+  removingId,
+  onConfirmOpen,
+  onConfirmClose,
+  onRemove,
+}: RegistrationRowProps) {
+  return (
+    <tr className="border-sand-50 hover:bg-sand-50 border-b transition-colors">
+      <td className="text-petroleum-300 px-5 py-4">{index + 1}</td>
+      <td className="text-petroleum-700 px-5 py-4 font-medium">
+        {reg.full_name ?? <span className="text-petroleum-300">{"—"}</span>}
+      </td>
+      <td className="text-petroleum-500 px-5 py-4">
+        {reg.email ?? <span className="text-petroleum-300">{"—"}</span>}
+      </td>
+      <td className="text-petroleum-500 px-5 py-4">
+        {reg.phone ?? <span className="text-petroleum-300">{"—"}</span>}
+      </td>
+      <td className="text-petroleum-400 px-5 py-4">
+        {formatDateTime(reg.registered_at)}
+      </td>
+      <td className="px-5 py-4">
+        {removeOpen === reg.id ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-petroleum-400 text-xs">Remove?</span>
+            <button
+              onClick={() => onRemove(reg.id)}
+              disabled={removingId === reg.id}
+              className="inline-flex items-center rounded-xl bg-red-500 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+            >
+              {removingId === reg.id ? "…" : "Yes"}
+            </button>
+            <button
+              onClick={onConfirmClose}
+              disabled={removingId === reg.id}
+              className="border-sand-200 text-petroleum-400 hover:bg-sand-50 inline-flex items-center rounded-xl border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
+            >
+              Keep registration
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => onConfirmOpen(reg.id)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50"
+          >
+            <IconTrash />
+            Remove
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+type AddContactModalProps = {
+  search: string;
+  contactsLoading: boolean;
+  filteredContacts: Contact[];
+  addingId: string | null;
+  onClose: () => void;
+  onSearch: (value: string) => void;
+  onAdd: (contact: Contact) => void;
+};
+
+function AddContactModal({
+  search,
+  contactsLoading,
+  filteredContacts,
+  addingId,
+  onClose,
+  onSearch,
+  onAdd,
+}: AddContactModalProps) {
+  return (
+    <div
+      role="presentation"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        role="presentation"
+        className="mx-4 flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-4">
+          <h2 className="font-display text-petroleum-700 text-xl">
+            Add Registration
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 rounded-lg p-1.5 transition-colors"
+          >
+            <IconClose />
+          </button>
+        </div>
+
+        <div className="shrink-0 px-6 pb-3">
+          <div className="relative">
+            <span className="text-petroleum-300 pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">
+              <IconSearch />
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder="Search by name, email or phone…"
+              className="border-sand-200 bg-sand-50 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none focus:ring-2"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          {contactsLoading ? (
+            <div className="space-y-2 pt-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-sand-100 h-14 animate-pulse rounded-xl"
+                />
+              ))}
+            </div>
+          ) : filteredContacts.length === 0 ? (
+            <p className="text-petroleum-400 py-8 text-center text-sm">
+              {search
+                ? "No contacts match your search."
+                : "All contacts are already registered."}
+            </p>
+          ) : (
+            <ul className="space-y-1.5 pt-1">
+              {filteredContacts.map((contact) => (
+                <li
+                  key={contact.id}
+                  className="border-sand-100 hover:border-petroleum-200 hover:bg-sand-50 flex items-center justify-between rounded-xl border px-4 py-3 transition-colors"
+                >
+                  <div>
+                    <p className="text-petroleum-700 text-sm font-medium">
+                      {contact.full_name}
+                    </p>
+                    <p className="text-petroleum-400 mt-0.5 text-xs">
+                      {[contact.email, contact.phone]
+                        .filter(Boolean)
+                        .join(" · ") || "No contact info"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="solid"
+                    size="sm"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => onAdd(contact)}
+                    disabled={addingId === contact.id}
+                  >
+                    {addingId === contact.id ? (
+                      <div className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    ) : (
+                      <IconPlus />
+                    )}
+                    Add to race
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RaceRegistrationsPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { back } = useRouter();
 
-  const [race, setRace] = useState<Race | null>(null);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-
-  const [addOpen, setAddOpen] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [contactsLoading, setContactsLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [addingId, setAddingId] = useState<string | null>(null);
+  const {
+    race,
+    registrations,
+    contacts,
+    loading,
+    notFound,
+    contactsLoading,
+    removingId,
+    addingId,
+    removeOpen,
+    addOpen,
+    search,
+  } = state;
 
   const loadRegistrations = useCallback(async () => {
     const { data: regs } = await insforge.database
@@ -142,7 +456,7 @@ export default function RaceRegistrationsPage() {
       .order("created_at", { ascending: true });
 
     if (!regs || (regs as unknown[]).length === 0) {
-      setRegistrations([]);
+      dispatch({ type: "SET_REGISTRATIONS", registrations: [] });
       return;
     }
 
@@ -153,10 +467,10 @@ export default function RaceRegistrationsPage() {
       created_at: string;
     }[];
 
-    const contactIds = regList
-      .map((r) => r.contact_id)
-      .filter(Boolean) as string[];
-    const userIds = regList.map((r) => r.user_id).filter(Boolean) as string[];
+    const contactIds = regList.flatMap((r) =>
+      r.contact_id ? [r.contact_id] : [],
+    );
+    const userIds = regList.flatMap((r) => (r.user_id ? [r.user_id] : []));
 
     const contactMap: Record<
       string,
@@ -206,8 +520,9 @@ export default function RaceRegistrationsPage() {
       }
     }
 
-    setRegistrations(
-      regList.map((r) => {
+    dispatch({
+      type: "SET_REGISTRATIONS",
+      registrations: regList.map((r) => {
         const c = r.contact_id ? contactMap[r.contact_id] : null;
         const p = r.user_id ? profileMap[r.user_id] : null;
         return {
@@ -220,12 +535,12 @@ export default function RaceRegistrationsPage() {
           registered_at: r.created_at,
         };
       }),
-    );
+    });
   }, [id]);
 
   useEffect(() => {
     async function load() {
-      setLoading(true);
+      dispatch({ type: "LOAD_START" });
 
       const { data: raceData } = await insforge.database
         .from("races")
@@ -235,34 +550,31 @@ export default function RaceRegistrationsPage() {
 
       const raceRow = (raceData as Race[] | null)?.[0];
       if (!raceRow) {
-        setNotFound(true);
-        setLoading(false);
+        dispatch({ type: "NOT_FOUND" });
         return;
       }
-      setRace(raceRow);
+
       await loadRegistrations();
-      setLoading(false);
+
+      dispatch({ type: "LOAD_SUCCESS", race: raceRow });
     }
 
     void load();
   }, [id, loadRegistrations]);
 
   async function handleRemove(regId: string) {
-    setRemovingId(regId);
+    dispatch({ type: "REMOVING_START", id: regId });
     await insforge.database.from("race_registrations").delete().eq("id", regId);
-    setRemovingId(null);
-    setConfirmRemoveId(null);
+    dispatch({ type: "REMOVING_DONE" });
     await loadRegistrations();
   }
 
   async function openAdd() {
-    setSearch("");
-    setAddOpen(true);
-    setContactsLoading(true);
+    dispatch({ type: "CONTACTS_LOADING" });
 
-    const registeredContactIds = registrations
-      .map((r) => r.contact_id)
-      .filter(Boolean) as string[];
+    const registeredContactIds = registrations.flatMap((r) =>
+      r.contact_id ? [r.contact_id] : [],
+    );
 
     const { data } = await insforge.database
       .from("contacts")
@@ -280,27 +592,30 @@ export default function RaceRegistrationsPage() {
           }[]
         | null) ?? [];
 
-    setContacts(
-      all
-        .filter((c) => !registeredContactIds.includes(c.id))
-        .map((c) => ({
-          id: c.id,
-          full_name:
-            [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
-          email: c.email,
-          phone: c.phone,
-        })),
-    );
-    setContactsLoading(false);
+    dispatch({
+      type: "OPEN_ADD",
+      contacts: all.flatMap((c) =>
+        registeredContactIds.includes(c.id)
+          ? []
+          : [
+              {
+                id: c.id,
+                full_name:
+                  [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+                email: c.email,
+                phone: c.phone,
+              },
+            ],
+      ),
+    });
   }
 
   async function handleAddContact(contact: Contact) {
-    setAddingId(contact.id);
+    dispatch({ type: "ADDING_START", id: contact.id });
     await insforge.database
       .from("race_registrations")
       .insert([{ race_id: id, contact_id: contact.id }]);
-    setAddingId(null);
-    setAddOpen(false);
+    dispatch({ type: "ADDING_DONE" });
     await loadRegistrations();
   }
 
@@ -318,7 +633,7 @@ export default function RaceRegistrationsPage() {
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
         <p className="text-sm">Race not found.</p>
         <button
-          onClick={() => router.back()}
+          onClick={() => back()}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
           Go back
@@ -329,36 +644,12 @@ export default function RaceRegistrationsPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-8">
-        <button
-          onClick={() => router.back()}
-          className="text-petroleum-400 hover:text-petroleum-700 mb-4 inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <IconArrowLeft />
-          Back to Races
-        </button>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="font-display text-petroleum-700 text-3xl">
-            {loading ? (
-              <span className="bg-sand-100 inline-block h-8 w-64 animate-pulse rounded-lg" />
-            ) : (
-              race?.title
-            )}
-          </h1>
-
-          <Button
-            variant="solid"
-            size="md"
-            onClick={() => void openAdd()}
-            disabled={loading}
-            className="gap-2 self-start sm:self-auto"
-          >
-            <IconPlus />
-            Add
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={race?.title}
+        loading={loading}
+        onBack={() => back()}
+        onAddOpen={openAdd}
+      />
 
       <div className="border-sand-200 rounded-2xl border bg-white">
         {!loading && (
@@ -428,63 +719,20 @@ export default function RaceRegistrationsPage() {
                 </tr>
               ) : (
                 registrations.map((reg, index) => (
-                  <tr
+                  <RegistrationRow
                     key={reg.id}
-                    className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
-                  >
-                    <td className="text-petroleum-300 px-5 py-4">
-                      {index + 1}
-                    </td>
-                    <td className="text-petroleum-700 px-5 py-4 font-medium">
-                      {reg.full_name ?? (
-                        <span className="text-petroleum-300">—</span>
-                      )}
-                    </td>
-                    <td className="text-petroleum-500 px-5 py-4">
-                      {reg.email ?? (
-                        <span className="text-petroleum-300">—</span>
-                      )}
-                    </td>
-                    <td className="text-petroleum-500 px-5 py-4">
-                      {reg.phone ?? (
-                        <span className="text-petroleum-300">—</span>
-                      )}
-                    </td>
-                    <td className="text-petroleum-400 px-5 py-4">
-                      {formatDateTime(reg.registered_at)}
-                    </td>
-                    <td className="px-5 py-4">
-                      {confirmRemoveId === reg.id ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-petroleum-400 text-xs">
-                            Remove?
-                          </span>
-                          <button
-                            onClick={() => void handleRemove(reg.id)}
-                            disabled={removingId === reg.id}
-                            className="inline-flex items-center rounded-xl bg-red-500 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-600 disabled:opacity-50"
-                          >
-                            {removingId === reg.id ? "…" : "Yes"}
-                          </button>
-                          <button
-                            onClick={() => setConfirmRemoveId(null)}
-                            disabled={removingId === reg.id}
-                            className="border-sand-200 text-petroleum-400 hover:bg-sand-50 inline-flex items-center rounded-xl border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
-                          >
-                            No
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmRemoveId(reg.id)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50"
-                        >
-                          <IconTrash />
-                          Remove
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                    reg={reg}
+                    index={index}
+                    removeOpen={removeOpen}
+                    removingId={removingId}
+                    onConfirmOpen={(regId) =>
+                      dispatch({ type: "SET_REMOVE_OPEN", id: regId })
+                    }
+                    onConfirmClose={() =>
+                      dispatch({ type: "SET_REMOVE_OPEN", id: null })
+                    }
+                    onRemove={(regId) => void handleRemove(regId)}
+                  />
                 ))
               )}
             </tbody>
@@ -493,96 +741,15 @@ export default function RaceRegistrationsPage() {
       </div>
 
       {addOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setAddOpen(false)}
-        >
-          <div
-            className="mx-4 flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-4">
-              <h2 className="font-display text-petroleum-700 text-xl">
-                Add Registration
-              </h2>
-              <button
-                onClick={() => setAddOpen(false)}
-                className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 rounded-lg p-1.5 transition-colors"
-              >
-                <IconClose />
-              </button>
-            </div>
-
-            <div className="shrink-0 px-6 pb-3">
-              <div className="relative">
-                <span className="text-petroleum-300 pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">
-                  <IconSearch />
-                </span>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name, email or phone…"
-                  className="border-sand-200 bg-sand-50 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none focus:ring-2"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
-              {contactsLoading ? (
-                <div className="space-y-2 pt-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="bg-sand-100 h-14 animate-pulse rounded-xl"
-                    />
-                  ))}
-                </div>
-              ) : filteredContacts.length === 0 ? (
-                <p className="text-petroleum-400 py-8 text-center text-sm">
-                  {search
-                    ? "No contacts match your search."
-                    : "All contacts are already registered."}
-                </p>
-              ) : (
-                <ul className="space-y-1.5 pt-1">
-                  {filteredContacts.map((contact) => (
-                    <li
-                      key={contact.id}
-                      className="border-sand-100 hover:border-petroleum-200 hover:bg-sand-50 flex items-center justify-between rounded-xl border px-4 py-3 transition-colors"
-                    >
-                      <div>
-                        <p className="text-petroleum-700 text-sm font-medium">
-                          {contact.full_name}
-                        </p>
-                        <p className="text-petroleum-400 mt-0.5 text-xs">
-                          {[contact.email, contact.phone]
-                            .filter(Boolean)
-                            .join(" · ") || "No contact info"}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="solid"
-                        size="sm"
-                        className="shrink-0 gap-1.5"
-                        onClick={() => void handleAddContact(contact)}
-                        disabled={addingId === contact.id}
-                      >
-                        {addingId === contact.id ? (
-                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        ) : (
-                          <IconPlus />
-                        )}
-                        Add
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
+        <AddContactModal
+          search={search}
+          contactsLoading={contactsLoading}
+          filteredContacts={filteredContacts}
+          addingId={addingId}
+          onClose={() => dispatch({ type: "CLOSE_ADD" })}
+          onSearch={(value) => dispatch({ type: "SET_SEARCH", search: value })}
+          onAdd={(contact) => void handleAddContact(contact)}
+        />
       )}
     </div>
   );

@@ -6,7 +6,7 @@ import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import type { DetailsState } from "@/types";
 
-export const inputClass =
+const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-100";
 
 function Field({

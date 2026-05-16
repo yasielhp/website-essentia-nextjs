@@ -20,8 +20,8 @@ function CalendarView({
   onSelect: (d: Date) => void;
 }) {
   const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(() => today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
   const days = getCalendarDays(viewYear, viewMonth);
 
   const prevMonth = () => {
@@ -75,13 +75,14 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          if (!day) return <div key={i} />;
+          const cellKey = day ? day.toISOString().slice(0, 10) : `empty-${i}`;
+          if (!day) return <div key={cellKey} />;
           const available = isAvailableDay(day);
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
             <button
-              key={i}
+              key={cellKey}
               disabled={!available}
               onClick={() => available && onSelect(day)}
               className={[
@@ -132,17 +133,13 @@ export function DateTimeStep({
     setView("date");
   };
 
-  if (view === "date") {
-    return (
-      <div className="mx-auto inline-block w-full rounded-2xl bg-white p-5">
-        <CalendarView selected={selectedDate} onSelect={handleDateSelect} />
-      </div>
-    );
-  }
-
   const slots = selectedDate ? getTimeSlots(selectedDate, service) : [];
 
-  return (
+  return view === "date" ? (
+    <div className="mx-auto inline-block w-full rounded-2xl bg-white p-5">
+      <CalendarView selected={selectedDate} onSelect={handleDateSelect} />
+    </div>
+  ) : (
     <div className="flex flex-col gap-5">
       <button
         onClick={handleChangeDate}
@@ -165,22 +162,24 @@ export function DateTimeStep({
       <div className="flex flex-col gap-3">
         <p className="text-petroleum-400 text-sm">Available times</p>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {slots
-            .filter(({ booked }) => !booked)
-            .map(({ time }) => (
-              <button
-                key={time}
-                onClick={() => onSelectTime(time)}
-                className={[
-                  "rounded-xl border py-2.5 text-sm font-medium transition-all",
-                  selectedTime === time
-                    ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
-                    : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
-                ].join(" ")}
-              >
-                {time}
-              </button>
-            ))}
+          {slots.flatMap(({ booked, time }) =>
+            booked
+              ? []
+              : [
+                  <button
+                    key={time}
+                    onClick={() => onSelectTime(time)}
+                    className={[
+                      "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                      selectedTime === time
+                        ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
+                        : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
+                    ].join(" ")}
+                  >
+                    {time}
+                  </button>,
+                ],
+          )}
         </div>
       </div>
     </div>

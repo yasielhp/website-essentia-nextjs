@@ -115,6 +115,7 @@ function SessionCard({
 export default function AccountEducationPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { push } = router;
 
   const [sessions, setSessions] = useState<EducationSession[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -179,12 +180,12 @@ export default function AccountEducationPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/sign-in");
+      push("/sign-in");
       return;
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(user.id);
-  }, [user, authLoading, router, load]);
+  }, [user, authLoading, push, load]);
 
   if (authLoading) return null;
   if (!user) return null;

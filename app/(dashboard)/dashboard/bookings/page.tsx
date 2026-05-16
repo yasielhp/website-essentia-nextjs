@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useReducer, useCallback } from "react";
 import { insforge } from "@/lib/insforge";
 
 type Booking = {
@@ -38,15 +38,61 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+// ─── State ────────────────────────────────────────────────────
+
+type PageState = {
+  bookings: Booking[];
+  total: number;
+  page: number;
+  statusFilter: StatusFilter;
+  loading: boolean;
+};
+
+type PageAction =
+  | {
+      type: "LOAD_SUCCESS";
+      bookings: Booking[];
+      total: number;
+    }
+  | { type: "SET_LOADING" }
+  | { type: "SET_STATUS_FILTER"; value: StatusFilter }
+  | { type: "SET_PAGE"; value: number };
+
+const initialState: PageState = {
+  bookings: [],
+  total: 0,
+  page: 0,
+  statusFilter: "all",
+  loading: true,
+};
+
+function reducer(state: PageState, action: PageAction): PageState {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: true };
+    case "LOAD_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        bookings: action.bookings,
+        total: action.total,
+      };
+    case "SET_STATUS_FILTER":
+      // Reset page to 0 when the filter changes — no derived-state effect needed
+      return { ...state, statusFilter: action.value, page: 0 };
+    case "SET_PAGE":
+      return { ...state, page: action.value };
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { bookings, total, page, statusFilter, loading } = state;
 
   const fetchBookings = useCallback(async () => {
-    setLoading(true);
+    dispatch({ type: "SET_LOADING" });
 
     let query = insforge.database
       .from("bookings")
@@ -63,20 +109,16 @@ export default function BookingsPage() {
 
     const { data, count } = await query;
 
-    setBookings((data as Booking[] | null) ?? []);
-    setTotal(count ?? 0);
-    setLoading(false);
+    dispatch({
+      type: "LOAD_SUCCESS",
+      bookings: (data as Booking[] | null) ?? [],
+      total: count ?? 0,
+    });
   }, [page, statusFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchBookings();
   }, [fetchBookings]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPage(0);
-  }, [statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -92,7 +134,12 @@ export default function BookingsPage() {
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          onChange={(e) =>
+            dispatch({
+              type: "SET_STATUS_FILTER",
+              value: e.target.value as StatusFilter,
+            })
+          }
           className="border-sand-200 text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 sm:w-48"
         >
           <option value="all">All statuses</option>
@@ -198,14 +245,21 @@ export default function BookingsPage() {
           </p>
           <div className="flex gap-2">
             <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              onClick={() =>
+                dispatch({ type: "SET_PAGE", value: Math.max(0, page - 1) })
+              }
               disabled={page === 0 || loading}
               className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
               Previous
             </button>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              onClick={() =>
+                dispatch({
+                  type: "SET_PAGE",
+                  value: Math.min(totalPages - 1, page + 1),
+                })
+              }
               disabled={page >= totalPages - 1 || loading}
               className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >

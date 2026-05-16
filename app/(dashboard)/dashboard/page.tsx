@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 
@@ -62,17 +62,59 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const [role, setRole] = useState<Role>(null);
-  const [stats, setStats] = useState<StatData>({
+// ─── State ────────────────────────────────────────────────────
+
+type PageState = {
+  role: Role;
+  stats: StatData;
+  recentBookings: RecentBooking[];
+  loading: boolean;
+};
+
+type PageAction =
+  | {
+      type: "LOAD_SUCCESS";
+      role: Role;
+      stats: StatData;
+      recentBookings: RecentBooking[];
+    }
+  | { type: "LOAD_ERROR" };
+
+const initialState: PageState = {
+  role: null,
+  stats: {
     totalBookings: 0,
     pendingBookings: 0,
     totalStaff: 0,
     upcomingRaces: 0,
-  });
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
-  const [loading, setLoading] = useState(true);
+  },
+  recentBookings: [],
+  loading: true,
+};
+
+function reducer(state: PageState, action: PageAction): PageState {
+  switch (action.type) {
+    case "LOAD_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        role: action.role,
+        stats: action.stats,
+        recentBookings: action.recentBookings,
+      };
+    case "LOAD_ERROR":
+      return { ...state, loading: false };
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [{ role, stats, recentBookings, loading }, dispatch] = useReducer(
+    reducer,
+    initialState,
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -117,15 +159,18 @@ export default function DashboardPage() {
           .limit(5),
       ]);
 
-      setRole((profileRes.data as { role: Role } | null)?.role ?? null);
-      setStats({
-        totalBookings: (allBookingsRes as { count: number | null }).count ?? 0,
-        pendingBookings: (pendingRes as { count: number | null }).count ?? 0,
-        totalStaff: (staffRes as { count: number | null }).count ?? 0,
-        upcomingRaces: (racesRes as { count: number | null }).count ?? 0,
+      dispatch({
+        type: "LOAD_SUCCESS",
+        role: (profileRes.data as { role: Role } | null)?.role ?? null,
+        stats: {
+          totalBookings:
+            (allBookingsRes as { count: number | null }).count ?? 0,
+          pendingBookings: (pendingRes as { count: number | null }).count ?? 0,
+          totalStaff: (staffRes as { count: number | null }).count ?? 0,
+          upcomingRaces: (racesRes as { count: number | null }).count ?? 0,
+        },
+        recentBookings: (recentRes.data as RecentBooking[] | null) ?? [],
       });
-      setRecentBookings((recentRes.data as RecentBooking[] | null) ?? []);
-      setLoading(false);
     }
 
     void load();

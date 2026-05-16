@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
@@ -303,15 +303,21 @@ export default function DashboardLayout({
 }) {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const { replace } = router;
   const pathname = usePathname();
   const [role, setRole] = useState<Role>(null);
-  const [roleLoading, setRoleLoading] = useState(true);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const roleLoadingRef = useRef(true);
+  const [mobileOpenAtPathname, setMobileOpenAtPathname] = useState<
+    string | null
+  >(null);
+
+  // Derive open state: drawer is open only while the pathname hasn't changed
+  const mobileOpen = mobileOpenAtPathname === pathname;
 
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace("/sign-in");
+      replace("/sign-in");
       return;
     }
 
@@ -324,25 +330,20 @@ export default function DashboardLayout({
         .single();
       const userRole = (data as { role: Role } | null)?.role ?? null;
       if (userRole !== "admin" && userRole !== "staff") {
-        router.replace("/");
+        replace("/");
         return;
       }
       setRole(userRole);
-      setRoleLoading(false);
+      roleLoadingRef.current = false;
     }
 
     void fetchRole();
-  }, [user, loading, router]);
+  }, [user, loading, replace]);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMobileOpen(false);
-  }, [pathname]);
-
-  if (loading || roleLoading) {
+  if (loading || role === null) {
     return (
       <div className="bg-sand-50 flex min-h-screen items-center justify-center">
-        <div className="border-petroleum-700 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
+        <div className="border-petroleum-700 size-8 animate-spin rounded-full border-2 border-t-transparent" />
       </div>
     );
   }
@@ -387,7 +388,7 @@ export default function DashboardLayout({
           </ul>
         </nav>
 
-        <div className="border-sand-200 border-t px-4 py-4">
+        <div className="border-sand-200 border-t p-4">
           <div className="bg-sand-50 mb-3 rounded-xl px-3 py-2.5">
             <p className="text-petroleum-700 truncate text-sm font-medium">
               {displayName}
@@ -414,7 +415,11 @@ export default function DashboardLayout({
           Essentia
         </span>
         <button
-          onClick={() => setMobileOpen((v) => !v)}
+          onClick={() =>
+            setMobileOpenAtPathname((prev) =>
+              prev === pathname ? null : pathname,
+            )
+          }
           className="text-petroleum-700 hover:bg-sand-50 rounded-lg p-1.5"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
@@ -425,13 +430,20 @@ export default function DashboardLayout({
       {/* Mobile sidebar drawer */}
       {mobileOpen && (
         <div
+          role="button"
+          tabIndex={0}
           className="fixed inset-0 z-30 lg:hidden"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setMobileOpenAtPathname(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ")
+              setMobileOpenAtPathname(null);
+          }}
         >
           <div className="absolute inset-0 bg-black/20" />
           <aside
             className="absolute top-0 left-0 flex h-full w-64 flex-col bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="border-sand-200 border-b px-6 py-5 pt-16">
               <span className="font-display text-petroleum-700 text-xl">
@@ -471,7 +483,7 @@ export default function DashboardLayout({
               </ul>
             </nav>
 
-            <div className="border-sand-200 border-t px-4 py-4">
+            <div className="border-sand-200 border-t p-4">
               <div className="bg-sand-50 mb-3 rounded-xl px-3 py-2.5">
                 <p className="text-petroleum-700 truncate text-sm font-medium">
                   {displayName}

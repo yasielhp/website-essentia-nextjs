@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
@@ -9,18 +9,60 @@ import { PasswordInput } from "@components/ui/input";
 
 type Stage = "email" | "reset";
 
+type State = {
+  stage: Stage;
+  email: string;
+  otp: string;
+  newPassword: string;
+  error: string | null;
+  loading: boolean;
+};
+
+type Action =
+  | { type: "SET_STAGE"; payload: Stage }
+  | { type: "SET_EMAIL"; payload: string }
+  | { type: "SET_OTP"; payload: string }
+  | { type: "SET_NEW_PASSWORD"; payload: string }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_LOADING"; payload: boolean };
+
+const initialState: State = {
+  stage: "email",
+  email: "",
+  otp: "",
+  newPassword: "",
+  error: null,
+  loading: false,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_STAGE":
+      return { ...state, stage: action.payload };
+    case "SET_EMAIL":
+      return { ...state, email: action.payload };
+    case "SET_OTP":
+      return { ...state, otp: action.payload };
+    case "SET_NEW_PASSWORD":
+      return { ...state, newPassword: action.payload };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    default:
+      return state;
+  }
+}
+
 const inputClass =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2";
 
 export default function ForgotPasswordForm() {
   const router = useRouter();
+  const { push } = router;
 
-  const [stage, setStage] = useState<Stage>("email");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { stage, email, otp, newPassword, error, loading } = state;
 
   const sendCode = async () => {
     await insforge.auth.sendResetPasswordEmail({
@@ -31,23 +73,26 @@ export default function ForgotPasswordForm() {
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    dispatch({ type: "SET_ERROR", payload: null });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       await sendCode();
-      setStage("reset");
+      dispatch({ type: "SET_STAGE", payload: "reset" });
     } catch {
-      setError("Failed to send reset code. Please try again.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Failed to send reset code. Please try again.",
+      });
     } finally {
-      setLoading(false);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    dispatch({ type: "SET_ERROR", payload: null });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       const { data, error: exchangeError } =
@@ -55,11 +100,15 @@ export default function ForgotPasswordForm() {
 
       if (exchangeError || !data) {
         if (exchangeError?.statusCode === 400) {
-          setError("Invalid or expired code.");
+          dispatch({ type: "SET_ERROR", payload: "Invalid or expired code." });
         } else {
-          setError(exchangeError?.message ?? "Reset failed. Please try again.");
+          dispatch({
+            type: "SET_ERROR",
+            payload:
+              exchangeError?.message ?? "Reset failed. Please try again.",
+          });
         }
-        setLoading(false);
+        dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
 
@@ -69,25 +118,34 @@ export default function ForgotPasswordForm() {
       });
 
       if (resetError) {
-        setError(resetError.message ?? "Reset failed. Please try again.");
-        setLoading(false);
+        dispatch({
+          type: "SET_ERROR",
+          payload: resetError.message ?? "Reset failed. Please try again.",
+        });
+        dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
 
-      router.push("/sign-in?reset=1");
+      push("/sign-in?reset=1");
     } catch {
-      setError("Something went wrong. Please try again.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Something went wrong. Please try again.",
+      });
     } finally {
-      setLoading(false);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   const handleResend = async () => {
-    setError(null);
+    dispatch({ type: "SET_ERROR", payload: null });
     try {
       await sendCode();
     } catch {
-      setError("Failed to resend code. Please try again.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Failed to resend code. Please try again.",
+      });
     }
   };
 
@@ -119,7 +177,12 @@ export default function ForgotPasswordForm() {
               pattern="[0-9]{6}"
               maxLength={6}
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_OTP",
+                  payload: e.target.value.replace(/\D/g, ""),
+                })
+              }
               required
               autoComplete="one-time-code"
               placeholder="123456"
@@ -137,7 +200,9 @@ export default function ForgotPasswordForm() {
             <PasswordInput
               id="new-password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) =>
+                dispatch({ type: "SET_NEW_PASSWORD", payload: e.target.value })
+              }
               required
               autoComplete="new-password"
               placeholder="••••••••"
@@ -198,7 +263,9 @@ export default function ForgotPasswordForm() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              dispatch({ type: "SET_EMAIL", payload: e.target.value })
+            }
             required
             autoComplete="email"
             placeholder="you@example.com"

@@ -37,6 +37,7 @@ function StatusBadge({ status }: { status: string | null }) {
 export default function AccountBookingsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { push } = router;
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -44,7 +45,7 @@ export default function AccountBookingsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/sign-in");
+      push("/sign-in");
       return;
     }
 
@@ -62,7 +63,7 @@ export default function AccountBookingsPage() {
     }
 
     void load();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   if (authLoading) return null;
   if (!user) return null;

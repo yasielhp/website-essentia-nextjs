@@ -1,7 +1,5 @@
 import type { Benefit, SessionDetail } from "@/types";
 
-export type { Benefit, SessionDetail };
-
 export type MedicineTreatmentData = {
   slug: string;
   heroImage: string;

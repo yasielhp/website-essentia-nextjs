@@ -352,6 +352,52 @@ function AccountDropdown({
   );
 }
 
+// ─── DesktopNav ───────────────────────────────────────────────
+
+type DesktopNavProps = {
+  activeMenu: MenuItem | null;
+  onMenuEnter: (menu: MenuItem) => void;
+  onMouseLeave: () => void;
+};
+
+function DesktopNav({
+  activeMenu,
+  onMenuEnter,
+  onMouseLeave,
+}: DesktopNavProps) {
+  return (
+    <nav className="hidden md:flex">
+      <ul className="flex gap-2">
+        {maiMenu.slice(0, 3).map((menu) => {
+          const isActive = activeMenu?.href === menu.href;
+          const isDimmed = activeMenu !== null && !isActive;
+          return (
+            <li key={menu.href} className="relative">
+              <AnimatedLink
+                href={menu.href}
+                className="flex items-center gap-1 p-4 font-medium transition-opacity duration-200"
+                style={{ opacity: isDimmed ? 0.5 : 1 }}
+                onMouseEnter={() => onMenuEnter(menu)}
+                onMouseLeave={onMouseLeave}
+              >
+                {menu.name}
+                <span
+                  className="transition-transform duration-300 ease-in-out"
+                  style={{
+                    transform: isActive ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                >
+                  <IconChevronDown />
+                </span>
+              </AnimatedLink>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 // ─── Header ───────────────────────────────────────────────────
 
 export const Header = () => {
@@ -565,35 +611,11 @@ export const Header = () => {
           <Logo />
         </Link>
 
-        <nav className="hidden md:flex">
-          <ul className="flex gap-2">
-            {maiMenu.slice(0, 3).map((menu) => {
-              const isActive = activeMenu?.href === menu.href;
-              const isDimmed = activeMenu !== null && !isActive;
-              return (
-                <li key={menu.href} className="relative">
-                  <AnimatedLink
-                    href={menu.href}
-                    className="flex items-center gap-1 p-4 font-medium transition-opacity duration-200"
-                    style={{ opacity: isDimmed ? 0.5 : 1 }}
-                    onMouseEnter={() => handleMenuEnter(menu)}
-                    onMouseLeave={scheduleClose}
-                  >
-                    {menu.name}
-                    <span
-                      className="transition-transform duration-300 ease-in-out"
-                      style={{
-                        transform: isActive ? "rotate(180deg)" : "rotate(0deg)",
-                      }}
-                    >
-                      <IconChevronDown />
-                    </span>
-                  </AnimatedLink>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        <DesktopNav
+          activeMenu={activeMenu}
+          onMenuEnter={handleMenuEnter}
+          onMouseLeave={scheduleClose}
+        />
 
         <div className="gap flex items-center justify-between gap-3">
           {user ? (
