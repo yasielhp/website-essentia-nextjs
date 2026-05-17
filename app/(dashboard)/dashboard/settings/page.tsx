@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   // Staff
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
-  const [staffLoaded, setStaffLoaded] = useState(false);
+  const staffLoaded = useRef(false);
   const [staffPage, setStaffPage] = useState(0);
 
   // Modal
@@ -122,7 +122,7 @@ export default function SettingsPage() {
   // ── Lazy-load staff ──
 
   useEffect(() => {
-    if (tab !== "staff" || staffLoaded) return;
+    if (tab !== "staff" || staffLoaded.current) return;
     async function loadStaff() {
       setStaffLoading(true);
       const { data } = await insforge.database
@@ -131,11 +131,11 @@ export default function SettingsPage() {
         .eq("role", "staff")
         .order("created_at", { ascending: false });
       setStaff((data as StaffRow[] | null) ?? []);
+      staffLoaded.current = true;
       setStaffLoading(false);
-      setStaffLoaded(true);
     }
     void loadStaff();
-  }, [tab, staffLoaded]);
+  }, [tab]);
 
   // ── Plans handlers ──
 
@@ -168,9 +168,9 @@ export default function SettingsPage() {
     return (
       <div className="px-6 py-8 lg:px-10">
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
+          {(["a", "b", "c"] as const).map((n) => (
             <div
-              key={i}
+              key={n}
               className="border-sand-200 h-40 animate-pulse rounded-2xl border bg-white"
             />
           ))}

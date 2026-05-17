@@ -51,7 +51,7 @@ export default function NewMemberPage() {
   const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState("");
   const [status, setStatus] = useState("active");
-  const [startDate, setStartDate] = useState(
+  const [startDate, setStartDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
   const [endDate, setEndDate] = useState("");

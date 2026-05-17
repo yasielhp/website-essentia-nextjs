@@ -318,15 +318,17 @@ export default function ContactDetailPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    await insforge.database
-      .from("race_registrations")
-      .delete()
-      .eq("contact_id", id);
-    await insforge.database
-      .from("education_registrations")
-      .delete()
-      .eq("contact_id", id);
-    await insforge.database.from("bookings").delete().eq("contact_id", id);
+    await Promise.all([
+      insforge.database
+        .from("race_registrations")
+        .delete()
+        .eq("contact_id", id),
+      insforge.database
+        .from("education_registrations")
+        .delete()
+        .eq("contact_id", id),
+      insforge.database.from("bookings").delete().eq("contact_id", id),
+    ]);
     await insforge.database.from("contacts").delete().eq("id", id);
     push("/dashboard/contacts");
   }
