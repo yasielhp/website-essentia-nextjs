@@ -349,6 +349,18 @@ export const IconSettings = () => (
   </svg>
 );
 
+export const IconReceipt = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1V2zM8 10h8M8 14h5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export const FavIcon = () => (
   <svg
     width="128"

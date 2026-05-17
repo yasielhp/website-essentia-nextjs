@@ -24,6 +24,7 @@ import { SectionCard } from "@/components/dashboard/settings/section-card";
 import { ColorRow } from "@/components/dashboard/settings/color-row";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
+import { PaymentGatewayTab } from "@/components/dashboard/settings/payment-gateway-tab";
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -253,6 +254,7 @@ export default function SettingsPage() {
             ["plans", "Membership Plans"],
             ["staff", "Staff"],
             ["appearance", "Appearance"],
+            ["payment", "Payment Gateway"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
           <TabButton key={key} active={tab === key} onClick={() => setTab(key)}>
@@ -602,6 +604,9 @@ export default function SettingsPage() {
             )}
           </div>
         )}
+
+        {/* ── Payment Gateway ── */}
+        {tab === "payment" && <PaymentGatewayTab />}
 
         {/* ── Appearance ── */}
         {tab === "appearance" && (

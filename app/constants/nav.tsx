@@ -5,6 +5,7 @@ import {
   IconMembers,
   IconFlag,
   IconBook,
+  IconReceipt,
   IconSettings,
 } from "@/components/ui/icons";
 
@@ -15,6 +16,7 @@ export const navLinks = [
   { label: "Members", href: "/dashboard/members" },
   { label: "Races", href: "/dashboard/races" },
   { label: "Education", href: "/dashboard/education" },
+  { label: "Transactions", href: "/dashboard/transactions" },
   { label: "Settings", href: "/dashboard/settings" },
 ];
 
@@ -25,5 +27,6 @@ export const navIcons: Record<string, React.ReactNode> = {
   Members: <IconMembers />,
   Races: <IconFlag />,
   Education: <IconBook />,
+  Transactions: <IconReceipt />,
   Settings: <IconSettings />,
 };

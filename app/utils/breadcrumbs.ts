@@ -7,6 +7,7 @@ const SECTION_LABELS: Record<string, string> = {
   staff: "Staff",
   races: "Races",
   education: "Education",
+  transactions: "Transactions",
   account: "Edit account",
   settings: "Settings",
 };
