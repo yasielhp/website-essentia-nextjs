@@ -63,7 +63,6 @@ export default function NewStaffPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -81,7 +80,6 @@ export default function NewStaffPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
@@ -152,21 +150,18 @@ export default function NewStaffPage() {
     });
 
     setSubmitting(false);
-    push("/dashboard/staff");
+    push("/dashboard/settings");
   }
 
   return (
     <div className="px-6 py-8 lg:px-10">
       <form onSubmit={(e) => void handleSubmit(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-petroleum-700 text-3xl">
-              New Staff Member
-            </h1>
-          </div>
-
+          <h1 className="font-display text-petroleum-700 text-3xl">
+            New Staff Member
+          </h1>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="md" href="/dashboard/staff">
+            <Button variant="outline" size="md" href="/dashboard/settings">
               Cancel
             </Button>
             <Button
@@ -183,12 +178,6 @@ export default function NewStaffPage() {
         {error && (
           <p className="mb-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
             {error}
-          </p>
-        )}
-
-        {success && (
-          <p className="bg-petroleum-50 text-petroleum-700 mb-6 rounded-xl px-4 py-3 text-sm">
-            {success}
           </p>
         )}
 

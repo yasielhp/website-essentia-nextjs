@@ -132,11 +132,11 @@ export const faqs = [
   },
   {
     q: "How does billing work?",
-    a: "Memberships are billed monthly or annually. Annual members receive a preferred rate. You will choose your billing preference at sign-up.",
+    a: "Memberships are billed monthly. You can cancel at any time with 30 days written notice.",
   },
   {
     q: "Can I cancel or pause my membership?",
-    a: "Monthly memberships may be cancelled with 30 days written notice. Annual memberships run for the full term; exceptions may be considered in extraordinary circumstances. Pauses may be available — speak to our team.",
+    a: "You may cancel your membership with 30 days written notice. Pauses may be available in certain circumstances — speak to our team.",
   },
   {
     q: "What is the difference between Essential and Premium in practice?",

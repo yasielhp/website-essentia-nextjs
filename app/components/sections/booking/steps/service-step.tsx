@@ -24,7 +24,7 @@ function ServiceItems({
     <button
       key={s.id}
       onClick={() => onSelect(s)}
-      className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors"
+      className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
     >
       <div
         className={`relative ${imageClass} shrink-0 overflow-hidden rounded-lg`}
@@ -42,7 +42,9 @@ function ServiceItems({
         <p className="text-petroleum-400 line-clamp-1 text-xs">
           {s.description}
         </p>
-        <p className="text-petroleum-500 text-xs">{s.durations.join(" | ")}</p>
+        <p className="text-petroleum-500 text-xs">
+          {s.category === "wellness" ? "Wellness" : "Medicine"}
+        </p>
       </div>
       {selected?.id === s.id && (
         <Check className="text-petroleum-700 shrink-0" size={14} />
@@ -119,7 +121,7 @@ function ServiceSelect({
     >
       {selected ? (
         <>
-          <div className="relative size-20 shrink-0 overflow-hidden rounded-xl">
+          <div className="animate-fade-in-up relative size-20 shrink-0 overflow-hidden rounded-xl">
             <Image
               src={selected.image}
               alt={selected.title}
@@ -133,8 +135,8 @@ function ServiceSelect({
             <p className="text-petroleum-400 line-clamp-2 text-sm">
               {selected.description}
             </p>
-            <p className="text-petroleum-500 text-sm">
-              {selected.durations.join(" | ")}
+            <p className="text-petroleum-500 text-sm capitalize">
+              {selected.category}
             </p>
           </div>
           <ChevronDown
@@ -169,7 +171,7 @@ function ServiceSelect({
 
       {/* Desktop dropdown */}
       {isOpen && (
-        <div className="border-sand-300 bg-sand-50 absolute top-full right-0 left-0 z-10 mt-2 hidden max-h-96 overflow-y-auto rounded-2xl border shadow-lg md:block">
+        <div className="border-sand-300 bg-sand-50 animate-fade-in-down absolute top-full right-0 left-0 z-10 mt-2 hidden max-h-96 overflow-y-auto rounded-2xl border shadow-lg md:block">
           <ServiceItems selected={selected} onSelect={handleSelect} />
         </div>
       )}
@@ -177,7 +179,7 @@ function ServiceSelect({
       {/* Mobile full-screen modal via portal */}
       {isOpen &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex flex-col bg-white md:hidden">
+          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white md:hidden">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
               <h3 className="text-petroleum-700 font-medium">
                 Select a service

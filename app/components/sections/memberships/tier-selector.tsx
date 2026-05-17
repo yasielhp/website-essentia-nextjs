@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@components/ui/button";
+import { insforge } from "@/lib/insforge";
 import { TierId, VALID_TIERS, tiers, pricing } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -65,9 +66,13 @@ function TierTabs({
 
 function TierDisplay({
   tier,
+  price,
+  features,
   displayRef,
 }: {
   tier: (typeof tiers)[number];
+  price: number;
+  features: readonly string[];
   displayRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
@@ -92,7 +97,7 @@ function TierDisplay({
 
           <div className="mt-7 flex items-end gap-1.5">
             <span className="font-display text-petroleum-700 text-5xl leading-none">
-              €{pricing[tier.id]}
+              €{price}
             </span>
             <span className="text-petroleum-400 mb-1 text-sm">/month</span>
           </div>
@@ -111,7 +116,7 @@ function TierDisplay({
         {/* Right: features */}
         <div className="border-sand-500 flex flex-col border-t pt-8 md:w-1/2 md:border-t-0 md:border-l md:pt-0 md:pl-12">
           <ul className="flex flex-col gap-3.5 md:min-h-[224px]">
-            {tier.features.map((feature) => (
+            {features.map((feature) => (
               <li
                 key={feature}
                 className="text-petroleum-600 flex items-start gap-3 text-sm"
@@ -157,10 +162,40 @@ function TierSelectorInner() {
   const [selectedTier, setSelectedTier] = useState<TierId>(initialTier);
   const selectedTierRef = useRef<TierId>(initialTier);
 
+  const [dbPrices, setDbPrices] = useState<Record<string, number>>({});
+  const [dbFeaturesList, setDbFeaturesList] = useState<
+    Record<string, string[]>
+  >({});
+
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const displayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadPlans() {
+      const { data } = await insforge.database
+        .from("membership_plans")
+        .select("id, price_monthly, features")
+        .eq("active", true);
+      if (!data) return;
+      const prices: Record<string, number> = {};
+      const features: Record<string, string[]> = {};
+      for (const p of data as {
+        id: string;
+        price_monthly: number;
+        features: string | null;
+      }[]) {
+        prices[p.id] = p.price_monthly;
+        if (p.features) {
+          features[p.id] = p.features.split(",").map((f) => f.trim());
+        }
+      }
+      setDbPrices(prices);
+      setDbFeaturesList(features);
+    }
+    void loadPlans();
+  }, []);
 
   useEffect(() => {
     const urlParam = new URLSearchParams(window.location.search).get("tier");
@@ -280,6 +315,8 @@ function TierSelectorInner() {
   }, [selectedTier]);
 
   const activeTier = tiers.find((t) => t.id === selectedTier)!;
+  const activePrice = dbPrices[activeTier.id] ?? pricing[activeTier.id];
+  const activeFeatures = dbFeaturesList[activeTier.id] ?? activeTier.features;
 
   return (
     <section ref={sectionRef} id="tiers" className="bg-sand-50 md:h-[280vh]">
@@ -299,7 +336,12 @@ function TierSelectorInner() {
               <TierTabs selected={selectedTier} onChange={setSelectedTier} />
             </div>
 
-            <TierDisplay tier={activeTier} displayRef={displayRef} />
+            <TierDisplay
+              tier={activeTier}
+              price={activePrice}
+              features={activeFeatures}
+              displayRef={displayRef}
+            />
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ import {
 import type { DetailsState } from "@/types";
 import { StepIndicator } from "./steps/step-indicator";
 import { ServiceStep } from "./steps/service-step";
-import { DurationStep } from "./steps/duration-step";
+import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
@@ -34,6 +34,8 @@ const EMPTY_DETAILS: DetailsState = {
 type BookingState = {
   step: number;
   selectedService: BookableService | null;
+  selectedTierId: string | null;
+  selectedTierPrice: number | null;
   selectedDuration: string | null;
   selectedDate: Date | null;
   selectedTime: string | null;
@@ -44,7 +46,12 @@ type BookingState = {
 
 type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
-  | { type: "SELECT_DURATION"; duration: string | null }
+  | {
+      type: "SELECT_TIER";
+      tierId: string;
+      duration: string | null;
+      price: number | null;
+    }
   | { type: "SELECT_DATE"; date: Date | null }
   | { type: "SELECT_TIME"; time: string }
   | { type: "SET_STEP"; step: number }
@@ -61,13 +68,17 @@ function bookingReducer(
       return {
         ...state,
         selectedService: action.service,
-        selectedDuration:
-          action.service?.durations.length === 1
-            ? action.service.durations[0]
-            : null,
+        selectedTierId: null,
+        selectedTierPrice: null,
+        selectedDuration: null,
       };
-    case "SELECT_DURATION":
-      return { ...state, selectedDuration: action.duration };
+    case "SELECT_TIER":
+      return {
+        ...state,
+        selectedTierId: action.tierId,
+        selectedTierPrice: action.price,
+        selectedDuration: action.duration,
+      };
     case "SELECT_DATE":
       return { ...state, selectedDate: action.date };
     case "SELECT_TIME":
@@ -90,8 +101,9 @@ function initState(slug: string | null): BookingState {
     return {
       step: 0,
       selectedService: service,
-      selectedDuration:
-        service?.durations.length === 1 ? service.durations[0] : null,
+      selectedTierId: null,
+      selectedTierPrice: null,
+      selectedDuration: null,
       selectedDate: null,
       selectedTime: null,
       details: saved.details ?? EMPTY_DETAILS,
@@ -105,6 +117,8 @@ function initState(slug: string | null): BookingState {
   return {
     step: saved.step ?? 0,
     selectedService: service,
+    selectedTierId: saved.selectedTierId ?? null,
+    selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
     selectedTime: saved.selectedTime ?? null,
@@ -225,6 +239,8 @@ function BookingContentInner() {
   const {
     step,
     selectedService,
+    selectedTierId,
+    selectedTierPrice,
     selectedDuration,
     selectedDate,
     selectedTime,
@@ -237,6 +253,8 @@ function BookingContentInner() {
     writeStorage({
       step,
       serviceId: selectedService?.id ?? null,
+      selectedTierId,
+      selectedTierPrice,
       selectedDuration,
       selectedDate: selectedDate?.toISOString() ?? null,
       selectedTime,
@@ -245,6 +263,8 @@ function BookingContentInner() {
   }, [
     step,
     selectedService,
+    selectedTierId,
+    selectedTierPrice,
     selectedDuration,
     selectedDate,
     selectedTime,
@@ -258,7 +278,7 @@ function BookingContentInner() {
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    duration: !!selectedDuration,
+    duration: !!selectedTierId,
     details: !!(
       details.firstName &&
       details.lastName &&
@@ -320,7 +340,15 @@ function BookingContentInner() {
       },
     );
 
-    if (newBookingId) setBookingId(newBookingId as string);
+    if (newBookingId) {
+      setBookingId(newBookingId as string);
+      if (selectedTierId) {
+        await insforge.database
+          .from("bookings")
+          .update({ tier_id: selectedTierId, price_eur: selectedTierPrice })
+          .eq("id", newBookingId as string);
+      }
+    }
 
     setChecking(false);
     dispatch({ type: "SET_STEP", step: step + 1 });
@@ -338,7 +366,7 @@ function BookingContentInner() {
   };
 
   const handleConfirm = async () => {
-    if (!selectedService || !selectedDate || !selectedTime || !selectedDuration)
+    if (!selectedService || !selectedDate || !selectedTime || !selectedTierId)
       return;
     dispatch({ type: "CONFIRM_START" });
 
@@ -353,7 +381,9 @@ function BookingContentInner() {
           ...(contactId ? { contact_id: contactId } : {}),
           service_id: selectedService.id,
           service_title: selectedService.title,
-          duration: selectedDuration,
+          tier_id: selectedTierId,
+          price_eur: selectedTierPrice,
+          duration: selectedDuration ?? "",
           date: selectedDate.toISOString().split("T")[0],
           time: selectedTime,
           first_name: details.firstName,
@@ -379,7 +409,7 @@ function BookingContentInner() {
           year: "numeric",
         }),
         time: selectedTime,
-        duration: selectedDuration,
+        duration: selectedDuration ?? "",
       }),
     });
 
@@ -412,7 +442,7 @@ function BookingContentInner() {
 
       <StepIndicator current={step} steps={activeSteps} />
 
-      <div className="h-full">
+      <div key={currentStepId} className="animate-fade-in-up h-full">
         {currentStepId === "service" && (
           <ServiceStep
             selected={selectedService}
@@ -421,9 +451,16 @@ function BookingContentInner() {
         )}
         {currentStepId === "duration" && selectedService && (
           <DurationStep
-            service={selectedService}
-            selectedDuration={selectedDuration}
-            onSelect={(d) => dispatch({ type: "SELECT_DURATION", duration: d })}
+            serviceId={selectedService.id}
+            selectedTierId={selectedTierId}
+            onSelect={(sel: TierSelection) =>
+              dispatch({
+                type: "SELECT_TIER",
+                tierId: sel.tierId,
+                duration: sel.duration,
+                price: sel.price,
+              })
+            }
           />
         )}
         {currentStepId === "details" && (
@@ -445,10 +482,10 @@ function BookingContentInner() {
           selectedService &&
           selectedDate &&
           selectedTime &&
-          selectedDuration && (
+          selectedTierId && (
             <ConfirmStep
               service={selectedService}
-              duration={selectedDuration}
+              duration={selectedDuration ?? ""}
               date={selectedDate}
               time={selectedTime}
               details={details}

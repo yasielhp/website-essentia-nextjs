@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useReducer, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/dashboard/pagination";
 
 type Booking = {
   id: string;
@@ -15,8 +18,6 @@ type Booking = {
   duration: string | null;
   status: string | null;
 };
-
-type StatusFilter = "all" | "pending" | "confirmed" | "cancelled";
 
 const PAGE_SIZE = 20;
 
@@ -38,31 +39,37 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+function IconPlus() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 // ─── State ────────────────────────────────────────────────────
 
 type PageState = {
   bookings: Booking[];
   total: number;
   page: number;
-  statusFilter: StatusFilter;
   loading: boolean;
 };
 
 type PageAction =
-  | {
-      type: "LOAD_SUCCESS";
-      bookings: Booking[];
-      total: number;
-    }
+  | { type: "LOAD_SUCCESS"; bookings: Booking[]; total: number }
   | { type: "SET_LOADING" }
-  | { type: "SET_STATUS_FILTER"; value: StatusFilter }
   | { type: "SET_PAGE"; value: number };
 
 const initialState: PageState = {
   bookings: [],
   total: 0,
   page: 0,
-  statusFilter: "all",
   loading: true,
 };
 
@@ -77,9 +84,6 @@ function reducer(state: PageState, action: PageAction): PageState {
         bookings: action.bookings,
         total: action.total,
       };
-    case "SET_STATUS_FILTER":
-      // Reset page to 0 when the filter changes — no derived-state effect needed
-      return { ...state, statusFilter: action.value, page: 0 };
     case "SET_PAGE":
       return { ...state, page: action.value };
   }
@@ -89,12 +93,13 @@ function reducer(state: PageState, action: PageAction): PageState {
 
 export default function BookingsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { bookings, total, page, statusFilter, loading } = state;
+  const { bookings, total, page, loading } = state;
+  const { push } = useRouter();
 
   const fetchBookings = useCallback(async () => {
     dispatch({ type: "SET_LOADING" });
 
-    let query = insforge.database
+    const { data, count } = await insforge.database
       .from("bookings")
       .select(
         "id, service_title, first_name, last_name, email, phone, date, time, duration, status",
@@ -103,18 +108,12 @@ export default function BookingsPage() {
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
-    if (statusFilter !== "all") {
-      query = query.eq("status", statusFilter);
-    }
-
-    const { data, count } = await query;
-
     dispatch({
       type: "LOAD_SUCCESS",
       bookings: (data as Booking[] | null) ?? [],
       total: count ?? 0,
     });
-  }, [page, statusFilter]);
+  }, [page]);
 
   useEffect(() => {
     void fetchBookings();
@@ -132,21 +131,15 @@ export default function BookingsPage() {
           </p>
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) =>
-            dispatch({
-              type: "SET_STATUS_FILTER",
-              value: e.target.value as StatusFilter,
-            })
-          }
-          className="border-sand-200 text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 sm:w-48"
+        <Button
+          variant="solid"
+          size="md"
+          href="/dashboard/bookings/new"
+          className="gap-2 self-start"
         >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+          <IconPlus />
+          Create Booking
+        </Button>
       </div>
 
       <div className="border-sand-200 rounded-2xl border bg-white">
@@ -204,7 +197,8 @@ export default function BookingsPage() {
                 bookings.map((b) => (
                   <tr
                     key={b.id}
-                    className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
+                    onClick={() => push(`/dashboard/bookings/${b.id}`)}
+                    className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
                     <td className="text-petroleum-700 px-5 py-4 font-medium">
                       {b.service_title ?? "—"}
@@ -238,35 +232,12 @@ export default function BookingsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="border-sand-200 flex items-center justify-between border-t px-5 py-3">
-          <p className="text-petroleum-400 text-sm">
-            Page {page + 1} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                dispatch({ type: "SET_PAGE", value: Math.max(0, page - 1) })
-              }
-              disabled={page === 0 || loading}
-              className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "SET_PAGE",
-                  value: Math.min(totalPages - 1, page + 1),
-                })
-              }
-              disabled={page >= totalPages - 1 || loading}
-              className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPage={(p) => dispatch({ type: "SET_PAGE", value: p })}
+          loading={loading}
+        />
       </div>
     </div>
   );

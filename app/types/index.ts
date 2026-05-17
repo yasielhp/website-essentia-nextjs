@@ -1,3 +1,5 @@
+export type Role = "admin" | "staff" | "member" | "contact" | null;
+
 export type DetailsState = {
   firstName: string;
   lastName: string;

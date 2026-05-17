@@ -39,6 +39,45 @@
   --color-black: #000000;
 }
 
+/* ─── Animaciones ──────────────────────────────────────────── */
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up-modal {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@theme {
+  --animate-fade-in-down: fade-in-down 0.18s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.22s ease-out both;
+  --animate-slide-up-modal: slide-up-modal 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+}
+
 /* ─── Prose (páginas legales / long-form) ──────────────────── */
 @layer base {
   .prose {

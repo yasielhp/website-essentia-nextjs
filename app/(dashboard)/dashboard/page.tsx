@@ -642,8 +642,20 @@ export default function DashboardPage() {
     confirmedBookings: number;
     totalContacts: number;
     upcomingEvents: number;
-  }>({ loading: true, totalBookings: 0, confirmedBookings: 0, totalContacts: 0, upcomingEvents: 0 });
-  const { loading: statsLoading, totalBookings, confirmedBookings, totalContacts, upcomingEvents } = stats;
+  }>({
+    loading: true,
+    totalBookings: 0,
+    confirmedBookings: 0,
+    totalContacts: 0,
+    upcomingEvents: 0,
+  });
+  const {
+    loading: statsLoading,
+    totalBookings,
+    confirmedBookings,
+    totalContacts,
+    upcomingEvents,
+  } = stats;
 
   // Upcoming
   const [upcoming, setUpcoming] = useState<{
@@ -651,7 +663,11 @@ export default function DashboardPage() {
     race: UpcomingRace | null;
     session: UpcomingSession | null;
   }>({ loading: true, race: null, session: null });
-  const { loading: upcomingLoading, race: upcomingRace, session: upcomingSession } = upcoming;
+  const {
+    loading: upcomingLoading,
+    race: upcomingRace,
+    session: upcomingSession,
+  } = upcoming;
 
   // Calendar
   const [view, setView] = useState<CalendarView>("month");
@@ -688,7 +704,8 @@ export default function DashboardPage() {
       setStats({
         loading: false,
         totalBookings: (allRes as { count: number | null }).count ?? 0,
-        confirmedBookings: (confirmedRes as { count: number | null }).count ?? 0,
+        confirmedBookings:
+          (confirmedRes as { count: number | null }).count ?? 0,
         totalContacts: (contactsRes as { count: number | null }).count ?? 0,
         upcomingEvents: (membersRes as { count: number | null }).count ?? 0,
       });
@@ -726,14 +743,15 @@ export default function DashboardPage() {
 
   // Set today client-side only
   useEffect(() => {
-    async function setToday() { setTodayYMD(toYMD(new Date())); }
+    async function setToday() {
+      setTodayYMD(toYMD(new Date()));
+    }
     void setToday();
   }, []);
 
   // Load all calendar events when view/anchor changes
   useEffect(() => {
     async function loadCalendar() {
-
       const settings = loadColorSettings();
 
       let fromDate: string;

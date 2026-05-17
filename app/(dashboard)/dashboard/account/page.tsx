@@ -159,8 +159,9 @@ export default function DashboardAccountPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
-        <h1 className="font-display text-petroleum-700 text-3xl">My account</h1>
-        <p className="text-petroleum-400 mt-1 text-sm">{user?.email}</p>
+        <h1 className="font-display text-petroleum-700 text-3xl">
+          Edit account
+        </h1>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

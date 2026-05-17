@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { insforge } from "@/lib/insforge";
 import { TierId, tiers, pricing, featureRows } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -80,10 +81,27 @@ function ComparisonCell({ value }: { value: string | boolean }) {
 
 export default function ComparisonSection() {
   const [comparisonTier, setComparisonTier] = useState<TierId>("essential");
+  const [dbPrices, setDbPrices] = useState<Record<string, number>>({});
 
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadPrices() {
+      const { data } = await insforge.database
+        .from("membership_plans")
+        .select("id, price_monthly")
+        .eq("active", true);
+      if (!data) return;
+      const prices: Record<string, number> = {};
+      for (const p of data as { id: string; price_monthly: number }[]) {
+        prices[p.id] = p.price_monthly;
+      }
+      setDbPrices(prices);
+    }
+    void loadPrices();
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -194,7 +212,7 @@ export default function ComparisonSection() {
                             key={id}
                             className="text-petroleum-700 font-display px-4 py-3 text-center text-base font-normal"
                           >
-                            €{pricing[id]}/mo
+                            €{dbPrices[id] ?? pricing[id]}/mo
                           </td>
                         ),
                       )}
@@ -250,7 +268,7 @@ export default function ComparisonSection() {
                     </div>
                     <div className="text-right">
                       <span className="font-display text-petroleum-700 text-2xl">
-                        €{pricing[activeTier.id]}
+                        €{dbPrices[activeTier.id] ?? pricing[activeTier.id]}
                       </span>
                       <span className="text-petroleum-400 block text-xs">
                         /month
