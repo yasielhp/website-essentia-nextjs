@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -8,30 +8,76 @@ import { Button } from "@/components/ui/button";
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
+// ---------------------------------------------------------------------------
+// Reducer
+// ---------------------------------------------------------------------------
+
+type FormState = {
+  submitting: boolean;
+  error: string | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
+
+type FormAction =
+  | {
+      type: "SET_FIELD";
+      field: "firstName" | "lastName" | "email" | "phone";
+      value: string;
+    }
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "CLEAR_ERROR" };
+
+const initialFormState: FormState = {
+  submitting: false,
+  error: null,
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SUBMIT_START":
+      return { ...state, submitting: true, error: null };
+    case "SUBMIT_ERROR":
+      return { ...state, submitting: false, error: action.message };
+    case "CLEAR_ERROR":
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+}
+
+// ---------------------------------------------------------------------------
+
 export default function NewContactPage() {
   const { push } = useRouter();
-
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [state, dispatch] = useReducer(formReducer, initialFormState);
+  const { submitting, error, firstName, lastName, email, phone } = state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatch({ type: "CLEAR_ERROR" });
 
     const trimmedFirst = firstName.trim();
     const trimmedEmail = email.trim();
 
     if (!trimmedFirst || !trimmedEmail) {
-      setError("First name and email are required.");
+      dispatch({
+        type: "SUBMIT_ERROR",
+        message: "First name and email are required.",
+      });
       return;
     }
 
-    setSubmitting(true);
+    dispatch({ type: "SUBMIT_START" });
 
     const { error: insertError } = await insforge.database
       .from("contacts")
@@ -44,13 +90,13 @@ export default function NewContactPage() {
         },
       ]);
 
-    setSubmitting(false);
-
     if (insertError) {
-      setError(
-        (insertError as { message?: string })?.message ??
+      dispatch({
+        type: "SUBMIT_ERROR",
+        message:
+          (insertError as { message?: string })?.message ??
           "Failed to create contact.",
-      );
+      });
       return;
     }
 
@@ -106,7 +152,13 @@ export default function NewContactPage() {
                     id="firstName"
                     type="text"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "firstName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Jane"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -123,7 +175,13 @@ export default function NewContactPage() {
                     id="lastName"
                     type="text"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "lastName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Doe"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -142,7 +200,13 @@ export default function NewContactPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "email",
+                      value: e.target.value,
+                    })
+                  }
                   placeholder="jane@example.com"
                   disabled={submitting}
                   className={INPUT_CLASS}
@@ -160,7 +224,13 @@ export default function NewContactPage() {
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "phone",
+                      value: e.target.value,
+                    })
+                  }
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}

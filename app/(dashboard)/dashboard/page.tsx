@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
@@ -18,6 +18,28 @@ import {
   formatPeriod,
   navigateAnchor,
 } from "@/utils/dashboard-calendar";
+// ─── Calendar navigation reducer ─────────────────────────────
+
+type CalNav = { view: CalendarView; anchor: Date };
+type CalNavAction =
+  | { type: "set-view"; view: CalendarView }
+  | { type: "set-anchor"; anchor: Date }
+  | { type: "nav"; delta: -1 | 1 };
+
+function calNavReducer(state: CalNav, action: CalNavAction): CalNav {
+  switch (action.type) {
+    case "set-view":
+      return { ...state, view: action.view };
+    case "set-anchor":
+      return { ...state, anchor: action.anchor };
+    case "nav":
+      return {
+        ...state,
+        anchor: navigateAnchor(state.view, state.anchor, action.delta),
+      };
+  }
+}
+
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { MonthGrid } from "@/components/dashboard/calendar/month-grid";
 import { WeekGrid } from "@/components/dashboard/calendar/week-grid";
@@ -62,9 +84,13 @@ export default function DashboardPage() {
     session: upcomingSession,
   } = upcoming;
 
-  // Calendar
-  const [view, setView] = useState<CalendarView>("month");
-  const [anchor, setAnchor] = useState<Date>(() => new Date());
+  // Calendar navigation — useReducer eliminates separate view/anchor useState
+  const [calNav, dispatchCalNav] = useReducer(calNavReducer, {
+    view: "month" as CalendarView,
+    anchor: new Date(),
+  });
+  const { view, anchor } = calNav;
+
   const [calendar, setCalendar] = useState<{
     loading: boolean;
     events: CalendarEvent[];
@@ -256,8 +282,12 @@ export default function DashboardPage() {
   const isAnchorToday = toYMD(anchor) === todayYMD;
 
   function handleDayClick(d: Date) {
-    setAnchor(d);
-    setView("day");
+    dispatchCalNav({ type: "set-anchor", anchor: d });
+    dispatchCalNav({ type: "set-view", view: "day" });
+  }
+
+  function handleTodayClick() {
+    dispatchCalNav({ type: "set-anchor", anchor: new Date() });
   }
 
   function handleEventClick(event: CalendarEvent) {
@@ -305,7 +335,7 @@ export default function DashboardPage() {
               {(["month", "week", "day"] as CalendarView[]).map((v) => (
                 <button
                   key={v}
-                  onClick={() => setView(v)}
+                  onClick={() => dispatchCalNav({ type: "set-view", view: v })}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
                     view === v
                       ? "text-petroleum-700 bg-white shadow-sm"
@@ -320,7 +350,7 @@ export default function DashboardPage() {
             {/* Period nav */}
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setAnchor(navigateAnchor(view, anchor, -1))}
+                onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ‹
@@ -329,7 +359,7 @@ export default function DashboardPage() {
                 {periodLabel}
               </span>
               <button
-                onClick={() => setAnchor(navigateAnchor(view, anchor, 1))}
+                onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ›
@@ -338,7 +368,7 @@ export default function DashboardPage() {
 
             {/* Today */}
             <button
-              onClick={() => setAnchor(new Date())}
+              onClick={handleTodayClick}
               disabled={isAnchorToday && view !== "month"}
               className={`text-xs font-medium transition-colors disabled:opacity-30 ${
                 isAnchorToday && view !== "month"

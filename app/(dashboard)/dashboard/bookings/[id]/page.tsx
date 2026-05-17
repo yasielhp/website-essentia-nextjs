@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -95,26 +95,134 @@ function DeleteDialog({
   );
 }
 
+// ─── State & Reducer ──────────────────────────────────────────
+
+type BookingRow = {
+  id: string;
+  service_id: string;
+  date: string | null;
+  time: string | null;
+  duration: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+};
+
+type PageState = {
+  loading: boolean;
+  notFound: boolean;
+  saving: boolean;
+  deleting: boolean;
+  deleteOpen: boolean;
+  error: string | null;
+  serviceId: string;
+  date: string;
+  time: string;
+  duration: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  status: string;
+};
+
+type PageAction =
+  | { type: "LOADED"; payload: BookingRow }
+  | { type: "LOAD_NOT_FOUND" }
+  | {
+      type: "SET_FIELD";
+      field: keyof Omit<
+        PageState,
+        "loading" | "notFound" | "saving" | "deleting" | "deleteOpen" | "error"
+      >;
+      value: string;
+    }
+  | { type: "SAVE_START" }
+  | { type: "SAVE_END" }
+  | { type: "DELETE_START" }
+  | { type: "DELETE_OPEN"; open: boolean }
+  | { type: "SET_ERROR"; payload: string | null };
+
+const pageInitial: PageState = {
+  loading: true,
+  notFound: false,
+  saving: false,
+  deleting: false,
+  deleteOpen: false,
+  error: null,
+  serviceId: "",
+  date: "",
+  time: "",
+  duration: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  status: "pending",
+};
+
+function pageReducer(state: PageState, action: PageAction): PageState {
+  switch (action.type) {
+    case "LOADED":
+      return {
+        ...state,
+        loading: false,
+        serviceId: action.payload.service_id ?? "",
+        date: action.payload.date ?? "",
+        time: action.payload.time ?? "",
+        duration: action.payload.duration ?? "",
+        firstName: action.payload.first_name ?? "",
+        lastName: action.payload.last_name ?? "",
+        email: action.payload.email ?? "",
+        phone: action.payload.phone ?? "",
+        status: action.payload.status ?? "pending",
+      };
+    case "LOAD_NOT_FOUND":
+      return { ...state, loading: false, notFound: true };
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SAVE_START":
+      return { ...state, saving: true };
+    case "SAVE_END":
+      return { ...state, saving: false };
+    case "DELETE_START":
+      return { ...state, deleting: true };
+    case "DELETE_OPEN":
+      return { ...state, deleteOpen: action.open };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    default:
+      return state;
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function EditBookingPage() {
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(pageReducer, pageInitial);
 
-  const [serviceId, setServiceId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [duration, setDuration] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState("pending");
+  const {
+    loading,
+    notFound,
+    saving,
+    deleting,
+    deleteOpen,
+    error,
+    serviceId,
+    date,
+    time,
+    duration,
+    firstName,
+    lastName,
+    email,
+    phone,
+    status,
+  } = state;
 
   useEffect(() => {
     async function load() {
@@ -126,39 +234,14 @@ export default function EditBookingPage() {
         .eq("id", id)
         .limit(1);
 
-      const booking = (
-        data as
-          | {
-              id: string;
-              service_id: string;
-              date: string | null;
-              time: string | null;
-              duration: string | null;
-              first_name: string;
-              last_name: string;
-              email: string;
-              phone: string | null;
-              status: string;
-            }[]
-          | null
-      )?.[0];
+      const booking = (data as BookingRow[] | null)?.[0];
 
       if (!booking) {
-        setNotFound(true);
-        setLoading(false);
+        dispatch({ type: "LOAD_NOT_FOUND" });
         return;
       }
 
-      setServiceId(booking.service_id ?? "");
-      setDate(booking.date ?? "");
-      setTime(booking.time ?? "");
-      setDuration(booking.duration ?? "");
-      setFirstName(booking.first_name ?? "");
-      setLastName(booking.last_name ?? "");
-      setEmail(booking.email ?? "");
-      setPhone(booking.phone ?? "");
-      setStatus(booking.status ?? "pending");
-      setLoading(false);
+      dispatch({ type: "LOADED", payload: booking });
     }
 
     void load();
@@ -166,18 +249,18 @@ export default function EditBookingPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatch({ type: "SET_ERROR", payload: null });
 
     if (!serviceId) {
-      setError("Please select a service.");
+      dispatch({ type: "SET_ERROR", payload: "Please select a service." });
       return;
     }
     if (!firstName.trim()) {
-      setError("First name is required.");
+      dispatch({ type: "SET_ERROR", payload: "First name is required." });
       return;
     }
 
-    setSaving(true);
+    dispatch({ type: "SAVE_START" });
 
     const serviceTitle =
       SERVICES.find((s) => s.id === serviceId)?.title ?? serviceId;
@@ -198,13 +281,15 @@ export default function EditBookingPage() {
       })
       .eq("id", id);
 
-    setSaving(false);
+    dispatch({ type: "SAVE_END" });
 
     if (updateError) {
-      setError(
-        (updateError as { message?: string })?.message ??
+      dispatch({
+        type: "SET_ERROR",
+        payload:
+          (updateError as { message?: string })?.message ??
           "Failed to save booking.",
-      );
+      });
       return;
     }
 
@@ -212,7 +297,7 @@ export default function EditBookingPage() {
   }
 
   async function handleDelete() {
-    setDeleting(true);
+    dispatch({ type: "DELETE_START" });
     await insforge.database.from("bookings").delete().eq("id", id);
     push("/dashboard/bookings");
   }
@@ -243,7 +328,7 @@ export default function EditBookingPage() {
               type="button"
               variant="outline-danger"
               size="md"
-              onClick={() => setDeleteOpen(true)}
+              onClick={() => dispatch({ type: "DELETE_OPEN", open: true })}
               disabled={loading}
               className="gap-1.5"
             >
@@ -289,7 +374,13 @@ export default function EditBookingPage() {
                   <select
                     id="service"
                     value={serviceId}
-                    onChange={(e) => setServiceId(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "serviceId",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={saving}
                     className={SELECT_CLASS}
                   >
@@ -318,7 +409,13 @@ export default function EditBookingPage() {
                       id="date"
                       type="date"
                       value={date}
-                      onChange={(e) => setDate(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "date",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
@@ -338,7 +435,13 @@ export default function EditBookingPage() {
                       id="time"
                       type="time"
                       value={time}
-                      onChange={(e) => setTime(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "time",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
@@ -358,7 +461,13 @@ export default function EditBookingPage() {
                       id="duration"
                       type="text"
                       value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "duration",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="e.g. 60 min"
                       disabled={saving}
                       className={INPUT_CLASS}
@@ -380,7 +489,13 @@ export default function EditBookingPage() {
                   <select
                     id="status"
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "status",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={saving}
                     className={SELECT_CLASS}
                   >
@@ -414,7 +529,13 @@ export default function EditBookingPage() {
                       id="firstName"
                       type="text"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "firstName",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="Jane"
                       disabled={saving}
                       className={INPUT_CLASS}
@@ -435,7 +556,13 @@ export default function EditBookingPage() {
                       id="lastName"
                       type="text"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "lastName",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="Doe"
                       disabled={saving}
                       className={INPUT_CLASS}
@@ -458,7 +585,13 @@ export default function EditBookingPage() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "email",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="jane@example.com"
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -480,7 +613,13 @@ export default function EditBookingPage() {
                     id="phone"
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "phone",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="+34 600 000 000"
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -496,7 +635,7 @@ export default function EditBookingPage() {
         <DeleteDialog
           deleting={deleting}
           onConfirm={() => void handleDelete()}
-          onCancel={() => setDeleteOpen(false)}
+          onCancel={() => dispatch({ type: "DELETE_OPEN", open: false })}
         />
       )}
     </div>

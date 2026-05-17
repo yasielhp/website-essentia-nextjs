@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -14,48 +14,81 @@ const INPUT_CLASS =
 const TEXTAREA_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full resize-none min-h-[80px] disabled:opacity-60";
 
+// ─── Form Reducer ─────────────────────────────────────────────
+
+type FormState = {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  duration: string;
+  location: string;
+  maxParticipants: string;
+  imageUrl: string;
+  access: AccessType;
+};
+
+type FormAction =
+  | { type: "SET_FIELD"; field: keyof Omit<FormState, "access">; value: string }
+  | { type: "SET_ACCESS"; value: AccessType };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ACCESS":
+      return { ...state, access: action.value };
+    default:
+      return state;
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function NewSessionPage() {
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [duration, setDuration] = useState("");
-  const [location, setLocation] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [access, setAccess] = useState<AccessType>("members_only");
+  const [form, dispatch] = useReducer(formReducer, {
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    duration: "",
+    location: "",
+    maxParticipants: "",
+    imageUrl: "",
+    access: "members_only",
+  });
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle || !date || !time) {
+    const trimmedTitle = form.title.trim();
+    if (!trimmedTitle || !form.date || !form.time) {
       setError("Title, date and time are required.");
       return;
     }
 
     setSubmitting(true);
 
-    const isoDateTime = new Date(date + "T" + time).toISOString();
+    const isoDateTime = new Date(form.date + "T" + form.time).toISOString();
 
     const { error: insertError } = await insforge.database
       .from("education_sessions")
       .insert([
         {
           title: trimmedTitle,
-          description: description.trim() || null,
+          description: form.description.trim() || null,
           date: isoDateTime,
-          duration_minutes: parseInt(duration) || null,
-          location: location.trim() || null,
-          max_participants: parseInt(maxParticipants) || null,
-          image_url: imageUrl || null,
-          access,
+          duration_minutes: parseInt(form.duration) || null,
+          location: form.location.trim() || null,
+          max_participants: parseInt(form.maxParticipants) || null,
+          image_url: form.imageUrl || null,
+          access: form.access,
         },
       ]);
 
@@ -120,8 +153,14 @@ export default function NewSessionPage() {
                   <input
                     id="edu-title"
                     type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    value={form.title}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "title",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Introduction to Breathwork"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -137,8 +176,14 @@ export default function NewSessionPage() {
                   </label>
                   <textarea
                     id="edu-description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={form.description}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "description",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="A brief overview of the session…"
                     disabled={submitting}
                     className={TEXTAREA_CLASS}
@@ -156,8 +201,14 @@ export default function NewSessionPage() {
                     <input
                       id="edu-date"
                       type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
+                      value={form.date}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "date",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={submitting}
                       className={INPUT_CLASS}
                     />
@@ -172,8 +223,14 @@ export default function NewSessionPage() {
                     <input
                       id="edu-time"
                       type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
+                      value={form.time}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "time",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={submitting}
                       className={INPUT_CLASS}
                     />
@@ -190,8 +247,14 @@ export default function NewSessionPage() {
                   <input
                     id="edu-location"
                     type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    value={form.location}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "location",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Studio A"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -210,8 +273,14 @@ export default function NewSessionPage() {
                       <input
                         id="edu-duration"
                         type="number"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
+                        value={form.duration}
+                        onChange={(e) =>
+                          dispatch({
+                            type: "SET_FIELD",
+                            field: "duration",
+                            value: e.target.value,
+                          })
+                        }
                         placeholder="60"
                         min="1"
                         disabled={submitting}
@@ -232,8 +301,14 @@ export default function NewSessionPage() {
                     <input
                       id="edu-max-participants"
                       type="number"
-                      value={maxParticipants}
-                      onChange={(e) => setMaxParticipants(e.target.value)}
+                      value={form.maxParticipants}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "maxParticipants",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="20"
                       min="1"
                       disabled={submitting}
@@ -251,8 +326,13 @@ export default function NewSessionPage() {
                   </label>
                   <select
                     id="edu-access"
-                    value={access}
-                    onChange={(e) => setAccess(e.target.value as AccessType)}
+                    value={form.access}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_ACCESS",
+                        value: e.target.value as AccessType,
+                      })
+                    }
                     disabled={submitting}
                     className={INPUT_CLASS}
                   >
@@ -276,8 +356,10 @@ export default function NewSessionPage() {
               <ImageUpload
                 bucket="events"
                 folder="education"
-                value={imageUrl}
-                onChange={setImageUrl}
+                value={form.imageUrl}
+                onChange={(val) =>
+                  dispatch({ type: "SET_FIELD", field: "imageUrl", value: val })
+                }
               />
             </div>
           </div>

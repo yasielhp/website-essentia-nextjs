@@ -1,9 +1,45 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useReducer } from "react";
 import { insforge } from "@/lib/insforge";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { ModalState } from "@/types/settings";
+
+// ─── Form state reducer ───────────────────────────────────────
+
+type FormState = {
+  label: string;
+  duration: string;
+  price: string;
+  color: string;
+  active: boolean;
+};
+
+type FormAction =
+  | { type: "SET_LABEL"; label: string }
+  | { type: "SET_DURATION"; duration: string }
+  | { type: "SET_PRICE"; price: string }
+  | { type: "SET_COLOR"; color: string }
+  | { type: "TOGGLE_ACTIVE" };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_LABEL":
+      return { ...state, label: action.label };
+    case "SET_DURATION":
+      return { ...state, duration: action.duration };
+    case "SET_PRICE":
+      return { ...state, price: action.price };
+    case "SET_COLOR":
+      return { ...state, color: action.color };
+    case "TOGGLE_ACTIVE":
+      return { ...state, active: !state.active };
+    default:
+      return state;
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────
 
 export function TierModal({
   modal,
@@ -15,17 +51,18 @@ export function TierModal({
   onSaved: (serviceId: string) => Promise<void>;
 }) {
   const isEdit = !!modal.tier;
-  const [label, setLabel] = useState(modal.tier?.label ?? "");
-  const [duration, setDuration] = useState(
-    modal.tier?.duration_minutes != null
-      ? String(modal.tier.duration_minutes)
-      : "",
-  );
-  const [price, setPrice] = useState(
-    modal.tier?.price_eur != null ? String(modal.tier.price_eur) : "",
-  );
-  const [color, setColor] = useState(modal.tier?.color ?? "#6b7280");
-  const [active, setActive] = useState(modal.tier?.active ?? true);
+
+  const [form, dispatchForm] = useReducer(formReducer, {
+    label: modal.tier?.label ?? "",
+    duration:
+      modal.tier?.duration_minutes != null
+        ? String(modal.tier.duration_minutes)
+        : "",
+    price: modal.tier?.price_eur != null ? String(modal.tier.price_eur) : "",
+    color: modal.tier?.color ?? "#6b7280",
+    active: modal.tier?.active ?? true,
+  });
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -48,11 +85,12 @@ export function TierModal({
       await insforge.database
         .from("service_tiers")
         .update({
-          label: label.trim() || null,
-          duration_minutes: duration !== "" ? parseInt(duration, 10) : null,
-          price_eur: price !== "" ? parseFloat(price) : null,
-          color: color || null,
-          active,
+          label: form.label.trim() || null,
+          duration_minutes:
+            form.duration !== "" ? parseInt(form.duration, 10) : null,
+          price_eur: form.price !== "" ? parseFloat(form.price) : null,
+          color: form.color || null,
+          active: form.active,
         })
         .eq("id", modal.tier.id);
     } else {
@@ -64,11 +102,12 @@ export function TierModal({
       await insforge.database.from("service_tiers").insert([
         {
           service_id: modal.serviceId,
-          label: label.trim() || null,
-          duration_minutes: duration !== "" ? parseInt(duration, 10) : null,
-          price_eur: price !== "" ? parseFloat(price) : null,
-          color: color || null,
-          active,
+          label: form.label.trim() || null,
+          duration_minutes:
+            form.duration !== "" ? parseInt(form.duration, 10) : null,
+          price_eur: form.price !== "" ? parseFloat(form.price) : null,
+          color: form.color || null,
+          active: form.active,
           sort_order: nextOrder,
         },
       ]);
@@ -131,8 +170,10 @@ export function TierModal({
             <input
               id="tier-label"
               type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
+              value={form.label}
+              onChange={(e) =>
+                dispatchForm({ type: "SET_LABEL", label: e.target.value })
+              }
               placeholder="e.g. Standard, 60 min, NAD+"
               className={INPUT_CLASS}
             />
@@ -151,8 +192,13 @@ export function TierModal({
                 type="number"
                 min="0"
                 step="1"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
+                value={form.duration}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_DURATION",
+                    duration: e.target.value,
+                  })
+                }
                 placeholder="60"
                 className={INPUT_CLASS}
               />
@@ -169,8 +215,10 @@ export function TierModal({
                 type="number"
                 min="0"
                 step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                value={form.price}
+                onChange={(e) =>
+                  dispatchForm({ type: "SET_PRICE", price: e.target.value })
+                }
                 placeholder="80"
                 className={INPUT_CLASS}
               />
@@ -185,19 +233,21 @@ export function TierModal({
               <label className="border-sand-200 flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5">
                 <div
                   className="size-5 shrink-0 rounded-full ring-1 ring-black/10"
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: form.color }}
                 />
                 <span className="text-petroleum-400 font-mono text-xs">
-                  {color}
+                  {form.color}
                 </span>
                 <div
                   className="border-sand-200 relative ml-2 size-7 overflow-hidden rounded-lg border"
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: form.color }}
                 >
                   <input
                     type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
+                    value={form.color}
+                    onChange={(e) =>
+                      dispatchForm({ type: "SET_COLOR", color: e.target.value })
+                    }
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   />
                 </div>
@@ -211,14 +261,14 @@ export function TierModal({
               <div className="flex h-[46px] items-center">
                 <button
                   type="button"
-                  onClick={() => setActive((a) => !a)}
+                  onClick={() => dispatchForm({ type: "TOGGLE_ACTIVE" })}
                   className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                    active ? "bg-petroleum-700" : "bg-sand-200"
+                    form.active ? "bg-petroleum-700" : "bg-sand-200"
                   }`}
                 >
                   <span
                     className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
-                      active ? "translate-x-5" : "translate-x-0"
+                      form.active ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
                 </button>

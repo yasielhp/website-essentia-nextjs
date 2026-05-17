@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,54 @@ type EduReg = {
     location: string | null;
   } | null;
 };
+
+// ---------------------------------------------------------------------------
+// Reducer for async load state
+// ---------------------------------------------------------------------------
+
+type LoadState = {
+  loading: boolean;
+  notFound: boolean;
+  bookings: Booking[];
+  raceRegs: RaceReg[];
+  eduRegs: EduReg[];
+};
+
+type LoadAction =
+  | {
+      type: "LOADED";
+      bookings: Booking[];
+      raceRegs: RaceReg[];
+      eduRegs: EduReg[];
+    }
+  | { type: "NOT_FOUND" };
+
+const initialLoadState: LoadState = {
+  loading: true,
+  notFound: false,
+  bookings: [],
+  raceRegs: [],
+  eduRegs: [],
+};
+
+function loadReducer(state: LoadState, action: LoadAction): LoadState {
+  switch (action.type) {
+    case "LOADED":
+      return {
+        loading: false,
+        notFound: false,
+        bookings: action.bookings,
+        raceRegs: action.raceRegs,
+        eduRegs: action.eduRegs,
+      };
+    case "NOT_FOUND":
+      return { ...state, loading: false, notFound: true };
+    default:
+      return state;
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700",
@@ -154,21 +202,21 @@ export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  // Async load state — a single reducer replaces loading + notFound + bookings + raceRegs + eduRegs useState calls
+  const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
+  const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
+
+  // Action / UI state
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Editable form fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [raceRegs, setRaceRegs] = useState<RaceReg[]>([]);
-  const [eduRegs, setEduRegs] = useState<EduReg[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -202,8 +250,7 @@ export default function ContactDetailPage() {
 
       const contact = (contacts as Contact[] | null)?.[0];
       if (!contact) {
-        setNotFound(true);
-        setLoading(false);
+        dispatch({ type: "NOT_FOUND" });
         return;
       }
 
@@ -211,7 +258,6 @@ export default function ContactDetailPage() {
       setLastName(contact.last_name ?? "");
       setEmail(contact.email ?? "");
       setPhone(contact.phone ?? "");
-      setBookings((bookingData as Booking[] | null) ?? []);
 
       const raceRows =
         (raceRegData as
@@ -262,20 +308,19 @@ export default function ContactDetailPage() {
         ).map((s) => [s.id, s]),
       );
 
-      setRaceRegs(
-        raceRows.map((r) => ({
+      // Single dispatch replaces the cascading setBookings / setRaceRegs / setEduRegs / setLoading calls
+      dispatch({
+        type: "LOADED",
+        bookings: (bookingData as Booking[] | null) ?? [],
+        raceRegs: raceRows.map((r) => ({
           ...r,
           race: racesMap.get(r.race_id) ?? null,
         })),
-      );
-      setEduRegs(
-        eduRows.map((r) => ({
+        eduRegs: eduRows.map((r) => ({
           ...r,
           session: sessionsMap.get(r.session_id) ?? null,
         })),
-      );
-
-      setLoading(false);
+      });
     }
 
     void load();
@@ -336,7 +381,7 @@ export default function ContactDetailPage() {
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ") || "Contact";
 
-  if (notFound) {
+  if (notFound.current) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
         <p className="text-sm">Contact not found.</p>

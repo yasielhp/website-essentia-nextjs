@@ -1,5 +1,3 @@
-"use server";
-
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -10,9 +8,8 @@ type SendEmailParams = {
   html: string;
 };
 
-// react-doctor: intentionally no auth check — used for unauthenticated booking
-// confirmations (public-facing) and internal admin flows that already gate access.
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
+  if (!to.includes("@")) throw new Error("Invalid recipient address");
   const from =
     process.env.RESEND_FROM_EMAIL ?? "Essentia <noreply@essentia.com>";
 

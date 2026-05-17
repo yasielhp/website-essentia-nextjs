@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -56,18 +56,43 @@ function welcomeStaffEmail({
 </html>`;
 }
 
+// ─── Form Reducer ─────────────────────────────────────────────
+
+type FormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  avatarUrl: string;
+};
+
+type FormAction = { type: "SET_FIELD"; field: keyof FormState; value: string };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    default:
+      return state;
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function NewStaffPage() {
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
   const [services, setServices] = useState<string[]>([]);
+
+  const [form, dispatch] = useReducer(formReducer, {
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    avatarUrl: "",
+  });
 
   function toggleService(id: string) {
     setServices((prev) =>
@@ -79,9 +104,9 @@ export default function NewStaffPage() {
     e.preventDefault();
     setError(null);
 
-    const trimmedFirst = firstName.trim();
-    const trimmedLast = lastName.trim();
-    const trimmedEmail = email.trim();
+    const trimmedFirst = form.firstName.trim();
+    const trimmedLast = form.lastName.trim();
+    const trimmedEmail = form.email.trim();
 
     if (!trimmedFirst || !trimmedEmail) {
       setError("First name and email are required.");
@@ -124,8 +149,8 @@ export default function NewStaffPage() {
         last_name: trimmedLast || null,
         full_name: fullName,
         email: trimmedEmail,
-        phone: phone.trim() || null,
-        avatar_url: avatarUrl || null,
+        phone: form.phone.trim() || null,
+        avatar_url: form.avatarUrl || null,
       },
     ]);
 
@@ -197,8 +222,14 @@ export default function NewStaffPage() {
                     <input
                       id="firstName"
                       type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      value={form.firstName}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "firstName",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="Jane"
                       disabled={submitting}
                       className={INPUT_CLASS}
@@ -214,8 +245,14 @@ export default function NewStaffPage() {
                     <input
                       id="lastName"
                       type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      value={form.lastName}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "lastName",
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="Doe"
                       disabled={submitting}
                       className={INPUT_CLASS}
@@ -233,8 +270,14 @@ export default function NewStaffPage() {
                   <input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={form.email}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "email",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="jane@essentia.com"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -251,8 +294,14 @@ export default function NewStaffPage() {
                   <input
                     id="phone"
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={form.phone}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "phone",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="+34 600 000 000"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -300,8 +349,14 @@ export default function NewStaffPage() {
               <ImageUpload
                 bucket="events"
                 folder="staff"
-                value={avatarUrl}
-                onChange={setAvatarUrl}
+                value={form.avatarUrl}
+                onChange={(val) =>
+                  dispatch({
+                    type: "SET_FIELD",
+                    field: "avatarUrl",
+                    value: val,
+                  })
+                }
               />
             </div>
           </div>

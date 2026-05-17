@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,98 @@ type Tier = {
   color: string | null;
 };
 
+// ─── Async state ──────────────────────────────────────────────
+
+type AsyncState = {
+  submitting: boolean;
+  error: string | null;
+  services: Service[];
+  servicesLoading: boolean;
+  tiers: Tier[];
+  tiersLoading: boolean;
+};
+
+type AsyncAction =
+  | { type: "SERVICES_LOADING" }
+  | { type: "SERVICES_LOADED"; payload: Service[] }
+  | { type: "TIERS_LOADING" }
+  | { type: "TIERS_LOADED"; payload: Tier[] }
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_END" }
+  | { type: "SET_ERROR"; payload: string | null };
+
+const asyncInitial: AsyncState = {
+  submitting: false,
+  error: null,
+  services: [],
+  servicesLoading: true,
+  tiers: [],
+  tiersLoading: false,
+};
+
+function asyncReducer(state: AsyncState, action: AsyncAction): AsyncState {
+  switch (action.type) {
+    case "SERVICES_LOADING":
+      return { ...state, servicesLoading: true };
+    case "SERVICES_LOADED":
+      return { ...state, services: action.payload, servicesLoading: false };
+    case "TIERS_LOADING":
+      return { ...state, tiersLoading: true };
+    case "TIERS_LOADED":
+      return { ...state, tiers: action.payload, tiersLoading: false };
+    case "SUBMIT_START":
+      return { ...state, submitting: true };
+    case "SUBMIT_END":
+      return { ...state, submitting: false };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    default:
+      return state;
+  }
+}
+
+// ─── Form state ───────────────────────────────────────────────
+
+type FormState = {
+  serviceId: string;
+  tierId: string;
+  date: string;
+  time: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
+
+type FormAction =
+  | { type: "SET_FIELD"; field: keyof FormState; value: string }
+  | { type: "RESET_TIER" }
+  | { type: "RESET_TIERS_FOR_SERVICE" };
+
+const formInitial: FormState = {
+  serviceId: "",
+  tierId: "",
+  date: "",
+  time: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "RESET_TIER":
+      return { ...state, tierId: "" };
+    case "RESET_TIERS_FOR_SERVICE":
+      return { ...state, tierId: "" };
+    default:
+      return state;
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 function tierLabel(t: Tier): string {
@@ -33,26 +125,13 @@ function tierLabel(t: Tier): string {
 export default function NewBookingPage() {
   const { push } = useRouter();
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
+  const [form, dispatchForm] = useReducer(formReducer, formInitial);
 
-  // Services (loaded from DB — active only)
-  const [services, setServices] = useState<Service[]>([]);
-  const [servicesLoading, setServicesLoading] = useState(true);
-
-  // Tiers for selected service
-  const [tiers, setTiers] = useState<Tier[]>([]);
-  const [tiersLoading, setTiersLoading] = useState(false);
-
-  // Form values
-  const [serviceId, setServiceId] = useState("");
-  const [tierId, setTierId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const { submitting, error, services, servicesLoading, tiers, tiersLoading } =
+    async_;
+  const { serviceId, tierId, date, time, firstName, lastName, email, phone } =
+    form;
 
   // Derived from selected tier
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
@@ -61,14 +140,16 @@ export default function NewBookingPage() {
   // Load active services on mount
   useEffect(() => {
     async function load() {
-      setServicesLoading(true);
+      dispatchAsync({ type: "SERVICES_LOADING" });
       const { data } = await insforge.database
         .from("service_settings")
         .select("id, title")
         .eq("active", true)
         .order("title");
-      setServices((data as Service[] | null) ?? []);
-      setServicesLoading(false);
+      dispatchAsync({
+        type: "SERVICES_LOADED",
+        payload: (data as Service[] | null) ?? [],
+      });
     }
     void load();
   }, []);
@@ -77,12 +158,12 @@ export default function NewBookingPage() {
   useEffect(() => {
     async function load() {
       if (!serviceId) {
-        setTiers([]);
-        setTierId("");
+        dispatchAsync({ type: "TIERS_LOADED", payload: [] });
+        dispatchForm({ type: "RESET_TIER" });
         return;
       }
-      setTiersLoading(true);
-      setTierId("");
+      dispatchAsync({ type: "TIERS_LOADING" });
+      dispatchForm({ type: "RESET_TIERS_FOR_SERVICE" });
       const { data } = await insforge.database
         .from("service_tiers")
         .select("id, label, duration_minutes, price_eur, color")
@@ -90,31 +171,42 @@ export default function NewBookingPage() {
         .eq("active", true)
         .order("sort_order");
       const rows = (data as Tier[] | null) ?? [];
-      setTiers(rows);
-      if (rows.length === 1) setTierId(rows[0]!.id);
-      setTiersLoading(false);
+      dispatchAsync({ type: "TIERS_LOADED", payload: rows });
+      if (rows.length === 1) {
+        dispatchForm({
+          type: "SET_FIELD",
+          field: "tierId",
+          value: rows[0]!.id,
+        });
+      }
     }
     void load();
   }, [serviceId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatchAsync({ type: "SET_ERROR", payload: null });
 
     if (!serviceId) {
-      setError("Please select a service.");
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: "Please select a service.",
+      });
       return;
     }
     if (!firstName.trim()) {
-      setError("First name is required.");
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: "First name is required.",
+      });
       return;
     }
     if (!email.trim()) {
-      setError("Email is required.");
+      dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
       return;
     }
 
-    setSubmitting(true);
+    dispatchAsync({ type: "SUBMIT_START" });
 
     const durationText =
       selectedTier?.duration_minutes != null
@@ -140,13 +232,15 @@ export default function NewBookingPage() {
         },
       ]);
 
-    setSubmitting(false);
+    dispatchAsync({ type: "SUBMIT_END" });
 
     if (insertError) {
-      setError(
-        (insertError as { message?: string })?.message ??
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload:
+          (insertError as { message?: string })?.message ??
           "Failed to create booking.",
-      );
+      });
       return;
     }
 
@@ -202,7 +296,13 @@ export default function NewBookingPage() {
                   <select
                     id="service"
                     value={serviceId}
-                    onChange={(e) => setServiceId(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "serviceId",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={SELECT_CLASS}
                   >
@@ -236,7 +336,13 @@ export default function NewBookingPage() {
                     <select
                       id="tier"
                       value={tierId}
-                      onChange={(e) => setTierId(e.target.value)}
+                      onChange={(e) =>
+                        dispatchForm({
+                          type: "SET_FIELD",
+                          field: "tierId",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={submitting}
                       className={SELECT_CLASS}
                     >
@@ -286,7 +392,13 @@ export default function NewBookingPage() {
                     id="date"
                     type="date"
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "date",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -302,7 +414,13 @@ export default function NewBookingPage() {
                     id="time"
                     type="time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "time",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -329,7 +447,13 @@ export default function NewBookingPage() {
                     id="firstName"
                     type="text"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "firstName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Jane"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -346,7 +470,13 @@ export default function NewBookingPage() {
                     id="lastName"
                     type="text"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "lastName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Doe"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -365,7 +495,13 @@ export default function NewBookingPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_FIELD",
+                      field: "email",
+                      value: e.target.value,
+                    })
+                  }
                   placeholder="jane@example.com"
                   disabled={submitting}
                   className={INPUT_CLASS}
@@ -383,7 +519,13 @@ export default function NewBookingPage() {
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_FIELD",
+                      field: "phone",
+                      value: e.target.value,
+                    })
+                  }
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}

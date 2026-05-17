@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useReducer } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
@@ -29,35 +29,89 @@ import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 
 const STAFF_PAGE_SIZE = 10;
 
+// ─── Data state reducer ───────────────────────────────────────
+
+type DataState = {
+  // useState (not useRef) — read in the early-return guard below: `if (!mounted) return <skeleton>`
+  mounted: boolean;
+  colors: ColorSettings;
+  serviceTiers: Record<string, TierRow[]>;
+  plans: PlanRow[];
+  planModal: PlanRow | null;
+  staff: StaffRow[];
+  staffLoading: boolean;
+  staffPage: number;
+  modal: ModalState | null;
+};
+
+type DataAction =
+  | {
+      type: "INIT_DONE";
+      colors: ColorSettings;
+      serviceTiers: Record<string, TierRow[]>;
+      plans: PlanRow[];
+    }
+  | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
+  | { type: "SET_PLANS"; plans: PlanRow[] }
+  | { type: "SET_PLAN_MODAL"; planModal: PlanRow | null }
+  | { type: "STAFF_LOADING_START" }
+  | { type: "STAFF_LOADED"; staff: StaffRow[] }
+  | { type: "SET_STAFF_PAGE"; staffPage: number }
+  | { type: "SET_MODAL"; modal: ModalState | null }
+  | { type: "SET_COLORS"; colors: ColorSettings };
+
+const initialDataState: DataState = {
+  mounted: false,
+  colors: DEFAULT_COLORS,
+  serviceTiers: {},
+  plans: [],
+  planModal: null,
+  staff: [],
+  staffLoading: false,
+  staffPage: 0,
+  modal: null,
+};
+
+function dataReducer(state: DataState, action: DataAction): DataState {
+  switch (action.type) {
+    case "INIT_DONE":
+      return {
+        ...state,
+        mounted: true,
+        colors: action.colors,
+        serviceTiers: action.serviceTiers,
+        plans: action.plans,
+      };
+    case "SET_SERVICE_TIERS":
+      return { ...state, serviceTiers: action.serviceTiers };
+    case "SET_PLANS":
+      return { ...state, plans: action.plans };
+    case "SET_PLAN_MODAL":
+      return { ...state, planModal: action.planModal };
+    case "STAFF_LOADING_START":
+      return { ...state, staffLoading: true };
+    case "STAFF_LOADED":
+      return { ...state, staff: action.staff, staffLoading: false };
+    case "SET_STAFF_PAGE":
+      return { ...state, staffPage: action.staffPage };
+    case "SET_MODAL":
+      return { ...state, modal: action.modal };
+    case "SET_COLORS":
+      return { ...state, colors: action.colors };
+    default:
+      return state;
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("services");
-  // useState (not useRef) — read in the early-return guard below: `if (!mounted) return <skeleton>`
-  const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const { push } = useRouter();
 
-  // Colors
-  const [colors, setColors] = useState<ColorSettings>(DEFAULT_COLORS);
-
-  // Services tiers
-  const [serviceTiers, setServiceTiers] = useState<Record<string, TierRow[]>>(
-    {},
-  );
-
-  // Plans
-  const [plans, setPlans] = useState<PlanRow[]>([]);
-  const [planModal, setPlanModal] = useState<PlanRow | null>(null);
-
-  // Staff
-  const [staff, setStaff] = useState<StaffRow[]>([]);
-  const [staffLoading, setStaffLoading] = useState(false);
+  const [data, dispatch] = useReducer(dataReducer, initialDataState);
   const staffLoaded = useRef(false);
-  const [staffPage, setStaffPage] = useState(0);
-
-  // Modal
-  const [modal, setModal] = useState<ModalState | null>(null);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -67,17 +121,20 @@ export default function SettingsPage() {
   // ── Load tiers for one service (called after modal save/delete) ──
 
   async function reloadServiceTiers(serviceId: string) {
-    const { data } = await insforge.database
+    const { data: rows } = await insforge.database
       .from("service_tiers")
       .select(
         "id, label, duration_minutes, price_eur, color, active, sort_order",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
-    setServiceTiers((p) => ({
-      ...p,
-      [serviceId]: (data as TierRow[] | null) ?? [],
-    }));
+    dispatch({
+      type: "SET_SERVICE_TIERS",
+      serviceTiers: {
+        ...data.serviceTiers,
+        [serviceId]: (rows as TierRow[] | null) ?? [],
+      },
+    });
     showToast("Saved");
   }
 
@@ -85,7 +142,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function init() {
-      setColors(loadColorSettings());
+      const colors = loadColorSettings();
 
       const [tiersRes, plansRes] = await Promise.all([
         insforge.database
@@ -100,22 +157,17 @@ export default function SettingsPage() {
           .order("price_monthly"),
       ]);
 
+      const serviceTiers: Record<string, TierRow[]> = {};
       if (tiersRes.data) {
-        const map: Record<string, TierRow[]> = {};
-        for (const r of tiersRes.data as (TierRow & {
-          service_id: string;
-        })[]) {
-          if (!map[r.service_id]) map[r.service_id] = [];
-          map[r.service_id].push(r);
+        for (const r of tiersRes.data as (TierRow & { service_id: string })[]) {
+          if (!serviceTiers[r.service_id]) serviceTiers[r.service_id] = [];
+          serviceTiers[r.service_id].push(r);
         }
-        setServiceTiers(map);
       }
 
-      if (plansRes.data) {
-        setPlans(plansRes.data as PlanRow[]);
-      }
+      const plans = plansRes.data ? (plansRes.data as PlanRow[]) : [];
 
-      setMounted(true);
+      dispatch({ type: "INIT_DONE", colors, serviceTiers, plans });
     }
     void init();
   }, []);
@@ -125,15 +177,17 @@ export default function SettingsPage() {
   useEffect(() => {
     if (tab !== "staff" || staffLoaded.current) return;
     async function loadStaff() {
-      setStaffLoading(true);
-      const { data } = await insforge.database
+      dispatch({ type: "STAFF_LOADING_START" });
+      const { data: rows } = await insforge.database
         .from("profiles")
         .select("id, full_name, email, phone, avatar_url")
         .eq("role", "staff")
         .order("created_at", { ascending: false });
-      setStaff((data as StaffRow[] | null) ?? []);
+      dispatch({
+        type: "STAFF_LOADED",
+        staff: (rows as StaffRow[] | null) ?? [],
+      });
       staffLoaded.current = true;
-      setStaffLoading(false);
     }
     void loadStaff();
   }, [tab]);
@@ -141,31 +195,31 @@ export default function SettingsPage() {
   // ── Plans handlers ──
 
   async function reloadPlans() {
-    const { data } = await insforge.database
+    const { data: rows } = await insforge.database
       .from("membership_plans")
       .select("id, label, price_monthly")
       .order("price_monthly");
-    if (data) setPlans(data as PlanRow[]);
+    if (rows) dispatch({ type: "SET_PLANS", plans: rows as PlanRow[] });
     showToast("Saved");
   }
 
   // ── Appearance handlers ──
 
   function handleRacesColor(color: string) {
-    const next = { ...colors, races: color };
-    setColors(next);
+    const next = { ...data.colors, races: color };
+    dispatch({ type: "SET_COLORS", colors: next });
     saveColorSettings(next);
   }
 
   function handleSessionsColor(color: string) {
-    const next = { ...colors, sessions: color };
-    setColors(next);
+    const next = { ...data.colors, sessions: color };
+    dispatch({ type: "SET_COLORS", colors: next });
     saveColorSettings(next);
   }
 
   // ── Skeleton ──
 
-  if (!mounted) {
+  if (!data.mounted) {
     return (
       <div className="px-6 py-8 lg:px-10">
         <div className="space-y-4">
@@ -212,7 +266,7 @@ export default function SettingsPage() {
         {tab === "services" && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {SERVICES.map(({ id, label }) => {
-              const tiers = serviceTiers[id] ?? [];
+              const tiers = data.serviceTiers[id] ?? [];
               return (
                 <div
                   key={id}
@@ -226,7 +280,12 @@ export default function SettingsPage() {
                     <Button
                       variant="solid"
                       size="sm"
-                      onClick={() => setModal({ serviceId: id })}
+                      onClick={() =>
+                        dispatch({
+                          type: "SET_MODAL",
+                          modal: { serviceId: id },
+                        })
+                      }
                     >
                       <svg
                         width="13"
@@ -272,7 +331,12 @@ export default function SettingsPage() {
                         <button
                           key={t.id}
                           type="button"
-                          onClick={() => setModal({ serviceId: id, tier: t })}
+                          onClick={() =>
+                            dispatch({
+                              type: "SET_MODAL",
+                              modal: { serviceId: id, tier: t },
+                            })
+                          }
                           className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
                         >
                           <span className="text-petroleum-700 min-w-0 truncate text-sm">
@@ -325,11 +389,13 @@ export default function SettingsPage() {
             description="Click a plan to edit its name and monthly price."
           >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {plans.map((plan) => (
+              {data.plans.map((plan) => (
                 <button
                   key={plan.id}
                   type="button"
-                  onClick={() => setPlanModal(plan)}
+                  onClick={() =>
+                    dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
+                  }
                   className="border-sand-200 hover:border-petroleum-300 hover:bg-sand-50 flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-colors active:scale-[0.98]"
                 >
                   <span className="text-petroleum-700 text-sm font-semibold">
@@ -369,7 +435,7 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {staffLoading ? (
+            {data.staffLoading ? (
               <div className="border-sand-100 space-y-3 border-t px-5 py-4">
                 {(["a", "b", "c"] as const).map((n) => (
                   <div
@@ -378,7 +444,7 @@ export default function SettingsPage() {
                   />
                 ))}
               </div>
-            ) : staff.length === 0 ? (
+            ) : data.staff.length === 0 ? (
               <div className="border-sand-100 border-t px-5 py-4">
                 <p className="text-petroleum-300 text-sm">
                   No staff members yet. Add one to get started.
@@ -400,10 +466,10 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 {/* Rows — current page */}
-                {staff
+                {data.staff
                   .slice(
-                    staffPage * STAFF_PAGE_SIZE,
-                    (staffPage + 1) * STAFF_PAGE_SIZE,
+                    data.staffPage * STAFF_PAGE_SIZE,
+                    (data.staffPage + 1) * STAFF_PAGE_SIZE,
                   )
                   .map((member) => (
                     <button
@@ -463,21 +529,26 @@ export default function SettingsPage() {
                     </button>
                   ))}
                 {/* Pagination */}
-                {staff.length > STAFF_PAGE_SIZE && (
+                {data.staff.length > STAFF_PAGE_SIZE && (
                   <div className="border-sand-100 flex items-center justify-between border-t px-5 py-3">
                     <span className="text-petroleum-400 text-xs">
-                      {staffPage * STAFF_PAGE_SIZE + 1}–
+                      {data.staffPage * STAFF_PAGE_SIZE + 1}–
                       {Math.min(
-                        (staffPage + 1) * STAFF_PAGE_SIZE,
-                        staff.length,
+                        (data.staffPage + 1) * STAFF_PAGE_SIZE,
+                        data.staff.length,
                       )}{" "}
-                      of {staff.length}
+                      of {data.staff.length}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        disabled={staffPage === 0}
-                        onClick={() => setStaffPage((p) => p - 1)}
+                        disabled={data.staffPage === 0}
+                        onClick={() =>
+                          dispatch({
+                            type: "SET_STAFF_PAGE",
+                            staffPage: data.staffPage - 1,
+                          })
+                        }
                         className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
                       >
                         <svg
@@ -498,9 +569,15 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         disabled={
-                          (staffPage + 1) * STAFF_PAGE_SIZE >= staff.length
+                          (data.staffPage + 1) * STAFF_PAGE_SIZE >=
+                          data.staff.length
                         }
-                        onClick={() => setStaffPage((p) => p + 1)}
+                        onClick={() =>
+                          dispatch({
+                            type: "SET_STAFF_PAGE",
+                            staffPage: data.staffPage + 1,
+                          })
+                        }
                         className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
                       >
                         <svg
@@ -535,7 +612,7 @@ export default function SettingsPage() {
             >
               <ColorRow
                 label="Races"
-                value={colors.races}
+                value={data.colors.races}
                 onChange={handleRacesColor}
               />
             </SectionCard>
@@ -545,7 +622,7 @@ export default function SettingsPage() {
             >
               <ColorRow
                 label="Education Sessions"
-                value={colors.sessions}
+                value={data.colors.sessions}
                 onChange={handleSessionsColor}
               />
             </SectionCard>
@@ -554,19 +631,19 @@ export default function SettingsPage() {
       </div>
 
       {/* Tier modal */}
-      {modal && (
+      {data.modal && (
         <TierModal
-          modal={modal}
-          onClose={() => setModal(null)}
+          modal={data.modal}
+          onClose={() => dispatch({ type: "SET_MODAL", modal: null })}
           onSaved={reloadServiceTiers}
         />
       )}
 
       {/* Plan modal */}
-      {planModal && (
+      {data.planModal && (
         <PlanModal
-          plan={planModal}
-          onClose={() => setPlanModal(null)}
+          plan={data.planModal}
+          onClose={() => dispatch({ type: "SET_PLAN_MODAL", planModal: null })}
           onSaved={reloadPlans}
         />
       )}

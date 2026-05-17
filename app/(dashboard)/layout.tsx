@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { UserMenu } from "@/components/dashboard/user-menu";
-import { EssentiaMark } from "@/components/ui/logo";
-import { IconSidebarLeft } from "@/components/ui/icons";
+import { Logo } from "@/components/ui/logo";
+import { FavIcon, IconSidebarLeft } from "@/components/ui/icons";
 import { navLinks, navIcons } from "@/constants/nav";
 import { getBreadcrumbs } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
@@ -85,13 +85,7 @@ export default function DashboardLayout({
             sidebarCollapsed ? "justify-center px-4" : "px-6"
           }`}
         >
-          {sidebarCollapsed ? (
-            <EssentiaMark size={28} />
-          ) : (
-            <span className="font-display text-petroleum-700 text-xl">
-              Essentia
-            </span>
-          )}
+          {sidebarCollapsed ? <FavIcon /> : <Logo />}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">

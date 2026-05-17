@@ -1,9 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef } from "react";
 import { insforge } from "@/lib/insforge";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { PlanRow } from "@/types/settings";
+
+type FormState = { label: string; price: string; saving: boolean };
+type FormAction =
+  | { type: "SET_LABEL"; label: string }
+  | { type: "SET_PRICE"; price: string }
+  | { type: "SAVING_START" }
+  | { type: "SAVING_END" };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_LABEL":
+      return { ...state, label: action.label };
+    case "SET_PRICE":
+      return { ...state, price: action.price };
+    case "SAVING_START":
+      return { ...state, saving: true };
+    case "SAVING_END":
+      return { ...state, saving: false };
+  }
+}
 
 export function PlanModal({
   plan,
@@ -14,11 +34,11 @@ export function PlanModal({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const [label, setLabel] = useState(plan.label);
-  const [price, setPrice] = useState(
-    plan.price_monthly != null ? String(plan.price_monthly) : "",
-  );
-  const [saving, setSaving] = useState(false);
+  const [form, dispatch] = useReducer(formReducer, {
+    label: plan.label,
+    price: plan.price_monthly != null ? String(plan.price_monthly) : "",
+    saving: false,
+  });
   const overlayRef = useRef<HTMLDivElement>(null);
 
   function handleOverlayClick(e: React.MouseEvent) {
@@ -34,17 +54,17 @@ export function PlanModal({
   }, [onClose]);
 
   async function handleSave() {
-    setSaving(true);
+    dispatch({ type: "SAVING_START" });
     await insforge.database
       .from("membership_plans")
       .update({
-        label: label.trim() || plan.label,
-        price_monthly: price !== "" ? parseFloat(price) : null,
+        label: form.label.trim() || plan.label,
+        price_monthly: form.price !== "" ? parseFloat(form.price) : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", plan.id);
     await onSaved();
-    setSaving(false);
+    dispatch({ type: "SAVING_END" });
     onClose();
   }
 
@@ -87,8 +107,10 @@ export function PlanModal({
             <input
               id="plan-label"
               type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
+              value={form.label}
+              onChange={(e) =>
+                dispatch({ type: "SET_LABEL", label: e.target.value })
+              }
               placeholder="e.g. Essential"
               className={INPUT_CLASS}
             />
@@ -105,8 +127,10 @@ export function PlanModal({
               type="number"
               min="0"
               step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              value={form.price}
+              onChange={(e) =>
+                dispatch({ type: "SET_PRICE", price: e.target.value })
+              }
               placeholder="199"
               className={INPUT_CLASS}
             />
@@ -124,11 +148,11 @@ export function PlanModal({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={form.saving}
             onClick={() => void handleSave()}
             className="bg-petroleum-700 hover:bg-petroleum-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save"}
+            {form.saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

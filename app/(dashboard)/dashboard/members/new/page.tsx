@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,85 @@ type Contact = {
   phone: string | null;
 };
 
+// ─── Contact Search Reducer ───────────────────────────────────
+
+type ContactSearchState = {
+  query: string;
+  results: Contact[];
+  showDropdown: boolean;
+  searching: boolean;
+};
+
+type ContactSearchAction =
+  | { type: "SET_QUERY"; payload: string }
+  | { type: "SEARCH_START" }
+  | { type: "SEARCH_DONE"; payload: Contact[] }
+  | { type: "CLEAR" }
+  | { type: "CLOSE_DROPDOWN" }
+  | { type: "OPEN_DROPDOWN" };
+
+function contactSearchReducer(
+  state: ContactSearchState,
+  action: ContactSearchAction,
+): ContactSearchState {
+  switch (action.type) {
+    case "SET_QUERY":
+      return { ...state, query: action.payload };
+    case "SEARCH_START":
+      return { ...state, searching: true };
+    case "SEARCH_DONE":
+      return {
+        ...state,
+        results: action.payload,
+        searching: false,
+        showDropdown: true,
+      };
+    case "CLEAR":
+      return { ...state, results: [], showDropdown: false };
+    case "CLOSE_DROPDOWN":
+      return { ...state, showDropdown: false };
+    case "OPEN_DROPDOWN":
+      return { ...state, showDropdown: true };
+    default:
+      return state;
+  }
+}
+
+// ─── Form Reducer ─────────────────────────────────────────────
+
+type FormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  plan: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  notes: string;
+};
+
+type FormAction =
+  | { type: "SET_FIELD"; field: keyof FormState; value: string }
+  | { type: "SET_PLAN"; value: string }
+  | {
+      type: "FILL_CONTACT";
+      payload: Pick<FormState, "firstName" | "lastName" | "email" | "phone">;
+    };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_PLAN":
+      return { ...state, plan: action.value };
+    case "FILL_CONTACT":
+      return { ...state, ...action.payload };
+    default:
+      return state;
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewMemberPage() {
@@ -33,29 +112,28 @@ export default function NewMemberPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Plans (loaded from DB)
   const [plans, setPlans] = useState<Plan[]>([]);
 
-  // Contact search
-  const [contactSearch, setContactSearch] = useState("");
-  const [contactResults, setContactResults] = useState<Contact[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [contactSearching, setContactSearching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Form fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [plan, setPlan] = useState("");
-  const [status, setStatus] = useState("active");
-  const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
-  );
-  const [endDate, setEndDate] = useState("");
-  const [notes, setNotes] = useState("");
+  const [search, dispatchSearch] = useReducer(contactSearchReducer, {
+    query: "",
+    results: [],
+    showDropdown: false,
+    searching: false,
+  });
+
+  const [form, dispatchForm] = useReducer(formReducer, {
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    plan: "",
+    status: "active",
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: "",
+    notes: "",
+  });
 
   // Load membership plans from DB on mount
   useEffect(() => {
@@ -67,40 +145,36 @@ export default function NewMemberPage() {
         .order("price_monthly");
       const rows = (data as Plan[] | null) ?? [];
       setPlans(rows);
-      if (rows.length > 0 && rows[0]) setPlan(rows[0].id);
+      if (rows.length > 0 && rows[0])
+        dispatchForm({ type: "SET_PLAN", value: rows[0].id });
     }
     void load();
   }, []);
 
   // Contact search with debounce
   useEffect(() => {
-    const q = contactSearch.trim();
+    const q = search.query.trim();
 
-    async function clear() {
-      setContactResults([]);
-      setShowDropdown(false);
+    if (q.length < 2) {
+      dispatchSearch({ type: "CLEAR" });
+      return;
     }
 
-    async function search() {
-      setContactSearching(true);
+    const timer = setTimeout(async () => {
+      dispatchSearch({ type: "SEARCH_START" });
       const { data } = await insforge.database
         .from("contacts")
         .select("id, first_name, last_name, email, phone")
         .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`)
         .limit(8);
-      setContactResults((data as Contact[] | null) ?? []);
-      setContactSearching(false);
-      setShowDropdown(true);
-    }
+      dispatchSearch({
+        type: "SEARCH_DONE",
+        payload: (data as Contact[] | null) ?? [],
+      });
+    }, 300);
 
-    if (q.length < 2) {
-      void clear();
-      return;
-    }
-
-    const timer = setTimeout(() => void search(), 300);
     return () => clearTimeout(timer);
-  }, [contactSearch]);
+  }, [search.query]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -109,7 +183,7 @@ export default function NewMemberPage() {
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
       ) {
-        setShowDropdown(false);
+        dispatchSearch({ type: "CLOSE_DROPDOWN" });
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -117,26 +191,33 @@ export default function NewMemberPage() {
   }, []);
 
   function selectContact(c: Contact) {
-    setFirstName(c.first_name ?? "");
-    setLastName(c.last_name ?? "");
-    setEmail(c.email ?? "");
-    setPhone(c.phone ?? "");
-    setContactSearch(
-      `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || (c.email ?? ""),
-    );
-    setShowDropdown(false);
-    setContactResults([]);
+    dispatchForm({
+      type: "FILL_CONTACT",
+      payload: {
+        firstName: c.first_name ?? "",
+        lastName: c.last_name ?? "",
+        email: c.email ?? "",
+        phone: c.phone ?? "",
+      },
+    });
+    dispatchSearch({
+      type: "SET_QUERY",
+      value:
+        `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || (c.email ?? ""),
+    });
+    dispatchSearch({ type: "CLOSE_DROPDOWN" });
+    dispatchSearch({ type: "CLEAR" });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!firstName.trim()) {
+    if (!form.firstName.trim()) {
       setError("First name is required.");
       return;
     }
-    if (!lastName.trim()) {
+    if (!form.lastName.trim()) {
       setError("Last name is required.");
       return;
     }
@@ -147,15 +228,15 @@ export default function NewMemberPage() {
       .from("memberships")
       .insert([
         {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim() || null,
-          phone: phone.trim() || null,
-          plan,
-          status,
-          start_date: startDate || null,
-          end_date: endDate || null,
-          notes: notes.trim() || null,
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          email: form.email.trim() || null,
+          phone: form.phone.trim() || null,
+          plan: form.plan,
+          status: form.status,
+          start_date: form.startDate || null,
+          end_date: form.endDate || null,
+          notes: form.notes.trim() || null,
         },
       ]);
 
@@ -213,25 +294,28 @@ export default function NewMemberPage() {
               <div className="relative">
                 <input
                   type="text"
-                  value={contactSearch}
-                  onChange={(e) => setContactSearch(e.target.value)}
+                  value={search.query}
+                  onChange={(e) =>
+                    dispatchSearch({ type: "SET_QUERY", value: e.target.value })
+                  }
                   onFocus={() => {
-                    if (contactResults.length > 0) setShowDropdown(true);
+                    if (search.results.length > 0)
+                      dispatchSearch({ type: "OPEN_DROPDOWN" });
                   }}
                   placeholder="Search by name or email…"
                   className={INPUT_CLASS}
                   disabled={submitting}
                 />
-                {contactSearching && (
+                {search.searching && (
                   <div className="absolute top-1/2 right-3 -translate-y-1/2">
                     <div className="border-petroleum-400 size-4 animate-spin rounded-full border-2 border-t-transparent" />
                   </div>
                 )}
               </div>
 
-              {showDropdown && contactResults.length > 0 && (
+              {search.showDropdown && search.results.length > 0 && (
                 <div className="border-sand-200 absolute z-20 mt-1 w-full overflow-hidden rounded-xl border bg-white shadow-lg">
-                  {contactResults.map((c) => (
+                  {search.results.map((c) => (
                     <button
                       key={c.id}
                       type="button"
@@ -258,10 +342,10 @@ export default function NewMemberPage() {
                 </div>
               )}
 
-              {showDropdown &&
-                !contactSearching &&
-                contactResults.length === 0 &&
-                contactSearch.trim().length >= 2 && (
+              {search.showDropdown &&
+                !search.searching &&
+                search.results.length === 0 &&
+                search.query.trim().length >= 2 && (
                   <div className="border-sand-200 absolute z-20 mt-1 w-full rounded-xl border bg-white px-4 py-3 text-sm shadow-lg">
                     <span className="text-petroleum-400">
                       No contacts found.
@@ -288,8 +372,14 @@ export default function NewMemberPage() {
                   <input
                     id="firstName"
                     type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    value={form.firstName}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "firstName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Jane"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -305,8 +395,14 @@ export default function NewMemberPage() {
                   <input
                     id="lastName"
                     type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    value={form.lastName}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "lastName",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="Doe"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -325,8 +421,14 @@ export default function NewMemberPage() {
                   <input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={form.email}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "email",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="jane@example.com"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -342,8 +444,14 @@ export default function NewMemberPage() {
                   <input
                     id="phone"
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={form.phone}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "phone",
+                        value: e.target.value,
+                      })
+                    }
                     placeholder="+34 600 000 000"
                     disabled={submitting}
                     className={INPUT_CLASS}
@@ -369,8 +477,14 @@ export default function NewMemberPage() {
                   </label>
                   <select
                     id="plan"
-                    value={plan}
-                    onChange={(e) => setPlan(e.target.value)}
+                    value={form.plan}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "plan",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting || plans.length === 0}
                     className={SELECT_CLASS}
                   >
@@ -393,8 +507,14 @@ export default function NewMemberPage() {
                   </label>
                   <select
                     id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    value={form.status}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "status",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={SELECT_CLASS}
                   >
@@ -416,8 +536,14 @@ export default function NewMemberPage() {
                   <input
                     id="startDate"
                     type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    value={form.startDate}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "startDate",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -432,8 +558,14 @@ export default function NewMemberPage() {
                   <input
                     id="endDate"
                     type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={form.endDate}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "endDate",
+                        value: e.target.value,
+                      })
+                    }
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -449,8 +581,14 @@ export default function NewMemberPage() {
                 </label>
                 <textarea
                   id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  value={form.notes}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_FIELD",
+                      field: "notes",
+                      value: e.target.value,
+                    })
+                  }
                   placeholder="Additional notes…"
                   rows={3}
                   disabled={submitting}
