@@ -19,7 +19,6 @@ import type {
   StaffRow,
   ModalState,
 } from "@/types/settings";
-import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { SectionCard } from "@/components/dashboard/settings/section-card";
 import { ColorRow } from "@/components/dashboard/settings/color-row";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
@@ -102,6 +101,269 @@ function dataReducer(state: DataState, action: DataAction): DataState {
     default:
       return state;
   }
+}
+
+// ─── Tab section components ───────────────────────────────────
+
+function ServicesTabContent({
+  serviceTiers,
+  onAddTier,
+  onEditTier,
+}: {
+  serviceTiers: Record<string, TierRow[]>;
+  onAddTier: (serviceId: string) => void;
+  onEditTier: (serviceId: string, tier: TierRow) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {SERVICES.map(({ id, label }) => {
+        const tiers = serviceTiers[id] ?? [];
+        return (
+          <div key={id} className="border-sand-200 rounded-2xl border bg-white">
+            <div className="flex items-center justify-between px-5 py-4">
+              <span className="text-petroleum-700 font-semibold">{label}</span>
+              <Button
+                variant="solid"
+                size="sm"
+                onClick={() => onAddTier(id)}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 5v14M5 12h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Add tier
+              </Button>
+            </div>
+
+            {tiers.length > 0 ? (
+              <div className="border-sand-100 border-t">
+                <div className="grid grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 px-5 py-2">
+                  {["Name", "Color", "Duration", "Price", "Status"].map(
+                    (h, i) => (
+                      <span
+                        key={h}
+                        className={`text-petroleum-400 text-xs font-medium ${i === 3 ? "text-right" : i === 4 ? "text-center" : ""}`}
+                      >
+                        {h}
+                      </span>
+                    ),
+                  )}
+                </div>
+                {tiers.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => onEditTier(id, t)}
+                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
+                  >
+                    <span className="text-petroleum-700 min-w-0 truncate text-sm">
+                      {t.label ?? "—"}
+                    </span>
+                    <div
+                      className="size-4 shrink-0 rounded-full ring-1 ring-black/10"
+                      style={{ backgroundColor: t.color ?? "#6b7280" }}
+                    />
+                    <span className="text-petroleum-500 text-sm">
+                      {t.duration_minutes != null
+                        ? `${t.duration_minutes} min`
+                        : "—"}
+                    </span>
+                    <span className="text-petroleum-700 text-right text-sm font-medium">
+                      {t.price_eur != null ? `€${t.price_eur}` : "—"}
+                    </span>
+                    <span className="flex justify-center">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          t.active
+                            ? "bg-green-100 text-green-700"
+                            : "bg-sand-100 text-petroleum-400"
+                        }`}
+                      >
+                        {t.active ? "Active" : "Off"}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="border-sand-100 border-t px-5 py-4">
+                <p className="text-petroleum-300 text-sm">
+                  No tiers yet. Add one to enable this service in bookings.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StaffTabContent({
+  staff,
+  staffLoading,
+  staffPage,
+  onNavigate,
+  onPageChange,
+}: {
+  staff: StaffRow[];
+  staffLoading: boolean;
+  staffPage: number;
+  onNavigate: (id: string) => void;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white">
+      <div className="flex items-center justify-between px-5 py-4">
+        <span className="text-petroleum-700 font-semibold">Staff</span>
+        <Button variant="solid" size="sm" href="/dashboard/settings/staff/new">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 5v14M5 12h14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          Add staff
+        </Button>
+      </div>
+
+      {staffLoading ? (
+        <div className="border-sand-100 space-y-3 border-t px-5 py-4">
+          {(["a", "b", "c"] as const).map((n) => (
+            <div
+              key={n}
+              className="bg-sand-100 h-10 animate-pulse rounded-xl"
+            />
+          ))}
+        </div>
+      ) : staff.length === 0 ? (
+        <div className="border-sand-100 border-t px-5 py-4">
+          <p className="text-petroleum-300 text-sm">
+            No staff members yet. Add one to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="border-sand-100 border-t">
+          <div className="grid grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 px-5 py-2">
+            <span />
+            {["Name", "Email", "Phone"].map((h) => (
+              <span
+                key={h}
+                className="text-petroleum-400 text-xs font-medium"
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+          {staff
+            .slice(
+              staffPage * STAFF_PAGE_SIZE,
+              (staffPage + 1) * STAFF_PAGE_SIZE,
+            )
+            .map((member) => (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => onNavigate(member.id)}
+                className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
+              >
+                {member.avatar_url ? (
+                  <div className="relative size-9 shrink-0 overflow-hidden rounded-lg">
+                    <Image
+                      src={member.avatar_url}
+                      alt={member.full_name ?? ""}
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-sand-100 flex size-9 shrink-0 items-center justify-center rounded-lg">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="text-petroleum-300"
+                    >
+                      <circle
+                        cx="12"
+                        cy="8"
+                        r="4"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                )}
+                <span className="text-petroleum-700 min-w-0 truncate text-sm font-medium">
+                  {member.full_name ?? "—"}
+                </span>
+                <span className="text-petroleum-400 min-w-0 truncate text-sm">
+                  {member.email ?? "—"}
+                </span>
+                <span className="text-petroleum-400 min-w-0 truncate text-sm">
+                  {member.phone ?? "—"}
+                </span>
+              </button>
+            ))}
+          {staff.length > STAFF_PAGE_SIZE && (
+            <div className="border-sand-100 flex items-center justify-between border-t px-5 py-3">
+              <span className="text-petroleum-400 text-xs">
+                {staffPage * STAFF_PAGE_SIZE + 1}–
+                {Math.min(
+                  (staffPage + 1) * STAFF_PAGE_SIZE,
+                  staff.length,
+                )}{" "}
+                of {staff.length}
+              </span>
+              <div className="flex items-center gap-1">
+                {[
+                  { dir: "prev", d: "M15 18l-6-6 6-6", disabled: staffPage === 0, page: staffPage - 1 },
+                  {
+                    dir: "next",
+                    d: "M9 18l6-6-6-6",
+                    disabled: (staffPage + 1) * STAFF_PAGE_SIZE >= staff.length,
+                    page: staffPage + 1,
+                  },
+                ].map(({ dir, d, disabled, page }) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onPageChange(page)}
+                    className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d={d}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────
@@ -247,7 +509,11 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div
+        role="tablist"
+        aria-label="Settings categories"
+        className="border-sand-200 mb-6 flex flex-wrap gap-1 border-b"
+      >
         {(
           [
             ["services", "Services"],
@@ -257,131 +523,35 @@ export default function SettingsPage() {
             ["payment", "Payment Gateway"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
-          <TabButton key={key} active={tab === key} onClick={() => setTab(key)}>
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`relative -mb-px rounded-t-md px-4 py-2.5 text-sm font-medium transition-colors ${
+              tab === key
+                ? "border-petroleum-700 text-petroleum-700 border-b-2"
+                : "text-petroleum-400 hover:text-petroleum-600 border-b-2 border-transparent"
+            }`}
+          >
             {label}
-          </TabButton>
+          </button>
         ))}
       </div>
 
       <div className="space-y-4">
         {/* ── Services ── */}
         {tab === "services" && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {SERVICES.map(({ id, label }) => {
-              const tiers = data.serviceTiers[id] ?? [];
-              return (
-                <div
-                  key={id}
-                  className="border-sand-200 rounded-2xl border bg-white"
-                >
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-5 py-4">
-                    <span className="text-petroleum-700 font-semibold">
-                      {label}
-                    </span>
-                    <Button
-                      variant="solid"
-                      size="sm"
-                      onClick={() =>
-                        dispatch({
-                          type: "SET_MODAL",
-                          modal: { serviceId: id },
-                        })
-                      }
-                    >
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M12 5v14M5 12h14"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      Add tier
-                    </Button>
-                  </div>
-
-                  {/* Tier table */}
-                  {tiers.length > 0 ? (
-                    <div className="border-sand-100 border-t">
-                      {/* Column headers */}
-                      <div className="grid grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 px-5 py-2">
-                        <span className="text-petroleum-400 text-xs font-medium">
-                          Name
-                        </span>
-                        <span className="text-petroleum-400 text-xs font-medium">
-                          Color
-                        </span>
-                        <span className="text-petroleum-400 text-xs font-medium">
-                          Duration
-                        </span>
-                        <span className="text-petroleum-400 text-right text-xs font-medium">
-                          Price
-                        </span>
-                        <span className="text-petroleum-400 text-center text-xs font-medium">
-                          Status
-                        </span>
-                      </div>
-
-                      {/* Rows */}
-                      {tiers.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() =>
-                            dispatch({
-                              type: "SET_MODAL",
-                              modal: { serviceId: id, tier: t },
-                            })
-                          }
-                          className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
-                        >
-                          <span className="text-petroleum-700 min-w-0 truncate text-sm">
-                            {t.label ?? "—"}
-                          </span>
-                          <div
-                            className="size-4 shrink-0 rounded-full ring-1 ring-black/10"
-                            style={{ backgroundColor: t.color ?? "#6b7280" }}
-                          />
-                          <span className="text-petroleum-500 text-sm">
-                            {t.duration_minutes != null
-                              ? `${t.duration_minutes} min`
-                              : "—"}
-                          </span>
-                          <span className="text-petroleum-700 text-right text-sm font-medium">
-                            {t.price_eur != null ? `€${t.price_eur}` : "—"}
-                          </span>
-                          <span className="flex justify-center">
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                t.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-sand-100 text-petroleum-400"
-                              }`}
-                            >
-                              {t.active ? "Active" : "Off"}
-                            </span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="border-sand-100 border-t px-5 py-4">
-                      <p className="text-petroleum-300 text-sm">
-                        No tiers yet. Add one to enable this service in
-                        bookings.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <ServicesTabContent
+            serviceTiers={data.serviceTiers}
+            onAddTier={(serviceId) =>
+              dispatch({ type: "SET_MODAL", modal: { serviceId } })
+            }
+            onEditTier={(serviceId, tier) =>
+              dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
+            }
+          />
         )}
 
         {/* ── Membership Plans ── */}
@@ -416,193 +586,15 @@ export default function SettingsPage() {
 
         {/* ── Staff ── */}
         {tab === "staff" && (
-          <div className="border-sand-200 rounded-2xl border bg-white">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-petroleum-700 font-semibold">Staff</span>
-              <Button
-                variant="solid"
-                size="sm"
-                href="/dashboard/settings/staff/new"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 5v14M5 12h14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                Add staff
-              </Button>
-            </div>
-
-            {data.staffLoading ? (
-              <div className="border-sand-100 space-y-3 border-t px-5 py-4">
-                {(["a", "b", "c"] as const).map((n) => (
-                  <div
-                    key={n}
-                    className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                  />
-                ))}
-              </div>
-            ) : data.staff.length === 0 ? (
-              <div className="border-sand-100 border-t px-5 py-4">
-                <p className="text-petroleum-300 text-sm">
-                  No staff members yet. Add one to get started.
-                </p>
-              </div>
-            ) : (
-              <div className="border-sand-100 border-t">
-                {/* Column headers */}
-                <div className="grid grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 px-5 py-2">
-                  <span />
-                  <span className="text-petroleum-400 text-xs font-medium">
-                    Name
-                  </span>
-                  <span className="text-petroleum-400 text-xs font-medium">
-                    Email
-                  </span>
-                  <span className="text-petroleum-400 text-xs font-medium">
-                    Phone
-                  </span>
-                </div>
-                {/* Rows — current page */}
-                {data.staff
-                  .slice(
-                    data.staffPage * STAFF_PAGE_SIZE,
-                    (data.staffPage + 1) * STAFF_PAGE_SIZE,
-                  )
-                  .map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => push(`/dashboard/staff/${member.id}`)}
-                      className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
-                    >
-                      {/* Avatar */}
-                      {member.avatar_url ? (
-                        <div className="relative size-9 shrink-0 overflow-hidden rounded-lg">
-                          <Image
-                            src={member.avatar_url}
-                            alt={member.full_name ?? ""}
-                            fill
-                            sizes="36px"
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="bg-sand-100 flex size-9 shrink-0 items-center justify-center rounded-lg">
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className="text-petroleum-300"
-                          >
-                            <circle
-                              cx="12"
-                              cy="8"
-                              r="4"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                            />
-                            <path
-                              d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      {/* Name */}
-                      <span className="text-petroleum-700 min-w-0 truncate text-sm font-medium">
-                        {member.full_name ?? "—"}
-                      </span>
-                      {/* Email */}
-                      <span className="text-petroleum-400 min-w-0 truncate text-sm">
-                        {member.email ?? "—"}
-                      </span>
-                      {/* Phone */}
-                      <span className="text-petroleum-400 min-w-0 truncate text-sm">
-                        {member.phone ?? "—"}
-                      </span>
-                    </button>
-                  ))}
-                {/* Pagination */}
-                {data.staff.length > STAFF_PAGE_SIZE && (
-                  <div className="border-sand-100 flex items-center justify-between border-t px-5 py-3">
-                    <span className="text-petroleum-400 text-xs">
-                      {data.staffPage * STAFF_PAGE_SIZE + 1}–
-                      {Math.min(
-                        (data.staffPage + 1) * STAFF_PAGE_SIZE,
-                        data.staff.length,
-                      )}{" "}
-                      of {data.staff.length}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        disabled={data.staffPage === 0}
-                        onClick={() =>
-                          dispatch({
-                            type: "SET_STAFF_PAGE",
-                            staffPage: data.staffPage - 1,
-                          })
-                        }
-                        className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M15 18l-6-6 6-6"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={
-                          (data.staffPage + 1) * STAFF_PAGE_SIZE >=
-                          data.staff.length
-                        }
-                        onClick={() =>
-                          dispatch({
-                            type: "SET_STAFF_PAGE",
-                            staffPage: data.staffPage + 1,
-                          })
-                        }
-                        className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M9 18l6-6-6-6"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <StaffTabContent
+            staff={data.staff}
+            staffLoading={data.staffLoading}
+            staffPage={data.staffPage}
+            onNavigate={(id) => push(`/dashboard/staff/${id}`)}
+            onPageChange={(page) =>
+              dispatch({ type: "SET_STAFF_PAGE", staffPage: page })
+            }
+          />
         )}
 
         {/* ── Payment Gateway ── */}

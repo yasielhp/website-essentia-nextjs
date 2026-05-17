@@ -17,10 +17,12 @@ type BookingRow = {
 
 type MembershipRow = {
   id: string;
+  contact_id: string | null;
   status: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string | null;
+  contacts?: { first_name: string | null; last_name: string | null } | null;
 };
 
 type RaceRegistrationRow = {
@@ -28,6 +30,8 @@ type RaceRegistrationRow = {
   contact_id: string | null;
   race_id: string | null;
   created_at: string | null;
+  races?: { title: string | null } | null;
+  contacts?: { first_name: string | null; last_name: string | null } | null;
 };
 
 type EducationRegistrationRow = {
@@ -35,6 +39,8 @@ type EducationRegistrationRow = {
   contact_id: string | null;
   session_id: string | null;
   created_at: string | null;
+  education_sessions?: { title: string | null } | null;
+  contacts?: { first_name: string | null; last_name: string | null } | null;
 };
 
 type TabData = {
@@ -150,12 +156,14 @@ function formatDate(value: string | null): string {
   });
 }
 
+const intlCurrency = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "EUR",
+});
+
 function formatAmount(value: number | null): string {
   if (value === null || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "EUR",
-  }).format(value);
+  return intlCurrency.format(value);
 }
 
 function shortenId(id: string | null): string {
@@ -279,7 +287,9 @@ export default function TransactionsPage() {
     dispatch({ type: "FETCH_START", tab: "members" });
     const { data: rows } = await insforge.database
       .from("memberships")
-      .select("id, status, start_date, end_date, created_at")
+      .select(
+        "id, contact_id, status, start_date, end_date, created_at, contacts(first_name, last_name)",
+      )
       .order("created_at", { ascending: false })
       .limit(50);
     dispatch({
@@ -292,7 +302,9 @@ export default function TransactionsPage() {
     dispatch({ type: "FETCH_START", tab: "races" });
     const { data: rows } = await insforge.database
       .from("race_registrations")
-      .select("id, contact_id, race_id, created_at")
+      .select(
+        "id, contact_id, race_id, created_at, races(title), contacts(first_name, last_name)",
+      )
       .order("created_at", { ascending: false })
       .limit(50);
     dispatch({
@@ -305,7 +317,9 @@ export default function TransactionsPage() {
     dispatch({ type: "FETCH_START", tab: "education" });
     const { data: rows } = await insforge.database
       .from("education_registrations")
-      .select("id, contact_id, session_id, created_at")
+      .select(
+        "id, contact_id, session_id, created_at, education_sessions(title), contacts(first_name, last_name)",
+      )
       .order("created_at", { ascending: false })
       .limit(50);
     dispatch({
@@ -419,31 +433,36 @@ export default function TransactionsPage() {
           loading={loading.members || (!loaded.members && !loading.members)}
           empty={loaded.members && data.members.length === 0}
         >
-          {data.members.map((row) => (
-            <tr
-              key={row.id}
-              className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
-            >
-              <td className="text-petroleum-700 px-5 py-4 font-medium">
-                Membership
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {shortenId(row.id)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {formatDate(row.start_date)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {formatDate(row.end_date)}
-              </td>
-              <td className="px-5 py-4">
-                <StatusBadge status={row.status} />
-              </td>
-              <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
-                {formatAmount(null)}
-              </td>
-            </tr>
-          ))}
+          {data.members.map((row) => {
+            const member = row.contacts
+              ? [row.contacts.first_name, row.contacts.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "—"
+              : shortenId(row.contact_id);
+            return (
+              <tr
+                key={row.id}
+                className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
+              >
+                <td className="text-petroleum-700 px-5 py-4 font-medium">
+                  Membership
+                </td>
+                <td className="text-petroleum-500 px-5 py-4">{member}</td>
+                <td className="text-petroleum-500 px-5 py-4">
+                  {formatDate(row.start_date)}
+                </td>
+                <td className="text-petroleum-500 px-5 py-4">
+                  {formatDate(row.end_date)}
+                </td>
+                <td className="px-5 py-4">
+                  <StatusBadge status={row.status} />
+                </td>
+                <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
+                  {formatAmount(null)}
+                </td>
+              </tr>
+            );
+          })}
         </TableShell>
       )}
 
@@ -453,25 +472,31 @@ export default function TransactionsPage() {
           loading={loading.races || (!loaded.races && !loading.races)}
           empty={loaded.races && data.races.length === 0}
         >
-          {data.races.map((row) => (
-            <tr
-              key={row.id}
-              className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
-            >
-              <td className="text-petroleum-700 px-5 py-4 font-medium">
-                {shortenId(row.race_id)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {shortenId(row.contact_id)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {formatDate(row.created_at)}
-              </td>
-              <td className="px-5 py-4">
-                <StatusBadge status="confirmed" />
-              </td>
-            </tr>
-          ))}
+          {data.races.map((row) => {
+            const raceTitle = row.races?.title ?? shortenId(row.race_id);
+            const registrant = row.contacts
+              ? [row.contacts.first_name, row.contacts.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "—"
+              : shortenId(row.contact_id);
+            return (
+              <tr
+                key={row.id}
+                className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
+              >
+                <td className="text-petroleum-700 px-5 py-4 font-medium">
+                  {raceTitle}
+                </td>
+                <td className="text-petroleum-500 px-5 py-4">{registrant}</td>
+                <td className="text-petroleum-500 px-5 py-4">
+                  {formatDate(row.created_at)}
+                </td>
+                <td className="px-5 py-4">
+                  <StatusBadge status="confirmed" />
+                </td>
+              </tr>
+            );
+          })}
         </TableShell>
       )}
 
@@ -483,25 +508,32 @@ export default function TransactionsPage() {
           }
           empty={loaded.education && data.education.length === 0}
         >
-          {data.education.map((row) => (
-            <tr
-              key={row.id}
-              className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
-            >
-              <td className="text-petroleum-700 px-5 py-4 font-medium">
-                {shortenId(row.session_id)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {shortenId(row.contact_id)}
-              </td>
-              <td className="text-petroleum-500 px-5 py-4">
-                {formatDate(row.created_at)}
-              </td>
-              <td className="px-5 py-4">
-                <StatusBadge status="confirmed" />
-              </td>
-            </tr>
-          ))}
+          {data.education.map((row) => {
+            const sessionTitle =
+              row.education_sessions?.title ?? shortenId(row.session_id);
+            const registrant = row.contacts
+              ? [row.contacts.first_name, row.contacts.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "—"
+              : shortenId(row.contact_id);
+            return (
+              <tr
+                key={row.id}
+                className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
+              >
+                <td className="text-petroleum-700 px-5 py-4 font-medium">
+                  {sessionTitle}
+                </td>
+                <td className="text-petroleum-500 px-5 py-4">{registrant}</td>
+                <td className="text-petroleum-500 px-5 py-4">
+                  {formatDate(row.created_at)}
+                </td>
+                <td className="px-5 py-4">
+                  <StatusBadge status="confirmed" />
+                </td>
+              </tr>
+            );
+          })}
         </TableShell>
       )}
     </div>

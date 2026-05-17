@@ -4,6 +4,7 @@ import { useReducer, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { createBookingCheckout } from "@/actions/payments";
 
 const SERVICES = [
   { id: "contrast-therapy", title: "Contrast Therapy" },
@@ -116,6 +117,8 @@ type PageState = {
   saving: boolean;
   deleting: boolean;
   deleteOpen: boolean;
+  paying: boolean;
+  payAmount: string;
   error: string | null;
   serviceId: string;
   date: string;
@@ -128,21 +131,27 @@ type PageState = {
   status: string;
 };
 
+type SettableField = keyof Omit<
+  PageState,
+  | "loading"
+  | "notFound"
+  | "saving"
+  | "deleting"
+  | "deleteOpen"
+  | "paying"
+  | "error"
+>;
+
 type PageAction =
   | { type: "LOADED"; payload: BookingRow }
   | { type: "LOAD_NOT_FOUND" }
-  | {
-      type: "SET_FIELD";
-      field: keyof Omit<
-        PageState,
-        "loading" | "notFound" | "saving" | "deleting" | "deleteOpen" | "error"
-      >;
-      value: string;
-    }
+  | { type: "SET_FIELD"; field: SettableField; value: string }
   | { type: "SAVE_START" }
   | { type: "SAVE_END" }
   | { type: "DELETE_START" }
   | { type: "DELETE_OPEN"; open: boolean }
+  | { type: "PAY_START" }
+  | { type: "PAY_END" }
   | { type: "SET_ERROR"; payload: string | null };
 
 const pageInitial: PageState = {
@@ -151,6 +160,8 @@ const pageInitial: PageState = {
   saving: false,
   deleting: false,
   deleteOpen: false,
+  paying: false,
+  payAmount: "",
   error: null,
   serviceId: "",
   date: "",
@@ -191,11 +202,330 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       return { ...state, deleting: true };
     case "DELETE_OPEN":
       return { ...state, deleteOpen: action.open };
+    case "PAY_START":
+      return { ...state, paying: true, error: null };
+    case "PAY_END":
+      return { ...state, paying: false };
     case "SET_ERROR":
       return { ...state, error: action.payload };
     default:
       return state;
   }
+}
+
+// ─── Section components ───────────────────────────────────────
+
+function Skeleton() {
+  return <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />;
+}
+
+function ServiceScheduleCard({
+  serviceId,
+  date,
+  time,
+  duration,
+  status,
+  loading,
+  saving,
+  onField,
+}: {
+  serviceId: string;
+  date: string;
+  time: string;
+  duration: string;
+  status: string;
+  loading: boolean;
+  saving: boolean;
+  onField: (f: SettableField, v: string) => void;
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Service &amp; Schedule
+      </h2>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="service"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Service <span className="text-red-400">*</span>
+          </label>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <select
+              id="service"
+              value={serviceId}
+              onChange={(e) => onField("serviceId", e.target.value)}
+              disabled={saving}
+              className={SELECT_CLASS}
+            >
+              <option value="">Select a service…</option>
+              {SERVICES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="date"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Date
+            </label>
+            {loading ? (
+              <Skeleton />
+            ) : (
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => onField("date", e.target.value)}
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="time"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Time
+            </label>
+            {loading ? (
+              <Skeleton />
+            ) : (
+              <input
+                id="time"
+                type="time"
+                value={time}
+                onChange={(e) => onField("time", e.target.value)}
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="duration"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Duration
+            </label>
+            {loading ? (
+              <Skeleton />
+            ) : (
+              <input
+                id="duration"
+                type="text"
+                value={duration}
+                onChange={(e) => onField("duration", e.target.value)}
+                placeholder="e.g. 60 min"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="status"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Status
+          </label>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <select
+              id="status"
+              value={status}
+              onChange={(e) => onField("status", e.target.value)}
+              disabled={saving}
+              className={SELECT_CLASS}
+            >
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClientCard({
+  firstName,
+  lastName,
+  email,
+  phone,
+  loading,
+  saving,
+  onField,
+}: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  loading: boolean;
+  saving: boolean;
+  onField: (f: SettableField, v: string) => void;
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Client</h2>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="firstName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              First name <span className="text-red-400">*</span>
+            </label>
+            {loading ? (
+              <Skeleton />
+            ) : (
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => onField("firstName", e.target.value)}
+                placeholder="Jane"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="lastName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Last name
+            </label>
+            {loading ? (
+              <Skeleton />
+            ) : (
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => onField("lastName", e.target.value)}
+                placeholder="Doe"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="email"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Email
+          </label>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => onField("email", e.target.value)}
+              placeholder="jane@example.com"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="phone"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Phone
+          </label>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => onField("phone", e.target.value)}
+              placeholder="+34 600 000 000"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentCard({
+  payAmount,
+  paying,
+  loading,
+  status,
+  onAmountChange,
+  onPay,
+}: {
+  payAmount: string;
+  paying: boolean;
+  loading: boolean;
+  status: string;
+  onAmountChange: (v: string) => void;
+  onPay: () => void;
+}) {
+  if (status === "cancelled") return null;
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+        Payment
+      </h2>
+      <p className="text-petroleum-400 mb-4 text-xs">
+        Enter the amount and create a checkout link for this booking.
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={payAmount}
+          onChange={(e) => onAmountChange(e.target.value)}
+          placeholder="0.00"
+          disabled={paying}
+          className={`${INPUT_CLASS} w-36`}
+        />
+        <span className="text-petroleum-500 text-sm font-medium">EUR</span>
+        <Button
+          type="button"
+          variant="solid"
+          size="md"
+          onClick={onPay}
+          disabled={paying || !payAmount || loading}
+          className="gap-1.5"
+        >
+          {paying ? "Processing…" : "Create checkout"}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────
@@ -205,13 +535,14 @@ export default function EditBookingPage() {
   const { push, back } = useRouter();
 
   const [state, dispatch] = useReducer(pageReducer, pageInitial);
-
   const {
     loading,
     notFound,
     saving,
     deleting,
     deleteOpen,
+    paying,
+    payAmount,
     error,
     serviceId,
     date,
@@ -224,6 +555,10 @@ export default function EditBookingPage() {
     status,
   } = state;
 
+  function onField(f: SettableField, v: string) {
+    dispatch({ type: "SET_FIELD", field: f, value: v });
+  }
+
   useEffect(() => {
     async function load() {
       const { data } = await insforge.database
@@ -235,15 +570,12 @@ export default function EditBookingPage() {
         .limit(1);
 
       const booking = (data as BookingRow[] | null)?.[0];
-
       if (!booking) {
         dispatch({ type: "LOAD_NOT_FOUND" });
         return;
       }
-
       dispatch({ type: "LOADED", payload: booking });
     }
-
     void load();
   }, [id]);
 
@@ -302,6 +634,60 @@ export default function EditBookingPage() {
     push("/dashboard/bookings");
   }
 
+  async function handlePay() {
+    const amountCents = Math.round(parseFloat(payAmount) * 100);
+    if (Number.isNaN(amountCents) || amountCents <= 0) {
+      dispatch({ type: "SET_ERROR", payload: "Please enter a valid amount." });
+      return;
+    }
+
+    dispatch({ type: "PAY_START" });
+
+    try {
+      const serviceTitle =
+        SERVICES.find((s) => s.id === serviceId)?.title ?? "Booking";
+
+      const session = await createBookingCheckout(id, {
+        amount: amountCents,
+        currency: "EUR",
+        description: serviceTitle,
+        successUrl: `${window.location.origin}/dashboard/bookings`,
+        cancelUrl: `${window.location.origin}/dashboard/bookings/${id}`,
+      });
+
+      if (session.url.startsWith("data:")) {
+        const base64 = session.url.split(",")[1] ?? "";
+        const html = atob(base64);
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const srcForm = doc.querySelector("form");
+        if (srcForm) {
+          const form = document.createElement("form");
+          form.action = srcForm.action;
+          form.method = srcForm.method;
+          srcForm.querySelectorAll("input").forEach((inp) => {
+            const el = document.createElement("input");
+            el.type = inp.type;
+            el.name = inp.name;
+            el.value = inp.value;
+            form.appendChild(el);
+          });
+          document.body.appendChild(form);
+          form.submit();
+        }
+      } else {
+        window.location.href = session.url;
+      }
+    } catch (err) {
+      dispatch({ type: "PAY_END" });
+      dispatch({
+        type: "SET_ERROR",
+        payload:
+          err instanceof Error ? err.message : "Could not create payment.",
+      });
+    }
+  }
+
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
@@ -355,279 +741,33 @@ export default function EditBookingPage() {
         )}
 
         <div className="space-y-6">
-          {/* Service & Schedule */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Service & Schedule
-            </h2>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="service"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Service <span className="text-red-400">*</span>
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <select
-                    id="service"
-                    value={serviceId}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "serviceId",
-                        value: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={SELECT_CLASS}
-                  >
-                    <option value="">Select a service…</option>
-                    {SERVICES.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="date"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Date
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="date"
-                      type="date"
-                      value={date}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "date",
-                          value: e.target.value,
-                        })
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="time"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Time
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="time"
-                      type="time"
-                      value={time}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "time",
-                          value: e.target.value,
-                        })
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="duration"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Duration
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="duration"
-                      type="text"
-                      value={duration}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "duration",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="e.g. 60 min"
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="status"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Status
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <select
-                    id="status"
-                    value={status}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "status",
-                        value: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={SELECT_CLASS}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Client */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Client
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    First name <span className="text-red-400">*</span>
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "firstName",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="Jane"
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Last name
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "lastName",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="Doe"
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="email"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Email
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "email",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder="jane@example.com"
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="phone"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Phone
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "phone",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder="+34 600 000 000"
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          <ServiceScheduleCard
+            serviceId={serviceId}
+            date={date}
+            time={time}
+            duration={duration}
+            status={status}
+            loading={loading}
+            saving={saving}
+            onField={onField}
+          />
+          <ClientCard
+            firstName={firstName}
+            lastName={lastName}
+            email={email}
+            phone={phone}
+            loading={loading}
+            saving={saving}
+            onField={onField}
+          />
+          <PaymentCard
+            payAmount={payAmount}
+            paying={paying}
+            loading={loading}
+            status={status}
+            onAmountChange={(v) => onField("payAmount", v)}
+            onPay={() => void handlePay()}
+          />
         </div>
       </form>
 

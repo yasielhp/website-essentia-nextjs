@@ -75,9 +75,7 @@ type EduReg = {
   } | null;
 };
 
-// ---------------------------------------------------------------------------
-// Reducer for async load state
-// ---------------------------------------------------------------------------
+// ─── Load reducer ─────────────────────────────────────────────
 
 type LoadState = {
   loading: boolean;
@@ -121,9 +119,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Reducer for form / action state
-// ---------------------------------------------------------------------------
+// ─── Form reducer ─────────────────────────────────────────────
 
 type FormState = {
   firstName: string;
@@ -144,7 +140,11 @@ type FormAction =
       email: string;
       phone: string;
     }
-  | { type: "SET_FIELD"; field: "firstName" | "lastName" | "email" | "phone"; value: string }
+  | {
+      type: "SET_FIELD";
+      field: "firstName" | "lastName" | "email" | "phone";
+      value: string;
+    }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SAVING_START" }
   | { type: "SAVING_END" }
@@ -192,7 +192,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
-// ---------------------------------------------------------------------------
+// ─── Shared helpers ───────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700",
@@ -218,6 +218,17 @@ function formatDate(iso: string | null) {
     month: "short",
     day: "numeric",
   });
+}
+
+function RowSkeleton({ cols }: { cols: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className="bg-sand-100 h-10 animate-pulse rounded-xl" />
+      ))}
+      <span className="sr-only">{cols}</span>
+    </div>
+  );
 }
 
 function DeleteDialog({
@@ -269,15 +280,310 @@ function DeleteDialog({
   );
 }
 
+// ─── Section components ───────────────────────────────────────
+
+function ContactDetailsCard({
+  firstName,
+  lastName,
+  email,
+  phone,
+  loading,
+  saving,
+  dispatchForm,
+}: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  loading: boolean;
+  saving: boolean;
+  dispatchForm: React.Dispatch<FormAction>;
+}) {
+  function field(
+    f: "firstName" | "lastName" | "email" | "phone",
+    value: string,
+  ) {
+    dispatchForm({ type: "SET_FIELD", field: f, value });
+  }
+
+  return (
+    <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Details
+      </h2>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="firstName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              First name <span className="text-red-400">*</span>
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => field("firstName", e.target.value)}
+                placeholder="Jane"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="lastName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Last name
+            </label>
+            {loading ? (
+              <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+            ) : (
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => field("lastName", e.target.value)}
+                placeholder="Doe"
+                disabled={saving}
+                className={INPUT_CLASS}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="email"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Email
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => field("email", e.target.value)}
+              placeholder="jane@example.com"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="phone"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Phone
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => field("phone", e.target.value)}
+              placeholder="+34 600 000 000"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingsSection({
+  loading,
+  bookings,
+}: {
+  loading: boolean;
+  bookings: Booking[];
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Bookings
+      </h2>
+      {loading ? (
+        <RowSkeleton cols={4} />
+      ) : bookings.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">No bookings yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-sand-100 border-b text-left">
+                {["Service", "Date", "Time", "Status"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-petroleum-400 pr-4 pb-2.5 font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((b) => (
+                <tr key={b.id} className="border-sand-50 border-b last:border-0">
+                  <td className="text-petroleum-700 py-3 pr-4 font-medium">
+                    {b.service_title ?? "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {formatDate(b.date)}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {b.time ?? "—"}
+                  </td>
+                  <td className="py-3">
+                    <StatusBadge status={b.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RaceRegsSection({
+  loading,
+  raceRegs,
+}: {
+  loading: boolean;
+  raceRegs: RaceReg[];
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Race registrations
+      </h2>
+      {loading ? (
+        <RowSkeleton cols={4} />
+      ) : raceRegs.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">No race registrations yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-sand-100 border-b text-left">
+                {["Race", "Date", "Location", "Registered"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-petroleum-400 pr-4 pb-2.5 font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {raceRegs.map((r) => (
+                <tr key={r.id} className="border-sand-50 border-b last:border-0">
+                  <td className="text-petroleum-700 py-3 pr-4 font-medium">
+                    {r.race?.title ?? "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {r.race?.date ? formatDate(r.race.date) : "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {r.race?.location ?? "—"}
+                  </td>
+                  <td className="text-petroleum-400 py-3">
+                    {formatDate(r.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EduRegsSection({
+  loading,
+  eduRegs,
+}: {
+  loading: boolean;
+  eduRegs: EduReg[];
+}) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Education sessions
+      </h2>
+      {loading ? (
+        <RowSkeleton cols={4} />
+      ) : eduRegs.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">
+          No education session registrations yet.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-sand-100 border-b text-left">
+                {["Session", "Date", "Location", "Registered"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-petroleum-400 pr-4 pb-2.5 font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {eduRegs.map((r) => (
+                <tr key={r.id} className="border-sand-50 border-b last:border-0">
+                  <td className="text-petroleum-700 py-3 pr-4 font-medium">
+                    {r.session?.title ?? "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {r.session?.date ? formatDate(r.session.date) : "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {r.session?.location ?? "—"}
+                  </td>
+                  <td className="text-petroleum-400 py-3">
+                    {formatDate(r.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
 
-  // Async load state
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
   const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
 
-  // Form + action state
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
   const { firstName, lastName, email, phone, error, saving, deleting, deleteOpen } = form;
 
@@ -334,7 +640,6 @@ export default function ContactDetailPage() {
           | { id: string; created_at: string | null; session_id: string }[]
           | null) ?? [];
 
-      // Fetch race and session details
       const raceIds = raceRows.map((r) => r.race_id);
       const sessionIds = eduRows.map((r) => r.session_id);
 
@@ -374,7 +679,6 @@ export default function ContactDetailPage() {
         ).map((s) => [s.id, s]),
       );
 
-      // Single dispatch replaces the cascading setBookings / setRaceRegs / setEduRegs / setLoading calls
       dispatch({
         type: "LOADED",
         bookings: (bookingData as Booking[] | null) ?? [],
@@ -470,7 +774,6 @@ export default function ContactDetailPage() {
           <h1 className="font-display text-petroleum-700 text-3xl">
             Edit Contact
           </h1>
-
           <div className="flex items-center gap-3">
             <Button
               type="button"
@@ -502,291 +805,21 @@ export default function ContactDetailPage() {
           </p>
         )}
 
-        <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
-          <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Details
-          </h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="firstName"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  First name <span className="text-red-400">*</span>
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="firstName"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "firstName", value: e.target.value })}
-                    placeholder="Jane"
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="lastName"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Last name
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "lastName", value: e.target.value })}
-                    placeholder="Doe"
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="email"
-                className="text-petroleum-500 text-xs font-medium"
-              >
-                Email
-              </label>
-              {loading ? (
-                <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-              ) : (
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "email", value: e.target.value })}
-                  placeholder="jane@example.com"
-                  disabled={saving}
-                  className={INPUT_CLASS}
-                />
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="phone"
-                className="text-petroleum-500 text-xs font-medium"
-              >
-                Phone
-              </label>
-              {loading ? (
-                <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-              ) : (
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "phone", value: e.target.value })}
-                  placeholder="+34 600 000 000"
-                  disabled={saving}
-                  className={INPUT_CLASS}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <ContactDetailsCard
+          firstName={firstName}
+          lastName={lastName}
+          email={email}
+          phone={phone}
+          loading={loading}
+          saving={saving}
+          dispatchForm={dispatchForm}
+        />
       </form>
 
-      {/* Activity sections */}
       <div className="space-y-5">
-        {/* Bookings */}
-        <div className="border-sand-200 rounded-2xl border bg-white p-6">
-          <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Bookings
-          </h2>
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                />
-              ))}
-            </div>
-          ) : bookings.length === 0 ? (
-            <p className="text-petroleum-300 text-sm">No bookings yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-sand-100 border-b text-left">
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Service
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Date
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Time
-                    </th>
-                    <th className="text-petroleum-400 pb-2.5 font-medium">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b) => (
-                    <tr
-                      key={b.id}
-                      className="border-sand-50 border-b last:border-0"
-                    >
-                      <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                        {b.service_title ?? "—"}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {formatDate(b.date)}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {b.time ?? "—"}
-                      </td>
-                      <td className="py-3">
-                        <StatusBadge status={b.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Race registrations */}
-        <div className="border-sand-200 rounded-2xl border bg-white p-6">
-          <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Race registrations
-          </h2>
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                />
-              ))}
-            </div>
-          ) : raceRegs.length === 0 ? (
-            <p className="text-petroleum-300 text-sm">
-              No race registrations yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-sand-100 border-b text-left">
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Race
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Date
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Location
-                    </th>
-                    <th className="text-petroleum-400 pb-2.5 font-medium">
-                      Registered
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {raceRegs.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-sand-50 border-b last:border-0"
-                    >
-                      <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                        {r.race?.title ?? "—"}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {r.race?.date ? formatDate(r.race.date) : "—"}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {r.race?.location ?? "—"}
-                      </td>
-                      <td className="text-petroleum-400 py-3">
-                        {formatDate(r.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Education sessions */}
-        <div className="border-sand-200 rounded-2xl border bg-white p-6">
-          <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Education sessions
-          </h2>
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                />
-              ))}
-            </div>
-          ) : eduRegs.length === 0 ? (
-            <p className="text-petroleum-300 text-sm">
-              No education session registrations yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-sand-100 border-b text-left">
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Session
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Date
-                    </th>
-                    <th className="text-petroleum-400 pr-4 pb-2.5 font-medium">
-                      Location
-                    </th>
-                    <th className="text-petroleum-400 pb-2.5 font-medium">
-                      Registered
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eduRegs.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-sand-50 border-b last:border-0"
-                    >
-                      <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                        {r.session?.title ?? "—"}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {r.session?.date ? formatDate(r.session.date) : "—"}
-                      </td>
-                      <td className="text-petroleum-500 py-3 pr-4">
-                        {r.session?.location ?? "—"}
-                      </td>
-                      <td className="text-petroleum-400 py-3">
-                        {formatDate(r.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <BookingsSection loading={loading} bookings={bookings} />
+        <RaceRegsSection loading={loading} raceRegs={raceRegs} />
+        <EduRegsSection loading={loading} eduRegs={eduRegs} />
       </div>
 
       {deleteOpen && (
