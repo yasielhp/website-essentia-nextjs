@@ -516,7 +516,7 @@ export default function DashboardLayout({
             email={user?.email ?? ""}
             role={role ?? ""}
             onSignOut={() => void signOut()}
-            onEditAccount={() => router.push("/account")}
+            onEditAccount={() => router.push("/dashboard/account")}
           />
         </div>
       </aside>
@@ -598,7 +598,7 @@ export default function DashboardLayout({
                 email={user?.email ?? ""}
                 role={role ?? ""}
                 onSignOut={() => void signOut()}
-                onEditAccount={() => router.push("/account")}
+                onEditAccount={() => router.push("/dashboard/account")}
               />
             </div>
           </aside>
