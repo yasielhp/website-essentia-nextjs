@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -68,58 +68,6 @@ function reducer(state: PageState, action: PageAction): PageState {
     case "SET_AVATAR_URL":
       return { ...state, avatarUrl: action.value };
   }
-}
-
-function ResetPasswordSection({ email }: { email: string }) {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function handleSend() {
-    setSending(true);
-    setErr(null);
-    const { error } = await insforge.auth.sendResetPasswordEmail({ email });
-    setSending(false);
-    if (error) {
-      setErr("Could not send the email. Please try again.");
-      return;
-    }
-    setSent(true);
-  }
-
-  return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        Password
-      </h2>
-      <p className="text-petroleum-400 mb-4 text-xs">
-        We&apos;ll send a reset link to{" "}
-        <span className="text-petroleum-600 font-medium">{email}</span>.
-      </p>
-
-      {err && (
-        <p className="mb-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-          {err}
-        </p>
-      )}
-      {sent ? (
-        <p className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-          Reset email sent — check your inbox.
-        </p>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="md"
-          disabled={sending}
-          onClick={() => void handleSend()}
-          className="w-full"
-        >
-          {sending ? "Sending…" : "Send password reset email"}
-        </Button>
-      )}
-    </div>
-  );
 }
 
 export default function DashboardAccountPage() {
@@ -338,7 +286,6 @@ export default function DashboardAccountPage() {
             </div>
           </form>
 
-          {user?.email && <ResetPasswordSection email={user.email} />}
         </div>
 
         <div>
