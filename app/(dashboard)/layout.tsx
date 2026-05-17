@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
-import { Button } from "@/components/ui/button";
 
 type Role = "admin" | "staff" | "member" | "contact" | null;
 
@@ -215,13 +214,7 @@ function IconContacts() {
 
 function IconLogOut() {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path
         d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
         stroke="currentColor"
@@ -246,6 +239,136 @@ function IconLogOut() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconChevronsUpDown() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M7 15l5 5 5-5M7 9l5-5 5 5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function avatarInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function UserMenu({
+  displayName,
+  email,
+  role,
+  onSignOut,
+  onEditAccount,
+}: {
+  displayName: string;
+  email: string;
+  role: string;
+  onSignOut: () => void;
+  onEditAccount: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const initials = avatarInitials(displayName);
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Dropdown */}
+      {open && (
+        <div className="border-sand-200 absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-2xl border bg-white shadow-lg">
+          {/* Header */}
+          <div className="border-sand-100 flex items-center gap-3 border-b px-4 py-3">
+            <div className="bg-petroleum-700 flex size-9 shrink-0 items-center justify-center rounded-full">
+              <span className="text-xs font-semibold text-white">{initials}</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-petroleum-700 truncate text-sm font-medium">
+                {displayName}
+              </p>
+              <p className="text-petroleum-400 truncate text-xs">{email}</p>
+              <p className="text-petroleum-300 mt-0.5 text-xs capitalize">{role}</p>
+            </div>
+          </div>
+          {/* Edit account */}
+          <button
+            onClick={() => { setOpen(false); onEditAccount(); }}
+            className="text-petroleum-600 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+          >
+            <IconEdit />
+            Edit account
+          </button>
+          {/* Sign out */}
+          <button
+            onClick={() => { setOpen(false); onSignOut(); }}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50"
+          >
+            <IconLogOut />
+            Sign out
+          </button>
+        </div>
+      )}
+
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="border-sand-200 hover:bg-sand-50 flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors"
+      >
+        <div className="bg-petroleum-700 flex size-8 shrink-0 items-center justify-center rounded-full">
+          <span className="text-xs font-semibold text-white">{initials}</span>
+        </div>
+        <div className="min-w-0 flex-1 text-left">
+          <p className="text-petroleum-700 truncate text-sm font-medium leading-none">
+            {email}
+          </p>
+          <p className="text-petroleum-400 mt-1 text-xs capitalize leading-none">
+            {role}
+          </p>
+        </div>
+        <span className="text-petroleum-300 shrink-0">
+          <IconChevronsUpDown />
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -353,12 +476,11 @@ export default function DashboardLayout({
   return (
     <div className="bg-sand-50 flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="border-sand-200 hidden w-64 shrink-0 flex-col border-r bg-white lg:flex">
+      <aside className="border-sand-200 sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r bg-white lg:flex">
         <div className="border-sand-200 border-b px-6 py-5">
           <span className="font-display text-petroleum-700 text-xl">
             Essentia
           </span>
-          <p className="text-petroleum-400 mt-0.5 text-xs">Admin Dashboard</p>
         </div>
 
         <nav className="flex-1 px-3 py-4">
@@ -389,23 +511,13 @@ export default function DashboardLayout({
         </nav>
 
         <div className="border-sand-200 border-t p-4">
-          <div className="bg-sand-50 mb-3 rounded-xl px-3 py-2.5">
-            <p className="text-petroleum-700 truncate text-sm font-medium">
-              {displayName}
-            </p>
-            <p className="text-petroleum-400 mt-0.5 text-xs capitalize">
-              {role}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-petroleum-500 w-full justify-start gap-2 hover:text-red-600"
-            onClick={() => void signOut()}
-          >
-            <IconLogOut />
-            Sign out
-          </Button>
+          <UserMenu
+            displayName={displayName}
+            email={user?.email ?? ""}
+            role={role ?? ""}
+            onSignOut={() => void signOut()}
+            onEditAccount={() => router.push("/account")}
+          />
         </div>
       </aside>
 
@@ -449,9 +561,6 @@ export default function DashboardLayout({
               <span className="font-display text-petroleum-700 text-xl">
                 Essentia
               </span>
-              <p className="text-petroleum-400 mt-0.5 text-xs">
-                Admin Dashboard
-              </p>
             </div>
 
             <nav className="flex-1 px-3 py-4">
@@ -484,23 +593,13 @@ export default function DashboardLayout({
             </nav>
 
             <div className="border-sand-200 border-t p-4">
-              <div className="bg-sand-50 mb-3 rounded-xl px-3 py-2.5">
-                <p className="text-petroleum-700 truncate text-sm font-medium">
-                  {displayName}
-                </p>
-                <p className="text-petroleum-400 mt-0.5 text-xs capitalize">
-                  {role}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-petroleum-500 w-full justify-start gap-2 hover:text-red-600"
-                onClick={() => void signOut()}
-              >
-                <IconLogOut />
-                Sign out
-              </Button>
+              <UserMenu
+                displayName={displayName}
+                email={user?.email ?? ""}
+                role={role ?? ""}
+                onSignOut={() => void signOut()}
+                onEditAccount={() => router.push("/account")}
+              />
             </div>
           </aside>
         </div>
