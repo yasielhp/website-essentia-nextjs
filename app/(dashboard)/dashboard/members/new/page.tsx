@@ -4,6 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import {
+  INPUT_CLASS,
+  SELECT_CLASS,
+  TEXTAREA_CLASS,
+} from "@/constants/form-styles";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -20,17 +25,6 @@ type Contact = {
   email: string | null;
   phone: string | null;
 };
-
-// ─── Style constants ──────────────────────────────────────────
-
-const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-const SELECT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-const TEXTAREA_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60 resize-none";
 
 // ─── Page ─────────────────────────────────────────────────────
 

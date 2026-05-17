@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -26,14 +27,6 @@ function tierLabel(t: Tier): string {
   if (t.price_eur != null) parts.push(`€${t.price_eur}`);
   return parts.join(" · ") || "Standard";
 }
-
-// ─── Styles ───────────────────────────────────────────────────
-
-const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-const SELECT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
 // ─── Page ─────────────────────────────────────────────────────
 

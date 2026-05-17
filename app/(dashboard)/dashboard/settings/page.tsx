@@ -12,6 +12,7 @@ import {
   SERVICES,
 } from "@/utils/color-settings";
 import type { ColorSettings } from "@/utils/color-settings";
+import { INPUT_CLASS } from "@/constants/form-styles";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -226,9 +227,6 @@ function TierModal({
     onClose();
   }
 
-  const INPUT_CLASS =
-    "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full";
-
   return (
     <div
       ref={overlayRef}
@@ -437,9 +435,6 @@ function PlanModal({
     setSaving(false);
     onClose();
   }
-
-  const INPUT_CLASS =
-    "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full";
 
   return (
     <div

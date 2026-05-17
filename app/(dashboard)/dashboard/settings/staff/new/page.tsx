@@ -6,6 +6,7 @@ import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { sendEmail } from "@/emails/send";
+import { INPUT_CLASS } from "@/constants/form-styles";
 
 const SERVICES = [
   { id: "contrast-therapy", title: "Contrast Therapy" },
@@ -17,9 +18,6 @@ const SERVICES = [
   { id: "intravenous-therapy", title: "Intravenous Therapy" },
   { id: "regenerative-medicine", title: "Regenerative Medicine" },
 ];
-
-const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
 function welcomeStaffEmail({
   name,
