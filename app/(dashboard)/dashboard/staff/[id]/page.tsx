@@ -110,6 +110,7 @@ type PageState = {
   phone: string;
   avatarUrl: string;
   calendarEmail: string;
+  calendarInputOpen: boolean;
   services: string[];
 };
 
@@ -138,6 +139,8 @@ type PageAction =
   | { type: "SET_PHONE"; value: string }
   | { type: "SET_AVATAR_URL"; value: string }
   | { type: "SET_CALENDAR_EMAIL"; value: string }
+  | { type: "SHOW_CALENDAR_INPUT" }
+  | { type: "HIDE_CALENDAR_INPUT" }
   | { type: "TOGGLE_SERVICE"; serviceId: string };
 
 const initialState: PageState = {
@@ -153,6 +156,7 @@ const initialState: PageState = {
   phone: "",
   avatarUrl: "",
   calendarEmail: "",
+  calendarInputOpen: false,
   services: [],
 };
 
@@ -184,6 +188,10 @@ function reducer(state: PageState, action: PageAction): PageState {
       return { ...state, avatarUrl: action.value };
     case "SET_CALENDAR_EMAIL":
       return { ...state, calendarEmail: action.value };
+    case "SHOW_CALENDAR_INPUT":
+      return { ...state, calendarInputOpen: true };
+    case "HIDE_CALENDAR_INPUT":
+      return { ...state, calendarInputOpen: false };
     case "TOGGLE_SERVICE":
       return {
         ...state,
@@ -269,6 +277,7 @@ export default function StaffMemberPage() {
     phone,
     avatarUrl,
     calendarEmail,
+    calendarInputOpen,
     services,
   } = state;
 
@@ -379,9 +388,26 @@ export default function StaffMemberPage() {
     push("/dashboard/staff");
   }
 
+  async function handleConnectCalendar() {
+    const trimmed = calendarEmail.trim();
+    if (!trimmed) return;
+    await insforge.database
+      .from("profiles")
+      .update({ google_calendar_email: trimmed })
+      .eq("id", id);
+    dispatch({ type: "HIDE_CALENDAR_INPUT" });
+  }
+
+  async function handleDisconnectCalendar() {
+    await insforge.database
+      .from("profiles")
+      .update({ google_calendar_email: null })
+      .eq("id", id);
+    dispatch({ type: "SET_CALENDAR_EMAIL", value: "" });
+  }
+
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ") || "Staff Member";
-  const calendarConnected = calendarEmail.trim().length > 0;
 
   if (notFound) {
     return (
@@ -580,35 +606,114 @@ export default function StaffMemberPage() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {SERVICES.map((service) => {
-                    const checked = services.includes(service.id);
-                    return (
-                      <label
-                        key={service.id}
-                        className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                          checked
-                            ? "border-petroleum-400 bg-petroleum-50 text-petroleum-700"
-                            : "border-sand-200 text-petroleum-500 hover:border-sand-400 hover:bg-sand-50 bg-white"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() =>
-                            dispatch({
-                              type: "TOGGLE_SERVICE",
-                              serviceId: service.id,
-                            })
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SERVICES.map((service) => {
+                      const checked = services.includes(service.id);
+                      return (
+                        <label
+                          key={service.id}
+                          className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
+                            checked
+                              ? "border-petroleum-400 bg-petroleum-50 text-petroleum-700"
+                              : "border-sand-200 text-petroleum-500 hover:border-sand-400 hover:bg-sand-50 bg-white"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              dispatch({
+                                type: "TOGGLE_SERVICE",
+                                serviceId: service.id,
+                              })
+                            }
+                            disabled={saving}
+                            className="accent-petroleum-700 size-3.5"
+                          />
+                          {service.title}
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {services.length > 0 && (
+                    <div className="border-sand-100 mt-4 border-t pt-4">
+                      {calendarEmail.trim() ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="size-2 shrink-0 rounded-full bg-green-500" />
+                            <div className="min-w-0">
+                              <p className="text-petroleum-700 text-sm font-medium">
+                                Google Calendar connected
+                              </p>
+                              <p className="text-petroleum-400 truncate text-xs">
+                                {calendarEmail}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handleDisconnectCalendar()}
+                            className="text-petroleum-400 shrink-0 text-xs transition-colors hover:text-red-500"
+                          >
+                            Disconnect
+                          </button>
+                        </div>
+                      ) : calendarInputOpen ? (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <div className="text-petroleum-400 pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2">
+                              <IconCalendar />
+                            </div>
+                            <input
+                              type="email"
+                              value={calendarEmail}
+                              onChange={(e) =>
+                                dispatch({
+                                  type: "SET_CALENDAR_EMAIL",
+                                  value: e.target.value,
+                                })
+                              }
+                              placeholder="jane@gmail.com"
+                              autoFocus
+                              className={INPUT_CLASS + " pl-10"}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="solid"
+                            size="sm"
+                            onClick={() => void handleConnectCalendar()}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              dispatch({ type: "HIDE_CALENDAR_INPUT" })
+                            }
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            dispatch({ type: "SHOW_CALENDAR_INPUT" })
                           }
-                          disabled={saving}
-                          className="accent-petroleum-700 size-3.5"
-                        />
-                        {service.title}
-                      </label>
-                    );
-                  })}
-                </div>
+                          className="border-sand-200 hover:border-petroleum-300 hover:bg-sand-50 text-petroleum-500 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm transition-colors"
+                        >
+                          <IconCalendar />
+                          Connect Google Calendar
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -630,63 +735,6 @@ export default function StaffMemberPage() {
                     dispatch({ type: "SET_AVATAR_URL", value })
                   }
                 />
-              )}
-            </div>
-
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-petroleum-500 text-sm font-semibold">
-                  Google Calendar
-                </h2>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    calendarConnected
-                      ? "bg-green-50 text-green-700"
-                      : "bg-sand-100 text-petroleum-400"
-                  }`}
-                >
-                  <span
-                    className={`size-1.5 rounded-full ${
-                      calendarConnected ? "bg-green-500" : "bg-petroleum-300"
-                    }`}
-                  />
-                  {calendarConnected ? "Connected" : "Not connected"}
-                </span>
-              </div>
-              {loading ? (
-                <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="calendarEmail"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Google account email
-                  </label>
-                  <div className="relative">
-                    <div className="text-petroleum-400 pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2">
-                      <IconCalendar />
-                    </div>
-                    <input
-                      id="calendarEmail"
-                      type="email"
-                      value={calendarEmail}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_CALENDAR_EMAIL",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="jane@gmail.com"
-                      disabled={saving}
-                      className={INPUT_CLASS + " pl-10"}
-                    />
-                  </div>
-                  <p className="text-petroleum-400 text-xs">
-                    Enter the Google account linked to this staff member&apos;s
-                    calendar.
-                  </p>
-                </div>
               )}
             </div>
           </div>
