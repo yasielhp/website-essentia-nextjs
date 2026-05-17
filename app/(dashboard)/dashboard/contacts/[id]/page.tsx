@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,77 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 }
 
 // ---------------------------------------------------------------------------
+// Reducer for form / action state
+// ---------------------------------------------------------------------------
+
+type FormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  error: string | null;
+  saving: boolean;
+  deleting: boolean;
+  deleteOpen: boolean;
+};
+
+type FormAction =
+  | {
+      type: "INIT";
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+    }
+  | { type: "SET_FIELD"; field: "firstName" | "lastName" | "email" | "phone"; value: string }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "SAVING_START" }
+  | { type: "SAVING_END" }
+  | { type: "DELETING_START" }
+  | { type: "OPEN_DELETE" }
+  | { type: "CLOSE_DELETE" };
+
+const initialFormState: FormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  error: null,
+  saving: false,
+  deleting: false,
+  deleteOpen: false,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "INIT":
+      return {
+        ...state,
+        firstName: action.firstName,
+        lastName: action.lastName,
+        email: action.email,
+        phone: action.phone,
+      };
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ERROR":
+      return { ...state, error: action.error };
+    case "SAVING_START":
+      return { ...state, saving: true, error: null };
+    case "SAVING_END":
+      return { ...state, saving: false };
+    case "DELETING_START":
+      return { ...state, deleting: true };
+    case "OPEN_DELETE":
+      return { ...state, deleteOpen: true };
+    case "CLOSE_DELETE":
+      return { ...state, deleteOpen: false };
+    default:
+      return state;
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700",
@@ -202,21 +273,13 @@ export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
 
-  // Async load state — a single reducer replaces loading + notFound + bookings + raceRegs + eduRegs useState calls
+  // Async load state
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
   const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
 
-  // Action / UI state
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Editable form fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // Form + action state
+  const [form, dispatchForm] = useReducer(formReducer, initialFormState);
+  const { firstName, lastName, email, phone, error, saving, deleting, deleteOpen } = form;
 
   useEffect(() => {
     async function load() {
@@ -254,10 +317,13 @@ export default function ContactDetailPage() {
         return;
       }
 
-      setFirstName(contact.first_name ?? "");
-      setLastName(contact.last_name ?? "");
-      setEmail(contact.email ?? "");
-      setPhone(contact.phone ?? "");
+      dispatchForm({
+        type: "INIT",
+        firstName: contact.first_name ?? "",
+        lastName: contact.last_name ?? "",
+        email: contact.email ?? "",
+        phone: contact.phone ?? "",
+      });
 
       const raceRows =
         (raceRegData as
@@ -328,15 +394,15 @@ export default function ContactDetailPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatchForm({ type: "SET_ERROR", error: null });
 
     const trimmedFirst = firstName.trim();
     if (!trimmedFirst) {
-      setError("First name is required.");
+      dispatchForm({ type: "SET_ERROR", error: "First name is required." });
       return;
     }
 
-    setSaving(true);
+    dispatchForm({ type: "SAVING_START" });
 
     const { error: updateError } = await insforge.database
       .from("contacts")
@@ -348,13 +414,15 @@ export default function ContactDetailPage() {
       })
       .eq("id", id);
 
-    setSaving(false);
+    dispatchForm({ type: "SAVING_END" });
 
     if (updateError) {
-      setError(
-        (updateError as { message?: string })?.message ??
+      dispatchForm({
+        type: "SET_ERROR",
+        error:
+          (updateError as { message?: string })?.message ??
           "Failed to save contact.",
-      );
+      });
       return;
     }
 
@@ -362,7 +430,7 @@ export default function ContactDetailPage() {
   }
 
   async function handleDelete() {
-    setDeleting(true);
+    dispatchForm({ type: "DELETING_START" });
     await Promise.all([
       insforge.database
         .from("race_registrations")
@@ -381,7 +449,7 @@ export default function ContactDetailPage() {
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ") || "Contact";
 
-  if (notFound.current) {
+  if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
         <p className="text-sm">Contact not found.</p>
@@ -408,7 +476,7 @@ export default function ContactDetailPage() {
               type="button"
               variant="outline-danger"
               size="md"
-              onClick={() => setDeleteOpen(true)}
+              onClick={() => dispatchForm({ type: "OPEN_DELETE" })}
               disabled={loading}
               className="gap-1.5"
             >
@@ -454,7 +522,7 @@ export default function ContactDetailPage() {
                     id="firstName"
                     type="text"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "firstName", value: e.target.value })}
                     placeholder="Jane"
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -475,7 +543,7 @@ export default function ContactDetailPage() {
                     id="lastName"
                     type="text"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "lastName", value: e.target.value })}
                     placeholder="Doe"
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -498,7 +566,7 @@ export default function ContactDetailPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "email", value: e.target.value })}
                   placeholder="jane@example.com"
                   disabled={saving}
                   className={INPUT_CLASS}
@@ -520,7 +588,7 @@ export default function ContactDetailPage() {
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: "SET_FIELD", field: "phone", value: e.target.value })}
                   placeholder="+34 600 000 000"
                   disabled={saving}
                   className={INPUT_CLASS}
@@ -726,7 +794,7 @@ export default function ContactDetailPage() {
           name={displayName}
           deleting={deleting}
           onConfirm={() => void handleDelete()}
-          onCancel={() => setDeleteOpen(false)}
+          onCancel={() => dispatchForm({ type: "CLOSE_DELETE" })}
         />
       )}
     </div>
