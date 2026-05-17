@@ -12,6 +12,8 @@ type BookingRow = {
   last_name: string | null;
   date: string | null;
   status: string | null;
+  payment_status: string | null;
+  price_eur: number | null;
   created_at: string | null;
 };
 
@@ -273,7 +275,7 @@ export default function TransactionsPage() {
     const { data: rows } = await insforge.database
       .from("bookings")
       .select(
-        "id, service_title, first_name, last_name, date, status, created_at",
+        "id, service_title, first_name, last_name, date, status, payment_status, price_eur, created_at",
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -413,10 +415,10 @@ export default function TransactionsPage() {
                   {formatDate(row.date)}
                 </td>
                 <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
-                  {formatAmount(null)}
+                  {formatAmount(row.price_eur)}
                 </td>
                 <td className="px-5 py-4">
-                  <StatusBadge status={row.status} />
+                  <StatusBadge status={row.payment_status ?? row.status} />
                 </td>
                 <td className="text-petroleum-400 px-5 py-4">
                   {formatDate(row.created_at)}

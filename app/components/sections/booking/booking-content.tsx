@@ -18,9 +18,9 @@ import { DetailsStep } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
+import { PaymentOverlay } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
-import { createBookingCheckout } from "@/actions/payments";
 
 const EMPTY_DETAILS: DetailsState = {
   firstName: "",
@@ -233,6 +233,14 @@ function BookingContentInner() {
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [memberBlocker, setMemberBlocker] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paidBooking, setPaidBooking] = useState<{
+    service_title: string | null;
+    date: string | null;
+    time: string | null;
+    email: string | null;
+  } | null>(null);
 
   const [state, dispatch] = useReducer(bookingReducer, slug, initState);
   const {
@@ -247,6 +255,31 @@ function BookingContentInner() {
     submitted,
     loading,
   } = state;
+
+  // Detect return from Stripe Embedded Checkout
+  useEffect(() => {
+    if (get("payment") !== "success") return;
+    clearStorage();
+    setPaymentSuccess(true);
+    const bid = get("bookingId");
+    if (!bid) return;
+    void insforge.database
+      .from("bookings")
+      .select("service_title, date, time, email")
+      .eq("id", bid)
+      .single()
+      .then(({ data }) => {
+        if (data)
+          setPaidBooking(
+            data as {
+              service_title: string | null;
+              date: string | null;
+              time: string | null;
+              email: string | null;
+            },
+          );
+      });
+  }, [get]);
 
   useEffect(() => {
     writeStorage({
@@ -408,39 +441,59 @@ function BookingContentInner() {
       return;
     }
 
-    // Fetch Stripe price ID for this tier
-    const { data: tierData } = await insforge.database
-      .from("service_tiers")
-      .select("stripe_price_id, price_eur")
-      .eq("id", selectedTierId)
-      .single();
-
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const successUrl = `${origin}/booking?payment=success&bookingId=${resolvedBookingId}`;
-    const cancelUrl = `${origin}/booking?payment=cancelled`;
-
-    const priceId =
-      (tierData as { stripe_price_id: string | null } | null)
-        ?.stripe_price_id ?? undefined;
-    const amountCents =
-      Math.round(Number(selectedTierPrice ?? tierData?.price_eur ?? 0) * 100) ||
-      undefined;
-
-    clearStorage();
-
-    const checkout = await createBookingCheckout(resolvedBookingId, {
-      priceId,
-      amount: amountCents,
-      currency: "eur",
-      description: `${selectedService.title} — ${selectedDuration ?? ""}`,
-      successUrl,
-      cancelUrl,
-      customerEmail: details.email,
-      customerName: `${details.firstName} ${details.lastName}`.trim(),
+    // Create embedded Stripe checkout session
+    const res = await fetch("/api/checkout/booking-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookingId: resolvedBookingId,
+        tierId: selectedTierId,
+        email: details.email,
+        name: `${details.firstName} ${details.lastName}`.trim(),
+        description: `${selectedService.title} — ${selectedDuration ?? ""}`,
+      }),
     });
 
-    window.location.href = checkout.url;
+    dispatch({ type: "CONFIRM_SUCCESS" }); // stop loading spinner
+
+    if (!res.ok) {
+      console.error("[booking] Failed to create checkout session");
+      return;
+    }
+
+    const { clientSecret: secret } = (await res.json()) as {
+      clientSecret: string;
+    };
+    setClientSecret(secret);
   };
+
+  // Return from Stripe embedded checkout
+  if (paymentSuccess) {
+    const successService = {
+      id: "",
+      category: "wellness" as const,
+      description: "",
+      durations: [],
+      price: "",
+      image: "",
+      title: paidBooking?.service_title ?? selectedService?.title ?? "Session",
+    };
+    const successDate = paidBooking?.date
+      ? new Date(paidBooking.date)
+      : (selectedDate ?? new Date());
+    const successTime = paidBooking?.time ?? selectedTime ?? "";
+    const successEmail =
+      paidBooking?.email ?? details.email ?? get("email") ?? "";
+
+    return (
+      <SuccessState
+        service={successService}
+        date={successDate}
+        time={successTime}
+        email={successEmail}
+      />
+    );
+  }
 
   if (submitted && selectedService && selectedDate && selectedTime) {
     return (
@@ -541,6 +594,13 @@ function BookingContentInner() {
             setMemberBlocker(false);
             dispatch({ type: "SET_STEP", step: step + 1 });
           }}
+        />
+      )}
+
+      {clientSecret && (
+        <PaymentOverlay
+          clientSecret={clientSecret}
+          onClose={() => setClientSecret(null)}
         />
       )}
     </div>
