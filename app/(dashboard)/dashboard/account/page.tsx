@@ -74,8 +74,16 @@ export default function DashboardAccountPage() {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const { loading, saving, savedOk, error, firstName, lastName, phone, avatarUrl } =
-    state;
+  const {
+    loading,
+    saving,
+    savedOk,
+    error,
+    firstName,
+    lastName,
+    phone,
+    avatarUrl,
+  } = state;
 
   useEffect(() => {
     if (!user) return;
@@ -285,7 +293,6 @@ export default function DashboardAccountPage() {
               </div>
             </div>
           </form>
-
         </div>
 
         <div>

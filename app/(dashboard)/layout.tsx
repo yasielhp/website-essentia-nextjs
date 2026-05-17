@@ -279,7 +279,8 @@ function IconChevronsUpDown() {
 
 function avatarInitials(name: string) {
   const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  if (parts.length >= 2)
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.slice(0, 2).toUpperCase();
 }
 
@@ -315,23 +316,30 @@ function UserMenu({
     <div ref={ref} className="relative">
       {/* Dropdown */}
       {open && (
-        <div className="border-sand-200 absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-2xl border bg-white shadow-lg">
+        <div className="border-sand-200 absolute right-0 bottom-full left-0 mb-2 overflow-hidden rounded-2xl border bg-white shadow-lg">
           {/* Header */}
           <div className="border-sand-100 flex items-center gap-3 border-b px-4 py-3">
             <div className="bg-petroleum-700 flex size-9 shrink-0 items-center justify-center rounded-full">
-              <span className="text-xs font-semibold text-white">{initials}</span>
+              <span className="text-xs font-semibold text-white">
+                {initials}
+              </span>
             </div>
             <div className="min-w-0">
               <p className="text-petroleum-700 truncate text-sm font-medium">
                 {displayName}
               </p>
               <p className="text-petroleum-400 truncate text-xs">{email}</p>
-              <p className="text-petroleum-300 mt-0.5 text-xs capitalize">{role}</p>
+              <p className="text-petroleum-300 mt-0.5 text-xs capitalize">
+                {role}
+              </p>
             </div>
           </div>
           {/* Edit account */}
           <button
-            onClick={() => { setOpen(false); onEditAccount(); }}
+            onClick={() => {
+              setOpen(false);
+              onEditAccount();
+            }}
             className="text-petroleum-600 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
           >
             <IconEdit />
@@ -339,7 +347,10 @@ function UserMenu({
           </button>
           {/* Sign out */}
           <button
-            onClick={() => { setOpen(false); onSignOut(); }}
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50"
           >
             <IconLogOut />
@@ -357,10 +368,10 @@ function UserMenu({
           <span className="text-xs font-semibold text-white">{initials}</span>
         </div>
         <div className="min-w-0 flex-1 text-left">
-          <p className="text-petroleum-700 truncate text-sm font-medium leading-none">
+          <p className="text-petroleum-700 truncate text-sm leading-none font-medium">
             {email}
           </p>
-          <p className="text-petroleum-400 mt-1 text-xs capitalize leading-none">
+          <p className="text-petroleum-400 mt-1 text-xs leading-none capitalize">
             {role}
           </p>
         </div>
