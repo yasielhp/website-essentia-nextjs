@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/dashboard/pagination";
 
 type AccessType = "members_only" | "open" | "paid" | "paid_members_free";
 
@@ -20,6 +21,8 @@ type Session = {
   access: AccessType;
   registrations_count: number;
 };
+
+const PAGE_SIZE = 20;
 
 const ACCESS_LABELS: Record<AccessType, string> = {
   members_only: "Members only",
@@ -70,55 +73,60 @@ function IconPlus() {
 }
 
 export default function EducationPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [state, setState] = useState<{
+    sessions: Session[];
+    loading: boolean;
+    total: number;
+  }>({ sessions: [], loading: true, total: 0 });
+  const { sessions, loading, total } = state;
 
   const { push } = useRouter();
 
-  const fetchSessions = useCallback(async () => {
-    setLoading(true);
-
-    const { data: rows } = await insforge.database
-      .from("education_sessions")
-      .select(
-        "id, title, description, date, duration_minutes, location, max_participants, image_url, access",
-      )
-      .order("date", { ascending: false });
-
-    if (!rows || (rows as unknown[]).length === 0) {
-      setSessions([]);
-      setLoading(false);
-      return;
-    }
-
-    const sessionList = rows as Omit<Session, "registrations_count">[];
-    const ids = sessionList.map((s) => s.id);
-
-    const { data: regs } = await insforge.database
-      .from("education_registrations")
-      .select("session_id")
-      .in("session_id", ids);
-
-    const countMap: Record<string, number> = {};
-    if (regs) {
-      for (const r of regs as { session_id: string }[]) {
-        countMap[r.session_id] = (countMap[r.session_id] ?? 0) + 1;
-      }
-    }
-
-    setSessions(
-      sessionList.map((s) => ({
-        ...s,
-        registrations_count: countMap[s.id] ?? 0,
-      })),
-    );
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchSessions();
-  }, [fetchSessions]);
+    async function run() {
+      const { data: rows, count } = await insforge.database
+        .from("education_sessions")
+        .select(
+          "id, title, description, date, duration_minutes, location, max_participants, image_url, access",
+          { count: "exact" },
+        )
+        .order("date", { ascending: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+      if (!rows || (rows as unknown[]).length === 0) {
+        setState({ sessions: [], loading: false, total: count ?? 0 });
+        return;
+      }
+
+      const sessionList = rows as Omit<Session, "registrations_count">[];
+      const ids = sessionList.map((s) => s.id);
+
+      const { data: regs } = await insforge.database
+        .from("education_registrations")
+        .select("session_id")
+        .in("session_id", ids);
+
+      const countMap: Record<string, number> = {};
+      if (regs) {
+        for (const r of regs as { session_id: string }[]) {
+          countMap[r.session_id] = (countMap[r.session_id] ?? 0) + 1;
+        }
+      }
+
+      setState({
+        sessions: sessionList.map((s) => ({
+          ...s,
+          registrations_count: countMap[s.id] ?? 0,
+        })),
+        loading: false,
+        total: count ?? 0,
+      });
+    }
+    void run();
+  }, [page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -127,6 +135,9 @@ export default function EducationPage() {
           <h1 className="font-display text-petroleum-700 text-3xl">
             Education
           </h1>
+          <p className="text-petroleum-400 mt-1 text-sm">
+            {total} session{total !== 1 ? "s" : ""}
+          </p>
         </div>
 
         <Button
@@ -281,6 +292,13 @@ export default function EducationPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPage={setPage}
+          loading={loading}
+        />
       </div>
     </div>
   );

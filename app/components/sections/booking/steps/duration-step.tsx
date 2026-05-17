@@ -2,19 +2,41 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import type { BookableService } from "@/data/services-data";
+import { insforge } from "@/lib/insforge";
 
-function DurationSelect({
-  durations,
-  selected,
+type Tier = {
+  id: string;
+  label: string | null;
+  duration_minutes: number | null;
+  price_eur: number | null;
+};
+
+export type TierSelection = {
+  tierId: string;
+  duration: string | null;
+  price: number | null;
+};
+
+function tierLabel(t: Tier): string {
+  const parts: string[] = [];
+  if (t.label) parts.push(t.label);
+  if (t.duration_minutes != null) parts.push(`${t.duration_minutes} min`);
+  if (t.price_eur != null) parts.push(`€${t.price_eur}`);
+  return parts.join(" · ") || "Standard";
+}
+
+function TierSelect({
+  tiers,
+  selectedId,
   onSelect,
 }: {
-  durations: string[];
-  selected: string | null;
-  onSelect: (d: string) => void;
+  tiers: Tier[];
+  selectedId: string | null;
+  onSelect: (t: Tier) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -42,11 +64,15 @@ function DurationSelect({
       >
         {selected ? (
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Duration</p>
-            <p className="text-petroleum-700 font-medium">{selected}</p>
+            <p className="text-petroleum-400 text-xs">Duration & Price</p>
+            <p className="text-petroleum-700 font-medium">
+              {tierLabel(selected)}
+            </p>
           </div>
         ) : (
-          <p className="text-petroleum-400 flex-1 text-sm">Select a duration</p>
+          <p className="text-petroleum-400 flex-1 text-sm">
+            Select a duration &amp; price
+          </p>
         )}
         <ChevronDown
           className={[
@@ -59,19 +85,35 @@ function DurationSelect({
       </button>
 
       {isOpen && (
-        <div className="border-sand-300 bg-sand-50 absolute top-full right-0 left-0 z-10 mt-2 overflow-hidden rounded-2xl border shadow-lg">
+        <div className="border-sand-300 bg-sand-50 animate-fade-in-down absolute top-full right-0 left-0 z-10 mt-2 overflow-hidden rounded-2xl border shadow-lg">
           <div className="p-3">
-            {durations.map((d) => (
+            {tiers.map((t) => (
               <button
-                key={d}
+                key={t.id}
                 onClick={() => {
-                  onSelect(d);
+                  onSelect(t);
                   setIsOpen(false);
                 }}
-                className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors"
+                className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
               >
-                <span className="text-petroleum-700 font-medium">{d}</span>
-                {selected === d && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-petroleum-700 font-medium">
+                    {t.label ?? "Standard"}
+                  </span>
+                  {(t.duration_minutes != null || t.price_eur != null) && (
+                    <span className="text-petroleum-400 text-xs">
+                      {[
+                        t.duration_minutes != null
+                          ? `${t.duration_minutes} min`
+                          : null,
+                        t.price_eur != null ? `€${t.price_eur}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                </div>
+                {selectedId === t.id && (
                   <Check className="text-petroleum-700 shrink-0" size={14} />
                 )}
               </button>
@@ -84,38 +126,90 @@ function DurationSelect({
 }
 
 export function DurationStep({
-  service,
-  selectedDuration,
+  serviceId,
+  selectedTierId,
   onSelect,
 }: {
-  service: BookableService;
-  selectedDuration: string | null;
-  onSelect: (d: string) => void;
+  serviceId: string;
+  selectedTierId: string | null;
+  onSelect: (sel: TierSelection) => void;
 }) {
-  const isFixed = service.durations.length === 1;
+  const [tiers, setTiers] = useState<Tier[] | null>(null);
+  const onSelectRef = useRef(onSelect);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  });
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await insforge.database
+        .from("service_tiers")
+        .select("id, label, duration_minutes, price_eur")
+        .eq("service_id", serviceId)
+        .eq("active", true)
+        .order("sort_order");
+      const rows = (data as Tier[] | null) ?? [];
+      setTiers(rows);
+      if (rows.length === 1 && rows[0]) {
+        const t = rows[0];
+        onSelectRef.current({
+          tierId: t.id,
+          duration:
+            t.duration_minutes != null ? `${t.duration_minutes} min` : null,
+          price: t.price_eur,
+        });
+      }
+    }
+    void load();
+  }, [serviceId]);
+
+  if (tiers === null) {
+    return (
+      <div className="border-sand-300 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
+    );
+  }
+
+  if (tiers.length === 0) {
+    return (
+      <p className="text-petroleum-400 text-sm">
+        No options configured for this service.
+      </p>
+    );
+  }
+
+  const isFixed = tiers.length === 1;
+  const singleTier = tiers[0]!;
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-petroleum-400 text-sm">
         {isFixed
-          ? "This service has a fixed session duration."
-          : "How long would you like your session?"}
+          ? "This service has a fixed session option."
+          : "Choose your session duration and price."}
       </p>
       {isFixed ? (
         <div className="border-sand-300 bg-sand-50 flex items-center gap-4 rounded-2xl border p-4">
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Duration</p>
+            <p className="text-petroleum-400 text-xs">Duration & Price</p>
             <p className="text-petroleum-700 font-medium">
-              {service.durations[0]}
+              {tierLabel(singleTier)}
             </p>
           </div>
           <Check className="text-petroleum-100 shrink-0" size={16} />
         </div>
       ) : (
-        <DurationSelect
-          durations={service.durations}
-          selected={selectedDuration}
-          onSelect={onSelect}
+        <TierSelect
+          tiers={tiers}
+          selectedId={selectedTierId}
+          onSelect={(t) =>
+            onSelect({
+              tierId: t.id,
+              duration:
+                t.duration_minutes != null ? `${t.duration_minutes} min` : null,
+              price: t.price_eur,
+            })
+          }
         />
       )}
     </div>

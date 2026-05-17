@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/dashboard/pagination";
 
 type RaceAccess = "members" | "open";
 
@@ -21,6 +22,8 @@ type Race = {
   created_at: string | null;
   registrations_count: number;
 };
+
+const PAGE_SIZE = 20;
 
 const RACE_ACCESS_LABELS: Record<RaceAccess, string> = {
   members: "Members only",
@@ -61,61 +64,69 @@ function IconPlus() {
 }
 
 export default function RacesPage() {
-  const [races, setRaces] = useState<Race[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [state, setState] = useState<{
+    races: Race[];
+    loading: boolean;
+    total: number;
+  }>({ races: [], loading: true, total: 0 });
+  const { races, loading, total } = state;
 
   const { push } = useRouter();
 
-  const fetchRaces = useCallback(async () => {
-    setLoading(true);
-
-    const { data: racesData } = await insforge.database
-      .from("races")
-      .select(
-        "id, title, description, date, location, distance_km, max_participants, image_url, access, created_at",
-      )
-      .order("date", { ascending: false });
-
-    if (!racesData || (racesData as unknown[]).length === 0) {
-      setRaces([]);
-      setLoading(false);
-      return;
-    }
-
-    const list = racesData as Omit<Race, "registrations_count">[];
-    const ids = list.map((r) => r.id);
-
-    const { data: regData } = await insforge.database
-      .from("race_registrations")
-      .select("race_id")
-      .in("race_id", ids);
-
-    const countMap: Record<string, number> = {};
-    if (regData) {
-      for (const row of regData as { race_id: string }[]) {
-        countMap[row.race_id] = (countMap[row.race_id] ?? 0) + 1;
-      }
-    }
-
-    setRaces(
-      list.map((r) => ({
-        ...r,
-        registrations_count: countMap[r.id] ?? 0,
-      })),
-    );
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchRaces();
-  }, [fetchRaces]);
+    async function run() {
+      const { data: racesData, count } = await insforge.database
+        .from("races")
+        .select(
+          "id, title, description, date, location, distance_km, max_participants, image_url, access, created_at",
+          { count: "exact" },
+        )
+        .order("date", { ascending: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+      if (!racesData || (racesData as unknown[]).length === 0) {
+        setState({ races: [], loading: false, total: count ?? 0 });
+        return;
+      }
+
+      const list = racesData as Omit<Race, "registrations_count">[];
+      const ids = list.map((r) => r.id);
+
+      const { data: regData } = await insforge.database
+        .from("race_registrations")
+        .select("race_id")
+        .in("race_id", ids);
+
+      const countMap: Record<string, number> = {};
+      if (regData) {
+        for (const row of regData as { race_id: string }[]) {
+          countMap[row.race_id] = (countMap[row.race_id] ?? 0) + 1;
+        }
+      }
+
+      setState({
+        races: list.map((r) => ({
+          ...r,
+          registrations_count: countMap[r.id] ?? 0,
+        })),
+        loading: false,
+        total: count ?? 0,
+      });
+    }
+    void run();
+  }, [page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-petroleum-700 text-3xl">Races</h1>
+          <p className="text-petroleum-400 mt-1 text-sm">
+            {total} race{total !== 1 ? "s" : ""}
+          </p>
         </div>
 
         <Button
@@ -283,6 +294,13 @@ export default function RacesPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPage={setPage}
+          loading={loading}
+        />
       </div>
     </div>
   );
