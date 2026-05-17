@@ -202,7 +202,7 @@ export default function NewMemberPage() {
     });
     dispatchSearch({
       type: "SET_QUERY",
-      value:
+      payload:
         `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || (c.email ?? ""),
     });
     dispatchSearch({ type: "CLOSE_DROPDOWN" });
@@ -296,7 +296,7 @@ export default function NewMemberPage() {
                   type="text"
                   value={search.query}
                   onChange={(e) =>
-                    dispatchSearch({ type: "SET_QUERY", value: e.target.value })
+                    dispatchSearch({ type: "SET_QUERY", payload: e.target.value })
                   }
                   onFocus={() => {
                     if (search.results.length > 0)
