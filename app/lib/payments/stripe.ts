@@ -41,8 +41,20 @@ export class StripeProvider implements PaymentProvider {
       line_items: [lineItem],
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
-      customer: params.customerId,
       metadata: params.metadata,
+      // Customer identity — prefer existing customer ID, fall back to email prefill
+      ...(params.customerId
+        ? { customer: params.customerId }
+        : params.customerEmail
+          ? { customer_email: params.customerEmail }
+          : {}),
+      // Billing address pre-populated with the country when provided
+      ...(params.customerCountry
+        ? {
+            billing_address_collection: "auto",
+            shipping_address_collection: undefined,
+          }
+        : {}),
     });
 
     if (!session.url) throw new Error("Stripe session URL missing");

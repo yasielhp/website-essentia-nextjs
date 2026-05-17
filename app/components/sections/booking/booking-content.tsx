@@ -435,6 +435,8 @@ function BookingContentInner() {
       description: `${selectedService.title} — ${selectedDuration ?? ""}`,
       successUrl,
       cancelUrl,
+      customerEmail: details.email,
+      customerName: `${details.firstName} ${details.lastName}`.trim(),
     });
 
     window.location.href = checkout.url;

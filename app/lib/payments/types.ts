@@ -13,6 +13,12 @@ export type CreateCheckoutParams = {
   cancelUrl: string;
   metadata?: Record<string, string>;
   customerId?: string;
+  /** Pre-fills the email field in Stripe Checkout */
+  customerEmail?: string;
+  /** Used for Stripe tax/billing prefill (first + last name) */
+  customerName?: string;
+  /** ISO 3166-1 alpha-2 country code for billing address prefill */
+  customerCountry?: string;
 };
 
 export type CheckoutSession = {

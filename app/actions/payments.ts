@@ -16,6 +16,10 @@ export async function createBookingCheckout(
     description: string;
     successUrl: string;
     cancelUrl: string;
+    /** Pre-fills the email field in Stripe Checkout */
+    customerEmail?: string;
+    /** Pre-fills the customer name shown in Stripe Checkout */
+    customerName?: string;
   },
 ) {
   const provider = createProviderFromEnv();
@@ -36,6 +40,8 @@ export async function createBookingCheckout(
     description: opts.description,
     successUrl: opts.successUrl,
     cancelUrl: opts.cancelUrl,
+    customerEmail: opts.customerEmail,
+    customerName: opts.customerName,
     metadata: {
       bookingId,
       notifyUrl: appUrl ? `${appUrl}/api/webhooks/redsys` : "",
