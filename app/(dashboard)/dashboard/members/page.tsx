@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -55,18 +55,46 @@ function IconPlus() {
   );
 }
 
+type ListState = {
+  members: Member[];
+  loading: boolean;
+  total: number;
+  activeCount: number | null;
+};
+
+type ListAction =
+  | { type: "loading" }
+  | {
+      type: "loaded";
+      members: Member[];
+      total: number;
+      activeCount?: number | null;
+    };
+
+function listReducer(state: ListState, action: ListAction): ListState {
+  if (action.type === "loading") return { ...state, loading: true };
+  return {
+    loading: false,
+    members: action.members,
+    total: action.total,
+    activeCount: action.activeCount ?? state.activeCount,
+  };
+}
+
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(listReducer, {
+    members: [],
+    loading: true,
+    total: 0,
+    activeCount: null,
+  });
+  const { members, loading, total, activeCount } = state;
   const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [activeCount, setActiveCount] = useState<number | null>(null);
   const { push } = useRouter();
 
   useEffect(() => {
+    dispatch({ type: "loading" });
     async function run() {
-      setLoading(true);
-
       const [listRes, activeRes] = await Promise.all([
         insforge.database
           .from("memberships")
@@ -84,12 +112,15 @@ export default function MembersPage() {
           : Promise.resolve(null),
       ]);
 
-      setMembers((listRes.data as Member[] | null) ?? []);
-      setTotal(listRes.count ?? 0);
-      if (activeRes && "count" in activeRes) {
-        setActiveCount((activeRes as { count: number | null }).count ?? 0);
-      }
-      setLoading(false);
+      dispatch({
+        type: "loaded",
+        members: (listRes.data as Member[] | null) ?? [],
+        total: listRes.count ?? 0,
+        activeCount:
+          activeRes && "count" in activeRes
+            ? ((activeRes as { count: number | null }).count ?? 0)
+            : undefined,
+      });
     }
     void run();
   }, [page]);

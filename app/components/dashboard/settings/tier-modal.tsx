@@ -179,9 +179,9 @@ export function TierModal({
 
           <div className="flex items-end gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-petroleum-500 text-xs font-medium">
+              <span className="text-petroleum-500 text-xs font-medium">
                 Calendar color
-              </label>
+              </span>
               <label className="border-sand-200 flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5">
                 <div
                   className="size-5 shrink-0 rounded-full ring-1 ring-black/10"
@@ -205,9 +205,9 @@ export function TierModal({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-petroleum-500 text-xs font-medium">
+              <span className="text-petroleum-500 text-xs font-medium">
                 Active
-              </label>
+              </span>
               <div className="flex h-[46px] items-center">
                 <button
                   type="button"

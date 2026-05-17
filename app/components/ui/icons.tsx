@@ -192,25 +192,6 @@ export const IconCalendar = () => (
   </svg>
 );
 
-export const IconUsers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M3 20c0-3.3 2.6-6 6-6s6 2.6 6 6"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <circle cx="17" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M21 20c0-2.7-1.7-5-4-5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
 export const IconFlag = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <path

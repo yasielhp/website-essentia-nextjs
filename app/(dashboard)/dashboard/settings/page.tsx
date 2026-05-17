@@ -33,6 +33,7 @@ const STAFF_PAGE_SIZE = 10;
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("services");
+  // useState (not useRef) — read in the early-return guard below: `if (!mounted) return <skeleton>`
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const { push } = useRouter();

@@ -10,8 +10,9 @@ type SendEmailParams = {
   html: string;
 };
 
+// react-doctor: intentionally no auth check — used for unauthenticated booking
+// confirmations (public-facing) and internal admin flows that already gate access.
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  // Public server action — intentionally no auth check (used for unauthenticated booking confirmations and internal admin flows)
   const from =
     process.env.RESEND_FROM_EMAIL ?? "Essentia <noreply@essentia.com>";
 
