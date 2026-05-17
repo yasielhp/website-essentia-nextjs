@@ -134,20 +134,6 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function IconArrowLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M19 12H5M5 12l7 7M5 12l7-7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function IconPlus() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -207,21 +193,12 @@ function IconSearch() {
 type PageHeaderProps = {
   title: string | null | undefined;
   loading: boolean;
-  onBack: () => void;
   onAddOpen: () => void;
 };
 
-function PageHeader({ title, loading, onBack, onAddOpen }: PageHeaderProps) {
+function PageHeader({ title, loading, onAddOpen }: PageHeaderProps) {
   return (
     <div className="mb-8">
-      <button
-        onClick={onBack}
-        className="text-petroleum-400 hover:text-petroleum-700 mb-4 inline-flex items-center gap-1.5 text-sm transition-colors"
-      >
-        <IconArrowLeft />
-        Back to Races
-      </button>
-
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-display text-petroleum-700 text-3xl">
           {loading ? (
@@ -644,12 +621,7 @@ export default function RaceRegistrationsPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <PageHeader
-        title={race?.title}
-        loading={loading}
-        onBack={() => back()}
-        onAddOpen={openAdd}
-      />
+      <PageHeader title={race?.title} loading={loading} onAddOpen={openAdd} />
 
       <div className="border-sand-200 rounded-2xl border bg-white">
         {!loading && (

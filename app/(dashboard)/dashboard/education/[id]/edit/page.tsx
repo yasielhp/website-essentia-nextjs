@@ -26,20 +26,6 @@ const INPUT_CLASS =
 const TEXTAREA_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full resize-none min-h-[80px] disabled:opacity-60";
 
-function IconArrowLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M19 12H5M5 12l7 7M5 12l7-7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function IconUsers() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -686,17 +672,6 @@ export default function EditSessionPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <button
-        onClick={() => back()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") back();
-        }}
-        className="text-petroleum-400 hover:text-petroleum-700 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
-      >
-        <IconArrowLeft />
-        Back to Education
-      </button>
-
       <form onSubmit={(e) => void handleSave(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
