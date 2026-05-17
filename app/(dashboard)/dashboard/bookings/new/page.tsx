@@ -229,8 +229,8 @@ export default function NewBookingPage() {
                     <div className="border-sand-200 bg-sand-50 h-12 animate-pulse rounded-xl border" />
                   ) : tiers.length === 0 ? (
                     <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                      No tiers configured for this service — add them in
-                      Settings → Services.
+                      No tiers configured for this service. Add them in
+                      Settings, Services.
                     </p>
                   ) : (
                     <select

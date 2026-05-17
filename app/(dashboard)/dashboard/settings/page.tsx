@@ -306,7 +306,7 @@ export default function SettingsPage() {
                   ) : (
                     <div className="border-sand-100 border-t px-5 py-4">
                       <p className="text-petroleum-300 text-sm">
-                        No tiers yet — add one to enable this service in
+                        No tiers yet. Add one to enable this service in
                         bookings.
                       </p>
                     </div>
@@ -370,9 +370,9 @@ export default function SettingsPage() {
 
             {staffLoading ? (
               <div className="border-sand-100 space-y-3 border-t px-5 py-4">
-                {Array.from({ length: 3 }).map((_, i) => (
+                {(["a", "b", "c"] as const).map((n) => (
                   <div
-                    key={i}
+                    key={n}
                     className="bg-sand-100 h-10 animate-pulse rounded-xl"
                   />
                 ))}
@@ -380,7 +380,7 @@ export default function SettingsPage() {
             ) : staff.length === 0 ? (
               <div className="border-sand-100 border-t px-5 py-4">
                 <p className="text-petroleum-300 text-sm">
-                  No staff members yet — add one to get started.
+                  No staff members yet. Add one to get started.
                 </p>
               </div>
             ) : (

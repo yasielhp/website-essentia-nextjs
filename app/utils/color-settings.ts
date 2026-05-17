@@ -51,7 +51,3 @@ export function loadColorSettings(): ColorSettings {
 export function saveColorSettings(settings: ColorSettings): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
-
-export function resetColorSettings(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}

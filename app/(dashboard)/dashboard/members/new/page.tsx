@@ -379,7 +379,7 @@ export default function NewMemberPage() {
                     )}
                     {plans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.label} — €{p.price_monthly}/mo
+                        {p.label}: €{p.price_monthly}/mo
                       </option>
                     ))}
                   </select>

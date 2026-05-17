@@ -1,6 +1,6 @@
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
 
-export const MONTHS = [
+const MONTHS = [
   "January",
   "February",
   "March",

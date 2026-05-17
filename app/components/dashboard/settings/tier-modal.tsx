@@ -93,7 +93,9 @@ export function TierModal({
   return (
     <div
       ref={overlayRef}
+      role="presentation"
       onClick={handleOverlayClick}
+      onKeyDown={(e) => e.key === "Escape" && onClose()}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
     >
       <div className="border-sand-200 mx-4 w-full max-w-md rounded-2xl border bg-white shadow-xl">
@@ -120,25 +122,32 @@ export function TierModal({
         {/* Body */}
         <div className="space-y-4 px-6 py-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-petroleum-500 text-xs font-medium">
+            <label
+              htmlFor="tier-label"
+              className="text-petroleum-500 text-xs font-medium"
+            >
               Name
             </label>
             <input
+              id="tier-label"
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Standard, 60 min, NAD+"
-              autoFocus
               className={INPUT_CLASS}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-petroleum-500 text-xs font-medium">
+              <label
+                htmlFor="tier-duration"
+                className="text-petroleum-500 text-xs font-medium"
+              >
                 Duration (min)
               </label>
               <input
+                id="tier-duration"
                 type="number"
                 min="0"
                 step="1"
@@ -149,10 +158,14 @@ export function TierModal({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-petroleum-500 text-xs font-medium">
+              <label
+                htmlFor="tier-price"
+                className="text-petroleum-500 text-xs font-medium"
+              >
                 Price (€)
               </label>
               <input
+                id="tier-price"
                 type="number"
                 min="0"
                 step="0.01"
