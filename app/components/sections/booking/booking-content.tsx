@@ -20,8 +20,7 @@ import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
-import { sendEmail } from "@/emails/send";
-import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
+import { createBookingCheckout } from "@/actions/payments";
 
 const EMPTY_DETAILS: DetailsState = {
   firstName: "",
@@ -370,52 +369,75 @@ function BookingContentInner() {
       return;
     dispatch({ type: "CONFIRM_START" });
 
-    if (bookingId) {
-      await insforge.database.rpc("confirm_booking", {
-        p_booking_id: bookingId,
-      });
+    // Ensure booking exists with pending payment status
+    let resolvedBookingId = bookingId;
+    if (resolvedBookingId) {
+      await insforge.database
+        .from("bookings")
+        .update({ payment_status: "pending" })
+        .eq("id", resolvedBookingId);
     } else {
-      await insforge.database.from("bookings").insert([
-        {
-          ...(user?.id ? { user_id: user.id } : {}),
-          ...(contactId ? { contact_id: contactId } : {}),
-          service_id: selectedService.id,
-          service_title: selectedService.title,
-          tier_id: selectedTierId,
-          price_eur: selectedTierPrice,
-          duration: selectedDuration ?? "",
-          date: selectedDate.toISOString().split("T")[0],
-          time: selectedTime,
-          first_name: details.firstName,
-          last_name: details.lastName,
-          email: details.email,
-          phone: details.phone,
-        },
-      ]);
+      const { data } = await insforge.database
+        .from("bookings")
+        .insert([
+          {
+            ...(user?.id ? { user_id: user.id } : {}),
+            ...(contactId ? { contact_id: contactId } : {}),
+            service_id: selectedService.id,
+            service_title: selectedService.title,
+            tier_id: selectedTierId,
+            price_eur: selectedTierPrice,
+            duration: selectedDuration ?? "",
+            date: selectedDate.toISOString().split("T")[0],
+            time: selectedTime,
+            first_name: details.firstName,
+            last_name: details.lastName,
+            email: details.email,
+            phone: details.phone,
+            payment_status: "pending",
+          },
+        ])
+        .select("id")
+        .single();
+      resolvedBookingId = (data as { id: string } | null)?.id ?? null;
     }
 
-    dispatch({ type: "CONFIRM_SUCCESS" });
+    if (!resolvedBookingId) {
+      dispatch({ type: "CONFIRM_SUCCESS" });
+      clearStorage();
+      return;
+    }
+
+    // Fetch Stripe price ID for this tier
+    const { data: tierData } = await insforge.database
+      .from("service_tiers")
+      .select("stripe_price_id, price_eur")
+      .eq("id", selectedTierId)
+      .single();
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const successUrl = `${origin}/booking?payment=success&bookingId=${resolvedBookingId}`;
+    const cancelUrl = `${origin}/booking?payment=cancelled`;
+
+    const priceId =
+      (tierData as { stripe_price_id: string | null } | null)
+        ?.stripe_price_id ?? undefined;
+    const amountCents =
+      Math.round(Number(selectedTierPrice ?? tierData?.price_eur ?? 0) * 100) ||
+      undefined;
+
     clearStorage();
 
-    const { error: emailError } = await sendEmail({
-      to: details.email,
-      subject: "Your Essentia booking is confirmed",
-      html: bookingConfirmationEmail({
-        name: details.firstName,
-        serviceName: selectedService.title,
-        date: selectedDate.toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }),
-        time: selectedTime,
-        duration: selectedDuration ?? "",
-      }),
+    const checkout = await createBookingCheckout(resolvedBookingId, {
+      priceId,
+      amount: amountCents,
+      currency: "eur",
+      description: `${selectedService.title} — ${selectedDuration ?? ""}`,
+      successUrl,
+      cancelUrl,
     });
 
-    if (emailError) {
-      console.error("[booking] Confirmation email failed:", emailError);
-    }
+    window.location.href = checkout.url;
   };
 
   if (submitted && selectedService && selectedDate && selectedTime) {

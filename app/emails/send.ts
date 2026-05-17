@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 type SendEmailParams = {
   to: string;
   subject: string;
@@ -10,6 +8,14 @@ type SendEmailParams = {
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
   if (!to.includes("@")) throw new Error("Invalid recipient address");
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[sendEmail] RESEND_API_KEY not set — email skipped");
+    return { error: null };
+  }
+
+  const resend = new Resend(apiKey);
   const from =
     process.env.RESEND_FROM_EMAIL ?? "Essentia <noreply@essentia.com>";
 

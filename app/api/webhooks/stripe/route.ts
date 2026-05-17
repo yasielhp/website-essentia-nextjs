@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createProviderFromEnv } from "@/lib/payments";
+import { handleBookingPaid } from "@/actions/payments";
+import { insforge } from "@/lib/insforge";
 
 export async function POST(req: NextRequest) {
   const provider = createProviderFromEnv();
@@ -15,17 +17,43 @@ export async function POST(req: NextRequest) {
 
   try {
     const event = provider.parseWebhookEvent(rawBody, signature);
+    const payload = event.payload as Record<string, unknown>;
 
     switch (event.type) {
-      case "checkout.session.completed":
-        // TODO: mark booking as paid using event.payload.metadata.bookingId
+      case "checkout.session.completed": {
+        const meta = (payload.metadata ?? {}) as Record<string, string>;
+        const bookingId = meta.bookingId;
+        if (bookingId) {
+          await insforge.database
+            .from("bookings")
+            .update({ stripe_session_id: payload.id as string })
+            .eq("id", bookingId);
+          await handleBookingPaid(bookingId);
+        }
         break;
-      case "payment_intent.payment_failed":
-        // TODO: mark booking as failed
+      }
+      case "payment_intent.payment_failed": {
+        const meta = (payload.metadata ?? {}) as Record<string, string>;
+        const bookingId = meta.bookingId;
+        if (bookingId) {
+          await insforge.database
+            .from("bookings")
+            .update({ payment_status: "failed" })
+            .eq("id", bookingId);
+        }
         break;
-      case "charge.refunded":
-        // TODO: mark booking as refunded
+      }
+      case "charge.refunded": {
+        const meta = (payload.metadata ?? {}) as Record<string, string>;
+        const bookingId = meta.bookingId;
+        if (bookingId) {
+          await insforge.database
+            .from("bookings")
+            .update({ payment_status: "refunded" })
+            .eq("id", bookingId);
+        }
         break;
+      }
     }
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

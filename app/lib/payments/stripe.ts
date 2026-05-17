@@ -22,18 +22,23 @@ export class StripeProvider implements PaymentProvider {
   async createCheckoutSession(
     params: CreateCheckoutParams,
   ): Promise<CheckoutSession> {
-    const session = await this.client.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
+    type LineItem = NonNullable<
+      Stripe.Checkout.SessionCreateParams["line_items"]
+    >[number];
+    const lineItem: LineItem = params.priceId
+      ? { price: params.priceId, quantity: 1 }
+      : {
           quantity: 1,
           price_data: {
             currency: params.currency.toLowerCase(),
-            unit_amount: params.amount,
+            unit_amount: params.amount ?? 0,
             product_data: { name: params.description },
           },
-        },
-      ],
+        };
+
+    const session = await this.client.checkout.sessions.create({
+      mode: "payment",
+      line_items: [lineItem],
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
       customer: params.customerId,

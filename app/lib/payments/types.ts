@@ -3,7 +3,10 @@ export type ProviderName = "stripe" | "redsys";
 // ─── Shared params / results ──────────────────────────────────
 
 export type CreateCheckoutParams = {
-  amount: number;
+  /** Pre-registered Stripe price ID — preferred over amount+description */
+  priceId?: string;
+  /** Amount in smallest currency unit (cents). Required when priceId is absent. */
+  amount?: number;
   currency: string;
   description: string;
   successUrl: string;
