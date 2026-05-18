@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useState, Suspense } from "react";
+import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@components/ui/button";
 import { bookableServices, type BookableService } from "@/data/services-data";
@@ -18,7 +18,7 @@ import { DetailsStep } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
-import { PaymentOverlay } from "./steps/payment-overlay";
+import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 
@@ -89,7 +89,7 @@ function bookingReducer(
     case "CONFIRM_START":
       return { ...state, loading: true };
     case "CONFIRM_SUCCESS":
-      return { ...state, loading: false, submitted: true };
+      return { ...state, loading: false };
   }
 }
 
@@ -223,24 +223,212 @@ function BookingNavigation({
   );
 }
 
+function BookingHeader() {
+  return (
+    <div className="flex flex-col gap-2">
+      <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
+        Book a session.
+      </h1>
+      <p className="text-petroleum-400">
+        Choose your service, pick a time, and we will take care of the rest.
+      </p>
+    </div>
+  );
+}
+
+type BookingStepRendererProps = {
+  currentStepId: string;
+  selectedService: BookableService | null;
+  selectedTierId: string | null;
+  selectedTierPrice: number | null;
+  selectedDuration: string | null;
+  selectedDate: Date | null;
+  selectedTime: string | null;
+  details: DetailsState;
+  dispatch: React.Dispatch<BookingAction>;
+};
+
+function BookingStepRenderer({
+  currentStepId,
+  selectedService,
+  selectedTierId,
+  selectedTierPrice,
+  selectedDuration,
+  selectedDate,
+  selectedTime,
+  details,
+  dispatch,
+}: BookingStepRendererProps) {
+  return (
+    <div key={currentStepId} className="animate-fade-in-up h-full">
+      {currentStepId === "service" && (
+        <ServiceStep
+          selected={selectedService}
+          onSelect={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
+        />
+      )}
+      {currentStepId === "duration" && selectedService && (
+        <DurationStep
+          serviceId={selectedService.id}
+          selectedTierId={selectedTierId}
+          onSelect={(sel: TierSelection) =>
+            dispatch({
+              type: "SELECT_TIER",
+              tierId: sel.tierId,
+              duration: sel.duration,
+              price: sel.price,
+            })
+          }
+        />
+      )}
+      {currentStepId === "details" && (
+        <DetailsStep
+          details={details}
+          onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
+        />
+      )}
+      {currentStepId === "datetime" && selectedService && (
+        <DateTimeStep
+          service={selectedService}
+          selectedDate={selectedDate}
+          selectedTime={selectedTime}
+          onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
+          onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
+        />
+      )}
+      {currentStepId === "confirm" &&
+        selectedService &&
+        selectedDate &&
+        selectedTime &&
+        selectedTierId && (
+          <ConfirmStep
+            service={selectedService}
+            duration={selectedDuration ?? ""}
+            price={selectedTierPrice}
+            date={selectedDate}
+            time={selectedTime}
+            details={details}
+          />
+        )}
+    </div>
+  );
+}
+
+type BookingModalsProps = {
+  paymentError: string | null;
+  memberBlocker: boolean;
+  redsysForm: RedsysFormData | null;
+  onContinueAsGuest: () => void;
+  onClosePayment: () => void;
+};
+
+function BookingModals({
+  paymentError,
+  memberBlocker,
+  redsysForm,
+  onContinueAsGuest,
+  onClosePayment,
+}: BookingModalsProps) {
+  return (
+    <>
+      {paymentError && (
+        <div className="mx-auto mt-3 max-w-md rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          {paymentError}
+        </div>
+      )}
+
+      {memberBlocker && <MemberBlockerModal onContinue={onContinueAsGuest} />}
+
+      {redsysForm && (
+        <PaymentOverlay formData={redsysForm} onClose={onClosePayment} />
+      )}
+    </>
+  );
+}
+
+type PaidBooking = {
+  service_title: string | null;
+  date: string | null;
+  time: string | null;
+  email: string | null;
+};
+
+type BookingLocalState = {
+  contactId: string | null;
+  bookingId: string | null;
+  memberBlocker: boolean;
+  checking: boolean;
+  redsysForm: RedsysFormData | null;
+  paymentError: string | null;
+  paymentSuccess: boolean;
+  paidBooking: PaidBooking | null;
+};
+
+const INITIAL_LOCAL_STATE: BookingLocalState = {
+  contactId: null,
+  bookingId: null,
+  memberBlocker: false,
+  checking: false,
+  redsysForm: null,
+  paymentError: null,
+  paymentSuccess: false,
+  paidBooking: null,
+};
+
 function BookingContentInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const slug = get("wellness") ?? get("medicine");
 
-  const [contactId, setContactId] = useState<string | null>(null);
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [memberBlocker, setMemberBlocker] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paidBooking, setPaidBooking] = useState<{
-    service_title: string | null;
-    date: string | null;
-    time: string | null;
-    email: string | null;
-  } | null>(null);
+  const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
+  const {
+    contactId,
+    bookingId,
+    memberBlocker,
+    checking,
+    redsysForm,
+    paymentError,
+    paymentSuccess,
+    paidBooking,
+  } = local;
+
+  const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
+    setLocal((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const setContactId = useCallback(
+    (v: string | null) => updateLocal({ contactId: v }),
+    [updateLocal],
+  );
+  const setBookingId = useCallback(
+    (v: string | null) => updateLocal({ bookingId: v }),
+    [updateLocal],
+  );
+  const setMemberBlocker = useCallback(
+    (v: boolean) => updateLocal({ memberBlocker: v }),
+    [updateLocal],
+  );
+  const setChecking = useCallback(
+    (v: boolean) => updateLocal({ checking: v }),
+    [updateLocal],
+  );
+  const setRedsysForm = useCallback(
+    (v: RedsysFormData | null) => updateLocal({ redsysForm: v }),
+    [updateLocal],
+  );
+  const setPaymentError = useCallback(
+    (v: string | null) => updateLocal({ paymentError: v }),
+    [updateLocal],
+  );
+  const setPaymentSuccess = useCallback(
+    (v: boolean) => updateLocal({ paymentSuccess: v }),
+    [updateLocal],
+  );
+  const setPaidBooking = useCallback(
+    (v: PaidBooking | null) => updateLocal({ paidBooking: v }),
+    [updateLocal],
+  );
 
   const [state, dispatch] = useReducer(bookingReducer, slug, initState);
   const {
@@ -252,14 +440,14 @@ function BookingContentInner() {
     selectedDate,
     selectedTime,
     details,
-    submitted,
     loading,
   } = state;
 
-  // Detect return from Stripe Embedded Checkout
+  // Detect return from payment gateway
   useEffect(() => {
     if (get("payment") !== "success") return;
     clearStorage();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPaymentSuccess(true);
     const bid = get("bookingId");
     if (!bid) return;
@@ -269,17 +457,9 @@ function BookingContentInner() {
       .eq("id", bid)
       .single()
       .then(({ data }) => {
-        if (data)
-          setPaidBooking(
-            data as {
-              service_title: string | null;
-              date: string | null;
-              time: string | null;
-              email: string | null;
-            },
-          );
+        if (data) setPaidBooking(data as PaidBooking);
       });
-  }, [get]);
+  }, [get, setPaymentSuccess, setPaidBooking]);
 
   useEffect(() => {
     writeStorage({
@@ -336,8 +516,7 @@ function BookingContentInner() {
       );
 
       if (roleData === "member") {
-        setChecking(false);
-        setMemberBlocker(true);
+        updateLocal({ checking: false, memberBlocker: true });
         return;
       }
 
@@ -457,14 +636,16 @@ function BookingContentInner() {
     dispatch({ type: "CONFIRM_SUCCESS" }); // stop loading spinner
 
     if (!res.ok) {
-      console.error("[booking] Failed to create checkout session");
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const msg = body.error ?? "Failed to start payment. Please try again.";
+      console.error("[booking] Failed to create checkout session:", msg);
+      setPaymentError(msg);
       return;
     }
 
-    const { clientSecret: secret } = (await res.json()) as {
-      clientSecret: string;
-    };
-    setClientSecret(secret);
+    setPaymentError(null);
+    const form = (await res.json()) as RedsysFormData;
+    setRedsysForm(form);
   };
 
   // Return from Stripe embedded checkout
@@ -495,80 +676,23 @@ function BookingContentInner() {
     );
   }
 
-  if (submitted && selectedService && selectedDate && selectedTime) {
-    return (
-      <SuccessState
-        service={selectedService}
-        date={selectedDate}
-        time={selectedTime}
-        email={details.email}
-      />
-    );
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          Book a session.
-        </h1>
-        <p className="text-petroleum-400">
-          Choose your service, pick a time, and we will take care of the rest.
-        </p>
-      </div>
+      <BookingHeader />
 
       <StepIndicator current={step} steps={activeSteps} />
 
-      <div key={currentStepId} className="animate-fade-in-up h-full">
-        {currentStepId === "service" && (
-          <ServiceStep
-            selected={selectedService}
-            onSelect={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
-          />
-        )}
-        {currentStepId === "duration" && selectedService && (
-          <DurationStep
-            serviceId={selectedService.id}
-            selectedTierId={selectedTierId}
-            onSelect={(sel: TierSelection) =>
-              dispatch({
-                type: "SELECT_TIER",
-                tierId: sel.tierId,
-                duration: sel.duration,
-                price: sel.price,
-              })
-            }
-          />
-        )}
-        {currentStepId === "details" && (
-          <DetailsStep
-            details={details}
-            onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
-          />
-        )}
-        {currentStepId === "datetime" && selectedService && (
-          <DateTimeStep
-            service={selectedService}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
-            onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
-          />
-        )}
-        {currentStepId === "confirm" &&
-          selectedService &&
-          selectedDate &&
-          selectedTime &&
-          selectedTierId && (
-            <ConfirmStep
-              service={selectedService}
-              duration={selectedDuration ?? ""}
-              date={selectedDate}
-              time={selectedTime}
-              details={details}
-            />
-          )}
-      </div>
+      <BookingStepRenderer
+        currentStepId={currentStepId}
+        selectedService={selectedService}
+        selectedTierId={selectedTierId}
+        selectedTierPrice={selectedTierPrice}
+        selectedDuration={selectedDuration}
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+        details={details}
+        dispatch={dispatch}
+      />
 
       <BookingNavigation
         step={step}
@@ -588,21 +712,16 @@ function BookingContentInner() {
         onConfirm={() => void handleConfirm()}
       />
 
-      {memberBlocker && (
-        <MemberBlockerModal
-          onContinue={() => {
-            setMemberBlocker(false);
-            dispatch({ type: "SET_STEP", step: step + 1 });
-          }}
-        />
-      )}
-
-      {clientSecret && (
-        <PaymentOverlay
-          clientSecret={clientSecret}
-          onClose={() => setClientSecret(null)}
-        />
-      )}
+      <BookingModals
+        paymentError={paymentError}
+        memberBlocker={memberBlocker}
+        redsysForm={redsysForm}
+        onContinueAsGuest={() => {
+          setMemberBlocker(false);
+          dispatch({ type: "SET_STEP", step: step + 1 });
+        }}
+        onClosePayment={() => setRedsysForm(null)}
+      />
     </div>
   );
 }

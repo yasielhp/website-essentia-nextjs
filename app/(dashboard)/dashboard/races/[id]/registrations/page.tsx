@@ -20,6 +20,8 @@ type Registration = {
   email: string | null;
   phone: string | null;
   registered_at: string;
+  table_number: number | null;
+  checked_in_at: string | null;
 };
 
 type Contact = {
@@ -191,12 +193,54 @@ function IconSearch() {
 // Sub-components
 
 type PageHeaderProps = {
+  raceId: string;
   title: string | null | undefined;
   loading: boolean;
   onAddOpen: () => void;
 };
 
-function PageHeader({ title, loading, onAddOpen }: PageHeaderProps) {
+function IconQr() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <rect
+        x="3"
+        y="3"
+        width="7"
+        height="7"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="14"
+        y="3"
+        width="7"
+        height="7"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="3"
+        y="14"
+        width="7"
+        height="7"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M14 14h2v2h-2zM18 14h3M14 18h2M18 18v3M21 18h-3v3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PageHeader({ raceId, title, loading, onAddOpen }: PageHeaderProps) {
   return (
     <div className="mb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -208,16 +252,27 @@ function PageHeader({ title, loading, onAddOpen }: PageHeaderProps) {
           )}
         </h1>
 
-        <Button
-          variant="solid"
-          size="md"
-          onClick={() => void onAddOpen()}
-          disabled={loading}
-          className="gap-2 self-start sm:self-auto"
-        >
-          <IconPlus />
-          Add to race
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="md"
+            href={`/dashboard/races/${raceId}/checkin`}
+            className="gap-2"
+          >
+            <IconQr />
+            Check-in
+          </Button>
+          <Button
+            variant="solid"
+            size="md"
+            onClick={() => void onAddOpen()}
+            disabled={loading}
+            className="gap-2"
+          >
+            <IconPlus />
+            Add to race
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -253,6 +308,23 @@ function RegistrationRow({
       </td>
       <td className="text-petroleum-500 px-5 py-4">
         {reg.phone ?? <span className="text-petroleum-300">{"—"}</span>}
+      </td>
+      <td className="px-5 py-4">
+        {reg.table_number != null ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="bg-petroleum-100 text-petroleum-600 rounded-full px-2.5 py-0.5 text-xs font-medium">
+              Mesa {reg.table_number}
+            </span>
+            {reg.checked_in_at && (
+              <span
+                className="size-1.5 rounded-full bg-green-500"
+                title="Verificado"
+              />
+            )}
+          </span>
+        ) : (
+          <span className="text-petroleum-300">{"—"}</span>
+        )}
       </td>
       <td className="text-petroleum-400 px-5 py-4">
         {formatDateTime(reg.registered_at)}
@@ -405,6 +477,139 @@ function AddContactModal({
   );
 }
 
+type NotFoundStateProps = {
+  onBack: () => void;
+};
+
+function NotFoundState({ onBack }: NotFoundStateProps) {
+  return (
+    <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
+      <p className="text-sm">Race not found.</p>
+      <button
+        onClick={onBack}
+        className="hover:text-petroleum-700 mt-4 text-xs underline"
+      >
+        Go back
+      </button>
+    </div>
+  );
+}
+
+type RegistrationsSummaryProps = {
+  date: string | null;
+  count: number;
+  maxParticipants: number | null;
+};
+
+function RegistrationsSummary({
+  date,
+  count,
+  maxParticipants,
+}: RegistrationsSummaryProps) {
+  return (
+    <div className="border-sand-100 flex items-center justify-between border-b px-5 py-3">
+      <p className="text-petroleum-400 text-sm">{formatDate(date)}</p>
+      <p className="text-petroleum-400 text-sm">
+        {count} registration
+        {count !== 1 ? "s" : ""}
+        {maxParticipants != null && (
+          <span
+            className={
+              count >= maxParticipants ? "font-medium text-red-500" : ""
+            }
+          >
+            {" "}
+            / {maxParticipants} max
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+type RegistrationsTableProps = {
+  loading: boolean;
+  registrations: Registration[];
+  removeOpen: string | null;
+  removingId: string | null;
+  onConfirmOpen: (id: string) => void;
+  onConfirmClose: () => void;
+  onRemove: (id: string) => void;
+};
+
+function RegistrationsTable({
+  loading,
+  registrations,
+  removeOpen,
+  removingId,
+  onConfirmOpen,
+  onConfirmClose,
+  onRemove,
+}: RegistrationsTableProps) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[560px] text-sm">
+        <thead>
+          <tr className="border-sand-200 border-b text-left">
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">#</th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              Name
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              Email
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              Phone
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              Mesa
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              Registered at
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i} className="border-sand-50 border-b">
+                {Array.from({ length: 7 }).map((_, j) => (
+                  <td key={j} className="px-5 py-4">
+                    <div className="bg-sand-100 h-4 animate-pulse rounded" />
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : registrations.length === 0 ? (
+            <tr>
+              <td
+                colSpan={7}
+                className="text-petroleum-400 px-6 py-12 text-center"
+              >
+                No registrations yet.
+              </td>
+            </tr>
+          ) : (
+            registrations.map((reg, index) => (
+              <RegistrationRow
+                key={reg.id}
+                reg={reg}
+                index={index}
+                removeOpen={removeOpen}
+                removingId={removingId}
+                onConfirmOpen={onConfirmOpen}
+                onConfirmClose={onConfirmClose}
+                onRemove={onRemove}
+              />
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function RaceRegistrationsPage() {
   const { id } = useParams<{ id: string }>();
   const { back } = useRouter();
@@ -428,9 +633,11 @@ export default function RaceRegistrationsPage() {
   const loadRegistrations = useCallback(async () => {
     const { data: regs } = await insforge.database
       .from("race_registrations")
-      .select("id, user_id, contact_id, created_at")
+      .select(
+        "id, user_id, contact_id, created_at, table_number, checked_in_at",
+      )
       .eq("race_id", id)
-      .order("created_at", { ascending: true });
+      .order("table_number", { ascending: true });
 
     if (!regs || (regs as unknown[]).length === 0) {
       dispatch({ type: "SET_REGISTRATIONS", registrations: [] });
@@ -442,6 +649,8 @@ export default function RaceRegistrationsPage() {
       user_id: string | null;
       contact_id: string | null;
       created_at: string;
+      table_number: number | null;
+      checked_in_at: string | null;
     }[];
 
     const contactIds = regList.flatMap((r) =>
@@ -510,6 +719,8 @@ export default function RaceRegistrationsPage() {
           email: c?.email ?? p?.email ?? null,
           phone: c?.phone ?? null,
           registered_at: r.created_at,
+          table_number: r.table_number,
+          checked_in_at: r.checked_in_at,
         };
       }),
     });
@@ -606,110 +817,39 @@ export default function RaceRegistrationsPage() {
   });
 
   if (notFound) {
-    return (
-      <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">Race not found.</p>
-        <button
-          onClick={() => back()}
-          className="hover:text-petroleum-700 mt-4 text-xs underline"
-        >
-          Go back
-        </button>
-      </div>
-    );
+    return <NotFoundState onBack={() => back()} />;
   }
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <PageHeader title={race?.title} loading={loading} onAddOpen={openAdd} />
+      <PageHeader
+        raceId={id}
+        title={race?.title}
+        loading={loading}
+        onAddOpen={openAdd}
+      />
 
       <div className="border-sand-200 rounded-2xl border bg-white">
         {!loading && (
-          <div className="border-sand-100 flex items-center justify-between border-b px-5 py-3">
-            <p className="text-petroleum-400 text-sm">
-              {formatDate(race?.date ?? null)}
-            </p>
-            <p className="text-petroleum-400 text-sm">
-              {registrations.length} registration
-              {registrations.length !== 1 ? "s" : ""}
-              {race?.max_participants != null && (
-                <span
-                  className={
-                    registrations.length >= race.max_participants
-                      ? "font-medium text-red-500"
-                      : ""
-                  }
-                >
-                  {" "}
-                  / {race.max_participants} max
-                </span>
-              )}
-            </p>
-          </div>
+          <RegistrationsSummary
+            date={race?.date ?? null}
+            count={registrations.length}
+            maxParticipants={race?.max_participants ?? null}
+          />
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr className="border-sand-200 border-b text-left">
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  #
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Name
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Email
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Phone
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Registered at
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-sand-50 border-b">
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : registrations.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="text-petroleum-400 px-6 py-12 text-center"
-                  >
-                    No registrations yet.
-                  </td>
-                </tr>
-              ) : (
-                registrations.map((reg, index) => (
-                  <RegistrationRow
-                    key={reg.id}
-                    reg={reg}
-                    index={index}
-                    removeOpen={removeOpen}
-                    removingId={removingId}
-                    onConfirmOpen={(regId) =>
-                      dispatch({ type: "SET_REMOVE_OPEN", id: regId })
-                    }
-                    onConfirmClose={() =>
-                      dispatch({ type: "SET_REMOVE_OPEN", id: null })
-                    }
-                    onRemove={(regId) => void handleRemove(regId)}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <RegistrationsTable
+          loading={loading}
+          registrations={registrations}
+          removeOpen={removeOpen}
+          removingId={removingId}
+          onConfirmOpen={(regId) =>
+            dispatch({ type: "SET_REMOVE_OPEN", id: regId })
+          }
+          onConfirmClose={() =>
+            dispatch({ type: "SET_REMOVE_OPEN", id: null })
+          }
+          onRemove={(regId) => void handleRemove(regId)}
+        />
       </div>
 
       {addOpen && (
