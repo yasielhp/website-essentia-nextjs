@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -177,14 +178,10 @@ export default function EditPostPage() {
     });
   }, [id]);
 
-  function handleTitleChange(val: string) {
-    dispatch({ type: "SET", field: "title", value: val });
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !slug.trim()) {
-      dispatch({ type: "ERROR", msg: "El título y el slug son obligatorios." });
+      dispatch({ type: "ERROR", msg: "Title and slug are required." });
       return;
     }
     dispatch({ type: "SAVING" });
@@ -216,7 +213,7 @@ export default function EditPostPage() {
     if (err) {
       dispatch({
         type: "ERROR",
-        msg: (err as { message?: string }).message ?? "Error al guardar.",
+        msg: (err as { message?: string }).message ?? "Failed to save.",
       });
       return;
     }
@@ -232,7 +229,7 @@ export default function EditPostPage() {
   if (notFound)
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24 text-sm">
-        Post no encontrado.
+        Post not found.
       </div>
     );
 
@@ -241,7 +238,7 @@ export default function EditPostPage() {
       <form onSubmit={(e) => void handleSave(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            Editar post
+            Edit post
           </h1>
           <div className="flex items-center gap-3">
             <Button
@@ -252,10 +249,10 @@ export default function EditPostPage() {
               disabled={loading}
               className="gap-1.5"
             >
-              <IconTrash /> Eliminar
+              <IconTrash /> Delete
             </Button>
             <Button variant="outline" size="md" href="/dashboard/blog">
-              Cancelar
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -263,7 +260,7 @@ export default function EditPostPage() {
               size="md"
               disabled={saving || loading}
             >
-              {saving ? "Guardando…" : "Guardar"}
+              {saving ? "Saving…" : "Save"}
             </Button>
           </div>
         </div>
@@ -279,12 +276,12 @@ export default function EditPostPage() {
           <div className="space-y-6 lg:col-span-2">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Contenido
+                Content
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Título <span className="text-red-400">*</span>
+                    Title <span className="text-red-400">*</span>
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -292,7 +289,13 @@ export default function EditPostPage() {
                     <input
                       type="text"
                       value={title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET",
+                          field: "title",
+                          value: e.target.value,
+                        })
+                      }
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
@@ -327,44 +330,7 @@ export default function EditPostPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Imagen destacada
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <>
-                      <input
-                        type="url"
-                        value={coverImageUrl}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET",
-                            field: "coverImageUrl",
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder="https://…"
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                      {coverImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={coverImageUrl}
-                          alt="Vista previa"
-                          className="border-sand-200 mt-2 h-40 w-full rounded-xl border object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Extracto
+                    Excerpt
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
@@ -386,7 +352,7 @@ export default function EditPostPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 mb-1 text-xs font-medium">
-                    Contenido
+                    Content
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
@@ -413,9 +379,10 @@ export default function EditPostPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Status */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Estado
+                Status
               </h2>
               {loading ? (
                 <div className="bg-sand-100 h-12 animate-pulse rounded-xl" />
@@ -429,16 +396,36 @@ export default function EditPostPage() {
                       disabled={saving}
                       className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${status === s ? "border-petroleum-400 bg-petroleum-50 text-petroleum-700" : "border-sand-200 text-petroleum-400 hover:border-sand-300 hover:bg-sand-50"}`}
                     >
-                      {s === "draft" ? "Borrador" : "Publicado"}
+                      {s === "draft" ? "Draft" : "Published"}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
+            {/* Featured image */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Categoría
+                Featured image
+              </h2>
+              {loading ? (
+                <div className="bg-sand-100 h-32 animate-pulse rounded-xl" />
+              ) : (
+                <ImageUpload
+                  bucket="blog"
+                  folder="covers"
+                  value={coverImageUrl || undefined}
+                  onChange={(url) =>
+                    dispatch({ type: "SET", field: "coverImageUrl", value: url })
+                  }
+                />
+              )}
+            </div>
+
+            {/* Category */}
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Category
               </h2>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -456,7 +443,7 @@ export default function EditPostPage() {
                     disabled={saving}
                     className={SELECT_CLASS}
                   >
-                    <option value="">Sin categoría</option>
+                    <option value="">No category</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -468,7 +455,7 @@ export default function EditPostPage() {
                     target="_blank"
                     className="text-petroleum-400 hover:text-petroleum-600 mt-3 block text-xs underline"
                   >
-                    Gestionar categorías →
+                    Manage categories →
                   </a>
                 </>
               )}
@@ -480,12 +467,12 @@ export default function EditPostPage() {
                 SEO
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
-                Cómo aparece en buscadores y redes sociales.
+                How it appears in search engines and social media.
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Meta título
+                    Meta title
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -506,14 +493,14 @@ export default function EditPostPage() {
                         className={INPUT_CLASS}
                       />
                       <p className="text-petroleum-400 text-xs">
-                        {seoTitle.length}/60 caracteres
+                        {seoTitle.length}/60 characters
                       </p>
                     </>
                   )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Meta descripción
+                    Meta description
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -533,7 +520,7 @@ export default function EditPostPage() {
                         className={`${INPUT_CLASS} resize-none`}
                       />
                       <p className="text-petroleum-400 text-xs">
-                        {seoDescription.length}/160 caracteres
+                        {seoDescription.length}/160 characters
                       </p>
                     </>
                   )}
@@ -550,10 +537,10 @@ export default function EditPostPage() {
           <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex flex-col gap-1">
               <h3 className="font-display text-petroleum-700 text-xl">
-                ¿Eliminar post?
+                Delete post?
               </h3>
               <p className="text-petroleum-400 text-sm">
-                Esta acción no se puede deshacer.
+                This action cannot be undone.
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -564,7 +551,7 @@ export default function EditPostPage() {
                 disabled={deleting}
                 className="w-full"
               >
-                {deleting ? "Eliminando…" : "Sí, eliminar"}
+                {deleting ? "Deleting…" : "Yes, delete"}
               </Button>
               <Button
                 variant="outline"
@@ -575,7 +562,7 @@ export default function EditPostPage() {
                 disabled={deleting}
                 className="w-full"
               >
-                Cancelar
+                Cancel
               </Button>
             </div>
           </div>
