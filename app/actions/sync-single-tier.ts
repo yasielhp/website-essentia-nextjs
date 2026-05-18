@@ -73,7 +73,11 @@ export async function syncSingleTierToStripe(tierId: string): Promise<{
 
   await insforge.database
     .from("service_tiers")
-    .update({ stripe_product_id: productId, stripe_price_id: price.id })
+    .update({
+      stripe_product_id: productId,
+      stripe_price_id: price.id,
+      stripe_synced_price: priceEur,
+    })
     .eq("id", tierId);
 
   return { stripe_product_id: productId, stripe_price_id: price.id };

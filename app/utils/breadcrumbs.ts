@@ -1,10 +1,12 @@
 const UUID_RE = /^[0-9a-f-]{36}$/i;
 
 const SECTION_LABELS: Record<string, string> = {
+  blog: "Blog",
   bookings: "Bookings",
-  contacts: "Contacts",
+  contacts: "Users",
   members: "Members",
-  staff: "Staff",
+  staff: "Users",
+  users: "Users",
   races: "Races",
   education: "Education",
   transactions: "Transactions",
@@ -12,11 +14,20 @@ const SECTION_LABELS: Record<string, string> = {
   settings: "Settings",
 };
 
+// Sections whose canonical list URL differs from /dashboard/<section>
+const SECTION_HREFS: Record<string, string> = {
+  contacts: "/dashboard/users",
+  staff: "/dashboard/users",
+};
+
 const LEAF_LABELS: Record<string, string> = {
   new: "New",
+  partner: "Partner Booking",
   edit: "Edit",
   registrations: "Registrations",
+  checkin: "Check-in",
   enrollees: "Enrollees",
+  categories: "Categorías",
 };
 
 export function getBreadcrumbs(
@@ -28,7 +39,7 @@ export function getBreadcrumbs(
   const segments = after.split("/").filter(Boolean);
   const [section, ...rest] = segments;
   const sectionLabel = SECTION_LABELS[section] ?? section;
-  const sectionHref = `/dashboard/${section}`;
+  const sectionHref = SECTION_HREFS[section] ?? `/dashboard/${section}`;
 
   if (rest.length === 0) return [{ label: sectionLabel }];
 

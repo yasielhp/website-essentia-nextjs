@@ -70,7 +70,11 @@ export async function syncPlanToStripe(planId: string): Promise<{
 
   await insforge.database
     .from("membership_plans")
-    .update({ stripe_product_id: productId, stripe_price_id: price.id })
+    .update({
+      stripe_product_id: productId,
+      stripe_price_id: price.id,
+      stripe_synced_price: priceMonthly,
+    })
     .eq("id", planId);
 
   return { stripe_product_id: productId, stripe_price_id: price.id };
@@ -98,9 +102,7 @@ export async function getPlanPriceHistory(
   }));
 }
 
-export async function getPlanMemberCount(
-  planLabel: string,
-): Promise<number> {
+export async function getPlanMemberCount(planLabel: string): Promise<number> {
   const { count } = await insforge.database
     .from("memberships")
     .select("id", { count: "exact", head: true })
@@ -108,4 +110,58 @@ export async function getPlanMemberCount(
     .eq("status", "active");
 
   return count ?? 0;
+}
+
+export async function syncAllPlansToStripe(): Promise<{
+  synced: Array<{
+    id: string;
+    stripe_product_id: string;
+    stripe_price_id: string;
+  }>;
+  errors: Array<{ id: string; label: string; error: string }>;
+}> {
+  const { data, error } = await insforge.database
+    .from("membership_plans")
+    .select(
+      "id, label, price_monthly, stripe_product_id, stripe_price_id, stripe_synced_price",
+    );
+
+  if (error || !data) throw new Error("Failed to fetch membership plans");
+
+  const allPlans = data as (PlanData & {
+    stripe_synced_price: number | null;
+  })[];
+
+  // Only sync plans that are not yet synced or whose price has changed
+  const plansToSync = allPlans.filter((p) => {
+    if (!p.stripe_price_id) return true;
+    if (p.stripe_synced_price == null) return true;
+    return (
+      Math.abs(Number(p.price_monthly) - Number(p.stripe_synced_price)) > 0.001
+    );
+  });
+
+  const results: {
+    synced: Array<{
+      id: string;
+      stripe_product_id: string;
+      stripe_price_id: string;
+    }>;
+    errors: Array<{ id: string; label: string; error: string }>;
+  } = { synced: [], errors: [] };
+
+  for (const plan of plansToSync) {
+    try {
+      const result = await syncPlanToStripe(plan.id);
+      results.synced.push({ id: plan.id, ...result });
+    } catch (err) {
+      results.errors.push({
+        id: plan.id,
+        label: plan.label,
+        error: err instanceof Error ? err.message : "Sync failed",
+      });
+    }
+  }
+
+  return results;
 }

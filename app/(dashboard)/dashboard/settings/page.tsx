@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useReducer } from "react";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,23 +10,13 @@ import {
   SERVICES,
 } from "@/utils/color-settings";
 import type { ColorSettings } from "@/utils/color-settings";
-import type {
-  Tab,
-  TierRow,
-  PlanRow,
-  StaffRow,
-  ModalState,
-} from "@/types/settings";
+import type { Tab, TierRow, PlanRow, ModalState } from "@/types/settings";
 import { SectionCard } from "@/components/dashboard/settings/section-card";
 import { ColorRow } from "@/components/dashboard/settings/color-row";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 import { PaymentGatewayTab } from "@/components/dashboard/settings/payment-gateway-tab";
 import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-content";
-
-// ─── Constants ────────────────────────────────────────────────
-
-const STAFF_PAGE_SIZE = 10;
 
 // ─── Data state reducer ───────────────────────────────────────
 
@@ -39,9 +27,6 @@ type DataState = {
   serviceTiers: Record<string, TierRow[]>;
   plans: PlanRow[];
   planModal: PlanRow | null;
-  staff: StaffRow[];
-  staffLoading: boolean;
-  staffPage: number;
   modal: ModalState | null;
 };
 
@@ -55,9 +40,6 @@ type DataAction =
   | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
   | { type: "SET_PLANS"; plans: PlanRow[] }
   | { type: "SET_PLAN_MODAL"; planModal: PlanRow | null }
-  | { type: "STAFF_LOADING_START" }
-  | { type: "STAFF_LOADED"; staff: StaffRow[] }
-  | { type: "SET_STAFF_PAGE"; staffPage: number }
   | { type: "SET_MODAL"; modal: ModalState | null }
   | { type: "SET_COLORS"; colors: ColorSettings };
 
@@ -67,9 +49,6 @@ const initialDataState: DataState = {
   serviceTiers: {},
   plans: [],
   planModal: null,
-  staff: [],
-  staffLoading: false,
-  staffPage: 0,
   modal: null,
 };
 
@@ -89,12 +68,6 @@ function dataReducer(state: DataState, action: DataAction): DataState {
       return { ...state, plans: action.plans };
     case "SET_PLAN_MODAL":
       return { ...state, planModal: action.planModal };
-    case "STAFF_LOADING_START":
-      return { ...state, staffLoading: true };
-    case "STAFF_LOADED":
-      return { ...state, staff: action.staff, staffLoading: false };
-    case "SET_STAFF_PAGE":
-      return { ...state, staffPage: action.staffPage };
     case "SET_MODAL":
       return { ...state, modal: action.modal };
     case "SET_COLORS":
@@ -123,11 +96,7 @@ function ServicesTabContent({
           <div key={id} className="border-sand-200 rounded-2xl border bg-white">
             <div className="flex items-center justify-between px-5 py-4">
               <span className="text-petroleum-700 font-semibold">{label}</span>
-              <Button
-                variant="solid"
-                size="sm"
-                onClick={() => onAddTier(id)}
-              >
+              <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M12 5v14M5 12h14"
@@ -204,178 +173,13 @@ function ServicesTabContent({
   );
 }
 
-function StaffTabContent({
-  staff,
-  staffLoading,
-  staffPage,
-  onNavigate,
-  onPageChange,
-}: {
-  staff: StaffRow[];
-  staffLoading: boolean;
-  staffPage: number;
-  onNavigate: (id: string) => void;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <div className="border-sand-200 rounded-2xl border bg-white">
-      <div className="flex items-center justify-between px-5 py-4">
-        <span className="text-petroleum-700 font-semibold">Staff</span>
-        <Button variant="solid" size="sm" href="/dashboard/settings/staff/new">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 5v14M5 12h14"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-          Add staff
-        </Button>
-      </div>
-
-      {staffLoading ? (
-        <div className="border-sand-100 space-y-3 border-t px-5 py-4">
-          {(["a", "b", "c"] as const).map((n) => (
-            <div
-              key={n}
-              className="bg-sand-100 h-10 animate-pulse rounded-xl"
-            />
-          ))}
-        </div>
-      ) : staff.length === 0 ? (
-        <div className="border-sand-100 border-t px-5 py-4">
-          <p className="text-petroleum-300 text-sm">
-            No staff members yet. Add one to get started.
-          </p>
-        </div>
-      ) : (
-        <div className="border-sand-100 border-t">
-          <div className="grid grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 px-5 py-2">
-            <span />
-            {["Name", "Email", "Phone"].map((h) => (
-              <span
-                key={h}
-                className="text-petroleum-400 text-xs font-medium"
-              >
-                {h}
-              </span>
-            ))}
-          </div>
-          {staff
-            .slice(
-              staffPage * STAFF_PAGE_SIZE,
-              (staffPage + 1) * STAFF_PAGE_SIZE,
-            )
-            .map((member) => (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => onNavigate(member.id)}
-                className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[36px_1fr_1fr_1fr] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
-              >
-                {member.avatar_url ? (
-                  <div className="relative size-9 shrink-0 overflow-hidden rounded-lg">
-                    <Image
-                      src={member.avatar_url}
-                      alt={member.full_name ?? ""}
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-sand-100 flex size-9 shrink-0 items-center justify-center rounded-lg">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className="text-petroleum-300"
-                    >
-                      <circle
-                        cx="12"
-                        cy="8"
-                        r="4"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <path
-                        d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                )}
-                <span className="text-petroleum-700 min-w-0 truncate text-sm font-medium">
-                  {member.full_name ?? "—"}
-                </span>
-                <span className="text-petroleum-400 min-w-0 truncate text-sm">
-                  {member.email ?? "—"}
-                </span>
-                <span className="text-petroleum-400 min-w-0 truncate text-sm">
-                  {member.phone ?? "—"}
-                </span>
-              </button>
-            ))}
-          {staff.length > STAFF_PAGE_SIZE && (
-            <div className="border-sand-100 flex items-center justify-between border-t px-5 py-3">
-              <span className="text-petroleum-400 text-xs">
-                {staffPage * STAFF_PAGE_SIZE + 1}–
-                {Math.min(
-                  (staffPage + 1) * STAFF_PAGE_SIZE,
-                  staff.length,
-                )}{" "}
-                of {staff.length}
-              </span>
-              <div className="flex items-center gap-1">
-                {[
-                  { dir: "prev", d: "M15 18l-6-6 6-6", disabled: staffPage === 0, page: staffPage - 1 },
-                  {
-                    dir: "next",
-                    d: "M9 18l6-6-6-6",
-                    disabled: (staffPage + 1) * STAFF_PAGE_SIZE >= staff.length,
-                    page: staffPage + 1,
-                  },
-                ].map(({ dir, d, disabled, page }) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onPageChange(page)}
-                    className="border-sand-200 text-petroleum-500 hover:bg-sand-50 disabled:text-petroleum-200 rounded-lg border p-1.5 transition-colors disabled:cursor-not-allowed"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d={d}
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("services");
   const [toast, setToast] = useState<string | null>(null);
-  const { push } = useRouter();
 
   const [data, dispatch] = useReducer(dataReducer, initialDataState);
-  const staffLoaded = useRef(false);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -388,7 +192,7 @@ export default function SettingsPage() {
     const { data: rows } = await insforge.database
       .from("service_tiers")
       .select(
-        "id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id",
+        "id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id, stripe_synced_price",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
@@ -412,12 +216,14 @@ export default function SettingsPage() {
         insforge.database
           .from("service_tiers")
           .select(
-            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id",
+            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id, stripe_synced_price",
           )
           .order("sort_order"),
         insforge.database
           .from("membership_plans")
-          .select("id, label, price_monthly, stripe_product_id, stripe_price_id")
+          .select(
+            "id, label, price_monthly, stripe_product_id, stripe_price_id, stripe_synced_price",
+          )
           .order("price_monthly"),
       ]);
 
@@ -436,32 +242,14 @@ export default function SettingsPage() {
     void init();
   }, []);
 
-  // ── Lazy-load staff ──
-
-  useEffect(() => {
-    if (tab !== "staff" || staffLoaded.current) return;
-    async function loadStaff() {
-      dispatch({ type: "STAFF_LOADING_START" });
-      const { data: rows } = await insforge.database
-        .from("profiles")
-        .select("id, full_name, email, phone, avatar_url")
-        .eq("role", "staff")
-        .order("created_at", { ascending: false });
-      dispatch({
-        type: "STAFF_LOADED",
-        staff: (rows as StaffRow[] | null) ?? [],
-      });
-      staffLoaded.current = true;
-    }
-    void loadStaff();
-  }, [tab]);
-
   // ── Plans handlers ──
 
   async function reloadPlans() {
     const { data: rows } = await insforge.database
       .from("membership_plans")
-      .select("id, label, price_monthly, stripe_product_id, stripe_price_id")
+      .select(
+        "id, label, price_monthly, stripe_product_id, stripe_price_id, stripe_synced_price",
+      )
       .order("price_monthly");
     if (rows) dispatch({ type: "SET_PLANS", plans: rows as PlanRow[] });
     showToast("Saved");
@@ -519,7 +307,6 @@ export default function SettingsPage() {
           [
             ["services", "Services"],
             ["plans", "Membership Plans"],
-            ["staff", "Staff"],
             ["appearance", "Appearance"],
             ["payment", "Payment Gateway"],
           ] as [Tab, string][]
@@ -563,19 +350,6 @@ export default function SettingsPage() {
               dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
             }
             onReload={reloadPlans}
-          />
-        )}
-
-        {/* ── Staff ── */}
-        {tab === "staff" && (
-          <StaffTabContent
-            staff={data.staff}
-            staffLoading={data.staffLoading}
-            staffPage={data.staffPage}
-            onNavigate={(id) => push(`/dashboard/staff/${id}`)}
-            onPageChange={(page) =>
-              dispatch({ type: "SET_STAFF_PAGE", staffPage: page })
-            }
           />
         )}
 
