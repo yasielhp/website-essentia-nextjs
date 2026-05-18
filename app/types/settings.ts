@@ -8,6 +8,8 @@ export type TierRow = {
   color: string | null;
   active: boolean;
   sort_order: number;
+  stripe_product_id: string | null;
+  stripe_price_id: string | null;
 };
 
 export type PlanRow = {

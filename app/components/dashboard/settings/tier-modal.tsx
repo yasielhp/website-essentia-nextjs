@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useReducer } from "react";
 import { insforge } from "@/lib/insforge";
+import { syncSingleTierToStripe } from "@/actions/sync-single-tier";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { ModalState } from "@/types/settings";
 
@@ -65,6 +66,12 @@ export function TierModal({
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [stripePriceId, setStripePriceId] = useState(
+    modal.tier?.stripe_price_id ?? null,
+  );
+  const [syncError, setSyncError] = useState<string | null>(null);
+
   const overlayRef = useRef<HTMLDivElement>(null);
 
   function handleOverlayClick(e: React.MouseEvent) {
@@ -129,6 +136,22 @@ export function TierModal({
     onClose();
   }
 
+  async function handleSync() {
+    if (!modal.tier) return;
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const result = await syncSingleTierToStripe(modal.tier.id);
+      setStripePriceId(result.stripe_price_id);
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  const isSynced = !!stripePriceId;
+
   return (
     <div
       ref={overlayRef}
@@ -160,6 +183,28 @@ export function TierModal({
 
         {/* Body */}
         <div className="space-y-4 px-6 py-5">
+          {/* Active — first */}
+          <div className="flex items-center justify-between">
+            <span className="text-petroleum-700 text-sm font-medium">
+              Active
+            </span>
+            <button
+              type="button"
+              onClick={() => dispatchForm({ type: "TOGGLE_ACTIVE" })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                form.active ? "bg-petroleum-700" : "bg-sand-200"
+              }`}
+            >
+              <span
+                className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+                  form.active ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="border-sand-100 border-t" />
+
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="tier-label"
@@ -225,56 +270,80 @@ export function TierModal({
             </div>
           </div>
 
-          <div className="flex items-end gap-4">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-petroleum-500 text-xs font-medium">
-                Calendar color
+          <div className="flex flex-col gap-1.5">
+            <span className="text-petroleum-500 text-xs font-medium">
+              Calendar color
+            </span>
+            <label className="border-sand-200 flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5">
+              <div
+                className="size-5 shrink-0 rounded-full ring-1 ring-black/10"
+                style={{ backgroundColor: form.color }}
+              />
+              <span className="text-petroleum-400 font-mono text-xs">
+                {form.color}
               </span>
-              <label className="border-sand-200 flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5">
-                <div
-                  className="size-5 shrink-0 rounded-full ring-1 ring-black/10"
-                  style={{ backgroundColor: form.color }}
+              <div
+                className="border-sand-200 relative ml-2 size-7 overflow-hidden rounded-lg border"
+                style={{ backgroundColor: form.color }}
+              >
+                <input
+                  type="color"
+                  value={form.color}
+                  onChange={(e) =>
+                    dispatchForm({ type: "SET_COLOR", color: e.target.value })
+                  }
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />
-                <span className="text-petroleum-400 font-mono text-xs">
-                  {form.color}
-                </span>
-                <div
-                  className="border-sand-200 relative ml-2 size-7 overflow-hidden rounded-lg border"
-                  style={{ backgroundColor: form.color }}
-                >
-                  <input
-                    type="color"
-                    value={form.color}
-                    onChange={(e) =>
-                      dispatchForm({ type: "SET_COLOR", color: e.target.value })
-                    }
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  />
-                </div>
-              </label>
-            </div>
+              </div>
+            </label>
+          </div>
 
-            <div className="flex flex-col gap-1.5">
-              <span className="text-petroleum-500 text-xs font-medium">
-                Active
-              </span>
-              <div className="flex h-[46px] items-center">
+          {/* Stripe sync — only when editing */}
+          {isEdit && (
+            <>
+              <div className="border-sand-100 border-t" />
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-petroleum-700 text-sm font-medium">
+                    Stripe product
+                  </span>
+                  {isSynced ? (
+                    <span className="font-mono text-xs text-green-600">
+                      {stripePriceId}
+                    </span>
+                  ) : (
+                    <span className="text-petroleum-400 text-xs">
+                      Not synced yet
+                    </span>
+                  )}
+                  {syncError && (
+                    <span className="mt-0.5 text-xs text-red-500">
+                      {syncError}
+                    </span>
+                  )}
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => dispatchForm({ type: "TOGGLE_ACTIVE" })}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                    form.active ? "bg-petroleum-700" : "bg-sand-200"
-                  }`}
+                  disabled={syncing || saving}
+                  onClick={() => void handleSync()}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#635BFF] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                 >
-                  <span
-                    className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
-                      form.active ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
+                  {syncing ? (
+                    <>
+                      <span className="size-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Syncing…
+                    </>
+                  ) : isSynced ? (
+                    "Re-sync"
+                  ) : (
+                    "Sync to Stripe"
+                  )}
                 </button>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}

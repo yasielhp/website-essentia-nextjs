@@ -387,7 +387,7 @@ export default function SettingsPage() {
     const { data: rows } = await insforge.database
       .from("service_tiers")
       .select(
-        "id, label, duration_minutes, price_eur, color, active, sort_order",
+        "id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
@@ -411,7 +411,7 @@ export default function SettingsPage() {
         insforge.database
           .from("service_tiers")
           .select(
-            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order",
+            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id",
           )
           .order("sort_order"),
         insforge.database
