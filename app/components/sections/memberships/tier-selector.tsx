@@ -6,6 +6,10 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
+import {
+  PaymentOverlay,
+  type RedsysFormData,
+} from "@/components/sections/booking/steps/payment-overlay";
 import { TierId, VALID_TIERS, tiers, pricing } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -69,11 +73,15 @@ function TierDisplay({
   price,
   features,
   displayRef,
+  onBecomeMember,
+  loading,
 }: {
   tier: (typeof tiers)[number];
   price: number;
   features: readonly string[];
   displayRef: React.RefObject<HTMLDivElement | null>;
+  onBecomeMember: () => void;
+  loading: boolean;
 }) {
   return (
     <div
@@ -107,8 +115,14 @@ function TierDisplay({
             {tier.description}
           </p>
           <div className="mt-auto pt-7 md:hidden">
-            <Button variant="solid" size="md" href="#" className="w-full">
-              Become a member
+            <Button
+              variant="solid"
+              size="md"
+              onClick={onBecomeMember}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Loading…" : "Become a member"}
             </Button>
           </div>
         </div>
@@ -138,13 +152,47 @@ function TierDisplay({
           <Button
             variant="solid"
             size="md"
-            href="#"
+            onClick={onBecomeMember}
+            disabled={loading}
             className="w-full md:w-auto"
           >
-            Become a member
+            {loading ? "Loading…" : "Become a member"}
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Success Banner ───────────────────────────────────────────
+
+function SuccessBanner() {
+  return (
+    <div className="mx-auto max-w-2xl rounded-2xl bg-green-50 px-8 py-10 text-center">
+      <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M5 13l4 4L19 7"
+            stroke="#16a34a"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+      <h3 className="text-petroleum-700 font-display text-2xl">
+        Welcome to Essentia!
+      </h3>
+      <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
+        Your membership is confirmed. You&apos;ll receive a confirmation email
+        shortly.
+      </p>
     </div>
   );
 }
@@ -155,17 +203,32 @@ function TierSelectorInner() {
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const paramValue = get("tier") as TierId | null;
+  const paymentSuccess = get("payment") === "success";
   const initialTier: TierId =
     paramValue && VALID_TIERS.includes(paramValue) ? paramValue : "essential";
   const hasTierParam = useRef(false);
 
-  const [selectedTier, setSelectedTier] = useState<TierId>(initialTier);
+  const [tierState, setTierState] = useState<{
+    selectedTier: TierId;
+    dbPrices: Record<string, number>;
+    dbFeaturesList: Record<string, string[]>;
+    redsysForm: RedsysFormData | null;
+    checkoutLoading: boolean;
+  }>({
+    selectedTier: initialTier,
+    dbPrices: {},
+    dbFeaturesList: {},
+    redsysForm: null,
+    checkoutLoading: false,
+  });
+  const { selectedTier, dbPrices, dbFeaturesList, redsysForm, checkoutLoading } = tierState;
   const selectedTierRef = useRef<TierId>(initialTier);
 
-  const [dbPrices, setDbPrices] = useState<Record<string, number>>({});
-  const [dbFeaturesList, setDbFeaturesList] = useState<
-    Record<string, string[]>
-  >({});
+  function setSelectedTier(v: TierId) { setTierState((s) => ({ ...s, selectedTier: v })); }
+  function setDbPrices(v: Record<string, number>) { setTierState((s) => ({ ...s, dbPrices: v })); }
+  function setDbFeaturesList(v: Record<string, string[]>) { setTierState((s) => ({ ...s, dbFeaturesList: v })); }
+  function setRedsysForm(v: RedsysFormData | null) { setTierState((s) => ({ ...s, redsysForm: v })); }
+  function setCheckoutLoading(v: boolean) { setTierState((s) => ({ ...s, checkoutLoading: v })); }
 
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +265,6 @@ function TierSelectorInner() {
     hasTierParam.current =
       !!urlParam && VALID_TIERS.includes(urlParam as TierId);
 
-    // Skip entrance animation when arriving via ?tier=X or direct #tiers hash
     const skipEntrance =
       hasTierParam.current || window.location.hash === "#tiers";
 
@@ -294,7 +356,7 @@ function TierSelectorInner() {
     };
   }, []);
 
-  // Animate card on tier change (skip initial mount)
+  // Animate card on tier change
   useEffect(() => {
     const prev = selectedTierRef.current;
     selectedTierRef.current = selectedTier;
@@ -314,38 +376,71 @@ function TierSelectorInner() {
     }
   }, [selectedTier]);
 
+  async function handleBecomeMember() {
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch("/api/checkout/membership-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: selectedTier }),
+      });
+      if (!res.ok) throw new Error("Failed to create checkout session");
+      const form = (await res.json()) as RedsysFormData;
+      setRedsysForm(form);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
   const activeTier = tiers.find((t) => t.id === selectedTier)!;
   const activePrice = dbPrices[activeTier.id] ?? pricing[activeTier.id];
   const activeFeatures = dbFeaturesList[activeTier.id] ?? activeTier.features;
 
   return (
-    <section ref={sectionRef} id="tiers" className="bg-sand-50 md:h-[280vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col gap-8">
-            <div className="text-center">
-              <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                Choose your membership.
-              </h2>
-              <p className="text-petroleum-400 mx-auto mt-4 max-w-lg leading-relaxed">
-                Select a tier to see what&apos;s included.
-              </p>
-            </div>
+    <>
+      <section ref={sectionRef} id="tiers" className="bg-sand-50 md:h-[280vh]">
+        <div ref={innerRef} className="overflow-hidden md:h-screen">
+          <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
+            <div ref={bodyRef} className="flex flex-col gap-8">
+              <div className="text-center">
+                <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                  Choose your membership.
+                </h2>
+                <p className="text-petroleum-400 mx-auto mt-4 max-w-lg leading-relaxed">
+                  Select a tier to see what&apos;s included.
+                </p>
+              </div>
 
-            <div className="flex justify-center">
-              <TierTabs selected={selectedTier} onChange={setSelectedTier} />
-            </div>
+              <div className="flex justify-center">
+                <TierTabs selected={selectedTier} onChange={setSelectedTier} />
+              </div>
 
-            <TierDisplay
-              tier={activeTier}
-              price={activePrice}
-              features={activeFeatures}
-              displayRef={displayRef}
-            />
+              {paymentSuccess ? (
+                <SuccessBanner />
+              ) : (
+                <TierDisplay
+                  tier={activeTier}
+                  price={activePrice}
+                  features={activeFeatures}
+                  displayRef={displayRef}
+                  onBecomeMember={() => void handleBecomeMember()}
+                  loading={checkoutLoading}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {redsysForm && (
+        <PaymentOverlay
+          formData={redsysForm}
+          onClose={() => setRedsysForm(null)}
+        />
+      )}
+    </>
   );
 }
 

@@ -55,9 +55,7 @@ export async function createBookingCheckout(
 export async function handleBookingPaid(bookingId: string) {
   const { data: booking } = await insforge.database
     .from("bookings")
-    .select(
-      "first_name, last_name, email, service_title, date, time, duration",
-    )
+    .select("first_name, last_name, email, service_title, date, time, duration")
     .eq("id", bookingId)
     .single();
 

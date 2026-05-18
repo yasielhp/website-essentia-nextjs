@@ -1,18 +1,19 @@
 "use server";
 
-export async function getStripeStatus(): Promise<{
+export async function getRedsysStatus(): Promise<{
   connected: boolean;
+  hasMerchantCode: boolean;
   hasSecretKey: boolean;
-  hasWebhookSecret: boolean;
-  hasPublishableKey: boolean;
+  environment: "test" | "live";
 }> {
-  const hasSecretKey = !!process.env.STRIPE_SECRET_KEY;
-  const hasWebhookSecret = !!process.env.STRIPE_WEBHOOK_SECRET;
-  const hasPublishableKey = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  const hasMerchantCode = !!process.env.REDSYS_MERCHANT_CODE;
+  const hasSecretKey = !!process.env.REDSYS_SECRET_KEY;
+  const environment =
+    (process.env.REDSYS_ENVIRONMENT as "test" | "live") ?? "test";
   const connected =
-    process.env.PAYMENT_PROVIDER === "stripe" &&
-    hasSecretKey &&
-    hasWebhookSecret;
+    process.env.PAYMENT_PROVIDER === "redsys" &&
+    hasMerchantCode &&
+    hasSecretKey;
 
-  return { connected, hasSecretKey, hasWebhookSecret, hasPublishableKey };
+  return { connected, hasMerchantCode, hasSecretKey, environment };
 }

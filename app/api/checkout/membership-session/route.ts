@@ -30,60 +30,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: {
-    bookingId: string;
-    tierId: string;
-    email: string;
-    name: string;
-    description: string;
-  };
+  let body: { planId: string; email?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { bookingId, tierId, email, name, description } = body;
-  if (!bookingId || !tierId) {
-    return NextResponse.json(
-      { error: "bookingId and tierId are required" },
-      { status: 400 },
-    );
+  const { planId, email } = body;
+  if (!planId) {
+    return NextResponse.json({ error: "planId is required" }, { status: 400 });
   }
 
-  const { data: tier } = await insforge.database
-    .from("service_tiers")
-    .select("price_eur")
-    .eq("id", tierId)
+  const { data: plan } = await insforge.database
+    .from("membership_plans")
+    .select("label, price_monthly")
+    .eq("id", planId)
     .single();
 
-  const priceEur = Number(
-    (tier as { price_eur: number | null } | null)?.price_eur ?? 0,
-  );
-  if (priceEur <= 0) {
+  if (!plan) {
+    return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+  }
+
+  const planData = plan as { label: string; price_monthly: number | null };
+  const priceMonthly = Number(planData.price_monthly ?? 0);
+
+  if (priceMonthly <= 0) {
     return NextResponse.json(
-      { error: "Tier has no price configured" },
+      { error: "Plan has no price configured" },
       { status: 400 },
     );
   }
 
   const appUrl = getAppUrl();
   const formData = provider.buildFormData({
-    amount: Math.round(priceEur * 100), // Redsys expects cents
-    currency: "978", // EUR
-    description: description || "Booking",
-    successUrl: `${appUrl}/booking?payment=success&bookingId=${bookingId}`,
-    cancelUrl: `${appUrl}/booking?payment=cancel&bookingId=${bookingId}`,
+    amount: Math.round(priceMonthly * 100),
+    currency: "978",
+    description: `Essentia — ${planData.label}`,
+    successUrl: `${appUrl}/community/memberships?payment=success&planId=${planId}`,
+    cancelUrl: `${appUrl}/community/memberships?payment=cancel`,
     customerEmail: email || undefined,
-    customerName: name || undefined,
     metadata: { notifyUrl: `${appUrl}/api/webhooks/redsys` },
   });
-
-  // Store Redsys order ID so we can match the notification back to the booking
-  await insforge.database
-    .from("bookings")
-    .update({ stripe_session_id: formData.orderId })
-    .eq("id", bookingId);
 
   return NextResponse.json(formData);
 }

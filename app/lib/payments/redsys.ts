@@ -9,94 +9,160 @@ import type {
   WebhookEvent,
 } from "./types";
 
+// ─── Redsys endpoints ─────────────────────────────────────────
+
 const REDSYS_ENDPOINTS = {
   test: "https://sis-t.redsys.es:25443/sis/realizarPago",
   live: "https://sis.redsys.es/sis/realizarPago",
 } as const;
 
-function signHmacSha256Base64(data: string, key: string): string {
-  const decodedKey = Buffer.from(key, "base64");
-  return crypto.createHmac("sha256", decodedKey).update(data).digest("base64");
+// ─── Crypto helpers ───────────────────────────────────────────
+
+// Derive per-order key: 3DES-CBC(order, decoded_secret, iv=0)
+function deriveOrderKey(order: string, secretKey: string): Buffer {
+  const key = Buffer.from(secretKey, "base64");
+  const iv = Buffer.alloc(8, 0);
+  const cipher = crypto.createCipheriv("des-ede3-cbc", key, iv);
+  cipher.setAutoPadding(true);
+  return Buffer.concat([
+    cipher.update(Buffer.from(order, "utf8")),
+    cipher.final(),
+  ]);
 }
 
-function orderCode(length = 12): string {
-  const now = Date.now().toString().slice(-length);
-  return now.padStart(length, "0");
+// HMAC-SHA256 of the Ds_MerchantParameters base64 string using the order key
+function signParams(params: string, order: string, secretKey: string): string {
+  const orderKey = deriveOrderKey(order, secretKey);
+  return crypto
+    .createHmac("sha256", orderKey)
+    .update(params, "utf8")
+    .digest("base64");
 }
+
+// Normalise Redsys URL-safe base64 to standard base64 before comparison
+function normaliseB64(s: string): string {
+  return s.replace(/-/g, "+").replace(/_/g, "/");
+}
+
+// Unique 12-digit numeric order ID (Redsys: 4-12 chars, starts with ≥4 digits)
+function newOrderId(): string {
+  return Date.now().toString().slice(-12);
+}
+
+// ─── Provider ─────────────────────────────────────────────────
 
 export class RedsysProvider implements PaymentProvider {
   readonly name = "redsys" as const;
-  private config: RedsysConfig;
+  private cfg: RedsysConfig;
 
   constructor(config: RedsysConfig) {
-    this.config = config;
+    this.cfg = config;
   }
 
   async createCheckoutSession(
     params: CreateCheckoutParams,
   ): Promise<CheckoutSession> {
-    const order = orderCode(12);
-    const currency = this.config.currency ?? "978";
-
-    const merchantParams = {
-      DS_MERCHANT_AMOUNT: String(params.amount),
-      DS_MERCHANT_ORDER: order,
-      DS_MERCHANT_MERCHANTCODE: this.config.merchantCode,
-      DS_MERCHANT_CURRENCY: currency,
-      DS_MERCHANT_TRANSACTIONTYPE: "0",
-      DS_MERCHANT_TERMINAL: this.config.terminal,
-      DS_MERCHANT_MERCHANTURL: params.metadata?.notifyUrl ?? "",
-      DS_MERCHANT_URLOK: params.successUrl,
-      DS_MERCHANT_URLKO: params.cancelUrl,
-      DS_MERCHANT_PRODUCTDESCRIPTION: params.description.slice(0, 125),
-    };
-
-    const b64Params = Buffer.from(JSON.stringify(merchantParams)).toString(
-      "base64",
-    );
-    const signature = signHmacSha256Base64(order, this.config.secretKey);
-
-    const endpoint = REDSYS_ENDPOINTS[this.config.environment];
-
-    const formHtml = `
-<!DOCTYPE html><html><body>
-<form id="redsys" action="${endpoint}" method="POST">
-  <input type="hidden" name="Ds_SignatureVersion" value="HMAC_SHA256_V1"/>
-  <input type="hidden" name="Ds_MerchantParameters" value="${b64Params}"/>
-  <input type="hidden" name="Ds_Signature" value="${signature}"/>
-</form>
-<script>document.getElementById('redsys').submit();</script>
-</body></html>`;
-
-    const dataUrl = `data:text/html;base64,${Buffer.from(formHtml).toString("base64")}`;
-
-    return {
-      id: order,
-      url: dataUrl,
-      provider: "redsys",
-    };
-  }
-
-  async createRefund(params: CreateRefundParams): Promise<Refund> {
-    const order = orderCode(12);
-    const currency = this.config.currency ?? "978";
+    const order = newOrderId();
+    const currency = this.cfg.currency ?? "978"; // 978 = EUR
 
     const merchantParams = {
       DS_MERCHANT_AMOUNT: String(params.amount ?? 0),
       DS_MERCHANT_ORDER: order,
-      DS_MERCHANT_MERCHANTCODE: this.config.merchantCode,
+      DS_MERCHANT_MERCHANTCODE: this.cfg.merchantCode,
       DS_MERCHANT_CURRENCY: currency,
-      DS_MERCHANT_TRANSACTIONTYPE: "3",
-      DS_MERCHANT_TERMINAL: this.config.terminal,
+      DS_MERCHANT_TRANSACTIONTYPE: "0",
+      DS_MERCHANT_TERMINAL: this.cfg.terminal,
+      DS_MERCHANT_MERCHANTURL: params.metadata?.notifyUrl ?? "",
+      DS_MERCHANT_URLOK: params.successUrl,
+      DS_MERCHANT_URLKO: params.cancelUrl,
+      DS_MERCHANT_PRODUCTDESCRIPTION: params.description.slice(0, 125),
+      ...(params.customerEmail
+        ? { DS_MERCHANT_TITULAR: params.customerName ?? params.customerEmail }
+        : {}),
+      DS_MERCHANT_CONSUMERLANGUAGE: "2", // 2 = Spanish
     };
 
     const b64Params = Buffer.from(JSON.stringify(merchantParams)).toString(
       "base64",
     );
-    const signature = signHmacSha256Base64(order, this.config.secretKey);
+    const signature = signParams(b64Params, order, this.cfg.secretKey);
+
+    const endpoint = REDSYS_ENDPOINTS[this.cfg.environment];
+
+    return {
+      id: order,
+      // Encode all form data in the URL so the client can render the redirect form
+      url: `${endpoint}?Ds_MerchantParameters=${encodeURIComponent(b64Params)}&Ds_Signature=${encodeURIComponent(signature)}&Ds_SignatureVersion=HMAC_SHA256_V1`,
+      provider: "redsys",
+    };
+  }
+
+  /** Returns a Redsys form data object — exposed for the checkout API */
+  buildFormData(params: CreateCheckoutParams): {
+    formUrl: string;
+    Ds_MerchantParameters: string;
+    Ds_Signature: string;
+    Ds_SignatureVersion: string;
+    orderId: string;
+  } {
+    const order = newOrderId();
+    const currency = this.cfg.currency ?? "978";
+
+    const merchantParams = {
+      DS_MERCHANT_AMOUNT: String(params.amount ?? 0),
+      DS_MERCHANT_ORDER: order,
+      DS_MERCHANT_MERCHANTCODE: this.cfg.merchantCode,
+      DS_MERCHANT_CURRENCY: currency,
+      DS_MERCHANT_TRANSACTIONTYPE: "0",
+      DS_MERCHANT_TERMINAL: this.cfg.terminal,
+      DS_MERCHANT_MERCHANTURL: params.metadata?.notifyUrl ?? "",
+      DS_MERCHANT_URLOK: params.successUrl,
+      DS_MERCHANT_URLKO: params.cancelUrl,
+      DS_MERCHANT_PRODUCTDESCRIPTION: params.description.slice(0, 125),
+      ...(params.customerEmail
+        ? { DS_MERCHANT_TITULAR: params.customerName ?? params.customerEmail }
+        : {}),
+      DS_MERCHANT_CONSUMERLANGUAGE: "2",
+    };
+
+    const Ds_MerchantParameters = Buffer.from(
+      JSON.stringify(merchantParams),
+    ).toString("base64");
+    const Ds_Signature = signParams(
+      Ds_MerchantParameters,
+      order,
+      this.cfg.secretKey,
+    );
+
+    return {
+      formUrl: REDSYS_ENDPOINTS[this.cfg.environment],
+      Ds_MerchantParameters,
+      Ds_Signature,
+      Ds_SignatureVersion: "HMAC_SHA256_V1",
+      orderId: order,
+    };
+  }
+
+  async createRefund(params: CreateRefundParams): Promise<Refund> {
+    const order = newOrderId();
+    const currency = this.cfg.currency ?? "978";
+
+    const merchantParams = {
+      DS_MERCHANT_AMOUNT: String(params.amount ?? 0),
+      DS_MERCHANT_ORDER: order,
+      DS_MERCHANT_MERCHANTCODE: this.cfg.merchantCode,
+      DS_MERCHANT_CURRENCY: currency,
+      DS_MERCHANT_TRANSACTIONTYPE: "3",
+      DS_MERCHANT_TERMINAL: this.cfg.terminal,
+    };
+
+    const b64Params = Buffer.from(JSON.stringify(merchantParams)).toString(
+      "base64",
+    );
+    const signature = signParams(b64Params, order, this.cfg.secretKey);
 
     const endpoint =
-      this.config.environment === "test"
+      this.cfg.environment === "test"
         ? "https://sis-t.redsys.es:25443/sis/operaciones"
         : "https://sis.redsys.es/sis/operaciones";
 
@@ -115,32 +181,30 @@ export class RedsysProvider implements PaymentProvider {
     if (!res.ok) throw new Error(`Redsys refund HTTP ${res.status}`);
 
     const xml = await res.text();
-    const errorMatch = xml.match(/<Ds_Response>(\d+)<\/Ds_Response>/);
-    const code = errorMatch?.[1] ?? "9999";
-    const success = parseInt(code, 10) < 100;
+    const match = xml.match(/<Ds_Response>(\d+)<\/Ds_Response>/);
+    const code = parseInt(match?.[1] ?? "9999", 10);
 
     return {
       id: params.transactionId,
       amount: params.amount ?? 0,
       currency,
-      status: success ? "succeeded" : "failed",
+      status: code < 100 ? "succeeded" : "failed",
     };
   }
 
-  verifyWebhook(rawBody: string, signature: string): boolean {
+  verifyWebhook(rawBody: string, receivedSignature: string): boolean {
     try {
       const params = new URLSearchParams(rawBody);
       const merchantParams = params.get("Ds_MerchantParameters") ?? "";
       const decoded = JSON.parse(
         Buffer.from(merchantParams, "base64").toString(),
-      ) as { DS_MERCHANT_ORDER?: string };
-      const order = decoded.DS_MERCHANT_ORDER ?? "";
-      const expected = signHmacSha256Base64(order, this.config.secretKey);
-      const receivedClean = signature.replace(/-/g, "+").replace(/_/g, "/");
-      return crypto.timingSafeEqual(
-        Buffer.from(expected),
-        Buffer.from(receivedClean),
-      );
+      ) as {
+        Ds_Order?: string;
+      };
+      const order = decoded.Ds_Order ?? "";
+      const expected = signParams(merchantParams, order, this.cfg.secretKey);
+      const clean = normaliseB64(receivedSignature);
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(clean));
     } catch {
       return false;
     }
@@ -159,10 +223,6 @@ export class RedsysProvider implements PaymentProvider {
     const responseCode = parseInt(decoded.Ds_Response ?? "9999", 10);
     const type = responseCode < 100 ? "payment.succeeded" : "payment.failed";
 
-    return {
-      type,
-      provider: "redsys",
-      payload: decoded,
-    };
+    return { type, provider: "redsys", payload: decoded };
   }
 }

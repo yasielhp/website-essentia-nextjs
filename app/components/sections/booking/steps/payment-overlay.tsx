@@ -1,24 +1,31 @@
 "use client";
 
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  EmbeddedCheckout,
-  EmbeddedCheckoutProvider,
-} from "@stripe/react-stripe-js";
 import { useEffect, useRef } from "react";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
-);
+export type RedsysFormData = {
+  formUrl: string;
+  Ds_MerchantParameters: string;
+  Ds_Signature: string;
+  Ds_SignatureVersion: string;
+  orderId: string;
+};
 
 export function PaymentOverlay({
-  clientSecret,
+  formData,
   onClose,
 }: {
-  clientSecret: string;
+  formData: RedsysFormData;
   onClose: () => void;
 }) {
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-submit the form → redirects to Redsys gateway
+  useEffect(() => {
+    const t = setTimeout(() => {
+      formRef.current?.submit();
+    }, 600); // brief delay so the user sees the redirect message
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -28,47 +35,50 @@ export function PaymentOverlay({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function handleOverlayClick(e: React.MouseEvent) {
-    if (e.target === overlayRef.current) onClose();
-  }
-
   return (
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-    >
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-          <span className="text-petroleum-700 text-sm font-semibold">
-            Complete payment
-          </span>
-          <button
-            onClick={onClose}
-            className="text-petroleum-400 hover:text-petroleum-700 transition-colors"
-            aria-label="Close payment"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M18 6L6 18M6 6l12 12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      {/* Hidden Redsys form — auto-submitted */}
+      <form
+        ref={formRef}
+        action={formData.formUrl}
+        method="POST"
+        style={{ display: "none" }}
+      >
+        <input
+          type="hidden"
+          name="Ds_SignatureVersion"
+          value={formData.Ds_SignatureVersion}
+        />
+        <input
+          type="hidden"
+          name="Ds_MerchantParameters"
+          value={formData.Ds_MerchantParameters}
+        />
+        <input
+          type="hidden"
+          name="Ds_Signature"
+          value={formData.Ds_Signature}
+        />
+      </form>
 
-        {/* Stripe Embedded Checkout */}
-        <div className="max-h-[80vh] overflow-y-auto p-5">
-          <EmbeddedCheckoutProvider
-            stripe={stripePromise}
-            options={{ clientSecret }}
-          >
-            <EmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
+      {/* Visual feedback while redirecting */}
+      <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl bg-white px-8 py-10 shadow-2xl">
+        <div className="border-petroleum-200 border-t-petroleum-600 size-10 animate-spin rounded-full border-4" />
+        <div className="flex flex-col items-center gap-1 text-center">
+          <p className="text-petroleum-700 text-sm font-semibold">
+            Redirigiendo al pago seguro…
+          </p>
+          <p className="text-petroleum-400 text-xs">
+            Te estamos llevando a la pasarela de pago de Redsys.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-petroleum-400 hover:text-petroleum-600 text-xs underline transition-colors"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );

@@ -6,16 +6,22 @@ import type { DetailsState } from "@/types";
 export function ConfirmStep({
   service,
   duration,
+  price,
   date,
   time,
   details,
 }: {
   service: BookableService;
   duration: string;
+  price: number | null;
   date: Date;
   time: string;
   details: DetailsState;
 }) {
+  const priceLine = [duration || null, price != null ? `€${price}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-5 rounded-2xl bg-white p-6">
@@ -31,9 +37,9 @@ export function ConfirmStep({
           </div>
           <div>
             <p className="text-petroleum-700 font-medium">{service.title}</p>
-            <p className="text-petroleum-400 text-sm">
-              {duration} · {service.price}
-            </p>
+            {priceLine && (
+              <p className="text-petroleum-400 text-sm">{priceLine}</p>
+            )}
           </div>
         </div>
 
