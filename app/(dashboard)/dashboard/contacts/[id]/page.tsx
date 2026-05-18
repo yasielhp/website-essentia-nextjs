@@ -308,9 +308,7 @@ function ContactDetailsCard({
 
   return (
     <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Details
-      </h2>
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Details</h2>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
@@ -438,7 +436,10 @@ function BookingsSection({
             </thead>
             <tbody>
               {bookings.map((b) => (
-                <tr key={b.id} className="border-sand-50 border-b last:border-0">
+                <tr
+                  key={b.id}
+                  className="border-sand-50 border-b last:border-0"
+                >
                   <td className="text-petroleum-700 py-3 pr-4 font-medium">
                     {b.service_title ?? "—"}
                   </td>
@@ -494,7 +495,10 @@ function RaceRegsSection({
             </thead>
             <tbody>
               {raceRegs.map((r) => (
-                <tr key={r.id} className="border-sand-50 border-b last:border-0">
+                <tr
+                  key={r.id}
+                  className="border-sand-50 border-b last:border-0"
+                >
                   <td className="text-petroleum-700 py-3 pr-4 font-medium">
                     {r.race?.title ?? "—"}
                   </td>
@@ -552,7 +556,10 @@ function EduRegsSection({
             </thead>
             <tbody>
               {eduRegs.map((r) => (
-                <tr key={r.id} className="border-sand-50 border-b last:border-0">
+                <tr
+                  key={r.id}
+                  className="border-sand-50 border-b last:border-0"
+                >
                   <td className="text-petroleum-700 py-3 pr-4 font-medium">
                     {r.session?.title ?? "—"}
                   </td>
@@ -585,7 +592,16 @@ export default function ContactDetailPage() {
   const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
 
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
-  const { firstName, lastName, email, phone, error, saving, deleting, deleteOpen } = form;
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    error,
+    saving,
+    deleting,
+    deleteOpen,
+  } = form;
 
   useEffect(() => {
     async function load() {

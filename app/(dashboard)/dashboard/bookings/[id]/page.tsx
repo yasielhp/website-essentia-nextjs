@@ -495,9 +495,7 @@ function PaymentCard({
   if (status === "cancelled") return null;
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        Payment
-      </h2>
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">Payment</h2>
       <p className="text-petroleum-400 mb-4 text-xs">
         Enter the amount and create a checkout link for this booking.
       </p>

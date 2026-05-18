@@ -45,8 +45,19 @@ export default function DashboardLayout({
         .eq("id", user.id)
         .single();
       const userRole = (data as { role: Role } | null)?.role ?? null;
-      if (userRole !== "admin" && userRole !== "staff") {
+      if (
+        userRole !== "admin" &&
+        userRole !== "staff" &&
+        userRole !== "partner"
+      ) {
         replace("/");
+        return;
+      }
+      if (
+        userRole === "partner" &&
+        !window.location.pathname.startsWith("/dashboard/bookings/partner")
+      ) {
+        replace("/dashboard/bookings/partner");
         return;
       }
       setRole(userRole);
@@ -66,6 +77,11 @@ export default function DashboardLayout({
 
   const displayName = user?.name ?? user?.email ?? "User";
   const breadcrumbs = getBreadcrumbs(pathname);
+
+  const visibleNavLinks =
+    role === "partner"
+      ? [{ label: "Bookings", href: "/dashboard/bookings/partner" }]
+      : navLinks;
 
   function isNavActive(href: string) {
     if (href === "/dashboard") return pathname === href;
@@ -90,7 +106,7 @@ export default function DashboardLayout({
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <ul className="space-y-0.5">
-            {navLinks.map(({ label, href }) => {
+            {visibleNavLinks.map(({ label, href }) => {
               const active = isNavActive(href);
               return (
                 <li key={href}>
@@ -220,7 +236,7 @@ export default function DashboardLayout({
 
           <nav className="flex-1 overflow-y-auto px-2 py-3">
             <ul className="space-y-0.5">
-              {navLinks.map(({ label, href }) => {
+              {visibleNavLinks.map(({ label, href }) => {
                 const active = isNavActive(href);
                 return (
                   <li key={href}>
