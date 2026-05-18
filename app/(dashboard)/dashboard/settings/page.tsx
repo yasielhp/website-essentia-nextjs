@@ -24,6 +24,7 @@ import { ColorRow } from "@/components/dashboard/settings/color-row";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 import { PaymentGatewayTab } from "@/components/dashboard/settings/payment-gateway-tab";
+import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-content";
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -416,7 +417,7 @@ export default function SettingsPage() {
           .order("sort_order"),
         insforge.database
           .from("membership_plans")
-          .select("id, label, price_monthly")
+          .select("id, label, price_monthly, stripe_product_id, stripe_price_id")
           .order("price_monthly"),
       ]);
 
@@ -460,7 +461,7 @@ export default function SettingsPage() {
   async function reloadPlans() {
     const { data: rows } = await insforge.database
       .from("membership_plans")
-      .select("id, label, price_monthly")
+      .select("id, label, price_monthly, stripe_product_id, stripe_price_id")
       .order("price_monthly");
     if (rows) dispatch({ type: "SET_PLANS", plans: rows as PlanRow[] });
     showToast("Saved");
@@ -556,32 +557,13 @@ export default function SettingsPage() {
 
         {/* ── Membership Plans ── */}
         {tab === "plans" && (
-          <SectionCard
-            title="Membership Plans"
-            description="Click a plan to edit its name and monthly price."
-          >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {data.plans.map((plan) => (
-                <button
-                  key={plan.id}
-                  type="button"
-                  onClick={() =>
-                    dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
-                  }
-                  className="border-sand-200 hover:border-petroleum-300 hover:bg-sand-50 flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-colors active:scale-[0.98]"
-                >
-                  <span className="text-petroleum-700 text-sm font-semibold">
-                    {plan.label}
-                  </span>
-                  <span className="text-petroleum-400 text-xs">
-                    {plan.price_monthly != null
-                      ? `€${plan.price_monthly} / mo`
-                      : "No price set"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SectionCard>
+          <PlansTabContent
+            plans={data.plans}
+            onEdit={(plan) =>
+              dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
+            }
+            onReload={reloadPlans}
+          />
         )}
 
         {/* ── Staff ── */}

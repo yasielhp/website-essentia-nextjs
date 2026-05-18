@@ -16,6 +16,8 @@ export type PlanRow = {
   id: string;
   label: string;
   price_monthly: number | null;
+  stripe_product_id: string | null;
+  stripe_price_id: string | null;
 };
 
 export type StaffRow = {
