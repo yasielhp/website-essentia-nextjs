@@ -1,13 +1,10 @@
 import type { DetailsState } from "@/types";
-import type { LocationAddress } from "@/components/sections/booking/booking-content";
 
 const STORAGE_KEY = "essentia_booking";
 
 export type BookingStorage = {
   step: number;
   serviceId: string | null;
-  selectedLocation: string | null;
-  locationAddress: LocationAddress | null;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;

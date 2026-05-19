@@ -2,12 +2,6 @@ import Image from "next/image";
 import { Phone } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
-import type { LocationAddress } from "@/components/sections/booking/booking-content";
-
-const LOCATION_LABELS: Record<string, string> = {
-  centro: "At the center",
-  domicilio: "Home visit",
-};
 
 export function ConfirmStep({
   service,
@@ -16,8 +10,6 @@ export function ConfirmStep({
   date,
   time,
   details,
-  location,
-  locationAddress,
 }: {
   service: BookableService;
   duration: string;
@@ -25,21 +17,10 @@ export function ConfirmStep({
   date: Date;
   time: string;
   details: DetailsState;
-  location: string | null;
-  locationAddress: LocationAddress;
 }) {
   const priceLine = [duration || null, price != null ? `€${price}` : null]
     .filter(Boolean)
     .join(" · ");
-
-  const addressLine = [
-    locationAddress.street,
-    locationAddress.building,
-    locationAddress.postalCode,
-    locationAddress.municipality,
-  ]
-    .filter(Boolean)
-    .join(", ");
 
   return (
     <div className="flex flex-col gap-4">
@@ -82,14 +63,7 @@ export function ConfirmStep({
             },
             { label: "Email", value: details.email },
             { label: "Phone", value: details.phone },
-            ...(location
-              ? [
-                  {
-                    label: "Location",
-                    value: LOCATION_LABELS[location] ?? location,
-                  },
-                ]
-              : []),
+            { label: "Location", value: "At the center" },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-petroleum-400 text-xs">{label}</p>
@@ -97,14 +71,6 @@ export function ConfirmStep({
             </div>
           ))}
         </div>
-
-        {/* Address block — only for home visits */}
-        {location === "domicilio" && addressLine && (
-          <div className="border-sand-100 border-t pt-4">
-            <p className="text-petroleum-400 text-xs">Home visit address</p>
-            <p className="text-petroleum-700 text-sm">{addressLine}</p>
-          </div>
-        )}
       </div>
 
       {/* Payment & confirmation notice */}
@@ -116,10 +82,8 @@ export function ConfirmStep({
             phone or WhatsApp
           </strong>{" "}
           at <span className="font-medium">{details.phone}</span> to confirm
-          your appointment. Payment will be collected{" "}
-          {location === "domicilio"
-            ? "at your home at the time of the visit."
-            : "at the center on the day of your session."}
+          your appointment. Payment will be collected at the center on the day
+          of your session.
         </p>
       </div>
     </div>

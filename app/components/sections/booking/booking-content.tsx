@@ -14,14 +14,9 @@ import {
 import type { DetailsState } from "@/types";
 import { StepIndicator } from "./steps/step-indicator";
 import { ServiceStep } from "./steps/service-step";
-import { LocationStep, type AddressErrors } from "./steps/location-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
-import {
-  bookingDetailsSchema,
-  locationAddressSchema,
-  parseErrors,
-} from "@/lib/schemas";
+import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
@@ -34,27 +29,12 @@ const EMPTY_DETAILS: DetailsState = {
   email: "",
   phone: "",
   consent: false,
-};
-
-export type LocationAddress = {
-  street: string;
-  building: string;
-  postalCode: string;
-  municipality: string;
-};
-
-const EMPTY_ADDRESS: LocationAddress = {
-  street: "",
-  building: "",
-  postalCode: "",
-  municipality: "",
+  notes: "",
 };
 
 type BookingState = {
   step: number;
   selectedService: BookableService | null;
-  selectedLocation: string | null;
-  locationAddress: LocationAddress;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -67,8 +47,6 @@ type BookingState = {
 
 type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
-  | { type: "SELECT_LOCATION"; location: string }
-  | { type: "SET_LOCATION_ADDRESS"; address: LocationAddress }
   | {
       type: "SELECT_TIER";
       tierId: string;
@@ -91,19 +69,10 @@ function bookingReducer(
       return {
         ...state,
         selectedService: action.service,
-        selectedLocation: null,
         selectedTierId: null,
         selectedTierPrice: null,
         selectedDuration: null,
       };
-    case "SELECT_LOCATION":
-      return {
-        ...state,
-        selectedLocation: action.location,
-        locationAddress: EMPTY_ADDRESS,
-      };
-    case "SET_LOCATION_ADDRESS":
-      return { ...state, locationAddress: action.address };
     case "SELECT_TIER":
       return {
         ...state,
@@ -133,8 +102,6 @@ function initState(slug: string | null): BookingState {
     return {
       step: 0,
       selectedService: service,
-      selectedLocation: null,
-      locationAddress: EMPTY_ADDRESS,
       selectedTierId: null,
       selectedTierPrice: null,
       selectedDuration: null,
@@ -151,8 +118,6 @@ function initState(slug: string | null): BookingState {
   return {
     step: saved.step ?? 0,
     selectedService: service,
-    selectedLocation: saved.selectedLocation ?? null,
-    locationAddress: saved.locationAddress ?? EMPTY_ADDRESS,
     selectedTierId: saved.selectedTierId ?? null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
@@ -276,9 +241,6 @@ function BookingHeader() {
 type BookingStepRendererProps = {
   currentStepId: string;
   selectedService: BookableService | null;
-  selectedLocation: string | null;
-  locationAddress: LocationAddress;
-  addressErrors: AddressErrors;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -288,15 +250,11 @@ type BookingStepRendererProps = {
   detailErrors: DetailsErrors;
   dispatch: React.Dispatch<BookingAction>;
   onClearDetailError: (key: keyof DetailsState) => void;
-  onClearAddressError: (key: keyof LocationAddress) => void;
 };
 
 function BookingStepRenderer({
   currentStepId,
   selectedService,
-  selectedLocation,
-  locationAddress,
-  addressErrors,
   selectedTierId,
   selectedTierPrice,
   selectedDuration,
@@ -306,7 +264,6 @@ function BookingStepRenderer({
   detailErrors,
   dispatch,
   onClearDetailError,
-  onClearAddressError,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -314,20 +271,6 @@ function BookingStepRenderer({
         <ServiceStep
           selected={selectedService}
           onSelect={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
-        />
-      )}
-      {currentStepId === "location" && (
-        <LocationStep
-          selected={selectedLocation}
-          address={locationAddress}
-          addressErrors={addressErrors}
-          onSelect={(loc) =>
-            dispatch({ type: "SELECT_LOCATION", location: loc })
-          }
-          onAddressChange={(addr) =>
-            dispatch({ type: "SET_LOCATION_ADDRESS", address: addr })
-          }
-          onClearAddressError={onClearAddressError}
         />
       )}
       {currentStepId === "duration" && selectedService && (
@@ -374,8 +317,6 @@ function BookingStepRenderer({
             date={selectedDate}
             time={selectedTime}
             details={details}
-            location={selectedLocation}
-            locationAddress={locationAddress}
           />
         )}
     </div>
@@ -420,7 +361,6 @@ function BookingContentInner() {
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
-  const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const { contactId, bookingId, memberBlocker, checking, bookingSubmitted } =
     local;
 
@@ -449,8 +389,6 @@ function BookingContentInner() {
   const {
     step,
     selectedService,
-    selectedLocation,
-    locationAddress,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -460,13 +398,10 @@ function BookingContentInner() {
     loading,
   } = state;
 
-  // Detect return from payment gateway
   useEffect(() => {
     writeStorage({
       step,
       serviceId: selectedService?.id ?? null,
-      selectedLocation,
-      locationAddress,
       selectedTierId,
       selectedTierPrice,
       selectedDuration,
@@ -477,8 +412,6 @@ function BookingContentInner() {
   }, [
     step,
     selectedService,
-    selectedLocation,
-    locationAddress,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -494,30 +427,10 @@ function BookingContentInner() {
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    location:
-      !!selectedLocation &&
-      (selectedLocation !== "domicilio" ||
-        (locationAddress.street.trim().length > 0 &&
-          locationAddress.postalCode.trim().length > 0 &&
-          locationAddress.municipality.trim().length > 0)),
     duration: !!selectedTierId,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
     confirm: true,
-  };
-
-  const handleNextFromLocation = () => {
-    if (selectedLocation !== "domicilio") {
-      dispatch({ type: "SET_STEP", step: step + 1 });
-      return;
-    }
-    const errs = parseErrors(locationAddressSchema, locationAddress);
-    if (Object.keys(errs).length > 0) {
-      setAddressErrors(errs);
-      return;
-    }
-    setAddressErrors({});
-    dispatch({ type: "SET_STEP", step: step + 1 });
   };
 
   const handleNextFromDetails = async () => {
@@ -583,20 +496,11 @@ function BookingContentInner() {
           ...(selectedTierId
             ? { tier_id: selectedTierId, price_eur: selectedTierPrice }
             : {}),
-          location: selectedLocation ?? null,
-          location_address:
-            selectedLocation === "domicilio"
-              ? [
-                  locationAddress.street,
-                  locationAddress.building,
-                  locationAddress.postalCode,
-                  locationAddress.municipality,
-                ]
-                  .filter(Boolean)
-                  .join(", ")
-              : null,
-          created_by_user_id: user?.id ?? null,
-          created_by_role: user?.id ? "client" : "anonymous",
+          location: "centro",
+          ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
+          ...(user?.id
+            ? { created_by_user_id: user.id, created_by_role: "client" }
+            : { created_by_role: "anonymous" }),
         })
         .eq("id", newBookingId as string);
     }
@@ -621,18 +525,6 @@ function BookingContentInner() {
       return;
     dispatch({ type: "CONFIRM_START" });
 
-    const locationAddressStr =
-      selectedLocation === "domicilio"
-        ? [
-            locationAddress.street,
-            locationAddress.building,
-            locationAddress.postalCode,
-            locationAddress.municipality,
-          ]
-            .filter(Boolean)
-            .join(", ")
-        : null;
-
     let resolvedBookingId = bookingId;
     if (resolvedBookingId) {
       await insforge.database
@@ -651,8 +543,8 @@ function BookingContentInner() {
             tier_id: selectedTierId,
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
-            location: selectedLocation ?? null,
-            location_address: locationAddressStr,
+            location: "centro",
+            ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
             date: selectedDate.toISOString().split("T")[0],
             time: selectedTime,
             first_name: details.firstName,
@@ -660,8 +552,9 @@ function BookingContentInner() {
             email: details.email,
             phone: details.phone,
             status: "pending",
-            created_by_user_id: user?.id ?? null,
-            created_by_role: user?.id ? "client" : "anonymous",
+            ...(user?.id
+              ? { created_by_user_id: user.id, created_by_role: "client" }
+              : { created_by_role: "anonymous" }),
           },
         ])
         .select("id")
@@ -750,9 +643,6 @@ function BookingContentInner() {
       <BookingStepRenderer
         currentStepId={currentStepId}
         selectedService={selectedService}
-        selectedLocation={selectedLocation}
-        locationAddress={locationAddress}
-        addressErrors={addressErrors}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}
@@ -763,9 +653,6 @@ function BookingContentInner() {
         dispatch={dispatch}
         onClearDetailError={(key) =>
           setDetailErrors((prev) => ({ ...prev, [key]: undefined }))
-        }
-        onClearAddressError={(key) =>
-          setAddressErrors((prev) => ({ ...prev, [key]: undefined }))
         }
       />
 
@@ -780,11 +667,9 @@ function BookingContentInner() {
         onNext={
           currentStepId === "details"
             ? () => void handleNextFromDetails()
-            : currentStepId === "location"
-              ? () => handleNextFromLocation()
-              : currentStepId === "datetime"
-                ? () => void handleNextFromDatetime()
-                : () => dispatch({ type: "SET_STEP", step: step + 1 })
+            : currentStepId === "datetime"
+              ? () => void handleNextFromDatetime()
+              : () => dispatch({ type: "SET_STEP", step: step + 1 })
         }
         onConfirm={() => void handleConfirm()}
       />
