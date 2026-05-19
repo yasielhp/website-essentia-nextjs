@@ -881,6 +881,8 @@ export default function NewBookingPage() {
           phone: phone.trim() || null,
           status: "pending",
           partner_id: role === "partner" ? (user?.id ?? null) : null,
+          created_by_user_id: user?.id ?? null,
+          created_by_role: (role as string) ?? null,
         },
       ]);
 

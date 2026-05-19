@@ -593,6 +593,8 @@ function BookingContentInner() {
                   .filter(Boolean)
                   .join(", ")
               : null,
+          created_by_user_id: user?.id ?? null,
+          created_by_role: user?.id ? "client" : "anonymous",
         })
         .eq("id", newBookingId as string);
     }
@@ -656,11 +658,21 @@ function BookingContentInner() {
             email: details.email,
             phone: details.phone,
             status: "pending",
+            created_by_user_id: user?.id ?? null,
+            created_by_role: user?.id ? "client" : "anonymous",
           },
         ])
         .select("id")
         .single();
       resolvedBookingId = (data as { id: string } | null)?.id ?? null;
+    }
+
+    if (contactId) {
+      await insforge.database
+        .from("contacts")
+        .update({ status: "client" })
+        .eq("id", contactId)
+        .neq("status", "client");
     }
 
     dispatch({ type: "CONFIRM_SUCCESS" });

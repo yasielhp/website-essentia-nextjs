@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -23,6 +24,8 @@ type BookingDetail = {
   location: string | null;
   location_address: string | null;
   created_at: string | null;
+  created_by_role: string | null;
+  created_by_user_id: string | null;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -68,6 +71,14 @@ const locationLabels: Record<string, string> = {
   centro: "At the center",
   habitacion: "Room",
   domicilio: "Home visit",
+};
+
+const sourceBadge: Record<string, { label: string; cls: string }> = {
+  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
+  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
+  client: { label: "Client", cls: "bg-green-50 text-green-700" },
+  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
 };
 
 // ─── Detail row ───────────────────────────────────────────────
@@ -136,10 +147,16 @@ function DeleteDialog({
 
 // ─── State ────────────────────────────────────────────────────
 
+type CreatorProfile = {
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+};
+
 type PageState =
   | { kind: "loading" }
   | { kind: "not_found" }
-  | { kind: "loaded"; booking: BookingDetail };
+  | { kind: "loaded"; booking: BookingDetail; creator: CreatorProfile | null };
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -151,12 +168,20 @@ export default function BookingDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const fullNameForCrumb =
+    state.kind === "loaded"
+      ? [state.booking.first_name, state.booking.last_name]
+          .filter(Boolean)
+          .join(" ") || null
+      : null;
+  useDynamicBreadcrumb(fullNameForCrumb);
+
   useEffect(() => {
     async function load() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, first_name, last_name, email, phone, date, time, status, location, location_address, created_at",
+          "id, service_title, duration, price_eur, first_name, last_name, email, phone, date, time, status, location, location_address, created_at, created_by_role, created_by_user_id",
         )
         .eq("id", id)
         .limit(1);
@@ -166,7 +191,22 @@ export default function BookingDetailPage() {
         setState({ kind: "not_found" });
         return;
       }
-      setState({ kind: "loaded", booking });
+
+      let creator: CreatorProfile | null = null;
+      if (
+        booking.created_by_user_id &&
+        booking.created_by_role !== "client" &&
+        booking.created_by_role !== "anonymous"
+      ) {
+        const { data: pData } = await insforge.database
+          .from("profiles")
+          .select("full_name, email, role")
+          .eq("id", booking.created_by_user_id)
+          .limit(1);
+        creator = (pData as CreatorProfile[] | null)?.[0] ?? null;
+      }
+
+      setState({ kind: "loaded", booking, creator });
     }
     void load();
   }, [id]);
@@ -219,7 +259,7 @@ export default function BookingDetailPage() {
     );
   }
 
-  const { booking } = state;
+  const { booking, creator } = state;
   const addrParsed = parseLocationAddress(booking.location_address);
   const fullName =
     [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—";
@@ -227,36 +267,28 @@ export default function BookingDetailPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <Link
-            href="/dashboard/bookings"
-            className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
-          >
-            ← Bookings
-          </Link>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline-danger"
-              size="md"
-              onClick={() => setDeleteOpen(true)}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="solid"
-              size="md"
-              href={`/dashboard/bookings/${id}/edit`}
-            >
-              Edit
-            </Button>
-          </div>
-        </div>
+      <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="font-display text-petroleum-700 text-2xl">{fullName}</h1>
+        <div className="flex shrink-0 items-center gap-3">
+          <Button
+            variant="outline-danger"
+            size="md"
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+          <Button
+            variant="solid"
+            size="md"
+            href={`/dashboard/bookings/${id}/edit`}
+          >
+            Edit
+          </Button>
+        </div>
       </div>
 
       {/* Meta strip */}
-      <div className="border-sand-200 divide-sand-200 mb-6 grid grid-cols-3 divide-x rounded-2xl border bg-white">
+      <div className="border-sand-200 divide-sand-200 mb-6 grid grid-cols-2 divide-x rounded-2xl border bg-white sm:grid-cols-4">
         <div className="flex flex-col gap-1.5 px-5 py-4">
           <p className="text-petroleum-400 text-xs">Status</p>
           <div className="flex items-center gap-1.5">
@@ -274,11 +306,26 @@ export default function BookingDetailPage() {
             {locationLabels[booking.location ?? ""] ?? "—"}
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 px-5 py-4">
+        <div className="flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0">
           <p className="text-petroleum-400 text-xs">Created</p>
           <p className="text-petroleum-700 text-sm">
             {formatCreated(booking.created_at)}
           </p>
+        </div>
+        <div className="flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0">
+          <p className="text-petroleum-400 text-xs">Reserved by</p>
+          {(() => {
+            const src =
+              sourceBadge[booking.created_by_role ?? ""] ??
+              sourceBadge["anonymous"];
+            return (
+              <span
+                className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+              >
+                {src.label}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -378,6 +425,45 @@ export default function BookingDetailPage() {
             <Field label="Name">{fullName}</Field>
             <Field label="Phone">{booking.phone ?? "—"}</Field>
             <Field label="Email">{booking.email ?? "—"}</Field>
+          </div>
+        </div>
+
+        {/* Reserved by */}
+        <div className="border-sand-200 rounded-2xl border bg-white p-6">
+          <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+            Reserved by
+          </h2>
+          <div className="flex items-start gap-4">
+            <div className="bg-petroleum-100 flex size-10 shrink-0 items-center justify-center rounded-full">
+              <span className="text-petroleum-700 text-sm font-bold">
+                {(creator?.full_name ??
+                  booking.created_by_role ??
+                  "?")[0]?.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-petroleum-700 font-medium">
+                {creator?.full_name ??
+                  (booking.created_by_role === "anonymous"
+                    ? "Anonymous visitor"
+                    : "Client")}
+              </p>
+              {creator?.email && (
+                <p className="text-petroleum-400 text-sm">{creator.email}</p>
+              )}
+              {(() => {
+                const src =
+                  sourceBadge[booking.created_by_role ?? ""] ??
+                  sourceBadge["anonymous"];
+                return (
+                  <span
+                    className={`mt-1 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                  >
+                    {src.label}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>

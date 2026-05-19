@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
+import { StatCard } from "@/components/dashboard/calendar/stat-card";
 
 type Booking = {
   id: string;
@@ -19,6 +20,9 @@ type Booking = {
   status: string | null;
   location: string | null;
   created_at: string | null;
+  created_by_role: string | null;
+  created_by_user_id: string | null;
+  creatorName?: string | null;
 };
 
 type Filters = {
@@ -423,12 +427,49 @@ function reducer(state: PageState, action: PageAction): PageState {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-const COL_COUNT = 6;
+const COL_COUNT = 7;
+
+const SOURCE_BADGE: Record<string, { label: string; cls: string }> = {
+  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
+  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
+  client: { label: "Client", cls: "bg-green-50 text-green-700" },
+  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
+};
 
 export default function BookingsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { bookings, total, page, loading } = state;
   const { push } = useRouter();
+
+  const [statusCounts, setStatusCounts] = useState<{
+    pending: number | null;
+    confirmed: number | null;
+    cancelled: number | null;
+  }>({ pending: null, confirmed: null, cancelled: null });
+
+  useEffect(() => {
+    void Promise.all([
+      insforge.database
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      insforge.database
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "confirmed"),
+      insforge.database
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "cancelled"),
+    ]).then(([p, c, x]) =>
+      setStatusCounts({
+        pending: (p as { count: number | null }).count ?? 0,
+        confirmed: (c as { count: number | null }).count ?? 0,
+        cancelled: (x as { count: number | null }).count ?? 0,
+      }),
+    );
+  }, []);
 
   const [appliedFilters, setAppliedFilters] = useState<Filters>(emptyFilters);
   const [pendingFilters, setPendingFilters] = useState<Filters>(emptyFilters);
@@ -468,7 +509,7 @@ export default function BookingsPage() {
     let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, duration, first_name, last_name, email, phone, date, time, status, location, created_at",
+        "id, service_title, duration, first_name, last_name, email, phone, date, time, status, location, created_at, created_by_role, created_by_user_id",
         { count: "exact" },
       );
 
@@ -493,9 +534,40 @@ export default function BookingsPage() {
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
+    const rows: Booking[] = (data as Booking[] | null) ?? [];
+
+    const creatorIds = [
+      ...new Set(
+        rows
+          .map((b) => b.created_by_user_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+
+    const nameMap: Record<string, string> = {};
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await insforge.database
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", creatorIds);
+      for (const p of (profiles ?? []) as {
+        id: string;
+        full_name: string | null;
+      }[]) {
+        if (p.full_name) nameMap[p.id] = p.full_name;
+      }
+    }
+
+    const enriched = rows.map((b) => ({
+      ...b,
+      creatorName: b.created_by_user_id
+        ? (nameMap[b.created_by_user_id] ?? null)
+        : null,
+    }));
+
     dispatch({
       type: "LOAD_SUCCESS",
-      bookings: (data as Booking[] | null) ?? [],
+      bookings: enriched,
       total: count ?? 0,
     });
   }, [page, fStatus, fLocation, fService, fClient, fDate]);
@@ -508,34 +580,50 @@ export default function BookingsPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Pending"
+          value={statusCounts.pending ?? 0}
+          loading={statusCounts.pending === null}
+        />
+        <StatCard
+          label="Confirmed"
+          value={statusCounts.confirmed ?? 0}
+          loading={statusCounts.confirmed === null}
+        />
+        <StatCard
+          label="Cancelled"
+          value={statusCounts.cancelled ?? 0}
+          loading={statusCounts.cancelled === null}
+        />
+        <StatCard
+          label="Total Bookings"
+          value={total}
+          loading={loading && total === 0}
+        />
+      </div>
+
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-petroleum-700 text-3xl">Bookings</h1>
-          <p className="text-petroleum-400 mt-1 text-sm">
-            {total} booking{total !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 self-start">
-          <Button
-            variant={activeCount > 0 ? "soft" : "outline"}
-            size="md"
-            onClick={openModal}
-            className="gap-2"
-          >
-            <IconFilter />
-            Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
-          </Button>
-          <Button
-            variant="solid"
-            size="md"
-            href="/dashboard/bookings/new"
-            className="gap-2"
-          >
-            <IconPlus />
-            Create Booking
-          </Button>
-        </div>
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Button
+          variant="solid"
+          size="md"
+          href="/dashboard/bookings/new"
+          className="gap-2"
+        >
+          <IconPlus />
+          Create Booking
+        </Button>
+        <Button
+          variant={activeCount > 0 ? "soft" : "outline"}
+          size="md"
+          onClick={openModal}
+          className="gap-2"
+        >
+          <IconFilter />
+          Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
+        </Button>
       </div>
 
       {/* Mobile cards */}
@@ -591,6 +679,19 @@ export default function BookingsPage() {
                     {b.time ? ` · ${b.time}` : ""}
                   </p>
                   <LocationBadge location={b.location} />
+                  {(() => {
+                    const src =
+                      SOURCE_BADGE[b.created_by_role ?? ""] ??
+                      SOURCE_BADGE["anonymous"];
+                    return (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${src.cls}`}
+                      >
+                        {src.label}
+                        {b.creatorName ? ` · ${b.creatorName}` : ""}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -621,6 +722,9 @@ export default function BookingsPage() {
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
                   Datetime
+                </th>
+                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+                  Reserved by
                 </th>
               </tr>
             </thead>
@@ -692,6 +796,27 @@ export default function BookingsPage() {
                       {b.time && (
                         <p className="text-petroleum-400 text-xs">{b.time}</p>
                       )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {(() => {
+                        const src =
+                          SOURCE_BADGE[b.created_by_role ?? ""] ??
+                          SOURCE_BADGE["anonymous"];
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span
+                              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                            >
+                              {src.label}
+                            </span>
+                            {b.creatorName && (
+                              <span className="text-petroleum-400 text-xs">
+                                {b.creatorName}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))
