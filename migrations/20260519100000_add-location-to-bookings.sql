@@ -1,2 +1,3 @@
 ALTER TABLE bookings
-  ADD COLUMN IF NOT EXISTS location TEXT;
+  ADD COLUMN IF NOT EXISTS location TEXT,
+  ADD COLUMN IF NOT EXISTS location_address TEXT;

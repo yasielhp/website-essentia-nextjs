@@ -31,10 +31,25 @@ const EMPTY_DETAILS: DetailsState = {
   consent: false,
 };
 
+export type LocationAddress = {
+  street: string;
+  apartment: string;
+  city: string;
+  postalCode: string;
+};
+
+const EMPTY_ADDRESS: LocationAddress = {
+  street: "",
+  apartment: "",
+  city: "",
+  postalCode: "",
+};
+
 type BookingState = {
   step: number;
   selectedService: BookableService | null;
   selectedLocation: string | null;
+  locationAddress: LocationAddress;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -48,6 +63,7 @@ type BookingState = {
 type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
   | { type: "SELECT_LOCATION"; location: string }
+  | { type: "SET_LOCATION_ADDRESS"; address: LocationAddress }
   | {
       type: "SELECT_TIER";
       tierId: string;
@@ -76,7 +92,13 @@ function bookingReducer(
         selectedDuration: null,
       };
     case "SELECT_LOCATION":
-      return { ...state, selectedLocation: action.location };
+      return {
+        ...state,
+        selectedLocation: action.location,
+        locationAddress: EMPTY_ADDRESS,
+      };
+    case "SET_LOCATION_ADDRESS":
+      return { ...state, locationAddress: action.address };
     case "SELECT_TIER":
       return {
         ...state,
@@ -107,6 +129,7 @@ function initState(slug: string | null): BookingState {
       step: 0,
       selectedService: service,
       selectedLocation: null,
+      locationAddress: EMPTY_ADDRESS,
       selectedTierId: null,
       selectedTierPrice: null,
       selectedDuration: null,
@@ -124,6 +147,7 @@ function initState(slug: string | null): BookingState {
     step: saved.step ?? 0,
     selectedService: service,
     selectedLocation: saved.selectedLocation ?? null,
+    locationAddress: saved.locationAddress ?? EMPTY_ADDRESS,
     selectedTierId: saved.selectedTierId ?? null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
@@ -248,6 +272,7 @@ type BookingStepRendererProps = {
   currentStepId: string;
   selectedService: BookableService | null;
   selectedLocation: string | null;
+  locationAddress: LocationAddress;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -261,6 +286,7 @@ function BookingStepRenderer({
   currentStepId,
   selectedService,
   selectedLocation,
+  locationAddress,
   selectedTierId,
   selectedTierPrice,
   selectedDuration,
@@ -280,8 +306,12 @@ function BookingStepRenderer({
       {currentStepId === "location" && (
         <LocationStep
           selected={selectedLocation}
+          address={locationAddress}
           onSelect={(loc) =>
             dispatch({ type: "SELECT_LOCATION", location: loc })
+          }
+          onAddressChange={(addr) =>
+            dispatch({ type: "SET_LOCATION_ADDRESS", address: addr })
           }
         />
       )}
@@ -453,6 +483,7 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedLocation,
+    locationAddress,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -485,6 +516,7 @@ function BookingContentInner() {
       step,
       serviceId: selectedService?.id ?? null,
       selectedLocation,
+      locationAddress,
       selectedTierId,
       selectedTierPrice,
       selectedDuration,
@@ -496,6 +528,7 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedLocation,
+    locationAddress,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -511,7 +544,12 @@ function BookingContentInner() {
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    location: !!selectedLocation,
+    location:
+      !!selectedLocation &&
+      (selectedLocation !== "domicilio" ||
+        (locationAddress.street.trim().length > 0 &&
+          locationAddress.city.trim().length > 0 &&
+          locationAddress.postalCode.trim().length > 0)),
     duration: !!selectedTierId,
     details: !!(
       details.firstName &&
@@ -582,6 +620,17 @@ function BookingContentInner() {
             ? { tier_id: selectedTierId, price_eur: selectedTierPrice }
             : {}),
           location: selectedLocation ?? null,
+          location_address:
+            selectedLocation === "domicilio"
+              ? [
+                  locationAddress.street,
+                  locationAddress.apartment,
+                  locationAddress.city,
+                  locationAddress.postalCode,
+                ]
+                  .filter(Boolean)
+                  .join(", ")
+              : null,
         })
         .eq("id", newBookingId as string);
     }
@@ -626,6 +675,17 @@ function BookingContentInner() {
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
             location: selectedLocation ?? null,
+            location_address:
+              selectedLocation === "domicilio"
+                ? [
+                    locationAddress.street,
+                    locationAddress.apartment,
+                    locationAddress.city,
+                    locationAddress.postalCode,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")
+                : null,
             date: selectedDate.toISOString().split("T")[0],
             time: selectedTime,
             first_name: details.firstName,
@@ -712,6 +772,7 @@ function BookingContentInner() {
         currentStepId={currentStepId}
         selectedService={selectedService}
         selectedLocation={selectedLocation}
+        locationAddress={locationAddress}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}
