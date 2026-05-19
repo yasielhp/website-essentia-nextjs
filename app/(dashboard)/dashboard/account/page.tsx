@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,89 @@ function reducer(state: PageState, action: PageAction): PageState {
     case "SET_AVATAR_URL":
       return { ...state, avatarUrl: action.value };
   }
+}
+
+function GoogleCalendarSection({ userId }: { userId: string }) {
+  const searchParams = useSearchParams();
+  const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
+  const [loadingCal, setLoadingCal] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [justConnected, setJustConnected] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("calendar_connected") === "1") {
+      setJustConnected(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    void fetch(`/api/google/calendar/user-config?user_id=${userId}`)
+      .then((r) => r.json())
+      .then((d: { google_connected_email: string | null }) => {
+        setConnectedEmail(d.google_connected_email ?? null);
+        setLoadingCal(false);
+      })
+      .catch(() => setLoadingCal(false));
+  }, [userId, justConnected]);
+
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    await fetch(`/api/google/calendar/disconnect-user?user_id=${userId}`, {
+      method: "DELETE",
+    });
+    setConnectedEmail(null);
+    setDisconnecting(false);
+    setJustConnected(false);
+  }
+
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+        Google Calendar
+      </h2>
+      <p className="text-petroleum-400 mb-4 text-xs">
+        Conecta tu Google Calendar para sincronizar tus disponibilidades.
+      </p>
+
+      {loadingCal ? (
+        <div className="bg-sand-100 h-9 w-48 animate-pulse rounded-xl" />
+      ) : connectedEmail ? (
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+            <span className="size-1.5 rounded-full bg-green-500" />
+            Conectado
+          </span>
+          <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
+            {connectedEmail}
+          </span>
+          <button
+            type="button"
+            onClick={() => void handleDisconnect()}
+            disabled={disconnecting}
+            className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
+          >
+            {disconnecting ? "Desconectando…" : "Desconectar"}
+          </button>
+        </div>
+      ) : (
+        <a
+          href={`/api/google/calendar/connect-user?user_id=${userId}&return_to=/dashboard/account`}
+          className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 7h8M12 12v4M10 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Conectar Google Calendar
+        </a>
+      )}
+
+      {justConnected && connectedEmail && (
+        <p className="mt-3 text-xs font-medium text-green-700">
+          Google Calendar conectado correctamente.
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function DashboardAccountPage() {
@@ -336,6 +420,11 @@ export default function DashboardAccountPage() {
               </div>
             </div>
           </form>
+
+          {/* Google Calendar */}
+          {!loading && user && (
+            <GoogleCalendarSection userId={user.id} />
+          )}
 
           {/* Security */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -148,17 +148,35 @@ function IconCheck() {
 export default function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
+  const searchParams = useSearchParams();
   const [state, dispatch] = useReducer(reducer, initial);
   const { loading, notFound, saving, removing, confirmRemove, error } = state;
 
   const [availableServices, setAvailableServices] = useState<ServiceRow[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [connectedCalendarEmail, setConnectedCalendarEmail] = useState<string | null>(null);
+  const [calendarConnected, setCalendarConnected] = useState(false);
 
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("calendar_connected") === "1") {
+      setCalendarConnected(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    void fetch(`/api/google/calendar/user-config?user_id=${id}`)
+      .then((r) => r.json())
+      .then((d: { google_connected_email: string | null }) => {
+        setConnectedCalendarEmail(d.google_connected_email ?? null);
+      })
+      .catch(() => {});
+  }, [id, calendarConnected]);
 
   useEffect(() => {
     async function load() {
@@ -254,7 +272,7 @@ export default function EditUserPage() {
         assignments.map((a) => ({
           staff_id: id,
           service_id: a.service_id,
-          google_calendar_email: a.google_calendar_email || null,
+          google_calendar_email: connectedCalendarEmail || null,
         })),
       );
     }
@@ -577,6 +595,59 @@ export default function EditUserPage() {
             </div>
           )}
 
+          {/* Google Calendar — only when role is Staff */}
+          {!loading && state.role === "staff" && (
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+                Google Calendar
+              </h2>
+              <p className="text-petroleum-400 mb-4 text-xs">
+                Conecta el Google Calendar de este miembro del staff para
+                sincronizar disponibilidades.
+              </p>
+              {connectedCalendarEmail ? (
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    Conectado
+                  </span>
+                  <span className="text-petroleum-400 max-w-[240px] truncate text-xs">
+                    {connectedCalendarEmail}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await fetch(
+                        `/api/google/calendar/disconnect-user?user_id=${id}`,
+                        { method: "DELETE" },
+                      );
+                      setConnectedCalendarEmail(null);
+                      setCalendarConnected(false);
+                    }}
+                    className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
+                  >
+                    Desconectar
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href={`/api/google/calendar/connect-user?user_id=${id}&return_to=/dashboard/users/${id}`}
+                  className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 7h8M12 12v4M10 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Conectar Google Calendar
+                </a>
+              )}
+              {calendarConnected && connectedCalendarEmail && (
+                <p className="mt-3 text-xs font-medium text-green-700">
+                  Google Calendar conectado correctamente.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Services — only when role is Staff */}
           {!loading && state.role === "staff" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -619,24 +690,6 @@ export default function EditUserPage() {
                           {svc.title}
                         </span>
                       </button>
-
-                      {isOn && (
-                        <div className="border-petroleum-100 border-t px-4 pt-2 pb-3">
-                          <label className="text-petroleum-400 mb-1.5 block text-xs font-medium">
-                            Google Calendar email
-                          </label>
-                          <input
-                            type="email"
-                            value={assigned?.google_calendar_email ?? ""}
-                            onChange={(e) =>
-                              setCalendarEmail(svc.id, e.target.value)
-                            }
-                            placeholder="staff@essentia.com"
-                            disabled={saving}
-                            className={INPUT_CLASS}
-                          />
-                        </div>
-                      )}
                     </div>
                   );
                 })}

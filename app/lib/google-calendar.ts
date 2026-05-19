@@ -44,10 +44,11 @@ const SCOPES = [
 ].join(" ");
 
 /**
- * Generate a Google OAuth URL, encoding serviceId as the `state` parameter
- * so the callback can identify which service to associate the tokens with.
+ * Generate a Google OAuth URL, encoding `state` as the OAuth state parameter.
+ * Pass a serviceId string for the service-level flow, or a
+ * `user__${userId}__${encodedReturnPath}` string for the user-level flow.
  */
-export function getGoogleAuthUrl(serviceId: string): string {
+export function getGoogleAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
@@ -55,7 +56,7 @@ export function getGoogleAuthUrl(serviceId: string): string {
     scope: SCOPES,
     access_type: "offline",
     prompt: "consent",
-    state: serviceId,
+    state: state,
   });
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
