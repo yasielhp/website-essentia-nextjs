@@ -1,29 +1,23 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
-import { insforge } from "@/lib/insforge";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { Logo } from "@/components/ui/logo";
 import { FavIcon, IconSidebarLeft } from "@/components/ui/icons";
 import { navLinks, navIcons } from "@/constants/nav";
 import { getBreadcrumbs } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
+import { RoleProvider, useRole } from "@/context/role-context";
 import type { Role } from "@/types";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, loading, signOut } = useAuth();
-  const router = useRouter();
-  const { replace, push } = router;
+function DashboardInner({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { role, loading: roleLoading } = useRole();
+  const { replace, push } = useRouter();
   const pathname = usePathname();
-  const [role, setRole] = useState<Role>(null);
-  const roleLoadingRef = useRef(true);
   const [mobileOpenAtPathname, setMobileOpenAtPathname] = useState<
     string | null
   >(null);
@@ -31,43 +25,25 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (!user) {
       replace("/sign-in");
-      return;
     }
+  }, [user, authLoading, replace]);
 
-    async function fetchRole() {
-      if (!user) return;
-      const { data } = await insforge.database
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      const userRole = (data as { role: Role } | null)?.role ?? null;
-      if (
-        userRole !== "admin" &&
-        userRole !== "staff" &&
-        userRole !== "partner"
-      ) {
-        replace("/");
-        return;
-      }
-      if (
-        userRole === "partner" &&
-        !window.location.pathname.startsWith("/dashboard/bookings/partner")
-      ) {
-        replace("/dashboard/bookings/partner");
-        return;
-      }
-      setRole(userRole);
-      roleLoadingRef.current = false;
+  useEffect(() => {
+    if (authLoading || roleLoading) return;
+    if (
+      role !== null &&
+      role !== "admin" &&
+      role !== "staff" &&
+      role !== "partner"
+    ) {
+      replace("/");
     }
+  }, [role, roleLoading, authLoading, replace]);
 
-    void fetchRole();
-  }, [user, loading, replace]);
-
-  if (loading || role === null) {
+  if (authLoading || roleLoading || role === null) {
     return (
       <div className="bg-sand-50 flex min-h-screen items-center justify-center">
         <div className="border-petroleum-700 size-8 animate-spin rounded-full border-2 border-t-transparent" />
@@ -79,8 +55,11 @@ export default function DashboardLayout({
   const breadcrumbs = getBreadcrumbs(pathname);
 
   const visibleNavLinks =
-    role === "partner"
-      ? [{ label: "Bookings", href: "/dashboard/bookings/partner" }]
+    (role as Role) === "partner"
+      ? [
+          { label: "Overview", href: "/dashboard" },
+          { label: "Bookings", href: "/dashboard/bookings" },
+        ]
       : navLinks;
 
   function isNavActive(href: string) {
@@ -101,7 +80,9 @@ export default function DashboardLayout({
             sidebarCollapsed ? "justify-center px-4" : "px-6"
           }`}
         >
-          {sidebarCollapsed ? <FavIcon /> : <Logo />}
+          <Link href="/dashboard">
+            {sidebarCollapsed ? <FavIcon className="size-7" /> : <Logo />}
+          </Link>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
@@ -229,9 +210,9 @@ export default function DashboardLayout({
           onKeyDown={(e) => e.stopPropagation()}
         >
           <div className="border-sand-200 flex h-12 items-center border-b px-6">
-            <span className="font-display text-petroleum-700 text-xl">
-              Essentia
-            </span>
+            <Link href="/dashboard" className="text-petroleum-500">
+              <Logo />
+            </Link>
           </div>
 
           <nav className="flex-1 overflow-y-auto px-2 py-3">
@@ -273,5 +254,17 @@ export default function DashboardLayout({
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <RoleProvider>
+      <DashboardInner>{children}</DashboardInner>
+    </RoleProvider>
   );
 }

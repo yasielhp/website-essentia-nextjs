@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { useAuth } from "@/components/auth-provider";
+import { useRole } from "@/context/role-context";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
 import type {
   CalendarView,
@@ -49,6 +50,9 @@ import { UpcomingSessionCard } from "@/components/dashboard/calendar/upcoming-se
 
 export default function DashboardPage() {
   const { push } = useRouter();
+  const { user } = useAuth();
+  const { role } = useRole();
+  const isPartner = role === "partner";
 
   // Stats
   const [stats, setStats] = useState<{
@@ -96,9 +100,6 @@ export default function DashboardPage() {
     events: CalendarEvent[];
   }>({ loading: true, events: [] });
   const { loading: calendarLoading, events: calendarEvents } = calendar;
-
-  // Today — computed client-side only to avoid hydration mismatch
-  const [todayYMD, setTodayYMD] = useState("");
 
   // Load stats once
   useEffect(() => {
@@ -160,14 +161,6 @@ export default function DashboardPage() {
     void loadUpcoming();
   }, []);
 
-  // Set today client-side only
-  useEffect(() => {
-    async function setToday() {
-      setTodayYMD(toYMD(new Date()));
-    }
-    void setToday();
-  }, []);
-
   // Load all calendar events when view/anchor changes
   useEffect(() => {
     async function loadCalendar() {
@@ -191,26 +184,35 @@ export default function DashboardPage() {
 
       const toDateEnd = toDate + "T23:59:59.999";
 
-      const [bookingsRes, racesRes, sessionsRes] = await Promise.all([
-        insforge.database
-          .from("bookings")
-          .select(
-            "id, date, time, service_id, service_title, first_name, last_name",
-          )
-          .gte("date", fromDate)
-          .lte("date", toDate)
-          .order("time", { ascending: true }),
-        insforge.database
-          .from("races")
-          .select("id, title, date, location")
-          .gte("date", fromDate)
-          .lte("date", toDateEnd),
-        insforge.database
-          .from("education_sessions")
-          .select("id, title, date, location, speaker")
-          .gte("date", fromDate)
-          .lte("date", toDateEnd),
-      ]);
+      let bookingsQuery = insforge.database
+        .from("bookings")
+        .select(
+          "id, date, time, service_id, service_title, first_name, last_name",
+        )
+        .gte("date", fromDate)
+        .lte("date", toDate)
+        .order("time", { ascending: true });
+
+      if (isPartner && user?.id) {
+        bookingsQuery = bookingsQuery.eq("partner_id", user.id);
+      }
+
+      const bookingsRes = await bookingsQuery;
+
+      const [racesRes, sessionsRes] = isPartner
+        ? [{ data: null }, { data: null }]
+        : await Promise.all([
+            insforge.database
+              .from("races")
+              .select("id, title, date, location")
+              .gte("date", fromDate)
+              .lte("date", toDateEnd),
+            insforge.database
+              .from("education_sessions")
+              .select("id, title, date, location, speaker")
+              .gte("date", fromDate)
+              .lte("date", toDateEnd),
+          ]);
 
       const events: CalendarEvent[] = [];
 
@@ -236,7 +238,7 @@ export default function DashboardPage() {
         });
       }
 
-      for (const r of (racesRes.data ?? []) as Record<string, unknown>[]) {
+      for (const r of (racesRes?.data ?? []) as Record<string, unknown>[]) {
         events.push({
           id: r.id as string,
           date: (r.date as string).slice(0, 10),
@@ -249,7 +251,7 @@ export default function DashboardPage() {
         });
       }
 
-      for (const s of (sessionsRes.data ?? []) as Record<string, unknown>[]) {
+      for (const s of (sessionsRes?.data ?? []) as Record<string, unknown>[]) {
         const d = new Date(s.date as string);
         const h = d.getUTCHours();
         const m = d.getUTCMinutes();
@@ -275,68 +277,70 @@ export default function DashboardPage() {
       setCalendar({ loading: false, events });
     }
     void loadCalendar();
-  }, [view, anchor]);
+  }, [view, anchor, isPartner, user]);
 
   const eventsByDay = groupByDate(calendarEvents);
   const periodLabel = formatPeriod(view, anchor);
-  const isAnchorToday = toYMD(anchor) === todayYMD;
 
   function handleDayClick(d: Date) {
-    dispatchCalNav({ type: "set-anchor", anchor: d });
-    dispatchCalNav({ type: "set-view", view: "day" });
-  }
-
-  function handleTodayClick() {
-    dispatchCalNav({ type: "set-anchor", anchor: new Date() });
+    push(`/dashboard/bookings/new?date=${toYMD(d)}`);
   }
 
   function handleEventClick(event: CalendarEvent) {
     push(event.href);
   }
 
+  function handleSlotClick(time: string) {
+    push(`/dashboard/bookings/new?date=${toYMD(anchor)}&time=${time}`);
+  }
+
   return (
-    <div className="px-6 py-8 lg:px-10">
+    <div className="py-8">
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Confirmed Bookings"
-          value={confirmedBookings}
-          loading={statsLoading}
-          href="/dashboard/bookings"
-        />
-        <StatCard
-          label="Total Bookings"
-          value={totalBookings}
-          loading={statsLoading}
-          href="/dashboard/bookings"
-        />
-        <StatCard
-          label="Total Contacts"
-          value={totalContacts}
-          loading={statsLoading}
-          href="/dashboard/contacts"
-        />
-        <StatCard
-          label="Total Members"
-          value={upcomingEvents}
-          loading={statsLoading}
-          href="/dashboard/members"
-        />
-      </div>
+      {!isPartner && (
+        <div className="mb-8 grid grid-cols-2 gap-4 px-6 lg:grid-cols-4 lg:px-10">
+          <StatCard
+            label="Confirmed Bookings"
+            value={confirmedBookings}
+            loading={statsLoading}
+            href="/dashboard/bookings"
+          />
+          <StatCard
+            label="Total Bookings"
+            value={totalBookings}
+            loading={statsLoading}
+            href="/dashboard/bookings"
+          />
+          <StatCard
+            label="Total Contacts"
+            value={totalContacts}
+            loading={statsLoading}
+            href="/dashboard/contacts"
+          />
+          <StatCard
+            label="Total Members"
+            value={upcomingEvents}
+            loading={statsLoading}
+            href="/dashboard/members"
+          />
+        </div>
+      )}
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_300px]">
+      <div
+        className={`grid grid-cols-1 gap-6 lg:px-10 ${!isPartner ? "xl:grid-cols-[1fr_300px]" : ""}`}
+      >
         {/* Calendar */}
-        <div className="border-sand-200 rounded-2xl border bg-white">
+        <div className="border-sand-200 border-y bg-white lg:rounded-2xl lg:border">
           {/* Calendar header */}
-          <div className="border-sand-200 flex flex-wrap items-center gap-3 border-b px-5 py-3">
-            {/* View switcher */}
-            <div className="border-sand-200 bg-sand-50 flex rounded-xl border p-0.5">
+          <div className="border-sand-200 flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center">
+            {/* View switcher — full width on mobile, auto on desktop */}
+            <div className="border-sand-200 bg-sand-50 flex w-full rounded-xl border p-0.5 sm:w-auto">
               {(["month", "week", "day"] as CalendarView[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => dispatchCalNav({ type: "set-view", view: v })}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
+                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all sm:flex-none ${
                     view === v
                       ? "text-petroleum-700 bg-white shadow-sm"
                       : "text-petroleum-400 hover:text-petroleum-700"
@@ -347,8 +351,27 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Period nav */}
-            <div className="flex items-center gap-1">
+            {/* Period nav — mobile row */}
+            <div className="flex w-full items-center justify-center gap-1 sm:hidden">
+              <button
+                onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
+                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
+              >
+                ‹
+              </button>
+              <span className="text-petroleum-700 text-sm font-medium">
+                {periodLabel}
+              </span>
+              <button
+                onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
+                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* Period nav — desktop, pushed to the right */}
+            <div className="ml-auto hidden items-center gap-1 sm:flex">
               <button
                 onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
@@ -365,41 +388,6 @@ export default function DashboardPage() {
                 ›
               </button>
             </div>
-
-            {/* Today */}
-            <button
-              onClick={handleTodayClick}
-              disabled={isAnchorToday && view !== "month"}
-              className={`text-xs font-medium transition-colors disabled:opacity-30 ${
-                isAnchorToday && view !== "month"
-                  ? "text-petroleum-300 cursor-default"
-                  : "text-petroleum-500 hover:text-petroleum-700"
-              }`}
-            >
-              Today
-            </button>
-
-            {/* New booking shortcut */}
-            <Link
-              href="/dashboard/bookings/new"
-              className="bg-petroleum-700 hover:bg-petroleum-600 ml-auto flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M12 5v14M5 12h14"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              New Booking
-            </Link>
           </div>
 
           {/* Calendar body */}
@@ -427,18 +415,21 @@ export default function DashboardPage() {
               eventsByDay={eventsByDay}
               loading={calendarLoading}
               onEventClick={handleEventClick}
+              onSlotClick={handleSlotClick}
             />
           )}
         </div>
 
         {/* Right sidebar */}
-        <div className="space-y-4">
-          <UpcomingRaceCard race={upcomingRace} loading={upcomingLoading} />
-          <UpcomingSessionCard
-            session={upcomingSession}
-            loading={upcomingLoading}
-          />
-        </div>
+        {!isPartner && (
+          <div className="space-y-4">
+            <UpcomingRaceCard race={upcomingRace} loading={upcomingLoading} />
+            <UpcomingSessionCard
+              session={upcomingSession}
+              loading={upcomingLoading}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
