@@ -222,7 +222,7 @@ function AddressFields({
           htmlFor="addr-street"
           className="text-petroleum-500 text-sm font-medium"
         >
-          Calle y número<span className="ml-0.5 text-red-400">*</span>
+          Street & number<span className="ml-0.5 text-red-400">*</span>
         </label>
         <input
           id="addr-street"
@@ -239,14 +239,14 @@ function AddressFields({
           htmlFor="addr-building"
           className="text-petroleum-500 text-sm font-medium"
         >
-          Bloque, piso y puerta
+          Block, floor & door
         </label>
         <input
           id="addr-building"
           type="text"
           value={address.building}
           onChange={set("building")}
-          placeholder="Bloque 3, 2.º B"
+          placeholder="Block 3, 2nd floor, apt B"
           autoComplete="address-line2"
           className={INPUT_CLASS}
         />
@@ -257,7 +257,7 @@ function AddressFields({
             htmlFor="addr-postal"
             className="text-petroleum-500 text-sm font-medium"
           >
-            Código postal<span className="ml-0.5 text-red-400">*</span>
+            Postal code<span className="ml-0.5 text-red-400">*</span>
           </label>
           <input
             id="addr-postal"
@@ -276,7 +276,7 @@ function AddressFields({
             htmlFor="addr-municipality"
             className="text-petroleum-500 text-sm font-medium"
           >
-            Municipio<span className="ml-0.5 text-red-400">*</span>
+            Municipality<span className="ml-0.5 text-red-400">*</span>
           </label>
           <input
             id="addr-municipality"
