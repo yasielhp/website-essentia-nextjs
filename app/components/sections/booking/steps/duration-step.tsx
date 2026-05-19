@@ -38,6 +38,7 @@ function TierSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
   const updatePosition = () => {
@@ -55,8 +56,12 @@ function TierSelect({
     if (!isOpen) return;
     updatePosition();
     const handleClose = (e: MouseEvent) => {
-      if (triggerRef.current && !triggerRef.current.contains(e.target as Node))
-        setIsOpen(false);
+      if (
+        triggerRef.current?.contains(e.target as Node) ||
+        dropdownRef.current?.contains(e.target as Node)
+      )
+        return;
+      setIsOpen(false);
     };
     const handleScroll = () => updatePosition();
     document.addEventListener("mousedown", handleClose);
@@ -104,6 +109,7 @@ function TierSelect({
       {isOpen &&
         createPortal(
           <div
+            ref={dropdownRef}
             style={dropdownStyle}
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
           >

@@ -72,6 +72,7 @@ function LocationSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = () =>
     typeof window !== "undefined" &&
     window.matchMedia("(max-width: 767px)").matches;
@@ -92,11 +93,11 @@ function LocationSelect({
     updateDropdownPosition();
     const handleClose = (e: MouseEvent) => {
       if (
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
+        triggerRef.current?.contains(e.target as Node) ||
+        dropdownRef.current?.contains(e.target as Node)
+      )
+        return;
+      setIsOpen(false);
     };
     const handleScroll = () => updateDropdownPosition();
     document.addEventListener("mousedown", handleClose);
@@ -176,6 +177,7 @@ function LocationSelect({
         !isMobile() &&
         createPortal(
           <div
+            ref={dropdownRef}
             style={dropdownStyle}
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
           >
