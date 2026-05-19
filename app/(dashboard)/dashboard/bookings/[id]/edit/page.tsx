@@ -836,6 +836,7 @@ type FormState = {
   location: DashboardLocation | "";
   roomNumber: string;
   reservationNumber: string;
+  notes: string;
   address: LocationAddress;
   selectedDate: Date | null;
   selectedTime: string;
@@ -854,6 +855,7 @@ type FormAction =
   | { type: "SET_LOCATION"; value: DashboardLocation }
   | { type: "SET_ROOM_NUMBER"; value: string }
   | { type: "SET_RESERVATION_NUMBER"; value: string }
+  | { type: "SET_NOTES"; value: string }
   | { type: "SET_ADDRESS"; value: LocationAddress }
   | { type: "SET_DATE"; value: Date }
   | { type: "SET_TIME"; value: string }
@@ -871,6 +873,7 @@ const formInitial: FormState = {
   location: "",
   roomNumber: "",
   reservationNumber: "",
+  notes: "",
   address: EMPTY_ADDRESS,
   selectedDate: null,
   selectedTime: "",
@@ -902,6 +905,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, roomNumber: action.value };
     case "SET_RESERVATION_NUMBER":
       return { ...state, reservationNumber: action.value };
+    case "SET_NOTES":
+      return { ...state, notes: action.value };
     case "SET_ADDRESS":
       return { ...state, address: action.value };
     case "SET_DATE":
@@ -958,6 +963,7 @@ export default function EditBookingPage() {
     location,
     roomNumber,
     reservationNumber,
+    notes,
     address,
     selectedDate,
     selectedTime,
@@ -978,7 +984,7 @@ export default function EditBookingPage() {
 
   const allowedLocations =
     role === "partner"
-      ? LOCATIONS.filter((l) => l.id === "habitacion")
+      ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
       : LOCATIONS;
 
   // Load services
@@ -1003,7 +1009,7 @@ export default function EditBookingPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "service_id, tier_id, location, location_address, date, time, first_name, last_name, email, phone, status",
+          "service_id, tier_id, location, location_address, notes, date, time, first_name, last_name, email, phone, status",
         )
         .eq("id", id)
         .limit(1);
@@ -1014,6 +1020,7 @@ export default function EditBookingPage() {
           tier_id: string | null;
           location: string | null;
           location_address: string | null;
+          notes: string | null;
           date: string | null;
           time: string | null;
           first_name: string | null;
@@ -1083,6 +1090,7 @@ export default function EditBookingPage() {
           location: (b.location as DashboardLocation) ?? "",
           roomNumber,
           reservationNumber,
+          notes: b.notes ?? "",
           address,
           selectedDate,
           selectedTime: b.time ?? "",
@@ -1143,6 +1151,13 @@ export default function EditBookingPage() {
       dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
       return;
     }
+    if (location === "habitacion" && !reservationNumber.trim()) {
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: "Reservation number is required for room bookings.",
+      });
+      return;
+    }
 
     let locationAddress: string | null = null;
     if (location === "habitacion")
@@ -1172,6 +1187,7 @@ export default function EditBookingPage() {
         time: selectedTime || null,
         location: location || null,
         location_address: locationAddress,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
@@ -1199,9 +1215,10 @@ export default function EditBookingPage() {
         .filter(Boolean)
         .join(" ");
       const service = selectedService?.title ?? serviceId;
-      const dur = selectedTier?.duration_minutes != null
-        ? `${selectedTier.duration_minutes} min`
-        : null;
+      const dur =
+        selectedTier?.duration_minutes != null
+          ? `${selectedTier.duration_minutes} min`
+          : null;
 
       const statusChanged = status !== orig.status;
       const dateTimeChanged =
@@ -1250,7 +1267,12 @@ export default function EditBookingPage() {
       }
 
       // Update original ref so re-saves don't re-send
-      originalRef.current = { status, date: dateStr ?? null, time: selectedTime, serviceId };
+      originalRef.current = {
+        status,
+        date: dateStr ?? null,
+        time: selectedTime,
+        serviceId,
+      };
     }
 
     push(`/dashboard/bookings/${id}`);
@@ -1369,53 +1391,77 @@ export default function EditBookingPage() {
               />
 
               {location === "habitacion" && (
-                <div className="animate-fade-in-up grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="roomNumber"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      Room number <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      id="roomNumber"
-                      type="text"
-                      value={roomNumber}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_ROOM_NUMBER",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="AK201"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="reservationNumber"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      Reservation number
-                    </label>
-                    <input
-                      id="reservationNumber"
-                      type="text"
-                      value={reservationNumber}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_RESERVATION_NUMBER",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="83943"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
+                <div className="animate-fade-in-up flex flex-col gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        htmlFor="reservationNumber"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
+                        Reservation number{" "}
+                        <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        id="reservationNumber"
+                        type="text"
+                        value={reservationNumber}
+                        onChange={(e) =>
+                          dispatchForm({
+                            type: "SET_RESERVATION_NUMBER",
+                            value: e.target.value,
+                          })
+                        }
+                        placeholder="83943"
+                        disabled={submitting}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        htmlFor="roomNumber"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
+                        Room number
+                      </label>
+                      <input
+                        id="roomNumber"
+                        type="text"
+                        value={roomNumber}
+                        onChange={(e) =>
+                          dispatchForm({
+                            type: "SET_ROOM_NUMBER",
+                            value: e.target.value,
+                          })
+                        }
+                        placeholder="AK201"
+                        disabled={submitting}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* Notes — available for all locations */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="notes"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) =>
+                    dispatchForm({ type: "SET_NOTES", value: e.target.value })
+                  }
+                  placeholder="Any additional notes for this booking…"
+                  rows={3}
+                  disabled={submitting}
+                  className={INPUT_CLASS + " resize-none"}
+                />
+              </div>
 
               {location === "domicilio" && (
                 <div className="animate-fade-in-up flex flex-col gap-4">

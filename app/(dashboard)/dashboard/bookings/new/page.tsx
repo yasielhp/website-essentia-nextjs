@@ -645,6 +645,7 @@ type FormState = {
   location: DashboardLocation | "";
   roomNumber: string;
   reservationNumber: string;
+  notes: string;
   address: LocationAddress;
   selectedDate: Date | null;
   selectedTime: string;
@@ -661,6 +662,7 @@ type FormAction =
   | { type: "SET_LOCATION"; value: DashboardLocation }
   | { type: "SET_ROOM_NUMBER"; value: string }
   | { type: "SET_RESERVATION_NUMBER"; value: string }
+  | { type: "SET_NOTES"; value: string }
   | { type: "SET_ADDRESS"; value: LocationAddress }
   | { type: "SET_DATE"; value: Date }
   | { type: "SET_TIME"; value: string }
@@ -678,6 +680,7 @@ const formInitial: FormState = {
   location: "",
   roomNumber: "",
   reservationNumber: "",
+  notes: "",
   address: EMPTY_ADDRESS,
   selectedDate: null,
   selectedTime: "",
@@ -706,6 +709,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, roomNumber: action.value };
     case "SET_RESERVATION_NUMBER":
       return { ...state, reservationNumber: action.value };
+    case "SET_NOTES":
+      return { ...state, notes: action.value };
     case "SET_ADDRESS":
       return { ...state, address: action.value };
     case "SET_DATE":
@@ -746,6 +751,7 @@ export default function NewBookingPage() {
     location,
     roomNumber,
     reservationNumber,
+    notes,
     address,
     selectedDate,
     selectedTime,
@@ -761,14 +767,8 @@ export default function NewBookingPage() {
 
   const allowedLocations =
     role === "partner"
-      ? LOCATIONS.filter((l) => l.id === "habitacion")
+      ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
       : LOCATIONS;
-
-  useEffect(() => {
-    if (role === "partner") {
-      dispatchForm({ type: "SET_LOCATION", value: "habitacion" });
-    }
-  }, [role]);
 
   useEffect(() => {
     const dateParam = searchParams.get("date");
@@ -843,6 +843,13 @@ export default function NewBookingPage() {
       dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
       return;
     }
+    if (location === "habitacion" && !reservationNumber.trim()) {
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: "Reservation number is required for room bookings.",
+      });
+      return;
+    }
 
     let locationAddress: string | null = null;
     if (location === "habitacion") {
@@ -875,14 +882,15 @@ export default function NewBookingPage() {
           time: selectedTime || null,
           location: location || null,
           location_address: locationAddress,
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           email: email.trim(),
           phone: phone.trim() || null,
-          status: "pending",
-          partner_id: role === "partner" ? (user?.id ?? null) : null,
-          created_by_user_id: user?.id ?? null,
-          created_by_role: (role as string) ?? null,
+          status: role === "partner" ? "confirmed" : "pending",
+          ...(role === "partner" && user?.id ? { partner_id: user.id } : {}),
+          ...(user?.id ? { created_by_user_id: user.id } : {}),
+          ...(role ? { created_by_role: role as string } : {}),
         },
       ]);
 
@@ -991,32 +999,10 @@ export default function NewBookingPage() {
                 <div className="animate-fade-in-up grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label
-                      htmlFor="roomNumber"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      Room number <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      id="roomNumber"
-                      type="text"
-                      value={roomNumber}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_ROOM_NUMBER",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder="AK201"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
                       htmlFor="reservationNumber"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Reservation number
+                      Reservation number <span className="text-red-400">*</span>
                     </label>
                     <input
                       id="reservationNumber"
@@ -1033,8 +1019,51 @@ export default function NewBookingPage() {
                       className={INPUT_CLASS}
                     />
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="roomNumber"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      Room number
+                    </label>
+                    <input
+                      id="roomNumber"
+                      type="text"
+                      value={roomNumber}
+                      onChange={(e) =>
+                        dispatchForm({
+                          type: "SET_ROOM_NUMBER",
+                          value: e.target.value,
+                        })
+                      }
+                      placeholder="AK201"
+                      disabled={submitting}
+                      className={INPUT_CLASS}
+                    />
+                  </div>
                 </div>
               )}
+
+              {/* Notes — available for all locations */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="notes"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) =>
+                    dispatchForm({ type: "SET_NOTES", value: e.target.value })
+                  }
+                  placeholder="Any additional notes for this booking…"
+                  rows={3}
+                  disabled={submitting}
+                  className={INPUT_CLASS + " resize-none"}
+                />
+              </div>
 
               {/* Home visit address */}
               {location === "domicilio" && (

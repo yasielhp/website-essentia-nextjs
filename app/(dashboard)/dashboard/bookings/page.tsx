@@ -3,6 +3,8 @@
 import { useEffect, useReducer, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { useAuth } from "@/components/auth-provider";
+import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
@@ -441,6 +443,11 @@ export default function BookingsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { bookings, total, page, loading } = state;
   const { push } = useRouter();
+  const { user } = useAuth();
+  const { role } = useRole();
+
+  const isPartner = role === "partner";
+  const partnerId = user?.id ?? null;
 
   const [statusCounts, setStatusCounts] = useState<{
     pending: number | null;
@@ -449,19 +456,26 @@ export default function BookingsPage() {
   }>({ pending: null, confirmed: null, cancelled: null });
 
   useEffect(() => {
+    if (isPartner && !partnerId) return;
+    const base = (q: ReturnType<typeof insforge.database.from>) =>
+      isPartner ? q.eq("partner_id", partnerId!) : q;
+
     void Promise.all([
-      insforge.database
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-      insforge.database
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "confirmed"),
-      insforge.database
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "cancelled"),
+      base(
+        insforge.database
+          .from("bookings")
+          .select("id", { count: "exact", head: true }),
+      ).eq("status", "pending"),
+      base(
+        insforge.database
+          .from("bookings")
+          .select("id", { count: "exact", head: true }),
+      ).eq("status", "confirmed"),
+      base(
+        insforge.database
+          .from("bookings")
+          .select("id", { count: "exact", head: true }),
+      ).eq("status", "cancelled"),
     ]).then(([p, c, x]) =>
       setStatusCounts({
         pending: (p as { count: number | null }).count ?? 0,
@@ -469,7 +483,7 @@ export default function BookingsPage() {
         cancelled: (x as { count: number | null }).count ?? 0,
       }),
     );
-  }, []);
+  }, [isPartner, partnerId]);
 
   const [appliedFilters, setAppliedFilters] = useState<Filters>(emptyFilters);
   const [pendingFilters, setPendingFilters] = useState<Filters>(emptyFilters);
@@ -504,6 +518,7 @@ export default function BookingsPage() {
   } = appliedFilters;
 
   const fetchBookings = useCallback(async () => {
+    if (isPartner && !partnerId) return;
     dispatch({ type: "SET_LOADING" });
 
     let query = insforge.database
@@ -512,6 +527,8 @@ export default function BookingsPage() {
         "id, service_title, duration, first_name, last_name, email, phone, date, time, status, location, created_at, created_by_role, created_by_user_id",
         { count: "exact" },
       );
+
+    if (isPartner) query = query.eq("partner_id", partnerId!);
 
     if (fStatus) query = query.eq("status", fStatus);
     if (fLocation) query = query.eq("location", fLocation);
@@ -570,7 +587,16 @@ export default function BookingsPage() {
       bookings: enriched,
       total: count ?? 0,
     });
-  }, [page, fStatus, fLocation, fService, fClient, fDate]);
+  }, [
+    page,
+    fStatus,
+    fLocation,
+    fService,
+    fClient,
+    fDate,
+    isPartner,
+    partnerId,
+  ]);
 
   useEffect(() => {
     void fetchBookings();

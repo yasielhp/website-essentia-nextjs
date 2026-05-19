@@ -23,6 +23,7 @@ type BookingDetail = {
   status: string | null;
   location: string | null;
   location_address: string | null;
+  notes: string | null;
   created_at: string | null;
   created_by_role: string | null;
   created_by_user_id: string | null;
@@ -181,7 +182,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, first_name, last_name, email, phone, date, time, status, location, location_address, created_at, created_by_role, created_by_user_id",
+          "id, service_title, duration, price_eur, first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
         )
         .eq("id", id)
         .limit(1);
@@ -368,11 +369,11 @@ export default function BookingDetailPage() {
             <div className="flex flex-col gap-3">
               {booking.location === "habitacion" && addrParsed && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Room number">
-                    {addrParsed.roomNumber ?? "—"}
-                  </Field>
                   <Field label="Reservation number">
                     {addrParsed.reservationNumber || "—"}
+                  </Field>
+                  <Field label="Room number">
+                    {addrParsed.roomNumber ?? "—"}
                   </Field>
                 </div>
               )}
@@ -402,6 +403,18 @@ export default function BookingDetailPage() {
                 </p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {booking.notes && (
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              Notes
+            </h2>
+            <p className="text-petroleum-700 text-sm leading-relaxed whitespace-pre-line">
+              {booking.notes}
+            </p>
           </div>
         )}
 

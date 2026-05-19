@@ -21,7 +21,6 @@ export function buildSteps() {
   return [
     { id: "service", label: "Service" },
     { id: "duration", label: "Duration" },
-    { id: "location", label: "Location" },
     { id: "details", label: "Your details" },
     { id: "datetime", label: "Date & time" },
     { id: "confirm", label: "Confirm" },
@@ -91,10 +90,12 @@ export function getTimeSlots(
     const slotStartMs = new Date(`${dateStr}T${time}:00Z`).getTime();
     const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
 
-    // A slot is booked if it overlaps with any busy interval
+    const BUFFER_MS = 10 * 60 * 1000; // 10 min cleanup buffer after each session
+
+    // A slot is booked if it overlaps with any busy interval (including buffer)
     const booked = busyIntervals.some(({ start, end }) => {
       const busyStartMs = new Date(start).getTime();
-      const busyEndMs = new Date(end).getTime();
+      const busyEndMs = new Date(end).getTime() + BUFFER_MS;
       return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
     });
 
