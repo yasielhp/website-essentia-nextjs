@@ -13,6 +13,7 @@ import {
 import type { DetailsState } from "@/types";
 import { StepIndicator } from "./steps/step-indicator";
 import { ServiceStep } from "./steps/service-step";
+import { LocationStep, type BookingLocation } from "./steps/location-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
@@ -33,6 +34,7 @@ const EMPTY_DETAILS: DetailsState = {
 type BookingState = {
   step: number;
   selectedService: BookableService | null;
+  selectedLocation: string | null;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -45,6 +47,7 @@ type BookingState = {
 
 type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
+  | { type: "SELECT_LOCATION"; location: string }
   | {
       type: "SELECT_TIER";
       tierId: string;
@@ -67,10 +70,13 @@ function bookingReducer(
       return {
         ...state,
         selectedService: action.service,
+        selectedLocation: null,
         selectedTierId: null,
         selectedTierPrice: null,
         selectedDuration: null,
       };
+    case "SELECT_LOCATION":
+      return { ...state, selectedLocation: action.location };
     case "SELECT_TIER":
       return {
         ...state,
@@ -100,6 +106,7 @@ function initState(slug: string | null): BookingState {
     return {
       step: 0,
       selectedService: service,
+      selectedLocation: null,
       selectedTierId: null,
       selectedTierPrice: null,
       selectedDuration: null,
@@ -116,6 +123,7 @@ function initState(slug: string | null): BookingState {
   return {
     step: saved.step ?? 0,
     selectedService: service,
+    selectedLocation: saved.selectedLocation ?? null,
     selectedTierId: saved.selectedTierId ?? null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
@@ -239,6 +247,7 @@ function BookingHeader() {
 type BookingStepRendererProps = {
   currentStepId: string;
   selectedService: BookableService | null;
+  selectedLocation: string | null;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
@@ -251,6 +260,7 @@ type BookingStepRendererProps = {
 function BookingStepRenderer({
   currentStepId,
   selectedService,
+  selectedLocation,
   selectedTierId,
   selectedTierPrice,
   selectedDuration,
@@ -265,6 +275,14 @@ function BookingStepRenderer({
         <ServiceStep
           selected={selectedService}
           onSelect={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
+        />
+      )}
+      {currentStepId === "location" && (
+        <LocationStep
+          selected={selectedLocation}
+          onSelect={(loc) =>
+            dispatch({ type: "SELECT_LOCATION", location: loc })
+          }
         />
       )}
       {currentStepId === "duration" && selectedService && (
@@ -434,6 +452,7 @@ function BookingContentInner() {
   const {
     step,
     selectedService,
+    selectedLocation,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -465,6 +484,7 @@ function BookingContentInner() {
     writeStorage({
       step,
       serviceId: selectedService?.id ?? null,
+      selectedLocation,
       selectedTierId,
       selectedTierPrice,
       selectedDuration,
@@ -475,6 +495,7 @@ function BookingContentInner() {
   }, [
     step,
     selectedService,
+    selectedLocation,
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
@@ -490,6 +511,7 @@ function BookingContentInner() {
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
+    location: !!selectedLocation,
     duration: !!selectedTierId,
     details: !!(
       details.firstName &&
@@ -553,12 +575,15 @@ function BookingContentInner() {
 
     if (newBookingId) {
       setBookingId(newBookingId as string);
-      if (selectedTierId) {
-        await insforge.database
-          .from("bookings")
-          .update({ tier_id: selectedTierId, price_eur: selectedTierPrice })
-          .eq("id", newBookingId as string);
-      }
+      await insforge.database
+        .from("bookings")
+        .update({
+          ...(selectedTierId
+            ? { tier_id: selectedTierId, price_eur: selectedTierPrice }
+            : {}),
+          location: selectedLocation ?? null,
+        })
+        .eq("id", newBookingId as string);
     }
 
     setChecking(false);
@@ -600,6 +625,7 @@ function BookingContentInner() {
             tier_id: selectedTierId,
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
+            location: selectedLocation ?? null,
             date: selectedDate.toISOString().split("T")[0],
             time: selectedTime,
             first_name: details.firstName,
@@ -685,6 +711,7 @@ function BookingContentInner() {
       <BookingStepRenderer
         currentStepId={currentStepId}
         selectedService={selectedService}
+        selectedLocation={selectedLocation}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}

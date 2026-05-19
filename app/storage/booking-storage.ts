@@ -5,6 +5,7 @@ const STORAGE_KEY = "essentia_booking";
 export type BookingStorage = {
   step: number;
   serviceId: string | null;
+  selectedLocation: string | null;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;

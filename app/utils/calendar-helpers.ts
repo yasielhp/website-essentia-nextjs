@@ -20,6 +20,7 @@ export const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export function buildSteps() {
   return [
     { id: "service", label: "Service" },
+    { id: "location", label: "Location" },
     { id: "duration", label: "Duration" },
     { id: "details", label: "Your details" },
     { id: "datetime", label: "Date & time" },
