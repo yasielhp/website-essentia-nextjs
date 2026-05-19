@@ -331,7 +331,7 @@ export default function DashboardPage() {
         className={`grid grid-cols-1 gap-6 lg:px-10 ${!isPartner ? "xl:grid-cols-[1fr_300px]" : ""}`}
       >
         {/* Calendar */}
-        <div className="border-sand-200 border-y bg-white lg:rounded-2xl lg:border">
+        <div className="border-sand-200 border-y bg-white lg:overflow-hidden lg:rounded-2xl lg:border">
           {/* Calendar header */}
           <div className="border-sand-200 flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center">
             {/* View switcher — full width on mobile, auto on desktop */}
