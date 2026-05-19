@@ -1,7 +1,13 @@
 import Image from "next/image";
-import Link from "next/link";
+import { MapPin, Phone } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
+import type { LocationAddress } from "@/components/sections/booking/booking-content";
+
+const LOCATION_LABELS: Record<string, string> = {
+  centro: "At the center",
+  domicilio: "Home visit",
+};
 
 export function ConfirmStep({
   service,
@@ -10,6 +16,8 @@ export function ConfirmStep({
   date,
   time,
   details,
+  location,
+  locationAddress,
 }: {
   service: BookableService;
   duration: string;
@@ -17,14 +25,26 @@ export function ConfirmStep({
   date: Date;
   time: string;
   details: DetailsState;
+  location: string | null;
+  locationAddress: LocationAddress;
 }) {
   const priceLine = [duration || null, price != null ? `€${price}` : null]
     .filter(Boolean)
     .join(" · ");
 
+  const addressLine = [
+    locationAddress.street,
+    locationAddress.building,
+    locationAddress.postalCode,
+    locationAddress.municipality,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-5 rounded-2xl bg-white p-6">
+        {/* Service */}
         <div className="flex items-start gap-4">
           <div className="relative size-16 shrink-0 overflow-hidden rounded-xl">
             <Image
@@ -43,6 +63,7 @@ export function ConfirmStep({
           </div>
         </div>
 
+        {/* Booking details */}
         <div className="border-sand-100 grid gap-3 border-t pt-4 md:grid-cols-2">
           {[
             {
@@ -61,6 +82,9 @@ export function ConfirmStep({
             },
             { label: "Email", value: details.email },
             { label: "Phone", value: details.phone },
+            ...(location
+              ? [{ label: "Location", value: LOCATION_LABELS[location] ?? location }]
+              : []),
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-petroleum-400 text-xs">{label}</p>
@@ -68,27 +92,34 @@ export function ConfirmStep({
             </div>
           ))}
         </div>
+
+        {/* Address block — only for home visits */}
+        {location === "domicilio" && addressLine && (
+          <div className="border-sand-100 flex items-start gap-3 border-t pt-4">
+            <MapPin size={16} className="text-petroleum-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-petroleum-400 text-xs">Home visit address</p>
+              <p className="text-petroleum-700 text-sm">{addressLine}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <p className="text-petroleum-400 text-center text-xs leading-relaxed">
-        By confirming you agree to our{" "}
-        <Link
-          href="/terms"
-          className="underline underline-offset-2"
-          target="_blank"
-        >
-          Terms
-        </Link>{" "}
-        and{" "}
-        <Link
-          href="/privacy"
-          className="underline underline-offset-2"
-          target="_blank"
-        >
-          Privacy Policy
-        </Link>
-        . A confirmation email will be sent to {details.email}.
-      </p>
+      {/* Payment & confirmation notice */}
+      <div className="border-sand-200 flex items-start gap-3 rounded-2xl border bg-white p-5">
+        <Phone size={16} className="text-petroleum-400 mt-0.5 shrink-0" />
+        <p className="text-petroleum-500 text-sm leading-relaxed">
+          Once you submit your request, we will contact you by{" "}
+          <strong className="text-petroleum-700 font-medium">
+            phone or WhatsApp
+          </strong>{" "}
+          at <span className="font-medium">{details.phone}</span> to confirm
+          your appointment. Payment will be collected{" "}
+          {location === "domicilio"
+            ? "at your home at the time of the visit."
+            : "at the center on the day of your session."}
+        </p>
+      </div>
     </div>
   );
 }

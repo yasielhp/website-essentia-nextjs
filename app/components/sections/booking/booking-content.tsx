@@ -20,7 +20,6 @@ import { bookingDetailsSchema, locationAddressSchema, parseErrors } from "@/lib/
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
-import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 
@@ -249,7 +248,7 @@ function BookingNavigation({
           disabled={loading}
           className="flex-1 sm:flex-none"
         >
-          {loading ? "Confirming…" : "Confirm booking"}
+          {loading ? "Submitting…" : "Request booking"}
         </Button>
       )}
     </div>
@@ -369,6 +368,8 @@ function BookingStepRenderer({
             date={selectedDate}
             time={selectedTime}
             details={details}
+            location={selectedLocation}
+            locationAddress={locationAddress}
           />
         )}
     </div>
@@ -376,53 +377,22 @@ function BookingStepRenderer({
 }
 
 type BookingModalsProps = {
-  paymentError: string | null;
   memberBlocker: boolean;
-  redsysForm: RedsysFormData | null;
   onContinueAsGuest: () => void;
-  onClosePayment: () => void;
 };
 
-function BookingModals({
-  paymentError,
-  memberBlocker,
-  redsysForm,
-  onContinueAsGuest,
-  onClosePayment,
-}: BookingModalsProps) {
-  return (
-    <>
-      {paymentError && (
-        <div className="mx-auto mt-3 max-w-md rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
-          {paymentError}
-        </div>
-      )}
-
-      {memberBlocker && <MemberBlockerModal onContinue={onContinueAsGuest} />}
-
-      {redsysForm && (
-        <PaymentOverlay formData={redsysForm} onClose={onClosePayment} />
-      )}
-    </>
-  );
+function BookingModals({ memberBlocker, onContinueAsGuest }: BookingModalsProps) {
+  return memberBlocker ? (
+    <MemberBlockerModal onContinue={onContinueAsGuest} />
+  ) : null;
 }
-
-type PaidBooking = {
-  service_title: string | null;
-  date: string | null;
-  time: string | null;
-  email: string | null;
-};
 
 type BookingLocalState = {
   contactId: string | null;
   bookingId: string | null;
   memberBlocker: boolean;
   checking: boolean;
-  redsysForm: RedsysFormData | null;
-  paymentError: string | null;
-  paymentSuccess: boolean;
-  paidBooking: PaidBooking | null;
+  bookingSubmitted: boolean;
 };
 
 const INITIAL_LOCAL_STATE: BookingLocalState = {
@@ -430,10 +400,7 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   bookingId: null,
   memberBlocker: false,
   checking: false,
-  redsysForm: null,
-  paymentError: null,
-  paymentSuccess: false,
-  paidBooking: null,
+  bookingSubmitted: false,
 };
 
 function BookingContentInner() {
@@ -445,16 +412,8 @@ function BookingContentInner() {
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
-  const {
-    contactId,
-    bookingId,
-    memberBlocker,
-    checking,
-    redsysForm,
-    paymentError,
-    paymentSuccess,
-    paidBooking,
-  } = local;
+  const { contactId, bookingId, memberBlocker, checking, bookingSubmitted } =
+    local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
     setLocal((prev) => ({ ...prev, ...patch }));
@@ -476,22 +435,6 @@ function BookingContentInner() {
     (v: boolean) => updateLocal({ checking: v }),
     [updateLocal],
   );
-  const setRedsysForm = useCallback(
-    (v: RedsysFormData | null) => updateLocal({ redsysForm: v }),
-    [updateLocal],
-  );
-  const setPaymentError = useCallback(
-    (v: string | null) => updateLocal({ paymentError: v }),
-    [updateLocal],
-  );
-  const setPaymentSuccess = useCallback(
-    (v: boolean) => updateLocal({ paymentSuccess: v }),
-    [updateLocal],
-  );
-  const setPaidBooking = useCallback(
-    (v: PaidBooking | null) => updateLocal({ paidBooking: v }),
-    [updateLocal],
-  );
 
   const [state, dispatch] = useReducer(bookingReducer, slug, initState);
   const {
@@ -509,23 +452,6 @@ function BookingContentInner() {
   } = state;
 
   // Detect return from payment gateway
-  useEffect(() => {
-    if (get("payment") !== "success") return;
-    clearStorage();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPaymentSuccess(true);
-    const bid = get("bookingId");
-    if (!bid) return;
-    void insforge.database
-      .from("bookings")
-      .select("service_title, date, time, email")
-      .eq("id", bid)
-      .single()
-      .then(({ data }) => {
-        if (data) setPaidBooking(data as PaidBooking);
-      });
-  }, [get, setPaymentSuccess, setPaidBooking]);
-
   useEffect(() => {
     writeStorage({
       step,
@@ -684,12 +610,23 @@ function BookingContentInner() {
       return;
     dispatch({ type: "CONFIRM_START" });
 
-    // Ensure booking exists with pending payment status
+    const locationAddressStr =
+      selectedLocation === "domicilio"
+        ? [
+            locationAddress.street,
+            locationAddress.building,
+            locationAddress.postalCode,
+            locationAddress.municipality,
+          ]
+            .filter(Boolean)
+            .join(", ")
+        : null;
+
     let resolvedBookingId = bookingId;
     if (resolvedBookingId) {
       await insforge.database
         .from("bookings")
-        .update({ payment_status: "pending" })
+        .update({ status: "pending" })
         .eq("id", resolvedBookingId);
     } else {
       const { data } = await insforge.database
@@ -704,24 +641,14 @@ function BookingContentInner() {
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
             location: selectedLocation ?? null,
-            location_address:
-              selectedLocation === "domicilio"
-                ? [
-                    locationAddress.street,
-                    locationAddress.building,
-                    locationAddress.postalCode,
-                    locationAddress.municipality,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")
-                : null,
+            location_address: locationAddressStr,
             date: selectedDate.toISOString().split("T")[0],
             time: selectedTime,
             first_name: details.firstName,
             last_name: details.lastName,
             email: details.email,
             phone: details.phone,
-            payment_status: "pending",
+            status: "pending",
           },
         ])
         .select("id")
@@ -729,64 +656,18 @@ function BookingContentInner() {
       resolvedBookingId = (data as { id: string } | null)?.id ?? null;
     }
 
-    if (!resolvedBookingId) {
-      dispatch({ type: "CONFIRM_SUCCESS" });
-      clearStorage();
-      return;
-    }
-
-    // Create embedded Stripe checkout session
-    const res = await fetch("/api/checkout/booking-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        bookingId: resolvedBookingId,
-        tierId: selectedTierId,
-        email: details.email,
-        name: `${details.firstName} ${details.lastName}`.trim(),
-        description: `${selectedService.title} — ${selectedDuration ?? ""}`,
-      }),
-    });
-
-    dispatch({ type: "CONFIRM_SUCCESS" }); // stop loading spinner
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      const msg = body.error ?? "Failed to start payment. Please try again.";
-      console.error("[booking] Failed to create checkout session:", msg);
-      setPaymentError(msg);
-      return;
-    }
-
-    setPaymentError(null);
-    const form = (await res.json()) as RedsysFormData;
-    setRedsysForm(form);
+    dispatch({ type: "CONFIRM_SUCCESS" });
+    clearStorage();
+    updateLocal({ bookingSubmitted: true });
   };
 
-  // Return from Stripe embedded checkout
-  if (paymentSuccess) {
-    const successService = {
-      id: "",
-      category: "wellness" as const,
-      description: "",
-      durations: [],
-      price: "",
-      image: "",
-      title: paidBooking?.service_title ?? selectedService?.title ?? "Session",
-    };
-    const successDate = paidBooking?.date
-      ? new Date(paidBooking.date)
-      : (selectedDate ?? new Date());
-    const successTime = paidBooking?.time ?? selectedTime ?? "";
-    const successEmail =
-      paidBooking?.email ?? details.email ?? get("email") ?? "";
-
+  if (bookingSubmitted) {
     return (
       <SuccessState
-        service={successService}
-        date={successDate}
-        time={successTime}
-        email={successEmail}
+        service={selectedService ?? { id: "", category: "wellness" as const, description: "", durations: [], price: "", image: "", title: "Session" }}
+        date={selectedDate ?? new Date()}
+        time={selectedTime ?? ""}
+        phone={details.phone}
       />
     );
   }
@@ -840,14 +721,11 @@ function BookingContentInner() {
       />
 
       <BookingModals
-        paymentError={paymentError}
         memberBlocker={memberBlocker}
-        redsysForm={redsysForm}
         onContinueAsGuest={() => {
           setMemberBlocker(false);
           dispatch({ type: "SET_STEP", step: step + 1 });
         }}
-        onClosePayment={() => setRedsysForm(null)}
       />
     </div>
   );

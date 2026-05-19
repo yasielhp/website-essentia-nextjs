@@ -6,12 +6,12 @@ export function SuccessState({
   service,
   date,
   time,
-  email,
+  phone,
 }: {
   service: BookableService;
   date: Date;
   time: string;
-  email: string;
+  phone: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">
@@ -20,7 +20,7 @@ export function SuccessState({
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="font-display text-petroleum-700 text-3xl">
-          Booking confirmed.
+          Booking requested.
         </h2>
         <p className="text-petroleum-500 text-balance">
           {service.title} on{" "}
@@ -31,8 +31,10 @@ export function SuccessState({
           })}{" "}
           at {time}.
         </p>
-        <p className="text-petroleum-400 mt-1 text-sm">
-          A confirmation has been sent to {email}.
+        <p className="text-petroleum-400 mt-1 text-sm text-balance">
+          We will contact you by phone or WhatsApp at{" "}
+          <span className="text-petroleum-600 font-medium">{phone}</span> to
+          confirm your appointment.
         </p>
       </div>
       <Button variant="solid" size="md" href="/">
