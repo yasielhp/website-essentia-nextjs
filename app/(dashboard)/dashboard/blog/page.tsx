@@ -82,7 +82,55 @@ export default function BlogDashboardPage() {
         </div>
       </div>
 
-      <div className="border-sand-200 rounded-2xl border bg-white">
+      {/* Mobile cards */}
+      <div className="border-sand-200 divide-sand-200 divide-y overflow-hidden rounded-2xl border bg-white sm:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2 px-5 py-4">
+              <div className="bg-sand-100 h-4 w-48 animate-pulse rounded" />
+              <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+            </div>
+          ))
+        ) : posts.length === 0 ? (
+          <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
+            No hay posts todavía.
+          </p>
+        ) : (
+          posts.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => push(`/dashboard/blog/${p.id}`)}
+              className="hover:bg-sand-50 cursor-pointer px-5 py-4 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-petroleum-700 truncate font-medium">
+                  {p.title}
+                </p>
+                {p.status === "published" ? (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    Publicado
+                  </span>
+                ) : (
+                  <span className="bg-sand-100 text-petroleum-500 inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                    <span className="bg-petroleum-300 size-1.5 rounded-full" />
+                    Borrador
+                  </span>
+                )}
+              </div>
+              <p className="text-petroleum-400 mt-1 text-xs">
+                {p.category?.name ?? "Sin categoría"}
+                {p.published_at
+                  ? ` · Publicado ${formatDate(p.published_at)}`
+                  : ` · Creado ${formatDate(p.created_at)}`}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table (desktop only) */}
+      <div className="border-sand-200 hidden rounded-2xl border bg-white sm:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>

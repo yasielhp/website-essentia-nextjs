@@ -22,7 +22,7 @@ type Session = {
   registrations_count: number;
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const ACCESS_LABELS: Record<AccessType, string> = {
   members_only: "Members only",
@@ -32,7 +32,7 @@ const ACCESS_LABELS: Record<AccessType, string> = {
 };
 
 const ACCESS_COLORS: Record<AccessType, string> = {
-  members_only: "bg-petroleum-50 text-petroleum-600",
+  members_only: "bg-petroleum-50 text-petroleum-500",
   open: "bg-green-50 text-green-700",
   paid: "bg-amber-50 text-amber-700",
   paid_members_free: "bg-blue-50 text-blue-700",
@@ -151,7 +151,107 @@ export default function EducationPage() {
         </Button>
       </div>
 
-      <div className="border-sand-200 rounded-2xl border bg-white">
+      {/* Mobile cards */}
+      <div className="border-sand-200 divide-sand-200 mb-4 divide-y overflow-hidden rounded-2xl border bg-white sm:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-5 py-4">
+              <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+              <div className="flex flex-1 flex-col gap-2">
+                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+              </div>
+            </div>
+          ))
+        ) : sessions.length === 0 ? (
+          <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
+            No sessions yet.
+          </p>
+        ) : (
+          sessions.map((session) => (
+            <div
+              key={session.id}
+              onClick={() => push(`/dashboard/education/${session.id}/edit`)}
+              className="hover:bg-sand-50 flex cursor-pointer items-stretch transition-colors"
+            >
+              <div className="bg-sand-100 relative w-20 shrink-0 overflow-hidden">
+                {session.image_url ? (
+                  <Image
+                    src={session.image_url}
+                    alt={session.title}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
+                ) : (
+                  <div className="bg-sand-100 flex size-full items-center justify-center">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="text-petroleum-300"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M21 15l-5-5L5 21"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 px-5 py-4">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-petroleum-700 truncate font-medium">
+                    {session.title}
+                  </p>
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ACCESS_COLORS[session.access]}`}
+                  >
+                    {ACCESS_LABELS[session.access]}
+                  </span>
+                </div>
+                <p className="text-petroleum-400 mt-1 text-xs">
+                  {formatDate(session.date)} · {formatTime(session.date)}
+                  {session.duration_minutes != null
+                    ? ` · ${session.duration_minutes} min`
+                    : ""}
+                </p>
+                <p className="text-petroleum-400 mt-0.5 text-xs">
+                  {session.location ?? ""}
+                  {session.location ? " · " : ""}
+                  {session.registrations_count}
+                  {session.max_participants != null
+                    ? ` / ${session.max_participants} enrolled`
+                    : " enrolled"}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table (desktop only) */}
+      <div className="border-sand-200 hidden rounded-2xl border bg-white sm:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-sm">
             <thead>
@@ -292,14 +392,19 @@ export default function EducationPage() {
             </tbody>
           </table>
         </div>
-
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPage={setPage}
-          loading={loading}
-        />
       </div>
+
+      {total > PAGE_SIZE && (
+        <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPage={setPage}
+            loading={loading}
+            className="border-t-0"
+          />
+        </div>
+      )}
     </div>
   );
 }

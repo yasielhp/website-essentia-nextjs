@@ -701,15 +701,17 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPage={(p) => dispatch({ type: "SET_PAGE", value: p })}
-          className="border-t-0"
-          loading={loading}
-        />
-      </div>
+      {total > PAGE_SIZE && (
+        <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPage={(p) => dispatch({ type: "SET_PAGE", value: p })}
+            className="border-t-0"
+            loading={loading}
+          />
+        </div>
+      )}
 
       {filterOpen && (
         <FilterModal

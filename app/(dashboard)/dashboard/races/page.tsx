@@ -23,7 +23,7 @@ type Race = {
   registrations_count: number;
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const RACE_ACCESS_LABELS: Record<RaceAccess, string> = {
   members: "Members only",
@@ -31,7 +31,7 @@ const RACE_ACCESS_LABELS: Record<RaceAccess, string> = {
 };
 
 const RACE_ACCESS_COLORS: Record<RaceAccess, string> = {
-  members: "bg-petroleum-50 text-petroleum-600",
+  members: "bg-petroleum-50 text-petroleum-500",
   open: "bg-green-50 text-green-700",
 };
 
@@ -140,7 +140,104 @@ export default function RacesPage() {
         </Button>
       </div>
 
-      <div className="border-sand-200 rounded-2xl border bg-white">
+      {/* Mobile cards */}
+      <div className="border-sand-200 divide-sand-200 mb-4 divide-y overflow-hidden rounded-2xl border bg-white sm:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-5 py-4">
+              <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+              <div className="flex flex-1 flex-col gap-2">
+                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+              </div>
+            </div>
+          ))
+        ) : races.length === 0 ? (
+          <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
+            No races yet.
+          </p>
+        ) : (
+          races.map((race) => (
+            <div
+              key={race.id}
+              onClick={() => push(`/dashboard/races/${race.id}/edit`)}
+              className="hover:bg-sand-50 flex cursor-pointer items-stretch transition-colors"
+            >
+              <div className="bg-sand-100 relative w-20 shrink-0 overflow-hidden">
+                {race.image_url ? (
+                  <Image
+                    src={race.image_url}
+                    alt={race.title}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
+                ) : (
+                  <div className="bg-petroleum-700/10 flex size-full items-center justify-center">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="text-petroleum-400"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="3"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M21 15l-5-5L5 21"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 px-5 py-4">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-petroleum-700 truncate font-medium">
+                    {race.title}
+                  </p>
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${RACE_ACCESS_COLORS[race.access]}`}
+                  >
+                    {RACE_ACCESS_LABELS[race.access]}
+                  </span>
+                </div>
+                <p className="text-petroleum-400 mt-1 text-xs">
+                  {formatDate(race.date)}
+                  {race.location ? ` · ${race.location}` : ""}
+                </p>
+                <p className="text-petroleum-400 mt-0.5 text-xs">
+                  {race.distance_km != null ? `${race.distance_km} km · ` : ""}
+                  {race.registrations_count}
+                  {race.max_participants != null
+                    ? ` / ${race.max_participants} registered`
+                    : " registered"}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table (desktop only) */}
+      <div className="border-sand-200 hidden rounded-2xl border bg-white sm:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[940px] text-sm">
             <thead>
@@ -294,14 +391,19 @@ export default function RacesPage() {
             </tbody>
           </table>
         </div>
-
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPage={setPage}
-          loading={loading}
-        />
       </div>
+
+      {total > PAGE_SIZE && (
+        <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPage={setPage}
+            loading={loading}
+            className="border-t-0"
+          />
+        </div>
+      )}
     </div>
   );
 }
