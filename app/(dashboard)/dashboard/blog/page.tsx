@@ -24,6 +24,12 @@ function formatDate(iso: string | null) {
   });
 }
 
+const fieldCls =
+  "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+
+type BlogFilter = { status: string; category: string };
+const emptyBlogFilter: BlogFilter = { status: "", category: "" };
+
 function IconPlus() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -37,10 +43,142 @@ function IconPlus() {
   );
 }
 
+function IconFilter() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 6h16M7 12h10M10 18h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FilterModal({
+  pending,
+  onChange,
+  onApply,
+  onClear,
+  onClose,
+}: {
+  pending: BlogFilter;
+  onChange: (key: keyof BlogFilter, value: string) => void;
+  onApply: () => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    void insforge.database
+      .from("blog_categories")
+      .select("name")
+      .order("name")
+      .then(({ data }) => {
+        setCategories(((data ?? []) as { name: string }[]).map((c) => c.name));
+      });
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <button
+            onClick={onClose}
+            className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 6 6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Status
+            </span>
+            <select
+              value={pending.status}
+              onChange={(e) => onChange("status", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Category
+            </span>
+            <select
+              value={pending.category}
+              onChange={(e) => onChange("category", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <button
+            onClick={onClear}
+            className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
+          >
+            Clear all
+          </button>
+          <Button variant="solid" size="md" onClick={onApply}>
+            Apply filters
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BlogDashboardPage() {
   const { push } = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [appliedFilter, setAppliedFilter] =
+    useState<BlogFilter>(emptyBlogFilter);
+  const [pendingFilter, setPendingFilter] =
+    useState<BlogFilter>(emptyBlogFilter);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const activeFilterCount = Object.values(appliedFilter).filter(Boolean).length;
+
+  function openModal() {
+    setPendingFilter(appliedFilter);
+    setFilterOpen(true);
+  }
+  function applyFilters() {
+    setAppliedFilter(pendingFilter);
+    setFilterOpen(false);
+  }
+  function clearFilters() {
+    setAppliedFilter(emptyBlogFilter);
+    setPendingFilter(emptyBlogFilter);
+    setFilterOpen(false);
+  }
 
   useEffect(() => {
     insforge.database
@@ -55,31 +193,39 @@ export default function BlogDashboardPage() {
       });
   }, []);
 
+  const filteredPosts = posts.filter((p) => {
+    if (appliedFilter.status && p.status !== appliedFilter.status) return false;
+    if (appliedFilter.category && p.category?.name !== appliedFilter.category)
+      return false;
+    return true;
+  });
+
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-petroleum-700 text-3xl">Blog</h1>
-          {!loading && (
-            <p className="text-petroleum-400 mt-1 text-sm">
-              {posts.length} post{posts.length !== 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
+      <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="md" href="/dashboard/blog/categories">
-            Categorías
-          </Button>
           <Button
             variant="solid"
             size="md"
             href="/dashboard/blog/new"
-            className="gap-2 self-start"
+            className="gap-2"
           >
             <IconPlus />
             Nuevo post
           </Button>
+          <Button variant="outline" size="md" href="/dashboard/blog/categories">
+            Categorías
+          </Button>
         </div>
+        <Button
+          variant={activeFilterCount > 0 ? "soft" : "outline"}
+          size="md"
+          onClick={openModal}
+          className="gap-2"
+        >
+          <IconFilter />
+          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+        </Button>
       </div>
 
       {/* Mobile cards */}
@@ -91,12 +237,12 @@ export default function BlogDashboardPage() {
               <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
             </div>
           ))
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
             No hay posts todavía.
           </p>
         ) : (
-          posts.map((p) => (
+          filteredPosts.map((p) => (
             <div
               key={p.id}
               onClick={() => push(`/dashboard/blog/${p.id}`)}
@@ -163,7 +309,7 @@ export default function BlogDashboardPage() {
                     ))}
                   </tr>
                 ))
-              ) : posts.length === 0 ? (
+              ) : filteredPosts.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
@@ -173,7 +319,7 @@ export default function BlogDashboardPage() {
                   </td>
                 </tr>
               ) : (
-                posts.map((p) => (
+                filteredPosts.map((p) => (
                   <tr
                     key={p.id}
                     onClick={() => push(`/dashboard/blog/${p.id}`)}
@@ -211,6 +357,18 @@ export default function BlogDashboardPage() {
           </table>
         </div>
       </div>
+
+      {filterOpen && (
+        <FilterModal
+          pending={pendingFilter}
+          onChange={(key, val) =>
+            setPendingFilter((p) => ({ ...p, [key]: val }))
+          }
+          onApply={applyFilters}
+          onClear={clearFilters}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </div>
   );
 }

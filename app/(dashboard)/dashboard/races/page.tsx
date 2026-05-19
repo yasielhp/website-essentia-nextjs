@@ -63,6 +63,94 @@ function IconPlus() {
   );
 }
 
+function IconFilter() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 6h16M7 12h10M10 18h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+type RaceFilter = { access: string };
+const emptyRaceFilter: RaceFilter = { access: "" };
+
+const fieldCls =
+  "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+
+function FilterModal({
+  pending,
+  onChange,
+  onApply,
+  onClear,
+  onClose,
+}: {
+  pending: RaceFilter;
+  onChange: (key: keyof RaceFilter, value: string) => void;
+  onApply: () => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <button
+            onClick={onClose}
+            className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 6 6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Access
+            </span>
+            <select
+              value={pending.access}
+              onChange={(e) => onChange("access", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All</option>
+              <option value="members">Members only</option>
+              <option value="open">Open · free</option>
+            </select>
+          </label>
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <button
+            onClick={onClear}
+            className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
+          >
+            Clear all
+          </button>
+          <Button variant="solid" size="md" onClick={onApply}>
+            Apply filters
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RacesPage() {
   const [page, setPage] = useState(0);
   const [state, setState] = useState<{
@@ -72,18 +160,49 @@ export default function RacesPage() {
   }>({ races: [], loading: true, total: 0 });
   const { races, loading, total } = state;
 
+  const [appliedFilter, setAppliedFilter] =
+    useState<RaceFilter>(emptyRaceFilter);
+  const [pendingFilter, setPendingFilter] =
+    useState<RaceFilter>(emptyRaceFilter);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const activeFilterCount = Object.values(appliedFilter).filter(Boolean).length;
+
+  function openModal() {
+    setPendingFilter(appliedFilter);
+    setFilterOpen(true);
+  }
+  function applyFilters() {
+    setAppliedFilter(pendingFilter);
+    setPage(0);
+    setFilterOpen(false);
+  }
+  function clearFilters() {
+    setAppliedFilter(emptyRaceFilter);
+    setPendingFilter(emptyRaceFilter);
+    setPage(0);
+    setFilterOpen(false);
+  }
+
   const { push } = useRouter();
 
   useEffect(() => {
     async function run() {
-      const { data: racesData, count } = await insforge.database
+      let query = insforge.database
         .from("races")
         .select(
           "id, title, description, date, location, distance_km, max_participants, image_url, access, created_at",
           { count: "exact" },
         )
-        .order("date", { ascending: false })
-        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+        .order("date", { ascending: false });
+
+      if (appliedFilter.access) {
+        query = query.eq("access", appliedFilter.access);
+      }
+
+      const { data: racesData, count } = await query.range(
+        page * PAGE_SIZE,
+        page * PAGE_SIZE + PAGE_SIZE - 1,
+      );
 
       if (!racesData || (racesData as unknown[]).length === 0) {
         setState({ races: [], loading: false, total: count ?? 0 });
@@ -115,28 +234,30 @@ export default function RacesPage() {
       });
     }
     void run();
-  }, [page]);
+  }, [page, appliedFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-petroleum-700 text-3xl">Races</h1>
-          <p className="text-petroleum-400 mt-1 text-sm">
-            {total} race{total !== 1 ? "s" : ""}
-          </p>
-        </div>
-
+      <div className="mb-8 flex items-center justify-between gap-3">
         <Button
           variant="solid"
           size="md"
           href="/dashboard/races/new"
-          className="gap-2 self-start"
+          className="gap-2"
         >
           <IconPlus />
           Create Race
+        </Button>
+        <Button
+          variant={activeFilterCount > 0 ? "soft" : "outline"}
+          size="md"
+          onClick={openModal}
+          className="gap-2"
+        >
+          <IconFilter />
+          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
         </Button>
       </div>
 
@@ -403,6 +524,18 @@ export default function RacesPage() {
             className="border-t-0"
           />
         </div>
+      )}
+
+      {filterOpen && (
+        <FilterModal
+          pending={pendingFilter}
+          onChange={(key, val) =>
+            setPendingFilter((p) => ({ ...p, [key]: val }))
+          }
+          onApply={applyFilters}
+          onClear={clearFilters}
+          onClose={() => setFilterOpen(false)}
+        />
       )}
     </div>
   );
