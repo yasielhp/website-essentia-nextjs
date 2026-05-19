@@ -1,4 +1,4 @@
-export type Role = "admin" | "staff" | "partner" | "member" | "contact" | null;
+export type Role = "admin" | "staff" | "partner" | "calendar" | "member" | "contact" | null;
 
 export type DetailsState = {
   firstName: string;

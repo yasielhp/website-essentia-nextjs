@@ -41,7 +41,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       role !== null &&
       role !== "admin" &&
       role !== "staff" &&
-      role !== "partner"
+      role !== "partner" &&
+      role !== "calendar"
     ) {
       replace("/");
     }
@@ -77,12 +78,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         : [rawCrumbs[0]!, { label: dynamicLabel }]
       : rawCrumbs;
 
+  const restrictedNavLinks = [
+    { label: "Overview", href: "/dashboard" },
+    { label: "Bookings", href: "/dashboard/bookings" },
+  ];
+
   const visibleNavLinks =
-    (role as Role) === "partner"
-      ? [
-          { label: "Overview", href: "/dashboard" },
-          { label: "Bookings", href: "/dashboard/bookings" },
-        ]
+    (role as Role) === "partner" || (role as Role) === "calendar"
+      ? restrictedNavLinks
       : navLinks;
 
   function isNavActive(href: string) {
