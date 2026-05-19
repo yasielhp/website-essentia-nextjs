@@ -21,9 +21,7 @@ export const bookingDetailsSchema = z.object({
 export const locationAddressSchema = z.object({
   street: z.string().min(1, "Street is required"),
   building: z.string().optional(),
-  postalCode: z
-    .string()
-    .regex(/^\d{5}$/, "Postal code must be 5 digits"),
+  postalCode: z.string().regex(/^\d{5}$/, "Postal code must be 5 digits"),
   municipality: z.string().min(1, "Municipality is required"),
 });
 

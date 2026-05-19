@@ -13,10 +13,14 @@ import {
 import type { DetailsState } from "@/types";
 import { StepIndicator } from "./steps/step-indicator";
 import { ServiceStep } from "./steps/service-step";
-import { LocationStep, type BookingLocation, type AddressErrors } from "./steps/location-step";
+import { LocationStep, type AddressErrors } from "./steps/location-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
-import { bookingDetailsSchema, locationAddressSchema, parseErrors } from "@/lib/schemas";
+import {
+  bookingDetailsSchema,
+  locationAddressSchema,
+  parseErrors,
+} from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
@@ -381,7 +385,10 @@ type BookingModalsProps = {
   onContinueAsGuest: () => void;
 };
 
-function BookingModals({ memberBlocker, onContinueAsGuest }: BookingModalsProps) {
+function BookingModals({
+  memberBlocker,
+  onContinueAsGuest,
+}: BookingModalsProps) {
   return memberBlocker ? (
     <MemberBlockerModal onContinue={onContinueAsGuest} />
   ) : null;
@@ -664,7 +671,17 @@ function BookingContentInner() {
   if (bookingSubmitted) {
     return (
       <SuccessState
-        service={selectedService ?? { id: "", category: "wellness" as const, description: "", durations: [], price: "", image: "", title: "Session" }}
+        service={
+          selectedService ?? {
+            id: "",
+            category: "wellness" as const,
+            description: "",
+            durations: [],
+            price: "",
+            image: "",
+            title: "Session",
+          }
+        }
         date={selectedDate ?? new Date()}
         time={selectedTime ?? ""}
         phone={details.phone}

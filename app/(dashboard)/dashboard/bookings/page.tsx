@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useCallback } from "react";
+import { useEffect, useReducer, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,58 @@ import { Pagination } from "@/components/dashboard/pagination";
 type Booking = {
   id: string;
   service_title: string | null;
+  duration: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
-  phone: string | null;
   date: string | null;
   time: string | null;
-  duration: string | null;
   status: string | null;
+  location: string | null;
+  created_at: string | null;
+};
+
+type Filters = {
+  status: string;
+  location: string;
+  service: string;
+  client: string;
+  date: string;
+};
+
+const emptyFilters: Filters = {
+  status: "",
+  location: "",
+  service: "",
+  client: "",
+  date: "",
 };
 
 const PAGE_SIZE = 20;
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+function formatBookingDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length < 3) return dateStr;
+  const [y, m, d] = parts as [number, number, number];
+  return new Date(y, m - 1, d).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatCreatedAt(isoStr: string | null): string {
+  if (!isoStr) return "—";
+  return new Date(isoStr).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// ─── Badges ───────────────────────────────────────────────────
 
 const statusBadgeClasses: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -39,6 +80,32 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+const locationLabels: Record<string, string> = {
+  centro: "At the center",
+  habitacion: "Room",
+  domicilio: "Home visit",
+};
+
+const locationBadgeClasses: Record<string, string> = {
+  centro: "bg-blue-50 text-blue-700",
+  habitacion: "bg-purple-50 text-purple-700",
+  domicilio: "bg-teal-50 text-teal-700",
+};
+
+function LocationBadge({ location }: { location: string | null }) {
+  if (!location) return <span className="text-petroleum-300">—</span>;
+  const label = locationLabels[location] ?? location;
+  const cls =
+    locationBadgeClasses[location] ?? "bg-sand-100 text-petroleum-500";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 function IconPlus() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -49,6 +116,258 @@ function IconPlus() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+function IconFilter() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 6h16M7 12h10M10 18h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// ─── Autocomplete input ────────────────────────────────────────
+
+const fieldCls =
+  "border-sand-200 text-petroleum-600 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+
+function AutocompleteInput({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const visible = options.filter(
+    (o) =>
+      o.toLowerCase().includes(value.toLowerCase()) &&
+      o.toLowerCase() !== value.toLowerCase(),
+  );
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={fieldCls}
+      />
+      {open && visible.length > 0 && (
+        <div className="border-sand-200 absolute top-full right-0 left-0 z-20 mt-1 max-h-48 overflow-auto rounded-xl border bg-white shadow-md">
+          {visible.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onMouseDown={() => {
+                onChange(opt);
+                setOpen(false);
+              }}
+              className="text-petroleum-700 hover:bg-sand-50 w-full px-3 py-2 text-left text-sm"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Filter modal ─────────────────────────────────────────────
+
+function FilterModal({
+  pending,
+  onChange,
+  onApply,
+  onClear,
+  onClose,
+}: {
+  pending: Filters;
+  onChange: (key: keyof Filters, value: string) => void;
+  onApply: () => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+  const [clientOptions, setClientOptions] = useState<string[]>([]);
+  const clientDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load services once on mount
+  useEffect(() => {
+    void insforge.database
+      .from("service_settings")
+      .select("title")
+      .eq("active", true)
+      .order("title")
+      .then(({ data }) => {
+        setServiceOptions(
+          ((data ?? []) as { title: string }[])
+            .map((s) => s.title)
+            .filter(Boolean),
+        );
+      });
+  }, []);
+
+  // Live client search with debounce
+  useEffect(() => {
+    if (clientDebounce.current) clearTimeout(clientDebounce.current);
+    if (!pending.client) {
+      clientDebounce.current = setTimeout(() => setClientOptions([]), 0);
+      return;
+    }
+
+    clientDebounce.current = setTimeout(async () => {
+      const term = pending.client;
+      const { data } = await insforge.database
+        .from("bookings")
+        .select("first_name, last_name")
+        .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+        .limit(30);
+
+      const seen = new Set<string>();
+      const names: string[] = [];
+      for (const b of (data ?? []) as {
+        first_name: string | null;
+        last_name: string | null;
+      }[]) {
+        const name = [b.first_name, b.last_name].filter(Boolean).join(" ");
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          names.push(name);
+        }
+      }
+      setClientOptions(names);
+    }, 300);
+  }, [pending.client]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <button
+            onClick={onClose}
+            className="text-petroleum-300 hover:text-petroleum-600 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 6 6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Status
+            </span>
+            <select
+              value={pending.status}
+              onChange={(e) => onChange("status", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Location
+            </span>
+            <select
+              value={pending.location}
+              onChange={(e) => onChange("location", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All locations</option>
+              <option value="centro">At the center</option>
+              <option value="habitacion">Room</option>
+              <option value="domicilio">Home visit</option>
+            </select>
+          </label>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Service
+            </span>
+            <AutocompleteInput
+              value={pending.service}
+              onChange={(v) => onChange("service", v)}
+              options={serviceOptions}
+              placeholder="Search service…"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Client
+            </span>
+            <AutocompleteInput
+              value={pending.client}
+              onChange={(v) => onChange("client", v)}
+              options={clientOptions}
+              placeholder="Search client…"
+            />
+          </div>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">Date</span>
+            <input
+              type="date"
+              value={pending.date}
+              onChange={(e) => onChange("date", e.target.value)}
+              className={fieldCls}
+            />
+          </label>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-1">
+          <button
+            onClick={onClear}
+            className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
+          >
+            Clear all
+          </button>
+          <Button variant="solid" size="md" onClick={onApply}>
+            Apply filters
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -64,7 +383,8 @@ type PageState = {
 type PageAction =
   | { type: "LOAD_SUCCESS"; bookings: Booking[]; total: number }
   | { type: "SET_LOADING" }
-  | { type: "SET_PAGE"; value: number };
+  | { type: "SET_PAGE"; value: number }
+  | { type: "RESET_PAGE" };
 
 const initialState: PageState = {
   bookings: [],
@@ -86,25 +406,80 @@ function reducer(state: PageState, action: PageAction): PageState {
       };
     case "SET_PAGE":
       return { ...state, page: action.value };
+    case "RESET_PAGE":
+      return { ...state, page: 0 };
   }
 }
 
 // ─── Page ─────────────────────────────────────────────────────
+
+const COL_COUNT = 6;
 
 export default function BookingsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { bookings, total, page, loading } = state;
   const { push } = useRouter();
 
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(emptyFilters);
+  const [pendingFilters, setPendingFilters] = useState<Filters>(emptyFilters);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const activeCount = Object.values(appliedFilters).filter(Boolean).length;
+
+  function openModal() {
+    setPendingFilters(appliedFilters);
+    setFilterOpen(true);
+  }
+
+  function applyFilters() {
+    setAppliedFilters(pendingFilters);
+    dispatch({ type: "RESET_PAGE" });
+    setFilterOpen(false);
+  }
+
+  function clearFilters() {
+    setAppliedFilters(emptyFilters);
+    setPendingFilters(emptyFilters);
+    dispatch({ type: "RESET_PAGE" });
+    setFilterOpen(false);
+  }
+
+  const {
+    status: fStatus,
+    location: fLocation,
+    service: fService,
+    client: fClient,
+    date: fDate,
+  } = appliedFilters;
+
   const fetchBookings = useCallback(async () => {
     dispatch({ type: "SET_LOADING" });
 
-    const { data, count } = await insforge.database
+    let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, first_name, last_name, email, phone, date, time, duration, status",
+        "id, service_title, duration, first_name, last_name, date, time, status, location, created_at",
         { count: "exact" },
-      )
+      );
+
+    if (fStatus) query = query.eq("status", fStatus);
+    if (fLocation) query = query.eq("location", fLocation);
+    if (fService) query = query.ilike("service_title", `%${fService}%`);
+    if (fClient) {
+      const parts = fClient.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        query = query
+          .ilike("first_name", `%${parts[0]}%`)
+          .ilike("last_name", `%${parts[1]}%`);
+      } else {
+        query = query.or(
+          `first_name.ilike.%${fClient}%,last_name.ilike.%${fClient}%`,
+        );
+      }
+    }
+    if (fDate) query = query.eq("date", fDate);
+
+    const { data, count } = await query
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
@@ -113,7 +488,7 @@ export default function BookingsPage() {
       bookings: (data as Booking[] | null) ?? [],
       total: count ?? 0,
     });
-  }, [page]);
+  }, [page, fStatus, fLocation, fService, fClient, fDate]);
 
   useEffect(() => {
     void fetchBookings();
@@ -123,53 +498,59 @@ export default function BookingsPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
+      {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-petroleum-700 text-3xl">Bookings</h1>
           <p className="text-petroleum-400 mt-1 text-sm">
-            {total} total booking{total !== 1 ? "s" : ""}
+            {total} booking{total !== 1 ? "s" : ""}
           </p>
         </div>
-
-        <Button
-          variant="solid"
-          size="md"
-          href="/dashboard/bookings/new"
-          className="gap-2 self-start"
-        >
-          <IconPlus />
-          Create Booking
-        </Button>
+        <div className="flex items-center gap-3 self-start">
+          <Button
+            variant={activeCount > 0 ? "soft" : "outline"}
+            size="md"
+            onClick={openModal}
+            className="gap-2"
+          >
+            <IconFilter />
+            Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
+          </Button>
+          <Button
+            variant="solid"
+            size="md"
+            href="/dashboard/bookings/new"
+            className="gap-2"
+          >
+            <IconPlus />
+            Create Booking
+          </Button>
+        </div>
       </div>
 
+      {/* Table */}
       <div className="border-sand-200 rounded-2xl border bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[800px] text-sm">
             <thead>
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Service
+                  Created
+                </th>
+                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+                  Status
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
                   Client
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Email
+                  Service
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Phone
+                  Location
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Date
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Time
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Duration
-                </th>
-                <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Status
+                  Date & time
                 </th>
               </tr>
             </thead>
@@ -177,7 +558,7 @@ export default function BookingsPage() {
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: COL_COUNT }).map((_, j) => (
                       <td key={j} className="px-5 py-4">
                         <div className="bg-sand-100 h-4 animate-pulse rounded" />
                       </td>
@@ -187,7 +568,7 @@ export default function BookingsPage() {
               ) : bookings.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={COL_COUNT}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
                     No bookings found.
@@ -200,30 +581,36 @@ export default function BookingsPage() {
                     onClick={() => push(`/dashboard/bookings/${b.id}`)}
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
-                    <td className="text-petroleum-700 px-5 py-4 font-medium">
-                      {b.service_title ?? "—"}
+                    <td className="text-petroleum-400 px-5 py-4 text-xs">
+                      {formatCreatedAt(b.created_at)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={b.status} />
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
                       {[b.first_name, b.last_name].filter(Boolean).join(" ") ||
                         "—"}
                     </td>
-                    <td className="text-petroleum-400 px-5 py-4">
-                      {b.email ?? "—"}
-                    </td>
-                    <td className="text-petroleum-400 px-5 py-4">
-                      {b.phone ?? "—"}
-                    </td>
-                    <td className="text-petroleum-500 px-5 py-4">
-                      {b.date ?? "—"}
-                    </td>
-                    <td className="text-petroleum-500 px-5 py-4">
-                      {b.time ?? "—"}
-                    </td>
-                    <td className="text-petroleum-400 px-5 py-4">
-                      {b.duration ?? "—"}
+                    <td className="px-5 py-4">
+                      <p className="text-petroleum-700 font-medium">
+                        {b.service_title ?? "—"}
+                      </p>
+                      {b.duration && (
+                        <p className="text-petroleum-400 text-xs">
+                          {b.duration}
+                        </p>
+                      )}
                     </td>
                     <td className="px-5 py-4">
-                      <StatusBadge status={b.status} />
+                      <LocationBadge location={b.location} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-petroleum-500">
+                        {formatBookingDate(b.date)}
+                      </p>
+                      {b.time && (
+                        <p className="text-petroleum-400 text-xs">{b.time}</p>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -239,6 +626,18 @@ export default function BookingsPage() {
           loading={loading}
         />
       </div>
+
+      {filterOpen && (
+        <FilterModal
+          pending={pendingFilters}
+          onChange={(key, value) =>
+            setPendingFilters((prev) => ({ ...prev, [key]: value }))
+          }
+          onApply={applyFilters}
+          onClear={clearFilters}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </div>
   );
 }

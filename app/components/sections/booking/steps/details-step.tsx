@@ -8,7 +8,8 @@ import type { DetailsState } from "@/types";
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
-const inputOk = "border-sand-300 focus:border-petroleum-400 focus:ring-petroleum-100";
+const inputOk =
+  "border-sand-300 focus:border-petroleum-400 focus:ring-petroleum-100";
 const inputErr = "border-red-300 focus:border-red-400 focus:ring-red-100";
 
 export type DetailsErrors = Partial<Record<keyof DetailsState, string>>;
@@ -58,7 +59,12 @@ export function DetailsStep({
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="First name" id="first-name" required error={errors.firstName}>
+        <Field
+          label="First name"
+          id="first-name"
+          required
+          error={errors.firstName}
+        >
           <input
             id="first-name"
             type="text"
@@ -69,7 +75,12 @@ export function DetailsStep({
             className={`${inputClass} ${errors.firstName ? inputErr : inputOk}`}
           />
         </Field>
-        <Field label="Last name" id="last-name" required error={errors.lastName}>
+        <Field
+          label="Last name"
+          id="last-name"
+          required
+          error={errors.lastName}
+        >
           <input
             id="last-name"
             type="text"

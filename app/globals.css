@@ -29,10 +29,44 @@
   --color-sand-700: #a9997d;
 
   /* ─── Red ───────────────────────────────────────────────── */
+  --color-red-50: #fef2f2;
   --color-red-100: #fee2e2;
+  --color-red-300: #fca5a5;
   --color-red-400: #f87171;
   --color-red-500: #ef4444;
   --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+
+  /* ─── Yellow ─────────────────────────────────────────────── */
+  --color-yellow-50: #fefce8;
+  --color-yellow-100: #fef9c3;
+  --color-yellow-300: #fde047;
+  --color-yellow-400: #facc15;
+  --color-yellow-700: #a16207;
+  --color-yellow-800: #854d0e;
+
+  /* ─── Green ──────────────────────────────────────────────── */
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+
+  /* ─── Blue ───────────────────────────────────────────────── */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-700: #1d4ed8;
+
+  /* ─── Purple ─────────────────────────────────────────────── */
+  --color-purple-50: #faf5ff;
+  --color-purple-700: #7e22ce;
+
+  /* ─── Teal ───────────────────────────────────────────────── */
+  --color-teal-50: #f0fdfa;
+  --color-teal-700: #0f766e;
 
   /* ─── Base ───────────────────────────────────────────────── */
   --color-white: #ffffff;

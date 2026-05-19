@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { MapPin, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
 import type { LocationAddress } from "@/components/sections/booking/booking-content";
@@ -83,7 +83,12 @@ export function ConfirmStep({
             { label: "Email", value: details.email },
             { label: "Phone", value: details.phone },
             ...(location
-              ? [{ label: "Location", value: LOCATION_LABELS[location] ?? location }]
+              ? [
+                  {
+                    label: "Location",
+                    value: LOCATION_LABELS[location] ?? location,
+                  },
+                ]
               : []),
           ].map(({ label, value }) => (
             <div key={label}>
@@ -95,12 +100,9 @@ export function ConfirmStep({
 
         {/* Address block — only for home visits */}
         {location === "domicilio" && addressLine && (
-          <div className="border-sand-100 flex items-start gap-3 border-t pt-4">
-            <MapPin size={16} className="text-petroleum-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-petroleum-400 text-xs">Home visit address</p>
-              <p className="text-petroleum-700 text-sm">{addressLine}</p>
-            </div>
+          <div className="border-sand-100 border-t pt-4">
+            <p className="text-petroleum-400 text-xs">Home visit address</p>
+            <p className="text-petroleum-700 text-sm">{addressLine}</p>
           </div>
         )}
       </div>

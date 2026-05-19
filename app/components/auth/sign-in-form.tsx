@@ -17,7 +17,10 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,12 +91,17 @@ export default function SignInForm() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFieldErrors((p) => ({ ...p, email: undefined }));
+            }}
             autoComplete="email"
             placeholder="you@example.com"
-            className={`rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 text-petroleum-700 placeholder:text-petroleum-100 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
+            className={`text-petroleum-700 placeholder:text-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
           />
-          {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
+          {fieldErrors.email && (
+            <p className="text-xs text-red-500">{fieldErrors.email}</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -106,11 +114,16 @@ export default function SignInForm() {
           <PasswordInput
             id="password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors((p) => ({ ...p, password: undefined }));
+            }}
             autoComplete="current-password"
             placeholder="••••••••"
           />
-          {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
+          {fieldErrors.password && (
+            <p className="text-xs text-red-500">{fieldErrors.password}</p>
+          )}
         </div>
 
         <div className="flex justify-end">
