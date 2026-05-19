@@ -552,18 +552,14 @@ function RegistrationsTable({
         <thead>
           <tr className="border-sand-200 border-b text-left">
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">#</th>
-            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-              Name
-            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">Name</th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
               Email
             </th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
               Phone
             </th>
-            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-              Mesa
-            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">Mesa</th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
               Registered at
             </th>
@@ -845,9 +841,7 @@ export default function RaceRegistrationsPage() {
           onConfirmOpen={(regId) =>
             dispatch({ type: "SET_REMOVE_OPEN", id: regId })
           }
-          onConfirmClose={() =>
-            dispatch({ type: "SET_REMOVE_OPEN", id: null })
-          }
+          onConfirmClose={() => dispatch({ type: "SET_REMOVE_OPEN", id: null })}
           onRemove={(regId) => void handleRemove(regId)}
         />
       </div>

@@ -221,14 +221,30 @@ function TierSelectorInner() {
     redsysForm: null,
     checkoutLoading: false,
   });
-  const { selectedTier, dbPrices, dbFeaturesList, redsysForm, checkoutLoading } = tierState;
+  const {
+    selectedTier,
+    dbPrices,
+    dbFeaturesList,
+    redsysForm,
+    checkoutLoading,
+  } = tierState;
   const selectedTierRef = useRef<TierId>(initialTier);
 
-  function setSelectedTier(v: TierId) { setTierState((s) => ({ ...s, selectedTier: v })); }
-  function setDbPrices(v: Record<string, number>) { setTierState((s) => ({ ...s, dbPrices: v })); }
-  function setDbFeaturesList(v: Record<string, string[]>) { setTierState((s) => ({ ...s, dbFeaturesList: v })); }
-  function setRedsysForm(v: RedsysFormData | null) { setTierState((s) => ({ ...s, redsysForm: v })); }
-  function setCheckoutLoading(v: boolean) { setTierState((s) => ({ ...s, checkoutLoading: v })); }
+  function setSelectedTier(v: TierId) {
+    setTierState((s) => ({ ...s, selectedTier: v }));
+  }
+  function setDbPrices(v: Record<string, number>) {
+    setTierState((s) => ({ ...s, dbPrices: v }));
+  }
+  function setDbFeaturesList(v: Record<string, string[]>) {
+    setTierState((s) => ({ ...s, dbFeaturesList: v }));
+  }
+  function setRedsysForm(v: RedsysFormData | null) {
+    setTierState((s) => ({ ...s, redsysForm: v }));
+  }
+  function setCheckoutLoading(v: boolean) {
+    setTierState((s) => ({ ...s, checkoutLoading: v }));
+  }
 
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);

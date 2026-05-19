@@ -416,7 +416,11 @@ export default function EditPostPage() {
                   folder="covers"
                   value={coverImageUrl || undefined}
                   onChange={(url) =>
-                    dispatch({ type: "SET", field: "coverImageUrl", value: url })
+                    dispatch({
+                      type: "SET",
+                      field: "coverImageUrl",
+                      value: url,
+                    })
                   }
                 />
               )}

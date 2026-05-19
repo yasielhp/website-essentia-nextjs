@@ -377,9 +377,7 @@ function MembershipDetailsSection({
               disabled={submitting || plans.length === 0}
               className={SELECT_CLASS}
             >
-              {plans.length === 0 && (
-                <option value="">Loading plans…</option>
-              )}
+              {plans.length === 0 && <option value="">Loading plans…</option>}
               {plans.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label}: €{p.price_monthly}/mo
