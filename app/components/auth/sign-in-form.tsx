@@ -51,6 +51,8 @@ export default function SignInForm() {
 
       if (role === "admin" || role === "staff") {
         push("/dashboard");
+      } else if (role === "partner") {
+        push("/dashboard/bookings/partner");
       } else {
         push("/account");
       }
