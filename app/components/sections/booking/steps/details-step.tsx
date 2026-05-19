@@ -114,6 +114,18 @@ export function DetailsStep({
           className={`${inputClass} ${errors.phone ? inputErr : inputOk}`}
         />
       </Field>
+      <Field label="Notes" id="notes">
+        <textarea
+          id="notes"
+          placeholder="Anything we should know before your session? (optional)"
+          value={details.notes ?? ""}
+          rows={3}
+          onChange={(e) => {
+            onChange({ ...details, notes: e.target.value });
+          }}
+          className={`${inputClass} ${inputOk} resize-none`}
+        />
+      </Field>
 
       <div className="flex flex-col gap-1">
         <Checkbox

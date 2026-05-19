@@ -48,8 +48,10 @@ async function getStaffEmail(serviceId: string): Promise<string | null> {
     .eq("service_id", serviceId)
     .limit(1)
     .single();
-  return (data as { google_connected_email: string | null } | null)
-    ?.google_connected_email ?? null;
+  return (
+    (data as { google_connected_email: string | null } | null)
+      ?.google_connected_email ?? null
+  );
 }
 
 export async function notifyBooking(
@@ -77,9 +79,21 @@ export async function notifyBooking(
     received: () =>
       bookingReceivedEmail({ name: clientName, service, date, time, duration }),
     confirmed: () =>
-      bookingConfirmedEmail({ name: clientName, service, date, time, duration }),
+      bookingConfirmedEmail({
+        name: clientName,
+        service,
+        date,
+        time,
+        duration,
+      }),
     cancelled: () =>
-      bookingCancelledEmail({ name: clientName, service, date, time, duration }),
+      bookingCancelledEmail({
+        name: clientName,
+        service,
+        date,
+        time,
+        duration,
+      }),
     rescheduled: () =>
       bookingRescheduledEmail({
         name: clientName,

@@ -6,6 +6,7 @@ export type DetailsState = {
   email: string;
   phone: string;
   consent: boolean;
+  notes?: string;
 };
 
 export type Step = { id: string; label: string };
