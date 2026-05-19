@@ -306,15 +306,25 @@ export default function BlogDashboardPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
                     {/* Título */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-48 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-48 animate-pulse rounded" />
+                    </td>
                     {/* Categoría */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-28 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                    </td>
                     {/* Estado (badge with dot) */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-24 animate-pulse rounded-full" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-5 w-24 animate-pulse rounded-full" />
+                    </td>
                     {/* Publicado */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                    </td>
                     {/* Creado */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                    </td>
                   </tr>
                 ))
               ) : filteredPosts.length === 0 ? (

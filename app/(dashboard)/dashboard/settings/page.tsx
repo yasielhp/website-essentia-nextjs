@@ -42,10 +42,9 @@ function GoogleCalendarWidget({
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      await fetch(
-        `/api/google/calendar/disconnect?service_id=${serviceId}`,
-        { method: "DELETE" },
-      );
+      await fetch(`/api/google/calendar/disconnect?service_id=${serviceId}`, {
+        method: "DELETE",
+      });
       onDisconnected(serviceId);
     } catch {
       // ignore
@@ -56,19 +55,19 @@ function GoogleCalendarWidget({
 
   if (config?.google_connected_email) {
     return (
-      <div className="flex items-center gap-2 mt-1">
+      <div className="mt-1 flex items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
           <span className="size-1.5 rounded-full bg-green-500" />
           Connected
         </span>
-        <span className="text-petroleum-400 truncate text-xs max-w-[160px]">
+        <span className="text-petroleum-400 max-w-[160px] truncate text-xs">
           {config.google_connected_email}
         </span>
         <button
           type="button"
           onClick={() => void handleDisconnect()}
           disabled={disconnecting}
-          className="text-petroleum-300 hover:text-red-500 text-xs transition-colors"
+          className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
         >
           {disconnecting ? "Disconnecting…" : "Disconnect"}
         </button>
@@ -83,7 +82,7 @@ function GoogleCalendarWidget({
         onClick={() => {
           window.location.href = `/api/google/calendar/connect?service_id=${serviceId}`;
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-sand-200 bg-white px-3 py-1.5 text-xs font-medium text-petroleum-600 shadow-sm transition-colors hover:border-petroleum-200 hover:bg-petroleum-50"
+        className="border-sand-200 text-petroleum-600 hover:border-petroleum-200 hover:bg-petroleum-50 inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
           <path
@@ -202,7 +201,9 @@ function ServicesTabContent({
           <div key={id} className="border-sand-200 rounded-2xl border bg-white">
             <div className="px-5 py-4">
               <div className="flex items-center justify-between">
-                <span className="text-petroleum-700 font-semibold">{label}</span>
+                <span className="text-petroleum-700 font-semibold">
+                  {label}
+                </span>
                 <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                     <path
@@ -325,7 +326,9 @@ export default function SettingsPage() {
   async function reloadServiceTiers(serviceId: string) {
     const { data: rows } = await insforge.database
       .from("service_tiers")
-      .select("id, label, duration_minutes, price_eur, color, active, sort_order")
+      .select(
+        "id, label, duration_minutes, price_eur, color, active, sort_order",
+      )
       .eq("service_id", serviceId)
       .order("sort_order");
     dispatch({
@@ -373,7 +376,13 @@ export default function SettingsPage() {
       const plans = plansRes.data ? (plansRes.data as PlanRow[]) : [];
       const calendarConfigs = (calRes.data ?? []) as ServiceCalendarConfig[];
 
-      dispatch({ type: "INIT_DONE", colors, serviceTiers, plans, calendarConfigs });
+      dispatch({
+        type: "INIT_DONE",
+        colors,
+        serviceTiers,
+        plans,
+        calendarConfigs,
+      });
     }
     void init();
   }, []);
@@ -428,7 +437,10 @@ export default function SettingsPage() {
         {/* Services grid — 2-col, 4 cards visible */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="border-sand-200 rounded-2xl border bg-white">
+            <div
+              key={i}
+              className="border-sand-200 rounded-2xl border bg-white"
+            >
               <div className="flex items-center justify-between px-5 py-4">
                 <div className="bg-sand-100 h-5 w-36 animate-pulse rounded" />
                 <div className="bg-sand-100 h-8 w-20 animate-pulse rounded-lg" />

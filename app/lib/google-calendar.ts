@@ -201,7 +201,12 @@ export async function getValidAccessToken(
     .eq("service_id", serviceId)
     .single<ServiceConfigRow>();
 
-  if (error || !data || !data.google_access_token || !data.google_refresh_token) {
+  if (
+    error ||
+    !data ||
+    !data.google_access_token ||
+    !data.google_refresh_token
+  ) {
     return null;
   }
 
@@ -220,7 +225,9 @@ export async function getValidAccessToken(
   // Token expired — refresh it
   try {
     const refreshed = await refreshGoogleToken(data.google_refresh_token);
-    const newExpiresAt = new Date(nowMs + refreshed.expires_in * 1000).toISOString();
+    const newExpiresAt = new Date(
+      nowMs + refreshed.expires_in * 1000,
+    ).toISOString();
 
     await adminClient.database
       .from("service_configs")

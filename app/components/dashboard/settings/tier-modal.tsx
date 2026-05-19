@@ -275,7 +275,6 @@ export function TierModal({
               </div>
             </label>
           </div>
-
         </div>
 
         {/* Footer */}

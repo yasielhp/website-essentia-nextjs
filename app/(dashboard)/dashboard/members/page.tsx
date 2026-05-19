@@ -306,7 +306,10 @@ export default function MembersPage() {
             {/* Mobile skeleton */}
             <div className="divide-sand-100 divide-y md:hidden">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between px-5 py-4">
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-5 py-4"
+                >
                   <div>
                     <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
                     <div className="bg-sand-100 mt-1.5 h-3 w-44 animate-pulse rounded" />
@@ -324,15 +327,25 @@ export default function MembersPage() {
                 <tbody>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="border-sand-100 border-b">
-                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-32 animate-pulse rounded" /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                      </td>
                       <td className="px-5 py-3.5">
                         <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
                         <div className="bg-sand-100 mt-1.5 h-3 w-24 animate-pulse rounded" />
                       </td>
-                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
-                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" /></td>
-                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
-                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

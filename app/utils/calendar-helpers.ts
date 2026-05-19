@@ -82,7 +82,7 @@ export function getTimeSlots(
   // Parse the first numeric duration from the service's durations array (e.g. "60 min" → 60)
   const durationMinutes =
     service.durations.length > 0
-      ? (parseInt(service.durations[0], 10) || 60)
+      ? parseInt(service.durations[0], 10) || 60
       : 60;
 
   const dateStr = date.toISOString().split("T")[0]; // "YYYY-MM-DD"

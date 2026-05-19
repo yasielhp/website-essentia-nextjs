@@ -393,19 +393,33 @@ export default function RacesPage() {
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
                     {/* Image thumbnail */}
-                    <td className="px-4 py-3"><div className="bg-sand-100 size-10 animate-pulse rounded-lg" /></td>
+                    <td className="px-4 py-3">
+                      <div className="bg-sand-100 size-10 animate-pulse rounded-lg" />
+                    </td>
                     {/* Title */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-40 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                    </td>
                     {/* Access badge */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                    </td>
                     {/* Date */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                    </td>
                     {/* Location */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-32 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                    </td>
                     {/* Distance */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-16 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-16 animate-pulse rounded" />
+                    </td>
                     {/* Registered/Max */}
-                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
+                    </td>
                   </tr>
                 ))
               ) : races.length === 0 ? (
