@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
+import { signInSchema, parseErrors } from "@/lib/schemas";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 import { OAuthButton } from "./oauth-button";
@@ -16,11 +17,18 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const errs = parseErrors(signInSchema, { email, password });
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      return;
+    }
+    setFieldErrors({});
     setLoading(true);
 
     const { data, error } = await insforge.auth.signInWithPassword({
@@ -80,12 +88,12 @@ export default function SignInForm() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
             autoComplete="email"
             placeholder="you@example.com"
-            className="border-sand-200 text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2"
+            className={`rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 text-petroleum-700 placeholder:text-petroleum-100 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
           />
+          {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -98,11 +106,11 @@ export default function SignInForm() {
           <PasswordInput
             id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
             autoComplete="current-password"
             placeholder="••••••••"
           />
+          {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
         </div>
 
         <div className="flex justify-end">

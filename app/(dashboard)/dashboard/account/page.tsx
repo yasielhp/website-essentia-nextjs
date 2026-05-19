@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
+import { accountProfileSchema, parseErrors } from "@/lib/schemas";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -165,13 +166,21 @@ export default function DashboardAccountPage() {
     dispatch({ type: "SET_ERROR", error: null });
     dispatch({ type: "SET_SAVED_OK", value: false });
 
-    const trimmedFirst = firstName.trim();
-    if (!trimmedFirst) {
-      dispatch({ type: "SET_ERROR", error: "First name is required." });
+    const errs = parseErrors(accountProfileSchema, {
+      firstName: firstName.trim(),
+      lastName: lastName.trim() || undefined,
+      phone: phone.trim() || undefined,
+    });
+    if (Object.keys(errs).length > 0) {
+      dispatch({
+        type: "SET_ERROR",
+        error: errs.firstName ?? errs.phone ?? "Please fix the errors.",
+      });
       return;
     }
 
     dispatch({ type: "SET_SAVING", value: true });
+    const trimmedFirst = firstName.trim();
     const fullName = [trimmedFirst, lastName.trim()].filter(Boolean).join(" ");
 
     await insforge.database

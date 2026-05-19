@@ -28,8 +28,12 @@ const LOCATIONS: {
   },
 ];
 
-const INPUT_CLASS =
-  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-100 w-full";
+const INPUT_BASE =
+  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
+const INPUT_CLASS = `${INPUT_BASE} border-sand-300 focus:border-petroleum-400 focus:ring-petroleum-100`;
+const INPUT_ERR = `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-100`;
+
+export type AddressErrors = Partial<Record<keyof LocationAddress, string>>;
 
 function LocationItems({
   selected,
@@ -235,15 +239,21 @@ const TENERIFE_MUNICIPALITIES = [
 
 function AddressFields({
   address,
+  errors = {},
   onChange,
+  onClearError,
 }: {
   address: LocationAddress;
+  errors?: AddressErrors;
   onChange: (addr: LocationAddress) => void;
+  onClearError?: (key: keyof LocationAddress) => void;
 }) {
   const set =
     (key: keyof LocationAddress) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...address, [key]: e.target.value });
+      onClearError?.(key);
+    };
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-4">
@@ -261,8 +271,11 @@ function AddressFields({
           onChange={set("street")}
           placeholder="Calle El Peñón, 23"
           autoComplete="address-line1"
-          className={INPUT_CLASS}
+          className={errors.street ? INPUT_ERR : INPUT_CLASS}
         />
+        {errors.street && (
+          <p className="text-xs text-red-500">{errors.street}</p>
+        )}
       </div>
       <div className="flex flex-col gap-1.5">
         <label
@@ -298,8 +311,11 @@ function AddressFields({
             onChange={set("postalCode")}
             placeholder="38670"
             autoComplete="postal-code"
-            className={INPUT_CLASS}
+            className={errors.postalCode ? INPUT_ERR : INPUT_CLASS}
           />
+          {errors.postalCode && (
+            <p className="text-xs text-red-500">{errors.postalCode}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <label
@@ -316,8 +332,11 @@ function AddressFields({
             onChange={set("municipality")}
             placeholder="Adeje"
             autoComplete="address-level2"
-            className={INPUT_CLASS}
+            className={errors.municipality ? INPUT_ERR : INPUT_CLASS}
           />
+          {errors.municipality && (
+            <p className="text-xs text-red-500">{errors.municipality}</p>
+          )}
           <datalist id="tenerife-municipalities">
             {TENERIFE_MUNICIPALITIES.map((m) => (
               <option key={m} value={m} />
@@ -332,13 +351,17 @@ function AddressFields({
 export function LocationStep({
   selected,
   address,
+  addressErrors,
   onSelect,
   onAddressChange,
+  onClearAddressError,
 }: {
   selected: string | null;
   address: LocationAddress;
+  addressErrors?: AddressErrors;
   onSelect: (location: BookingLocation) => void;
   onAddressChange: (address: LocationAddress) => void;
+  onClearAddressError?: (key: keyof LocationAddress) => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -350,7 +373,12 @@ export function LocationStep({
         onSelect={onSelect}
       />
       {selected === "domicilio" && (
-        <AddressFields address={address} onChange={onAddressChange} />
+        <AddressFields
+          address={address}
+          errors={addressErrors}
+          onChange={onAddressChange}
+          onClearError={onClearAddressError}
+        />
       )}
     </div>
   );

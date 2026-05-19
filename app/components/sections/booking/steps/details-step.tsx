@@ -7,17 +7,23 @@ import { contact } from "@/constants/contact";
 import type { DetailsState } from "@/types";
 
 const inputClass =
-  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-100";
+  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
+const inputOk = "border-sand-300 focus:border-petroleum-400 focus:ring-petroleum-100";
+const inputErr = "border-red-300 focus:border-red-400 focus:ring-red-100";
+
+export type DetailsErrors = Partial<Record<keyof DetailsState, string>>;
 
 function Field({
   label,
   id,
   required,
+  error,
   children,
 }: {
   label: string;
   id: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -27,100 +33,111 @@ function Field({
         {required && <span className="ml-0.5 text-red-400">*</span>}
       </label>
       {children}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
 
 export function DetailsStep({
   details,
+  errors = {},
   onChange,
+  onClearError,
 }: {
   details: DetailsState;
+  errors?: DetailsErrors;
   onChange: (d: DetailsState) => void;
+  onClearError?: (key: keyof DetailsState) => void;
 }) {
   const set =
-    (key: keyof DetailsState) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    (key: keyof DetailsState) => (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...details, [key]: e.target.value });
+      onClearError?.(key);
+    };
 
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="First name" id="first-name">
+        <Field label="First name" id="first-name" required error={errors.firstName}>
           <input
             id="first-name"
             type="text"
-            required
             autoComplete="given-name"
             placeholder="Jane"
             value={details.firstName}
             onChange={set("firstName")}
-            className={inputClass}
+            className={`${inputClass} ${errors.firstName ? inputErr : inputOk}`}
           />
         </Field>
-        <Field label="Last name" id="last-name">
+        <Field label="Last name" id="last-name" required error={errors.lastName}>
           <input
             id="last-name"
             type="text"
-            required
             autoComplete="family-name"
             placeholder="Smith"
             value={details.lastName}
             onChange={set("lastName")}
-            className={inputClass}
+            className={`${inputClass} ${errors.lastName ? inputErr : inputOk}`}
           />
         </Field>
       </div>
-      <Field label="Email" id="email" required>
+      <Field label="Email" id="email" required error={errors.email}>
         <input
           id="email"
           type="email"
-          required
           autoComplete="email"
           placeholder="jane@example.com"
           value={details.email}
           onChange={set("email")}
-          className={inputClass}
+          className={`${inputClass} ${errors.email ? inputErr : inputOk}`}
         />
       </Field>
-      <Field label="Phone" id="phone" required>
+      <Field label="Phone" id="phone" required error={errors.phone}>
         <input
           id="phone"
           type="tel"
-          required
           autoComplete="tel"
           placeholder="+34 600 000 000"
           value={details.phone}
           onChange={set("phone")}
-          className={inputClass}
+          className={`${inputClass} ${errors.phone ? inputErr : inputOk}`}
         />
       </Field>
 
-      <Checkbox
-        name="consent"
-        checked={details.consent}
-        onChange={(e) => onChange({ ...details, consent: e.target.checked })}
-        label={
-          <span className="text-petroleum-400 text-sm">
-            I accept the{" "}
-            <Link
-              href="/terms"
-              className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-              target="_blank"
-            >
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/privacy"
-              className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-              target="_blank"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </span>
-        }
-      />
+      <div className="flex flex-col gap-1">
+        <Checkbox
+          name="consent"
+          checked={details.consent}
+          onChange={(e) => {
+            onChange({ ...details, consent: e.target.checked });
+            onClearError?.("consent");
+          }}
+          label={
+            <span className="text-petroleum-400 text-sm">
+              I accept the{" "}
+              <Link
+                href="/terms"
+                className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                target="_blank"
+              >
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                target="_blank"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          }
+        />
+        {errors.consent && (
+          <p className="text-xs text-red-500">{errors.consent}</p>
+        )}
+      </div>
 
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">

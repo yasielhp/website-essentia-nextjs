@@ -13,9 +13,10 @@ import {
 import type { DetailsState } from "@/types";
 import { StepIndicator } from "./steps/step-indicator";
 import { ServiceStep } from "./steps/service-step";
-import { LocationStep, type BookingLocation } from "./steps/location-step";
+import { LocationStep, type BookingLocation, type AddressErrors } from "./steps/location-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
-import { DetailsStep } from "./steps/details-step";
+import { DetailsStep, type DetailsErrors } from "./steps/details-step";
+import { bookingDetailsSchema, locationAddressSchema, parseErrors } from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
 import { SuccessState } from "./steps/success-state";
@@ -273,13 +274,17 @@ type BookingStepRendererProps = {
   selectedService: BookableService | null;
   selectedLocation: string | null;
   locationAddress: LocationAddress;
+  addressErrors: AddressErrors;
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
+  detailErrors: DetailsErrors;
   dispatch: React.Dispatch<BookingAction>;
+  onClearDetailError: (key: keyof DetailsState) => void;
+  onClearAddressError: (key: keyof LocationAddress) => void;
 };
 
 function BookingStepRenderer({
@@ -287,13 +292,17 @@ function BookingStepRenderer({
   selectedService,
   selectedLocation,
   locationAddress,
+  addressErrors,
   selectedTierId,
   selectedTierPrice,
   selectedDuration,
   selectedDate,
   selectedTime,
   details,
+  detailErrors,
   dispatch,
+  onClearDetailError,
+  onClearAddressError,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -307,12 +316,14 @@ function BookingStepRenderer({
         <LocationStep
           selected={selectedLocation}
           address={locationAddress}
+          addressErrors={addressErrors}
           onSelect={(loc) =>
             dispatch({ type: "SELECT_LOCATION", location: loc })
           }
           onAddressChange={(addr) =>
             dispatch({ type: "SET_LOCATION_ADDRESS", address: addr })
           }
+          onClearAddressError={onClearAddressError}
         />
       )}
       {currentStepId === "duration" && selectedService && (
@@ -332,7 +343,9 @@ function BookingStepRenderer({
       {currentStepId === "details" && (
         <DetailsStep
           details={details}
+          errors={detailErrors}
           onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
+          onClearError={onClearDetailError}
         />
       )}
       {currentStepId === "datetime" && selectedService && (
@@ -430,6 +443,8 @@ function BookingContentInner() {
   const slug = get("wellness") ?? get("medicine");
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
+  const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
+  const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const {
     contactId,
     bookingId,
@@ -551,18 +566,32 @@ function BookingContentInner() {
           locationAddress.postalCode.trim().length > 0 &&
           locationAddress.municipality.trim().length > 0)),
     duration: !!selectedTierId,
-    details: !!(
-      details.firstName &&
-      details.lastName &&
-      details.email &&
-      details.phone &&
-      details.consent
-    ),
+    details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
     confirm: true,
   };
 
+  const handleNextFromLocation = () => {
+    if (selectedLocation !== "domicilio") {
+      dispatch({ type: "SET_STEP", step: step + 1 });
+      return;
+    }
+    const errs = parseErrors(locationAddressSchema, locationAddress);
+    if (Object.keys(errs).length > 0) {
+      setAddressErrors(errs);
+      return;
+    }
+    setAddressErrors({});
+    dispatch({ type: "SET_STEP", step: step + 1 });
+  };
+
   const handleNextFromDetails = async () => {
+    const errs = parseErrors(bookingDetailsSchema, details);
+    if (Object.keys(errs).length > 0) {
+      setDetailErrors(errs);
+      return;
+    }
+    setDetailErrors({});
     setChecking(true);
 
     let resolvedContactId = contactId;
@@ -773,13 +802,21 @@ function BookingContentInner() {
         selectedService={selectedService}
         selectedLocation={selectedLocation}
         locationAddress={locationAddress}
+        addressErrors={addressErrors}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         details={details}
+        detailErrors={detailErrors}
         dispatch={dispatch}
+        onClearDetailError={(key) =>
+          setDetailErrors((prev) => ({ ...prev, [key]: undefined }))
+        }
+        onClearAddressError={(key) =>
+          setAddressErrors((prev) => ({ ...prev, [key]: undefined }))
+        }
       />
 
       <BookingNavigation
@@ -793,9 +830,11 @@ function BookingContentInner() {
         onNext={
           currentStepId === "details"
             ? () => void handleNextFromDetails()
-            : currentStepId === "datetime"
-              ? () => void handleNextFromDatetime()
-              : () => dispatch({ type: "SET_STEP", step: step + 1 })
+            : currentStepId === "location"
+              ? () => handleNextFromLocation()
+              : currentStepId === "datetime"
+                ? () => void handleNextFromDatetime()
+                : () => dispatch({ type: "SET_STEP", step: step + 1 })
         }
         onConfirm={() => void handleConfirm()}
       />
