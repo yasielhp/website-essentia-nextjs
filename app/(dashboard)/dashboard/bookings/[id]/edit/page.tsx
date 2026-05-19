@@ -13,6 +13,7 @@ import {
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { notifyBooking } from "@/actions/booking-notifications";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
@@ -935,6 +936,12 @@ export default function EditBookingPage() {
   const [deleting, setDeleting] = useState(false);
 
   const pendingTierId = useRef<string>("");
+  const originalRef = useRef<{
+    status: string;
+    date: string | null;
+    time: string;
+    serviceId: string;
+  } | null>(null);
 
   const {
     submitting,
@@ -1062,6 +1069,12 @@ export default function EditBookingPage() {
       }
 
       pendingTierId.current = b.tier_id ?? "";
+      originalRef.current = {
+        status: b.status ?? "pending",
+        date: b.date ?? null,
+        time: b.time ?? "",
+        serviceId: b.service_id ?? "",
+      };
 
       dispatchForm({
         type: "LOAD_BOOKING",
@@ -1177,6 +1190,67 @@ export default function EditBookingPage() {
           "Failed to save booking.",
       });
       return;
+    }
+
+    // Send email notifications based on what changed (non-blocking)
+    const orig = originalRef.current;
+    if (orig && email) {
+      const clientName = [firstName.trim(), lastName.trim()]
+        .filter(Boolean)
+        .join(" ");
+      const service = selectedService?.title ?? serviceId;
+      const dur = selectedTier?.duration_minutes != null
+        ? `${selectedTier.duration_minutes} min`
+        : null;
+
+      const statusChanged = status !== orig.status;
+      const dateTimeChanged =
+        (dateStr ?? null) !== orig.date || (selectedTime || "") !== orig.time;
+
+      try {
+        if (statusChanged && status === "confirmed") {
+          await notifyBooking({
+            bookingId: id,
+            event: "confirmed",
+            clientName,
+            clientEmail: email.trim(),
+            service,
+            serviceId,
+            date: dateStr ?? orig.date ?? "",
+            time: selectedTime || orig.time,
+            duration: dur,
+          });
+        } else if (statusChanged && status === "cancelled") {
+          await notifyBooking({
+            bookingId: id,
+            event: "cancelled",
+            clientName,
+            clientEmail: email.trim(),
+            service,
+            serviceId,
+            date: dateStr ?? orig.date ?? "",
+            time: selectedTime || orig.time,
+            duration: dur,
+          });
+        } else if (!statusChanged && dateTimeChanged) {
+          await notifyBooking({
+            bookingId: id,
+            event: "rescheduled",
+            clientName,
+            clientEmail: email.trim(),
+            service,
+            serviceId,
+            date: dateStr ?? orig.date ?? "",
+            time: selectedTime || orig.time,
+            duration: dur,
+          });
+        }
+      } catch {
+        // Notification failed silently — booking is already saved
+      }
+
+      // Update original ref so re-saves don't re-send
+      originalRef.current = { status, date: dateStr ?? null, time: selectedTime, serviceId };
     }
 
     push(`/dashboard/bookings/${id}`);

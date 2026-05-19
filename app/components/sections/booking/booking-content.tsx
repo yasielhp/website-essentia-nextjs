@@ -2,6 +2,7 @@
 
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { notifyBooking } from "@/actions/booking-notifications";
 import { Button } from "@components/ui/button";
 import { bookableServices, type BookableService } from "@/data/services-data";
 import { buildSteps } from "@/utils/calendar-helpers";
@@ -674,6 +675,24 @@ function BookingContentInner() {
         .update({ status: "client" })
         .eq("id", contactId)
         .neq("status", "client");
+    }
+
+    // Email notifications (non-blocking)
+    try {
+      await notifyBooking({
+        bookingId: resolvedBookingId ?? "",
+        event: "received",
+        clientName: `${details.firstName} ${details.lastName}`.trim(),
+        clientEmail: details.email,
+        clientPhone: details.phone || null,
+        service: selectedService.title,
+        serviceId: selectedService.id,
+        date: selectedDate.toISOString().split("T")[0],
+        time: selectedTime,
+        duration: selectedDuration,
+      });
+    } catch {
+      // Email failed silently — booking is already saved
     }
 
     // Create Google Calendar event (non-blocking — booking succeeds even if calendar sync fails)
