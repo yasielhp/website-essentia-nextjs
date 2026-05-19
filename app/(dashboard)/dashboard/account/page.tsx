@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { PasswordInput } from "@/components/ui/input";
+import { setUserPassword } from "@/actions/set-user-password";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -74,6 +76,12 @@ export default function DashboardAccountPage() {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwOk, setPwOk] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+
   const {
     loading,
     saving,
@@ -126,6 +134,31 @@ export default function DashboardAccountPage() {
 
     void load();
   }, [user]);
+
+  async function handleChangePw(e: React.FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwOk(false);
+    if (pwNew !== pwConfirm) {
+      setPwError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (pwNew.length < 8) {
+      setPwError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    setPwLoading(true);
+    const { error } = await setUserPassword(user!.id, pwNew);
+    if (error) {
+      setPwError(error);
+      setPwLoading(false);
+      return;
+    }
+    setPwNew("");
+    setPwConfirm("");
+    setPwOk(true);
+    setPwLoading(false);
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -294,6 +327,76 @@ export default function DashboardAccountPage() {
               </div>
             </div>
           </form>
+
+          {/* Security */}
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              Security
+            </h2>
+            <form
+              onSubmit={(e) => void handleChangePw(e)}
+              className="space-y-4"
+              noValidate
+            >
+              {pwError && (
+                <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
+                  {pwError}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="pw-new"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  New password
+                </label>
+                <PasswordInput
+                  id="pw-new"
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={pwLoading}
+                  autoComplete="new-password"
+                  inputClassName={INPUT_CLASS}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="pw-confirm"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Confirm password
+                </label>
+                <PasswordInput
+                  id="pw-confirm"
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={pwLoading}
+                  autoComplete="new-password"
+                  inputClassName={INPUT_CLASS}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-4">
+                {pwOk && (
+                  <p className="text-sm font-medium text-green-700">
+                    Password updated.
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  variant="solid"
+                  size="md"
+                  disabled={pwLoading || !pwNew || !pwConfirm}
+                >
+                  {pwLoading ? "Saving…" : "Change password"}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
 
         <div>

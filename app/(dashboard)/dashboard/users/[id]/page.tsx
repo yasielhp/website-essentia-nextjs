@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
+import { PasswordInput } from "@/components/ui/input";
+import { setUserPassword } from "@/actions/set-user-password";
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -152,6 +154,12 @@ export default function EditUserPage() {
   const [availableServices, setAvailableServices] = useState<ServiceRow[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwOk, setPwOk] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+
   useEffect(() => {
     async function load() {
       const { data } = await insforge.database
@@ -253,6 +261,30 @@ export default function EditUserPage() {
 
     dispatch({ type: "SET_SAVING", value: false });
     push("/dashboard/users");
+  }
+
+  async function handleChangePw() {
+    setPwError(null);
+    setPwOk(false);
+    if (pwNew !== pwConfirm) {
+      setPwError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (pwNew.length < 8) {
+      setPwError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    setPwLoading(true);
+    const { error } = await setUserPassword(id, pwNew);
+    if (error) {
+      setPwError(error);
+      setPwLoading(false);
+      return;
+    }
+    setPwNew("");
+    setPwConfirm("");
+    setPwOk(true);
+    setPwLoading(false);
   }
 
   async function handleRemove() {
@@ -475,6 +507,75 @@ export default function EditUserPage() {
               </div>
             </div>
           </div>
+
+          {/* Password */}
+          {!loading && (
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Password
+              </h2>
+              <div className="space-y-4">
+                {pwError && (
+                  <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
+                    {pwError}
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="pw-new"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    New password
+                  </label>
+                  <PasswordInput
+                    id="pw-new"
+                    value={pwNew}
+                    onChange={(e) => setPwNew(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={pwLoading || saving}
+                    autoComplete="new-password"
+                    inputClassName={INPUT_CLASS}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="pw-confirm"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    Confirm password
+                  </label>
+                  <PasswordInput
+                    id="pw-confirm"
+                    value={pwConfirm}
+                    onChange={(e) => setPwConfirm(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={pwLoading || saving}
+                    autoComplete="new-password"
+                    inputClassName={INPUT_CLASS}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-4">
+                  {pwOk && (
+                    <p className="text-sm font-medium text-green-700">
+                      Password updated.
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="solid"
+                    size="md"
+                    onClick={() => void handleChangePw()}
+                    disabled={pwLoading || saving || !pwNew || !pwConfirm}
+                  >
+                    {pwLoading ? "Saving…" : "Change password"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Services — only when role is Staff */}
           {!loading && state.role === "staff" && (
