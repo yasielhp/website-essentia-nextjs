@@ -302,14 +302,43 @@ export default function MembersPage() {
       {/* Table */}
       <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
         {loading ? (
-          <div className="space-y-3 p-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-sand-100 h-10 animate-pulse rounded-xl"
-              />
-            ))}
-          </div>
+          <>
+            {/* Mobile skeleton */}
+            <div className="divide-sand-100 divide-y md:hidden">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-4">
+                  <div>
+                    <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                    <div className="bg-sand-100 mt-1.5 h-3 w-44 animate-pulse rounded" />
+                  </div>
+                  <div className="ml-4 flex flex-col items-end gap-1.5">
+                    <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                    <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop skeleton */}
+            <div className="hidden md:block">
+              <table className="w-full text-sm">
+                <tbody>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-sand-100 border-b">
+                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-32 animate-pulse rounded" /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                        <div className="bg-sand-100 mt-1.5 h-3 w-24 animate-pulse rounded" />
+                      </td>
+                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
+                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" /></td>
+                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
+                      <td className="px-5 py-3.5"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : members.length === 0 ? (
           <div className="text-petroleum-300 py-20 text-center text-sm">
             No members yet.

@@ -232,9 +232,12 @@ export default function BlogDashboardPage() {
       <div className="border-sand-200 divide-sand-200 divide-y overflow-hidden rounded-2xl border bg-white sm:hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 px-5 py-4">
-              <div className="bg-sand-100 h-4 w-48 animate-pulse rounded" />
-              <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+            <div key={i} className="px-5 py-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+              </div>
+              <div className="bg-sand-100 mt-1.5 h-3 w-32 animate-pulse rounded" />
             </div>
           ))
         ) : filteredPosts.length === 0 ? (
@@ -302,11 +305,16 @@ export default function BlogDashboardPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                      </td>
-                    ))}
+                    {/* Título */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-48 animate-pulse rounded" /></td>
+                    {/* Categoría */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-28 animate-pulse rounded" /></td>
+                    {/* Estado (badge with dot) */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-24 animate-pulse rounded-full" /></td>
+                    {/* Publicado */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                    {/* Creado */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
                   </tr>
                 ))
               ) : filteredPosts.length === 0 ? (

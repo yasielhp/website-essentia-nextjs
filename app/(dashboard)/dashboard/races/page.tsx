@@ -265,11 +265,15 @@ export default function RacesPage() {
       <div className="border-sand-200 divide-sand-200 mb-4 divide-y overflow-hidden rounded-2xl border bg-white sm:hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-5 py-4">
-              <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
-              <div className="flex flex-1 flex-col gap-2">
-                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
-                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+            <div key={i} className="flex items-stretch">
+              <div className="bg-sand-100 w-20 shrink-0 animate-pulse" />
+              <div className="min-w-0 flex-1 px-5 py-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="bg-sand-100 h-4 w-36 animate-pulse rounded" />
+                  <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                </div>
+                <div className="bg-sand-100 mt-2 h-3 w-40 animate-pulse rounded" />
+                <div className="bg-sand-100 mt-1 h-3 w-28 animate-pulse rounded" />
               </div>
             </div>
           ))
@@ -388,11 +392,20 @@ export default function RacesPage() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
-                    {Array.from({ length: 7 }).map((_, j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                      </td>
-                    ))}
+                    {/* Image thumbnail */}
+                    <td className="px-4 py-3"><div className="bg-sand-100 size-10 animate-pulse rounded-lg" /></td>
+                    {/* Title */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-40 animate-pulse rounded" /></td>
+                    {/* Access badge */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
+                    {/* Date */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                    {/* Location */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-32 animate-pulse rounded" /></td>
+                    {/* Distance */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-16 animate-pulse rounded" /></td>
+                    {/* Registered/Max */}
+                    <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-20 animate-pulse rounded" /></td>
                   </tr>
                 ))
               ) : races.length === 0 ? (

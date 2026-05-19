@@ -489,11 +489,18 @@ export default function TransactionsPage() {
                 {loading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="border-sand-50 border-b">
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <td key={j} className="px-5 py-4">
-                          <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                        </td>
-                      ))}
+                      {/* Created */}
+                      <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-24 animate-pulse rounded" /></td>
+                      {/* Status */}
+                      <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
+                      {/* Type */}
+                      <td className="px-5 py-4"><div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" /></td>
+                      {/* Title */}
+                      <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-40 animate-pulse rounded" /></td>
+                      {/* Client */}
+                      <td className="px-5 py-4"><div className="bg-sand-100 h-4 w-32 animate-pulse rounded" /></td>
+                      {/* Amount (right-aligned) */}
+                      <td className="px-5 py-4 text-right"><div className="bg-sand-100 ml-auto h-4 w-16 animate-pulse rounded" /></td>
                     </tr>
                   ))
                 ) : pageRows.length === 0 ? (

@@ -436,9 +436,12 @@ export default function UsersPage() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-4">
                 <div className="bg-sand-100 size-9 shrink-0 animate-pulse rounded-lg" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
-                  <div className="bg-sand-100 h-3 w-48 animate-pulse rounded" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                    <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
+                  </div>
+                  <div className="bg-sand-100 mt-1.5 h-3 w-44 animate-pulse rounded" />
                 </div>
               </div>
             ))}
@@ -513,11 +516,30 @@ export default function UsersPage() {
                 {loading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="border-sand-50 border-b">
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <td key={j} className="px-5 py-4">
-                          <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                        </td>
-                      ))}
+                      {/* Avatar */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 size-9 animate-pulse rounded-lg" />
+                      </td>
+                      {/* Name */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                      </td>
+                      {/* Email */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-44 animate-pulse rounded" />
+                      </td>
+                      {/* Phone */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                      </td>
+                      {/* Role badge */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                      </td>
+                      {/* Created */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                      </td>
                     </tr>
                   ))
                 ) : filteredRows.length === 0 ? (

@@ -630,10 +630,19 @@ export default function BookingsPage() {
       <div className="border-sand-200 divide-sand-200 mb-4 divide-y rounded-2xl border bg-white sm:hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 px-5 py-4">
-              <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
-              <div className="bg-sand-100 h-3 w-48 animate-pulse rounded" />
-              <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+            <div key={i} className="px-5 py-4">
+              {/* Row 1: name + status badge */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+              </div>
+              {/* Row 2: service */}
+              <div className="bg-sand-100 mt-2 h-3 w-40 animate-pulse rounded" />
+              {/* Row 3: date + location badge */}
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+                <div className="bg-sand-100 h-4 w-16 animate-pulse rounded-full" />
+              </div>
             </div>
           ))
         ) : bookings.length === 0 ? (
@@ -732,11 +741,38 @@ export default function BookingsPage() {
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-sand-50 border-b">
-                    {Array.from({ length: COL_COUNT }).map((_, j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                      </td>
-                    ))}
+                    {/* Created */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                      <div className="bg-sand-100 mt-1.5 h-3 w-14 animate-pulse rounded" />
+                    </td>
+                    {/* Status */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                    </td>
+                    {/* Client */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                      <div className="bg-sand-100 mt-1.5 h-3 w-36 animate-pulse rounded" />
+                    </td>
+                    {/* Service */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                      <div className="bg-sand-100 mt-1.5 h-3 w-16 animate-pulse rounded" />
+                    </td>
+                    {/* Location */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-5 w-24 animate-pulse rounded-full" />
+                    </td>
+                    {/* Datetime */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                      <div className="bg-sand-100 mt-1.5 h-3 w-12 animate-pulse rounded" />
+                    </td>
+                    {/* Reserved by */}
+                    <td className="px-5 py-4">
+                      <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                    </td>
                   </tr>
                 ))
               ) : bookings.length === 0 ? (

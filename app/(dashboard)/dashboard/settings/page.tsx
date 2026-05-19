@@ -274,12 +274,46 @@ export default function SettingsPage() {
   if (!data.mounted) {
     return (
       <div className="px-6 py-8 lg:px-10">
-        <div className="space-y-4">
-          {(["a", "b", "c"] as const).map((n) => (
+        {/* Header */}
+        <div className="mb-8 space-y-2">
+          <div className="bg-sand-100 h-8 w-40 animate-pulse rounded-lg" />
+          <div className="bg-sand-100 h-4 w-72 animate-pulse rounded" />
+        </div>
+
+        {/* Tab bar */}
+        <div className="border-sand-200 mb-6 flex gap-1 border-b">
+          {[20, 36, 28, 32].map((w, i) => (
             <div
-              key={n}
-              className="border-sand-200 h-40 animate-pulse rounded-2xl border bg-white"
+              key={i}
+              className="bg-sand-100 mb-[-1px] h-9 animate-pulse rounded-t-md"
+              style={{ width: `${w * 4}px` }}
             />
+          ))}
+        </div>
+
+        {/* Services grid — 2-col, 4 cards visible */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="border-sand-200 rounded-2xl border bg-white">
+              <div className="flex items-center justify-between px-5 py-4">
+                <div className="bg-sand-100 h-5 w-36 animate-pulse rounded" />
+                <div className="bg-sand-100 h-8 w-20 animate-pulse rounded-lg" />
+              </div>
+              <div className="border-sand-100 border-t">
+                {[0, 1].map((j) => (
+                  <div
+                    key={j}
+                    className="border-sand-100 flex items-center gap-3 border-t px-5 py-3"
+                  >
+                    <div className="bg-sand-100 h-4 flex-1 animate-pulse rounded" />
+                    <div className="bg-sand-100 size-4 shrink-0 animate-pulse rounded-full" />
+                    <div className="bg-sand-100 h-4 w-16 animate-pulse rounded" />
+                    <div className="bg-sand-100 h-4 w-12 animate-pulse rounded" />
+                    <div className="bg-sand-100 h-5 w-12 animate-pulse rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
