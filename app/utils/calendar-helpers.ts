@@ -63,6 +63,7 @@ export function getCalendarDays(year: number, month: number): (Date | null)[] {
 export function getTimeSlots(
   date: Date,
   service: BookableService,
+  busyIntervals: { start: string; end: string }[] = [],
 ): { time: string; booked: boolean }[] {
   const base =
     service.category === "medicine"
@@ -77,6 +78,26 @@ export function getTimeSlots(
           "17:00",
           "18:00",
         ];
-  const seed = date.getDate() + date.getMonth();
-  return base.map((time, i) => ({ time, booked: (seed + i) % 5 === 0 }));
+
+  // Parse the first numeric duration from the service's durations array (e.g. "60 min" → 60)
+  const durationMinutes =
+    service.durations.length > 0
+      ? (parseInt(service.durations[0], 10) || 60)
+      : 60;
+
+  const dateStr = date.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+  return base.map((time) => {
+    const slotStartMs = new Date(`${dateStr}T${time}:00Z`).getTime();
+    const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
+
+    // A slot is booked if it overlaps with any busy interval
+    const booked = busyIntervals.some(({ start, end }) => {
+      const busyStartMs = new Date(start).getTime();
+      const busyEndMs = new Date(end).getTime();
+      return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
+    });
+
+    return { time, booked };
+  });
 }

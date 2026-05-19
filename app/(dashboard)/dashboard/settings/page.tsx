@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
+import { useSearchParams } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,95 @@ import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-content";
 
+// ─── Google Calendar types ────────────────────────────────────────────────────
+
+type ServiceCalendarConfig = {
+  service_id: string;
+  google_connected_email: string | null;
+  google_calendar_id: string | null;
+};
+
+// ─── Google Calendar connect/disconnect widget ────────────────────────────────
+
+function GoogleCalendarWidget({
+  serviceId,
+  config,
+  onDisconnected,
+}: {
+  serviceId: string;
+  config: ServiceCalendarConfig | undefined;
+  onDisconnected: (serviceId: string) => void;
+}) {
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await fetch(
+        `/api/google/calendar/disconnect?service_id=${serviceId}`,
+        { method: "DELETE" },
+      );
+      onDisconnected(serviceId);
+    } catch {
+      // ignore
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  if (config?.google_connected_email) {
+    return (
+      <div className="flex items-center gap-2 mt-1">
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+          <span className="size-1.5 rounded-full bg-green-500" />
+          Connected
+        </span>
+        <span className="text-petroleum-400 truncate text-xs max-w-[160px]">
+          {config.google_connected_email}
+        </span>
+        <button
+          type="button"
+          onClick={() => void handleDisconnect()}
+          disabled={disconnecting}
+          className="text-petroleum-300 hover:text-red-500 text-xs transition-colors"
+        >
+          {disconnecting ? "Disconnecting…" : "Disconnect"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => {
+          window.location.href = `/api/google/calendar/connect?service_id=${serviceId}`;
+        }}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-sand-200 bg-white px-3 py-1.5 text-xs font-medium text-petroleum-600 shadow-sm transition-colors hover:border-petroleum-200 hover:bg-petroleum-50"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M15.5 5H19a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h3.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 2h8v6H8z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Connect Google Calendar
+      </button>
+    </div>
+  );
+}
+
 // ─── Data state reducer ───────────────────────────────────────
 
 type DataState = {
@@ -27,6 +117,7 @@ type DataState = {
   plans: PlanRow[];
   planModal: PlanRow | null;
   modal: ModalState | null;
+  calendarConfigs: ServiceCalendarConfig[];
 };
 
 type DataAction =
@@ -35,12 +126,14 @@ type DataAction =
       colors: ColorSettings;
       serviceTiers: Record<string, TierRow[]>;
       plans: PlanRow[];
+      calendarConfigs: ServiceCalendarConfig[];
     }
   | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
   | { type: "SET_PLANS"; plans: PlanRow[] }
   | { type: "SET_PLAN_MODAL"; planModal: PlanRow | null }
   | { type: "SET_MODAL"; modal: ModalState | null }
-  | { type: "SET_COLORS"; colors: ColorSettings };
+  | { type: "SET_COLORS"; colors: ColorSettings }
+  | { type: "REMOVE_CALENDAR_CONFIG"; serviceId: string };
 
 const initialDataState: DataState = {
   mounted: false,
@@ -49,6 +142,7 @@ const initialDataState: DataState = {
   plans: [],
   planModal: null,
   modal: null,
+  calendarConfigs: [],
 };
 
 function dataReducer(state: DataState, action: DataAction): DataState {
@@ -60,6 +154,7 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         colors: action.colors,
         serviceTiers: action.serviceTiers,
         plans: action.plans,
+        calendarConfigs: action.calendarConfigs,
       };
     case "SET_SERVICE_TIERS":
       return { ...state, serviceTiers: action.serviceTiers };
@@ -71,6 +166,13 @@ function dataReducer(state: DataState, action: DataAction): DataState {
       return { ...state, modal: action.modal };
     case "SET_COLORS":
       return { ...state, colors: action.colors };
+    case "REMOVE_CALENDAR_CONFIG":
+      return {
+        ...state,
+        calendarConfigs: state.calendarConfigs.filter(
+          (c) => c.service_id !== action.serviceId,
+        ),
+      };
     default:
       return state;
   }
@@ -80,32 +182,44 @@ function dataReducer(state: DataState, action: DataAction): DataState {
 
 function ServicesTabContent({
   serviceTiers,
+  calendarConfigs,
   onAddTier,
   onEditTier,
+  onCalendarDisconnected,
 }: {
   serviceTiers: Record<string, TierRow[]>;
+  calendarConfigs: ServiceCalendarConfig[];
   onAddTier: (serviceId: string) => void;
   onEditTier: (serviceId: string, tier: TierRow) => void;
+  onCalendarDisconnected: (serviceId: string) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {SERVICES.map(({ id, label }) => {
         const tiers = serviceTiers[id] ?? [];
+        const calConfig = calendarConfigs.find((c) => c.service_id === id);
         return (
           <div key={id} className="border-sand-200 rounded-2xl border bg-white">
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-petroleum-700 font-semibold">{label}</span>
-              <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 5v14M5 12h14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                Add tier
-              </Button>
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-petroleum-700 font-semibold">{label}</span>
+                <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Add tier
+                </Button>
+              </div>
+              <GoogleCalendarWidget
+                serviceId={id}
+                config={calConfig}
+                onDisconnected={onCalendarDisconnected}
+              />
             </div>
 
             {tiers.length > 0 ? (
@@ -175,8 +289,29 @@ function ServicesTabContent({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("services");
-  const [toast, setToast] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<Tab>(
+    (searchParams.get("tab") as Tab | null) ?? "services",
+  );
+
+  // Derive an initial toast from OAuth callback query params (evaluated once on mount)
+  const initialToast =
+    searchParams.get("connected") === "1"
+      ? "Google Calendar connected"
+      : searchParams.get("error")
+        ? `Calendar error: ${searchParams.get("error")}`
+        : null;
+
+  const [toast, setToast] = useState<string | null>(initialToast);
+
+  // Auto-dismiss the initial OAuth toast after mount
+  useEffect(() => {
+    if (!initialToast) return;
+    const t = setTimeout(() => setToast(null), 2200);
+    return () => clearTimeout(t);
+    // initialToast is stable (derived from URL at mount) — exhaustive-deps is intentionally not a concern here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [data, dispatch] = useReducer(dataReducer, initialDataState);
 
@@ -209,7 +344,7 @@ export default function SettingsPage() {
     async function init() {
       const colors = loadColorSettings();
 
-      const [tiersRes, plansRes] = await Promise.all([
+      const [tiersRes, plansRes, calRes] = await Promise.all([
         insforge.database
           .from("service_tiers")
           .select(
@@ -220,6 +355,11 @@ export default function SettingsPage() {
           .from("membership_plans")
           .select("id, label, price_monthly")
           .order("price_monthly"),
+        // Calendar configs are fetched via the API route (uses service key server-side)
+        fetch("/api/google/calendar/configs").then(async (r) => {
+          if (!r.ok) return { data: [] };
+          return r.json() as Promise<{ data: ServiceCalendarConfig[] }>;
+        }),
       ]);
 
       const serviceTiers: Record<string, TierRow[]> = {};
@@ -231,8 +371,9 @@ export default function SettingsPage() {
       }
 
       const plans = plansRes.data ? (plansRes.data as PlanRow[]) : [];
+      const calendarConfigs = (calRes.data ?? []) as ServiceCalendarConfig[];
 
-      dispatch({ type: "INIT_DONE", colors, serviceTiers, plans });
+      dispatch({ type: "INIT_DONE", colors, serviceTiers, plans, calendarConfigs });
     }
     void init();
   }, []);
@@ -359,12 +500,17 @@ export default function SettingsPage() {
         {tab === "services" && (
           <ServicesTabContent
             serviceTiers={data.serviceTiers}
+            calendarConfigs={data.calendarConfigs}
             onAddTier={(serviceId) =>
               dispatch({ type: "SET_MODAL", modal: { serviceId } })
             }
             onEditTier={(serviceId, tier) =>
               dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
             }
+            onCalendarDisconnected={(serviceId) => {
+              dispatch({ type: "REMOVE_CALENDAR_CONFIG", serviceId });
+              showToast("Google Calendar disconnected");
+            }}
           />
         )}
 

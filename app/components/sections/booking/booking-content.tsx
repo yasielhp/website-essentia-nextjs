@@ -354,6 +354,7 @@ function BookingStepRenderer({
       {currentStepId === "datetime" && selectedService && (
         <DateTimeStep
           service={selectedService}
+          serviceId={selectedService.id}
           selectedDate={selectedDate}
           selectedTime={selectedTime}
           onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
@@ -673,6 +674,26 @@ function BookingContentInner() {
         .update({ status: "client" })
         .eq("id", contactId)
         .neq("status", "client");
+    }
+
+    // Create Google Calendar event (non-blocking — booking succeeds even if calendar sync fails)
+    try {
+      await fetch("/api/google/calendar/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service_id: selectedService.id,
+          summary: `${selectedService.title} — ${details.firstName} ${details.lastName}`,
+          description: `Booking #${resolvedBookingId ?? ""}\nPhone: ${details.phone}\nEmail: ${details.email}`,
+          date: selectedDate.toISOString().split("T")[0],
+          time: selectedTime,
+          duration_minutes: selectedDuration
+            ? parseInt(selectedDuration, 10)
+            : 60,
+        }),
+      });
+    } catch {
+      // Calendar sync failed silently — booking is already saved
     }
 
     dispatch({ type: "CONFIRM_SUCCESS" });
