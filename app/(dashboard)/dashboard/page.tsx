@@ -41,7 +41,6 @@ function calNavReducer(state: CalNav, action: CalNavAction): CalNav {
   }
 }
 
-import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { MonthGrid } from "@/components/dashboard/calendar/month-grid";
 import { WeekGrid } from "@/components/dashboard/calendar/week-grid";
 import { DayList } from "@/components/dashboard/calendar/day-list";
@@ -53,28 +52,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { role } = useRole();
   const isPartner = role === "partner";
-
-  // Stats
-  const [stats, setStats] = useState<{
-    loading: boolean;
-    totalBookings: number;
-    confirmedBookings: number;
-    totalContacts: number;
-    upcomingEvents: number;
-  }>({
-    loading: true,
-    totalBookings: 0,
-    confirmedBookings: 0,
-    totalContacts: 0,
-    upcomingEvents: 0,
-  });
-  const {
-    loading: statsLoading,
-    totalBookings,
-    confirmedBookings,
-    totalContacts,
-    upcomingEvents,
-  } = stats;
 
   // Upcoming
   const [upcoming, setUpcoming] = useState<{
@@ -101,38 +78,6 @@ export default function DashboardPage() {
   }>({ loading: true, events: [] });
   const { loading: calendarLoading, events: calendarEvents } = calendar;
 
-  // Load stats once
-  useEffect(() => {
-    async function loadStats() {
-      const [allRes, confirmedRes, contactsRes, membersRes] = await Promise.all(
-        [
-          insforge.database
-            .from("bookings")
-            .select("id", { count: "exact", head: true }),
-          insforge.database
-            .from("bookings")
-            .select("id", { count: "exact", head: true })
-            .eq("status", "confirmed"),
-          insforge.database
-            .from("contacts")
-            .select("id", { count: "exact", head: true }),
-          insforge.database
-            .from("memberships")
-            .select("id", { count: "exact", head: true }),
-        ],
-      );
-      setStats({
-        loading: false,
-        totalBookings: (allRes as { count: number | null }).count ?? 0,
-        confirmedBookings:
-          (confirmedRes as { count: number | null }).count ?? 0,
-        totalContacts: (contactsRes as { count: number | null }).count ?? 0,
-        upcomingEvents: (membersRes as { count: number | null }).count ?? 0,
-      });
-    }
-    void loadStats();
-  }, []);
-
   // Load upcoming race + session once
   useEffect(() => {
     async function loadUpcoming() {
@@ -141,13 +86,15 @@ export default function DashboardPage() {
       const [raceRes, sessionRes] = await Promise.all([
         insforge.database
           .from("races")
-          .select("id, title, date, location, distance_km")
+          .select("id, title, date, location, distance_km, image_url")
           .gte("date", todayStr)
           .order("date", { ascending: true })
           .limit(1),
         insforge.database
           .from("education_sessions")
-          .select("id, title, date, location, speaker, duration_minutes")
+          .select(
+            "id, title, date, location, speaker, duration_minutes, image_url",
+          )
           .gte("date", nowIso)
           .order("date", { ascending: true })
           .limit(1),
@@ -296,36 +243,6 @@ export default function DashboardPage() {
 
   return (
     <div className="py-8">
-      {/* Stats */}
-      {!isPartner && (
-        <div className="mb-8 grid grid-cols-2 gap-4 px-6 lg:grid-cols-4 lg:px-10">
-          <StatCard
-            label="Confirmed Bookings"
-            value={confirmedBookings}
-            loading={statsLoading}
-            href="/dashboard/bookings"
-          />
-          <StatCard
-            label="Total Bookings"
-            value={totalBookings}
-            loading={statsLoading}
-            href="/dashboard/bookings"
-          />
-          <StatCard
-            label="Total Contacts"
-            value={totalContacts}
-            loading={statsLoading}
-            href="/dashboard/contacts"
-          />
-          <StatCard
-            label="Total Members"
-            value={upcomingEvents}
-            loading={statsLoading}
-            href="/dashboard/members"
-          />
-        </div>
-      )}
-
       {/* Main grid */}
       <div
         className={`grid grid-cols-1 gap-6 lg:px-10 ${!isPartner ? "xl:grid-cols-[1fr_300px]" : ""}`}

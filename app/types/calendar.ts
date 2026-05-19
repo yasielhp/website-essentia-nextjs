@@ -17,6 +17,7 @@ export type UpcomingRace = {
   date: string | null;
   location: string | null;
   distance_km: number | null;
+  image_url: string | null;
 };
 
 export type UpcomingSession = {
@@ -26,4 +27,5 @@ export type UpcomingSession = {
   location: string | null;
   speaker: string | null;
   duration_minutes: number | null;
+  image_url: string | null;
 };

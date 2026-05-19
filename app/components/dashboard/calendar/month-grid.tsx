@@ -55,7 +55,7 @@ export function MonthGrid({
             <div
               key={ymd}
               onClick={() => onDayClick(day)}
-              className={`border-sand-100 hover:bg-sand-50 min-h-16 cursor-pointer border-r border-b p-0.5 transition-colors sm:min-h-22 sm:p-1.5 ${
+              className={`border-sand-100 hover:bg-sand-50 min-h-16 cursor-pointer border-r border-b p-0.5 transition-colors sm:min-h-22 sm:p-1.5 [&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0 ${
                 !isCurrentMonth ? "bg-sand-50/60" : ""
               }`}
             >
