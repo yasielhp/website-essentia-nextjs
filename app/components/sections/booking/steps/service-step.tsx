@@ -74,29 +74,41 @@ function ServiceSelect({
   onSelect: (s: BookableService | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const isMobile = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
 
-  // Close desktop dropdown on click outside (skip on mobile — portal handles its own closing)
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: "fixed",
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
   useEffect(() => {
-    if (!isOpen) return;
-    if (window.matchMedia("(max-width: 767px)").matches) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+    if (!isOpen || isMobile()) return;
+    updatePosition();
+    const handleClose = (e: MouseEvent) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target as Node))
         setIsOpen(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const handleScroll = () => updatePosition();
+    document.addEventListener("mousedown", handleClose);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [isOpen]);
 
-  // Lock body scroll when mobile modal is open
   useEffect(() => {
-    if (!isOpen) return;
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    if (!isMobile) return;
+    if (!isOpen || !isMobile()) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -108,78 +120,84 @@ function ServiceSelect({
     setIsOpen(false);
   };
 
-  const trigger = (
-    <button
-      onClick={() => setIsOpen((o) => !o)}
-      className={[
-        "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
-        isOpen
-          ? "border-petroleum-400 ring-petroleum-100 ring-2"
-          : "border-sand-300 hover:border-petroleum-400",
-        "bg-sand-50",
-      ].join(" ")}
-    >
-      {selected ? (
-        <>
-          <div className="animate-fade-in-up relative size-20 shrink-0 overflow-hidden rounded-xl">
-            <Image
-              src={selected.image}
-              alt={selected.title}
-              fill
-              sizes="80px"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
-            <p className="text-petroleum-700 font-medium">{selected.title}</p>
-            <p className="text-petroleum-400 line-clamp-2 text-sm">
-              {selected.description}
-            </p>
-            <p className="text-petroleum-500 text-sm capitalize">
-              {selected.category}
-            </p>
-          </div>
-          <ChevronDown
-            className={[
-              "text-petroleum-400 shrink-0 transition-transform duration-200",
-              isOpen ? "rotate-180" : "",
-            ].join(" ")}
-            size={16}
-          />
-        </>
-      ) : (
-        <>
-          <div className="bg-sand-200 flex size-20 shrink-0 items-center justify-center rounded-xl">
-            <span className="text-petroleum-100 text-lg">+</span>
-          </div>
-          <p className="text-petroleum-400 flex-1 text-sm">Select a service</p>
-          <ChevronDown
-            className={[
-              "text-petroleum-400 shrink-0 transition-transform duration-200",
-              isOpen ? "rotate-180" : "",
-            ].join(" ")}
-            size={16}
-          />
-        </>
-      )}
-    </button>
-  );
-
   return (
-    <div ref={containerRef} className="relative">
-      {trigger}
+    <div>
+      <button
+        ref={triggerRef}
+        onClick={() => setIsOpen((o) => !o)}
+        className={[
+          "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          isOpen
+            ? "border-petroleum-400 ring-petroleum-100 ring-2"
+            : "border-sand-300 hover:border-petroleum-400",
+          "bg-sand-50",
+        ].join(" ")}
+      >
+        {selected ? (
+          <>
+            <div className="animate-fade-in-up relative size-20 shrink-0 overflow-hidden rounded-xl">
+              <Image
+                src={selected.image}
+                alt={selected.title}
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
+              <p className="text-petroleum-700 font-medium">{selected.title}</p>
+              <p className="text-petroleum-400 line-clamp-2 text-sm">
+                {selected.description}
+              </p>
+              <p className="text-petroleum-500 text-sm capitalize">
+                {selected.category}
+              </p>
+            </div>
+            <ChevronDown
+              className={[
+                "text-petroleum-400 shrink-0 transition-transform duration-200",
+                isOpen ? "rotate-180" : "",
+              ].join(" ")}
+              size={16}
+            />
+          </>
+        ) : (
+          <>
+            <div className="bg-sand-200 flex size-20 shrink-0 items-center justify-center rounded-xl">
+              <span className="text-petroleum-100 text-lg">+</span>
+            </div>
+            <p className="text-petroleum-400 flex-1 text-sm">
+              Select a service
+            </p>
+            <ChevronDown
+              className={[
+                "text-petroleum-400 shrink-0 transition-transform duration-200",
+                isOpen ? "rotate-180" : "",
+              ].join(" ")}
+              size={16}
+            />
+          </>
+        )}
+      </button>
 
-      {/* Desktop dropdown */}
-      {isOpen && (
-        <div className="border-sand-300 bg-sand-50 animate-fade-in-down absolute top-full right-0 left-0 z-10 mt-2 hidden max-h-96 overflow-y-auto rounded-2xl border shadow-lg md:block">
-          <ServiceItems selected={selected} onSelect={handleSelect} />
-        </div>
-      )}
-
-      {/* Mobile full-screen modal via portal */}
+      {/* Desktop: fixed-position portal to escape stacking contexts */}
       {isOpen &&
+        !isMobile() &&
         createPortal(
-          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white md:hidden">
+          <div
+            style={dropdownStyle}
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] max-h-96 overflow-y-auto rounded-2xl border shadow-lg"
+          >
+            <ServiceItems selected={selected} onSelect={handleSelect} />
+          </div>,
+          document.body,
+        )}
+
+      {/* Mobile: full-screen modal */}
+      {isOpen &&
+        isMobile() &&
+        createPortal(
+          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
               <h3 className="text-petroleum-700 font-medium">
                 Select a service

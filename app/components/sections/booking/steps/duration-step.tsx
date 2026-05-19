@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 
@@ -35,25 +36,41 @@ function TierSelect({
   onSelect: (t: Tier) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: "fixed",
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+    if (!isOpen) return;
+    updatePosition();
+    const handleClose = (e: MouseEvent) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target as Node))
         setIsOpen(false);
-      }
     };
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const handleScroll = () => updatePosition();
+    document.addEventListener("mousedown", handleClose);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [isOpen]);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div>
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen((o) => !o)}
         className={[
           "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
@@ -84,43 +101,48 @@ function TierSelect({
         />
       </button>
 
-      {isOpen && (
-        <div className="border-sand-300 bg-sand-50 animate-fade-in-down absolute top-full right-0 left-0 z-10 mt-2 overflow-hidden rounded-2xl border shadow-lg">
-          <div className="p-3">
-            {tiers.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  onSelect(t);
-                  setIsOpen(false);
-                }}
-                className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-petroleum-700 font-medium">
-                    {t.label ?? "Standard"}
-                  </span>
-                  {(t.duration_minutes != null || t.price_eur != null) && (
-                    <span className="text-petroleum-400 text-xs">
-                      {[
-                        t.duration_minutes != null
-                          ? `${t.duration_minutes} min`
-                          : null,
-                        t.price_eur != null ? `€${t.price_eur}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+      {isOpen &&
+        createPortal(
+          <div
+            style={dropdownStyle}
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
+          >
+            <div className="p-3">
+              {tiers.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    onSelect(t);
+                    setIsOpen(false);
+                  }}
+                  className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-petroleum-700 font-medium">
+                      {t.label ?? "Standard"}
                     </span>
+                    {(t.duration_minutes != null || t.price_eur != null) && (
+                      <span className="text-petroleum-400 text-xs">
+                        {[
+                          t.duration_minutes != null
+                            ? `${t.duration_minutes} min`
+                            : null,
+                          t.price_eur != null ? `€${t.price_eur}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    )}
+                  </div>
+                  {selectedId === t.id && (
+                    <Check className="text-petroleum-700 shrink-0" size={14} />
                   )}
-                </div>
-                {selectedId === t.id && (
-                  <Check className="text-petroleum-700 shrink-0" size={14} />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
