@@ -20,7 +20,7 @@ const theme = {
     input:
       "border-petroleum-200 text-petroleum-700 placeholder:text-petroleum-400 focus:border-petroleum-500 focus:ring-petroleum-500/20",
     label: "text-petroleum-400",
-    link: "text-petroleum-600 hover:text-petroleum-800",
+    link: "text-petroleum-500 hover:text-petroleum-800",
     muted: "text-petroleum-400",
     accordion: "text-petroleum-400",
     button: "solid" as const,

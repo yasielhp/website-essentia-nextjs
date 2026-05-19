@@ -243,7 +243,7 @@ function ConfirmDeleteModal({
         </h2>
         <p className="text-petroleum-400 mt-2 text-sm">
           This will permanently delete{" "}
-          <span className="text-petroleum-600 font-medium">{title}</span> and
+          <span className="text-petroleum-500 font-medium">{title}</span> and
           all its registrations. This action cannot be undone.
         </p>
         <div className="mt-6 flex justify-end gap-3">

@@ -225,7 +225,7 @@ export default function ComparisonSection() {
                           i % 2 === 0 ? "bg-white" : "bg-sand-50/50",
                         ].join(" ")}
                       >
-                        <td className="text-petroleum-600 px-4 py-3 font-medium">
+                        <td className="text-petroleum-500 px-4 py-3 font-medium">
                           {row.label}
                         </td>
                         <ComparisonCell value={row.essential} />
@@ -284,7 +284,7 @@ export default function ComparisonSection() {
                           key={row.label}
                           className="flex items-center justify-between px-5 py-3"
                         >
-                          <span className="text-petroleum-600 text-sm">
+                          <span className="text-petroleum-500 text-sm">
                             {row.label}
                           </span>
                           <span className="ml-3 shrink-0">

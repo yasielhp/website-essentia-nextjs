@@ -120,7 +120,7 @@ function TierCard({ tier }: { tier: Tier }) {
         {tier.features.map((feature) => (
           <li
             key={feature}
-            className="text-petroleum-600 flex items-start gap-2 text-sm"
+            className="text-petroleum-500 flex items-start gap-2 text-sm"
           >
             <Checkmark />
             {feature}

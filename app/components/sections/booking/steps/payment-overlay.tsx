@@ -75,7 +75,7 @@ export function PaymentOverlay({
         <button
           type="button"
           onClick={onClose}
-          className="text-petroleum-400 hover:text-petroleum-600 text-xs underline transition-colors"
+          className="text-petroleum-400 hover:text-petroleum-500 text-xs underline transition-colors"
         >
           Cancelar
         </button>

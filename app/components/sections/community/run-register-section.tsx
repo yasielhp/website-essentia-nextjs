@@ -127,7 +127,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-petroleum-600 text-sm font-medium">
+      <label htmlFor={id} className="text-petroleum-500 text-sm font-medium">
         {label}
       </label>
       {children}
@@ -174,7 +174,7 @@ function RaceInfoPanel({
           {raceDetails.map(({ id, icon: Icon, value }) => (
             <div key={id} className="flex items-center gap-3">
               <Icon className="text-petroleum-400 shrink-0" size={15} />
-              <p className="text-petroleum-600 text-sm">{value}</p>
+              <p className="text-petroleum-500 text-sm">{value}</p>
             </div>
           ))}
         </div>
@@ -313,7 +313,7 @@ function GuestRegistrationForm({
               I accept the{" "}
               <Link
                 href="/terms"
-                className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
+                className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
                 Terms
@@ -321,7 +321,7 @@ function GuestRegistrationForm({
               and{" "}
               <Link
                 href="/privacy"
-                className="text-petroleum-600 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
+                className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
                 Privacy Policy
@@ -504,7 +504,7 @@ function RunRegisterContent() {
                   </p>
                   <p className="text-petroleum-400 text-sm leading-relaxed">
                     We&apos;ve received your registration for the{" "}
-                    <strong className="text-petroleum-600 font-medium">
+                    <strong className="text-petroleum-500 font-medium">
                       {displayDate || race?.title || "next run"}
                     </strong>{" "}
                     run.
@@ -527,7 +527,7 @@ function RunRegisterContent() {
                     </h2>
                     <p className="text-petroleum-400 mt-2 text-sm">
                       Registering as{" "}
-                      <span className="text-petroleum-600 font-medium">
+                      <span className="text-petroleum-500 font-medium">
                         {user.email}
                       </span>
                     </p>

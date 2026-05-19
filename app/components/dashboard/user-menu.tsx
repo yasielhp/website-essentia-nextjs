@@ -60,7 +60,7 @@ export function UserMenu({
               setOpen(false);
               onEditAccount();
             }}
-            className="text-petroleum-600 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+            className="text-petroleum-500 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
           >
             <IconEdit />
             Edit account

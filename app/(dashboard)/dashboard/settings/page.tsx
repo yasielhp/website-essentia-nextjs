@@ -320,7 +320,7 @@ export default function SettingsPage() {
             className={`relative -mb-px rounded-t-md px-4 py-2.5 text-sm font-medium transition-colors ${
               tab === key
                 ? "border-petroleum-700 text-petroleum-700 border-b-2"
-                : "text-petroleum-400 hover:text-petroleum-600 border-b-2 border-transparent"
+                : "text-petroleum-400 hover:text-petroleum-500 border-b-2 border-transparent"
             }`}
           >
             {label}

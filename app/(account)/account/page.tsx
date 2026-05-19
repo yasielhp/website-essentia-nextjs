@@ -72,7 +72,7 @@ function SummaryCard({
       ) : (
         <p className="font-display text-petroleum-700 text-4xl">{count}</p>
       )}
-      <span className="text-petroleum-400 group-hover:text-petroleum-600 text-xs transition-colors">
+      <span className="text-petroleum-400 group-hover:text-petroleum-500 text-xs transition-colors">
         View all →
       </span>
     </Link>

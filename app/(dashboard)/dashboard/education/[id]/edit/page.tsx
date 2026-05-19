@@ -227,7 +227,7 @@ function DeleteModal({
             Delete session?
           </h3>
           <p className="text-petroleum-400 text-sm">
-            <strong className="text-petroleum-600 font-medium">{title}</strong>{" "}
+            <strong className="text-petroleum-500 font-medium">{title}</strong>{" "}
             will be permanently deleted along with all its enrollments.
           </p>
         </div>

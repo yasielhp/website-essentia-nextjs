@@ -33,7 +33,7 @@ export function SuccessState({
         </p>
         <p className="text-petroleum-400 mt-1 text-sm text-balance">
           We will contact you by phone or WhatsApp at{" "}
-          <span className="text-petroleum-600 font-medium">{phone}</span> to
+          <span className="text-petroleum-500 font-medium">{phone}</span> to
           confirm your appointment.
         </p>
       </div>

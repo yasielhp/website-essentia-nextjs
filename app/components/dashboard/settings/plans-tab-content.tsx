@@ -60,7 +60,7 @@ function PlanCard({ plan, onEdit }: { plan: PlanRow; onEdit: () => void }) {
         {isSynced && !priceChanged ? (
           <span className="text-xs font-medium text-green-600">Synced ✓</span>
         ) : priceChanged ? (
-          <span className="text-xs font-medium text-amber-600">
+          <span className="text-xs font-medium text-yellow-700">
             Price changed
           </span>
         ) : (
@@ -158,7 +158,7 @@ function PriceHistoryCard({ plans }: { plans: PlanRow[] }) {
                   <td className="text-petroleum-400 px-5 py-3 font-mono">
                     {r.id.slice(0, 18)}…
                   </td>
-                  <td className="text-petroleum-600 px-5 py-3">
+                  <td className="text-petroleum-500 px-5 py-3">
                     {r.unit_amount != null
                       ? intl.format(r.unit_amount / 100)
                       : "—"}
@@ -181,7 +181,7 @@ function PriceHistoryCard({ plans }: { plans: PlanRow[] }) {
                   <td className="text-petroleum-400 px-5 py-3">
                     {formatDate(r.created)}
                   </td>
-                  <td className="text-petroleum-600 px-5 py-3 text-right font-medium">
+                  <td className="text-petroleum-500 px-5 py-3 text-right font-medium">
                     {r.memberCount != null ? r.memberCount : "—"}
                   </td>
                 </tr>

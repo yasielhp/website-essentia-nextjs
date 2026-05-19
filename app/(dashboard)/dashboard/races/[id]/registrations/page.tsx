@@ -312,7 +312,7 @@ function RegistrationRow({
       <td className="px-5 py-4">
         {reg.table_number != null ? (
           <span className="inline-flex items-center gap-1">
-            <span className="bg-petroleum-100 text-petroleum-600 rounded-full px-2.5 py-0.5 text-xs font-medium">
+            <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
               Mesa {reg.table_number}
             </span>
             {reg.checked_in_at && (

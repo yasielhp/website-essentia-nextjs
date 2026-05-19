@@ -332,7 +332,7 @@ function AccountDropdown({
             <Link
               href={item.href}
               onClick={onClose}
-              className="text-petroleum-600 hover:bg-sand-50 block px-4 py-2.5 text-sm font-medium transition-colors"
+              className="text-petroleum-500 hover:bg-sand-50 block px-4 py-2.5 text-sm font-medium transition-colors"
             >
               {item.label}
             </Link>
@@ -342,7 +342,7 @@ function AccountDropdown({
           <button
             type="button"
             onClick={onSignOut}
-            className="text-petroleum-400 hover:text-petroleum-600 w-full py-2.5 text-left text-sm font-medium transition-colors"
+            className="text-petroleum-400 hover:text-petroleum-500 w-full py-2.5 text-left text-sm font-medium transition-colors"
           >
             Sign out
           </button>

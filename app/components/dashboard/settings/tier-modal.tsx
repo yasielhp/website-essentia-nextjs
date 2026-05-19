@@ -332,7 +332,7 @@ export function TierModal({
                             {stripePriceId}
                           </span>
                           {priceChanged && (
-                            <span className="mt-0.5 text-xs text-amber-600">
+                            <span className="mt-0.5 text-xs text-yellow-700">
                               Price changed: re-sync to update
                             </span>
                           )}

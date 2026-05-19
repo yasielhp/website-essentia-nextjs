@@ -250,7 +250,7 @@ function DeleteDialog({
             Delete contact?
           </h3>
           <p className="text-petroleum-400 text-sm">
-            <strong className="text-petroleum-600 font-medium">{name}</strong>{" "}
+            <strong className="text-petroleum-500 font-medium">{name}</strong>{" "}
             and all their associated bookings and registrations will be
             permanently deleted.
           </p>

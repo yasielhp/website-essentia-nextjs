@@ -133,7 +133,7 @@ function TierDisplay({
             {features.map((feature) => (
               <li
                 key={feature}
-                className="text-petroleum-600 flex items-start gap-3 text-sm"
+                className="text-petroleum-500 flex items-start gap-3 text-sm"
               >
                 <IconCheck />
                 {feature}

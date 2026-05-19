@@ -374,7 +374,7 @@ export default function CheckInPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {r.table_number != null && (
-                    <span className="bg-petroleum-100 text-petroleum-600 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                    <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
                       Mesa {r.table_number}
                     </span>
                   )}
@@ -446,7 +446,7 @@ export default function CheckInPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {r.table_number != null && (
-                      <span className="bg-petroleum-100 text-petroleum-600 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                      <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
                         Mesa {r.table_number}
                       </span>
                     )}

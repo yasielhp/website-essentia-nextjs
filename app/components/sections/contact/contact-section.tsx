@@ -19,7 +19,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-petroleum-600 text-sm font-medium">
+      <label htmlFor={id} className="text-petroleum-500 text-sm font-medium">
         {label}
       </label>
       {children}

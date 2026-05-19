@@ -346,7 +346,7 @@ function NextSessionSection({
                           className="text-petroleum-400 mt-0.5 shrink-0"
                           size={15}
                         />
-                        <p className="text-petroleum-600 text-sm leading-snug">
+                        <p className="text-petroleum-500 text-sm leading-snug">
                           {value}
                         </p>
                       </div>
