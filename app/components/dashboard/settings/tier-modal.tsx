@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useReducer } from "react";
 import { insforge } from "@/lib/insforge";
-import { syncSingleTierToStripe } from "@/actions/sync-single-tier";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { ModalState } from "@/types/settings";
 
@@ -64,14 +63,8 @@ export function TierModal({
     active: modal.tier?.active ?? true,
   });
 
-  const [ops, setOps] = useState({
-    saving: false,
-    deleting: false,
-    syncing: false,
-    stripePriceId: modal.tier?.stripe_price_id ?? (null as string | null),
-    syncError: null as string | null,
-  });
-  const { saving, deleting, syncing, stripePriceId, syncError } = ops;
+  const [ops, setOps] = useState({ saving: false, deleting: false });
+  const { saving, deleting } = ops;
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -136,24 +129,6 @@ export function TierModal({
     setOps((o) => ({ ...o, deleting: false }));
     onClose();
   }
-
-  async function handleSync() {
-    if (!modal.tier) return;
-    setOps((o) => ({ ...o, syncing: true, syncError: null }));
-    try {
-      const result = await syncSingleTierToStripe(modal.tier.id);
-      setOps((o) => ({ ...o, stripePriceId: result.stripe_price_id }));
-    } catch (err) {
-      setOps((o) => ({
-        ...o,
-        syncError: err instanceof Error ? err.message : "Sync failed",
-      }));
-    } finally {
-      setOps((o) => ({ ...o, syncing: false }));
-    }
-  }
-
-  const isSynced = !!stripePriceId;
 
   return (
     <div
@@ -301,77 +276,6 @@ export function TierModal({
             </label>
           </div>
 
-          {/* Stripe sync — only when editing */}
-          {isEdit &&
-            (() => {
-              const syncedPrice = modal.tier?.stripe_synced_price;
-              const currentPrice =
-                form.price !== "" ? parseFloat(form.price) : null;
-              const priceChanged =
-                isSynced &&
-                syncedPrice != null &&
-                currentPrice != null &&
-                Math.abs(Number(syncedPrice) - currentPrice) > 0.001;
-              const needsSync = !isSynced || priceChanged;
-
-              return (
-                <>
-                  <div className="border-sand-100 border-t" />
-
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-petroleum-700 text-sm font-medium">
-                        Stripe product
-                      </span>
-                      {isSynced ? (
-                        <>
-                          <span className="text-xs font-medium text-green-600">
-                            Synced ✓
-                          </span>
-                          <span className="font-mono text-xs text-green-600/70">
-                            {stripePriceId}
-                          </span>
-                          {priceChanged && (
-                            <span className="mt-0.5 text-xs text-yellow-700">
-                              Price changed: re-sync to update
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-petroleum-400 text-xs">
-                          Not synced yet
-                        </span>
-                      )}
-                      {syncError && (
-                        <span className="mt-0.5 text-xs text-red-500">
-                          {syncError}
-                        </span>
-                      )}
-                    </div>
-
-                    {needsSync && (
-                      <button
-                        type="button"
-                        disabled={syncing || saving}
-                        onClick={() => void handleSync()}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#635BFF] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                      >
-                        {syncing ? (
-                          <>
-                            <span className="size-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            Syncing…
-                          </>
-                        ) : isSynced ? (
-                          "Re-sync"
-                        ) : (
-                          "Sync to Stripe"
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
         </div>
 
         {/* Footer */}

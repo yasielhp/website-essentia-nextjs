@@ -15,7 +15,6 @@ import { SectionCard } from "@/components/dashboard/settings/section-card";
 import { ColorRow } from "@/components/dashboard/settings/color-row";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
-import { PaymentGatewayTab } from "@/components/dashboard/settings/payment-gateway-tab";
 import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-content";
 
 // ─── Data state reducer ───────────────────────────────────────
@@ -191,9 +190,7 @@ export default function SettingsPage() {
   async function reloadServiceTiers(serviceId: string) {
     const { data: rows } = await insforge.database
       .from("service_tiers")
-      .select(
-        "id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id, stripe_synced_price",
-      )
+      .select("id, label, duration_minutes, price_eur, color, active, sort_order")
       .eq("service_id", serviceId)
       .order("sort_order");
     dispatch({
@@ -216,14 +213,12 @@ export default function SettingsPage() {
         insforge.database
           .from("service_tiers")
           .select(
-            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order, stripe_product_id, stripe_price_id, stripe_synced_price",
+            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order",
           )
           .order("sort_order"),
         insforge.database
           .from("membership_plans")
-          .select(
-            "id, label, price_monthly, stripe_product_id, stripe_price_id, stripe_synced_price",
-          )
+          .select("id, label, price_monthly")
           .order("price_monthly"),
       ]);
 
@@ -247,9 +242,7 @@ export default function SettingsPage() {
   async function reloadPlans() {
     const { data: rows } = await insforge.database
       .from("membership_plans")
-      .select(
-        "id, label, price_monthly, stripe_product_id, stripe_price_id, stripe_synced_price",
-      )
+      .select("id, label, price_monthly")
       .order("price_monthly");
     if (rows) dispatch({ type: "SET_PLANS", plans: rows as PlanRow[] });
     showToast("Saved");
@@ -282,7 +275,7 @@ export default function SettingsPage() {
 
         {/* Tab bar */}
         <div className="border-sand-200 mb-6 flex gap-1 border-b">
-          {[20, 36, 28, 32].map((w, i) => (
+          {[20, 36, 28].map((w, i) => (
             <div
               key={i}
               className="bg-sand-100 mb-[-1px] h-9 animate-pulse rounded-t-md"
@@ -342,7 +335,6 @@ export default function SettingsPage() {
             ["services", "Services"],
             ["plans", "Membership Plans"],
             ["appearance", "Appearance"],
-            ["payment", "Payment Gateway"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
           <button
@@ -383,12 +375,8 @@ export default function SettingsPage() {
             onEdit={(plan) =>
               dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
             }
-            onReload={reloadPlans}
           />
         )}
-
-        {/* ── Payment Gateway ── */}
-        {tab === "payment" && <PaymentGatewayTab />}
 
         {/* ── Appearance ── */}
         {tab === "appearance" && (

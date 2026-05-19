@@ -1,4 +1,4 @@
-export type Tab = "services" | "plans" | "appearance" | "payment";
+export type Tab = "services" | "plans" | "appearance";
 
 export type TierRow = {
   id: string;
@@ -8,18 +8,12 @@ export type TierRow = {
   color: string | null;
   active: boolean;
   sort_order: number;
-  stripe_product_id: string | null;
-  stripe_price_id: string | null;
-  stripe_synced_price: number | null;
 };
 
 export type PlanRow = {
   id: string;
   label: string;
   price_monthly: number | null;
-  stripe_product_id: string | null;
-  stripe_price_id: string | null;
-  stripe_synced_price: number | null;
 };
 
 export type StaffRow = {
