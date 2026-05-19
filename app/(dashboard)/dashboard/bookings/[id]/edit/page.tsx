@@ -13,6 +13,7 @@ import {
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -431,7 +432,7 @@ function StatusSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
-  const active = STATUSES.find((s) => s.id === selected)!;
+  const active = STATUSES.find((s) => s.id === selected) ?? STATUSES[0]!;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -960,6 +961,10 @@ export default function EditBookingPage() {
     phone,
     status,
   } = form;
+
+  const fullNameForCrumb =
+    [firstName, lastName].filter(Boolean).join(" ") || null;
+  useDynamicBreadcrumb(!bookingLoading ? fullNameForCrumb : null);
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;

@@ -11,6 +11,10 @@ import { navLinks, navIcons } from "@/constants/nav";
 import { getBreadcrumbs } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
 import { RoleProvider, useRole } from "@/context/role-context";
+import {
+  BreadcrumbProvider,
+  useBreadcrumbContext,
+} from "@/context/breadcrumb-context";
 import type { Role } from "@/types";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
@@ -43,6 +47,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     }
   }, [role, roleLoading, authLoading, replace]);
 
+  const { dynamicLabel } = useBreadcrumbContext();
+
   if (authLoading || roleLoading || role === null) {
     return (
       <div className="bg-sand-50 flex min-h-screen items-center justify-center">
@@ -52,7 +58,24 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   }
 
   const displayName = user?.name ?? user?.email ?? "User";
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const UUID_RE = /^[0-9a-f-]{36}$/i;
+  const rawCrumbs = getBreadcrumbs(pathname);
+  const segments = pathname
+    .replace(/^\/dashboard\/?/, "")
+    .split("/")
+    .filter(Boolean);
+  const hasUUID = segments.some((s) => UUID_RE.test(s));
+  const isEditPage = segments[segments.length - 1] === "edit";
+  const breadcrumbs =
+    hasUUID && dynamicLabel
+      ? isEditPage
+        ? [
+            rawCrumbs[0]!,
+            { label: dynamicLabel, href: pathname.replace(/\/edit$/, "") },
+            { label: "Edit" },
+          ]
+        : [rawCrumbs[0]!, { label: dynamicLabel }]
+      : rawCrumbs;
 
   const visibleNavLinks =
     (role as Role) === "partner"
@@ -264,7 +287,9 @@ export default function DashboardLayout({
 }) {
   return (
     <RoleProvider>
-      <DashboardInner>{children}</DashboardInner>
+      <BreadcrumbProvider>
+        <DashboardInner>{children}</DashboardInner>
+      </BreadcrumbProvider>
     </RoleProvider>
   );
 }
