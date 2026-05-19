@@ -33,16 +33,16 @@ const EMPTY_DETAILS: DetailsState = {
 
 export type LocationAddress = {
   street: string;
-  apartment: string;
-  city: string;
+  building: string;
   postalCode: string;
+  municipality: string;
 };
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",
-  apartment: "",
-  city: "",
+  building: "",
   postalCode: "",
+  municipality: "",
 };
 
 type BookingState = {
@@ -548,8 +548,8 @@ function BookingContentInner() {
       !!selectedLocation &&
       (selectedLocation !== "domicilio" ||
         (locationAddress.street.trim().length > 0 &&
-          locationAddress.city.trim().length > 0 &&
-          locationAddress.postalCode.trim().length > 0)),
+          locationAddress.postalCode.trim().length > 0 &&
+          locationAddress.municipality.trim().length > 0)),
     duration: !!selectedTierId,
     details: !!(
       details.firstName &&
@@ -624,9 +624,9 @@ function BookingContentInner() {
             selectedLocation === "domicilio"
               ? [
                   locationAddress.street,
-                  locationAddress.apartment,
-                  locationAddress.city,
+                  locationAddress.building,
                   locationAddress.postalCode,
+                  locationAddress.municipality,
                 ]
                   .filter(Boolean)
                   .join(", ")
@@ -679,9 +679,9 @@ function BookingContentInner() {
               selectedLocation === "domicilio"
                 ? [
                     locationAddress.street,
-                    locationAddress.apartment,
-                    locationAddress.city,
+                    locationAddress.building,
                     locationAddress.postalCode,
+                    locationAddress.municipality,
                   ]
                     .filter(Boolean)
                     .join(", ")

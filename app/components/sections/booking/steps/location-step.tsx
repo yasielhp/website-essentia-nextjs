@@ -183,6 +183,26 @@ function LocationSelect({
   );
 }
 
+const TENERIFE_MUNICIPALITIES = [
+  "Adeje",
+  "Arona",
+  "Granadilla de Abona",
+  "Guía de Isora",
+  "San Miguel de Abona",
+  "Santiago del Teide",
+  "Los Cristianos",
+  "Playa de las Américas",
+  "Costa Adeje",
+  "El Médano",
+  "Los Abrigos",
+  "Puerto de la Cruz",
+  "Santa Cruz de Tenerife",
+  "San Cristóbal de La Laguna",
+  "Los Realejos",
+  "Candelaria",
+  "Güímar",
+];
+
 function AddressFields({
   address,
   onChange,
@@ -190,67 +210,89 @@ function AddressFields({
   address: LocationAddress;
   onChange: (addr: LocationAddress) => void;
 }) {
-  const set = (key: keyof LocationAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    onChange({ ...address, [key]: e.target.value });
+  const set =
+    (key: keyof LocationAddress) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      onChange({ ...address, [key]: e.target.value });
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="addr-street" className="text-petroleum-500 text-sm font-medium">
-          Street & number<span className="ml-0.5 text-red-400">*</span>
+        <label
+          htmlFor="addr-street"
+          className="text-petroleum-500 text-sm font-medium"
+        >
+          Calle y número<span className="ml-0.5 text-red-400">*</span>
         </label>
         <input
           id="addr-street"
           type="text"
           value={address.street}
           onChange={set("street")}
-          placeholder="Main St, 42"
+          placeholder="Calle El Peñón, 23"
           autoComplete="address-line1"
           className={INPUT_CLASS}
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="addr-apartment" className="text-petroleum-500 text-sm font-medium">
-          Apartment / floor
+        <label
+          htmlFor="addr-building"
+          className="text-petroleum-500 text-sm font-medium"
+        >
+          Bloque, piso y puerta
         </label>
         <input
-          id="addr-apartment"
+          id="addr-building"
           type="text"
-          value={address.apartment}
-          onChange={set("apartment")}
-          placeholder="3rd floor, apt B"
+          value={address.building}
+          onChange={set("building")}
+          placeholder="Bloque 3, 2.º B"
           autoComplete="address-line2"
           className={INPUT_CLASS}
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="addr-city" className="text-petroleum-500 text-sm font-medium">
-            City<span className="ml-0.5 text-red-400">*</span>
-          </label>
-          <input
-            id="addr-city"
-            type="text"
-            value={address.city}
-            onChange={set("city")}
-            placeholder="Santander"
-            autoComplete="address-level2"
-            className={INPUT_CLASS}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="addr-postal" className="text-petroleum-500 text-sm font-medium">
-            Postal code<span className="ml-0.5 text-red-400">*</span>
+          <label
+            htmlFor="addr-postal"
+            className="text-petroleum-500 text-sm font-medium"
+          >
+            Código postal<span className="ml-0.5 text-red-400">*</span>
           </label>
           <input
             id="addr-postal"
             type="text"
+            inputMode="numeric"
+            maxLength={5}
             value={address.postalCode}
             onChange={set("postalCode")}
-            placeholder="39001"
+            placeholder="38670"
             autoComplete="postal-code"
             className={INPUT_CLASS}
           />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="addr-municipality"
+            className="text-petroleum-500 text-sm font-medium"
+          >
+            Municipio<span className="ml-0.5 text-red-400">*</span>
+          </label>
+          <input
+            id="addr-municipality"
+            type="text"
+            list="tenerife-municipalities"
+            value={address.municipality}
+            onChange={set("municipality")}
+            placeholder="Adeje"
+            autoComplete="address-level2"
+            className={INPUT_CLASS}
+          />
+          <datalist id="tenerife-municipalities">
+            {TENERIFE_MUNICIPALITIES.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
         </div>
       </div>
     </div>
