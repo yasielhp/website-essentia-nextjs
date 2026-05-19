@@ -26,60 +26,66 @@ export function WeekGrid({
   const weekDays = getWeekDays(anchor);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-140">
-        {/* Day headers */}
-        <div className="border-sand-200 grid grid-cols-7 border-b">
-          {weekDays.map((day) => {
-            const ymd = toYMD(day);
-            const isToday = ymd === todayYMD;
-            return (
-              <div key={ymd} className="py-2 text-center">
-                <div className="text-petroleum-400 text-xs">
+    <div>
+      {/* Day headers */}
+      <div className="border-sand-200 grid grid-cols-7 border-b">
+        {weekDays.map((day) => {
+          const ymd = toYMD(day);
+          const isToday = ymd === todayYMD;
+          return (
+            <div key={ymd} className="py-2 text-center">
+              <div className="text-petroleum-400 text-xs">
+                <span className="hidden sm:inline">
                   {DAYS_SHORT[(day.getDay() + 6) % 7]}
-                </div>
-                <button
-                  onClick={() => onDayClick(day)}
-                  className={`mx-auto mt-1 flex size-7 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                    isToday
-                      ? "bg-petroleum-700 text-white"
-                      : "text-petroleum-700 hover:bg-sand-100"
-                  }`}
-                >
-                  {day.getDate()}
-                </button>
+                </span>
+                <span className="sm:hidden">
+                  {DAYS_SHORT[(day.getDay() + 6) % 7]![0]}
+                </span>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Columns */}
-        <div className="grid min-h-80 grid-cols-7">
-          {weekDays.map((day) => {
-            const ymd = toYMD(day);
-            const dayEvents = sortByTime(eventsByDay.get(ymd) ?? []);
-            return (
-              <div
-                key={ymd}
-                className="border-sand-100 border-r p-1.5 last:border-r-0"
+              <button
+                onClick={() => onDayClick(day)}
+                className={`mx-auto mt-1 flex size-6 items-center justify-center rounded-full text-xs font-medium transition-colors sm:size-7 sm:text-sm ${
+                  isToday
+                    ? "bg-petroleum-700 text-white"
+                    : "text-petroleum-700 hover:bg-sand-100"
+                }`}
               >
-                {loading ? (
-                  day.getDay() % 2 === 0 ? (
-                    <div className="bg-sand-100 h-14 animate-pulse rounded-xl" />
-                  ) : null
-                ) : (
-                  dayEvents.map((e) => (
+                {day.getDate()}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Columns */}
+      <div className="grid min-h-80 grid-cols-7">
+        {weekDays.map((day) => {
+          const ymd = toYMD(day);
+          const dayEvents = sortByTime(eventsByDay.get(ymd) ?? []);
+          return (
+            <div
+              key={ymd}
+              onClick={() => onDayClick(day)}
+              className="border-sand-100 hover:bg-sand-50 cursor-pointer border-r p-0.5 transition-colors last:border-r-0 sm:p-1.5"
+            >
+              {loading ? (
+                day.getDay() % 2 === 0 ? (
+                  <div className="bg-sand-100 h-10 animate-pulse rounded-xl sm:h-14" />
+                ) : null
+              ) : (
+                <div onClick={(e) => e.stopPropagation()}>
+                  {dayEvents.map((e) => (
                     <EventPill
                       key={e.id + e.type}
                       event={e}
                       onClick={() => onEventClick(e)}
                     />
-                  ))
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
