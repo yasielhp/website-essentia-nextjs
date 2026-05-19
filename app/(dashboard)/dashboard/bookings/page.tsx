@@ -12,6 +12,8 @@ type Booking = {
   duration: string | null;
   first_name: string | null;
   last_name: string | null;
+  email: string | null;
+  phone: string | null;
   date: string | null;
   time: string | null;
   status: string | null;
@@ -35,7 +37,7 @@ const emptyFilters: Filters = {
   date: "",
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -51,12 +53,20 @@ function formatBookingDate(dateStr: string | null): string {
   });
 }
 
-function formatCreatedAt(isoStr: string | null): string {
+function formatCreatedDate(isoStr: string | null): string {
   if (!isoStr) return "—";
   return new Date(isoStr).toLocaleDateString("es-ES", {
     day: "numeric",
     month: "short",
     year: "numeric",
+  });
+}
+
+function formatCreatedTime(isoStr: string | null): string {
+  if (!isoStr) return "";
+  return new Date(isoStr).toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -135,7 +145,7 @@ function IconFilter() {
 // ─── Autocomplete input ────────────────────────────────────────
 
 const fieldCls =
-  "border-sand-200 text-petroleum-600 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+  "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
 function AutocompleteInput({
   value,
@@ -272,7 +282,7 @@ function FilterModal({
           <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
           <button
             onClick={onClose}
-            className="text-petroleum-300 hover:text-petroleum-600 transition-colors"
+            className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
@@ -458,7 +468,7 @@ export default function BookingsPage() {
     let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, duration, first_name, last_name, date, time, status, location, created_at",
+        "id, service_title, duration, first_name, last_name, email, phone, date, time, status, location, created_at",
         { count: "exact" },
       );
 
@@ -528,8 +538,68 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border-sand-200 rounded-2xl border bg-white">
+      {/* Mobile cards */}
+      <div className="border-sand-200 divide-sand-200 mb-4 divide-y rounded-2xl border bg-white sm:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2 px-5 py-4">
+              <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+              <div className="bg-sand-100 h-3 w-48 animate-pulse rounded" />
+              <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+            </div>
+          ))
+        ) : bookings.length === 0 ? (
+          <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
+            No bookings found.
+          </p>
+        ) : (
+          bookings.map((b) => {
+            const fullName =
+              [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
+            return (
+              <div
+                key={b.id}
+                onClick={() => push(`/dashboard/bookings/${b.id}`)}
+                className="hover:bg-sand-50 cursor-pointer px-5 py-4 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-petroleum-700 truncate font-medium">
+                      {fullName}
+                    </p>
+                    {b.email && (
+                      <p className="text-petroleum-400 truncate text-xs">
+                        {b.email}
+                      </p>
+                    )}
+                  </div>
+                  <StatusBadge status={b.status} />
+                </div>
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  <p className="text-petroleum-500 text-sm">
+                    {b.service_title ?? "—"}
+                  </p>
+                  {b.duration && (
+                    <span className="text-petroleum-400 text-xs">
+                      · {b.duration}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <p className="text-petroleum-400 text-xs">
+                    {formatBookingDate(b.date)}
+                    {b.time ? ` · ${b.time}` : ""}
+                  </p>
+                  <LocationBadge location={b.location} />
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Table (desktop only) */}
+      <div className="border-sand-200 hidden rounded-2xl border bg-white sm:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-sm">
             <thead>
@@ -550,7 +620,7 @@ export default function BookingsPage() {
                   Location
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Date & time
+                  Datetime
                 </th>
               </tr>
             </thead>
@@ -581,15 +651,26 @@ export default function BookingsPage() {
                     onClick={() => push(`/dashboard/bookings/${b.id}`)}
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
-                    <td className="text-petroleum-400 px-5 py-4 text-xs">
-                      {formatCreatedAt(b.created_at)}
+                    <td className="px-5 py-4">
+                      <p className="text-petroleum-500">
+                        {formatCreatedDate(b.created_at)}
+                      </p>
+                      <p className="text-petroleum-400 text-xs">
+                        {formatCreatedTime(b.created_at)}
+                      </p>
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={b.status} />
                     </td>
-                    <td className="text-petroleum-500 px-5 py-4">
-                      {[b.first_name, b.last_name].filter(Boolean).join(" ") ||
-                        "—"}
+                    <td className="px-5 py-4">
+                      <p className="text-petroleum-500">
+                        {[b.first_name, b.last_name]
+                          .filter(Boolean)
+                          .join(" ") || "—"}
+                      </p>
+                      {b.email && (
+                        <p className="text-petroleum-400 text-xs">{b.email}</p>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <p className="text-petroleum-700 font-medium">
@@ -618,11 +699,14 @@ export default function BookingsPage() {
             </tbody>
           </table>
         </div>
+      </div>
 
+      <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
         <Pagination
           page={page}
           totalPages={totalPages}
           onPage={(p) => dispatch({ type: "SET_PAGE", value: p })}
+          className="border-t-0"
           loading={loading}
         />
       </div>

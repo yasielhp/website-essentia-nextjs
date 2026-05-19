@@ -5,6 +5,7 @@ type PaginationProps = {
   totalPages: number;
   onPage: (page: number) => void;
   loading?: boolean;
+  className?: string;
 };
 
 export function Pagination({
@@ -12,9 +13,12 @@ export function Pagination({
   totalPages,
   onPage,
   loading = false,
+  className,
 }: PaginationProps) {
   return (
-    <div className="border-sand-200 flex items-center justify-between border-t px-5 py-3">
+    <div
+      className={`border-sand-200 flex items-center justify-between border-t px-5 py-3 ${className ?? ""}`}
+    >
       <p className="text-petroleum-400 text-sm">
         Page {page + 1} of {totalPages}
       </p>
