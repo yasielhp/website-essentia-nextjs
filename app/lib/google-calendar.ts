@@ -51,7 +51,7 @@ const SCOPES = [
 export function getGoogleAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/google/calendar/callback`,
     response_type: "code",
     scope: SCOPES,
     access_type: "offline",
@@ -74,7 +74,7 @@ export async function exchangeCodeForTokens(
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/google/calendar/callback`,
       grant_type: "authorization_code",
     }),
   });
