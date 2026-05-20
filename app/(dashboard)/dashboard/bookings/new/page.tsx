@@ -1215,54 +1215,8 @@ export default function NewBookingPage() {
             </div>
           )}
 
-          {/* ── Step 2: Session type ── */}
+          {/* ── Step 2: Location ── */}
           {serviceId && (
-            <>
-              {tierId && editingStep !== "tier" ? (
-                <CompletedRow
-                  label="Session type"
-                  value={
-                    selectedTier
-                      ? [
-                          selectedTier.label,
-                          selectedTier.duration_minutes != null
-                            ? `${selectedTier.duration_minutes} min`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")
-                      : ""
-                  }
-                  onEdit={() => setEditingStep("tier")}
-                />
-              ) : (
-                <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-                  <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                    Session type
-                  </h2>
-                  {tiersLoading ? (
-                    <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
-                  ) : tiers.length === 0 ? (
-                    <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                      No session types configured for this service.
-                    </p>
-                  ) : (
-                    <TierSelect
-                      tiers={tiers}
-                      selectedId={tierId}
-                      onSelect={(t) => {
-                        dispatchForm({ type: "SET_TIER", id: t.id });
-                        setEditingStep(null);
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ── Step 3: Location ── */}
-          {tierId && (
             <>
               {location && editingStep !== "location" ? (
                 <CompletedRow
@@ -1481,6 +1435,52 @@ export default function NewBookingPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Step 3: Session type ── */}
+          {serviceId && location && editingStep !== "location" && (
+            <>
+              {tierId && editingStep !== "tier" ? (
+                <CompletedRow
+                  label="Session type"
+                  value={
+                    selectedTier
+                      ? [
+                          selectedTier.label,
+                          selectedTier.duration_minutes != null
+                            ? `${selectedTier.duration_minutes} min`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : ""
+                  }
+                  onEdit={() => setEditingStep("tier")}
+                />
+              ) : (
+                <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
+                  <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                    Session type
+                  </h2>
+                  {tiersLoading ? (
+                    <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+                  ) : tiers.length === 0 ? (
+                    <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
+                      No session types configured for this service.
+                    </p>
+                  ) : (
+                    <TierSelect
+                      tiers={tiers}
+                      selectedId={tierId}
+                      onSelect={(t) => {
+                        dispatchForm({ type: "SET_TIER", id: t.id });
+                        setEditingStep(null);
+                      }}
+                    />
+                  )}
                 </div>
               )}
             </>

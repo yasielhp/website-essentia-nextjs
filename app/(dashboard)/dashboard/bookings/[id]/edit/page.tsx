@@ -1533,29 +1533,7 @@ export default function EditBookingPage() {
             )}
           </div>
 
-          {/* ── 3. Session type ── */}
-          {serviceId && (
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Session type
-              </h2>
-              {tiersLoading ? (
-                <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
-              ) : tiers.length === 0 ? (
-                <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                  No session types configured for this service.
-                </p>
-              ) : (
-                <TierSelect
-                  tiers={tiers}
-                  selectedId={tierId}
-                  onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
-                />
-              )}
-            </div>
-          )}
-
-          {/* ── 4. Location ── */}
+          {/* ── 3. Location ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Location
@@ -1729,6 +1707,28 @@ export default function EditBookingPage() {
               )}
             </div>
           </div>
+
+          {/* ── 4. Session type ── */}
+          {serviceId && (
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Session type
+              </h2>
+              {tiersLoading ? (
+                <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+              ) : tiers.length === 0 ? (
+                <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
+                  No session types configured for this service.
+                </p>
+              ) : (
+                <TierSelect
+                  tiers={tiers}
+                  selectedId={tierId}
+                  onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
+                />
+              )}
+            </div>
+          )}
 
           {/* ── 5. Date & Time ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
