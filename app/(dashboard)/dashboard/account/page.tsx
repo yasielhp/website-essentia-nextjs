@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { useRole } from "@/context/role-context";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -203,8 +204,6 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
     );
   }
 
-  if (services.length === 0) return null;
-
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
@@ -213,22 +212,29 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
       <p className="text-petroleum-400 mb-4 text-xs">
         Conecta tu Google Calendar para cada servicio que gestionas.
       </p>
-      <div className="space-y-3">
-        {services.map((svc) => (
-          <CalendarServiceRow
-            key={svc.service_id}
-            staffId={userId}
-            svc={svc}
-            justConnectedServiceId={justConnectedServiceId}
-          />
-        ))}
-      </div>
+      {services.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">
+          No tienes servicios asignados todavía.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {services.map((svc) => (
+            <CalendarServiceRow
+              key={svc.service_id}
+              staffId={userId}
+              svc={svc}
+              justConnectedServiceId={justConnectedServiceId}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 export default function DashboardAccountPage() {
   const { user } = useAuth();
+  const { role } = useRole();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const [pwNew, setPwNew] = useState("");
@@ -491,8 +497,8 @@ export default function DashboardAccountPage() {
             </div>
           </form>
 
-          {/* Google Calendar */}
-          {!loading && user && (
+          {/* Google Calendar — solo para staff */}
+          {!loading && user && role === "staff" && (
             <GoogleCalendarSection userId={user.id} />
           )}
 
