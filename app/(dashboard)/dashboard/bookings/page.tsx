@@ -468,7 +468,26 @@ export default function BookingsPage() {
   const { role } = useRole();
 
   const isPartner = role === "partner";
-  const partnerId = user?.id ?? null;
+  const isStaff = role === "staff";
+  const userId = user?.id ?? null;
+
+  // Service IDs assigned to this staff user (null = not yet loaded)
+  const [staffServiceIds, setStaffServiceIds] = useState<string[] | null>(
+    isStaff ? null : [],
+  );
+
+  useEffect(() => {
+    if (!isStaff || !userId) return;
+    void insforge.database
+      .from("staff_services")
+      .select("service_id")
+      .eq("staff_id", userId)
+      .then(({ data }) => {
+        setStaffServiceIds(
+          ((data ?? []) as { service_id: string }[]).map((r) => r.service_id),
+        );
+      });
+  }, [isStaff, userId]);
 
   const [statusCounts, setStatusCounts] = useState<{
     pending: number | null;
@@ -477,14 +496,20 @@ export default function BookingsPage() {
   }>({ pending: null, confirmed: null, cancelled: null });
 
   useEffect(() => {
-    if (isPartner && !partnerId) return;
+    // Wait until we know the staff's service list
+    if (isStaff && staffServiceIds === null) return;
+    if (isPartner && !userId) return;
 
     const makeQuery = (status: string) => {
       let q = insforge.database
         .from("bookings")
         .select("id", { count: "exact", head: true })
         .eq("status", status);
-      if (isPartner) q = q.eq("partner_id", partnerId!);
+      if (isPartner) q = q.eq("partner_id", userId!);
+      if (isStaff && staffServiceIds && staffServiceIds.length > 0)
+        q = q.in("service_id", staffServiceIds);
+      if (isStaff && staffServiceIds?.length === 0)
+        return Promise.resolve({ count: 0 });
       return q;
     };
 
@@ -499,7 +524,7 @@ export default function BookingsPage() {
         cancelled: (x as { count: number | null }).count ?? 0,
       }),
     );
-  }, [isPartner, partnerId]);
+  }, [isPartner, isStaff, userId, staffServiceIds]);
 
   const [appliedFilters, setAppliedFilters] = useState<Filters>(emptyFilters);
   const [pendingFilters, setPendingFilters] = useState<Filters>(emptyFilters);
@@ -534,7 +559,16 @@ export default function BookingsPage() {
   } = appliedFilters;
 
   const fetchBookings = useCallback(async () => {
-    if (isPartner && !partnerId) return;
+    // Wait until staff service IDs are loaded
+    if (isStaff && staffServiceIds === null) return;
+    if (isPartner && !userId) return;
+
+    // Staff with no assigned services → empty result
+    if (isStaff && staffServiceIds?.length === 0) {
+      dispatch({ type: "LOAD_SUCCESS", bookings: [], total: 0 });
+      return;
+    }
+
     dispatch({ type: "SET_LOADING" });
 
     let query = insforge.database
@@ -544,7 +578,9 @@ export default function BookingsPage() {
         { count: "exact" },
       );
 
-    if (isPartner) query = query.eq("partner_id", partnerId!);
+    if (isPartner) query = query.eq("partner_id", userId!);
+    if (isStaff && staffServiceIds && staffServiceIds.length > 0)
+      query = query.in("service_id", staffServiceIds);
 
     if (fStatus) query = query.eq("status", fStatus);
     if (fLocation) query = query.eq("location", fLocation);
@@ -611,7 +647,9 @@ export default function BookingsPage() {
     fClient,
     fDate,
     isPartner,
-    partnerId,
+    isStaff,
+    userId,
+    staffServiceIds,
   ]);
 
   useEffect(() => {
