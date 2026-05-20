@@ -119,17 +119,35 @@ export async function refreshGoogleToken(
 // ─── Calendar API helpers ─────────────────────────────────────────────────────
 
 /**
- * Query Google Calendar FreeBusy API for the full local day of `date`.
- * Queries ±4 h around UTC midnight to cover any UTC offset (up to UTC±4).
+ * Fetch all calendar IDs accessible to the user (including non-primary ones).
+ */
+async function listCalendarIds(accessToken: string): Promise<string[]> {
+  const res = await fetch(
+    "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader",
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) return ["primary"];
+  const data = (await res.json()) as {
+    items?: { id: string; accessRole: string }[];
+  };
+  return (data.items ?? []).map((c) => c.id).filter(Boolean);
+}
+
+/**
+ * Query Google Calendar FreeBusy API across ALL user calendars for the local day `date`.
+ * Uses ±1 day window so UTC offsets don't cause missed events.
  */
 export async function getFreeBusy(
   accessToken: string,
-  calendarId: string,
+  _calendarId: string, // kept for backwards-compat, now ignored — all calendars queried
   date: string, // "YYYY-MM-DD" in LOCAL time
 ): Promise<{ start: string; end: string }[]> {
-  // Widen the query window by 4 h on each side to cover any UTC offset.
+  // Use a full UTC day as query window; local business hours always fall within this range
   const timeMin = `${date}T00:00:00Z`;
   const timeMax = `${date}T23:59:59Z`;
+
+  // Get all calendars for the user so we catch non-primary ones (e.g. "Essentia Longevity Center")
+  const calendarIds = await listCalendarIds(accessToken);
 
   const res = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST",
@@ -140,7 +158,7 @@ export async function getFreeBusy(
     body: JSON.stringify({
       timeMin,
       timeMax,
-      items: [{ id: calendarId }],
+      items: calendarIds.map((id) => ({ id })),
     }),
   });
 
@@ -153,7 +171,8 @@ export async function getFreeBusy(
     calendars: Record<string, { busy: { start: string; end: string }[] }>;
   };
 
-  return data.calendars[calendarId]?.busy ?? [];
+  // Merge busy intervals from all calendars
+  return Object.values(data.calendars).flatMap((cal) => cal.busy ?? []);
 }
 
 /**
