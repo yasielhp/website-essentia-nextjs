@@ -22,13 +22,14 @@ import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
-import { TIME_SLOTS } from "@/constants/booking";
+
 import {
   MONTH_NAMES,
   DAY_NAMES,
   isAvailableDay,
   isSameDay,
   getCalendarDays,
+  getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
 
 // ─── Types ────────────────────────────────────────────────────
@@ -1197,6 +1198,50 @@ export default function EditBookingPage() {
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
 
+  // ── freeBusy for time-slot availability ───────────────────────
+  const [busyIntervals, setBusyIntervals] = useState<
+    { start: string; end: string }[]
+  >([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDate || !serviceId) {
+      setBusyIntervals([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSlots(true);
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+    fetch(
+      `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
+    )
+      .then((r) => r.json())
+      .then((json: { busy?: { start: string; end: string }[] }) => {
+        if (!cancelled) {
+          setBusyIntervals(json.busy ?? []);
+          setLoadingSlots(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBusyIntervals([]);
+          setLoadingSlots(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, serviceId]);
+
+  const timeSlots = selectedDate
+    ? getTimeSlotsForDashboard(
+        selectedDate,
+        selectedService?.category,
+        selectedTier?.duration_minutes ?? 60,
+        busyIntervals,
+      )
+    : [];
+
   const allowedLocations =
     role === "partner"
       ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
@@ -1885,25 +1930,40 @@ export default function EditBookingPage() {
                 </button>
                 <div className="flex flex-col gap-3">
                   <p className="text-petroleum-400 text-sm">Available times</p>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {TIME_SLOTS.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() =>
-                          dispatchForm({ type: "SET_TIME", value: slot })
-                        }
-                        className={[
-                          "rounded-xl border py-2.5 text-sm font-medium transition-all",
-                          selectedTime === slot
-                            ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
-                            : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
-                        ].join(" ")}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
+                  {loadingSlots ? (
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="bg-sand-100 h-10 animate-pulse rounded-xl"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {timeSlots.map(({ time, booked }) => (
+                        <button
+                          key={time}
+                          type="button"
+                          disabled={booked}
+                          onClick={() => {
+                            if (!booked)
+                              dispatchForm({ type: "SET_TIME", value: time });
+                          }}
+                          className={[
+                            "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                            selectedTime === time
+                              ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
+                              : booked
+                                ? "border-sand-200 text-sand-400 cursor-not-allowed opacity-40"
+                                : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
+                          ].join(" ")}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

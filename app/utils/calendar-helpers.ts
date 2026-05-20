@@ -58,13 +58,14 @@ export function getCalendarDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
-export function getTimeSlots(
+function computeSlots(
   date: Date,
-  service: BookableService,
-  busyIntervals: { start: string; end: string }[] = [],
+  category: string | undefined | null,
+  durationMinutes: number,
+  busyIntervals: { start: string; end: string }[],
 ): { time: string; booked: boolean }[] {
   const base =
-    service.category === "medicine"
+    category === "medicine"
       ? ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"]
       : [
           "09:00",
@@ -77,29 +78,41 @@ export function getTimeSlots(
           "18:00",
         ];
 
-  // Parse the first numeric duration from the service's durations array (e.g. "60 min" → 60)
-  const durationMinutes =
-    service.durations.length > 0
-      ? parseInt(service.durations[0], 10) || 60
-      : 60;
-
-  // Use LOCAL date components — toISOString() converts to UTC and may give the wrong day
+  const BUFFER_MS = 10 * 60 * 1000;
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
   return base.map((time) => {
-    // Parse slot as LOCAL time (no trailing Z) so it matches the user's calendar timezone
     const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
     const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
-
-    const BUFFER_MS = 10 * 60 * 1000; // 10 min cleanup buffer after each session
-
-    // A slot is booked if it overlaps with any busy interval (including buffer)
     const booked = busyIntervals.some(({ start, end }) => {
       const busyStartMs = new Date(start).getTime();
       const busyEndMs = new Date(end).getTime() + BUFFER_MS;
       return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
     });
-
     return { time, booked };
   });
+}
+
+export function getTimeSlots(
+  date: Date,
+  service: BookableService,
+  busyIntervals: { start: string; end: string }[] = [],
+): { time: string; booked: boolean }[] {
+  const durationMinutes =
+    service.durations.length > 0
+      ? parseInt(service.durations[0], 10) || 60
+      : 60;
+  return computeSlots(date, service.category, durationMinutes, busyIntervals);
+}
+
+/**
+ * Dashboard variant — takes explicit category and duration instead of BookableService.
+ */
+export function getTimeSlotsForDashboard(
+  date: Date,
+  category: string | undefined | null,
+  durationMinutes: number,
+  busyIntervals: { start: string; end: string }[] = [],
+): { time: string; booked: boolean }[] {
+  return computeSlots(date, category, durationMinutes, busyIntervals);
 }
