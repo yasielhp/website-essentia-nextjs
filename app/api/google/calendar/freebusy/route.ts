@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@insforge/sdk";
-import { getStaffServiceAccessToken, getFreeBusy } from "@/lib/google-calendar";
+import {
+  getValidAccessToken,
+  getStaffServiceAccessToken,
+  getFreeBusy,
+} from "@/lib/google-calendar";
 
 function getAdminClient() {
   return createClient({
@@ -23,12 +27,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const queryDate = date ?? start!;
   const timeMax = date ? `${date}T23:59:59Z` : `${end}T23:59:59Z`;
 
   try {
     const adminClient = getAdminClient();
+    const allBusy: { start: string; end: string }[] = [];
+    let hasCalendar = false;
 
-    // Get all staff assigned to this service that have a connected calendar
+    // 1. Service-level calendar (configured in Settings — primary source of events)
+    const serviceToken = await getValidAccessToken(serviceId);
+    if (serviceToken) {
+      hasCalendar = true;
+      const busy = await getFreeBusy(serviceToken, "primary", queryDate, timeMax);
+      allBusy.push(...busy);
+    }
+
+    // 2. Staff-level calendars (staff assigned to this service)
     const { data: staffRows } = await adminClient.database
       .from("staff_services")
       .select("staff_id, google_access_token")
@@ -36,42 +51,45 @@ export async function GET(request: NextRequest) {
       .not("google_access_token", "is", null);
 
     const assignedStaff = (
-      (staffRows ?? []) as {
-        staff_id: string;
-        google_access_token: string | null;
-      }[]
+      (staffRows ?? []) as { staff_id: string; google_access_token: string | null }[]
     ).filter((r) => !!r.google_access_token);
 
-    if (assignedStaff.length === 0) {
-      // No calendar connected for any staff on this service — all slots available
-      return NextResponse.json({ busy: [] });
+    if (assignedStaff.length > 0) {
+      hasCalendar = true;
+      await Promise.all(
+        assignedStaff.map(async ({ staff_id }) => {
+          const token = await getStaffServiceAccessToken(staff_id, serviceId);
+          if (!token) return;
+          const busy = await getFreeBusy(token, "primary", queryDate, timeMax);
+          allBusy.push(...busy);
+        }),
+      );
     }
 
-    // Query freebusy for each staff member and merge results
-    const allBusy: { start: string; end: string }[] = [];
+    // 3. Fallback: if this service has no calendar of its own, use any service
+    //    that has one — in a single-practitioner centre all slots are shared.
+    if (!hasCalendar) {
+      const { data: allConfigs } = await adminClient.database
+        .from("service_configs")
+        .select("service_id")
+        .not("google_access_token", "is", null)
+        .neq("service_id", serviceId)
+        .limit(5);
 
-    await Promise.all(
-      assignedStaff.map(async ({ staff_id }) => {
-        const accessToken = await getStaffServiceAccessToken(
-          staff_id,
-          serviceId,
-        );
-        if (!accessToken) return;
-
-        const busy = await getFreeBusy(
-          accessToken,
-          "primary",
-          date ?? start!,
-          timeMax,
-        );
-        allBusy.push(...busy);
-      }),
-    );
+      await Promise.all(
+        ((allConfigs ?? []) as { service_id: string }[]).map(async ({ service_id }) => {
+          const token = await getValidAccessToken(service_id);
+          if (!token) return;
+          const busy = await getFreeBusy(token, "primary", queryDate, timeMax);
+          allBusy.push(...busy);
+        }),
+      );
+    }
 
     return NextResponse.json({ busy: allBusy });
   } catch (err) {
     console.error("[google/calendar/freebusy] error:", err);
-    // Fail-open: return empty busy list so the booking flow is not broken
+    // Fail-open: return empty so the booking flow is not blocked
     return NextResponse.json({ busy: [] });
   }
 }
