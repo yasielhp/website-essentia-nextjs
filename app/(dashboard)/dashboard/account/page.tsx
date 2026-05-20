@@ -74,58 +74,49 @@ function reducer(state: PageState, action: PageAction): PageState {
   }
 }
 
-function GoogleCalendarSection({ userId }: { userId: string }) {
-  const searchParams = useSearchParams();
-  const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
-  const [loadingCal, setLoadingCal] = useState(true);
+type ServiceCalConfig = {
+  service_id: string;
+  service_title: string;
+  google_calendar_email: string | null;
+};
+
+function CalendarServiceRow({
+  staffId,
+  svc,
+  justConnectedServiceId,
+}: {
+  staffId: string;
+  svc: ServiceCalConfig;
+  justConnectedServiceId: string | null;
+}) {
+  const [email, setEmail] = useState(svc.google_calendar_email);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [justConnected, setJustConnected] = useState(false);
 
-  useEffect(() => {
-    if (searchParams.get("calendar_connected") === "1") {
-      setJustConnected(true);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    void fetch(`/api/google/calendar/user-config?user_id=${userId}`)
-      .then((r) => r.json())
-      .then((d: { google_connected_email: string | null }) => {
-        setConnectedEmail(d.google_connected_email ?? null);
-        setLoadingCal(false);
-      })
-      .catch(() => setLoadingCal(false));
-  }, [userId, justConnected]);
+  const justConnected = justConnectedServiceId === svc.service_id && !!email;
 
   async function handleDisconnect() {
     setDisconnecting(true);
-    await fetch(`/api/google/calendar/disconnect-user?user_id=${userId}`, {
-      method: "DELETE",
-    });
-    setConnectedEmail(null);
+    await fetch(
+      `/api/google/calendar/disconnect-user?staff_id=${staffId}&service_id=${svc.service_id}`,
+      { method: "DELETE" },
+    );
+    setEmail(null);
     setDisconnecting(false);
-    setJustConnected(false);
   }
 
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        Google Calendar
-      </h2>
-      <p className="text-petroleum-400 mb-4 text-xs">
-        Conecta tu Google Calendar para sincronizar tus disponibilidades.
+    <div className="border-sand-200 rounded-xl border p-4">
+      <p className="text-petroleum-700 mb-3 text-sm font-medium">
+        {svc.service_title}
       </p>
-
-      {loadingCal ? (
-        <div className="bg-sand-100 h-9 w-48 animate-pulse rounded-xl" />
-      ) : connectedEmail ? (
+      {email ? (
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
             <span className="size-1.5 rounded-full bg-green-500" />
             Conectado
           </span>
           <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
-            {connectedEmail}
+            {email}
           </span>
           <button
             type="button"
@@ -135,24 +126,103 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
           >
             {disconnecting ? "Desconectando…" : "Desconectar"}
           </button>
+          {justConnected && (
+            <span className="text-xs font-medium text-green-700">
+              Conectado correctamente.
+            </span>
+          )}
         </div>
       ) : (
         <a
-          href={`/api/google/calendar/connect-user?user_id=${userId}&return_to=/dashboard/account`}
+          href={`/api/google/calendar/connect-user?staff_id=${staffId}&service_id=${svc.service_id}&return_to=${encodeURIComponent(`/dashboard/account?service_id=${svc.service_id}`)}`}
           className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 7h8M12 12v4M10 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 7h8"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
           Conectar Google Calendar
         </a>
       )}
+    </div>
+  );
+}
 
-      {justConnected && connectedEmail && (
-        <p className="mt-3 text-xs font-medium text-green-700">
-          Google Calendar conectado correctamente.
-        </p>
-      )}
+function GoogleCalendarSection({ userId }: { userId: string }) {
+  const searchParams = useSearchParams();
+  const [services, setServices] = useState<ServiceCalConfig[]>([]);
+  const [loadingCal, setLoadingCal] = useState(true);
+  const [justConnectedServiceId, setJustConnectedServiceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const connected = searchParams.get("calendar_connected");
+    const svcId = searchParams.get("service_id");
+    if (connected === "1" && svcId) setJustConnectedServiceId(svcId);
+  }, [searchParams]);
+
+  useEffect(() => {
+    void (async () => {
+      const [configRes, svcRes] = await Promise.all([
+        fetch(`/api/google/calendar/user-config?staff_id=${userId}`).then(
+          (r) => r.json() as Promise<{ configs: { service_id: string; google_calendar_email: string | null }[] }>,
+        ),
+        fetch(`/api/google/calendar/staff-services?staff_id=${userId}`).then(
+          (r) => r.json() as Promise<{ services: { id: string; title: string }[] }>,
+        ),
+      ]);
+
+      const configMap = new Map(
+        (configRes.configs ?? []).map((c) => [c.service_id, c.google_calendar_email]),
+      );
+
+      setServices(
+        (svcRes.services ?? []).map((s) => ({
+          service_id: s.id,
+          service_title: s.title,
+          google_calendar_email: configMap.get(s.id) ?? null,
+        })),
+      );
+      setLoadingCal(false);
+    })();
+  }, [userId]);
+
+  if (loadingCal) {
+    return (
+      <div className="border-sand-200 rounded-2xl border bg-white p-6">
+        <div className="bg-sand-100 mb-4 h-4 w-40 animate-pulse rounded" />
+        <div className="space-y-3">
+          <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+          <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (services.length === 0) return null;
+
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+        Google Calendar
+      </h2>
+      <p className="text-petroleum-400 mb-4 text-xs">
+        Conecta tu Google Calendar para cada servicio que gestionas.
+      </p>
+      <div className="space-y-3">
+        {services.map((svc) => (
+          <CalendarServiceRow
+            key={svc.service_id}
+            staffId={userId}
+            svc={svc}
+            justConnectedServiceId={justConnectedServiceId}
+          />
+        ))}
+      </div>
     </div>
   );
 }

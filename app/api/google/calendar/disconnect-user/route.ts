@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@insforge/sdk";
 
 /**
- * DELETE /api/google/calendar/disconnect-user?user_id=UUID
+ * DELETE /api/google/calendar/disconnect-user?staff_id=UUID&service_id=UUID
  *
- * Clears all Google Calendar token columns from the user's profiles row,
- * effectively disconnecting their personal Google Calendar integration.
+ * Clears Google Calendar tokens from staff_services for a specific staff+service pair.
  */
 
 function getAdminClient() {
@@ -17,11 +16,12 @@ function getAdminClient() {
 
 export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("user_id");
+  const staffId = searchParams.get("staff_id");
+  const serviceId = searchParams.get("service_id");
 
-  if (!userId) {
+  if (!staffId || !serviceId) {
     return NextResponse.json(
-      { error: "user_id query parameter is required" },
+      { error: "staff_id and service_id query parameters are required" },
       { status: 400 },
     );
   }
@@ -30,14 +30,15 @@ export async function DELETE(request: NextRequest) {
     const adminClient = getAdminClient();
 
     const { error } = await adminClient.database
-      .from("profiles")
+      .from("staff_services")
       .update({
         google_access_token: null,
         google_refresh_token: null,
         google_token_expires_at: null,
-        google_connected_email: null,
+        google_calendar_email: null,
       })
-      .eq("id", userId);
+      .eq("staff_id", staffId)
+      .eq("service_id", serviceId);
 
     if (error) {
       console.error("[google/calendar/disconnect-user] db error:", error);

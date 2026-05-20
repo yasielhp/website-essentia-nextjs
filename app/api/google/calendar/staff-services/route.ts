@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@insforge/sdk";
 
 /**
- * GET /api/google/calendar/user-config?staff_id=UUID
+ * GET /api/google/calendar/staff-services?staff_id=UUID
  *
- * Returns all staff_services rows for a staff member with their
- * Google Calendar connection status (google_calendar_email per service).
+ * Returns the list of services assigned to a staff member
+ * (joined with service_settings to get the title).
  *
- * Response: { configs: { service_id: string; google_calendar_email: string | null }[] }
+ * Response: { services: { id: string; title: string }[] }
  */
 
 function getAdminClient() {
@@ -33,19 +33,21 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await adminClient.database
       .from("staff_services")
-      .select("service_id, google_calendar_email")
+      .select("service_id, service_settings(id, title)")
       .eq("staff_id", staffId);
 
     if (error) {
-      console.error("[google/calendar/user-config] db error:", error);
-      return NextResponse.json({ error: "Failed to fetch configs" }, { status: 500 });
+      console.error("[google/calendar/staff-services] db error:", error);
+      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 });
     }
 
-    return NextResponse.json({
-      configs: (data ?? []) as { service_id: string; google_calendar_email: string | null }[],
-    });
+    const services = ((data ?? []) as { service_id: string; service_settings: { id: string; title: string } | null }[])
+      .filter((r) => r.service_settings)
+      .map((r) => ({ id: r.service_settings!.id, title: r.service_settings!.title }));
+
+    return NextResponse.json({ services });
   } catch (err) {
-    console.error("[google/calendar/user-config] error:", err);
+    console.error("[google/calendar/staff-services] error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

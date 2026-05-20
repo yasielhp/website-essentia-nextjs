@@ -15,11 +15,12 @@ export async function GET(request: NextRequest) {
   const stateParam = searchParams.get("state");
   const errorParam = searchParams.get("error");
 
-  // ── Determine flow: user-level vs service-level ──────────────────────────────
-  const isUserFlow = stateParam?.startsWith("user__") ?? false;
+  // ── Determine flow ────────────────────────────────────────────────────────────
+  const isStaffSvcFlow = stateParam?.startsWith("staffsvc__") ?? false;
+  // Keep legacy user__ check in case old links are still in flight
+  const isUserFlow = !isStaffSvcFlow && (stateParam?.startsWith("user__") ?? false);
 
-  // Error redirect destination depends on the flow
-  const errorRedirectBase = isUserFlow
+  const errorRedirectBase = isStaffSvcFlow || isUserFlow
     ? "/dashboard/account"
     : "/dashboard/settings?tab=services";
 
@@ -61,21 +62,45 @@ export async function GET(request: NextRequest) {
 
     const adminClient = getAdminClient();
 
-    if (isUserFlow) {
-      // ── User-level flow: parse state and store tokens in profiles ─────────────
-      // state format: `user__${userId}__${encodedReturnPath}`
+    if (isStaffSvcFlow) {
+      // ── Staff+service flow: store tokens in staff_services ────────────────────
+      // state format: `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`
       const parts = stateParam.split("__");
-      // parts[0] = "user", parts[1] = userId, parts[2] = encodedReturnPath
+      const staffId = parts[1];
+      const serviceId = parts[2];
+      const encodedReturnPath = parts.slice(3).join("__");
+      const returnPath = decodeURIComponent(encodedReturnPath);
+
+      if (!staffId || !serviceId) {
+        return NextResponse.redirect(
+          new URL(`${errorRedirectBase}?error=invalid_state`, process.env.NEXT_PUBLIC_APP_URL),
+        );
+      }
+
+      await adminClient.database
+        .from("staff_services")
+        .update({
+          google_access_token: tokens.access_token,
+          google_refresh_token: tokens.refresh_token,
+          google_token_expires_at: expiresAt,
+          google_calendar_email: connectedEmail,
+        })
+        .eq("staff_id", staffId)
+        .eq("service_id", serviceId);
+
+      return NextResponse.redirect(
+        new URL(`${returnPath}?calendar_connected=1`, process.env.NEXT_PUBLIC_APP_URL),
+      );
+    } else if (isUserFlow) {
+      // ── Legacy user-level flow (profiles table) ───────────────────────────────
+      const parts = stateParam.split("__");
       const userId = parts[1];
-      const encodedReturnPath = parts.slice(2).join("__"); // re-join in case path contained "__"
+      const encodedReturnPath = parts.slice(2).join("__");
       const returnPath = decodeURIComponent(encodedReturnPath);
 
       if (!userId) {
         return NextResponse.redirect(
-          new URL(
-            `${errorRedirectBase}&error=invalid_state`,
-            process.env.NEXT_PUBLIC_APP_URL,
-          ),
+          new URL(`${errorRedirectBase}?error=invalid_state`, process.env.NEXT_PUBLIC_APP_URL),
         );
       }
 
@@ -90,10 +115,7 @@ export async function GET(request: NextRequest) {
         .eq("id", userId);
 
       return NextResponse.redirect(
-        new URL(
-          `${returnPath}?calendar_connected=1`,
-          process.env.NEXT_PUBLIC_APP_URL,
-        ),
+        new URL(`${returnPath}?calendar_connected=1`, process.env.NEXT_PUBLIC_APP_URL),
       );
     } else {
       // ── Service-level flow: store tokens in service_configs (unchanged) ───────
