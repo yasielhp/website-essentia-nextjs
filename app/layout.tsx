@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import localFont from "next/font/local";
 import "./globals.css";
 import { contact } from "@/constants/contact";
@@ -41,18 +42,23 @@ const dmSans = localFont({
 
 const siteUrl = `https://${contact.domain}`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "Essentia — Longevity Center & Social Wellness Club in Tenerife",
-    template: "%s | Essentia",
-  },
-  description:
-    "Longevity center & social wellness club in Tenerife. Science-backed protocols, medical therapies, and an exclusive community for a longer life.",
-  alternates: {
-    canonical: "/",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "/";
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: "Essentia — Longevity Center & Social Wellness Club in Tenerife",
+      template: "%s | Essentia",
+    },
+    description:
+      "Longevity center & social wellness club in Tenerife. Science-backed protocols, medical therapies, and an exclusive community for a longer life.",
+    alternates: {
+      canonical: pathname,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
