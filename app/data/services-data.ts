@@ -5,86 +5,140 @@ export type BookableService = {
   description: string;
   durations: string[];
   price: string;
+  priceCenter?: string;
+  priceSuite?: string;
   image: string;
 };
 
 export const bookableServices: BookableService[] = [
-  // Wellness
   {
-    id: "contrast-therapy",
+    id: "espira",
     category: "wellness",
-    title: "Contrast Therapy",
+    title: "Espira",
     description:
-      "Alternating heat and cold to activate recovery and reduce inflammation.",
-    durations: ["60 min"],
-    price: "€45",
-    image: "/images/menu/thermal-contrast.webp",
-  },
-  {
-    id: "breathing-sessions",
-    category: "wellness",
-    title: "Breathing Sessions",
-    description: "Guided breathwork to shift from stress to active recovery.",
-    durations: ["45 min"],
-    price: "€35",
-    image: "/images/menu/breathing-sessions.webp",
-  },
-  {
-    id: "red-light-therapy",
-    category: "wellness",
-    title: "Red Light Therapy",
-    description:
-      "Red and infrared light to stimulate cellular repair and regeneration.",
-    durations: ["20 min"],
-    price: "€25",
-    image: "/images/menu/red-light-therapy.webp",
-  },
-  {
-    id: "manual-therapies",
-    category: "wellness",
-    title: "Manual Therapies",
-    description: "Precise manual work to release tension and restore mobility.",
-    durations: ["60 min", "90 min"],
-    price: "€80 / €110",
+      "Ritual breve que libera tensiones en espalda, cuello y hombros. Técnicas envolventes, presión consciente y aceites esenciales.",
+    durations: ["30 min"],
+    price: "90 €",
+    priceCenter: "90 €",
+    priceSuite: "120 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
-    id: "functional-well-being",
+    id: "pulse",
     category: "wellness",
-    title: "Functional Well-being",
-    description: "Movement and strength training designed around longevity.",
-    durations: ["50 min"],
-    price: "€65",
-    image: "/images/menu/functional-wellbeing.webp",
-  },
-  // Medicine
-  {
-    id: "hyperbaric-chambers",
-    category: "medicine",
-    title: "Hyperbaric Oxygen",
+    title: "Pulse",
     description:
-      "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
-    durations: ["60 min"],
-    price: "€120",
-    image: "/images/menu/hyperbaric-chambers.webp",
-  },
-  {
-    id: "intravenous-therapy",
-    category: "medicine",
-    title: "IV Therapy",
-    description:
-      "Direct nutrient delivery for rapid absorption and cellular support.",
+      "Masaje descontracturante de presión profunda para zonas de dolor, rigidez y sobrecarga muscular.",
     durations: ["45 min"],
-    price: "€95",
-    image: "/images/menu/intravenous-therapy.webp",
+    price: "100 €",
+    priceCenter: "100 €",
+    priceSuite: "130 €",
+    image: "/images/menu/manual-therapies.webp",
   },
   {
-    id: "regenerative-medicine",
-    category: "medicine",
-    title: "Regenerative Medicine",
-    description: "Protocols that activate your body's own repair mechanisms.",
-    durations: ["30 min", "60 min", "90 min"],
-    price: "From €250",
-    image: "/images/menu/regenerative-medicine.webp",
+    id: "drenaje-linfatico",
+    category: "wellness",
+    title: "Drenaje Linfático Brasileño",
+    description:
+      "Masaje estético y terapéutico para moldear la silueta, reducir retención de líquidos y mejorar la piel de naranja.",
+    durations: ["50 min"],
+    price: "100 €",
+    priceCenter: "100 €",
+    priceSuite: "130 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "essentia-active",
+    category: "wellness",
+    title: "Essentia Active",
+    description:
+      "Masaje para piernas y músculos fatigados. Ideal para deportistas y personas activas: reduce fatiga, previene lesiones.",
+    durations: ["45 min"],
+    price: "110 €",
+    priceCenter: "110 €",
+    priceSuite: "140 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "nurtura",
+    category: "wellness",
+    title: "Nurtura",
+    description:
+      "Masaje diseñado para futuras mamás. Técnicas suaves y seguras que alivian tensión muscular e hinchazón durante el embarazo.",
+    durations: ["50 min"],
+    price: "130 €",
+    priceCenter: "130 €",
+    priceSuite: "160 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "serenna",
+    category: "wellness",
+    title: "Serenna",
+    description:
+      "Experiencia de relajación profunda con maniobras suaves y continuas. Estimula la circulación y revitaliza la energía desde el interior.",
+    durations: ["50 min"],
+    price: "130 €",
+    priceCenter: "130 €",
+    priceSuite: "160 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "solea",
+    category: "wellness",
+    title: "Soléa",
+    description:
+      "Para pieles expuestas al sol. Envoltura de aloe vera antiinflamatoria más masaje relajante de cuerpo completo.",
+    durations: ["70 min"],
+    price: "150 €",
+    priceCenter: "150 €",
+    priceSuite: "180 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "soma",
+    category: "wellness",
+    title: "Soma",
+    description:
+      "Masaje de tejido profundo para contracturas, rigidez y dolores persistentes. Mejora movilidad y elasticidad muscular.",
+    durations: ["60 min"],
+    price: "160 €",
+    priceCenter: "160 €",
+    priceSuite: "190 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "lume",
+    category: "wellness",
+    title: "Lume",
+    description:
+      "Experiencia multisensorial: masaje cráneo-facial, reflexología y aromaterapia para una desconexión total.",
+    durations: ["80 min"],
+    price: "220 €",
+    priceCenter: "220 €",
+    priceSuite: "250 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "alure-duo",
+    category: "wellness",
+    title: "Alure Duo",
+    description:
+      "Ritual sensorial para dos personas: reconexión a través del tacto, la respiración y el cuidado mutuo.",
+    durations: ["50 min"],
+    price: "270 €",
+    priceCenter: "270 €",
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "essentia-signature",
+    category: "wellness",
+    title: "Essentia",
+    description:
+      "Experiencia completa: peeling corporal, envoltura ultra hidratante, facial rejuvenecedor con masaje craneofacial y masaje de cuerpo completo.",
+    durations: ["120 min"],
+    price: "350 €",
+    priceCenter: "350 €",
+    image: "/images/menu/manual-therapies.webp",
   },
 ];

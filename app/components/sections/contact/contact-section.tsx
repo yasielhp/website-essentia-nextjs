@@ -213,6 +213,14 @@ export default function ContactSection() {
                 >
                   {contact.phone}
                 </Link>
+                {contact.phone2 && (
+                  <Link
+                    href={`tel:${contact.phone2}`}
+                    className="text-petroleum-700 hover:text-petroleum-500 text-sm transition-colors"
+                  >
+                    {contact.phone2}
+                  </Link>
+                )}
               </div>
 
               {/* Social */}
