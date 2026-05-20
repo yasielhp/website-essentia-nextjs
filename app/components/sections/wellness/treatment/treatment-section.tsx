@@ -54,22 +54,24 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
           {data.intro}
         </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button
-            variant="white"
-            size="md"
-            href={`/booking?wellness=${data.slug}`}
-          >
-            Book a session
-          </Button>
-          <Button
-            variant="outline-white"
-            size="md"
-            href="/community/memberships"
-          >
-            View memberships
-          </Button>
-        </div>
+        {data.slug === "manual-therapies" && (
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              variant="white"
+              size="md"
+              href={`/booking?wellness=${data.slug}`}
+            >
+              Book a session
+            </Button>
+            <Button
+              variant="outline-white"
+              size="md"
+              href="/community/memberships"
+            >
+              View memberships
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -350,18 +352,24 @@ function CtaSection({ data }: { data: TreatmentData }) {
             <p className="text-petroleum-400 max-w-md leading-relaxed">
               {data.ctaBody}
             </p>
-            <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button
-                variant="solid"
-                size="md"
-                href={`/booking?wellness=${data.slug}`}
-              >
-                Book a session
-              </Button>
-              <Button variant="outline" size="md" href="/community/memberships">
-                View memberships
-              </Button>
-            </div>
+            {data.slug === "manual-therapies" && (
+              <div className="flex flex-col items-center gap-3 sm:flex-row">
+                <Button
+                  variant="solid"
+                  size="md"
+                  href={`/booking?wellness=${data.slug}`}
+                >
+                  Book a session
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  href="/community/memberships"
+                >
+                  View memberships
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

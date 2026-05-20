@@ -54,6 +54,7 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
           {data.intro}
         </p>
+        {/* Book a session / View memberships — not available yet
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
             variant="white"
@@ -70,6 +71,7 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
             View memberships
           </Button>
         </div>
+        */}
       </div>
     </section>
   );
@@ -350,6 +352,7 @@ function CtaSection({ data }: { data: MedicineTreatmentData }) {
             <p className="text-petroleum-400 max-w-md leading-relaxed">
               {data.ctaBody}
             </p>
+            {/* Book a session / View memberships — not available yet
             <div className="flex flex-col items-center gap-3 sm:flex-row">
               <Button
                 variant="solid"
@@ -362,6 +365,7 @@ function CtaSection({ data }: { data: MedicineTreatmentData }) {
                 View memberships
               </Button>
             </div>
+            */}
           </div>
         </div>
       </div>
