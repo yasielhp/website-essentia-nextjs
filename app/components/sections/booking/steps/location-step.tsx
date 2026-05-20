@@ -3,8 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Building2, Home, ChevronDown, Check, X } from "lucide-react";
-import type { LocationAddress } from "@/components/sections/booking/booking-content";
 import { contact } from "@/constants/contact";
+
+export type LocationAddress = {
+  street: string;
+  building: string;
+  postalCode: string;
+  municipality: string;
+};
 
 export type BookingLocation = "centro" | "domicilio";
 

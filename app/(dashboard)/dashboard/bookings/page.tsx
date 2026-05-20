@@ -457,25 +457,20 @@ export default function BookingsPage() {
 
   useEffect(() => {
     if (isPartner && !partnerId) return;
-    const base = (q: ReturnType<typeof insforge.database.from>) =>
-      isPartner ? q.eq("partner_id", partnerId!) : q;
+
+    const makeQuery = (status: string) => {
+      let q = insforge.database
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status);
+      if (isPartner) q = q.eq("partner_id", partnerId!);
+      return q;
+    };
 
     void Promise.all([
-      base(
-        insforge.database
-          .from("bookings")
-          .select("id", { count: "exact", head: true }),
-      ).eq("status", "pending"),
-      base(
-        insforge.database
-          .from("bookings")
-          .select("id", { count: "exact", head: true }),
-      ).eq("status", "confirmed"),
-      base(
-        insforge.database
-          .from("bookings")
-          .select("id", { count: "exact", head: true }),
-      ).eq("status", "cancelled"),
+      makeQuery("pending"),
+      makeQuery("confirmed"),
+      makeQuery("cancelled"),
     ]).then(([p, c, x]) =>
       setStatusCounts({
         pending: (p as { count: number | null }).count ?? 0,
