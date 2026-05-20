@@ -1285,20 +1285,33 @@ export default function NewBookingPage() {
         ? `${serviceName} · ${tierInfo} — ${clientName}`
         : `${serviceName} — ${clientName}`;
 
-      void fetch("/api/google/calendar/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_id: serviceId,
-          summary: calSummary,
-          description: descLines.join("\n"),
-          location: calLocation || undefined,
-          colorId: "7",
-          date: dateStr,
-          time: selectedTime,
-          duration_minutes: selectedTier?.duration_minutes ?? 60,
-        }),
-      });
+      try {
+        const calRes = await fetch("/api/google/calendar/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service_id: serviceId,
+            summary: calSummary,
+            description: descLines.join("\n"),
+            location: calLocation || undefined,
+            colorId: "7",
+            date: dateStr,
+            time: selectedTime,
+            duration_minutes: selectedTier?.duration_minutes ?? 60,
+          }),
+        });
+        if (calRes.ok) {
+          const calData = (await calRes.json()) as { eventId?: string };
+          if (calData.eventId && bookingId) {
+            void insforge.database
+              .from("bookings")
+              .update({ google_event_id: calData.eventId })
+              .eq("id", bookingId);
+          }
+        }
+      } catch {
+        // fail-open: calendar error must not block navigation
+      }
     }
 
     push("/dashboard/bookings");
