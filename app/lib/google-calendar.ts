@@ -140,11 +140,11 @@ async function listCalendarIds(accessToken: string): Promise<string[]> {
 export async function getFreeBusy(
   accessToken: string,
   _calendarId: string, // kept for backwards-compat, now ignored — all calendars queried
-  date: string, // "YYYY-MM-DD" in LOCAL time
+  date: string,        // "YYYY-MM-DD" start date in LOCAL time
+  explicitTimeMax?: string, // optional override for multi-day range
 ): Promise<{ start: string; end: string }[]> {
-  // Use a full UTC day as query window; local business hours always fall within this range
   const timeMin = `${date}T00:00:00Z`;
-  const timeMax = `${date}T23:59:59Z`;
+  const timeMax = explicitTimeMax ?? `${date}T23:59:59Z`;
 
   // Get all calendars for the user so we catch non-primary ones (e.g. "Essentia Longevity Center")
   const calendarIds = await listCalendarIds(accessToken);

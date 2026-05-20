@@ -12,14 +12,19 @@ function getAdminClient() {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const serviceId = searchParams.get("service_id");
-  const date = searchParams.get("date"); // "YYYY-MM-DD" in local time
+  const date = searchParams.get("date");   // single day "YYYY-MM-DD"
+  const start = searchParams.get("start"); // range start "YYYY-MM-DD"
+  const end = searchParams.get("end");     // range end   "YYYY-MM-DD"
 
-  if (!serviceId || !date) {
+  if (!serviceId || (!date && (!start || !end))) {
     return NextResponse.json(
-      { error: "Missing service_id or date" },
+      { error: "Missing service_id or date / start+end" },
       { status: 400 },
     );
   }
+
+  const timeMin = date ? `${date}T00:00:00Z` : `${start}T00:00:00Z`;
+  const timeMax = date ? `${date}T23:59:59Z` : `${end}T23:59:59Z`;
 
   try {
     const adminClient = getAdminClient();
@@ -47,7 +52,7 @@ export async function GET(request: NextRequest) {
         const accessToken = await getStaffServiceAccessToken(staff_id, serviceId);
         if (!accessToken) return;
 
-        const busy = await getFreeBusy(accessToken, "primary", date);
+        const busy = await getFreeBusy(accessToken, "primary", date ?? start!, timeMax);
         allBusy.push(...busy);
       }),
     );

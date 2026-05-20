@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import {
@@ -14,50 +14,51 @@ import {
 
 type BusyInterval = { start: string; end: string };
 
+function localDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function CalendarView({
   selected,
   onSelect,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+  fullyBlockedDates,
+  loadingMonth,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  fullyBlockedDates: Set<string>;
+  loadingMonth: boolean;
 }) {
   const today = new Date();
-  const [viewYear, setViewYear] = useState(() => today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
   const days = getCalendarDays(viewYear, viewMonth);
-
-  const prevMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
-  };
-
-  const nextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <button
-          onClick={prevMonth}
+          onClick={onPrevMonth}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </p>
+          {loadingMonth && (
+            <span className="border-petroleum-300 size-3 animate-spin rounded-full border border-t-transparent" />
+          )}
+        </div>
         <button
-          onClick={nextMonth}
+          onClick={onNextMonth}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronRight size={16} />
@@ -77,9 +78,11 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          const cellKey = day ? day.toISOString().slice(0, 10) : `empty-${i}`;
+          const cellKey = day ? localDateStr(day) : `empty-${i}`;
           if (!day) return <div key={cellKey} />;
-          const available = isAvailableDay(day);
+          const baseAvailable = isAvailableDay(day);
+          const isBlocked = baseAvailable && fullyBlockedDates.has(localDateStr(day));
+          const available = baseAvailable && !isBlocked;
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
@@ -123,19 +126,68 @@ export function DateTimeStep({
   onSelectDate: (d: Date) => void;
   onSelectTime: (t: string) => void;
 }) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(() => today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
+
   const [view, setView] = useState<"date" | "time">(
     selectedDate ? "time" : "date",
   );
+
+  // Month-level busy intervals (for blocking days in the calendar)
+  const [monthBusy, setMonthBusy] = useState<BusyInterval[]>([]);
+  const [loadingMonth, setLoadingMonth] = useState(false);
+
+  // Day-level busy intervals (for slot display after date is selected)
   const [busyIntervals, setBusyIntervals] = useState<BusyInterval[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  // Pre-fetch busy intervals for the whole visible month
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchMonth() {
+      setLoadingMonth(true);
+      try {
+        const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+        const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const endDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+        const res = await fetch(
+          `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
+        );
+        if (res.ok && !cancelled) {
+          const json = (await res.json()) as { busy: BusyInterval[] };
+          setMonthBusy(json.busy ?? []);
+        }
+      } catch {
+        // fail-open: no blocking
+      } finally {
+        if (!cancelled) setLoadingMonth(false);
+      }
+    }
+    void fetchMonth();
+    return () => { cancelled = true; };
+  }, [serviceId, viewYear, viewMonth]);
+
+  // Compute which available days in this month are fully booked
+  const fullyBlockedDates = useMemo(() => {
+    const blocked = new Set<string>();
+    if (monthBusy.length === 0) return blocked;
+    const days = getCalendarDays(viewYear, viewMonth);
+    for (const day of days) {
+      if (!day || !isAvailableDay(day)) continue;
+      const slots = getTimeSlots(day, service, monthBusy);
+      if (slots.length > 0 && slots.every((s) => s.booked)) {
+        blocked.add(localDateStr(day));
+      }
+    }
+    return blocked;
+  }, [monthBusy, viewYear, viewMonth, service]);
+
   const fetchBusyIntervals = async (d: Date) => {
-    // Use LOCAL date (not UTC) — toISOString() shifts to UTC and may give the wrong day
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     setLoadingSlots(true);
     try {
       const res = await fetch(
-        `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
+        `/api/google/calendar/freebusy?service_id=${serviceId}&date=${localDateStr(d)}`,
       );
       if (res.ok) {
         const json = (await res.json()) as { busy: BusyInterval[] };
@@ -156,18 +208,40 @@ export function DateTimeStep({
     setView("time");
     void fetchBusyIntervals(d);
   };
+
   const handleChangeDate = () => {
     onSelectTime("");
     setView("date");
+  };
+
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
   };
 
   const slots = selectedDate
     ? getTimeSlots(selectedDate, service, busyIntervals)
     : [];
 
+  const availableSlots = slots.filter((s) => !s.booked);
+
   return view === "date" ? (
     <div className="mx-auto inline-block w-full rounded-2xl bg-white p-5">
-      <CalendarView selected={selectedDate} onSelect={handleDateSelect} />
+      <CalendarView
+        selected={selectedDate}
+        onSelect={handleDateSelect}
+        viewYear={viewYear}
+        viewMonth={viewMonth}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        fullyBlockedDates={fullyBlockedDates}
+        loadingMonth={loadingMonth}
+      />
     </div>
   ) : (
     <div className="flex flex-col gap-5">
@@ -194,32 +268,40 @@ export function DateTimeStep({
         {loadingSlots ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-sand-100 h-10 animate-pulse rounded-xl"
-              />
+              <div key={i} className="bg-sand-100 h-10 animate-pulse rounded-xl" />
             ))}
+          </div>
+        ) : availableSlots.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-8 text-center">
+            <p className="text-petroleum-500 text-sm font-medium">
+              No availability for this day
+            </p>
+            <p className="text-petroleum-400 text-xs">
+              Please choose a different date.
+            </p>
+            <button
+              onClick={handleChangeDate}
+              className="bg-petroleum-700 hover:bg-petroleum-600 mt-1 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+            >
+              Choose another date
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {slots.flatMap(({ booked, time }) =>
-              booked
-                ? []
-                : [
-                    <button
-                      key={time}
-                      onClick={() => onSelectTime(time)}
-                      className={[
-                        "rounded-xl border py-2.5 text-sm font-medium transition-all",
-                        selectedTime === time
-                          ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
-                          : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
-                      ].join(" ")}
-                    >
-                      {time}
-                    </button>,
-                  ],
-            )}
+            {availableSlots.map(({ time }) => (
+              <button
+                key={time}
+                onClick={() => onSelectTime(time)}
+                className={[
+                  "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                  selectedTime === time
+                    ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
+                    : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
+                ].join(" ")}
+              >
+                {time}
+              </button>
+            ))}
           </div>
         )}
       </div>
