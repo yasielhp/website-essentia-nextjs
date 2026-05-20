@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { BlogList } from "./blog-list";
+import BlogHeroSection from "@/components/sections/blog/hero-section";
+import PostsSection from "@/components/sections/blog/posts-section";
 import Newsletter from "@/components/sections/newsletter";
 
 export const metadata: Metadata = {
   title: "Blog | Essentia Longevity & Wellness",
   description:
-    "Artículos, guías y recursos sobre bienestar, salud y longevidad del equipo de Essentia en Tenerife.",
+    "Protocols, perspectives, and science from the Essentia team — written for people who take their health seriously.",
   openGraph: {
     title: "Blog | Essentia Longevity & Wellness",
     description:
-      "Artículos, guías y recursos sobre bienestar, salud y longevidad.",
+      "Protocols, perspectives, and science from the Essentia team.",
     type: "website",
   },
 };
@@ -17,8 +18,11 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <>
-      <BlogList />
-      <Newsletter />
+      <BlogHeroSection />
+      <PostsSection />
+      <div id="newsletter">
+        <Newsletter variant="light" />
+      </div>
     </>
   );
 }

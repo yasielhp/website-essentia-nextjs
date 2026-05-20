@@ -64,6 +64,7 @@ type NewsletterProps = { variant?: Variant };
 
 export default function Newsletter({ variant = "light" }: NewsletterProps) {
   const [email, setEmail] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("idle");
@@ -82,6 +83,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
     try {
       const result = await subscribeToNewsletter(email);
       if (!result.ok) throw new Error(result.error);
+      setSubmittedEmail(email);
       setState("success");
       setEmail("");
       setConsent(false);
@@ -115,7 +117,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
             <p className={`${t.muted} mt-3 text-xs`}>
               Changed your mind?{" "}
               <Link
-                href={`/newsletter/unsubscribe?email=${encodeURIComponent(email)}`}
+                href={`/newsletter/unsubscribe?email=${encodeURIComponent(submittedEmail)}`}
                 className={`${t.link} underline underline-offset-2 transition-colors`}
               >
                 Unsubscribe
