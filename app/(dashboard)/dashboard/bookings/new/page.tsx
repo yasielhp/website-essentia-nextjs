@@ -1171,15 +1171,25 @@ export default function NewBookingPage() {
         notes.trim() ? `Notes: ${notes.trim()}` : null,
       ].filter(Boolean);
 
+      const tierParts: string[] = [];
+      if (selectedTier?.label) tierParts.push(selectedTier.label);
+      if (selectedTier?.duration_minutes != null)
+        tierParts.push(`${selectedTier.duration_minutes} min`);
+      const tierInfo = tierParts.join(" · ");
+      const serviceName = selectedService?.title ?? serviceId;
+      const calSummary = tierInfo
+        ? `${serviceName} · ${tierInfo} — ${clientName}`
+        : `${serviceName} — ${clientName}`;
+
       void fetch("/api/google/calendar/event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           service_id: serviceId,
-          summary: `${selectedService?.title ?? serviceId} — ${clientName}`,
+          summary: calSummary,
           description: descLines.join("\n"),
           location: calLocation || undefined,
-          colorId: "7", // Peacock (teal) — matches brand palette
+          colorId: "7",
           date: dateStr,
           time: selectedTime,
           duration_minutes: selectedTier?.duration_minutes ?? 60,
