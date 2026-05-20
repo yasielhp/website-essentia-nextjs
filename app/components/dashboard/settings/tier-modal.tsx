@@ -10,7 +10,8 @@ import type { ModalState } from "@/types/settings";
 type FormState = {
   label: string;
   duration: string;
-  price: string;
+  priceCenter: string;
+  priceSuite: string;
   color: string;
   active: boolean;
 };
@@ -18,7 +19,8 @@ type FormState = {
 type FormAction =
   | { type: "SET_LABEL"; label: string }
   | { type: "SET_DURATION"; duration: string }
-  | { type: "SET_PRICE"; price: string }
+  | { type: "SET_PRICE_CENTER"; price: string }
+  | { type: "SET_PRICE_SUITE"; price: string }
   | { type: "SET_COLOR"; color: string }
   | { type: "TOGGLE_ACTIVE" };
 
@@ -28,8 +30,10 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, label: action.label };
     case "SET_DURATION":
       return { ...state, duration: action.duration };
-    case "SET_PRICE":
-      return { ...state, price: action.price };
+    case "SET_PRICE_CENTER":
+      return { ...state, priceCenter: action.price };
+    case "SET_PRICE_SUITE":
+      return { ...state, priceSuite: action.price };
     case "SET_COLOR":
       return { ...state, color: action.color };
     case "TOGGLE_ACTIVE":
@@ -58,7 +62,14 @@ export function TierModal({
       modal.tier?.duration_minutes != null
         ? String(modal.tier.duration_minutes)
         : "",
-    price: modal.tier?.price_eur != null ? String(modal.tier.price_eur) : "",
+    priceCenter:
+      modal.tier?.price_center_eur != null
+        ? String(modal.tier.price_center_eur)
+        : "",
+    priceSuite:
+      modal.tier?.price_suite_eur != null
+        ? String(modal.tier.price_suite_eur)
+        : "",
     color: modal.tier?.color ?? "#6b7280",
     active: modal.tier?.active ?? true,
   });
@@ -82,17 +93,22 @@ export function TierModal({
 
   async function handleSave() {
     setOps((o) => ({ ...o, saving: true }));
+    const payload = {
+      label: form.label.trim() || null,
+      duration_minutes:
+        form.duration !== "" ? parseInt(form.duration, 10) : null,
+      price_center_eur:
+        form.priceCenter !== "" ? parseFloat(form.priceCenter) : null,
+      price_suite_eur:
+        form.priceSuite !== "" ? parseFloat(form.priceSuite) : null,
+      color: form.color || null,
+      active: form.active,
+    };
+
     if (isEdit && modal.tier) {
       await insforge.database
         .from("service_tiers")
-        .update({
-          label: form.label.trim() || null,
-          duration_minutes:
-            form.duration !== "" ? parseInt(form.duration, 10) : null,
-          price_eur: form.price !== "" ? parseFloat(form.price) : null,
-          color: form.color || null,
-          active: form.active,
-        })
+        .update(payload)
         .eq("id", modal.tier.id);
     } else {
       const existing = await insforge.database
@@ -101,16 +117,7 @@ export function TierModal({
         .eq("service_id", modal.serviceId);
       const nextOrder = existing.count ?? 0;
       await insforge.database.from("service_tiers").insert([
-        {
-          service_id: modal.serviceId,
-          label: form.label.trim() || null,
-          duration_minutes:
-            form.duration !== "" ? parseInt(form.duration, 10) : null,
-          price_eur: form.price !== "" ? parseFloat(form.price) : null,
-          color: form.color || null,
-          active: form.active,
-          sort_order: nextOrder,
-        },
+        { service_id: modal.serviceId, sort_order: nextOrder, ...payload },
       ]);
     }
     await onSaved(modal.serviceId);
@@ -202,47 +209,74 @@ export function TierModal({
             />
           </div>
 
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="tier-duration"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Duration (min)
+            </label>
+            <input
+              id="tier-duration"
+              type="number"
+              min="0"
+              step="1"
+              value={form.duration}
+              onChange={(e) =>
+                dispatchForm({
+                  type: "SET_DURATION",
+                  duration: e.target.value,
+                })
+              }
+              placeholder="60"
+              className={INPUT_CLASS}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="tier-duration"
+                htmlFor="tier-price-center"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Duration (min)
+                Price — Centre (€)
               </label>
               <input
-                id="tier-duration"
+                id="tier-price-center"
                 type="number"
                 min="0"
-                step="1"
-                value={form.duration}
+                step="0.01"
+                value={form.priceCenter}
                 onChange={(e) =>
                   dispatchForm({
-                    type: "SET_DURATION",
-                    duration: e.target.value,
+                    type: "SET_PRICE_CENTER",
+                    price: e.target.value,
                   })
                 }
-                placeholder="60"
+                placeholder="90"
                 className={INPUT_CLASS}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="tier-price"
+                htmlFor="tier-price-suite"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Price (€)
+                Price — Suite (€)
               </label>
               <input
-                id="tier-price"
+                id="tier-price-suite"
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.price}
+                value={form.priceSuite}
                 onChange={(e) =>
-                  dispatchForm({ type: "SET_PRICE", price: e.target.value })
+                  dispatchForm({
+                    type: "SET_PRICE_SUITE",
+                    price: e.target.value,
+                  })
                 }
-                placeholder="80"
+                placeholder="120"
                 className={INPUT_CLASS}
               />
             </div>

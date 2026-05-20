@@ -4,8 +4,10 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
+import { bookableServices } from "@/data/services-data";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -59,19 +61,129 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
             <Button
               variant="white"
               size="md"
-              href={`/booking?wellness=${data.slug}`}
+              onClick={() => {
+                const el = document.getElementById("treatments");
+                if (el) {
+                  const top =
+                    el.getBoundingClientRect().top + window.scrollY - 80;
+                  window.scrollTo({ top, behavior: "smooth" });
+                }
+              }}
             >
-              Book a session
-            </Button>
-            <Button
-              variant="outline-white"
-              size="md"
-              href="/community/memberships"
-            >
-              View memberships
+              Explore treatments
             </Button>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Manual Therapies — treatment grid ───────────────────────
+
+function ManualTherapiesSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const cards = sectionRef.current?.querySelectorAll<HTMLElement>("[data-card]");
+      if (!cards) return;
+      cards.forEach((card) => {
+        gsap.fromTo(
+          card,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 90%",
+              end: "top 60%",
+              scrub: false,
+              toggleActions: "play none none none",
+            },
+          },
+        );
+      });
+    }, sectionRef);
+    return () => ctx.revert();
+  }, []);
+
+  const manualServices = bookableServices.filter(
+    (s) => s.category === "wellness",
+  );
+
+  return (
+    <section
+      id="treatments"
+      ref={sectionRef}
+      className="bg-sand-50 px-5 py-20 md:py-28"
+    >
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 text-center">
+          <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+            Our treatments.
+          </h2>
+          <p className="text-petroleum-400 mx-auto mt-3 max-w-lg leading-relaxed">
+            Each treatment is designed with a specific purpose. Choose the one
+            that fits what your body needs today.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {manualServices.map((service) => (
+            <div
+              key={service.id}
+              data-card
+              className="border-sand-200 bg-white flex flex-col overflow-hidden rounded-2xl border"
+            >
+              <div className="relative h-44 w-full shrink-0">
+                <Image
+                  src={service.image}
+                  alt={service.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-3 p-5">
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <h3 className="text-petroleum-700 font-semibold">
+                      {service.title}
+                    </h3>
+                    <span className="text-petroleum-400 text-xs">
+                      · {service.durations.join(", ")}
+                    </span>
+                  </div>
+                  <p className="text-petroleum-500 line-clamp-2 text-sm leading-relaxed">
+                    {service.description}
+                  </p>
+                </div>
+                <div className="mt-auto flex items-center justify-between pt-1">
+                  <span className="text-petroleum-700 text-sm font-medium">
+                    {service.priceCenter ?? service.price}
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/wellness/manual-therapies/${service.id}`}
+                      className="border-sand-300 text-petroleum-500 hover:border-petroleum-400 hover:text-petroleum-700 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+                    >
+                      Read more
+                    </Link>
+                    <Link
+                      href={`/booking?service=${service.id}`}
+                      className="bg-petroleum-700 hover:bg-petroleum-800 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                    >
+                      Book
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -383,6 +495,7 @@ export default function TreatmentSection({ data }: { data: TreatmentData }) {
   return (
     <>
       <TreatmentHero data={data} />
+      {data.slug === "manual-therapies" && <ManualTherapiesSection />}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
       <CtaSection data={data} />
