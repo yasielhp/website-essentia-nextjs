@@ -1,4 +1,4 @@
-export type Tab = "services" | "plans" | "appearance";
+export type Tab = "services";
 
 export type TierRow = {
   id: string;

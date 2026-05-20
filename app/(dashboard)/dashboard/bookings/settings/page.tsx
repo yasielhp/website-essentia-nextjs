@@ -1,22 +1,16 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
-import { useSearchParams } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
   loadColorSettings,
-  saveColorSettings,
   DEFAULT_COLORS,
   SERVICES,
 } from "@/utils/color-settings";
 import type { ColorSettings } from "@/utils/color-settings";
-import type { Tab, TierRow, PlanRow, ModalState } from "@/types/settings";
-import { SectionCard } from "@/components/dashboard/settings/section-card";
-import { ColorRow } from "@/components/dashboard/settings/color-row";
+import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
-import { PlanModal } from "@/components/dashboard/settings/plan-modal";
-import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-content";
 
 // ─── Google Calendar types ────────────────────────────────────────────────────
 
@@ -26,7 +20,7 @@ type ServiceCalendarConfig = {
   google_calendar_id: string | null;
 };
 
-// ─── Google Calendar connect/disconnect widget ────────────────────────────────
+// ─── Google Calendar widget ───────────────────────────────────────────────────
 
 function GoogleCalendarWidget({
   serviceId,
@@ -128,15 +122,12 @@ function GoogleCalendarWidget({
   );
 }
 
-// ─── Data state reducer ───────────────────────────────────────
+// ─── Reducer ──────────────────────────────────────────────────────────────────
 
 type DataState = {
-  // useState (not useRef) — read in the early-return guard below: `if (!mounted) return <skeleton>`
   mounted: boolean;
   colors: ColorSettings;
   serviceTiers: Record<string, TierRow[]>;
-  plans: PlanRow[];
-  planModal: PlanRow | null;
   modal: ModalState | null;
   calendarConfigs: ServiceCalendarConfig[];
 };
@@ -146,12 +137,9 @@ type DataAction =
       type: "INIT_DONE";
       colors: ColorSettings;
       serviceTiers: Record<string, TierRow[]>;
-      plans: PlanRow[];
       calendarConfigs: ServiceCalendarConfig[];
     }
   | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
-  | { type: "SET_PLANS"; plans: PlanRow[] }
-  | { type: "SET_PLAN_MODAL"; planModal: PlanRow | null }
   | { type: "SET_MODAL"; modal: ModalState | null }
   | { type: "SET_COLORS"; colors: ColorSettings }
   | { type: "REMOVE_CALENDAR_CONFIG"; serviceId: string };
@@ -160,8 +148,6 @@ const initialDataState: DataState = {
   mounted: false,
   colors: DEFAULT_COLORS,
   serviceTiers: {},
-  plans: [],
-  planModal: null,
   modal: null,
   calendarConfigs: [],
 };
@@ -174,15 +160,10 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         mounted: true,
         colors: action.colors,
         serviceTiers: action.serviceTiers,
-        plans: action.plans,
         calendarConfigs: action.calendarConfigs,
       };
     case "SET_SERVICE_TIERS":
       return { ...state, serviceTiers: action.serviceTiers };
-    case "SET_PLANS":
-      return { ...state, plans: action.plans };
-    case "SET_PLAN_MODAL":
-      return { ...state, planModal: action.planModal };
     case "SET_MODAL":
       return { ...state, modal: action.modal };
     case "SET_COLORS":
@@ -199,9 +180,9 @@ function dataReducer(state: DataState, action: DataAction): DataState {
   }
 }
 
-// ─── Tab section components ───────────────────────────────────
+// ─── Services content ─────────────────────────────────────────────────────────
 
-function ServicesTabContent({
+function ServicesContent({
   serviceTiers,
   calendarConfigs,
   onAddTier,
@@ -323,30 +304,23 @@ function ServicesTabContent({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsPage() {
-  const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>(
-    (searchParams.get("tab") as Tab | null) ?? "services",
-  );
-
-  // Derive an initial toast from OAuth callback query params (evaluated once on mount)
-  const initialToast =
-    searchParams.get("connected") === "1"
-      ? "Google Calendar connected"
-      : searchParams.get("error")
-        ? `Calendar error: ${searchParams.get("error")}`
-        : null;
+export default function BookingsSettingsPage() {
+  const [initialToast] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("connected") === "1") return "Google Calendar connected";
+    if (p.get("error")) return `Calendar error: ${p.get("error")}`;
+    return null;
+  });
 
   const [toast, setToast] = useState<string | null>(initialToast);
 
-  // Auto-dismiss the initial OAuth toast after mount
   useEffect(() => {
     if (!initialToast) return;
     const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
-    // initialToast is stable (derived from URL at mount) — exhaustive-deps is intentionally not a concern here
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -356,8 +330,6 @@ export default function SettingsPage() {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
   }
-
-  // ── Load tiers for one service (called after modal save/delete) ──
 
   async function reloadServiceTiers(serviceId: string) {
     const { data: rows } = await insforge.database
@@ -377,24 +349,17 @@ export default function SettingsPage() {
     showToast("Saved");
   }
 
-  // ── Initial load ──
-
   useEffect(() => {
     async function init() {
       const colors = loadColorSettings();
 
-      const [tiersRes, plansRes, calRes] = await Promise.all([
+      const [tiersRes, calRes] = await Promise.all([
         insforge.database
           .from("service_tiers")
           .select(
             "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
           )
           .order("sort_order"),
-        insforge.database
-          .from("membership_plans")
-          .select("id, label, price_monthly")
-          .order("price_monthly"),
-        // Calendar configs are fetched via the API route (uses service key server-side)
         fetch("/api/google/calendar/configs").then(async (r) => {
           if (!r.ok) return { data: [] };
           return r.json() as Promise<{ data: ServiceCalendarConfig[] }>;
@@ -409,69 +374,22 @@ export default function SettingsPage() {
         }
       }
 
-      const plans = plansRes.data ? (plansRes.data as PlanRow[]) : [];
       const calendarConfigs = (calRes.data ?? []) as ServiceCalendarConfig[];
 
-      dispatch({
-        type: "INIT_DONE",
-        colors,
-        serviceTiers,
-        plans,
-        calendarConfigs,
-      });
+      dispatch({ type: "INIT_DONE", colors, serviceTiers, calendarConfigs });
     }
     void init();
   }, []);
-
-  // ── Plans handlers ──
-
-  async function reloadPlans() {
-    const { data: rows } = await insforge.database
-      .from("membership_plans")
-      .select("id, label, price_monthly")
-      .order("price_monthly");
-    if (rows) dispatch({ type: "SET_PLANS", plans: rows as PlanRow[] });
-    showToast("Saved");
-  }
-
-  // ── Appearance handlers ──
-
-  function handleRacesColor(color: string) {
-    const next = { ...data.colors, races: color };
-    dispatch({ type: "SET_COLORS", colors: next });
-    saveColorSettings(next);
-  }
-
-  function handleSessionsColor(color: string) {
-    const next = { ...data.colors, sessions: color };
-    dispatch({ type: "SET_COLORS", colors: next });
-    saveColorSettings(next);
-  }
 
   // ── Skeleton ──
 
   if (!data.mounted) {
     return (
       <div className="px-6 py-8 lg:px-10">
-        {/* Header */}
-        <div className="mb-8 space-y-2">
-          <div className="bg-sand-100 h-8 w-40 animate-pulse rounded-lg" />
-          <div className="bg-sand-100 h-4 w-72 animate-pulse rounded" />
+        <div className="mb-8">
+          <div className="bg-sand-100 h-8 w-32 animate-pulse rounded-lg" />
         </div>
-
-        {/* Tab bar */}
-        <div className="border-sand-200 mb-6 flex gap-1 border-b">
-          {[20, 36, 28].map((w, i) => (
-            <div
-              key={i}
-              className="bg-sand-100 mb-[-1px] h-9 animate-pulse rounded-t-md"
-              style={{ width: `${w * 4}px` }}
-            />
-          ))}
-        </div>
-
-        {/* Services grid — 2-col, 4 cards visible */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
@@ -502,104 +420,23 @@ export default function SettingsPage() {
     );
   }
 
-  // ── Render ──
-
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-8">
-        <h1 className="font-display text-petroleum-700 text-3xl">Settings</h1>
-        <p className="text-petroleum-400 mt-1 text-sm">
-          Manage services, membership plans, staff, and display preferences.
-        </p>
-      </div>
+      <ServicesContent
+        serviceTiers={data.serviceTiers}
+        calendarConfigs={data.calendarConfigs}
+        onAddTier={(serviceId) =>
+          dispatch({ type: "SET_MODAL", modal: { serviceId } })
+        }
+        onEditTier={(serviceId, tier) =>
+          dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
+        }
+        onCalendarDisconnected={(serviceId) => {
+          dispatch({ type: "REMOVE_CALENDAR_CONFIG", serviceId });
+          showToast("Google Calendar disconnected");
+        }}
+      />
 
-      {/* Tabs */}
-      <div
-        role="tablist"
-        aria-label="Settings categories"
-        className="border-sand-200 mb-6 flex flex-wrap gap-1 border-b"
-      >
-        {(
-          [
-            ["services", "Services"],
-            ["plans", "Membership Plans"],
-            ["appearance", "Appearance"],
-          ] as [Tab, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`relative -mb-px rounded-t-md px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === key
-                ? "border-petroleum-700 text-petroleum-700 border-b-2"
-                : "text-petroleum-400 hover:text-petroleum-500 border-b-2 border-transparent"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-4">
-        {/* ── Services ── */}
-        {tab === "services" && (
-          <ServicesTabContent
-            serviceTiers={data.serviceTiers}
-            calendarConfigs={data.calendarConfigs}
-            onAddTier={(serviceId) =>
-              dispatch({ type: "SET_MODAL", modal: { serviceId } })
-            }
-            onEditTier={(serviceId, tier) =>
-              dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
-            }
-            onCalendarDisconnected={(serviceId) => {
-              dispatch({ type: "REMOVE_CALENDAR_CONFIG", serviceId });
-              showToast("Google Calendar disconnected");
-            }}
-          />
-        )}
-
-        {/* ── Membership Plans ── */}
-        {tab === "plans" && (
-          <PlansTabContent
-            plans={data.plans}
-            onEdit={(plan) =>
-              dispatch({ type: "SET_PLAN_MODAL", planModal: plan })
-            }
-          />
-        )}
-
-        {/* ── Appearance ── */}
-        {tab === "appearance" && (
-          <>
-            <SectionCard
-              title="Races"
-              description="Color used to represent races in the calendar."
-            >
-              <ColorRow
-                label="Races"
-                value={data.colors.races}
-                onChange={handleRacesColor}
-              />
-            </SectionCard>
-            <SectionCard
-              title="Education Sessions"
-              description="Color used to represent education sessions in the calendar."
-            >
-              <ColorRow
-                label="Education Sessions"
-                value={data.colors.sessions}
-                onChange={handleSessionsColor}
-              />
-            </SectionCard>
-          </>
-        )}
-      </div>
-
-      {/* Tier modal */}
       {data.modal && (
         <TierModal
           modal={data.modal}
@@ -608,16 +445,6 @@ export default function SettingsPage() {
         />
       )}
 
-      {/* Plan modal */}
-      {data.planModal && (
-        <PlanModal
-          plan={data.planModal}
-          onClose={() => dispatch({ type: "SET_PLAN_MODAL", planModal: null })}
-          onSaved={reloadPlans}
-        />
-      )}
-
-      {/* Toast */}
       {toast && (
         <div className="bg-petroleum-700 fixed right-6 bottom-6 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-white shadow-lg">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">

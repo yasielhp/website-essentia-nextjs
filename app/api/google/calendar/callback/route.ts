@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const errorRedirectBase =
     isStaffSvcFlow || isUserFlow
       ? "/dashboard/account"
-      : "/dashboard/settings?tab=services";
+      : "/dashboard/bookings/settings";
 
   if (errorParam) {
     return NextResponse.redirect(
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.redirect(
         new URL(
-          "/dashboard/settings?tab=services&connected=1",
+          "/dashboard/bookings/settings?connected=1",
           process.env.NEXT_PUBLIC_APP_URL,
         ),
       );

@@ -5,7 +5,6 @@ import {
   IconFlag,
   IconBook,
   IconReceipt,
-  IconSettings,
   IconUsers,
   IconBlog,
 } from "@/components/ui/icons";
@@ -19,7 +18,6 @@ export const navLinks = [
   { label: "Races", href: "/dashboard/races" },
   { label: "Education", href: "/dashboard/education" },
   { label: "Blog", href: "/dashboard/blog" },
-  { label: "Settings", href: "/dashboard/settings" },
 ];
 
 export const navIcons: Record<string, React.ReactNode> = {
@@ -31,5 +29,4 @@ export const navIcons: Record<string, React.ReactNode> = {
   Education: <IconBook />,
   Blog: <IconBlog />,
   Transactions: <IconReceipt />,
-  Settings: <IconSettings />,
 };
