@@ -10,16 +10,6 @@ export const maiMenu = [
     },
     itemMenu: [
       {
-        itemName: "Thermal contrast",
-        href: "/wellness/contrast-therapy",
-        card: {
-          title: "Thermal contrast",
-          description:
-            "Cold immersion and dry saunas to activate the nervous system, boost circulation, and sharpen mental resilience.",
-          imagen: "/images/menu/thermal-contrast.webp",
-        },
-      },
-      {
         itemName: "Manual therapies",
         href: "/wellness/manual-therapies",
         card: {
@@ -27,6 +17,16 @@ export const maiMenu = [
           description:
             "Skilled hands releasing tension, restoring mobility, and deepening your sense of physical ease.",
           imagen: "/images/menu/manual-therapies.webp",
+        },
+      },
+      {
+        itemName: "Thermal contrast",
+        href: "/wellness/contrast-therapy",
+        card: {
+          title: "Thermal contrast",
+          description:
+            "Cold immersion and dry saunas to activate the nervous system, boost circulation, and sharpen mental resilience.",
+          imagen: "/images/menu/thermal-contrast.webp",
         },
       },
       {
