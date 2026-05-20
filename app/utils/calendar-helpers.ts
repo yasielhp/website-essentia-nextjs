@@ -36,8 +36,7 @@ export function isAvailableDay(date: Date): boolean {
   const max = new Date(today);
   max.setDate(today.getDate() + 60);
   if (d > max) return false;
-  const dow = d.getDay();
-  return dow !== 0 && dow !== 6;
+  return true;
 }
 
 export function isSameDay(a: Date, b: Date) {
