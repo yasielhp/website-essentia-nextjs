@@ -512,9 +512,8 @@ function BookingContentInner() {
       await insforge.database
         .from("bookings")
         .update({
-          ...(selectedTierId
-            ? { tier_id: selectedTierId, price_eur: selectedTierPrice }
-            : {}),
+          tier_id: selectedTierId ?? null,
+          price_eur: selectedTierPrice ?? null,
           location: "centro",
           ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
           ...(user?.id
@@ -548,7 +547,15 @@ function BookingContentInner() {
     if (resolvedBookingId) {
       await insforge.database
         .from("bookings")
-        .update({ status: "pending" })
+        .update({
+          status: "pending",
+          tier_id: selectedTierId,
+          price_eur: selectedTierPrice,
+          duration: selectedDuration ?? "",
+          location: "centro",
+          date: selectedDate.toISOString().split("T")[0],
+          time: selectedTime,
+        })
         .eq("id", resolvedBookingId);
     } else {
       const { data } = await insforge.database
