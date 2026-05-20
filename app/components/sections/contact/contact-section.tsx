@@ -5,6 +5,7 @@ import gsap from "gsap";
 import Link from "next/link";
 import { Button } from "@components/ui/button";
 import { contact } from "@/constants/contact";
+import { AnimatedIconLink } from "@components/ui/animated-text";
 
 // ─── Input ────────────────────────────────────────────────────
 
@@ -214,17 +215,6 @@ export default function ContactSection() {
                 </Link>
               </div>
 
-              {/* Hours */}
-              <div className="flex flex-col gap-2">
-                <p className="text-petroleum-400 text-xs tracking-widest uppercase">
-                  Hours
-                </p>
-                <div className="text-petroleum-700 flex flex-col gap-1 text-sm">
-                  <span>Monday – Friday: 7:00 – 21:00</span>
-                  <span>Saturday – Sunday: 8:00 – 20:00</span>
-                </div>
-              </div>
-
               {/* Social */}
               <div className="flex flex-col gap-3">
                 <p className="text-petroleum-400 text-xs tracking-widest uppercase">
@@ -232,15 +222,15 @@ export default function ContactSection() {
                 </p>
                 <div className="flex gap-3">
                   {contact.socialMedia.map((social) => (
-                    <Link
+                    <AnimatedIconLink
                       key={social.name}
                       href={social.url}
                       target="_blank"
                       aria-label={social.name}
-                      className="text-petroleum-500 hover:text-petroleum-700 border-petroleum-200 rounded-full border p-2 transition-colors"
+                      className="border-petroleum-500 text-petroleum-500 rounded-full border p-2 text-center"
                     >
                       <social.icon />
-                    </Link>
+                    </AnimatedIconLink>
                   ))}
                 </div>
               </div>
