@@ -188,7 +188,9 @@ function ServiceItems({
   imageClass?: string;
   imageSizes?: string;
 }) {
-  const wellness = services.filter((s) => s.category === "wellness" || !s.category);
+  const wellness = services.filter(
+    (s) => s.category === "wellness" || !s.category,
+  );
   const medicine = services.filter((s) => s.category === "medicine");
 
   const row = (s: Service) => (
@@ -199,18 +201,32 @@ function ServiceItems({
       className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
     >
       {s.image ? (
-        <div className={`relative ${imageClass} shrink-0 overflow-hidden rounded-lg`}>
-          <Image src={s.image} alt={s.title} fill sizes={imageSizes} className="object-cover" />
+        <div
+          className={`relative ${imageClass} shrink-0 overflow-hidden rounded-lg`}
+        >
+          <Image
+            src={s.image}
+            alt={s.title}
+            fill
+            sizes={imageSizes}
+            className="object-cover"
+          />
         </div>
       ) : (
-        <div className={`bg-petroleum-100 flex ${imageClass} shrink-0 items-center justify-center rounded-lg`}>
-          <span className="text-petroleum-700 text-sm font-bold">{s.title[0]?.toUpperCase()}</span>
+        <div
+          className={`bg-petroleum-100 flex ${imageClass} shrink-0 items-center justify-center rounded-lg`}
+        >
+          <span className="text-petroleum-700 text-sm font-bold">
+            {s.title[0]?.toUpperCase()}
+          </span>
         </div>
       )}
       <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
         <p className="text-petroleum-700 text-sm font-medium">{s.title}</p>
         {s.description && (
-          <p className="text-petroleum-400 line-clamp-1 text-xs">{s.description}</p>
+          <p className="text-petroleum-400 line-clamp-1 text-xs">
+            {s.description}
+          </p>
         )}
         {s.category && (
           <p className="text-petroleum-500 text-xs capitalize">{s.category}</p>
@@ -226,13 +242,17 @@ function ServiceItems({
     <div className="p-3">
       {wellness.length > 0 && (
         <>
-          <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">Wellness</p>
+          <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">
+            Wellness
+          </p>
           {wellness.map(row)}
         </>
       )}
       {medicine.length > 0 && (
         <>
-          <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">Medicine</p>
+          <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">
+            Medicine
+          </p>
           {medicine.map(row)}
         </>
       )}
@@ -269,7 +289,9 @@ function ServiceSelect({
   useEffect(() => {
     if (!isOpen || !isMobile()) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   const handleSelect = (s: Service) => {
@@ -294,17 +316,27 @@ function ServiceSelect({
           <>
             {selected.image ? (
               <div className="animate-fade-in-up relative size-16 shrink-0 overflow-hidden rounded-xl">
-                <Image src={selected.image} alt={selected.title} fill sizes="64px" className="object-cover" />
+                <Image
+                  src={selected.image}
+                  alt={selected.title}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
               </div>
             ) : (
               <div className="animate-fade-in-up bg-petroleum-100 flex size-16 shrink-0 items-center justify-center rounded-xl">
-                <span className="text-petroleum-700 text-xl font-bold">{selected.title[0]?.toUpperCase()}</span>
+                <span className="text-petroleum-700 text-xl font-bold">
+                  {selected.title[0]?.toUpperCase()}
+                </span>
               </div>
             )}
             <div className="flex flex-1 flex-col gap-1 overflow-hidden">
               <p className="text-petroleum-700 font-medium">{selected.title}</p>
               {selected.description && (
-                <p className="text-petroleum-400 line-clamp-1 text-sm">{selected.description}</p>
+                <p className="text-petroleum-400 line-clamp-1 text-sm">
+                  {selected.description}
+                </p>
               )}
             </div>
           </>
@@ -351,7 +383,9 @@ function ServiceSelect({
         createPortal(
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-petroleum-700 font-medium">Select a service</h3>
+              <h3 className="text-petroleum-700 font-medium">
+                Select a service
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -408,7 +442,9 @@ function TierItems({
               {(t.duration_minutes != null || price != null) && (
                 <span className="text-petroleum-400 text-xs">
                   {[
-                    t.duration_minutes != null ? `${t.duration_minutes} min` : null,
+                    t.duration_minutes != null
+                      ? `${t.duration_minutes} min`
+                      : null,
                     price != null ? `€${price}` : null,
                   ]
                     .filter(Boolean)
@@ -458,7 +494,9 @@ function TierSelect({
   useEffect(() => {
     if (!isOpen || !isMobile()) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   const handleSelect = (t: Tier) => {
@@ -524,7 +562,12 @@ function TierSelect({
             style={dropdownStyle}
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
           >
-            <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} location={location} />
+            <TierItems
+              tiers={tiers}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              location={location}
+            />
           </div>,
           document.body,
         )}
@@ -535,7 +578,9 @@ function TierSelect({
         createPortal(
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-petroleum-700 font-medium">Select a session type</h3>
+              <h3 className="text-petroleum-700 font-medium">
+                Select a session type
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -546,7 +591,12 @@ function TierSelect({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} location={location} />
+              <TierItems
+                tiers={tiers}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+                location={location}
+              />
             </div>
           </div>,
           document.body,
@@ -1142,23 +1192,32 @@ export default function NewBookingPage() {
     // Create Google Calendar event (non-blocking, only for confirmed bookings)
     if (dateStr && selectedTime) {
       const bookingId = (inserted as { id: string } | null)?.id ?? "";
-      const clientName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+      const clientName = [firstName.trim(), lastName.trim()]
+        .filter(Boolean)
+        .join(" ");
 
       // Build location string for the event
       const calLocation = (() => {
         if (location === "centro") return contact.address;
         if (location === "habitacion") {
           const parts: string[] = [];
-          if (reservationNumber.trim()) parts.push(`Reservation: ${reservationNumber.trim()}`);
+          if (reservationNumber.trim())
+            parts.push(`Reservation: ${reservationNumber.trim()}`);
           if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
-          return parts.length ? `Baobab Suites — ${parts.join(" · ")}` : "Baobab Suites";
+          return parts.length
+            ? `Baobab Suites — ${parts.join(" · ")}`
+            : "Baobab Suites";
         }
         if (location === "domicilio") {
           const parts: string[] = [];
           if (address.street.trim()) parts.push(address.street.trim());
           if (address.building.trim()) parts.push(address.building.trim());
           if (address.postalCode.trim() || address.municipality.trim())
-            parts.push([address.postalCode.trim(), address.municipality.trim()].filter(Boolean).join(" "));
+            parts.push(
+              [address.postalCode.trim(), address.municipality.trim()]
+                .filter(Boolean)
+                .join(" "),
+            );
           return parts.filter(Boolean).join(", ");
         }
         return "";
@@ -1204,7 +1263,8 @@ export default function NewBookingPage() {
     const base = allowedLocations.find((l) => l.id === location)?.label ?? "";
     if (location === "habitacion") {
       const parts: string[] = [];
-      if (reservationNumber.trim()) parts.push(`Reservation: ${reservationNumber.trim()}`);
+      if (reservationNumber.trim())
+        parts.push(`Reservation: ${reservationNumber.trim()}`);
       if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
       return parts.length ? parts.join(" · ") : base;
     }
@@ -1212,7 +1272,11 @@ export default function NewBookingPage() {
       const parts: string[] = [];
       if (address.street.trim()) parts.push(address.street.trim());
       if (address.postalCode.trim() || address.municipality.trim())
-        parts.push([address.postalCode.trim(), address.municipality.trim()].filter(Boolean).join(" "));
+        parts.push(
+          [address.postalCode.trim(), address.municipality.trim()]
+            .filter(Boolean)
+            .join(" "),
+        );
       return parts.length ? parts.join(" · ") : base;
     }
     return base;
@@ -1221,7 +1285,11 @@ export default function NewBookingPage() {
     selectedDate && selectedTime
       ? `${selectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · ${selectedTime}`
       : selectedDate
-        ? selectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        ? selectedDate.toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          })
         : "";
 
   return (
@@ -1253,7 +1321,6 @@ export default function NewBookingPage() {
         )}
 
         <div className="space-y-3">
-
           {/* ── Step 1: Service ── */}
           {serviceId && editingStep !== "service" ? (
             <CompletedRow
