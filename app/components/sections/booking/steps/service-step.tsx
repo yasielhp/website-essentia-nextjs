@@ -54,14 +54,22 @@ function ServiceItems({
 
   return (
     <div className="p-3">
-      <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">
-        Wellness
-      </p>
-      {wellness.map(row)}
-      <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">
-        Medicine
-      </p>
-      {medicine.map(row)}
+      {wellness.length > 0 && (
+        <>
+          <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">
+            Wellness
+          </p>
+          {wellness.map(row)}
+        </>
+      )}
+      {medicine.length > 0 && (
+        <>
+          <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">
+            Medicine
+          </p>
+          {medicine.map(row)}
+        </>
+      )}
     </div>
   );
 }
