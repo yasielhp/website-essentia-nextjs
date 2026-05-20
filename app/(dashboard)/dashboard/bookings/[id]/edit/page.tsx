@@ -1290,7 +1290,7 @@ export default function EditBookingPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "service_id, tier_id, location, location_address, notes, date, time, first_name, last_name, email, phone, status",
+          "service_id, tier_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status",
         )
         .eq("id", id)
         .limit(1);
@@ -1299,6 +1299,7 @@ export default function EditBookingPage() {
         data as Array<{
           service_id: string | null;
           tier_id: string | null;
+          duration: string | null;
           location: string | null;
           location_address: string | null;
           notes: string | null;
@@ -1465,7 +1466,7 @@ export default function EditBookingPage() {
         service_title: selectedService?.title ?? serviceId,
         tier_id: tierId || null,
         price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
-        duration: durationText,
+        ...(durationText !== null ? { duration: durationText } : {}),
         date: dateStr,
         time: selectedTime || null,
         location: location || null,
