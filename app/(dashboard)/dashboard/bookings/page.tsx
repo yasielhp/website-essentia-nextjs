@@ -467,6 +467,7 @@ export default function BookingsPage() {
   const { user } = useAuth();
   const { role } = useRole();
 
+  const isAdmin = role === "admin";
   const isPartner = role === "partner";
   const isStaff = role === "staff";
   const userId = user?.id ?? null;
@@ -696,15 +697,17 @@ export default function BookingsPage() {
           Create Booking
         </Button>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="md"
-            href="/dashboard/bookings/settings"
-            className="gap-2"
-          >
-            <IconSettings />
-            Settings
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="md"
+              href="/dashboard/bookings/settings"
+              className="gap-2"
+            >
+              <IconSettings />
+              Settings
+            </Button>
+          )}
           <Button
             variant={activeCount > 0 ? "soft" : "outline"}
             size="md"

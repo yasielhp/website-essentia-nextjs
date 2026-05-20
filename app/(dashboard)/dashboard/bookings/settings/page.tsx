@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
+import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { useRole } from "@/context/role-context";
 import {
   loadColorSettings,
   DEFAULT_COLORS,
@@ -307,6 +309,15 @@ function ServicesContent({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BookingsSettingsPage() {
+  const { role } = useRole();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (role && role !== "admin") {
+      router.replace("/dashboard/bookings");
+    }
+  }, [role, router]);
+
   const [initialToast] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const p = new URLSearchParams(window.location.search);
