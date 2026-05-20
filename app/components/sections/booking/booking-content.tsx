@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { Button } from "@components/ui/button";
 import { bookableServices, type BookableService } from "@/data/services-data";
@@ -19,7 +19,6 @@ import { DetailsStep, type DetailsErrors } from "./steps/details-step";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
-import { SuccessState } from "./steps/success-state";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 
@@ -342,7 +341,6 @@ type BookingLocalState = {
   bookingId: string | null;
   memberBlocker: boolean;
   checking: boolean;
-  bookingSubmitted: boolean;
 };
 
 const INITIAL_LOCAL_STATE: BookingLocalState = {
@@ -350,19 +348,18 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   bookingId: null,
   memberBlocker: false,
   checking: false,
-  bookingSubmitted: false,
 };
 
 function BookingContentInner() {
   const { user } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const slug = get("wellness") ?? get("medicine");
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
-  const { contactId, bookingId, memberBlocker, checking, bookingSubmitted } =
-    local;
+  const { contactId, bookingId, memberBlocker, checking } = local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
     setLocal((prev) => ({ ...prev, ...patch }));
@@ -610,29 +607,15 @@ function BookingContentInner() {
 
     dispatch({ type: "CONFIRM_SUCCESS" });
     clearStorage();
-    updateLocal({ bookingSubmitted: true });
-  };
 
-  if (bookingSubmitted) {
-    return (
-      <SuccessState
-        service={
-          selectedService ?? {
-            id: "",
-            category: "wellness" as const,
-            description: "",
-            durations: [],
-            price: "",
-            image: "",
-            title: "Session",
-          }
-        }
-        date={selectedDate ?? new Date()}
-        time={selectedTime ?? ""}
-        phone={details.phone}
-      />
-    );
-  }
+    const params = new URLSearchParams({
+      service: selectedService.title,
+      date: selectedDate.toISOString(),
+      time: selectedTime,
+      phone: details.phone,
+    });
+    router.push(`/booking/confirmation?${params.toString()}`);
+  };
 
   return (
     <div className="flex flex-col gap-4">
