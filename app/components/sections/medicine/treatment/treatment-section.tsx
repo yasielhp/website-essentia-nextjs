@@ -4,7 +4,6 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { Button } from "@components/ui/button";
 import type { MedicineTreatmentData } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);

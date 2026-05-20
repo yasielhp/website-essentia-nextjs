@@ -250,3 +250,99 @@ Diverse group of wellness-focused adults socializing and connecting at a premium
 ```
 Exclusive membership card and welcome kit on a marble surface, luxury wellness brand aesthetic, cream tones, embossed details, botanical element, flat lay editorial photography
 ```
+
+---
+
+## Manual Therapies — Treatment Cards
+
+Imágenes individuales para cada tipo de masaje. Se usan en las cards de `/wellness/manual-therapies` y como hero en cada página de detalle.
+
+**Tamaño:** `1200 × 800 px` — ratio 3:2 (landscape)  
+**Carpeta destino:** `public/images/treatments/`  
+**Midjourney:** añadir `--ar 3:2` al final del prompt
+
+### `espira.webp`
+
+```
+Close-up of a therapist's hands applying slow enveloping massage strokes to a client's upper back and neck, warm soft lighting, neutral linen draping, luxury spa setting, shallow depth of field, calming earthy tones, no visible faces --ar 3:2
+```
+
+---
+
+### `pulse.webp`
+
+```
+Therapist applying firm deep-tissue pressure with thumbs along a client's trapezius and shoulder blade, focused and deliberate hand position, clinical yet warm spa environment, natural light from a side window, muted green and sand tones --ar 3:2
+```
+
+---
+
+### `drenaje-linfatico.webp`
+
+```
+Therapist performing gentle rhythmic lymphatic drainage strokes along a client's leg and thigh, soft diffused light, white towels on a massage table, serene atmosphere, clean minimalist spa room, no visible faces --ar 3:2
+```
+
+---
+
+### `essentia-active.webp`
+
+```
+Therapist working on the hamstrings and calves of an athletic client, sports recovery context, clean white massage table, bright natural light, fresh and energetic atmosphere, close-up of hands on muscle tissue --ar 3:2
+```
+
+---
+
+### `nurtura.webp`
+
+```
+Gentle prenatal massage on a pregnant woman lying on her side supported by a pillow, therapist's hands resting on her lower back, warm golden light, soft cotton draping, intimate and safe spa atmosphere, no visible faces --ar 3:2
+```
+
+---
+
+### `serenna.webp`
+
+```
+Full-body relaxation massage with long flowing strokes on a client's back, warm massage oil sheen on skin, candles softly blurred in the background, deep calm atmosphere, petroleum-green and sand tones, editorial spa photography --ar 3:2
+```
+
+---
+
+### `solea.webp`
+
+```
+Aloe vera body wrap being gently applied to sun-exposed skin, green gel on a client's back, therapist's hands spreading the wrap evenly, warm Mediterranean light, coastal spa feel, calming and restorative mood --ar 3:2
+```
+
+---
+
+### `soma.webp`
+
+```
+Deep tissue massage on a client's lower back and lumbar region, therapist using forearm for precise sustained pressure, focused clinical atmosphere, modern spa room, muted earth tones, editorial wellness photography --ar 3:2
+```
+
+---
+
+### `lume.webp`
+
+```
+Therapist performing a cranio-facial massage, client's face completely relaxed, essential oil diffuser and aromatic botanicals visible in the background, warm candlelight, multi-sensory treatment room, total disconnection mood --ar 3:2
+```
+
+---
+
+### `alure-duo.webp`
+
+```
+Two therapists working simultaneously on a couple lying side by side on adjacent massage tables, private treatment suite with dim romantic lighting, synchronised hand movements, sense of connection and shared calm --ar 3:2
+```
+
+---
+
+### `essentia-signature.webp`
+
+```
+Luxurious full-body ritual — therapist applying a body scrub exfoliation on a client, white marble surfaces, premium botanicals and oils arranged beside the table, overhead editorial spa photography, premium and complete treatment atmosphere --ar 3:2
+```

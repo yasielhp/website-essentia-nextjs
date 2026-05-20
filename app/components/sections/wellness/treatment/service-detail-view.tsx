@@ -280,7 +280,11 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
 
 // ─── Page view ────────────────────────────────────────────────
 
-export function ServiceDetailView({ service }: { service: ManualTherapyTreatment }) {
+export function ServiceDetailView({
+  service,
+}: {
+  service: ManualTherapyTreatment;
+}) {
   return (
     <>
       <ServiceHero service={service} />

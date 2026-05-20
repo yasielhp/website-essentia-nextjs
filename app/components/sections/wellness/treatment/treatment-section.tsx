@@ -85,7 +85,8 @@ function ManualTherapiesSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const cards = sectionRef.current?.querySelectorAll<HTMLElement>("[data-card]");
+      const cards =
+        sectionRef.current?.querySelectorAll<HTMLElement>("[data-card]");
       if (!cards) return;
       cards.forEach((card) => {
         gsap.fromTo(
@@ -133,7 +134,7 @@ function ManualTherapiesSection() {
             <div
               key={service.id}
               data-card
-              className="border-sand-200 bg-white flex flex-col overflow-hidden rounded-2xl border"
+              className="border-sand-200 flex flex-col overflow-hidden rounded-2xl border bg-white"
             >
               <div className="relative h-44 w-full shrink-0">
                 <Image
