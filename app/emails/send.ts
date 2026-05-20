@@ -17,7 +17,8 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 
   const resend = new Resend(apiKey);
   const from =
-    process.env.RESEND_FROM_EMAIL ?? "Essentia <noreply@essentia.com>";
+    process.env.RESEND_FROM_EMAIL ??
+    "Essentia <noreply@essentiawellnessclub.com>";
 
   const { error } = await resend.emails.send({ from, to, subject, html });
 
