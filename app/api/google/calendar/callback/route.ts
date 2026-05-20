@@ -65,15 +65,14 @@ export async function GET(request: NextRequest) {
     const adminClient = getAdminClient();
 
     if (isStaffSvcFlow) {
-      // ── Staff+service flow: store tokens in staff_services ────────────────────
+      // ── Staff+service flow: store tokens in service_configs (shared calendar) ──
       // state format: `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`
       const parts = stateParam.split("__");
-      const staffId = parts[1];
       const serviceId = parts[2];
       const encodedReturnPath = parts.slice(3).join("__");
       const returnPath = decodeURIComponent(encodedReturnPath);
 
-      if (!staffId || !serviceId) {
+      if (!serviceId) {
         return NextResponse.redirect(
           new URL(
             `${errorRedirectBase}?error=invalid_state`,
@@ -82,16 +81,18 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      await adminClient.database
-        .from("staff_services")
-        .update({
+      await adminClient.database.from("service_configs").upsert(
+        {
+          service_id: serviceId,
           google_access_token: tokens.access_token,
           google_refresh_token: tokens.refresh_token,
           google_token_expires_at: expiresAt,
-          google_calendar_email: connectedEmail,
-        })
-        .eq("staff_id", staffId)
-        .eq("service_id", serviceId);
+          google_connected_email: connectedEmail,
+          google_calendar_id: "primary",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "service_id" },
+      );
 
       return NextResponse.redirect(
         new URL(

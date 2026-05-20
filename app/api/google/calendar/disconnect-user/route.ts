@@ -4,7 +4,8 @@ import { createClient } from "@insforge/sdk";
 /**
  * DELETE /api/google/calendar/disconnect-user?staff_id=UUID&service_id=UUID
  *
- * Clears Google Calendar tokens from staff_services for a specific staff+service pair.
+ * Removes the shared Google Calendar connection from service_configs for the given service.
+ * staff_id is accepted for backwards compatibility but the connection is service-scoped.
  */
 
 function getAdminClient() {
@@ -30,14 +31,8 @@ export async function DELETE(request: NextRequest) {
     const adminClient = getAdminClient();
 
     const { error } = await adminClient.database
-      .from("staff_services")
-      .update({
-        google_access_token: null,
-        google_refresh_token: null,
-        google_token_expires_at: null,
-        google_calendar_email: null,
-      })
-      .eq("staff_id", staffId)
+      .from("service_configs")
+      .delete()
       .eq("service_id", serviceId);
 
     if (error) {
