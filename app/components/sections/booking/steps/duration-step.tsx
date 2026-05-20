@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, X } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 
 type Tier = {
@@ -26,6 +26,49 @@ function tierLabel(t: Tier): string {
   return parts.join(" · ") || "Standard";
 }
 
+function TierItems({
+  tiers,
+  selectedId,
+  onSelect,
+}: {
+  tiers: Tier[];
+  selectedId: string | null;
+  onSelect: (t: Tier) => void;
+}) {
+  return (
+    <div className="p-3">
+      {tiers.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => onSelect(t)}
+          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
+        >
+          <div className="flex flex-col gap-0.5">
+            <span className="text-petroleum-700 font-medium">
+              {t.label ?? "Standard"}
+            </span>
+            {(t.duration_minutes != null || t.price_eur != null) && (
+              <span className="text-petroleum-400 text-xs">
+                {[
+                  t.duration_minutes != null
+                    ? `${t.duration_minutes} min`
+                    : null,
+                  t.price_eur != null ? `€${t.price_eur}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            )}
+          </div>
+          {selectedId === t.id && (
+            <Check className="text-petroleum-700 shrink-0" size={14} />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TierSelect({
   tiers,
   selectedId,
@@ -41,6 +84,10 @@ function TierSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
+  const isMobile = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
@@ -53,7 +100,7 @@ function TierSelect({
   };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isMobile()) return;
     updatePosition();
     const handleClose = (e: MouseEvent) => {
       if (
@@ -71,6 +118,19 @@ function TierSelect({
       window.removeEventListener("scroll", handleScroll, true);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isMobile()) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  const handleSelect = (t: Tier) => {
+    onSelect(t);
+    setIsOpen(false);
+  };
 
   return (
     <div>
@@ -106,45 +166,47 @@ function TierSelect({
         />
       </button>
 
+      {/* Desktop: dropdown portal */}
       {isOpen &&
+        !isMobile() &&
         createPortal(
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] max-h-96 overflow-y-auto rounded-2xl border shadow-lg"
           >
-            <div className="p-3">
-              {tiers.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    onSelect(t);
-                    setIsOpen(false);
-                  }}
-                  className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-petroleum-700 font-medium">
-                      {t.label ?? "Standard"}
-                    </span>
-                    {(t.duration_minutes != null || t.price_eur != null) && (
-                      <span className="text-petroleum-400 text-xs">
-                        {[
-                          t.duration_minutes != null
-                            ? `${t.duration_minutes} min`
-                            : null,
-                          t.price_eur != null ? `€${t.price_eur}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    )}
-                  </div>
-                  {selectedId === t.id && (
-                    <Check className="text-petroleum-700 shrink-0" size={14} />
-                  )}
-                </button>
-              ))}
+            <TierItems
+              tiers={tiers}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+            />
+          </div>,
+          document.body,
+        )}
+
+      {/* Mobile: full-screen modal */}
+      {isOpen &&
+        isMobile() &&
+        createPortal(
+          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
+            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
+              <h3 className="text-petroleum-700 font-medium">
+                Select a session type
+              </h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-petroleum-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <TierItems
+                tiers={tiers}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+              />
             </div>
           </div>,
           document.body,
@@ -201,7 +263,7 @@ export function DurationStep({
   if (tiers.length === 0) {
     return (
       <p className="text-petroleum-400 text-sm">
-        No options configured for this service.
+        No session types available for this service.
       </p>
     );
   }
