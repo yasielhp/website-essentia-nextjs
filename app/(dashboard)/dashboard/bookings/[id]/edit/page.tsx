@@ -154,11 +154,12 @@ const STATUSES: {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-function tierLabel(t: Tier): string {
+function tierLabel(t: Tier, location: DashboardLocation | "" = ""): string {
   const parts: string[] = [];
   if (t.label) parts.push(t.label);
   if (t.duration_minutes != null) parts.push(`${t.duration_minutes} min`);
-  if (t.price_eur != null) parts.push(`€${t.price_eur}`);
+  const price = resolvePrice(t, location);
+  if (price != null) parts.push(`€${price}`);
   return parts.join(" · ") || "Standard";
 }
 
@@ -412,42 +413,45 @@ function TierItems({
   tiers,
   selectedId,
   onSelect,
+  location = "",
 }: {
   tiers: Tier[];
   selectedId: string;
   onSelect: (t: Tier) => void;
+  location?: DashboardLocation | "";
 }) {
   return (
     <div className="p-3">
-      {tiers.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => onSelect(t)}
-          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-        >
-          <div className="flex flex-col gap-0.5">
-            <span className="text-petroleum-700 font-medium">
-              {t.label ?? "Standard"}
-            </span>
-            {(t.duration_minutes != null || t.price_eur != null) && (
-              <span className="text-petroleum-400 text-xs">
-                {[
-                  t.duration_minutes != null
-                    ? `${t.duration_minutes} min`
-                    : null,
-                  t.price_eur != null ? `€${t.price_eur}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+      {tiers.map((t) => {
+        const price = resolvePrice(t, location);
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onSelect(t)}
+            className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
+          >
+            <div className="flex flex-col gap-0.5">
+              <span className="text-petroleum-700 font-medium">
+                {t.label ?? "Standard"}
               </span>
+              {(t.duration_minutes != null || price != null) && (
+                <span className="text-petroleum-400 text-xs">
+                  {[
+                    t.duration_minutes != null ? `${t.duration_minutes} min` : null,
+                    price != null ? `€${price}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
+            </div>
+            {selectedId === t.id && (
+              <Check className="text-petroleum-700 shrink-0" size={14} />
             )}
-          </div>
-          {selectedId === t.id && (
-            <Check className="text-petroleum-700 shrink-0" size={14} />
-          )}
-        </button>
-      ))}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -456,10 +460,12 @@ function TierSelect({
   tiers,
   selectedId,
   onSelect,
+  location = "",
 }: {
   tiers: Tier[];
   selectedId: string;
   onSelect: (t: Tier) => void;
+  location?: DashboardLocation | "";
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
@@ -498,7 +504,7 @@ function TierSelect({
         <div className="flex flex-1 flex-col gap-1">
           <p className="text-petroleum-400 text-xs">Duration & Price</p>
           <p className="text-petroleum-700 font-medium">
-            {tierLabel(tiers[0]!)}
+            {tierLabel(tiers[0]!, location)}
           </p>
         </div>
         <Check className="text-petroleum-100 shrink-0" size={16} />
@@ -523,7 +529,7 @@ function TierSelect({
           <div className="flex flex-1 flex-col gap-1">
             <p className="text-petroleum-400 text-xs">Duration & Price</p>
             <p className="text-petroleum-700 font-medium">
-              {tierLabel(selected)}
+              {tierLabel(selected, location)}
             </p>
           </div>
         ) : (
@@ -550,7 +556,7 @@ function TierSelect({
             style={dropdownStyle}
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
           >
-            <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} />
+            <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} location={location} />
           </div>,
           document.body,
         )}
@@ -572,7 +578,7 @@ function TierSelect({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} />
+              <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} location={location} />
             </div>
           </div>,
           document.body,
@@ -1724,6 +1730,7 @@ export default function EditBookingPage() {
                 <TierSelect
                   tiers={tiers}
                   selectedId={tierId}
+                  location={location}
                   onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
                 />
               )}
