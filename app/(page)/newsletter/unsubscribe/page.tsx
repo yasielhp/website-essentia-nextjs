@@ -28,8 +28,8 @@ function UnsubscribeContent() {
             Unsubscribed.
           </h1>
           <p className="text-petroleum-400 text-sm leading-relaxed">
-            You&apos;ve been removed from our newsletter. You won&apos;t
-            receive further emails from Essentia.
+            You&apos;ve been removed from our newsletter. You won&apos;t receive
+            further emails from Essentia.
           </p>
           <Link
             href="/"

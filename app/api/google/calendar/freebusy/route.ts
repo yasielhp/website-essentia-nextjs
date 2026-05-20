@@ -39,7 +39,12 @@ export async function GET(request: NextRequest) {
     const serviceToken = await getValidAccessToken(serviceId);
     if (serviceToken) {
       hasCalendar = true;
-      const busy = await getFreeBusy(serviceToken, "primary", queryDate, timeMax);
+      const busy = await getFreeBusy(
+        serviceToken,
+        "primary",
+        queryDate,
+        timeMax,
+      );
       allBusy.push(...busy);
     }
 
@@ -51,7 +56,10 @@ export async function GET(request: NextRequest) {
       .not("google_access_token", "is", null);
 
     const assignedStaff = (
-      (staffRows ?? []) as { staff_id: string; google_access_token: string | null }[]
+      (staffRows ?? []) as {
+        staff_id: string;
+        google_access_token: string | null;
+      }[]
     ).filter((r) => !!r.google_access_token);
 
     if (assignedStaff.length > 0) {
@@ -77,12 +85,19 @@ export async function GET(request: NextRequest) {
         .limit(5);
 
       await Promise.all(
-        ((allConfigs ?? []) as { service_id: string }[]).map(async ({ service_id }) => {
-          const token = await getValidAccessToken(service_id);
-          if (!token) return;
-          const busy = await getFreeBusy(token, "primary", queryDate, timeMax);
-          allBusy.push(...busy);
-        }),
+        ((allConfigs ?? []) as { service_id: string }[]).map(
+          async ({ service_id }) => {
+            const token = await getValidAccessToken(service_id);
+            if (!token) return;
+            const busy = await getFreeBusy(
+              token,
+              "primary",
+              queryDate,
+              timeMax,
+            );
+            allBusy.push(...busy);
+          },
+        ),
       );
     }
 

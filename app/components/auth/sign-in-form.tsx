@@ -7,7 +7,6 @@ import { insforge } from "@/lib/insforge";
 import { signInSchema, parseErrors } from "@/lib/schemas";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
-import { OAuthButton } from "./oauth-button";
 import { useAuth } from "@/components/auth-provider";
 
 export default function SignInForm() {
@@ -151,16 +150,6 @@ export default function SignInForm() {
           {loading ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-      <div className="flex items-center gap-3">
-        <div className="bg-sand-200 h-px flex-1" />
-        <span className="text-petroleum-400 text-xs tracking-widest uppercase">
-          or
-        </span>
-        <div className="bg-sand-200 h-px flex-1" />
-      </div>
-
-      <OAuthButton provider="google" redirectTo="/booking" />
     </div>
   );
 }

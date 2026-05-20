@@ -70,8 +70,6 @@ type LocationAddress = {
 
 // ─── Constants ────────────────────────────────────────────────
 
-
-
 const TENERIFE_MUNICIPALITIES = [
   "Adeje",
   "Arona",
@@ -1039,29 +1037,30 @@ export default function NewBookingPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
-    if (!selectedDate || !serviceId) {
-      setBusyIntervals([]);
-      return;
-    }
+    if (!selectedDate || !serviceId) return;
     let cancelled = false;
-    setLoadingSlots(true);
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
-    fetch(
-      `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
-    )
-      .then((r) => r.json())
-      .then((json: { busy?: { start: string; end: string }[] }) => {
+    async function fetchBusy() {
+      setLoadingSlots(true);
+      try {
+        const r = await fetch(
+          `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
+        );
+        const json = (await r.json()) as {
+          busy?: { start: string; end: string }[];
+        };
         if (!cancelled) {
           setBusyIntervals(json.busy ?? []);
           setLoadingSlots(false);
         }
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setBusyIntervals([]);
           setLoadingSlots(false);
         }
-      });
+      }
+    }
+    void fetchBusy();
     return () => {
       cancelled = true;
     };

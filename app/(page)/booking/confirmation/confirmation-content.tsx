@@ -46,7 +46,7 @@ export function ConfirmationContent() {
 
         {/* Detail card */}
         {hasDetails && (
-          <div className="border-sand-200 mb-6 divide-y divide-sand-100 rounded-2xl border bg-white">
+          <div className="border-sand-200 divide-sand-100 mb-6 divide-y rounded-2xl border bg-white">
             {service && (
               <div className="flex items-center justify-between px-5 py-3.5">
                 <span className="text-petroleum-400 text-sm">Service</span>
@@ -79,7 +79,8 @@ export function ConfirmationContent() {
           Please keep an eye on your email
           {phone && (
             <>
-              {" "}and phone{" "}
+              {" "}
+              and phone{" "}
               <span className="text-petroleum-600 font-medium">{phone}</span>
             </>
           )}

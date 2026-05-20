@@ -308,7 +308,9 @@ function BookingStepRenderer({
           service={selectedService}
           serviceId={selectedService.id}
           durationMinutes={
-            selectedDuration ? parseInt(selectedDuration, 10) || undefined : undefined
+            selectedDuration
+              ? parseInt(selectedDuration, 10) || undefined
+              : undefined
           }
           selectedDate={selectedDate}
           selectedTime={selectedTime}

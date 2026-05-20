@@ -6,7 +6,6 @@ import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
-import { OAuthButton } from "./oauth-button";
 
 async function createProfile(userId: string, fullName: string, email: string) {
   await insforge.database
@@ -311,16 +310,6 @@ export default function SignUpForm() {
           {loading ? "Creating account…" : "Create account"}
         </Button>
       </form>
-
-      <div className="flex items-center gap-3">
-        <div className="bg-sand-200 h-px flex-1" />
-        <span className="text-petroleum-400 text-xs tracking-widest uppercase">
-          or
-        </span>
-        <div className="bg-sand-200 h-px flex-1" />
-      </div>
-
-      <OAuthButton provider="google" redirectTo="/booking" />
 
       <p className="text-petroleum-400 text-center text-sm">
         Already have an account?{" "}

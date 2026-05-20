@@ -182,7 +182,12 @@ export function DateTimeStep({
     for (const day of days) {
       if (!day || !isAvailableDay(day)) continue;
       const slots = durationMinutes
-        ? getTimeSlotsForDashboard(day, service.category, durationMinutes, monthBusy)
+        ? getTimeSlotsForDashboard(
+            day,
+            service.category,
+            durationMinutes,
+            monthBusy,
+          )
         : getTimeSlots(day, service, monthBusy);
       if (slots.length > 0 && slots.every((s) => s.booked)) {
         blocked.add(localDateStr(day));
@@ -238,7 +243,12 @@ export function DateTimeStep({
 
   const slots = selectedDate
     ? durationMinutes
-      ? getTimeSlotsForDashboard(selectedDate, service.category, durationMinutes, busyIntervals)
+      ? getTimeSlotsForDashboard(
+          selectedDate,
+          service.category,
+          durationMinutes,
+          busyIntervals,
+        )
       : getTimeSlots(selectedDate, service, busyIntervals)
     : [];
 
