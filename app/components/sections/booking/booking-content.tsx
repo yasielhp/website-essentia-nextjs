@@ -3,6 +3,7 @@
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { updateDraftBookingMeta } from "@/actions/booking-draft";
 import { Button } from "@components/ui/button";
 import {
   bookableServices,
@@ -509,18 +510,14 @@ function BookingContentInner() {
 
     if (newBookingId) {
       setBookingId(newBookingId as string);
-      await insforge.database
-        .from("bookings")
-        .update({
-          tier_id: selectedTierId ?? null,
-          price_eur: selectedTierPrice ?? null,
-          location: "centro",
-          ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
-          ...(user?.id
-            ? { created_by_user_id: user.id, created_by_role: "client" }
-            : { created_by_role: "anonymous" }),
-        })
-        .eq("id", newBookingId as string);
+      await updateDraftBookingMeta(
+        newBookingId as string,
+        selectedTierId,
+        selectedTierPrice,
+        user?.id ?? null,
+        user?.id ? "client" : "anonymous",
+        details.notes?.trim() || null,
+      );
     }
 
     setChecking(false);
