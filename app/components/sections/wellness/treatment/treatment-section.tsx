@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
 import { manualTherapyTreatments } from "@/data/services-data";
@@ -129,54 +130,40 @@ function ManualTherapiesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {manualServices.map((service) => (
-            <div
+            <Link
               key={service.id}
+              href={`/wellness/manual-therapies/${service.id}`}
               data-card
-              className="border-sand-200 flex flex-col overflow-hidden rounded-2xl border bg-white"
+              className="group relative block h-80 cursor-pointer overflow-hidden rounded-2xl"
             >
-              <div className="relative h-44 w-full shrink-0">
-                <Image
-                  src={service.image}
-                  alt={service.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
-                />
+              <Image
+                src={service.image}
+                alt={service.title}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.35), transparent)",
+                }}
+              />
+              <span className="absolute top-4 right-4 text-xs text-white/60">
+                {service.durations.join(" · ")}
+              </span>
+              <div className="absolute right-0 bottom-0 left-0 p-5">
+                <h3 className="font-body text-lg text-white">
+                  {service.title}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-white/70">
+                  {service.description}
+                </p>
               </div>
-              <div className="flex flex-1 flex-col gap-3 p-5">
-                <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <h3 className="text-petroleum-700 font-semibold">
-                      {service.title}
-                    </h3>
-                    <span className="text-petroleum-400 text-xs">
-                      · {service.durations.join(", ")}
-                    </span>
-                  </div>
-                  <p className="text-petroleum-500 line-clamp-2 text-sm leading-relaxed">
-                    {service.description}
-                  </p>
-                </div>
-                <div className="mt-auto flex items-center justify-end gap-2 pt-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    href={`/wellness/manual-therapies/${service.id}`}
-                  >
-                    Learn more
-                  </Button>
-                  <Button
-                    variant="solid"
-                    size="sm"
-                    href={`/booking?service=${service.id}`}
-                  >
-                    Reserve
-                  </Button>
-                </div>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
