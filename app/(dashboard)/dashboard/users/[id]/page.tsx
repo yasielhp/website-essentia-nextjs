@@ -211,14 +211,6 @@ export default function EditUserPage() {
     });
   }
 
-  function setCalendarEmail(serviceId: string, value: string) {
-    setAssignments((prev) =>
-      prev.map((a) =>
-        a.service_id === serviceId ? { ...a, google_calendar_email: value } : a,
-      ),
-    );
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "SET_ERROR", msg: null });

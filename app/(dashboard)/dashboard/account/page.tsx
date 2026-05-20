@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { insforge } from "@/lib/insforge";
@@ -158,27 +158,34 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
   const searchParams = useSearchParams();
   const [services, setServices] = useState<ServiceCalConfig[]>([]);
   const [loadingCal, setLoadingCal] = useState(true);
-  const [justConnectedServiceId, setJustConnectedServiceId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const connected = searchParams.get("calendar_connected");
-    const svcId = searchParams.get("service_id");
-    if (connected === "1" && svcId) setJustConnectedServiceId(svcId);
-  }, [searchParams]);
+  const justConnectedServiceId =
+    searchParams.get("calendar_connected") === "1"
+      ? searchParams.get("service_id")
+      : null;
 
   useEffect(() => {
     void (async () => {
       const [configRes, svcRes] = await Promise.all([
         fetch(`/api/google/calendar/user-config?staff_id=${userId}`).then(
-          (r) => r.json() as Promise<{ configs: { service_id: string; google_calendar_email: string | null }[] }>,
+          (r) =>
+            r.json() as Promise<{
+              configs: {
+                service_id: string;
+                google_calendar_email: string | null;
+              }[];
+            }>,
         ),
         fetch(`/api/google/calendar/staff-services?staff_id=${userId}`).then(
-          (r) => r.json() as Promise<{ services: { id: string; title: string }[] }>,
+          (r) =>
+            r.json() as Promise<{ services: { id: string; title: string }[] }>,
         ),
       ]);
 
       const configMap = new Map(
-        (configRes.configs ?? []).map((c) => [c.service_id, c.google_calendar_email]),
+        (configRes.configs ?? []).map((c) => [
+          c.service_id,
+          c.google_calendar_email,
+        ]),
       );
 
       setServices(
