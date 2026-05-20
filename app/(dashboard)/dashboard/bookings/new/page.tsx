@@ -1100,7 +1100,7 @@ export default function NewBookingPage() {
 
     dispatchAsync({ type: "SUBMIT_START" });
 
-    const { error: insertError } = await insforge.database
+    const { data: inserted, error: insertError } = await insforge.database
       .from("bookings")
       .insert([
         {
@@ -1123,7 +1123,9 @@ export default function NewBookingPage() {
           ...(user?.id ? { created_by_user_id: user.id } : {}),
           ...(role ? { created_by_role: role as string } : {}),
         },
-      ]);
+      ])
+      .select("id")
+      .single();
 
     dispatchAsync({ type: "SUBMIT_END" });
 
@@ -1135,6 +1137,24 @@ export default function NewBookingPage() {
           "Failed to create booking.",
       });
       return;
+    }
+
+    // Create Google Calendar event (non-blocking)
+    if (dateStr && selectedTime) {
+      const bookingId = (inserted as { id: string } | null)?.id ?? "";
+      const clientName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+      void fetch("/api/google/calendar/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service_id: serviceId,
+          summary: `${selectedService?.title ?? serviceId} — ${clientName}`,
+          description: `Booking #${bookingId}\nPhone: ${phone.trim()}\nEmail: ${email.trim()}`,
+          date: dateStr,
+          time: selectedTime,
+          duration_minutes: selectedTier?.duration_minutes ?? 60,
+        }),
+      });
     }
 
     push("/dashboard/bookings");
