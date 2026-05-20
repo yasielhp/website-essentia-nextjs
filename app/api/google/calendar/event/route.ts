@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     date,
     time,
     duration_minutes,
-    timezone = "Europe/Madrid",
+    timezone = "Atlantic/Canary",
   } = body;
 
   if (!service_id || !summary || !date || !time || !duration_minutes) {

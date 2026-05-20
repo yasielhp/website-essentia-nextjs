@@ -113,11 +113,11 @@ export async function POST(request: NextRequest) {
           summary,
           start: {
             dateTime: `${booking.date}T${booking.time}:00`,
-            timeZone: "Europe/Madrid",
+            timeZone: "Atlantic/Canary",
           },
           end: {
             dateTime: `${booking.date}T${endHour}:${endMinute}:00`,
-            timeZone: "Europe/Madrid",
+            timeZone: "Atlantic/Canary",
           },
         });
 

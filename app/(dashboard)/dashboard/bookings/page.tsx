@@ -13,6 +13,8 @@ type Booking = {
   id: string;
   service_title: string | null;
   duration: string | null;
+  tier_id: string | null;
+  service_tiers: { label: string | null } | null;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
@@ -575,7 +577,7 @@ export default function BookingsPage() {
     let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, duration, first_name, last_name, email, phone, date, time, status, location, created_at, created_by_role, created_by_user_id",
+        "id, service_title, duration, tier_id, service_tiers(label), first_name, last_name, email, phone, date, time, status, location, created_at, created_by_role, created_by_user_id",
         { count: "exact" },
       );
 
@@ -770,9 +772,12 @@ export default function BookingsPage() {
                   <p className="text-petroleum-500 text-sm">
                     {b.service_title ?? "—"}
                   </p>
-                  {b.duration && (
+                  {(b.service_tiers?.label || b.duration) && (
                     <span className="text-petroleum-400 text-xs">
-                      · {b.duration}
+                      ·{" "}
+                      {[b.service_tiers?.label, b.duration]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                   )}
                 </div>
@@ -910,9 +915,11 @@ export default function BookingsPage() {
                       <p className="text-petroleum-700 font-medium">
                         {b.service_title ?? "—"}
                       </p>
-                      {b.duration && (
+                      {(b.service_tiers?.label || b.duration) && (
                         <p className="text-petroleum-400 text-xs">
-                          {b.duration}
+                          {[b.service_tiers?.label, b.duration]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </p>
                       )}
                     </td>
