@@ -10,6 +10,7 @@ type Tier = {
   label: string | null;
   duration_minutes: number | null;
   price_eur: number | null;
+  price_center_eur: number | null;
 };
 
 export type TierSelection = {
@@ -235,7 +236,7 @@ export function DurationStep({
     async function load() {
       const { data } = await insforge.database
         .from("service_tiers")
-        .select("id, label, duration_minutes, price_eur")
+        .select("id, label, duration_minutes, price_eur, price_center_eur")
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
@@ -247,7 +248,7 @@ export function DurationStep({
           tierId: t.id,
           duration:
             t.duration_minutes != null ? `${t.duration_minutes} min` : null,
-          price: t.price_eur,
+          price: t.price_center_eur ?? t.price_eur,
         });
       }
     }
@@ -297,7 +298,7 @@ export function DurationStep({
               tierId: t.id,
               duration:
                 t.duration_minutes != null ? `${t.duration_minutes} min` : null,
-              price: t.price_eur,
+              price: t.price_center_eur ?? t.price_eur,
             })
           }
         />

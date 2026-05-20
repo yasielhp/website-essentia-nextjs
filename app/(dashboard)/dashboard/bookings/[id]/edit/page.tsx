@@ -35,7 +35,19 @@ type Tier = {
   label: string | null;
   duration_minutes: number | null;
   price_eur: number | null;
+  price_center_eur: number | null;
+  price_suite_eur: number | null;
 };
+
+function resolvePrice(
+  tier: Tier,
+  location: DashboardLocation | "",
+): number | null {
+  if (location === "habitacion") {
+    return tier.price_suite_eur ?? tier.price_center_eur ?? tier.price_eur;
+  }
+  return tier.price_center_eur ?? tier.price_eur;
+}
 type DashboardLocation = "centro" | "habitacion" | "domicilio";
 type LocationAddress = {
   street: string;
@@ -1117,7 +1129,9 @@ export default function EditBookingPage() {
       dispatchAsync({ type: "TIERS_LOADING" });
       const { data } = await insforge.database
         .from("service_tiers")
-        .select("id, label, duration_minutes, price_eur")
+        .select(
+          "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur",
+        )
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
@@ -1181,7 +1195,7 @@ export default function EditBookingPage() {
         service_id: serviceId,
         service_title: selectedService?.title ?? serviceId,
         tier_id: tierId || null,
-        price_eur: selectedTier?.price_eur ?? null,
+        price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
         duration: durationText,
         date: dateStr,
         time: selectedTime || null,
