@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
 
   if (!staffId || !serviceId || !returnTo) {
     return NextResponse.json(
-      { error: "staff_id, service_id and return_to query parameters are required" },
+      {
+        error:
+          "staff_id, service_id and return_to query parameters are required",
+      },
       { status: 400 },
     );
   }

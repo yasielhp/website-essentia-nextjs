@@ -38,14 +38,23 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("[google/calendar/user-config] db error:", error);
-      return NextResponse.json({ error: "Failed to fetch configs" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to fetch configs" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
-      configs: (data ?? []) as { service_id: string; google_calendar_email: string | null }[],
+      configs: (data ?? []) as {
+        service_id: string;
+        google_calendar_email: string | null;
+      }[],
     });
   } catch (err) {
     console.error("[google/calendar/user-config] error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

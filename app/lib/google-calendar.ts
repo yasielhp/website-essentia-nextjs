@@ -140,7 +140,7 @@ async function listCalendarIds(accessToken: string): Promise<string[]> {
 export async function getFreeBusy(
   accessToken: string,
   _calendarId: string, // kept for backwards-compat, now ignored — all calendars queried
-  date: string,        // "YYYY-MM-DD" start date in LOCAL time
+  date: string, // "YYYY-MM-DD" start date in LOCAL time
   explicitTimeMax?: string, // optional override for multi-day range
 ): Promise<{ start: string; end: string }[]> {
   const timeMin = `${date}T00:00:00Z`;
@@ -305,7 +305,9 @@ export async function getStaffServiceAccessToken(
 
   try {
     const refreshed = await refreshGoogleToken(data.google_refresh_token);
-    const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+    const newExpiresAt = new Date(
+      Date.now() + refreshed.expires_in * 1000,
+    ).toISOString();
 
     await adminClient.database
       .from("staff_services")

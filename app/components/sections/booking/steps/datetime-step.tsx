@@ -81,7 +81,8 @@ function CalendarView({
           const cellKey = day ? localDateStr(day) : `empty-${i}`;
           if (!day) return <div key={cellKey} />;
           const baseAvailable = isAvailableDay(day);
-          const isBlocked = baseAvailable && fullyBlockedDates.has(localDateStr(day));
+          const isBlocked =
+            baseAvailable && fullyBlockedDates.has(localDateStr(day));
           const available = baseAvailable && !isBlocked;
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
@@ -165,7 +166,9 @@ export function DateTimeStep({
       }
     }
     void fetchMonth();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId, viewYear, viewMonth]);
 
   // Compute which available days in this month are fully booked
@@ -215,13 +218,17 @@ export function DateTimeStep({
   };
 
   const handlePrevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-    else setViewMonth((m) => m - 1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else setViewMonth((m) => m - 1);
   };
 
   const handleNextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-    else setViewMonth((m) => m + 1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else setViewMonth((m) => m + 1);
   };
 
   const slots = selectedDate
@@ -268,11 +275,14 @@ export function DateTimeStep({
         {loadingSlots ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-sand-100 h-10 animate-pulse rounded-xl" />
+              <div
+                key={i}
+                className="bg-sand-100 h-10 animate-pulse rounded-xl"
+              />
             ))}
           </div>
         ) : availableSlots.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-8 text-center">
+          <div className="border-sand-200 bg-sand-50 flex flex-col items-center gap-3 rounded-2xl border px-4 py-8 text-center">
             <p className="text-petroleum-500 text-sm font-medium">
               No availability for this day
             </p>

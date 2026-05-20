@@ -18,11 +18,13 @@ export async function GET(request: NextRequest) {
   // ── Determine flow ────────────────────────────────────────────────────────────
   const isStaffSvcFlow = stateParam?.startsWith("staffsvc__") ?? false;
   // Keep legacy user__ check in case old links are still in flight
-  const isUserFlow = !isStaffSvcFlow && (stateParam?.startsWith("user__") ?? false);
+  const isUserFlow =
+    !isStaffSvcFlow && (stateParam?.startsWith("user__") ?? false);
 
-  const errorRedirectBase = isStaffSvcFlow || isUserFlow
-    ? "/dashboard/account"
-    : "/dashboard/settings?tab=services";
+  const errorRedirectBase =
+    isStaffSvcFlow || isUserFlow
+      ? "/dashboard/account"
+      : "/dashboard/settings?tab=services";
 
   if (errorParam) {
     return NextResponse.redirect(
@@ -73,7 +75,10 @@ export async function GET(request: NextRequest) {
 
       if (!staffId || !serviceId) {
         return NextResponse.redirect(
-          new URL(`${errorRedirectBase}?error=invalid_state`, process.env.NEXT_PUBLIC_APP_URL),
+          new URL(
+            `${errorRedirectBase}?error=invalid_state`,
+            process.env.NEXT_PUBLIC_APP_URL,
+          ),
         );
       }
 
@@ -89,7 +94,10 @@ export async function GET(request: NextRequest) {
         .eq("service_id", serviceId);
 
       return NextResponse.redirect(
-        new URL(`${returnPath}?calendar_connected=1`, process.env.NEXT_PUBLIC_APP_URL),
+        new URL(
+          `${returnPath}?calendar_connected=1`,
+          process.env.NEXT_PUBLIC_APP_URL,
+        ),
       );
     } else if (isUserFlow) {
       // ── Legacy user-level flow (profiles table) ───────────────────────────────
@@ -100,7 +108,10 @@ export async function GET(request: NextRequest) {
 
       if (!userId) {
         return NextResponse.redirect(
-          new URL(`${errorRedirectBase}?error=invalid_state`, process.env.NEXT_PUBLIC_APP_URL),
+          new URL(
+            `${errorRedirectBase}?error=invalid_state`,
+            process.env.NEXT_PUBLIC_APP_URL,
+          ),
         );
       }
 
@@ -115,7 +126,10 @@ export async function GET(request: NextRequest) {
         .eq("id", userId);
 
       return NextResponse.redirect(
-        new URL(`${returnPath}?calendar_connected=1`, process.env.NEXT_PUBLIC_APP_URL),
+        new URL(
+          `${returnPath}?calendar_connected=1`,
+          process.env.NEXT_PUBLIC_APP_URL,
+        ),
       );
     } else {
       // ── Service-level flow: store tokens in service_configs (unchanged) ───────

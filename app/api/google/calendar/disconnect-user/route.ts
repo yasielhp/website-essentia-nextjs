@@ -42,12 +42,18 @@ export async function DELETE(request: NextRequest) {
 
     if (error) {
       console.error("[google/calendar/disconnect-user] db error:", error);
-      return NextResponse.json({ error: "Failed to disconnect" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to disconnect" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[google/calendar/disconnect-user] error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

@@ -32,14 +32,21 @@ export async function GET(request: NextRequest) {
     const adminClient = getAdminClient();
 
     // 1. Get service IDs assigned to this staff member
-    const { data: assignedData, error: assignedError } = await adminClient.database
-      .from("staff_services")
-      .select("service_id")
-      .eq("staff_id", staffId);
+    const { data: assignedData, error: assignedError } =
+      await adminClient.database
+        .from("staff_services")
+        .select("service_id")
+        .eq("staff_id", staffId);
 
     if (assignedError) {
-      console.error("[google/calendar/staff-services] staff_services error:", assignedError);
-      return NextResponse.json({ error: "Failed to fetch assignments" }, { status: 500 });
+      console.error(
+        "[google/calendar/staff-services] staff_services error:",
+        assignedError,
+      );
+      return NextResponse.json(
+        { error: "Failed to fetch assignments" },
+        { status: 500 },
+      );
     }
 
     const serviceIds = ((assignedData ?? []) as { service_id: string }[]).map(
@@ -57,8 +64,14 @@ export async function GET(request: NextRequest) {
       .in("id", serviceIds);
 
     if (svcError) {
-      console.error("[google/calendar/staff-services] service_settings error:", svcError);
-      return NextResponse.json({ error: "Failed to fetch service titles" }, { status: 500 });
+      console.error(
+        "[google/calendar/staff-services] service_settings error:",
+        svcError,
+      );
+      return NextResponse.json(
+        { error: "Failed to fetch service titles" },
+        { status: 500 },
+      );
     }
 
     const services = ((svcData ?? []) as { id: string; title: string }[]).map(
@@ -68,6 +81,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ services });
   } catch (err) {
     console.error("[google/calendar/staff-services] error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
