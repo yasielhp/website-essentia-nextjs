@@ -4,7 +4,6 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
 import { bookableServices } from "@/data/services-data";
@@ -161,24 +160,21 @@ function ManualTherapiesSection() {
                     {service.description}
                   </p>
                 </div>
-                <div className="mt-auto flex items-center justify-between pt-1">
-                  <span className="text-petroleum-700 text-sm font-medium">
-                    {service.priceCenter ?? service.price}
-                  </span>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/wellness/manual-therapies/${service.id}`}
-                      className="border-sand-300 text-petroleum-500 hover:border-petroleum-400 hover:text-petroleum-700 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
-                    >
-                      Read more
-                    </Link>
-                    <Link
-                      href={`/booking?service=${service.id}`}
-                      className="bg-petroleum-700 hover:bg-petroleum-800 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors"
-                    >
-                      Book
-                    </Link>
-                  </div>
+                <div className="mt-auto flex items-center justify-end gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/wellness/manual-therapies/${service.id}`}
+                  >
+                    Learn more
+                  </Button>
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    href={`/booking?service=${service.id}`}
+                  >
+                    Reserve
+                  </Button>
                 </div>
               </div>
             </div>
