@@ -3,22 +3,26 @@
 import { useState, useEffect, useRef, useReducer } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Check,
+  X,
   Building2,
   Home,
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { bookableServices } from "@/data/services-data";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
+import { TIME_SLOTS } from "@/constants/booking";
 import {
   MONTH_NAMES,
   DAY_NAMES,
@@ -29,7 +33,14 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────
 
-type Service = { id: string; title: string };
+type Service = {
+  id: string;
+  title: string;
+  image?: string;
+  description?: string;
+  category?: string;
+};
+
 type Tier = {
   id: string;
   label: string | null;
@@ -48,7 +59,9 @@ function resolvePrice(
   }
   return tier.price_center_eur ?? tier.price_eur;
 }
+
 type DashboardLocation = "centro" | "habitacion" | "domicilio";
+
 type LocationAddress = {
   street: string;
   building: string;
@@ -56,29 +69,9 @@ type LocationAddress = {
   municipality: string;
 };
 
-// ─── Constants ────────────────────────────────────────────────
+type BookingStatus = "pending" | "confirmed" | "cancelled";
 
-const TIME_SLOTS = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-];
+// ─── Constants ────────────────────────────────────────────────
 
 const TENERIFE_MUNICIPALITIES = [
   "Adeje",
@@ -133,8 +126,6 @@ const EMPTY_ADDRESS: LocationAddress = {
   municipality: "",
 };
 
-type BookingStatus = "pending" | "confirmed" | "cancelled";
-
 const STATUSES: {
   id: BookingStatus;
   label: string;
@@ -171,6 +162,12 @@ function tierLabel(t: Tier): string {
   return parts.join(" · ") || "Standard";
 }
 
+const DROPDOWN_MAX_H = 320;
+
+const isMobile = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
 function useDropdownPortal(isOpen: boolean) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -179,11 +176,16 @@ function useDropdownPortal(isOpen: boolean) {
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const openUpward = spaceBelow < DROPDOWN_MAX_H && rect.top > DROPDOWN_MAX_H;
     setDropdownStyle({
       position: "fixed",
-      top: rect.bottom + 8,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + 8 }
+        : { top: rect.bottom + 8 }),
       left: rect.left,
       width: rect.width,
+      maxHeight: openUpward ? rect.top - 16 : spaceBelow,
     });
   };
 
@@ -200,6 +202,71 @@ function useDropdownPortal(isOpen: boolean) {
 
 // ─── Service Select ───────────────────────────────────────────
 
+function ServiceItems({
+  services,
+  selectedId,
+  onSelect,
+  imageClass = "size-12",
+  imageSizes = "48px",
+}: {
+  services: Service[];
+  selectedId: string | null;
+  onSelect: (s: Service) => void;
+  imageClass?: string;
+  imageSizes?: string;
+}) {
+  const wellness = services.filter((s) => s.category === "wellness" || !s.category);
+  const medicine = services.filter((s) => s.category === "medicine");
+
+  const row = (s: Service) => (
+    <button
+      key={s.id}
+      type="button"
+      onClick={() => onSelect(s)}
+      className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
+    >
+      {s.image ? (
+        <div className={`relative ${imageClass} shrink-0 overflow-hidden rounded-lg`}>
+          <Image src={s.image} alt={s.title} fill sizes={imageSizes} className="object-cover" />
+        </div>
+      ) : (
+        <div className={`bg-petroleum-100 flex ${imageClass} shrink-0 items-center justify-center rounded-lg`}>
+          <span className="text-petroleum-700 text-sm font-bold">{s.title[0]?.toUpperCase()}</span>
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+        <p className="text-petroleum-700 text-sm font-medium">{s.title}</p>
+        {s.description && (
+          <p className="text-petroleum-400 line-clamp-1 text-xs">{s.description}</p>
+        )}
+        {s.category && (
+          <p className="text-petroleum-500 text-xs capitalize">{s.category}</p>
+        )}
+      </div>
+      {selectedId === s.id && (
+        <Check className="text-petroleum-700 shrink-0" size={14} />
+      )}
+    </button>
+  );
+
+  return (
+    <div className="p-3">
+      {wellness.length > 0 && (
+        <>
+          <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">Wellness</p>
+          {wellness.map(row)}
+        </>
+      )}
+      {medicine.length > 0 && (
+        <>
+          <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">Medicine</p>
+          {medicine.map(row)}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ServiceSelect({
   services,
   selected,
@@ -213,8 +280,8 @@ function ServiceSelect({
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
 
   useEffect(() => {
-    if (!isOpen) return;
-    const close = (e: MouseEvent) => {
+    if (!isOpen || isMobile()) return;
+    const handleClose = (e: MouseEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
         dropdownRef.current?.contains(e.target as Node)
@@ -222,9 +289,22 @@ function ServiceSelect({
         return;
       setIsOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", handleClose);
+    return () => document.removeEventListener("mousedown", handleClose);
   }, [isOpen, triggerRef, dropdownRef]);
+
+  useEffect(() => {
+    if (!isOpen || !isMobile()) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  const handleSelect = (s: Service) => {
+    onSelect(s);
+    setIsOpen(false);
+  };
 
   return (
     <div>
@@ -241,18 +321,25 @@ function ServiceSelect({
       >
         {selected ? (
           <>
-            <div className="animate-fade-in-up bg-petroleum-100 flex size-14 shrink-0 items-center justify-center rounded-xl">
-              <span className="text-petroleum-700 text-xl font-bold">
-                {selected.title[0]?.toUpperCase()}
-              </span>
+            {selected.image ? (
+              <div className="animate-fade-in-up relative size-16 shrink-0 overflow-hidden rounded-xl">
+                <Image src={selected.image} alt={selected.title} fill sizes="64px" className="object-cover" />
+              </div>
+            ) : (
+              <div className="animate-fade-in-up bg-petroleum-100 flex size-16 shrink-0 items-center justify-center rounded-xl">
+                <span className="text-petroleum-700 text-xl font-bold">{selected.title[0]?.toUpperCase()}</span>
+              </div>
+            )}
+            <div className="flex flex-1 flex-col gap-1 overflow-hidden">
+              <p className="text-petroleum-700 font-medium">{selected.title}</p>
+              {selected.description && (
+                <p className="text-petroleum-400 line-clamp-1 text-sm">{selected.description}</p>
+              )}
             </div>
-            <p className="text-petroleum-700 flex-1 font-medium">
-              {selected.title}
-            </p>
           </>
         ) : (
           <>
-            <div className="bg-sand-200 flex size-14 shrink-0 items-center justify-center rounded-xl">
+            <div className="bg-sand-200 flex size-16 shrink-0 items-center justify-center rounded-xl">
               <span className="text-petroleum-100 text-lg">+</span>
             </div>
             <p className="text-petroleum-400 flex-1 text-sm">
@@ -269,37 +356,48 @@ function ServiceSelect({
         />
       </button>
 
+      {/* Desktop: dropdown portal */}
       {isOpen &&
+        !isMobile() &&
         createPortal(
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] max-h-72 overflow-y-auto rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
           >
-            <div className="p-3">
-              {services.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(s);
-                    setIsOpen(false);
-                  }}
-                  className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
-                >
-                  <div className="bg-petroleum-100 flex size-10 shrink-0 items-center justify-center rounded-lg">
-                    <span className="text-petroleum-700 text-sm font-bold">
-                      {s.title[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-petroleum-700 flex-1 text-sm font-medium">
-                    {s.title}
-                  </p>
-                  {selected?.id === s.id && (
-                    <Check className="text-petroleum-700 shrink-0" size={14} />
-                  )}
-                </button>
-              ))}
+            <ServiceItems
+              services={services}
+              selectedId={selected?.id ?? null}
+              onSelect={handleSelect}
+            />
+          </div>,
+          document.body,
+        )}
+
+      {/* Mobile: full-screen modal */}
+      {isOpen &&
+        isMobile() &&
+        createPortal(
+          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
+            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
+              <h3 className="text-petroleum-700 font-medium">Select a service</h3>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-petroleum-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <ServiceItems
+                services={services}
+                selectedId={selected?.id ?? null}
+                onSelect={handleSelect}
+                imageClass="size-16"
+                imageSizes="64px"
+              />
             </div>
           </div>,
           document.body,
@@ -309,6 +407,50 @@ function ServiceSelect({
 }
 
 // ─── Tier Select ──────────────────────────────────────────────
+
+function TierItems({
+  tiers,
+  selectedId,
+  onSelect,
+}: {
+  tiers: Tier[];
+  selectedId: string;
+  onSelect: (t: Tier) => void;
+}) {
+  return (
+    <div className="p-3">
+      {tiers.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => onSelect(t)}
+          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
+        >
+          <div className="flex flex-col gap-0.5">
+            <span className="text-petroleum-700 font-medium">
+              {t.label ?? "Standard"}
+            </span>
+            {(t.duration_minutes != null || t.price_eur != null) && (
+              <span className="text-petroleum-400 text-xs">
+                {[
+                  t.duration_minutes != null
+                    ? `${t.duration_minutes} min`
+                    : null,
+                  t.price_eur != null ? `€${t.price_eur}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            )}
+          </div>
+          {selectedId === t.id && (
+            <Check className="text-petroleum-700 shrink-0" size={14} />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function TierSelect({
   tiers,
@@ -324,8 +466,8 @@ function TierSelect({
   const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
   useEffect(() => {
-    if (!isOpen) return;
-    const close = (e: MouseEvent) => {
+    if (!isOpen || isMobile()) return;
+    const handleClose = (e: MouseEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
         dropdownRef.current?.contains(e.target as Node)
@@ -333,9 +475,22 @@ function TierSelect({
         return;
       setIsOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", handleClose);
+    return () => document.removeEventListener("mousedown", handleClose);
   }, [isOpen, triggerRef, dropdownRef]);
+
+  useEffect(() => {
+    if (!isOpen || !isMobile()) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  const handleSelect = (t: Tier) => {
+    onSelect(t);
+    setIsOpen(false);
+  };
 
   if (tiers.length === 1) {
     return (
@@ -386,46 +541,38 @@ function TierSelect({
         />
       </button>
 
+      {/* Desktop: dropdown portal */}
       {isOpen &&
+        !isMobile() &&
         createPortal(
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
           >
-            <div className="p-3">
-              {tiers.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(t);
-                    setIsOpen(false);
-                  }}
-                  className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-petroleum-700 font-medium">
-                      {t.label ?? "Standard"}
-                    </span>
-                    {(t.duration_minutes != null || t.price_eur != null) && (
-                      <span className="text-petroleum-400 text-xs">
-                        {[
-                          t.duration_minutes != null
-                            ? `${t.duration_minutes} min`
-                            : null,
-                          t.price_eur != null ? `€${t.price_eur}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    )}
-                  </div>
-                  {selectedId === t.id && (
-                    <Check className="text-petroleum-700 shrink-0" size={14} />
-                  )}
-                </button>
-              ))}
+            <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} />
+          </div>,
+          document.body,
+        )}
+
+      {/* Mobile: full-screen modal */}
+      {isOpen &&
+        isMobile() &&
+        createPortal(
+          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
+            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
+              <h3 className="text-petroleum-700 font-medium">Select a session type</h3>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-petroleum-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <TierItems tiers={tiers} selectedId={selectedId} onSelect={handleSelect} />
             </div>
           </div>,
           document.body,
@@ -434,7 +581,7 @@ function TierSelect({
   );
 }
 
-// ─── Location Select ──────────────────────────────────────────
+// ─── Status Select ────────────────────────────────────────────
 
 function StatusSelect({
   selected,
@@ -449,7 +596,7 @@ function StatusSelect({
 
   useEffect(() => {
     if (!isOpen) return;
-    const close = (e: MouseEvent) => {
+    const handleClose = (e: MouseEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
         dropdownRef.current?.contains(e.target as Node)
@@ -457,8 +604,8 @@ function StatusSelect({
         return;
       setIsOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", handleClose);
+    return () => document.removeEventListener("mousedown", handleClose);
   }, [isOpen, triggerRef, dropdownRef]);
 
   return (
@@ -530,6 +677,8 @@ function StatusSelect({
   );
 }
 
+// ─── Location Select ──────────────────────────────────────────
+
 function LocationSelect({
   selected,
   onSelect,
@@ -546,7 +695,7 @@ function LocationSelect({
 
   useEffect(() => {
     if (!isOpen) return;
-    const close = (e: MouseEvent) => {
+    const handleClose = (e: MouseEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
         dropdownRef.current?.contains(e.target as Node)
@@ -554,8 +703,8 @@ function LocationSelect({
         return;
       setIsOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", handleClose);
+    return () => document.removeEventListener("mousedown", handleClose);
   }, [isOpen, triggerRef, dropdownRef]);
 
   return (
@@ -697,6 +846,7 @@ function CalendarView({
           <ChevronRight size={16} />
         </button>
       </div>
+
       <div className="grid grid-cols-7">
         {DAY_NAMES.map((d) => (
           <div
@@ -707,6 +857,7 @@ function CalendarView({
           </div>
         ))}
       </div>
+
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
           const cellKey = day ? day.toISOString().slice(0, 10) : `empty-${i}`;
@@ -999,7 +1150,13 @@ export default function EditBookingPage() {
       ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
       : LOCATIONS;
 
-  // Load services
+  const sortedServices = [...services].sort((a, b) => {
+    if (a.id === "manual-therapies") return -1;
+    if (b.id === "manual-therapies") return 1;
+    return a.title.localeCompare(b.title);
+  });
+
+  // Load services with enrichment from bookableServices
   useEffect(() => {
     async function load() {
       const { data } = await insforge.database
@@ -1007,10 +1164,17 @@ export default function EditBookingPage() {
         .select("id, title")
         .eq("active", true)
         .order("title");
-      dispatchAsync({
-        type: "SERVICES_LOADED",
-        payload: (data as Service[] | null) ?? [],
+      const raw = (data as { id: string; title: string }[] | null) ?? [];
+      const enriched: Service[] = raw.map((s) => {
+        const static_ = bookableServices.find((b) => b.id === s.id);
+        return {
+          ...s,
+          image: static_?.image,
+          description: static_?.description,
+          category: static_?.category,
+        };
       });
+      dispatchAsync({ type: "SERVICES_LOADED", payload: enriched });
     }
     void load();
   }, []);
@@ -1049,9 +1213,9 @@ export default function EditBookingPage() {
       }
 
       // Parse location address
-      let roomNumber = "";
-      let reservationNumber = "";
-      let address = EMPTY_ADDRESS;
+      let parsedRoomNumber = "";
+      let parsedReservationNumber = "";
+      let parsedAddress = EMPTY_ADDRESS;
       if (b.location_address) {
         try {
           const parsed = JSON.parse(b.location_address) as Record<
@@ -1059,10 +1223,10 @@ export default function EditBookingPage() {
             string
           >;
           if (b.location === "habitacion") {
-            roomNumber = parsed.roomNumber ?? "";
-            reservationNumber = parsed.reservationNumber ?? "";
+            parsedRoomNumber = parsed.roomNumber ?? "";
+            parsedReservationNumber = parsed.reservationNumber ?? "";
           } else if (b.location === "domicilio") {
-            address = {
+            parsedAddress = {
               street: parsed.street ?? "",
               building: parsed.building ?? "",
               postalCode: parsed.postalCode ?? "",
@@ -1075,16 +1239,16 @@ export default function EditBookingPage() {
       }
 
       // Parse date
-      let selectedDate: Date | null = null;
-      let calendarView: "date" | "time" = "date";
+      let parsedDate: Date | null = null;
+      let parsedCalendarView: "date" | "time" = "date";
       if (b.date) {
         const [y, m, d] = b.date.split("-").map(Number) as [
           number,
           number,
           number,
         ];
-        selectedDate = new Date(y, m - 1, d);
-        calendarView = "time";
+        parsedDate = new Date(y, m - 1, d);
+        parsedCalendarView = "time";
       }
 
       pendingTierId.current = b.tier_id ?? "";
@@ -1100,13 +1264,13 @@ export default function EditBookingPage() {
         payload: {
           serviceId: b.service_id ?? "",
           location: (b.location as DashboardLocation) ?? "",
-          roomNumber,
-          reservationNumber,
+          roomNumber: parsedRoomNumber,
+          reservationNumber: parsedReservationNumber,
           notes: b.notes ?? "",
-          address,
-          selectedDate,
+          address: parsedAddress,
+          selectedDate: parsedDate,
           selectedTime: b.time ?? "",
-          calendarView,
+          calendarView: parsedCalendarView,
           firstName: b.first_name ?? "",
           lastName: b.last_name ?? "",
           email: b.email ?? "",
@@ -1336,8 +1500,9 @@ export default function EditBookingPage() {
           </p>
         )}
 
-        <div className="space-y-6">
-          {/* Status */}
+        <div className="space-y-3">
+
+          {/* ── 1. Status ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Status
@@ -1350,7 +1515,7 @@ export default function EditBookingPage() {
             />
           </div>
 
-          {/* Service */}
+          {/* ── 2. Service ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Service
@@ -1359,7 +1524,7 @@ export default function EditBookingPage() {
               <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
             ) : (
               <ServiceSelect
-                services={services}
+                services={sortedServices}
                 selected={selectedService}
                 onSelect={(s) =>
                   dispatchForm({ type: "SET_SERVICE", id: s.id })
@@ -1368,17 +1533,17 @@ export default function EditBookingPage() {
             )}
           </div>
 
-          {/* Duration & Price */}
+          {/* ── 3. Session type ── */}
           {serviceId && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Duration & Price
+                Session type
               </h2>
               {tiersLoading ? (
                 <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
               ) : tiers.length === 0 ? (
                 <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                  No tiers configured for this service.
+                  No session types configured for this service.
                 </p>
               ) : (
                 <TierSelect
@@ -1390,7 +1555,7 @@ export default function EditBookingPage() {
             </div>
           )}
 
-          {/* Location */}
+          {/* ── 4. Location ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Location
@@ -1455,27 +1620,6 @@ export default function EditBookingPage() {
                   </div>
                 </div>
               )}
-
-              {/* Notes — available for all locations */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="notes"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Notes
-                </label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) =>
-                    dispatchForm({ type: "SET_NOTES", value: e.target.value })
-                  }
-                  placeholder="Any additional notes for this booking…"
-                  rows={3}
-                  disabled={submitting}
-                  className={INPUT_CLASS + " resize-none"}
-                />
-              </div>
 
               {location === "domicilio" && (
                 <div className="animate-fade-in-up flex flex-col gap-4">
@@ -1586,7 +1730,7 @@ export default function EditBookingPage() {
             </div>
           </div>
 
-          {/* Date & Time */}
+          {/* ── 5. Date & Time ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Date & Time
@@ -1647,7 +1791,7 @@ export default function EditBookingPage() {
             )}
           </div>
 
-          {/* Client */}
+          {/* ── 6. Client ── */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Client
@@ -1745,6 +1889,25 @@ export default function EditBookingPage() {
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="notes"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) =>
+                    dispatchForm({ type: "SET_NOTES", value: e.target.value })
+                  }
+                  placeholder="Any additional notes for this booking…"
+                  rows={3}
+                  disabled={submitting}
+                  className={INPUT_CLASS + " resize-none"}
                 />
               </div>
             </div>
