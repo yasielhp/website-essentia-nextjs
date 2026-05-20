@@ -178,6 +178,20 @@ export async function getFreeBusy(
 }
 
 /**
+ * Delete a Google Calendar event by its ID.
+ */
+export async function deleteCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+): Promise<void> {
+  await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+}
+
+/**
  * Create a Google Calendar event and return the created event's ID.
  */
 export async function createCalendarEvent(

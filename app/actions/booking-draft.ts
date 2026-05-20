@@ -30,3 +30,26 @@ export async function updateDraftBookingMeta(
     })
     .eq("id", bookingId);
 }
+
+export async function confirmDraftBooking(
+  bookingId: string,
+  tierId: string | null,
+  tierPrice: number | null,
+  duration: string,
+  date: string,
+  time: string,
+): Promise<void> {
+  const adminClient = getAdminClient();
+  await adminClient.database
+    .from("bookings")
+    .update({
+      status: "pending",
+      tier_id: tierId,
+      price_eur: tierPrice,
+      duration,
+      location: "centro",
+      date,
+      time,
+    })
+    .eq("id", bookingId);
+}

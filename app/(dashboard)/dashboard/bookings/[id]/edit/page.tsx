@@ -1169,6 +1169,7 @@ export default function EditBookingPage() {
     date: string | null;
     time: string;
     serviceId: string;
+    googleEventId: string | null;
   } | null>(null);
 
   const {
@@ -1290,7 +1291,7 @@ export default function EditBookingPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "service_id, tier_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status",
+          "service_id, tier_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status, google_event_id",
         )
         .eq("id", id)
         .limit(1);
@@ -1310,6 +1311,7 @@ export default function EditBookingPage() {
           email: string | null;
           phone: string | null;
           status: string | null;
+          google_event_id: string | null;
         }> | null
       )?.[0];
 
@@ -1363,6 +1365,7 @@ export default function EditBookingPage() {
         date: b.date ?? null,
         time: b.time ?? "",
         serviceId: b.service_id ?? "",
+        googleEventId: b.google_event_id ?? null,
       };
 
       dispatchForm({
@@ -1550,12 +1553,29 @@ export default function EditBookingPage() {
         // Notification failed silently — booking is already saved
       }
 
+      // Delete Google Calendar event when booking is cancelled
+      if (statusChanged && status === "cancelled" && orig.googleEventId) {
+        try {
+          await fetch("/api/google/calendar/event", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              service_id: serviceId || orig.serviceId,
+              event_id: orig.googleEventId,
+            }),
+          });
+        } catch {
+          // fail-open: calendar deletion failure must not block navigation
+        }
+      }
+
       // Update original ref so re-saves don't re-send
       originalRef.current = {
         status,
         date: dateStr ?? null,
         time: selectedTime,
         serviceId,
+        googleEventId: originalRef.current?.googleEventId ?? null,
       };
     }
 

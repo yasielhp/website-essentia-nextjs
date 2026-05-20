@@ -3,7 +3,10 @@
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notifyBooking } from "@/actions/booking-notifications";
-import { updateDraftBookingMeta } from "@/actions/booking-draft";
+import {
+  updateDraftBookingMeta,
+  confirmDraftBooking,
+} from "@/actions/booking-draft";
 import { Button } from "@components/ui/button";
 import {
   bookableServices,
@@ -542,18 +545,14 @@ function BookingContentInner() {
 
     let resolvedBookingId = bookingId;
     if (resolvedBookingId) {
-      await insforge.database
-        .from("bookings")
-        .update({
-          status: "pending",
-          tier_id: selectedTierId,
-          price_eur: selectedTierPrice,
-          duration: selectedDuration ?? "",
-          location: "centro",
-          date: selectedDate.toISOString().split("T")[0],
-          time: selectedTime,
-        })
-        .eq("id", resolvedBookingId);
+      await confirmDraftBooking(
+        resolvedBookingId,
+        selectedTierId,
+        selectedTierPrice,
+        selectedDuration ?? "",
+        selectedDate.toISOString().split("T")[0],
+        selectedTime,
+      );
     } else {
       const { data } = await insforge.database
         .from("bookings")

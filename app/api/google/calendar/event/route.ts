@@ -3,6 +3,7 @@ import { createClient } from "@insforge/sdk";
 import {
   getValidAccessToken,
   createCalendarEvent,
+  deleteCalendarEvent,
 } from "@/lib/google-calendar";
 
 function getAdminClient() {
@@ -93,6 +94,54 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // Fail-open: calendar sync failure must not break the booking
     console.error("[google/calendar/event] error:", err);
+    return NextResponse.json({ ok: true });
+  }
+}
+
+type DeleteRequestBody = {
+  service_id: string;
+  event_id: string;
+};
+
+export async function DELETE(request: NextRequest) {
+  let body: DeleteRequestBody;
+
+  try {
+    body = (await request.json()) as DeleteRequestBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { service_id, event_id } = body;
+
+  if (!service_id || !event_id) {
+    return NextResponse.json(
+      { error: "Missing service_id or event_id" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(service_id);
+
+    if (!accessToken) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const adminClient = getAdminClient();
+    const { data: config } = await adminClient.database
+      .from("service_configs")
+      .select("google_calendar_id")
+      .eq("service_id", service_id)
+      .single<{ google_calendar_id: string | null }>();
+
+    const calendarId = config?.google_calendar_id ?? "primary";
+
+    await deleteCalendarEvent(accessToken, calendarId, event_id);
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[google/calendar/event DELETE] error:", err);
     return NextResponse.json({ ok: true });
   }
 }
