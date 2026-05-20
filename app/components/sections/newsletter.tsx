@@ -7,6 +7,7 @@ import { Checkbox } from "@components/ui/input";
 import { Button } from "@components/ui/button";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
+import { subscribeToNewsletter } from "@/actions/newsletter";
 
 // ─── Tema ─────────────────────────────────────────────────────
 
@@ -79,8 +80,8 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
     setErrors({});
     setState("loading");
     try {
-      // TODO: conectar con el endpoint real de suscripción
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await subscribeToNewsletter(email);
+      if (!result.ok) throw new Error(result.error);
       setState("success");
       setEmail("");
       setConsent(false);
@@ -109,8 +110,16 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
           <div className="flex flex-col gap-1 text-center">
             <p className={`${t.heading} font-medium`}>You&apos;re in.</p>
             <p className={`${t.subheading} text-sm`}>
-              Confirm your address via the email we just sent. You can leave
-              whenever you like.
+              You&apos;ll hear from us when it&apos;s worth your attention.
+            </p>
+            <p className={`${t.muted} mt-3 text-xs`}>
+              Changed your mind?{" "}
+              <Link
+                href={`/newsletter/unsubscribe?email=${encodeURIComponent(email)}`}
+                className={`${t.link} underline underline-offset-2 transition-colors`}
+              >
+                Unsubscribe
+              </Link>
             </p>
           </div>
         ) : (

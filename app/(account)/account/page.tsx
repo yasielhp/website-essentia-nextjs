@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
+import { updateNewsletterForUser } from "@/actions/newsletter";
 
 type Booking = {
   id: string;
@@ -88,12 +89,16 @@ export default function AccountPage() {
     counts: SummaryCounts;
     upcomingBookings: Booking[];
     dataLoading: boolean;
+    newsletterSubscribed: boolean;
   }>({
     counts: { bookings: 0, races: 0, sessions: 0 },
     upcomingBookings: [],
     dataLoading: true,
+    newsletterSubscribed: false,
   });
-  const { counts, upcomingBookings, dataLoading } = dataState;
+  const { counts, upcomingBookings, dataLoading, newsletterSubscribed } =
+    dataState;
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -107,29 +112,39 @@ export default function AccountPage() {
 
       const today = new Date().toISOString().slice(0, 10);
 
-      const [bookingsCountRes, racesCountRes, sessionsCountRes, upcomingRes] =
-        await Promise.all([
-          insforge.database
-            .from("bookings")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
-          insforge.database
-            .from("race_registrations")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
-          insforge.database
-            .from("education_registrations")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
-          insforge.database
-            .from("bookings")
-            .select("id, service_title, date, time, status")
-            .eq("user_id", user.id)
-            .neq("status", "cancelled")
-            .gte("date", today)
-            .order("date", { ascending: true })
-            .limit(5),
-        ]);
+      const [
+        bookingsCountRes,
+        racesCountRes,
+        sessionsCountRes,
+        upcomingRes,
+        profileRes,
+      ] = await Promise.all([
+        insforge.database
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        insforge.database
+          .from("race_registrations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        insforge.database
+          .from("education_registrations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        insforge.database
+          .from("bookings")
+          .select("id, service_title, date, time, status")
+          .eq("user_id", user.id)
+          .neq("status", "cancelled")
+          .gte("date", today)
+          .order("date", { ascending: true })
+          .limit(5),
+        insforge.database
+          .from("profiles")
+          .select("newsletter_subscribed")
+          .eq("id", user.id)
+          .single(),
+      ]);
 
       setDataState({
         counts: {
@@ -139,6 +154,9 @@ export default function AccountPage() {
         },
         upcomingBookings: (upcomingRes.data as Booking[] | null) ?? [],
         dataLoading: false,
+        newsletterSubscribed:
+          (profileRes.data as { newsletter_subscribed: boolean } | null)
+            ?.newsletter_subscribed ?? false,
       });
     }
 
@@ -263,6 +281,56 @@ export default function AccountPage() {
             </div>
           )}
         </div>
+
+        {/* Newsletter */}
+        {!dataLoading && (
+          <div className="border-sand-200 mt-12 rounded-2xl border bg-white p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="font-display text-petroleum-700 text-xl">
+                  Newsletter
+                </h2>
+                <p className="text-petroleum-400 text-sm">
+                  {newsletterSubscribed
+                    ? "You are subscribed to Essentia's newsletter."
+                    : "Subscribe to receive protocols, insights, and community updates."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user || newsletterLoading) return;
+                  setNewsletterLoading(true);
+                  const next = !newsletterSubscribed;
+                  const result = await updateNewsletterForUser(
+                    user.id,
+                    user.email,
+                    next,
+                  );
+                  if (result.ok) {
+                    setDataState((prev) => ({
+                      ...prev,
+                      newsletterSubscribed: next,
+                    }));
+                  }
+                  setNewsletterLoading(false);
+                }}
+                disabled={newsletterLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                  newsletterSubscribed ? "bg-petroleum-500" : "bg-sand-200"
+                }`}
+                role="switch"
+                aria-checked={newsletterSubscribed}
+                aria-label="Newsletter subscription"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition duration-200 ${
+                    newsletterSubscribed ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
