@@ -57,8 +57,77 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: pathname,
     },
+    openGraph: {
+      siteName: "Essentia Wellness Club",
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
   };
 }
+
+const schemaOrg = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "Essentia Wellness Club",
+      url: siteUrl,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/images/logo-for-google.png`,
+      },
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Baobab Suites",
+        addressLocality: "Costa Adeje",
+        addressRegion: "Tenerife",
+        postalCode: "38660",
+        addressCountry: "ES",
+      },
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: contact.phone,
+        email: contact.email,
+        contactType: "customer service",
+      },
+      sameAs: contact.socialMedia.map((s) => s.url),
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "Essentia Wellness Club",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+    {
+      "@type": ["LocalBusiness", "HealthAndBeautyBusiness"],
+      "@id": `${siteUrl}/#localbusiness`,
+      name: "Essentia Wellness Club",
+      image: `${siteUrl}/images/logo-for-google.png`,
+      url: siteUrl,
+      telephone: contact.phone,
+      email: contact.email,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Baobab Suites",
+        addressLocality: "Costa Adeje",
+        addressRegion: "Tenerife",
+        postalCode: "38660",
+        addressCountry: "ES",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: "28.0863",
+        longitude: "-16.7307",
+      },
+      priceRange: "€€€",
+    },
+  ],
+};
 
 export default function RootLayout({
   children,
@@ -67,6 +136,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
+        />
+      </head>
       <body className="antialiased">
         <AuthProvider>
           <ConsentManager>{children}</ConsentManager>
