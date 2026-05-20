@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
-import { bookableServices } from "@/data/services-data";
+import { manualTherapyTreatments } from "@/data/services-data";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -109,9 +109,7 @@ function ManualTherapiesSection() {
     return () => ctx.revert();
   }, []);
 
-  const manualServices = bookableServices.filter(
-    (s) => s.category === "wellness",
-  );
+  const manualServices = manualTherapyTreatments;
 
   return (
     <section

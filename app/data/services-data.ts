@@ -3,19 +3,98 @@ export type BookableService = {
   category: "wellness" | "medicine";
   title: string;
   description: string;
+  durations: string[];
+  image: string;
+};
+
+export type ManualTherapyTreatment = {
+  id: string;
+  title: string;
+  description: string;
   body: string;
   highlights: { title: string; description: string }[];
   durations: string[];
-  price: string;
   priceCenter?: string;
   priceSuite?: string;
   image: string;
 };
 
 export const bookableServices: BookableService[] = [
+  // Wellness
+  {
+    id: "manual-therapies",
+    category: "wellness",
+    title: "Manual Therapies",
+    description: "Precise manual work to release tension and restore mobility.",
+    durations: ["30 min", "120 min"],
+    image: "/images/menu/manual-therapies.webp",
+  },
+  {
+    id: "contrast-therapy",
+    category: "wellness",
+    title: "Contrast Therapy",
+    description:
+      "Alternating heat and cold to activate recovery and reduce inflammation.",
+    durations: ["60 min"],
+    image: "/images/menu/thermal-contrast.webp",
+  },
+  {
+    id: "breathing-sessions",
+    category: "wellness",
+    title: "Breathing Sessions",
+    description: "Guided breathwork to shift from stress to active recovery.",
+    durations: ["45 min"],
+    image: "/images/menu/breathing-sessions.webp",
+  },
+  {
+    id: "red-light-therapy",
+    category: "wellness",
+    title: "Red Light Therapy",
+    description:
+      "Red and infrared light to stimulate cellular repair and regeneration.",
+    durations: ["20 min"],
+    image: "/images/menu/red-light-therapy.webp",
+  },
+  {
+    id: "functional-well-being",
+    category: "wellness",
+    title: "Functional Well-being",
+    description: "Movement and strength training designed around longevity.",
+    durations: ["50 min"],
+    image: "/images/menu/functional-wellbeing.webp",
+  },
+  // Medicine
+  {
+    id: "hyperbaric-chambers",
+    category: "medicine",
+    title: "Hyperbaric Oxygen",
+    description:
+      "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
+    durations: ["60 min"],
+    image: "/images/menu/hyperbaric-chambers.webp",
+  },
+  {
+    id: "intravenous-therapy",
+    category: "medicine",
+    title: "IV Therapy",
+    description:
+      "Direct nutrient delivery for rapid absorption and cellular support.",
+    durations: ["45 min"],
+    image: "/images/menu/intravenous-therapy.webp",
+  },
+  {
+    id: "regenerative-medicine",
+    category: "medicine",
+    title: "Regenerative Medicine",
+    description: "Protocols that activate your body's own repair mechanisms.",
+    durations: ["30 min", "60 min", "90 min"],
+    image: "/images/menu/regenerative-medicine.webp",
+  },
+];
+
+export const manualTherapyTreatments: ManualTherapyTreatment[] = [
   {
     id: "espira",
-    category: "wellness",
     title: "Espira",
     description:
       "A brief ritual that releases tension across the back, neck, and shoulders. Enveloping techniques, mindful pressure, and essential oils.",
@@ -38,14 +117,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["30 min"],
-    price: "90 €",
     priceCenter: "90 €",
     priceSuite: "120 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "pulse",
-    category: "wellness",
     title: "Pulse",
     description:
       "A decontracting deep-pressure massage for areas of pain, stiffness, and muscle overload.",
@@ -68,14 +145,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["45 min"],
-    price: "100 €",
     priceCenter: "100 €",
     priceSuite: "130 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "drenaje-linfatico",
-    category: "wellness",
     title: "Drenaje Linfático Brasileño",
     description:
       "An aesthetic and therapeutic massage to sculpt the silhouette, reduce fluid retention, and improve the appearance of orange-peel skin.",
@@ -98,14 +173,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["50 min"],
-    price: "100 €",
     priceCenter: "100 €",
     priceSuite: "130 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "essentia-active",
-    category: "wellness",
     title: "Essentia Active",
     description:
       "A massage for tired legs and fatigued muscles. Ideal for athletes and active people: reduces fatigue and helps prevent injury.",
@@ -128,14 +201,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["45 min"],
-    price: "110 €",
     priceCenter: "110 €",
     priceSuite: "140 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "nurtura",
-    category: "wellness",
     title: "Nurtura",
     description:
       "A massage designed for expectant mothers. Gentle, safe techniques that relieve muscular tension and swelling during pregnancy.",
@@ -158,14 +229,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["50 min"],
-    price: "130 €",
     priceCenter: "130 €",
     priceSuite: "160 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "serenna",
-    category: "wellness",
     title: "Serenna",
     description:
       "An experience of deep relaxation with soft, continuous manoeuvres. Stimulates circulation and revitalises energy from within.",
@@ -188,14 +257,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["50 min"],
-    price: "130 €",
     priceCenter: "130 €",
     priceSuite: "160 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "solea",
-    category: "wellness",
     title: "Soléa",
     description:
       "For skin exposed to the sun. Anti-inflammatory aloe vera wrap followed by a relaxing full-body massage.",
@@ -218,14 +285,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["70 min"],
-    price: "150 €",
     priceCenter: "150 €",
     priceSuite: "180 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "soma",
-    category: "wellness",
     title: "Soma",
     description:
       "A deep-tissue massage for contractures, stiffness, and persistent pain. Improves mobility and muscle elasticity.",
@@ -248,14 +313,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["60 min"],
-    price: "160 €",
     priceCenter: "160 €",
     priceSuite: "190 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "lume",
-    category: "wellness",
     title: "Lume",
     description:
       "A multisensory experience: cranio-facial massage, reflexology, and aromatherapy for a complete disconnect.",
@@ -278,14 +341,12 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["80 min"],
-    price: "220 €",
     priceCenter: "220 €",
     priceSuite: "250 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "alure-duo",
-    category: "wellness",
     title: "Alure Duo",
     description:
       "A sensory ritual for two: reconnection through touch, breath, and mutual care.",
@@ -308,13 +369,11 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["50 min"],
-    price: "270 €",
     priceCenter: "270 €",
     image: "/images/menu/manual-therapies.webp",
   },
   {
     id: "essentia-signature",
-    category: "wellness",
     title: "Essentia",
     description:
       "A complete experience: body peel, ultra-hydrating wrap, rejuvenating facial with craniofacial massage, and a full-body massage.",
@@ -337,7 +396,6 @@ export const bookableServices: BookableService[] = [
       },
     ],
     durations: ["120 min"],
-    price: "350 €",
     priceCenter: "350 €",
     image: "/images/menu/manual-therapies.webp",
   },

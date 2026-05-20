@@ -5,13 +5,13 @@ import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@components/ui/button";
-import type { BookableService } from "@/data/services-data";
+import type { ManualTherapyTreatment } from "@/data/services-data";
 
 gsap.registerPlugin(ScrollTrigger);
 
 // ─── Hero ─────────────────────────────────────────────────────
 
-function ServiceHero({ service }: { service: BookableService }) {
+function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,9 +48,6 @@ function ServiceHero({ service }: { service: BookableService }) {
         }}
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
-        <p className="text-sand-500 mb-3 text-sm tracking-widest uppercase">
-          Manual Therapies
-        </p>
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           {service.title}.
         </h1>
@@ -87,7 +84,7 @@ function ServiceHero({ service }: { service: BookableService }) {
 
 // ─── Details ──────────────────────────────────────────────────
 
-function ServiceDetails({ service }: { service: BookableService }) {
+function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -186,7 +183,7 @@ function ServiceDetails({ service }: { service: BookableService }) {
 
 // ─── CTA ──────────────────────────────────────────────────────
 
-function ServiceCta({ service }: { service: BookableService }) {
+function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -283,7 +280,7 @@ function ServiceCta({ service }: { service: BookableService }) {
 
 // ─── Page view ────────────────────────────────────────────────
 
-export function ServiceDetailView({ service }: { service: BookableService }) {
+export function ServiceDetailView({ service }: { service: ManualTherapyTreatment }) {
   return (
     <>
       <ServiceHero service={service} />
