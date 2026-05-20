@@ -4,7 +4,11 @@ import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { Button } from "@components/ui/button";
-import { bookableServices, type BookableService } from "@/data/services-data";
+import {
+  bookableServices,
+  manualTherapyTreatments,
+  type BookableService,
+} from "@/data/services-data";
 import { buildSteps } from "@/utils/calendar-helpers";
 import {
   readStorage,
@@ -94,12 +98,14 @@ function bookingReducer(
   }
 }
 
-function initState(slug: string | null): BookingState {
+type InitArg = { slug: string | null; startStep: number };
+
+function initState({ slug, startStep }: InitArg): BookingState {
   const saved = readStorage();
   if (slug) {
     const service = bookableServices.find((s) => s.id === slug) ?? null;
     return {
-      step: 0,
+      step: startStep,
       selectedService: service,
       selectedTierId: null,
       selectedTierPrice: null,
@@ -249,6 +255,7 @@ type BookingStepRendererProps = {
   detailErrors: DetailsErrors;
   dispatch: React.Dispatch<BookingAction>;
   onClearDetailError: (key: keyof DetailsState) => void;
+  preselectedLabel?: string | null;
 };
 
 function BookingStepRenderer({
@@ -263,6 +270,7 @@ function BookingStepRenderer({
   detailErrors,
   dispatch,
   onClearDetailError,
+  preselectedLabel,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -276,6 +284,7 @@ function BookingStepRenderer({
         <DurationStep
           serviceId={selectedService.id}
           selectedTierId={selectedTierId}
+          preselectedLabel={preselectedLabel}
           onSelect={(sel: TierSelection) =>
             dispatch({
               type: "SELECT_TIER",
@@ -356,6 +365,10 @@ function BookingContentInner() {
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const slug = get("service") ?? get("wellness") ?? get("medicine");
+  const treatmentId = get("treatment");
+  const preselectedLabel = treatmentId
+    ? (manualTherapyTreatments.find((t) => t.id === treatmentId)?.title ?? null)
+    : null;
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
@@ -382,7 +395,11 @@ function BookingContentInner() {
     [updateLocal],
   );
 
-  const [state, dispatch] = useReducer(bookingReducer, slug, initState);
+  const [state, dispatch] = useReducer(
+    bookingReducer,
+    { slug, startStep: treatmentId ? 1 : 0 },
+    initState,
+  );
   const {
     step,
     selectedService,
@@ -637,6 +654,7 @@ function BookingContentInner() {
         onClearDetailError={(key) =>
           setDetailErrors((prev) => ({ ...prev, [key]: undefined }))
         }
+        preselectedLabel={preselectedLabel}
       />
 
       <BookingNavigation

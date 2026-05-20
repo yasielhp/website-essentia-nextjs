@@ -220,10 +220,12 @@ export function DurationStep({
   serviceId,
   selectedTierId,
   onSelect,
+  preselectedLabel,
 }: {
   serviceId: string;
   selectedTierId: string | null;
   onSelect: (sel: TierSelection) => void;
+  preselectedLabel?: string | null;
 }) {
   const [tiers, setTiers] = useState<Tier[] | null>(null);
   const onSelectRef = useRef(onSelect);
@@ -250,10 +252,24 @@ export function DurationStep({
             t.duration_minutes != null ? `${t.duration_minutes} min` : null,
           price: t.price_center_eur ?? t.price_eur,
         });
+      } else if (preselectedLabel) {
+        const match = rows.find(
+          (t) => t.label?.toLowerCase() === preselectedLabel.toLowerCase(),
+        );
+        if (match) {
+          onSelectRef.current({
+            tierId: match.id,
+            duration:
+              match.duration_minutes != null
+                ? `${match.duration_minutes} min`
+                : null,
+            price: match.price_center_eur ?? match.price_eur,
+          });
+        }
       }
     }
     void load();
-  }, [serviceId]);
+  }, [serviceId, preselectedLabel]);
 
   if (tiers === null) {
     return (

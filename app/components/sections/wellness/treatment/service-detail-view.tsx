@@ -58,7 +58,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
           <Button
             variant="white"
             size="md"
-            href={`/booking?service=${service.id}`}
+            href={`/booking?service=manual-therapies&treatment=${service.id}`}
           >
             Book a session
           </Button>
@@ -259,7 +259,7 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
               <Button
                 variant="white"
                 size="md"
-                href={`/booking?service=${service.id}`}
+                href={`/booking?service=manual-therapies&treatment=${service.id}`}
               >
                 Book a session
               </Button>
