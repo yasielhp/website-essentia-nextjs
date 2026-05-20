@@ -116,9 +116,11 @@ export function TierModal({
         .select("id", { count: "exact", head: true })
         .eq("service_id", modal.serviceId);
       const nextOrder = existing.count ?? 0;
-      await insforge.database.from("service_tiers").insert([
-        { service_id: modal.serviceId, sort_order: nextOrder, ...payload },
-      ]);
+      await insforge.database
+        .from("service_tiers")
+        .insert([
+          { service_id: modal.serviceId, sort_order: nextOrder, ...payload },
+        ]);
     }
     await onSaved(modal.serviceId);
     setOps((o) => ({ ...o, saving: false }));

@@ -38,6 +38,7 @@ function GoogleCalendarWidget({
   onDisconnected: (serviceId: string) => void;
 }) {
   const [disconnecting, setDisconnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const handleDisconnect = async () => {
     setDisconnecting(true);
@@ -53,55 +54,76 @@ function GoogleCalendarWidget({
     }
   };
 
-  if (config?.google_connected_email) {
-    return (
-      <div className="mt-1 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-          <span className="size-1.5 rounded-full bg-green-500" />
-          Connected
-        </span>
-        <span className="text-petroleum-400 max-w-[160px] truncate text-xs">
-          {config.google_connected_email}
-        </span>
-        <button
-          type="button"
-          onClick={() => void handleDisconnect()}
-          disabled={disconnecting}
-          className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
-        >
-          {disconnecting ? "Disconnecting…" : "Disconnect"}
-        </button>
-      </div>
-    );
-  }
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await fetch("/api/google/calendar/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service_id: serviceId }),
+      });
+    } catch {
+      // ignore
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const isConnected = !!config?.google_connected_email;
 
   return (
-    <div className="mt-1">
-      <button
-        type="button"
-        onClick={() => {
-          window.location.href = `/api/google/calendar/connect?service_id=${serviceId}`;
-        }}
-        className="border-sand-200 text-petroleum-600 hover:border-petroleum-200 hover:bg-petroleum-50 inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M15.5 5H19a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h3.5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <div
+      className={`mt-2 flex items-center justify-between rounded-xl border px-4 py-3 ${isConnected ? "border-green-200 bg-green-50" : "border-petroleum-100 bg-petroleum-100"}`}
+    >
+      <div className="flex flex-col gap-0.5">
+        <span
+          className={`text-sm font-medium ${isConnected ? "text-green-700" : "text-petroleum-400"}`}
+        >
+          {isConnected ? "Connected" : "Not connected"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`size-1.5 shrink-0 rounded-full ${isConnected ? "bg-green-500" : "hidden"}`}
           />
-          <path
-            d="M8 2h8v6H8z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Connect Google Calendar
-      </button>
+          <span className="text-petroleum-500 max-w-50 truncate text-xs">
+            {isConnected
+              ? config!.google_connected_email
+              : "No calendar linked"}
+          </span>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {isConnected ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleSync()}
+              disabled={syncing}
+            >
+              {syncing ? "Syncing…" : "Re-sync"}
+            </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => void handleDisconnect()}
+              disabled={disconnecting}
+            >
+              {disconnecting ? "Disconnecting…" : "Disconnect"}
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              window.location.href = `/api/google/calendar/connect?service_id=${serviceId}`;
+            }}
+          >
+            Connect Google Calendar
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -193,7 +215,7 @@ function ServicesTabContent({
   onCalendarDisconnected: (serviceId: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="flex flex-col gap-4">
       {SERVICES.map(({ id, label }) => {
         const tiers = serviceTiers[id] ?? [];
         const calConfig = calendarConfigs.find((c) => c.service_id === id);
@@ -225,24 +247,29 @@ function ServicesTabContent({
 
             {tiers.length > 0 ? (
               <div className="border-sand-100 border-t">
-                <div className="grid grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 px-5 py-2">
-                  {["Name", "Color", "Duration", "Price", "Status"].map(
-                    (h, i) => (
-                      <span
-                        key={h}
-                        className={`text-petroleum-400 text-xs font-medium ${i === 3 ? "text-right" : i === 4 ? "text-center" : ""}`}
-                      >
-                        {h}
-                      </span>
-                    ),
-                  )}
+                <div className="grid grid-cols-[1fr_48px_88px_80px_80px_72px] items-center gap-3 px-5 py-2">
+                  {[
+                    "Name",
+                    "Color",
+                    "Duration",
+                    "Centre",
+                    "Suite",
+                    "Status",
+                  ].map((h, i) => (
+                    <span
+                      key={h}
+                      className={`text-petroleum-400 text-xs font-medium ${i >= 3 && i <= 4 ? "text-right" : i === 5 ? "text-center" : ""}`}
+                    >
+                      {h}
+                    </span>
+                  ))}
                 </div>
                 {tiers.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => onEditTier(id, t)}
-                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_72px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
+                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_80px_80px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
                   >
                     <span className="text-petroleum-700 min-w-0 truncate text-sm">
                       {t.label ?? "—"}
@@ -257,7 +284,16 @@ function ServicesTabContent({
                         : "—"}
                     </span>
                     <span className="text-petroleum-700 text-right text-sm font-medium">
-                      {t.price_eur != null ? `€${t.price_eur}` : "—"}
+                      {t.price_center_eur != null
+                        ? `€${t.price_center_eur}`
+                        : t.price_eur != null
+                          ? `€${t.price_eur}`
+                          : "—"}
+                    </span>
+                    <span className="text-petroleum-500 text-right text-sm">
+                      {t.price_suite_eur != null
+                        ? `€${t.price_suite_eur}`
+                        : "—"}
                     </span>
                     <span className="flex justify-center">
                       <span
@@ -327,7 +363,7 @@ export default function SettingsPage() {
     const { data: rows } = await insforge.database
       .from("service_tiers")
       .select(
-        "id, label, duration_minutes, price_eur, color, active, sort_order",
+        "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
@@ -351,7 +387,7 @@ export default function SettingsPage() {
         insforge.database
           .from("service_tiers")
           .select(
-            "id, service_id, label, duration_minutes, price_eur, color, active, sort_order",
+            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
           )
           .order("sort_order"),
         insforge.database
