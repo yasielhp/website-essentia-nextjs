@@ -212,10 +212,17 @@ function formatDate(value: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString("en-GB", {
-    year: "numeric",
-    month: "short",
     day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
   });
+}
+
+function formatTime(value: string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 const intlCurrency = new Intl.NumberFormat("en-GB", {
@@ -443,6 +450,9 @@ export default function TransactionsPage() {
                     {row.created_at && (
                       <span className="text-petroleum-300 text-xs">
                         {formatDate(row.created_at)}
+                        {formatTime(row.created_at)
+                          ? ` · ${formatTime(row.created_at)}`
+                          : ""}
                       </span>
                     )}
                     {row.amount !== null && (
@@ -491,7 +501,8 @@ export default function TransactionsPage() {
                     <tr key={i} className="border-sand-50 border-b">
                       {/* Created */}
                       <td className="px-5 py-4">
-                        <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
+                        <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
+                        <div className="bg-sand-100 mt-1.5 h-3 w-12 animate-pulse rounded" />
                       </td>
                       {/* Status */}
                       <td className="px-5 py-4">
@@ -532,8 +543,13 @@ export default function TransactionsPage() {
                         key={row.id}
                         className="border-sand-50 hover:bg-sand-50 border-b transition-colors"
                       >
-                        <td className="text-petroleum-400 px-5 py-4">
-                          {formatDate(row.created_at)}
+                        <td className="px-5 py-4">
+                          <p className="text-petroleum-500">
+                            {formatDate(row.created_at)}
+                          </p>
+                          <p className="text-petroleum-400 text-xs">
+                            {formatTime(row.created_at)}
+                          </p>
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={row.status} />
