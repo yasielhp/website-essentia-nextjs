@@ -1,8 +1,8 @@
 export const SERVICES = [
+  { id: "manual-therapies", label: "Manual Therapies" },
   { id: "contrast-therapy", label: "Contrast Therapy" },
   { id: "breathing-sessions", label: "Breathing Sessions" },
   { id: "red-light-therapy", label: "Red Light Therapy" },
-  { id: "manual-therapies", label: "Manual Therapies" },
   { id: "functional-well-being", label: "Functional Well-being" },
   { id: "hyperbaric-chambers", label: "Hyperbaric Chambers" },
   { id: "intravenous-therapy", label: "Intravenous Therapy" },
