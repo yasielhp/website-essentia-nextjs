@@ -307,6 +307,9 @@ function BookingStepRenderer({
         <DateTimeStep
           service={selectedService}
           serviceId={selectedService.id}
+          durationMinutes={
+            selectedDuration ? parseInt(selectedDuration, 10) || undefined : undefined
+          }
           selectedDate={selectedDate}
           selectedTime={selectedTime}
           onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}

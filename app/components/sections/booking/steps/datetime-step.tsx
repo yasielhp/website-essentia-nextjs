@@ -10,6 +10,7 @@ import {
   isSameDay,
   getCalendarDays,
   getTimeSlots,
+  getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
 
 type BusyInterval = { start: string; end: string };
@@ -115,6 +116,7 @@ function CalendarView({
 export function DateTimeStep({
   service,
   serviceId,
+  durationMinutes,
   selectedDate,
   selectedTime,
   onSelectDate,
@@ -122,6 +124,7 @@ export function DateTimeStep({
 }: {
   service: BookableService;
   serviceId: string;
+  durationMinutes?: number;
   selectedDate: Date | null;
   selectedTime: string | null;
   onSelectDate: (d: Date) => void;
@@ -178,13 +181,15 @@ export function DateTimeStep({
     const days = getCalendarDays(viewYear, viewMonth);
     for (const day of days) {
       if (!day || !isAvailableDay(day)) continue;
-      const slots = getTimeSlots(day, service, monthBusy);
+      const slots = durationMinutes
+        ? getTimeSlotsForDashboard(day, service.category, durationMinutes, monthBusy)
+        : getTimeSlots(day, service, monthBusy);
       if (slots.length > 0 && slots.every((s) => s.booked)) {
         blocked.add(localDateStr(day));
       }
     }
     return blocked;
-  }, [monthBusy, viewYear, viewMonth, service]);
+  }, [monthBusy, viewYear, viewMonth, service, durationMinutes]);
 
   const fetchBusyIntervals = async (d: Date) => {
     setLoadingSlots(true);
@@ -232,7 +237,9 @@ export function DateTimeStep({
   };
 
   const slots = selectedDate
-    ? getTimeSlots(selectedDate, service, busyIntervals)
+    ? durationMinutes
+      ? getTimeSlotsForDashboard(selectedDate, service.category, durationMinutes, busyIntervals)
+      : getTimeSlots(selectedDate, service, busyIntervals)
     : [];
 
   const availableSlots = slots.filter((s) => !s.booked);
