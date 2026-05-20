@@ -6,6 +6,7 @@ import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
+import { useRole } from "@/context/role-context";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -164,6 +165,8 @@ type PageState =
 export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
+  const { role } = useRole();
+  const isPartner = role === "partner";
 
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -270,22 +273,24 @@ export default function BookingDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="font-display text-petroleum-700 text-2xl">{fullName}</h1>
-        <div className="flex shrink-0 items-center gap-3">
-          <Button
-            variant="outline-danger"
-            size="md"
-            onClick={() => setDeleteOpen(true)}
-          >
-            Delete
-          </Button>
-          <Button
-            variant="solid"
-            size="md"
-            href={`/dashboard/bookings/${id}/edit`}
-          >
-            Edit
-          </Button>
-        </div>
+        {!isPartner && (
+          <div className="flex shrink-0 items-center gap-3">
+            <Button
+              variant="outline-danger"
+              size="md"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+            <Button
+              variant="solid"
+              size="md"
+              href={`/dashboard/bookings/${id}/edit`}
+            >
+              Edit
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Meta strip */}

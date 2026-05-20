@@ -1151,6 +1151,13 @@ export default function EditBookingPage() {
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
+
+  useEffect(() => {
+    if (role && role === "partner") {
+      push(`/dashboard/bookings/${id}`);
+    }
+  }, [role, id, push]);
+
   const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
   const [form, dispatchForm] = useReducer(formReducer, formInitial);
   const [deleteOpen, setDeleteOpen] = useState(false);
