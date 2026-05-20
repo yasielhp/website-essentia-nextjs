@@ -86,14 +86,14 @@ function TierSelect({
       >
         {selected ? (
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Duration & Price</p>
+            <p className="text-petroleum-400 text-xs">Session type</p>
             <p className="text-petroleum-700 font-medium">
               {tierLabel(selected)}
             </p>
           </div>
         ) : (
           <p className="text-petroleum-400 flex-1 text-sm">
-            Select a duration &amp; price
+            Select a session type
           </p>
         )}
         <ChevronDown
@@ -213,13 +213,13 @@ export function DurationStep({
     <div className="flex flex-col gap-4">
       <p className="text-petroleum-400 text-sm">
         {isFixed
-          ? "This service has a fixed session option."
-          : "Choose your session duration and price."}
+          ? "This service has a fixed session type."
+          : "Choose your session type."}
       </p>
       {isFixed ? (
         <div className="border-sand-300 bg-sand-50 flex items-center gap-4 rounded-2xl border p-4">
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Duration & Price</p>
+            <p className="text-petroleum-400 text-xs">Session type</p>
             <p className="text-petroleum-700 font-medium">
               {tierLabel(singleTier)}
             </p>

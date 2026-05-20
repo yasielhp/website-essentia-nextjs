@@ -355,7 +355,7 @@ function BookingContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
-  const slug = get("wellness") ?? get("medicine");
+  const slug = get("service") ?? get("wellness") ?? get("medicine");
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
