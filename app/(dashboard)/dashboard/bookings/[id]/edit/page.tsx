@@ -1459,6 +1459,53 @@ export default function EditBookingPage() {
       };
     }
 
+    // Create Google Calendar event when booking is confirmed/paid and has date+time
+    const isConfirmedStatus = status === "confirmed" || status === "paid";
+    if (isConfirmedStatus && dateStr && selectedTime) {
+      const clientName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+
+      const calLocation = (() => {
+        if (location === "centro") return contact.address;
+        if (location === "habitacion") {
+          const parts: string[] = [];
+          if (reservationNumber.trim()) parts.push(`Reservation: ${reservationNumber.trim()}`);
+          if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
+          return parts.length ? `Baobab Suites — ${parts.join(" · ")}` : "Baobab Suites";
+        }
+        if (location === "domicilio") {
+          const parts: string[] = [];
+          if (address.street.trim()) parts.push(address.street.trim());
+          if (address.building.trim()) parts.push(address.building.trim());
+          if (address.postalCode.trim() || address.municipality.trim())
+            parts.push([address.postalCode.trim(), address.municipality.trim()].filter(Boolean).join(" "));
+          return parts.filter(Boolean).join(", ");
+        }
+        return "";
+      })();
+
+      const descLines = [
+        `Booking #${id}`,
+        phone.trim() ? `Phone: ${phone.trim()}` : null,
+        email.trim() ? `Email: ${email.trim()}` : null,
+        notes.trim() ? `Notes: ${notes.trim()}` : null,
+      ].filter(Boolean);
+
+      void fetch("/api/google/calendar/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service_id: serviceId,
+          summary: `${selectedService?.title ?? serviceId} — ${clientName}`,
+          description: descLines.join("\n"),
+          location: calLocation || undefined,
+          colorId: "7",
+          date: dateStr,
+          time: selectedTime,
+          duration_minutes: selectedTier?.duration_minutes ?? 60,
+        }),
+      });
+    }
+
     push(`/dashboard/bookings/${id}`);
   }
 

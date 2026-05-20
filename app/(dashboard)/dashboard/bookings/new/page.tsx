@@ -1139,17 +1139,47 @@ export default function NewBookingPage() {
       return;
     }
 
-    // Create Google Calendar event (non-blocking)
+    // Create Google Calendar event (non-blocking, only for confirmed bookings)
     if (dateStr && selectedTime) {
       const bookingId = (inserted as { id: string } | null)?.id ?? "";
       const clientName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+
+      // Build location string for the event
+      const calLocation = (() => {
+        if (location === "centro") return contact.address;
+        if (location === "habitacion") {
+          const parts: string[] = [];
+          if (reservationNumber.trim()) parts.push(`Reservation: ${reservationNumber.trim()}`);
+          if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
+          return parts.length ? `Baobab Suites — ${parts.join(" · ")}` : "Baobab Suites";
+        }
+        if (location === "domicilio") {
+          const parts: string[] = [];
+          if (address.street.trim()) parts.push(address.street.trim());
+          if (address.building.trim()) parts.push(address.building.trim());
+          if (address.postalCode.trim() || address.municipality.trim())
+            parts.push([address.postalCode.trim(), address.municipality.trim()].filter(Boolean).join(" "));
+          return parts.filter(Boolean).join(", ");
+        }
+        return "";
+      })();
+
+      const descLines = [
+        `Booking #${bookingId}`,
+        phone.trim() ? `Phone: ${phone.trim()}` : null,
+        email.trim() ? `Email: ${email.trim()}` : null,
+        notes.trim() ? `Notes: ${notes.trim()}` : null,
+      ].filter(Boolean);
+
       void fetch("/api/google/calendar/event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           service_id: serviceId,
           summary: `${selectedService?.title ?? serviceId} — ${clientName}`,
-          description: `Booking #${bookingId}\nPhone: ${phone.trim()}\nEmail: ${email.trim()}`,
+          description: descLines.join("\n"),
+          location: calLocation || undefined,
+          colorId: "7", // Peacock (teal) — matches brand palette
           date: dateStr,
           time: selectedTime,
           duration_minutes: selectedTier?.duration_minutes ?? 60,

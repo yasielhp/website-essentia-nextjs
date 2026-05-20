@@ -21,6 +21,8 @@ export type GoogleTokens = {
 export type GoogleCalendarEvent = {
   summary: string;
   description?: string;
+  location?: string;
+  colorId?: string;
   start: { dateTime: string; timeZone: string };
   end: { dateTime: string; timeZone: string };
 };

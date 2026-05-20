@@ -16,6 +16,8 @@ type EventRequestBody = {
   service_id: string;
   summary: string;
   description?: string;
+  location?: string;
+  colorId?: string;
   date: string; // "YYYY-MM-DD"
   time: string; // "HH:MM"
   duration_minutes: number;
@@ -35,6 +37,8 @@ export async function POST(request: NextRequest) {
     service_id,
     summary,
     description,
+    location,
+    colorId,
     date,
     time,
     duration_minutes,
@@ -79,6 +83,8 @@ export async function POST(request: NextRequest) {
     const eventId = await createCalendarEvent(accessToken, calendarId, {
       summary,
       description,
+      ...(location ? { location } : {}),
+      ...(colorId ? { colorId } : {}),
       start: { dateTime: startDateTime, timeZone: timezone },
       end: { dateTime: endDateTime, timeZone: timezone },
     });
