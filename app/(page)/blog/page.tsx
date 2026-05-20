@@ -9,8 +9,7 @@ export const metadata: Metadata = {
     "Protocols, perspectives, and science from the Essentia team — written for people who take their health seriously.",
   openGraph: {
     title: "Blog | Essentia Longevity & Wellness",
-    description:
-      "Protocols, perspectives, and science from the Essentia team.",
+    description: "Protocols, perspectives, and science from the Essentia team.",
     type: "website",
   },
 };

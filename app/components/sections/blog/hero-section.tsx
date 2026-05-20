@@ -44,8 +44,7 @@ export default function BlogHeroSection() {
       <div ref={contentRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           Insights for
-          <br />
-          a longer life.
+          <br />a longer life.
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
           Protocols, perspectives, and science from the Essentia team — written
@@ -58,7 +57,8 @@ export default function BlogHeroSection() {
             onClick={() => {
               const el = document.getElementById("posts");
               if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 32;
+                const top =
+                  el.getBoundingClientRect().top + window.scrollY - 32;
                 window.scrollTo({ top, behavior: "smooth" });
               }
             }}
@@ -71,7 +71,8 @@ export default function BlogHeroSection() {
             onClick={() => {
               const el = document.getElementById("newsletter");
               if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 32;
+                const top =
+                  el.getBoundingClientRect().top + window.scrollY - 32;
                 window.scrollTo({ top, behavior: "smooth" });
               }
             }}

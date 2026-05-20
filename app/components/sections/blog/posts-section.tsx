@@ -57,21 +57,23 @@ export default function PostsSection() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const q = insforge.database
-      .from("blog_posts")
-      .select(
-        "id, title, slug, excerpt, cover_image_url, published_at, category:blog_categories(name, slug)",
-      )
-      .eq("status", "published")
-      .order("published_at", { ascending: false });
+    async function load() {
+      setLoading(true);
+      const q = insforge.database
+        .from("blog_posts")
+        .select(
+          "id, title, slug, excerpt, cover_image_url, published_at, category:blog_categories(name, slug)",
+        )
+        .eq("status", "published")
+        .order("published_at", { ascending: false });
 
-    (activeCategory ? q.eq("category_id", activeCategory) : q).then(
-      ({ data }) => {
-        setPosts((data as Post[] | null) ?? []);
-        setLoading(false);
-      },
-    );
+      const { data } = await (activeCategory
+        ? q.eq("category_id", activeCategory)
+        : q);
+      setPosts((data as Post[] | null) ?? []);
+      setLoading(false);
+    }
+    void load();
   }, [activeCategory]);
 
   // Animar cards cuando aparecen
@@ -97,7 +99,7 @@ export default function PostsSection() {
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 activeCategory === null
                   ? "bg-petroleum-700 text-white"
-                  : "bg-sand-200 text-petroleum-500 hover:bg-sand-300"
+                  : "bg-sand-200 text-petroleum-500 hover:bg-sand-200"
               }`}
             >
               All
@@ -109,7 +111,7 @@ export default function PostsSection() {
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   activeCategory === c.id
                     ? "bg-petroleum-700 text-white"
-                    : "bg-sand-200 text-petroleum-500 hover:bg-sand-300"
+                    : "bg-sand-200 text-petroleum-500 hover:bg-sand-200"
                 }`}
               >
                 {c.name}
