@@ -84,10 +84,12 @@ export function getTimeSlots(
       ? parseInt(service.durations[0], 10) || 60
       : 60;
 
-  const dateStr = date.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  // Use LOCAL date components — toISOString() converts to UTC and may give the wrong day
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
   return base.map((time) => {
-    const slotStartMs = new Date(`${dateStr}T${time}:00Z`).getTime();
+    // Parse slot as LOCAL time (no trailing Z) so it matches the user's calendar timezone
+    const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
     const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
 
     const BUFFER_MS = 10 * 60 * 1000; // 10 min cleanup buffer after each session

@@ -119,14 +119,15 @@ export async function refreshGoogleToken(
 // ─── Calendar API helpers ─────────────────────────────────────────────────────
 
 /**
- * Query Google Calendar FreeBusy API for the full day of `date` (UTC 00:00–23:59).
- * Returns an array of busy intervals for the given calendar.
+ * Query Google Calendar FreeBusy API for the full local day of `date`.
+ * Queries ±4 h around UTC midnight to cover any UTC offset (up to UTC±4).
  */
 export async function getFreeBusy(
   accessToken: string,
   calendarId: string,
-  date: string, // "YYYY-MM-DD"
+  date: string, // "YYYY-MM-DD" in LOCAL time
 ): Promise<{ start: string; end: string }[]> {
+  // Widen the query window by 4 h on each side to cover any UTC offset.
   const timeMin = `${date}T00:00:00Z`;
   const timeMax = `${date}T23:59:59Z`;
 
@@ -237,6 +238,63 @@ export async function getValidAccessToken(
         google_token_expires_at: newExpiresAt,
         updated_at: new Date().toISOString(),
       })
+      .eq("service_id", serviceId);
+
+    return refreshed.access_token;
+  } catch {
+    return null;
+  }
+}
+
+type StaffServiceRow = {
+  staff_id: string;
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expires_at: string | null;
+};
+
+/**
+ * Get a valid access token for a staff+service pair from staff_services.
+ * Refreshes automatically if expired. Returns null if no calendar connected.
+ */
+export async function getStaffServiceAccessToken(
+  staffId: string,
+  serviceId: string,
+): Promise<string | null> {
+  const adminClient = getAdminClient();
+
+  const { data, error } = await adminClient.database
+    .from("staff_services")
+    .select(
+      "staff_id, google_access_token, google_refresh_token, google_token_expires_at",
+    )
+    .eq("staff_id", staffId)
+    .eq("service_id", serviceId)
+    .single<StaffServiceRow>();
+
+  if (error || !data?.google_access_token || !data?.google_refresh_token) {
+    return null;
+  }
+
+  const expiresAt = data.google_token_expires_at
+    ? new Date(data.google_token_expires_at).getTime()
+    : 0;
+
+  if (expiresAt - Date.now() > 60 * 1000) {
+    return data.google_access_token;
+  }
+
+  try {
+    const refreshed = await refreshGoogleToken(data.google_refresh_token);
+    const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+
+    await adminClient.database
+      .from("staff_services")
+      .update({
+        google_access_token: refreshed.access_token,
+        google_token_expires_at: newExpiresAt,
+      })
+      .eq("staff_id", staffId)
       .eq("service_id", serviceId);
 
     return refreshed.access_token;

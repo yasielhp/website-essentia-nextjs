@@ -130,7 +130,8 @@ export function DateTimeStep({
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const fetchBusyIntervals = async (d: Date) => {
-    const dateStr = d.toISOString().split("T")[0];
+    // Use LOCAL date (not UTC) — toISOString() shifts to UTC and may give the wrong day
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     setLoadingSlots(true);
     try {
       const res = await fetch(
