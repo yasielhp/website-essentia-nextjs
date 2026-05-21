@@ -141,7 +141,6 @@ export default async function BlogPostPage({
               dangerouslySetInnerHTML={{ __html: html }}
             />
           )}
-
         </div>
       </article>
       <Newsletter />

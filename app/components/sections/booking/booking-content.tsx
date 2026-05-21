@@ -132,7 +132,9 @@ function initState({ slug, startStep }: InitArg): BookingState {
     step: saved.step ?? 0,
     selectedService: service,
     selectedTierId: saved.selectedTierId ?? null,
-    selectedTierLabel: (saved as { selectedTierLabel?: string | null }).selectedTierLabel ?? null,
+    selectedTierLabel:
+      (saved as { selectedTierLabel?: string | null }).selectedTierLabel ??
+      null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
@@ -376,7 +378,7 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
 
 function BookingContentInner() {
   const { user } = useAuth();
-  const router = useRouter();
+  const { push } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const slug = get("service") ?? get("wellness") ?? get("medicine");
@@ -647,7 +649,7 @@ function BookingContentInner() {
       time: selectedTime,
       phone: details.phone,
     });
-    router.push(`/booking/confirmation?${params.toString()}`);
+    push(`/booking/confirmation?${params.toString()}`);
   };
 
   return (

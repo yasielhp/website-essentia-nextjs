@@ -918,7 +918,8 @@ function CalendarView({
           const cellKey = day ? localDateStr(day) : `empty-${i}`;
           if (!day) return <div key={cellKey} />;
           const baseAvailable = isAvailableDay(day);
-          const isBlocked = baseAvailable && fullyBlockedDates.has(localDateStr(day));
+          const isBlocked =
+            baseAvailable && fullyBlockedDates.has(localDateStr(day));
           const available = baseAvailable && !isBlocked;
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
@@ -1164,8 +1165,11 @@ export default function EditBookingPage() {
 
   const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
   const [form, dispatchForm] = useReducer(formReducer, formInitial);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteState, setDeleteState] = useState({
+    open: false,
+    pending: false,
+  });
+  const { open: deleteOpen, pending: deleting } = deleteState;
 
   const pendingTierId = useRef<string>("");
   const originalRef = useRef<{
@@ -1211,28 +1215,39 @@ export default function EditBookingPage() {
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
 
   // ── Calendar month view state (lifted to enable month-level freeBusy) ────
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(() => today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
+  const [calView, setCalView] = useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
+  const { year: viewYear, month: viewMonth } = calView;
 
   const prevCalMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-    else setViewMonth((m) => m - 1);
+    setCalView((prev) =>
+      prev.month === 0
+        ? { year: prev.year - 1, month: 11 }
+        : { year: prev.year, month: prev.month - 1 },
+    );
   };
   const nextCalMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-    else setViewMonth((m) => m + 1);
+    setCalView((prev) =>
+      prev.month === 11
+        ? { year: prev.year + 1, month: 0 }
+        : { year: prev.year, month: prev.month + 1 },
+    );
   };
 
   // ── Month-level freeBusy (blocks fully-booked days in the calendar) ───────
-  const [monthBusy, setMonthBusy] = useState<{ start: string; end: string }[]>([]);
-  const [loadingMonth, setLoadingMonth] = useState(false);
+  const [monthFreeBusy, setMonthFreeBusy] = useState<{
+    busy: { start: string; end: string }[];
+    loading: boolean;
+  }>({ busy: [], loading: false });
+  const { busy: monthBusy, loading: loadingMonth } = monthFreeBusy;
 
   useEffect(() => {
     if (!serviceId) return;
     let cancelled = false;
     async function fetchMonth() {
-      setLoadingMonth(true);
+      setMonthFreeBusy((prev) => ({ ...prev, loading: true }));
       try {
         const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
         const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -1241,17 +1256,23 @@ export default function EditBookingPage() {
           `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
         );
         if (res.ok && !cancelled) {
-          const json = (await res.json()) as { busy: { start: string; end: string }[] };
-          setMonthBusy(json.busy ?? []);
+          const json = (await res.json()) as {
+            busy: { start: string; end: string }[];
+          };
+          setMonthFreeBusy({ busy: json.busy ?? [], loading: false });
+          return;
         }
       } catch {
         // fail-open
-      } finally {
-        if (!cancelled) setLoadingMonth(false);
+      }
+      if (!cancelled) {
+        setMonthFreeBusy((prev) => ({ ...prev, loading: false }));
       }
     }
     void fetchMonth();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId, viewYear, viewMonth]);
 
   const fullyBlockedDates = useMemo(() => {
@@ -1274,17 +1295,18 @@ export default function EditBookingPage() {
   }, [monthBusy, viewYear, viewMonth, selectedService, selectedTier]);
 
   // ── freeBusy for time-slot availability ───────────────────────
-  const [busyIntervals, setBusyIntervals] = useState<
-    { start: string; end: string }[]
-  >([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsFreeBusy, setSlotsFreeBusy] = useState<{
+    busy: { start: string; end: string }[];
+    loading: boolean;
+  }>({ busy: [], loading: false });
+  const { busy: busyIntervals, loading: loadingSlots } = slotsFreeBusy;
 
   useEffect(() => {
     if (!selectedDate || !serviceId) return;
     let cancelled = false;
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
     async function fetchBusy() {
-      setLoadingSlots(true);
+      setSlotsFreeBusy((prev) => ({ ...prev, loading: true }));
       try {
         const r = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
@@ -1293,13 +1315,11 @@ export default function EditBookingPage() {
           busy?: { start: string; end: string }[];
         };
         if (!cancelled) {
-          setBusyIntervals(json.busy ?? []);
-          setLoadingSlots(false);
+          setSlotsFreeBusy({ busy: json.busy ?? [], loading: false });
         }
       } catch {
         if (!cancelled) {
-          setBusyIntervals([]);
-          setLoadingSlots(false);
+          setSlotsFreeBusy({ busy: [], loading: false });
         }
       }
     }
@@ -1323,7 +1343,7 @@ export default function EditBookingPage() {
       ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
       : LOCATIONS;
 
-  const sortedServices = [...services].sort((a, b) => {
+  const sortedServices = services.toSorted((a, b) => {
     if (a.id === "manual-therapies") return -1;
     if (b.id === "manual-therapies") return 1;
     return a.title.localeCompare(b.title);
@@ -1734,7 +1754,7 @@ export default function EditBookingPage() {
   }
 
   async function handleDelete() {
-    setDeleting(true);
+    setDeleteState((prev) => ({ ...prev, pending: true }));
     await insforge.database.from("bookings").delete().eq("id", id);
     push("/dashboard/bookings");
   }
@@ -1754,7 +1774,7 @@ export default function EditBookingPage() {
               type="button"
               variant="outline-danger"
               size="md"
-              onClick={() => setDeleteOpen(true)}
+              onClick={() => setDeleteState((prev) => ({ ...prev, open: true }))}
               disabled={loading}
             >
               Delete
@@ -2237,7 +2257,7 @@ export default function EditBookingPage() {
         <DeleteDialog
           deleting={deleting}
           onConfirm={() => void handleDelete()}
-          onCancel={() => setDeleteOpen(false)}
+          onCancel={() => setDeleteState((prev) => ({ ...prev, open: false }))}
         />
       )}
     </div>

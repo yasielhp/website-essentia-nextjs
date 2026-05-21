@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer } from "react";
+import { useState, useEffect, useRef, useReducer, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -997,7 +997,7 @@ function CompletedRow({
 
 // ─── Page ─────────────────────────────────────────────────────
 
-export default function NewBookingPage() {
+function NewBookingPageInner() {
   const { push } = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -1081,7 +1081,7 @@ export default function NewBookingPage() {
       ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
       : LOCATIONS;
 
-  const sortedServices = [...services].sort((a, b) => {
+  const sortedServices = services.toSorted((a, b) => {
     if (a.id === "manual-therapies") return -1;
     if (b.id === "manual-therapies") return 1;
     return a.title.localeCompare(b.title);
@@ -1265,7 +1265,6 @@ export default function NewBookingPage() {
 
     // Create Google Calendar event (non-blocking, only for confirmed bookings)
     if (dateStr && selectedTime) {
-
       // Build location string for the event
       const calLocation = (() => {
         if (location === "centro") return contact.address;
@@ -1954,5 +1953,13 @@ export default function NewBookingPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewBookingPage() {
+  return (
+    <Suspense>
+      <NewBookingPageInner />
+    </Suspense>
   );
 }
