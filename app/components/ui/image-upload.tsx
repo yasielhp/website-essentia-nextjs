@@ -87,12 +87,11 @@ export function ImageUpload({
         // Client-side path: compress in browser, upload directly via Insforge client
         const compressed = await compressImage(file);
         const key = `${folder}/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.webp`;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const uploadResult = await (insforge.storage.from(bucket) as any).upload(
-          key,
-          compressed,
-          { upsert: true },
-        );
+        const uploadResult = await (
+          insforge.storage.from(bucket) as unknown as {
+            upload: (key: string, data: Blob, opts: { upsert: boolean }) => Promise<{ error?: { message?: string } }>;
+          }
+        ).upload(key, compressed, { upsert: true });
 
         const uploadError = (uploadResult as { error?: { message?: string } })
           .error;
@@ -105,7 +104,8 @@ export function ImageUpload({
         const publicUrl =
           typeof publicUrlResult === "string"
             ? publicUrlResult
-            : (publicUrlResult as { data: { publicUrl: string } }).data.publicUrl;
+            : (publicUrlResult as { data: { publicUrl: string } }).data
+                .publicUrl;
         onChange(publicUrl);
       }
     } catch {
