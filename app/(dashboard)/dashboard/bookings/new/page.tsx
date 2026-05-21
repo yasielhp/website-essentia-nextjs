@@ -1004,6 +1004,7 @@ function NewBookingPageInner() {
   const { role } = useRole();
   const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
   const [form, dispatchForm] = useReducer(formReducer, formInitial);
+  const submittingRef = useRef(false);
 
   const [editingStep, setEditingStep] = useState<
     "service" | "location" | "tier" | "datetime" | null
@@ -1193,6 +1194,8 @@ function NewBookingPageInner() {
       ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
       : null;
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     dispatchAsync({ type: "SUBMIT_START" });
 
     const { data: inserted, error: insertError } = await insforge.database
@@ -1225,6 +1228,7 @@ function NewBookingPageInner() {
     dispatchAsync({ type: "SUBMIT_END" });
 
     if (insertError) {
+      submittingRef.current = false;
       dispatchAsync({
         type: "SET_ERROR",
         payload:
@@ -1244,7 +1248,7 @@ function NewBookingPageInner() {
       try {
         await notifyBooking({
           bookingId,
-          event: "received",
+          event: "confirmed",
           clientName,
           clientEmail: email.trim(),
           clientPhone: phone.trim() || null,

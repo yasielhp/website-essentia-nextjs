@@ -129,8 +129,8 @@ export async function notifyBooking(
     html: clientTemplates[event](),
   });
 
-  // ── Staff notification (only on new bookings) ──────────────────
-  if (event === "received" && serviceId) {
+  // ── Staff notification (on new bookings, whether pending or confirmed) ───
+  if ((event === "received" || event === "confirmed") && serviceId) {
     const staffEmail = await getStaffEmail(serviceId).catch(() => null);
     if (staffEmail) {
       await sendEmail({
