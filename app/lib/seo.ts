@@ -1,4 +1,5 @@
 import { contact } from "@/constants/contact";
+import type { FaqItem } from "@/components/sections/service-faq";
 
 const base = `https://${contact.domain}`;
 
@@ -13,6 +14,18 @@ export function breadcrumbSchema(items: BreadcrumbItem[]) {
       position: i + 1,
       name: item.name,
       item: `${base}${item.url}`,
+    })),
+  };
+}
+
+export function faqPageSchema(faqs: FaqItem[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.answer },
     })),
   };
 }
