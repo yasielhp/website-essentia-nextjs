@@ -28,6 +28,13 @@ export default function ConsentManagerClient({
         overrides: { country: "ES" },
         theme,
         scripts,
+        consentCategories: [
+          "necessary",
+          "measurement",
+          "marketing",
+          "functionality",
+          "experience",
+        ],
         offlinePolicy: {
           policyPacks: [
             policyPackPresets.europeOptIn(),
