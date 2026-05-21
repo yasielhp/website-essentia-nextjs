@@ -8,6 +8,7 @@ import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
+import { updateUserProfile } from "@/actions/update-user-profile";
 import {
   IconTrash,
   IconCheck,
@@ -41,6 +42,7 @@ type State = {
   firstName: string;
   lastName: string;
   email: string;
+  originalEmail: string;
   phone: string;
   role: SystemRole;
 };
@@ -70,6 +72,7 @@ const initial: State = {
   firstName: "",
   lastName: "",
   email: "",
+  originalEmail: "",
   phone: "",
   role: "staff",
 };
@@ -89,6 +92,7 @@ function reducer(state: State, action: Action): State {
           action.profile.full_name?.split(" ").slice(1).join(" ") ??
           "",
         email: action.profile.email ?? "",
+        originalEmail: action.profile.email ?? "",
         phone: action.profile.phone ?? "",
         role: action.profile.role,
       };
@@ -199,21 +203,21 @@ export default function EditUserPage() {
 
     dispatch({ type: "SET_SAVING", value: true });
 
-    const fullName = [trimFirst, state.lastName.trim()]
-      .filter(Boolean)
-      .join(" ");
+    const { error } = await updateUserProfile({
+      userId: id,
+      email: state.email,
+      firstName: state.firstName,
+      lastName: state.lastName,
+      phone: state.phone,
+      role: state.role,
+      currentEmail: state.originalEmail,
+    });
 
-    await insforge.database
-      .from("profiles")
-      .update({
-        role: state.role,
-        first_name: trimFirst,
-        last_name: state.lastName.trim() || null,
-        full_name: fullName,
-        email: state.email.trim() || null,
-        phone: state.phone.trim() || null,
-      })
-      .eq("id", id);
+    if (error) {
+      dispatch({ type: "SET_ERROR", msg: error });
+      dispatch({ type: "SET_SAVING", value: false });
+      return;
+    }
 
     // Sync staff_services: delete all then re-insert
     await insforge.database.from("staff_services").delete().eq("staff_id", id);
