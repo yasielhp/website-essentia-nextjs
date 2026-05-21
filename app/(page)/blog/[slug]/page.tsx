@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { marked } from "marked";
 import { createClient } from "@insforge/sdk";
@@ -95,22 +94,6 @@ export default async function BlogPostPage({
     <>
       <article className="bg-sand-50 text-petroleum-700 px-4 py-20 sm:px-8">
         <div className="mx-auto max-w-3xl">
-          {/* Breadcrumb */}
-          <nav className="mb-8 text-sm">
-            <Link
-              href="/blog"
-              className="text-petroleum-400 hover:text-petroleum-700 transition-colors"
-            >
-              Blog
-            </Link>
-            {post.category && (
-              <>
-                <span className="text-petroleum-100 mx-2">/</span>
-                <span className="text-petroleum-400">{post.category.name}</span>
-              </>
-            )}
-          </nav>
-
           {/* Category badge */}
           {post.category && (
             <span className="bg-petroleum-50 text-petroleum-500 mb-4 inline-block rounded-full px-3 py-1 text-xs font-medium">
