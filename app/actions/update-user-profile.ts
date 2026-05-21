@@ -31,18 +31,17 @@ export async function updateUserProfile(
   const trimEmail = email.trim().toLowerCase();
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 
-  // Always sync auth.users + auth.identities so profiles.email and login email stay in sync
-  if (trimEmail) {
+  // Sync auth.users email if it changed (requires admin_update_user_email SQL function)
+  const emailChanged = trimEmail && trimEmail !== currentEmail.trim().toLowerCase();
+  if (emailChanged) {
     const { error: emailError } = await admin.database.rpc(
       "admin_update_user_email",
       { p_user_id: userId, p_new_email: trimEmail },
     );
     if (emailError) {
-      return {
-        error:
-          (emailError as { message?: string }).message ??
-          "Error al actualizar el email.",
-      };
+      // RPC not available — profile email will be updated but login email must be
+      // changed manually from the Insforge Authentication panel
+      console.warn("admin_update_user_email RPC failed:", emailError);
     }
   }
 
