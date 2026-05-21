@@ -1664,7 +1664,7 @@ export default function EditBookingPage() {
   const { role } = useRole();
 
   useEffect(() => {
-    if (role && role === "partner") {
+    if (role && role !== "admin" && role !== "staff" && role !== "partner") {
       push(`/dashboard/bookings/${id}`);
     }
   }, [role, id, push]);

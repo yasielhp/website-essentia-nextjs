@@ -273,8 +273,8 @@ export default function BookingDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="font-display text-petroleum-700 text-2xl">{fullName}</h1>
-        {!isPartner && (
-          <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
+          {!isPartner && (
             <Button
               variant="outline-danger"
               size="md"
@@ -282,15 +282,15 @@ export default function BookingDetailPage() {
             >
               Delete
             </Button>
-            <Button
-              variant="solid"
-              size="md"
-              href={`/dashboard/bookings/${id}/edit`}
-            >
-              Edit
-            </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="solid"
+            size="md"
+            href={`/dashboard/bookings/${id}/edit`}
+          >
+            Edit
+          </Button>
+        </div>
       </div>
 
       {/* Meta strip */}
