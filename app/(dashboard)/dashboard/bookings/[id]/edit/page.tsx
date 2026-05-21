@@ -1150,6 +1150,512 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
+// ─── Form sections ────────────────────────────────────────────
+
+type StatusSectionProps = {
+  status: string;
+  onChange: (s: BookingStatus) => void;
+};
+
+function StatusSection({ status, onChange }: StatusSectionProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Status</h2>
+      <StatusSelect
+        selected={(status as BookingStatus) || "pending"}
+        onSelect={onChange}
+      />
+    </div>
+  );
+}
+
+type ServiceSectionProps = {
+  loading: boolean;
+  services: Service[];
+  selectedService: Service | null;
+  onSelect: (service: Service) => void;
+};
+
+function ServiceSection({
+  loading,
+  services,
+  selectedService,
+  onSelect,
+}: ServiceSectionProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Service</h2>
+      {loading ? (
+        <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+      ) : (
+        <ServiceSelect
+          services={services}
+          selected={selectedService}
+          onSelect={onSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+type LocationSectionProps = {
+  location: DashboardLocation | "";
+  allowedLocations: typeof LOCATIONS;
+  onLocationChange: (l: DashboardLocation) => void;
+  roomNumber: string;
+  reservationNumber: string;
+  address: LocationAddress;
+  submitting: boolean;
+  onRoomNumberChange: (value: string) => void;
+  onReservationNumberChange: (value: string) => void;
+  onAddressChange: (value: LocationAddress) => void;
+};
+
+function LocationSection({
+  location,
+  allowedLocations,
+  onLocationChange,
+  roomNumber,
+  reservationNumber,
+  address,
+  submitting,
+  onRoomNumberChange,
+  onReservationNumberChange,
+  onAddressChange,
+}: LocationSectionProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Location
+      </h2>
+      <div className="flex flex-col gap-4">
+        <LocationSelect
+          selected={location || null}
+          onSelect={onLocationChange}
+          locations={allowedLocations}
+        />
+
+        {location === "habitacion" && (
+          <div className="animate-fade-in-up flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="reservationNumber"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Reservation number <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="reservationNumber"
+                  type="text"
+                  value={reservationNumber}
+                  onChange={(e) => onReservationNumberChange(e.target.value)}
+                  placeholder="83943"
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="roomNumber"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Room number
+                </label>
+                <input
+                  id="roomNumber"
+                  type="text"
+                  value={roomNumber}
+                  onChange={(e) => onRoomNumberChange(e.target.value)}
+                  placeholder="AK201"
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {location === "domicilio" && (
+          <div className="animate-fade-in-up flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="addr-street"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Street & number <span className="text-red-400">*</span>
+              </label>
+              <input
+                id="addr-street"
+                type="text"
+                value={address.street}
+                onChange={(e) =>
+                  onAddressChange({ ...address, street: e.target.value })
+                }
+                placeholder="Calle El Peñón, 23"
+                autoComplete="address-line1"
+                disabled={submitting}
+                className={INPUT_CLASS}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="addr-building"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Block, floor & door
+              </label>
+              <input
+                id="addr-building"
+                type="text"
+                value={address.building}
+                onChange={(e) =>
+                  onAddressChange({ ...address, building: e.target.value })
+                }
+                placeholder="Block 3, 2nd floor, apt B"
+                autoComplete="address-line2"
+                disabled={submitting}
+                className={INPUT_CLASS}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="addr-postal"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Postal code <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="addr-postal"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={address.postalCode}
+                  onChange={(e) =>
+                    onAddressChange({
+                      ...address,
+                      postalCode: e.target.value,
+                    })
+                  }
+                  placeholder="38670"
+                  autoComplete="postal-code"
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="addr-municipality"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Municipality <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="addr-municipality"
+                  type="text"
+                  list="edit-municipalities"
+                  value={address.municipality}
+                  onChange={(e) =>
+                    onAddressChange({
+                      ...address,
+                      municipality: e.target.value,
+                    })
+                  }
+                  placeholder="Adeje"
+                  autoComplete="address-level2"
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+                <datalist id="edit-municipalities">
+                  {TENERIFE_MUNICIPALITIES.map((m) => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type TierSectionProps = {
+  serviceId: string;
+  tiersLoading: boolean;
+  tiers: Tier[];
+  tierId: string;
+  location: DashboardLocation | "";
+  onSelect: (tier: Tier) => void;
+};
+
+function TierSection({
+  serviceId,
+  tiersLoading,
+  tiers,
+  tierId,
+  location,
+  onSelect,
+}: TierSectionProps) {
+  if (!serviceId) return null;
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Session type
+      </h2>
+      {tiersLoading ? (
+        <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+      ) : tiers.length === 0 ? (
+        <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
+          No session types configured for this service.
+        </p>
+      ) : (
+        <TierSelect
+          tiers={tiers}
+          selectedId={tierId}
+          location={location}
+          onSelect={onSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+type DateTimeSectionProps = {
+  calendarView: "date" | "time";
+  selectedDate: Date | null;
+  selectedTime: string;
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  fullyBlockedDates: Set<string>;
+  loadingMonth: boolean;
+  loadingSlots: boolean;
+  timeSlots: { time: string; booked: boolean }[];
+  onSelectDate: (d: Date) => void;
+  onSelectTime: (time: string) => void;
+  onChangeView: (view: "date" | "time") => void;
+};
+
+function DateTimeSection({
+  calendarView,
+  selectedDate,
+  selectedTime,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+  fullyBlockedDates,
+  loadingMonth,
+  loadingSlots,
+  timeSlots,
+  onSelectDate,
+  onSelectTime,
+  onChangeView,
+}: DateTimeSectionProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Date & Time
+      </h2>
+      {calendarView === "date" ? (
+        <CalendarView
+          selected={selectedDate}
+          onSelect={onSelectDate}
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          onPrevMonth={onPrevMonth}
+          onNextMonth={onNextMonth}
+          fullyBlockedDates={fullyBlockedDates}
+          loadingMonth={loadingMonth}
+        />
+      ) : (
+        <div className="flex flex-col gap-5">
+          <button
+            type="button"
+            onClick={() => onChangeView("date")}
+            className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200"
+          >
+            <div className="flex flex-col gap-1">
+              <p className="text-petroleum-400 text-xs">Date</p>
+              <p className="text-petroleum-700 font-medium">
+                {selectedDate?.toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+            <ChevronDown
+              className="text-petroleum-400 shrink-0"
+              size={16}
+            />
+          </button>
+          <div className="flex flex-col gap-3">
+            <p className="text-petroleum-400 text-sm">Available times</p>
+            {loadingSlots ? (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-sand-100 h-10 animate-pulse rounded-xl"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {timeSlots.map(({ time, booked }) => (
+                  <button
+                    key={time}
+                    type="button"
+                    disabled={booked}
+                    onClick={() => {
+                      if (!booked) onSelectTime(time);
+                    }}
+                    className={[
+                      "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                      selectedTime === time
+                        ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
+                        : booked
+                          ? "border-sand-200 text-sand-400 cursor-not-allowed opacity-40"
+                          : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
+                    ].join(" ")}
+                  >
+                    {time}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type ClientSectionProps = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  notes: string;
+  submitting: boolean;
+  onFieldChange: (
+    field: "firstName" | "lastName" | "email" | "phone",
+    value: string,
+  ) => void;
+  onNotesChange: (value: string) => void;
+};
+
+function ClientSection({
+  firstName,
+  lastName,
+  email,
+  phone,
+  notes,
+  submitting,
+  onFieldChange,
+  onNotesChange,
+}: ClientSectionProps) {
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Client</h2>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="firstName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              First name <span className="text-red-400">*</span>
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              value={firstName}
+              onChange={(e) => onFieldChange("firstName", e.target.value)}
+              placeholder="Jane"
+              disabled={submitting}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="lastName"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              Last name
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              value={lastName}
+              onChange={(e) => onFieldChange("lastName", e.target.value)}
+              placeholder="Doe"
+              disabled={submitting}
+              className={INPUT_CLASS}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="email"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Email <span className="text-red-400">*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => onFieldChange("email", e.target.value)}
+            placeholder="jane@example.com"
+            disabled={submitting}
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="phone"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Phone
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => onFieldChange("phone", e.target.value)}
+            placeholder="+34 600 000 000"
+            disabled={submitting}
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="notes"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Notes
+          </label>
+          <textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            placeholder="Any additional notes for this booking…"
+            rows={3}
+            disabled={submitting}
+            className={INPUT_CLASS + " resize-none"}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditBookingPage() {
@@ -1246,8 +1752,9 @@ export default function EditBookingPage() {
   useEffect(() => {
     if (!serviceId) return;
     let cancelled = false;
-    async function fetchMonth() {
-      setMonthFreeBusy((prev) => ({ ...prev, loading: true }));
+    void (async () => {
+      setMonthFreeBusy({ busy: [], loading: true });
+      let busy: { start: string; end: string }[] = [];
       try {
         const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
         const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -1255,24 +1762,16 @@ export default function EditBookingPage() {
         const res = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
         );
-        if (res.ok && !cancelled) {
-          const json = (await res.json()) as {
-            busy: { start: string; end: string }[];
-          };
-          setMonthFreeBusy({ busy: json.busy ?? [], loading: false });
-          return;
+        if (res.ok) {
+          const json = (await res.json()) as { busy: { start: string; end: string }[] };
+          busy = json.busy ?? [];
         }
       } catch {
         // fail-open
       }
-      if (!cancelled) {
-        setMonthFreeBusy((prev) => ({ ...prev, loading: false }));
-      }
-    }
-    void fetchMonth();
-    return () => {
-      cancelled = true;
-    };
+      if (!cancelled) setMonthFreeBusy({ busy, loading: false });
+    })();
+    return () => { cancelled = true; };
   }, [serviceId, viewYear, viewMonth]);
 
   const fullyBlockedDates = useMemo(() => {
@@ -1305,28 +1804,21 @@ export default function EditBookingPage() {
     if (!selectedDate || !serviceId) return;
     let cancelled = false;
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
-    async function fetchBusy() {
-      setSlotsFreeBusy((prev) => ({ ...prev, loading: true }));
+    void (async () => {
+      setSlotsFreeBusy({ busy: [], loading: true });
+      let busy: { start: string; end: string }[] = [];
       try {
         const r = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
         );
-        const json = (await r.json()) as {
-          busy?: { start: string; end: string }[];
-        };
-        if (!cancelled) {
-          setSlotsFreeBusy({ busy: json.busy ?? [], loading: false });
-        }
+        const json = (await r.json()) as { busy?: { start: string; end: string }[] };
+        busy = json.busy ?? [];
       } catch {
-        if (!cancelled) {
-          setSlotsFreeBusy({ busy: [], loading: false });
-        }
+        // fail-open
       }
-    }
-    void fetchBusy();
-    return () => {
-      cancelled = true;
-    };
+      if (!cancelled) setSlotsFreeBusy({ busy, loading: false });
+    })();
+    return () => { cancelled = true; };
   }, [selectedDate, serviceId]);
 
   const timeSlots = selectedDate
@@ -1774,7 +2266,9 @@ export default function EditBookingPage() {
               type="button"
               variant="outline-danger"
               size="md"
-              onClick={() => setDeleteState((prev) => ({ ...prev, open: true }))}
+              onClick={() =>
+                setDeleteState((prev) => ({ ...prev, open: true }))
+              }
               disabled={loading}
             >
               Delete
@@ -1799,437 +2293,90 @@ export default function EditBookingPage() {
 
         <div className="space-y-3">
           {/* ── 1. Status ── */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Status
-            </h2>
-            <StatusSelect
-              selected={(status as BookingStatus) || "pending"}
-              onSelect={(s) =>
-                dispatchForm({ type: "SET_FIELD", field: "status", value: s })
-              }
-            />
-          </div>
+          <StatusSection
+            status={status}
+            onChange={(s) =>
+              dispatchForm({ type: "SET_FIELD", field: "status", value: s })
+            }
+          />
 
           {/* ── 2. Service ── */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Service
-            </h2>
-            {loading ? (
-              <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
-            ) : (
-              <ServiceSelect
-                services={sortedServices}
-                selected={selectedService}
-                onSelect={(s) =>
-                  dispatchForm({ type: "SET_SERVICE", id: s.id })
-                }
-              />
-            )}
-          </div>
+          <ServiceSection
+            loading={loading}
+            services={sortedServices}
+            selectedService={selectedService}
+            onSelect={(s) => dispatchForm({ type: "SET_SERVICE", id: s.id })}
+          />
 
           {/* ── 3. Location ── */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Location
-            </h2>
-            <div className="flex flex-col gap-4">
-              <LocationSelect
-                selected={location || null}
-                onSelect={(l) =>
-                  dispatchForm({ type: "SET_LOCATION", value: l })
-                }
-                locations={allowedLocations}
-              />
-
-              {location === "habitacion" && (
-                <div className="animate-fade-in-up flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label
-                        htmlFor="reservationNumber"
-                        className="text-petroleum-500 text-xs font-medium"
-                      >
-                        Reservation number{" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        id="reservationNumber"
-                        type="text"
-                        value={reservationNumber}
-                        onChange={(e) =>
-                          dispatchForm({
-                            type: "SET_RESERVATION_NUMBER",
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder="83943"
-                        disabled={submitting}
-                        className={INPUT_CLASS}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label
-                        htmlFor="roomNumber"
-                        className="text-petroleum-500 text-xs font-medium"
-                      >
-                        Room number
-                      </label>
-                      <input
-                        id="roomNumber"
-                        type="text"
-                        value={roomNumber}
-                        onChange={(e) =>
-                          dispatchForm({
-                            type: "SET_ROOM_NUMBER",
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder="AK201"
-                        disabled={submitting}
-                        className={INPUT_CLASS}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {location === "domicilio" && (
-                <div className="animate-fade-in-up flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="addr-street"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      Street & number <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      id="addr-street"
-                      type="text"
-                      value={address.street}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_ADDRESS",
-                          value: { ...address, street: e.target.value },
-                        })
-                      }
-                      placeholder="Calle El Peñón, 23"
-                      autoComplete="address-line1"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="addr-building"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      Block, floor & door
-                    </label>
-                    <input
-                      id="addr-building"
-                      type="text"
-                      value={address.building}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_ADDRESS",
-                          value: { ...address, building: e.target.value },
-                        })
-                      }
-                      placeholder="Block 3, 2nd floor, apt B"
-                      autoComplete="address-line2"
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label
-                        htmlFor="addr-postal"
-                        className="text-petroleum-500 text-xs font-medium"
-                      >
-                        Postal code <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        id="addr-postal"
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={5}
-                        value={address.postalCode}
-                        onChange={(e) =>
-                          dispatchForm({
-                            type: "SET_ADDRESS",
-                            value: { ...address, postalCode: e.target.value },
-                          })
-                        }
-                        placeholder="38670"
-                        autoComplete="postal-code"
-                        disabled={submitting}
-                        className={INPUT_CLASS}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label
-                        htmlFor="addr-municipality"
-                        className="text-petroleum-500 text-xs font-medium"
-                      >
-                        Municipality <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        id="addr-municipality"
-                        type="text"
-                        list="edit-municipalities"
-                        value={address.municipality}
-                        onChange={(e) =>
-                          dispatchForm({
-                            type: "SET_ADDRESS",
-                            value: { ...address, municipality: e.target.value },
-                          })
-                        }
-                        placeholder="Adeje"
-                        autoComplete="address-level2"
-                        disabled={submitting}
-                        className={INPUT_CLASS}
-                      />
-                      <datalist id="edit-municipalities">
-                        {TENERIFE_MUNICIPALITIES.map((m) => (
-                          <option key={m} value={m} />
-                        ))}
-                      </datalist>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <LocationSection
+            location={location}
+            allowedLocations={allowedLocations}
+            onLocationChange={(l) =>
+              dispatchForm({ type: "SET_LOCATION", value: l })
+            }
+            roomNumber={roomNumber}
+            reservationNumber={reservationNumber}
+            address={address}
+            submitting={submitting}
+            onRoomNumberChange={(value) =>
+              dispatchForm({ type: "SET_ROOM_NUMBER", value })
+            }
+            onReservationNumberChange={(value) =>
+              dispatchForm({ type: "SET_RESERVATION_NUMBER", value })
+            }
+            onAddressChange={(value) =>
+              dispatchForm({ type: "SET_ADDRESS", value })
+            }
+          />
 
           {/* ── 4. Session type ── */}
-          {serviceId && (
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Session type
-              </h2>
-              {tiersLoading ? (
-                <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
-              ) : tiers.length === 0 ? (
-                <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                  No session types configured for this service.
-                </p>
-              ) : (
-                <TierSelect
-                  tiers={tiers}
-                  selectedId={tierId}
-                  location={location}
-                  onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
-                />
-              )}
-            </div>
-          )}
+          <TierSection
+            serviceId={serviceId}
+            tiersLoading={tiersLoading}
+            tiers={tiers}
+            tierId={tierId}
+            location={location}
+            onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
+          />
 
           {/* ── 5. Date & Time ── */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Date & Time
-            </h2>
-            {calendarView === "date" ? (
-              <CalendarView
-                selected={selectedDate}
-                onSelect={(d) => dispatchForm({ type: "SET_DATE", value: d })}
-                viewYear={viewYear}
-                viewMonth={viewMonth}
-                onPrevMonth={prevCalMonth}
-                onNextMonth={nextCalMonth}
-                fullyBlockedDates={fullyBlockedDates}
-                loadingMonth={loadingMonth}
-              />
-            ) : (
-              <div className="flex flex-col gap-5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    dispatchForm({ type: "SET_CALENDAR_VIEW", value: "date" })
-                  }
-                  className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200"
-                >
-                  <div className="flex flex-col gap-1">
-                    <p className="text-petroleum-400 text-xs">Date</p>
-                    <p className="text-petroleum-700 font-medium">
-                      {selectedDate?.toLocaleDateString("en-GB", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <ChevronDown
-                    className="text-petroleum-400 shrink-0"
-                    size={16}
-                  />
-                </button>
-                <div className="flex flex-col gap-3">
-                  <p className="text-petroleum-400 text-sm">Available times</p>
-                  {loadingSlots ? (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {timeSlots.map(({ time, booked }) => (
-                        <button
-                          key={time}
-                          type="button"
-                          disabled={booked}
-                          onClick={() => {
-                            if (!booked)
-                              dispatchForm({ type: "SET_TIME", value: time });
-                          }}
-                          className={[
-                            "rounded-xl border py-2.5 text-sm font-medium transition-all",
-                            selectedTime === time
-                              ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
-                              : booked
-                                ? "border-sand-200 text-sand-400 cursor-not-allowed opacity-40"
-                                : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
-                          ].join(" ")}
-                        >
-                          {time}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <DateTimeSection
+            calendarView={calendarView}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            onPrevMonth={prevCalMonth}
+            onNextMonth={nextCalMonth}
+            fullyBlockedDates={fullyBlockedDates}
+            loadingMonth={loadingMonth}
+            loadingSlots={loadingSlots}
+            timeSlots={timeSlots}
+            onSelectDate={(d) => dispatchForm({ type: "SET_DATE", value: d })}
+            onSelectTime={(time) =>
+              dispatchForm({ type: "SET_TIME", value: time })
+            }
+            onChangeView={(view) =>
+              dispatchForm({ type: "SET_CALENDAR_VIEW", value: view })
+            }
+          />
 
           {/* ── 6. Client ── */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Client
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    First name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "firstName",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder="Jane"
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    Last name
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "lastName",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder="Doe"
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="email"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Email <span className="text-red-400">*</span>
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) =>
-                    dispatchForm({
-                      type: "SET_FIELD",
-                      field: "email",
-                      value: e.target.value,
-                    })
-                  }
-                  placeholder="jane@example.com"
-                  disabled={submitting}
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="phone"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Phone
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) =>
-                    dispatchForm({
-                      type: "SET_FIELD",
-                      field: "phone",
-                      value: e.target.value,
-                    })
-                  }
-                  placeholder="+34 600 000 000"
-                  disabled={submitting}
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="notes"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  Notes
-                </label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) =>
-                    dispatchForm({ type: "SET_NOTES", value: e.target.value })
-                  }
-                  placeholder="Any additional notes for this booking…"
-                  rows={3}
-                  disabled={submitting}
-                  className={INPUT_CLASS + " resize-none"}
-                />
-              </div>
-            </div>
-          </div>
+          <ClientSection
+            firstName={firstName}
+            lastName={lastName}
+            email={email}
+            phone={phone}
+            notes={notes}
+            submitting={submitting}
+            onFieldChange={(field, value) =>
+              dispatchForm({ type: "SET_FIELD", field, value })
+            }
+            onNotesChange={(value) =>
+              dispatchForm({ type: "SET_NOTES", value })
+            }
+          />
         </div>
 
         {/* Mobile bottom bar */}
