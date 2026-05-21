@@ -117,10 +117,10 @@ export async function notifyBooking(
   };
 
   const clientSubjects: Record<BookingNotificationEvent, string> = {
-    received: `Solicitud recibida — ${service}`,
-    confirmed: `Reserva confirmada — ${service}`,
-    cancelled: `Reserva cancelada — ${service}`,
-    rescheduled: `Reserva reprogramada — ${service}`,
+    received: `Booking request received — ${service}`,
+    confirmed: `Booking confirmed — ${service}`,
+    cancelled: `Booking cancelled — ${service}`,
+    rescheduled: `Booking rescheduled — ${service}`,
   };
 
   await sendEmail({
