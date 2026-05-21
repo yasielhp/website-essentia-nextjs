@@ -28,7 +28,3 @@ BEGIN
     AND provider = 'email';
 END;
 $$;
-
--- Solo service_role puede llamar esta función
-REVOKE EXECUTE ON FUNCTION public.admin_update_user_email(UUID, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT  EXECUTE ON FUNCTION public.admin_update_user_email(UUID, TEXT) TO service_role;
