@@ -8,6 +8,7 @@ import {
   ConsentDialogTrigger,
 } from "@c15t/nextjs";
 import { DevTools } from "@c15t/dev-tools/react";
+import { policyPackPresets } from "c15t";
 import { theme } from "./theme";
 import { googleTagManager } from "@c15t/scripts/google-tag-manager";
 
@@ -27,6 +28,12 @@ export default function ConsentManagerClient({
         overrides: { country: "ES" },
         theme,
         scripts,
+        offlinePolicy: {
+          policyPacks: [
+            policyPackPresets.europeOptIn(),
+            policyPackPresets.worldNoBanner(),
+          ],
+        },
       }}
     >
       <ConsentBanner />
