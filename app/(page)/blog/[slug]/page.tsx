@@ -93,38 +93,38 @@ export default async function BlogPostPage({
 
   return (
     <>
-      <article className="bg-sand-50 text-primary px-4 py-20 sm:px-8">
+      <article className="bg-sand-50 text-petroleum-700 px-4 py-20 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm">
             <Link
               href="/blog"
-              className="text-primary/50 hover:text-primary transition-colors"
+              className="text-petroleum-400 hover:text-petroleum-700 transition-colors"
             >
               Blog
             </Link>
             {post.category && (
               <>
-                <span className="text-primary/30 mx-2">/</span>
-                <span className="text-primary/50">{post.category.name}</span>
+                <span className="text-petroleum-100 mx-2">/</span>
+                <span className="text-petroleum-400">{post.category.name}</span>
               </>
             )}
           </nav>
 
           {/* Category badge */}
           {post.category && (
-            <span className="bg-primary/10 text-primary mb-4 inline-block rounded-full px-3 py-1 text-xs font-medium">
+            <span className="bg-petroleum-50 text-petroleum-500 mb-4 inline-block rounded-full px-3 py-1 text-xs font-medium">
               {post.category.name}
             </span>
           )}
 
           {/* Title */}
-          <h1 className="font-display mb-4 text-4xl leading-tight sm:text-5xl">
+          <h1 className="font-display text-petroleum-700 mb-4 text-4xl leading-tight sm:text-5xl">
             {post.title}
           </h1>
 
           {/* Meta */}
-          <div className="text-primary/50 mb-8 flex flex-wrap items-center gap-3 text-sm">
+          <div className="text-petroleum-400 mb-8 flex flex-wrap items-center gap-3 text-sm">
             {post.author?.full_name && <span>{post.author.full_name}</span>}
             {post.author?.full_name && post.published_at && <span>·</span>}
             {post.published_at && <span>{formatDate(post.published_at)}</span>}
@@ -146,7 +146,7 @@ export default async function BlogPostPage({
 
           {/* Excerpt */}
           {post.excerpt && (
-            <p className="text-primary/70 border-primary/20 mb-8 border-l-2 pl-4 text-lg leading-relaxed italic">
+            <p className="text-petroleum-500 border-petroleum-100 mb-8 border-l-2 pl-4 text-lg leading-relaxed italic">
               {post.excerpt}
             </p>
           )}
@@ -154,7 +154,7 @@ export default async function BlogPostPage({
           {/* Content */}
           {html && (
             <div
-              className="prose prose-lg prose-headings:font-display prose-headings:text-primary prose-p:text-primary/80 prose-a:text-primary prose-strong:text-primary max-w-none"
+              className="prose prose-lg prose-headings:font-display max-w-none"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           )}
