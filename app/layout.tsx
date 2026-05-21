@@ -104,7 +104,7 @@ const schemaOrg = {
       publisher: { "@id": `${siteUrl}/#organization` },
     },
     {
-      "@type": ["LocalBusiness", "HealthAndBeautyBusiness"],
+      "@type": ["LocalBusiness", "HealthAndBeautyBusiness", "MedicalClinic"],
       "@id": `${siteUrl}/#localbusiness`,
       name: "Essentia Wellness Club",
       image: `${siteUrl}/images/logo-for-google.png`,
@@ -125,6 +125,15 @@ const schemaOrg = {
         longitude: "-16.7307",
       },
       priceRange: "€€€",
+      medicalSpecialty: ["Preventive Medicine", "Regenerative Medicine"],
+      availableService: [
+        { "@type": "MedicalTherapy", "name": "Hyperbaric Oxygen Therapy" },
+        { "@type": "MedicalTherapy", "name": "Intravenous Therapy" },
+        { "@type": "MedicalTherapy", "name": "Regenerative Medicine" },
+        { "@type": "MedicalTherapy", "name": "Contrast Therapy" },
+        { "@type": "MedicalTherapy", "name": "Red Light Therapy" },
+        { "@type": "MedicalTherapy", "name": "Manual Therapies" },
+      ],
     },
   ],
 };

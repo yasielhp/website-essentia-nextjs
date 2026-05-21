@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TreatmentSection from "@components/sections/wellness/treatment/treatment-section";
 import { treatments } from "@components/sections/wellness/treatment/data";
+import { breadcrumbSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Contrast Therapy | Essentia Wellness",
@@ -9,5 +10,21 @@ export const metadata: Metadata = {
 };
 
 export default function ContrastTherapyPage() {
-  return <TreatmentSection data={treatments["contrast-therapy"]} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema([
+              { name: "Home", url: "/" },
+              { name: "Wellness", url: "/wellness" },
+              { name: "Contrast Therapy", url: "/wellness/contrast-therapy" },
+            ]),
+          ),
+        }}
+      />
+      <TreatmentSection data={treatments["contrast-therapy"]} />
+    </>
+  );
 }

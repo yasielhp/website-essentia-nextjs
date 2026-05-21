@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TreatmentSection from "@components/sections/medicine/treatment/treatment-section";
 import { treatments } from "@components/sections/medicine/treatment/data";
+import { breadcrumbSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Hyperbaric Chambers | Essentia Medicine",
@@ -9,5 +10,21 @@ export const metadata: Metadata = {
 };
 
 export default function HyperbaricChambersPage() {
-  return <TreatmentSection data={treatments["hyperbaric-chambers"]} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema([
+              { name: "Home", url: "/" },
+              { name: "Medicine", url: "/medicine" },
+              { name: "Hyperbaric Chambers", url: "/medicine/hyperbaric-chambers" },
+            ]),
+          ),
+        }}
+      />
+      <TreatmentSection data={treatments["hyperbaric-chambers"]} />
+    </>
+  );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TreatmentSection from "@components/sections/medicine/treatment/treatment-section";
 import { treatments } from "@components/sections/medicine/treatment/data";
+import { breadcrumbSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "IV Therapy | Essentia Medicine",
@@ -9,5 +10,21 @@ export const metadata: Metadata = {
 };
 
 export default function IvTherapyPage() {
-  return <TreatmentSection data={treatments["intravenous-therapy"]} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema([
+              { name: "Home", url: "/" },
+              { name: "Medicine", url: "/medicine" },
+              { name: "IV Therapy", url: "/medicine/intravenous-therapy" },
+            ]),
+          ),
+        }}
+      />
+      <TreatmentSection data={treatments["intravenous-therapy"]} />
+    </>
+  );
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { marked } from "marked";
 import { createClient } from "@insforge/sdk";
 import { contact } from "@/constants/contact";
+import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
 
 // Server-side client (anon key — RLS allows reading published posts)
@@ -117,6 +118,18 @@ export default async function BlogPostPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema([
+              { name: "Home", url: "/" },
+              { name: "Blog", url: "/blog" },
+              { name: post.title, url: `/blog/${post.slug}` },
+            ]),
+          ),
+        }}
       />
       <article className="bg-sand-50 text-petroleum-700 px-4 py-20 sm:px-8">
         <div className="mx-auto max-w-3xl">
