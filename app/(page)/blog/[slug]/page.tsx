@@ -93,7 +93,7 @@ export default async function BlogPostPage({
 
   return (
     <>
-      <article className="text-primary px-4 py-20 sm:px-8">
+      <article className="bg-sand-50 text-primary px-4 py-20 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm">
@@ -159,15 +159,6 @@ export default async function BlogPostPage({
             />
           )}
 
-          {/* Back */}
-          <div className="border-primary/10 mt-16 border-t pt-8">
-            <Link
-              href="/blog"
-              className="text-primary/60 hover:text-primary text-sm underline transition-colors"
-            >
-              ← Volver al blog
-            </Link>
-          </div>
         </div>
       </article>
       <Newsletter />
