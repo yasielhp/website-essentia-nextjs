@@ -454,13 +454,6 @@ export default function EditPostPage() {
                       </option>
                     ))}
                   </select>
-                  <a
-                    href="/dashboard/blog/categories"
-                    target="_blank"
-                    className="text-petroleum-400 hover:text-petroleum-500 mt-3 block text-xs underline"
-                  >
-                    Manage categories →
-                  </a>
                 </>
               )}
             </div>
