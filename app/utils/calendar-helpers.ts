@@ -17,14 +17,15 @@ export const MONTH_NAMES = [
 
 export const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function buildSteps() {
-  return [
+export function buildSteps(hasDatetime = true) {
+  const steps = [
     { id: "service", label: "Service" },
     { id: "duration", label: "Session type" },
     { id: "details", label: "Your details" },
-    { id: "datetime", label: "Date & time" },
+    ...(hasDatetime ? [{ id: "datetime", label: "Date & time" }] : []),
     { id: "confirm", label: "Confirm" },
   ];
+  return steps;
 }
 
 export function isAvailableDay(date: Date): boolean {

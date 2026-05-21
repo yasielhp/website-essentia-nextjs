@@ -14,8 +14,8 @@ export function ConfirmStep({
   service: BookableService;
   duration: string;
   price: number | null;
-  date: Date;
-  time: string;
+  date: Date | null;
+  time: string | null;
   details: DetailsState;
 }) {
   const priceLine = [duration || null, price != null ? `€${price}` : null]
@@ -49,14 +49,16 @@ export function ConfirmStep({
           {[
             {
               label: "Date",
-              value: date.toLocaleDateString("en-GB", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }),
+              value: date
+                ? date.toLocaleDateString("en-GB", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "To be confirmed",
             },
-            { label: "Time", value: time },
+            { label: "Time", value: time ?? "To be confirmed" },
             {
               label: "Name",
               value: `${details.firstName} ${details.lastName}`,

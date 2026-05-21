@@ -330,20 +330,16 @@ function BookingStepRenderer({
           onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
         />
       )}
-      {currentStepId === "confirm" &&
-        selectedService &&
-        selectedDate &&
-        selectedTime &&
-        selectedTierId && (
-          <ConfirmStep
-            service={selectedService}
-            duration={selectedDuration ?? ""}
-            price={selectedTierPrice}
-            date={selectedDate}
-            time={selectedTime}
-            details={details}
-          />
-        )}
+      {currentStepId === "confirm" && selectedService && selectedTierId && (
+        <ConfirmStep
+          service={selectedService}
+          duration={selectedDuration ?? ""}
+          price={selectedTierPrice}
+          date={selectedDate}
+          time={selectedTime}
+          details={details}
+        />
+      )}
     </div>
   );
 }
@@ -389,6 +385,7 @@ function BookingContentInner() {
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
+  const [hasCalendar, setHasCalendar] = useState<boolean>(true);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
@@ -452,7 +449,15 @@ function BookingContentInner() {
     details,
   ]);
 
-  const activeSteps = buildSteps();
+  useEffect(() => {
+    if (!state.selectedService) return;
+    fetch(`/api/google/calendar/has-calendar?service_id=${state.selectedService.id}`)
+      .then((r) => r.json())
+      .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
+      .catch(() => setHasCalendar(false));
+  }, [state.selectedService?.id]);
+
+  const activeSteps = buildSteps(hasCalendar);
   const currentStepId = activeSteps[step]?.id ?? "service";
   const isLastStep = step === activeSteps.length - 1;
   const nextStepLabel = activeSteps[step + 1]?.label;
@@ -462,7 +467,7 @@ function BookingContentInner() {
     duration: !!selectedTierId,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
-    confirm: true,
+    confirm: !hasCalendar || !!(selectedDate && selectedTime),
   };
 
   const handleNextFromDetails = async () => {
@@ -548,9 +553,11 @@ function BookingContentInner() {
   };
 
   const handleConfirm = async () => {
-    if (!selectedService || !selectedDate || !selectedTime || !selectedTierId)
-      return;
+    if (!selectedService || !selectedTierId) return;
     dispatch({ type: "CONFIRM_START" });
+
+    const dateStr = selectedDate ? selectedDate.toISOString().split("T")[0] : null;
+    const timeStr = selectedTime ?? null;
 
     let resolvedBookingId = bookingId;
     if (resolvedBookingId) {
@@ -559,8 +566,8 @@ function BookingContentInner() {
         selectedTierId,
         selectedTierPrice,
         selectedDuration ?? "",
-        selectedDate.toISOString().split("T")[0],
-        selectedTime,
+        dateStr ?? "",
+        timeStr ?? "",
       );
     } else {
       const { data } = await insforge.database
@@ -576,8 +583,8 @@ function BookingContentInner() {
             duration: selectedDuration ?? "",
             location: "centro",
             ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
-            date: selectedDate.toISOString().split("T")[0],
-            time: selectedTime,
+            ...(dateStr ? { date: dateStr } : {}),
+            ...(timeStr ? { time: timeStr } : {}),
             first_name: details.firstName,
             last_name: details.lastName,
             email: details.email,
@@ -612,32 +619,34 @@ function BookingContentInner() {
         service: selectedService.title,
         serviceId: selectedService.id,
         sessionType: selectedTierLabel ?? null,
-        date: selectedDate.toISOString().split("T")[0],
-        time: selectedTime,
+        date: dateStr ?? "",
+        time: timeStr ?? "",
         duration: selectedDuration,
       });
     } catch {
       // Email failed silently — booking is already saved
     }
 
-    // Create Google Calendar event (non-blocking — booking succeeds even if calendar sync fails)
-    try {
-      await fetch("/api/google/calendar/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_id: selectedService.id,
-          summary: `${selectedService.title} — ${details.firstName} ${details.lastName}`,
-          description: `Booking #${resolvedBookingId ?? ""}\nPhone: ${details.phone}\nEmail: ${details.email}`,
-          date: selectedDate.toISOString().split("T")[0],
-          time: selectedTime,
-          duration_minutes: selectedDuration
-            ? parseInt(selectedDuration, 10)
-            : 60,
-        }),
-      });
-    } catch {
-      // Calendar sync failed silently — booking is already saved
+    // Create Google Calendar event only if date/time are available
+    if (dateStr && timeStr) {
+      try {
+        await fetch("/api/google/calendar/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service_id: selectedService.id,
+            summary: `${selectedService.title} — ${details.firstName} ${details.lastName}`,
+            description: `Booking #${resolvedBookingId ?? ""}\nPhone: ${details.phone}\nEmail: ${details.email}`,
+            date: dateStr,
+            time: timeStr,
+            duration_minutes: selectedDuration
+              ? parseInt(selectedDuration, 10)
+              : 60,
+          }),
+        });
+      } catch {
+        // Calendar sync failed silently — booking is already saved
+      }
     }
 
     dispatch({ type: "CONFIRM_SUCCESS" });
@@ -645,8 +654,8 @@ function BookingContentInner() {
 
     const params = new URLSearchParams({
       service: selectedService.title,
-      date: selectedDate.toISOString(),
-      time: selectedTime,
+      ...(dateStr ? { date: selectedDate!.toISOString() } : {}),
+      ...(timeStr ? { time: timeStr } : {}),
       phone: details.phone,
     });
     push(`/booking/requested?${params.toString()}`);
