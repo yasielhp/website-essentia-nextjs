@@ -89,7 +89,11 @@ export function ImageUpload({
         const key = `${folder}/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.webp`;
         const uploadResult = await (
           insforge.storage.from(bucket) as unknown as {
-            upload: (key: string, data: Blob, opts: { upsert: boolean }) => Promise<{ error?: { message?: string } }>;
+            upload: (
+              key: string,
+              data: Blob,
+              opts: { upsert: boolean },
+            ) => Promise<{ error?: { message?: string } }>;
           }
         ).upload(key, compressed, { upsert: true });
 

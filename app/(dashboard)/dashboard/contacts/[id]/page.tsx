@@ -398,11 +398,13 @@ function ContactDetailsCard({
               newsletterSubscribed
                 ? "border-petroleum-200 bg-petroleum-50"
                 : "border-sand-200 bg-sand-50",
-              saving ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+              saving ? "cursor-not-allowed opacity-60" : "cursor-pointer",
             ].join(" ")}
           >
             <div className="flex flex-col gap-0.5">
-              <p className="text-petroleum-700 text-sm font-medium">Newsletter</p>
+              <p className="text-petroleum-700 text-sm font-medium">
+                Newsletter
+              </p>
               <p className="text-petroleum-400 text-xs">
                 {newsletterSubscribed ? "Subscribed" : "Not subscribed"}
               </p>
@@ -640,7 +642,9 @@ export default function ContactDetailPage() {
       ] = await Promise.all([
         insforge.database
           .from("contacts")
-          .select("id, first_name, last_name, email, phone, newsletter_subscribed")
+          .select(
+            "id, first_name, last_name, email, phone, newsletter_subscribed",
+          )
           .eq("id", id)
           .limit(1),
         insforge.database

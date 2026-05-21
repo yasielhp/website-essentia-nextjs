@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
 
   // Compress and convert to WebP server-side
   const webpBuffer = await sharp(inputBuffer)
-    .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+    .resize({
+      width: 1200,
+      height: 1200,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
     .webp({ quality: 82 })
     .toBuffer();
 
@@ -25,7 +30,9 @@ export async function POST(request: NextRequest) {
     anonKey: process.env.INSFORGE_SERVICE_KEY!,
   });
 
-  const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-z0-9]/gi, "-");
+  const baseName = file.name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-z0-9]/gi, "-");
   const key = `${folder}/${Date.now()}-${baseName}.webp`;
   const blob = new Blob([new Uint8Array(webpBuffer)], { type: "image/webp" });
 

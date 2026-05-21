@@ -645,7 +645,11 @@ export default function EditSessionPage() {
               disabled={saving || loading}
               className="gap-1.5"
             >
-              {saving ? <IconSpinner className="animate-spin" /> : <IconCheckmark />}
+              {saving ? (
+                <IconSpinner className="animate-spin" />
+              ) : (
+                <IconCheckmark />
+              )}
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>

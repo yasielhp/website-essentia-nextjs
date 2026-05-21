@@ -193,7 +193,11 @@ function ConfirmDeleteModal({
             onClick={onConfirm}
             disabled={deleting}
           >
-            {deleting ? <IconSpinner className="animate-spin" /> : <IconTrash />}
+            {deleting ? (
+              <IconSpinner className="animate-spin" />
+            ) : (
+              <IconTrash />
+            )}
             {deleting ? "Deleting…" : "Yes, delete"}
           </Button>
         </div>
@@ -645,7 +649,11 @@ export default function EditRacePage() {
               className="gap-2"
               disabled={saving || loading}
             >
-              {saving ? <IconSpinner className="animate-spin" /> : <IconCheckmark />}
+              {saving ? (
+                <IconSpinner className="animate-spin" />
+              ) : (
+                <IconCheckmark />
+              )}
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>
