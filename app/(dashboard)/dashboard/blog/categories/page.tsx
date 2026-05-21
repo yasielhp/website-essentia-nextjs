@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
+import { IconTrash } from "@/components/ui/icons";
 
 type Category = { id: string; name: string; slug: string; created_at: string };
 
@@ -14,20 +15,6 @@ function slugify(text: string): string {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function IconTrash() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export default function BlogCategoriesPage() {

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { CalendarColorModal } from "@/components/dashboard/calendar-color-modal";
 import { loadColorSettings, saveColorSettings } from "@/utils/color-settings";
+import { IconPlus, IconFilter } from "@/components/ui/icons";
 
 type RaceAccess = "members" | "open";
 
@@ -44,38 +45,6 @@ function formatDate(iso: string | null): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function IconPlus() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconFilter() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M4 6h16M7 12h10M10 18h4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 type RaceFilter = { access: string };

@@ -7,6 +7,7 @@ import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
+import { IconTrash } from "@/components/ui/icons";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -95,20 +96,6 @@ function reducer(s: FormState, a: Action): FormState {
     default:
       return s;
   }
-}
-
-function IconTrash() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export default function EditPostPage() {

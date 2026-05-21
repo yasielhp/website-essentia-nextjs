@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { UpcomingRace } from "@/types/calendar";
 import { formatUpcomingDate } from "@/utils/dashboard-calendar";
+import { IconImage } from "@/components/ui/icons";
 
 export function UpcomingRaceCard({
   race,
@@ -33,37 +34,7 @@ export function UpcomingRaceCard({
             />
           ) : (
             <div className="bg-petroleum-700/10 flex size-full items-center justify-center">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-petroleum-300"
-              >
-                <rect
-                  x="3"
-                  y="3"
-                  width="18"
-                  height="18"
-                  rx="3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <circle
-                  cx="8.5"
-                  cy="8.5"
-                  r="1.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M21 15l-5-5L5 21"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <IconImage className="text-petroleum-300" />
             </div>
           )}
         </div>

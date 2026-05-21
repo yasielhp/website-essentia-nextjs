@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
+import {
+  IconTrash,
+  IconCheck,
+  IconCalendarConnect,
+} from "@/components/ui/icons";
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -112,36 +117,6 @@ const ROLES: { value: SystemRole; label: string; desc: string }[] = [
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
 ];
-
-// ─── Icons ────────────────────────────────────────────────────
-
-function IconTrash() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconCheck() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M5 12l5 5L19 7"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -652,20 +627,7 @@ export default function EditUserPage() {
                               href={`/api/google/calendar/connect-user?staff_id=${id}&service_id=${svc.id}&return_to=${encodeURIComponent(`/dashboard/users/${id}`)}`}
                               className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
                             >
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <path
-                                  d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 7h8"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                              <IconCalendarConnect />
                               Conectar Google Calendar
                             </a>
                           )}

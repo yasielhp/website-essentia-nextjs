@@ -3,6 +3,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  IconCheckmark,
+  IconArrowLeft,
+  IconSearch,
+} from "@/components/ui/icons";
 
 type Race = {
   id: string;
@@ -78,15 +83,7 @@ function CheckInCard({
       {/* Check-in status */}
       {isCheckedIn ? (
         <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-5 py-2 text-sm font-medium text-green-700">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <IconCheckmark />
           Entrada verificada ·{" "}
           {new Date(registration.checked_in_at!).toLocaleTimeString("es-ES", {
             hour: "2-digit",
@@ -107,15 +104,7 @@ function CheckInCard({
             </>
           ) : (
             <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M20 6L9 17l-5-5"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <IconCheckmark />
               Verificar entrada
             </>
           )}
@@ -296,15 +285,7 @@ export default function CheckInPage() {
           className="text-petroleum-400 hover:text-petroleum-700 transition-colors"
           aria-label="Go back"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M19 12H5M12 19l-7-7 7-7"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <IconArrowLeft />
         </button>
         <div>
           <h1 className="font-display text-petroleum-700 text-2xl">
@@ -322,21 +303,7 @@ export default function CheckInPage() {
         {/* Search input */}
         <div className="relative mb-6">
           <span className="text-petroleum-300 pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="11"
-                cy="11"
-                r="8"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <IconSearch />
           </span>
           <input
             ref={inputRef}

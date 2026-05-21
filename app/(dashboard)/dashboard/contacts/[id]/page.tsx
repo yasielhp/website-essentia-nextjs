@@ -8,37 +8,10 @@ import {
   subscribeToNewsletter,
   unsubscribeFromNewsletter,
 } from "@/actions/newsletter";
+import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-function IconCheck() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M20 6L9 17l-5-5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 type Contact = {
   id: string;
@@ -882,7 +855,7 @@ export default function ContactDetailPage() {
               disabled={saving || loading}
               className="gap-1.5"
             >
-              <IconCheck />
+              <IconCheckmark />
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>

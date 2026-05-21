@@ -7,6 +7,7 @@ import Image from "next/image";
 import { MapPin, Route, Lock, Globe } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
+import { IconRunner } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -259,42 +260,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                   />
                 ) : (
                   <div className="bg-petroleum-700 flex h-full w-full flex-col items-center justify-center gap-4">
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 48 48"
-                      fill="none"
-                      className="text-petroleum-500 opacity-60"
-                    >
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="22"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 3"
-                      />
-                      <path
-                        d="M16 32 C18 26 22 22 24 20 C26 18 27 15 29 14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M29 14 C30 18 31 20 33 22 M29 14 L32 11"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle
-                        cx="29"
-                        cy="11"
-                        r="2.5"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                    </svg>
+                    <IconRunner className="text-petroleum-500 opacity-60" />
                     <span className="text-petroleum-400 text-xs tracking-widest uppercase">
                       No image yet
                     </span>

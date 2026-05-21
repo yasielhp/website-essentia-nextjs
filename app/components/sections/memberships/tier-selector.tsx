@@ -11,31 +11,9 @@ import {
   type RedsysFormData,
 } from "@/components/sections/booking/steps/payment-overlay";
 import { TierId, VALID_TIERS, tiers, pricing } from "./data";
+import { IconCheck } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
-
-// ─── Icons ────────────────────────────────────────────────────
-
-function IconCheck({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width={15}
-      height={15}
-      fill="none"
-      aria-hidden="true"
-      className={["mt-0.5 shrink-0", className].filter(Boolean).join(" ")}
-    >
-      <path
-        d="M3 8l3.5 3.5 6.5-7"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 // ─── TierTabs ────────────────────────────────────────────────
 
@@ -135,7 +113,7 @@ function TierDisplay({
                 key={feature}
                 className="text-petroleum-500 flex items-start gap-3 text-sm"
               >
-                <IconCheck />
+                <IconCheck className="mt-0.5 shrink-0" />
                 {feature}
               </li>
             ))}

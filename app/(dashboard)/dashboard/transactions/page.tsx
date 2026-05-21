@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
+import { IconFilter } from "@/components/ui/icons";
 
 // ─── Source row types ─────────────────────────────────────────
 
@@ -91,19 +92,6 @@ const fieldCls =
 
 type TxFilter = { type: string; status: string };
 const emptyTxFilter: TxFilter = { type: "", status: "" };
-
-function IconFilter() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M4 6h16M7 12h10M10 18h4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 function FilterModal({
   pending,

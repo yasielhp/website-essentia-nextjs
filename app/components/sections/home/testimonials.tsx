@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { testimonials, type Testimonial } from "@data/testimonials-data";
+import { IconQuote } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,14 +29,12 @@ function TestimonialCard({
         compact ? "gap-4 p-5" : "gap-6 p-7"
       }`}
     >
-      <svg
+      <div
         aria-hidden="true"
-        className={`absolute top-4 left-5 h-8 w-8 opacity-15 ${t.textColor}`}
-        viewBox="0 0 44 44"
-        fill="currentColor"
+        className={`absolute top-4 left-5 ${t.textColor}`}
       >
-        <path d="M10 28c0-5.523 4.477-10 10-10V12C9.402 12 1 20.402 1 31v1h9v-4zm20 0c0-5.523 4.477-10 10-10V12c-10.598 0-19 8.402-19 19v1h9v-4z" />
-      </svg>
+        <IconQuote className="h-8 w-8 opacity-15" />
+      </div>
       <p
         className={`font-body ${t.textColor} leading-snug ${
           compact ? "pt-5 text-lg" : "pt-6 text-xl"

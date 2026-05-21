@@ -5,51 +5,9 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { insforge } from "@/lib/insforge";
 import { TierId, tiers, pricing, featureRows } from "./data";
+import { IconCheck, IconMinus } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
-
-// ─── Icons ────────────────────────────────────────────────────
-
-function IconCheck({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width={15}
-      height={15}
-      fill="none"
-      aria-hidden="true"
-      className={["mt-0.5 shrink-0", className].filter(Boolean).join(" ")}
-    >
-      <path
-        d="M3 8l3.5 3.5 6.5-7"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconMinus() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width={15}
-      height={15}
-      fill="none"
-      aria-hidden="true"
-      className="mt-0.5 shrink-0 opacity-25"
-    >
-      <path
-        d="M4 8h8"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 // ─── ComparisonCell ──────────────────────────────────────────
 
@@ -58,7 +16,7 @@ function ComparisonCell({ value }: { value: string | boolean }) {
     return (
       <td className="px-4 py-3 text-center">
         <span className="text-petroleum-700 inline-flex justify-center">
-          <IconCheck />
+          <IconCheck className="mt-0.5 shrink-0" />
         </span>
       </td>
     );
@@ -66,7 +24,7 @@ function ComparisonCell({ value }: { value: string | boolean }) {
     return (
       <td className="px-4 py-3 text-center">
         <span className="text-petroleum-300 inline-flex justify-center">
-          <IconMinus />
+          <IconMinus className="mt-0.5 shrink-0 opacity-25" />
         </span>
       </td>
     );
@@ -289,9 +247,11 @@ export default function ComparisonSection() {
                           </span>
                           <span className="ml-3 shrink-0">
                             {value === true && (
-                              <IconCheck className="text-petroleum-700" />
+                              <IconCheck className="text-petroleum-700 mt-0.5 shrink-0" />
                             )}
-                            {value === false && <IconMinus />}
+                            {value === false && (
+                              <IconMinus className="mt-0.5 shrink-0 opacity-25" />
+                            )}
                             {typeof value === "string" && (
                               <span className="text-petroleum-500 text-xs">
                                 {value}

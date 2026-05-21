@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback } from "react";
 import NextImage from "next/image";
 import { insforge } from "@/lib/insforge";
+import { IconImage, IconX } from "@/components/ui/icons";
 
 async function compressImage(
   file: File,
@@ -170,37 +171,7 @@ export function ImageUpload({
           />
         ) : (
           <div className="flex flex-col items-center gap-1 px-4 py-6 text-center">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="text-petroleum-300"
-            >
-              <rect
-                x="3"
-                y="3"
-                width="18"
-                height="18"
-                rx="3"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <circle
-                cx="8.5"
-                cy="8.5"
-                r="1.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M21 15l-5-5L5 21"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <IconImage className="text-petroleum-300" />
             <span className="text-petroleum-400 text-xs">
               {uploading
                 ? "Compressing & uploading…"
@@ -229,14 +200,7 @@ export function ImageUpload({
             }}
             className="text-petroleum-500 absolute top-2 right-2 rounded-full bg-white/80 p-1 shadow transition-colors hover:bg-white hover:text-red-500"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M18 6L6 18M6 6l12 12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
+            <IconX className="size-[14px]" />
           </button>
         )}
       </div>
