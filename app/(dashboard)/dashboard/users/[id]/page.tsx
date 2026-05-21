@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
+import { removeUserAccess } from "@/actions/remove-user-access";
 import {
   IconTrash,
   IconCheck,
@@ -256,10 +257,12 @@ export default function EditUserPage() {
 
   async function handleRemove() {
     dispatch({ type: "SET_REMOVING", value: true });
-    await insforge.database
-      .from("profiles")
-      .update({ role: "contact" })
-      .eq("id", id);
+    const { error } = await removeUserAccess(id);
+    if (error) {
+      dispatch({ type: "SET_ERROR", msg: error });
+      dispatch({ type: "SET_REMOVING", value: false });
+      return;
+    }
     push("/dashboard/users");
   }
 

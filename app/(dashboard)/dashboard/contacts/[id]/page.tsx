@@ -9,6 +9,7 @@ import {
   unsubscribeFromNewsletter,
 } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
+import { deleteContact } from "@/actions/delete-contact";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -801,18 +802,12 @@ export default function ContactDetailPage() {
 
   async function handleDelete() {
     dispatchForm({ type: "DELETING_START" });
-    await Promise.all([
-      insforge.database
-        .from("race_registrations")
-        .delete()
-        .eq("contact_id", id),
-      insforge.database
-        .from("education_registrations")
-        .delete()
-        .eq("contact_id", id),
-      insforge.database.from("bookings").delete().eq("contact_id", id),
-    ]);
-    await insforge.database.from("contacts").delete().eq("id", id);
+    const { error } = await deleteContact(id);
+    if (error) {
+      dispatchForm({ type: "SET_ERROR", error });
+      dispatchForm({ type: "CLOSE_DELETE" });
+      return;
+    }
     push("/dashboard/contacts");
   }
 
