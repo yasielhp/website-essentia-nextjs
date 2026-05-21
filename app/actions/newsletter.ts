@@ -14,6 +14,30 @@ function getResend(): Resend | null {
   return new Resend(apiKey);
 }
 
+function getAdminClient() {
+  return createClient({
+    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
+    anonKey: process.env.INSFORGE_SERVICE_KEY!,
+  });
+}
+
+async function syncContactNewsletter(
+  email: string,
+  subscribed: boolean,
+): Promise<void> {
+  try {
+    // Upsert the contact so new subscribers also appear in the contacts table
+    await getAdminClient()
+      .database.from("contacts")
+      .upsert(
+        { email, newsletter_subscribed: subscribed },
+        { onConflict: "email" },
+      );
+  } catch {
+    // fail-open: DB sync failure must not block the subscription
+  }
+}
+
 export async function subscribeToNewsletter(
   email: string,
 ): Promise<{ ok: boolean; error?: string }> {
@@ -31,6 +55,7 @@ export async function subscribeToNewsletter(
     return { ok: false, error: error.message };
   }
 
+  await syncContactNewsletter(email, true);
   return { ok: true };
 }
 
@@ -52,6 +77,7 @@ export async function unsubscribeFromNewsletter(
     return { ok: false, error: error.message };
   }
 
+  await syncContactNewsletter(email, false);
   return { ok: true };
 }
 
