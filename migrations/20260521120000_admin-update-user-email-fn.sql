@@ -10,9 +10,8 @@ AS $$
 BEGIN
   UPDATE auth.users
   SET
-    email                    = p_new_email,
-    email_confirmed_at       = NOW(),
-    updated_at               = NOW()
+    email      = p_new_email,
+    updated_at = NOW()
   WHERE id = p_user_id;
 
   IF NOT FOUND THEN
