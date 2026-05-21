@@ -1511,6 +1511,8 @@ export default function EditBookingPage() {
       const dateTimeChanged =
         (dateStr ?? null) !== orig.date || (selectedTime || "") !== orig.time;
 
+      const sessionType = selectedTier?.label ?? null;
+
       try {
         if (statusChanged && status === "confirmed") {
           await notifyBooking({
@@ -1520,6 +1522,7 @@ export default function EditBookingPage() {
             clientEmail: email.trim(),
             service,
             serviceId,
+            sessionType,
             date: dateStr ?? orig.date ?? "",
             time: selectedTime || orig.time,
             duration: dur,
@@ -1532,6 +1535,7 @@ export default function EditBookingPage() {
             clientEmail: email.trim(),
             service,
             serviceId,
+            sessionType,
             date: dateStr ?? orig.date ?? "",
             time: selectedTime || orig.time,
             duration: dur,
@@ -1544,6 +1548,7 @@ export default function EditBookingPage() {
             clientEmail: email.trim(),
             service,
             serviceId,
+            sessionType,
             date: dateStr ?? orig.date ?? "",
             time: selectedTime || orig.time,
             duration: dur,

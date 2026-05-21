@@ -5,6 +5,7 @@ export function staffNewBookingEmail({
   clientEmail,
   clientPhone,
   service,
+  sessionType,
   date,
   time,
   duration,
@@ -15,6 +16,7 @@ export function staffNewBookingEmail({
   clientEmail: string;
   clientPhone?: string | null;
   service: string;
+  sessionType?: string | null;
   date: string;
   time: string;
   duration?: string | null;
@@ -22,13 +24,14 @@ export function staffNewBookingEmail({
   dashboardUrl: string;
 }): string {
   const rows: [string, string][] = [
-    ["Cliente", clientName],
+    ["Client", clientName],
     ["Email", clientEmail],
-    ...(clientPhone ? [["Teléfono", clientPhone] as [string, string]] : []),
-    ["Servicio", service],
-    ["Fecha", date],
-    ["Hora", time],
-    ...(duration ? [["Duración", duration] as [string, string]] : []),
+    ...(clientPhone ? [["Phone", clientPhone] as [string, string]] : []),
+    ["Service", service],
+    ...(sessionType ? [["Session type", sessionType] as [string, string]] : []),
+    ["Date", date],
+    ["Time", time],
+    ...(duration ? [["Duration", duration] as [string, string]] : []),
   ];
 
   const rowsHtml = rows
@@ -42,20 +45,20 @@ export function staffNewBookingEmail({
     .join("");
 
   return emailBase({
-    preheader: `Nueva solicitud de reserva de ${clientName} para ${service} el ${date}.`,
+    preheader: `New booking request from ${clientName} for ${service} on ${date}.`,
     body: `
-      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Nueva reserva</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">New booking</p>
       <h1 style="margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-        Nueva solicitud de reserva recibida.
+        New booking request received.
       </h1>
       <p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
-        Has recibido una nueva solicitud de reserva. Revísala y confírmala desde el panel de administración.
+        You have received a new booking request. Review it and confirm it from the dashboard.
       </p>
 
       <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f2ed;border-radius:8px;border:1px solid #d7dbd9;margin-bottom:24px;">
         <tr>
           <td style="padding:20px 24px;">
-            <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Detalles</p>
+            <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Details</p>
             <table width="100%" cellpadding="0" cellspacing="0">
               ${rowsHtml}
             </table>
@@ -65,7 +68,7 @@ export function staffNewBookingEmail({
 
       <a href="${dashboardUrl}/dashboard/bookings/${bookingId}"
          style="display:inline-block;background-color:#103838;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
-        Ver reserva en el panel
+        View booking in dashboard
       </a>
     `,
   });

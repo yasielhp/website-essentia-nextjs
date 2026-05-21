@@ -43,6 +43,7 @@ type BookingState = {
   step: number;
   selectedService: BookableService | null;
   selectedTierId: string | null;
+  selectedTierLabel: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
   selectedDate: Date | null;
@@ -57,6 +58,7 @@ type BookingAction =
   | {
       type: "SELECT_TIER";
       tierId: string;
+      label: string | null;
       duration: string | null;
       price: number | null;
     }
@@ -84,6 +86,7 @@ function bookingReducer(
       return {
         ...state,
         selectedTierId: action.tierId,
+        selectedTierLabel: action.label,
         selectedTierPrice: action.price,
         selectedDuration: action.duration,
       };
@@ -112,6 +115,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
       step: startStep,
       selectedService: service,
       selectedTierId: null,
+      selectedTierLabel: null,
       selectedTierPrice: null,
       selectedDuration: null,
       selectedDate: null,
@@ -128,6 +132,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
     step: saved.step ?? 0,
     selectedService: service,
     selectedTierId: saved.selectedTierId ?? null,
+    selectedTierLabel: (saved as { selectedTierLabel?: string | null }).selectedTierLabel ?? null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
@@ -293,6 +298,7 @@ function BookingStepRenderer({
             dispatch({
               type: "SELECT_TIER",
               tierId: sel.tierId,
+              label: sel.label,
               duration: sel.duration,
               price: sel.price,
             })
@@ -413,6 +419,7 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedTierId,
+    selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
     selectedDate,
@@ -602,6 +609,7 @@ function BookingContentInner() {
         clientPhone: details.phone || null,
         service: selectedService.title,
         serviceId: selectedService.id,
+        sessionType: selectedTierLabel ?? null,
         date: selectedDate.toISOString().split("T")[0],
         time: selectedTime,
         duration: selectedDuration,

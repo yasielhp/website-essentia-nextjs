@@ -22,6 +22,7 @@ export type BookingNotificationPayload = {
   clientPhone?: string | null;
   service: string;
   serviceId?: string | null;
+  sessionType?: string | null;
   date: string;
   time: string;
   duration?: string | null;
@@ -29,7 +30,7 @@ export type BookingNotificationPayload = {
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString("es-ES", {
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -65,6 +66,7 @@ export async function notifyBooking(
     clientPhone,
     service,
     serviceId,
+    sessionType,
     duration,
   } = payload;
 
@@ -77,11 +79,19 @@ export async function notifyBooking(
   // ── Client emails ──────────────────────────────────────────────
   const clientTemplates: Record<BookingNotificationEvent, () => string> = {
     received: () =>
-      bookingReceivedEmail({ name: clientName, service, date, time, duration }),
+      bookingReceivedEmail({
+        name: clientName,
+        service,
+        sessionType,
+        date,
+        time,
+        duration,
+      }),
     confirmed: () =>
       bookingConfirmedEmail({
         name: clientName,
         service,
+        sessionType,
         date,
         time,
         duration,
@@ -90,6 +100,7 @@ export async function notifyBooking(
       bookingCancelledEmail({
         name: clientName,
         service,
+        sessionType,
         date,
         time,
         duration,
@@ -98,6 +109,7 @@ export async function notifyBooking(
       bookingRescheduledEmail({
         name: clientName,
         service,
+        sessionType,
         date,
         time,
         duration,
@@ -123,12 +135,13 @@ export async function notifyBooking(
     if (staffEmail) {
       await sendEmail({
         to: staffEmail,
-        subject: `Nueva reserva — ${clientName} · ${service}`,
+        subject: `New booking — ${clientName} · ${service}`,
         html: staffNewBookingEmail({
           clientName,
           clientEmail,
           clientPhone,
           service,
+          sessionType,
           date,
           time,
           duration,

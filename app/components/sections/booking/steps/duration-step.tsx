@@ -15,6 +15,7 @@ type Tier = {
 
 export type TierSelection = {
   tierId: string;
+  label: string | null;
   duration: string | null;
   price: number | null;
 };
@@ -248,6 +249,7 @@ export function DurationStep({
         const t = rows[0];
         onSelectRef.current({
           tierId: t.id,
+          label: t.label,
           duration:
             t.duration_minutes != null ? `${t.duration_minutes} min` : null,
           price: t.price_center_eur ?? t.price_eur,
@@ -259,6 +261,7 @@ export function DurationStep({
         if (match) {
           onSelectRef.current({
             tierId: match.id,
+            label: match.label,
             duration:
               match.duration_minutes != null
                 ? `${match.duration_minutes} min`
@@ -312,6 +315,7 @@ export function DurationStep({
           onSelect={(t) =>
             onSelect({
               tierId: t.id,
+              label: t.label,
               duration:
                 t.duration_minutes != null ? `${t.duration_minutes} min` : null,
               price: t.price_center_eur ?? t.price_eur,

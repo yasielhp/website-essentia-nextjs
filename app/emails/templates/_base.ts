@@ -7,7 +7,7 @@ export function emailBase({
   body: string;
 }): string {
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -40,7 +40,7 @@ export function emailBase({
             <td style="padding:20px 32px;border-top:1px solid #d7dbd9;">
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;">
                 Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
-                C/ La Noria 14, Santa Cruz de Tenerife
+                Baobab Suites, Costa Adeje, Tenerife
               </p>
             </td>
           </tr>
@@ -53,23 +53,26 @@ export function emailBase({
 </html>`;
 }
 
-/** Renders the booking details card (service / date / time / duration). */
+/** Renders the booking details card (service / session type / date / time / duration). */
 export function bookingDetailsCard({
   service,
+  sessionType,
   date,
   time,
   duration,
 }: {
   service: string;
+  sessionType?: string | null;
   date: string;
   time: string;
   duration?: string | null;
 }): string {
-  const rows = [
-    ["Servicio", service],
-    ["Fecha", date],
-    ["Hora", time],
-    ...(duration ? [["Duración", duration] as [string, string]] : []),
+  const rows: [string, string][] = [
+    ["Service", service],
+    ...(sessionType ? [["Session type", sessionType] as [string, string]] : []),
+    ["Date", date],
+    ["Time", time],
+    ...(duration ? [["Duration", duration] as [string, string]] : []),
   ];
 
   const rowsHtml = rows
@@ -86,7 +89,7 @@ export function bookingDetailsCard({
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f2ed;border-radius:8px;border:1px solid #d7dbd9;margin-bottom:24px;">
     <tr>
       <td style="padding:20px 24px;">
-        <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Detalles de la sesión</p>
+        <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Session details</p>
         <table width="100%" cellpadding="0" cellspacing="0">
           ${rowsHtml}
         </table>
