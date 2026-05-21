@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 import { bookableServices } from "@/data/services-data";
+import { notifyBooking } from "@/actions/booking-notifications";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
@@ -1233,12 +1234,37 @@ export default function NewBookingPage() {
       return;
     }
 
+    const bookingId = (inserted as { id: string } | null)?.id ?? "";
+    const clientName = [firstName.trim(), lastName.trim()]
+      .filter(Boolean)
+      .join(" ");
+
+    // Send notifications (non-blocking)
+    if (email.trim() && dateStr) {
+      try {
+        await notifyBooking({
+          bookingId,
+          event: "received",
+          clientName,
+          clientEmail: email.trim(),
+          clientPhone: phone.trim() || null,
+          service: selectedService?.title ?? serviceId,
+          serviceId,
+          sessionType: selectedTier?.label ?? null,
+          date: dateStr,
+          time: selectedTime || "",
+          duration:
+            selectedTier?.duration_minutes != null
+              ? `${selectedTier.duration_minutes} min`
+              : null,
+        });
+      } catch {
+        // Notification failed silently — booking is already saved
+      }
+    }
+
     // Create Google Calendar event (non-blocking, only for confirmed bookings)
     if (dateStr && selectedTime) {
-      const bookingId = (inserted as { id: string } | null)?.id ?? "";
-      const clientName = [firstName.trim(), lastName.trim()]
-        .filter(Boolean)
-        .join(" ");
 
       // Build location string for the event
       const calLocation = (() => {
