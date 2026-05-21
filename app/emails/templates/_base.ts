@@ -24,7 +24,7 @@ export function emailBase({
           <!-- Header -->
           <tr>
             <td style="background-color:#103838;padding:24px 32px;text-align:center;">
-              <span style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#ffffff;letter-spacing:4px;text-transform:uppercase;">ESSENTIA</span>
+              <img src="https://www.essentiawellnessclub.com/logo-email.png" alt="Essentia" width="200" style="display:block;margin:0 auto;height:auto;border:0;" />
             </td>
           </tr>
 
