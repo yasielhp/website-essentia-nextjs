@@ -43,6 +43,8 @@ type ImageUploadProps = {
   value?: string | null;
   onChange: (url: string) => void;
   className?: string;
+  /** If set, uploads the raw file to this endpoint (POST multipart/form-data) instead of uploading directly via the Insforge client. The endpoint must return { url: string }. */
+  apiEndpoint?: string;
 };
 
 export function ImageUpload({
@@ -51,6 +53,7 @@ export function ImageUpload({
   value,
   onChange,
   className = "",
+  apiEndpoint,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -66,28 +69,44 @@ export function ImageUpload({
     setUploading(true);
 
     try {
-      const compressed = await compressImage(file);
-      const key = `${folder}/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.webp`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const uploadResult = await (insforge.storage.from(bucket) as any).upload(
-        key,
-        compressed,
-        { upsert: true },
-      );
+      if (apiEndpoint) {
+        // Server-side path: send raw file, server compresses and uploads
+        const body = new FormData();
+        body.append("file", file);
+        body.append("folder", folder);
+        const res = await fetch(apiEndpoint, { method: "POST", body });
+        if (!res.ok) {
+          const json = (await res.json()) as { error?: string };
+          setError(json.error ?? "Upload failed.");
+          return;
+        }
+        const { url } = (await res.json()) as { url: string };
+        onChange(url);
+      } else {
+        // Client-side path: compress in browser, upload directly via Insforge client
+        const compressed = await compressImage(file);
+        const key = `${folder}/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.webp`;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const uploadResult = await (insforge.storage.from(bucket) as any).upload(
+          key,
+          compressed,
+          { upsert: true },
+        );
 
-      const uploadError = (uploadResult as { error?: { message?: string } })
-        .error;
-      if (uploadError) {
-        setError(uploadError.message ?? "Upload failed.");
-        return;
+        const uploadError = (uploadResult as { error?: { message?: string } })
+          .error;
+        if (uploadError) {
+          setError(uploadError.message ?? "Upload failed.");
+          return;
+        }
+
+        const publicUrlResult = insforge.storage.from(bucket).getPublicUrl(key);
+        const publicUrl =
+          typeof publicUrlResult === "string"
+            ? publicUrlResult
+            : (publicUrlResult as { data: { publicUrl: string } }).data.publicUrl;
+        onChange(publicUrl);
       }
-
-      const publicUrlResult = insforge.storage.from(bucket).getPublicUrl(key);
-      const publicUrl =
-        typeof publicUrlResult === "string"
-          ? publicUrlResult
-          : (publicUrlResult as { data: { publicUrl: string } }).data.publicUrl;
-      onChange(publicUrl);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

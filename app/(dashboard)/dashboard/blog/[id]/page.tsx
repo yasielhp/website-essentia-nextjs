@@ -412,7 +412,7 @@ export default function EditPostPage() {
                 <div className="bg-sand-100 h-32 animate-pulse rounded-xl" />
               ) : (
                 <ImageUpload
-                  bucket="blog"
+                  apiEndpoint="/api/blog/upload"
                   folder="covers"
                   value={coverImageUrl || undefined}
                   onChange={(url) =>

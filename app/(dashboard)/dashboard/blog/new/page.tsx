@@ -279,7 +279,7 @@ export default function NewPostPage() {
                 Featured image
               </h2>
               <ImageUpload
-                bucket="blog"
+                apiEndpoint="/api/blog/upload"
                 folder="covers"
                 value={coverImageUrl || undefined}
                 onChange={(url) =>
