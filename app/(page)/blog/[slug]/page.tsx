@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { marked } from "marked";
 import { createClient } from "@insforge/sdk";
+import { contact } from "@/constants/contact";
 import Newsletter from "@/components/sections/newsletter";
 
 // Server-side client (anon key — RLS allows reading published posts)
@@ -90,8 +91,33 @@ export default async function BlogPostPage({
 
   const html = post.content ? await marked(post.content) : "";
 
+  const siteUrl = `https://${contact.domain}`;
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.seo_title ?? post.title,
+    description: post.seo_description ?? post.excerpt ?? undefined,
+    image: post.seo_og_image_url ?? post.cover_image_url ?? undefined,
+    datePublished: post.published_at ?? undefined,
+    author: {
+      "@type": "Person",
+      name: post.author?.full_name ?? "Essentia Team",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Essentia",
+      url: siteUrl,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/logo.webp` },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${siteUrl}/blog/${post.slug}` },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       <article className="bg-sand-50 text-petroleum-700 px-4 py-20 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {/* Category badge */}
