@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     amount: Math.round(priceEur * 100), // Redsys expects cents
     currency: "978", // EUR
     description: description || "Booking",
-    successUrl: `${appUrl}/booking?payment=success&bookingId=${bookingId}`,
+    successUrl: `${appUrl}/booking/confirmation?bookingId=${bookingId}&description=${encodeURIComponent(description || "")}`,
     cancelUrl: `${appUrl}/booking?payment=cancel&bookingId=${bookingId}`,
     customerEmail: email || undefined,
     customerName: name || undefined,

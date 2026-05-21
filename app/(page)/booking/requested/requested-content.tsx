@@ -1,20 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { CheckCircle } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function ConfirmationContent() {
+export function RequestedContent() {
   const searchParams = useSearchParams();
-  const service =
-    searchParams.get("service") ??
-    searchParams.get("description") ??
-    "Your session";
+  const service = searchParams.get("service") ?? "Your session";
   const dateStr = searchParams.get("date");
   const time = searchParams.get("time") ?? "";
   const phone = searchParams.get("phone") ?? "";
 
-  // Parse only the date portion to avoid UTC↔local shift
   const dateIso = dateStr?.split("T")[0];
   const date = dateIso ? new Date(`${dateIso}T12:00:00`) : null;
   const formattedDate = date
@@ -33,17 +29,17 @@ export function ConfirmationContent() {
       <div className="w-full max-w-md">
         {/* Icon */}
         <div className="bg-petroleum-700 mx-auto mb-8 flex size-16 items-center justify-center rounded-full">
-          <CheckCircle className="text-sand-50" size={28} strokeWidth={2.5} />
+          <Clock className="text-sand-50" size={28} strokeWidth={2.5} />
         </div>
 
         {/* Heading */}
         <div className="mb-8 text-center">
           <h1 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-            Booking confirmed.
+            Request received.
           </h1>
           <p className="text-petroleum-400 mt-3 leading-relaxed text-balance">
-            Your payment has been processed and your appointment is confirmed.
-            See you soon!
+            We&apos;ve received your request and will be in touch shortly to
+            confirm your appointment.
           </p>
         </div>
 
@@ -79,15 +75,15 @@ export function ConfirmationContent() {
 
         {/* Contact note */}
         <p className="text-petroleum-400 mb-8 text-center text-sm leading-relaxed">
-          A confirmation has been sent to your email
+          Please keep an eye on your email
           {phone && (
             <>
               {" "}
-              and to{" "}
+              and phone{" "}
               <span className="text-petroleum-600 font-medium">{phone}</span>
             </>
           )}
-          .
+          . We will reach out to confirm your appointment.
         </p>
 
         {/* CTA */}

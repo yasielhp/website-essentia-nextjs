@@ -3,9 +3,8 @@ import { Suspense } from "react";
 import { ConfirmationContent } from "./confirmation-content";
 
 export const metadata: Metadata = {
-  title: "Booking Requested | Essentia Tenerife",
-  description:
-    "Your booking request has been received. We will contact you shortly to confirm your appointment.",
+  title: "Booking Confirmed | Essentia Tenerife",
+  description: "Your payment has been processed and your appointment is confirmed.",
 };
 
 export default function BookingConfirmationPage() {

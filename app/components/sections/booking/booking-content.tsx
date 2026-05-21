@@ -649,7 +649,7 @@ function BookingContentInner() {
       time: selectedTime,
       phone: details.phone,
     });
-    push(`/booking/confirmation?${params.toString()}`);
+    push(`/booking/requested?${params.toString()}`);
   };
 
   return (
