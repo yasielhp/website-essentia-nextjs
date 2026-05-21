@@ -9,7 +9,7 @@ import CommunitySection from "@components/sections/home/community-section";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Essentia | Longevity Center & Social Wellness Club — Tenerife",
+    absolute: "Essentia | Longevity Center & Social Wellness Club",
   },
   description:
     "Essentia is a longevity center and social wellness club in Tenerife, combining regenerative medicine, wellness protocols, and an exclusive community.",
