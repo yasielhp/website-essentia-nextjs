@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import {
+  subscribeToNewsletter,
+  unsubscribeFromNewsletter,
+} from "@/actions/newsletter";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -42,6 +46,7 @@ type Contact = {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  newsletter_subscribed: boolean | null;
 };
 
 type Booking = {
@@ -126,6 +131,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
+  newsletterSubscribed: boolean;
   error: string | null;
   saving: boolean;
   deleting: boolean;
@@ -139,12 +145,14 @@ type FormAction =
       lastName: string;
       email: string;
       phone: string;
+      newsletterSubscribed: boolean;
     }
   | {
       type: "SET_FIELD";
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
+  | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SAVING_START" }
   | { type: "SAVING_END" }
@@ -157,6 +165,7 @@ const initialFormState: FormState = {
   lastName: "",
   email: "",
   phone: "",
+  newsletterSubscribed: false,
   error: null,
   saving: false,
   deleting: false,
@@ -172,7 +181,10 @@ function formReducer(state: FormState, action: FormAction): FormState {
         lastName: action.lastName,
         email: action.email,
         phone: action.phone,
+        newsletterSubscribed: action.newsletterSubscribed,
       };
+    case "TOGGLE_NEWSLETTER":
+      return { ...state, newsletterSubscribed: !state.newsletterSubscribed };
     case "SET_FIELD":
       return { ...state, [action.field]: action.value };
     case "SET_ERROR":
@@ -287,6 +299,7 @@ function ContactDetailsCard({
   lastName,
   email,
   phone,
+  newsletterSubscribed,
   loading,
   saving,
   dispatchForm,
@@ -295,6 +308,7 @@ function ContactDetailsCard({
   lastName: string;
   email: string;
   phone: string;
+  newsletterSubscribed: boolean;
   loading: boolean;
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
@@ -398,6 +412,43 @@ function ContactDetailsCard({
             />
           )}
         </div>
+
+        {loading ? (
+          <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
+        ) : (
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
+            className={[
+              "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200",
+              newsletterSubscribed
+                ? "border-petroleum-200 bg-petroleum-50"
+                : "border-sand-200 bg-sand-50",
+              saving ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+            ].join(" ")}
+          >
+            <div className="flex flex-col gap-0.5">
+              <p className="text-petroleum-700 text-sm font-medium">Newsletter</p>
+              <p className="text-petroleum-400 text-xs">
+                {newsletterSubscribed ? "Subscribed" : "Not subscribed"}
+              </p>
+            </div>
+            <div
+              className={[
+                "flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors duration-200",
+                newsletterSubscribed ? "bg-petroleum-500" : "bg-sand-300",
+              ].join(" ")}
+            >
+              <div
+                className={[
+                  "size-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                  newsletterSubscribed ? "translate-x-5" : "translate-x-0",
+                ].join(" ")}
+              />
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -597,11 +648,14 @@ export default function ContactDetailPage() {
     lastName,
     email,
     phone,
+    newsletterSubscribed,
     error,
     saving,
     deleting,
     deleteOpen,
   } = form;
+
+  const originalNewsletter = useRef<boolean>(false);
 
   useEffect(() => {
     async function load() {
@@ -613,7 +667,7 @@ export default function ContactDetailPage() {
       ] = await Promise.all([
         insforge.database
           .from("contacts")
-          .select("id, first_name, last_name, email, phone")
+          .select("id, first_name, last_name, email, phone, newsletter_subscribed")
           .eq("id", id)
           .limit(1),
         insforge.database
@@ -639,12 +693,15 @@ export default function ContactDetailPage() {
         return;
       }
 
+      const initialNewsletter = contact.newsletter_subscribed ?? false;
+      originalNewsletter.current = initialNewsletter;
       dispatchForm({
         type: "INIT",
         firstName: contact.first_name ?? "",
         lastName: contact.last_name ?? "",
         email: contact.email ?? "",
         phone: contact.phone ?? "",
+        newsletterSubscribed: initialNewsletter,
       });
 
       const raceRows =
@@ -731,6 +788,7 @@ export default function ContactDetailPage() {
         last_name: lastName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
+        newsletter_subscribed: newsletterSubscribed,
       })
       .eq("id", id);
 
@@ -744,6 +802,21 @@ export default function ContactDetailPage() {
           "Failed to save contact.",
       });
       return;
+    }
+
+    // Sync Resend audience only when the newsletter status actually changed
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && newsletterSubscribed !== originalNewsletter.current) {
+      try {
+        if (newsletterSubscribed) {
+          await subscribeToNewsletter(trimmedEmail);
+        } else {
+          await unsubscribeFromNewsletter(trimmedEmail);
+        }
+        originalNewsletter.current = newsletterSubscribed;
+      } catch {
+        // fail-open: Resend sync failure must not block navigation
+      }
     }
 
     push("/dashboard/contacts");
@@ -826,6 +899,7 @@ export default function ContactDetailPage() {
           lastName={lastName}
           email={email}
           phone={phone}
+          newsletterSubscribed={newsletterSubscribed}
           loading={loading}
           saving={saving}
           dispatchForm={dispatchForm}

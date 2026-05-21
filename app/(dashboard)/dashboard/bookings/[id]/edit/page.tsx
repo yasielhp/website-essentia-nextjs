@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer } from "react";
+import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -162,6 +162,10 @@ function tierLabel(t: Tier, location: DashboardLocation | "" = ""): string {
   const price = resolvePrice(t, location);
   if (price != null) parts.push(`€${price}`);
   return parts.join(" · ") || "Standard";
+}
+
+function localDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const DROPDOWN_MAX_H = 320;
@@ -852,48 +856,46 @@ function LocationSelect({
 function CalendarView({
   selected,
   onSelect,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+  fullyBlockedDates,
+  loadingMonth,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  fullyBlockedDates: Set<string>;
+  loadingMonth: boolean;
 }) {
   const today = new Date();
-  const [viewYear, setViewYear] = useState(
-    () => selected?.getFullYear() ?? today.getFullYear(),
-  );
-  const [viewMonth, setViewMonth] = useState(
-    () => selected?.getMonth() ?? today.getMonth(),
-  );
   const days = getCalendarDays(viewYear, viewMonth);
-
-  const prevMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else setViewMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else setViewMonth((m) => m + 1);
-  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={prevMonth}
+          onClick={onPrevMonth}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </p>
+          {loadingMonth && (
+            <span className="border-petroleum-300 size-3 animate-spin rounded-full border border-t-transparent" />
+          )}
+        </div>
         <button
           type="button"
-          onClick={nextMonth}
+          onClick={onNextMonth}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronRight size={16} />
@@ -913,9 +915,11 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          const cellKey = day ? day.toISOString().slice(0, 10) : `empty-${i}`;
+          const cellKey = day ? localDateStr(day) : `empty-${i}`;
           if (!day) return <div key={cellKey} />;
-          const available = isAvailableDay(day);
+          const baseAvailable = isAvailableDay(day);
+          const isBlocked = baseAvailable && fullyBlockedDates.has(localDateStr(day));
+          const available = baseAvailable && !isBlocked;
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
@@ -1205,6 +1209,69 @@ export default function EditBookingPage() {
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
+
+  // ── Calendar month view state (lifted to enable month-level freeBusy) ────
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(() => today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
+
+  const prevCalMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+  const nextCalMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  };
+
+  // ── Month-level freeBusy (blocks fully-booked days in the calendar) ───────
+  const [monthBusy, setMonthBusy] = useState<{ start: string; end: string }[]>([]);
+  const [loadingMonth, setLoadingMonth] = useState(false);
+
+  useEffect(() => {
+    if (!serviceId) return;
+    let cancelled = false;
+    async function fetchMonth() {
+      setLoadingMonth(true);
+      try {
+        const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+        const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const endDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+        const res = await fetch(
+          `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
+        );
+        if (res.ok && !cancelled) {
+          const json = (await res.json()) as { busy: { start: string; end: string }[] };
+          setMonthBusy(json.busy ?? []);
+        }
+      } catch {
+        // fail-open
+      } finally {
+        if (!cancelled) setLoadingMonth(false);
+      }
+    }
+    void fetchMonth();
+    return () => { cancelled = true; };
+  }, [serviceId, viewYear, viewMonth]);
+
+  const fullyBlockedDates = useMemo(() => {
+    const blocked = new Set<string>();
+    if (monthBusy.length === 0) return blocked;
+    const days = getCalendarDays(viewYear, viewMonth);
+    for (const day of days) {
+      if (!day || !isAvailableDay(day)) continue;
+      const slots = getTimeSlotsForDashboard(
+        day,
+        selectedService?.category,
+        selectedTier?.duration_minutes ?? 60,
+        monthBusy,
+      );
+      if (slots.length > 0 && slots.every((s) => s.booked)) {
+        blocked.add(localDateStr(day));
+      }
+    }
+    return blocked;
+  }, [monthBusy, viewYear, viewMonth, selectedService, selectedTier]);
 
   // ── freeBusy for time-slot availability ───────────────────────
   const [busyIntervals, setBusyIntervals] = useState<
@@ -1949,6 +2016,12 @@ export default function EditBookingPage() {
               <CalendarView
                 selected={selectedDate}
                 onSelect={(d) => dispatchForm({ type: "SET_DATE", value: d })}
+                viewYear={viewYear}
+                viewMonth={viewMonth}
+                onPrevMonth={prevCalMonth}
+                onNextMonth={nextCalMonth}
+                fullyBlockedDates={fullyBlockedDates}
+                loadingMonth={loadingMonth}
               />
             ) : (
               <div className="flex flex-col gap-5">
