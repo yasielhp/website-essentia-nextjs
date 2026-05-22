@@ -25,6 +25,7 @@ type FormState = {
   excerpt: string;
   content: string;
   titleEs: string;
+  slugEs: string;
   excerptEs: string;
   contentEs: string;
   coverImageUrl: string;
@@ -71,6 +72,7 @@ const init: FormState = {
   excerpt: "",
   content: "",
   titleEs: "",
+  slugEs: "",
   excerptEs: "",
   contentEs: "",
   coverImageUrl: "",
@@ -113,6 +115,7 @@ export default function EditPostPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, init);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [lang, setLang] = useState<"en" | "es">("en");
   const { loading, saving, deleting, confirmDelete, notFound, error } = state;
   const {
     title,
@@ -120,6 +123,7 @@ export default function EditPostPage() {
     excerpt,
     content,
     titleEs,
+    slugEs,
     excerptEs,
     contentEs,
     coverImageUrl,
@@ -135,12 +139,38 @@ export default function EditPostPage() {
     dispatch({ type: "SET", field, value });
   }
 
+  function setSlug(value: string) {
+    dispatch({
+      type: "SET",
+      field: "slug",
+      value: value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-{2,}/g, "-"),
+    });
+  }
+
+  function setSlugEs(value: string) {
+    dispatch({
+      type: "SET",
+      field: "slugEs",
+      value: value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-{2,}/g, "-"),
+    });
+  }
+
   useEffect(() => {
     Promise.all([
       insforge.database
         .from("blog_posts")
         .select(
-          "title, slug, excerpt, content, title_es, excerpt_es, content_es, cover_image_url, category_id, status, published_at, seo_title, seo_description, seo_title_es, seo_description_es",
+          "title, slug, slug_es, excerpt, content, title_es, excerpt_es, content_es, cover_image_url, category_id, status, published_at, seo_title, seo_description, seo_title_es, seo_description_es",
         )
         .eq("id", id)
         .single(),
@@ -160,6 +190,7 @@ export default function EditPostPage() {
         excerpt: string | null;
         content: string | null;
         title_es: string | null;
+        slug_es: string | null;
         excerpt_es: string | null;
         content_es: string | null;
         cover_image_url: string | null;
@@ -179,6 +210,7 @@ export default function EditPostPage() {
           excerpt: p.excerpt ?? "",
           content: p.content ?? "",
           titleEs: p.title_es ?? "",
+          slugEs: p.slug_es ?? "",
           excerptEs: p.excerpt_es ?? "",
           contentEs: p.content_es ?? "",
           coverImageUrl: p.cover_image_url ?? "",
@@ -196,8 +228,11 @@ export default function EditPostPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !slug.trim()) {
-      dispatch({ type: "ERROR", msg: "Title and slug are required." });
+    if (!title.trim() || !slug.trim() || !titleEs.trim() || !slugEs.trim()) {
+      dispatch({
+        type: "ERROR",
+        msg: "Title and slug are required in both languages.",
+      });
       return;
     }
     dispatch({ type: "SAVING" });
@@ -213,6 +248,7 @@ export default function EditPostPage() {
         excerpt: excerpt.trim() || null,
         content: content.trim() || null,
         title_es: titleEs.trim() || null,
+        slug_es: slugEs.trim() || null,
         excerpt_es: excerptEs.trim() || null,
         content_es: contentEs.trim() || null,
         cover_image_url: coverImageUrl.trim() || null,
@@ -295,145 +331,178 @@ export default function EditPostPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Main — 2/3 */}
           <div className="space-y-6 lg:col-span-2">
-            {/* English content */}
+            {/* Content tabs */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Content (EN)
-              </h2>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Title <span className="text-red-400">*</span>
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => set("title", e.target.value)}
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Slug <span className="text-red-400">*</span>
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <div className="flex items-center">
-                      <span className="text-petroleum-400 border-sand-200 bg-sand-50 rounded-l-xl border border-r-0 px-3 py-2.5 text-xs">
-                        /blog/
-                      </span>
-                      <input
-                        type="text"
-                        value={slug}
-                        onChange={(e) => set("slug", e.target.value)}
-                        disabled={saving}
-                        className={`${INPUT_CLASS} rounded-l-none border-l-0`}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Excerpt
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
-                  ) : (
-                    <textarea
-                      value={excerpt}
-                      onChange={(e) => set("excerpt", e.target.value)}
-                      rows={2}
-                      disabled={saving}
-                      className={`${INPUT_CLASS} resize-y`}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 mb-1 text-xs font-medium">
-                    Content
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
-                  ) : (
-                    <div data-color-mode="light">
-                      <MDEditor
-                        value={content}
-                        onChange={(val) => set("content", val ?? "")}
-                        height={480}
-                        preview="edit"
-                      />
-                    </div>
-                  )}
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-petroleum-500 text-sm font-semibold">
+                  Content
+                </h2>
+                <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
+                  {(["en", "es"] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLang(l)}
+                      className={[
+                        "rounded-md px-3 py-1 text-xs font-semibold tracking-wide uppercase transition-colors",
+                        lang === l
+                          ? "text-petroleum-700 bg-white shadow-sm"
+                          : "text-petroleum-400 hover:text-petroleum-600",
+                      ].join(" ")}
+                    >
+                      {l === "en" ? "English" : "Español"}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-
-            {/* Spanish content */}
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                Content (ES)
-              </h2>
-              <p className="text-petroleum-400 mb-4 text-xs">
-                Optional Spanish translation.
-              </p>
               <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Título
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      type="text"
-                      value={titleEs}
-                      onChange={(e) => set("titleEs", e.target.value)}
-                      placeholder="Mi primer artículo"
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Extracto
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
-                  ) : (
-                    <textarea
-                      value={excerptEs}
-                      onChange={(e) => set("excerptEs", e.target.value)}
-                      placeholder="Breve descripción del artículo…"
-                      rows={2}
-                      disabled={saving}
-                      className={`${INPUT_CLASS} resize-y`}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 mb-1 text-xs font-medium">
-                    Contenido
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
-                  ) : (
-                    <div data-color-mode="light">
-                      <MDEditor
-                        value={contentEs}
-                        onChange={(val) => set("contentEs", val ?? "")}
-                        height={480}
-                        preview="edit"
-                      />
+                {lang === "en" ? (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Title <span className="text-red-400">*</span>
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <input
+                          type="text"
+                          value={title}
+                          onChange={(e) => set("title", e.target.value)}
+                          disabled={saving}
+                          className={INPUT_CLASS}
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Slug <span className="text-red-400">*</span>
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <div className="flex items-center">
+                          <span className="text-petroleum-400 border-sand-200 bg-sand-50 rounded-l-xl border border-r-0 px-3 py-2.5 text-xs">
+                            /blog/
+                          </span>
+                          <input
+                            type="text"
+                            value={slug}
+                            onChange={(e) => setSlug(e.target.value)}
+                            disabled={saving}
+                            className={`${INPUT_CLASS} rounded-l-none border-l-0`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Excerpt
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
+                      ) : (
+                        <textarea
+                          value={excerpt}
+                          onChange={(e) => set("excerpt", e.target.value)}
+                          rows={2}
+                          disabled={saving}
+                          className={`${INPUT_CLASS} resize-y`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 mb-1 text-xs font-medium">
+                        Content
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
+                      ) : (
+                        <div data-color-mode="light">
+                          <MDEditor
+                            value={content}
+                            onChange={(val) => set("content", val ?? "")}
+                            height={480}
+                            preview="edit"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Title <span className="text-red-400">*</span>
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <input
+                          type="text"
+                          value={titleEs}
+                          onChange={(e) => set("titleEs", e.target.value)}
+                          disabled={saving}
+                          className={INPUT_CLASS}
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Slug <span className="text-red-400">*</span>
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <div className="flex items-center">
+                          <span className="text-petroleum-400 border-sand-200 bg-sand-50 rounded-l-xl border border-r-0 px-3 py-2.5 text-xs">
+                            /blog/
+                          </span>
+                          <input
+                            type="text"
+                            value={slugEs}
+                            onChange={(e) => setSlugEs(e.target.value)}
+                            disabled={saving}
+                            className={`${INPUT_CLASS} rounded-l-none border-l-0`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Excerpt
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
+                      ) : (
+                        <textarea
+                          value={excerptEs}
+                          onChange={(e) => set("excerptEs", e.target.value)}
+                          rows={2}
+                          disabled={saving}
+                          className={`${INPUT_CLASS} resize-y`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 mb-1 text-xs font-medium">
+                        Content
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
+                      ) : (
+                        <div data-color-mode="light">
+                          <MDEditor
+                            value={contentEs}
+                            onChange={(val) => set("contentEs", val ?? "")}
+                            height={480}
+                            preview="edit"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -505,115 +574,128 @@ export default function EditPostPage() {
               )}
             </div>
 
-            {/* SEO EN */}
+            {/* SEO tabs */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                SEO (EN)
-              </h2>
-              <p className="text-petroleum-400 mb-4 text-xs">
-                How it appears in search engines and social media.
-              </p>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Meta title
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={seoTitle}
-                        onChange={(e) => set("seoTitle", e.target.value)}
-                        placeholder={title}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                      <p className="text-petroleum-400 text-xs">
-                        {seoTitle.length}/60 characters
-                      </p>
-                    </>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Meta description
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
-                  ) : (
-                    <>
-                      <textarea
-                        value={seoDescription}
-                        onChange={(e) => set("seoDescription", e.target.value)}
-                        rows={3}
-                        disabled={saving}
-                        className={`${INPUT_CLASS} resize-none`}
-                      />
-                      <p className="text-petroleum-400 text-xs">
-                        {seoDescription.length}/160 characters
-                      </p>
-                    </>
-                  )}
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-petroleum-500 text-sm font-semibold">
+                  SEO
+                </h2>
+                <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
+                  {(["en", "es"] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLang(l)}
+                      className={[
+                        "rounded-md px-3 py-1 text-xs font-semibold tracking-wide uppercase transition-colors",
+                        lang === l
+                          ? "text-petroleum-700 bg-white shadow-sm"
+                          : "text-petroleum-400 hover:text-petroleum-600",
+                      ].join(" ")}
+                    >
+                      {l === "en" ? "English" : "Español"}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-
-            {/* SEO ES */}
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                SEO (ES)
-              </h2>
-              <p className="text-petroleum-400 mb-4 text-xs">
-                Versión en español para buscadores.
-              </p>
               <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Meta título
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={seoTitleEs}
-                        onChange={(e) => set("seoTitleEs", e.target.value)}
-                        placeholder={titleEs || "Título para buscadores"}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                      <p className="text-petroleum-400 text-xs">
-                        {seoTitleEs.length}/60 caracteres
-                      </p>
-                    </>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
-                    Meta descripción
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
-                  ) : (
-                    <>
-                      <textarea
-                        value={seoDescriptionEs}
-                        onChange={(e) =>
-                          set("seoDescriptionEs", e.target.value)
-                        }
-                        rows={3}
-                        disabled={saving}
-                        className={`${INPUT_CLASS} resize-none`}
-                      />
-                      <p className="text-petroleum-400 text-xs">
-                        {seoDescriptionEs.length}/160 caracteres
-                      </p>
-                    </>
-                  )}
-                </div>
+                {lang === "en" ? (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Meta title
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={seoTitle}
+                            onChange={(e) => set("seoTitle", e.target.value)}
+                            placeholder={title}
+                            disabled={saving}
+                            className={INPUT_CLASS}
+                          />
+                          <p className="text-petroleum-400 text-xs">
+                            {seoTitle.length}/60 characters
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Meta description
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+                      ) : (
+                        <>
+                          <textarea
+                            value={seoDescription}
+                            onChange={(e) =>
+                              set("seoDescription", e.target.value)
+                            }
+                            rows={3}
+                            disabled={saving}
+                            className={`${INPUT_CLASS} resize-none`}
+                          />
+                          <p className="text-petroleum-400 text-xs">
+                            {seoDescription.length}/160 characters
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Meta title
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={seoTitleEs}
+                            onChange={(e) => set("seoTitleEs", e.target.value)}
+                            placeholder={titleEs}
+                            disabled={saving}
+                            className={INPUT_CLASS}
+                          />
+                          <p className="text-petroleum-400 text-xs">
+                            {seoTitleEs.length}/60 characters
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-petroleum-500 text-xs font-medium">
+                        Meta description
+                      </label>
+                      {loading ? (
+                        <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+                      ) : (
+                        <>
+                          <textarea
+                            value={seoDescriptionEs}
+                            onChange={(e) =>
+                              set("seoDescriptionEs", e.target.value)
+                            }
+                            rows={3}
+                            disabled={saving}
+                            className={`${INPUT_CLASS} resize-none`}
+                          />
+                          <p className="text-petroleum-400 text-xs">
+                            {seoDescriptionEs.length}/160 characters
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

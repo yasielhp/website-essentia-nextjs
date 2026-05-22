@@ -18,7 +18,7 @@ type Post = {
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("es-ES", {
+  return new Date(iso).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -186,10 +186,10 @@ export default function BlogDashboardPage() {
             className="gap-2"
           >
             <IconPlus />
-            Nuevo post
+            New post
           </Button>
           <Button variant="outline" size="md" href="/dashboard/blog/categories">
-            Categorías
+            Categories
           </Button>
         </div>
         <Button
@@ -217,7 +217,7 @@ export default function BlogDashboardPage() {
           ))
         ) : filteredPosts.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No hay posts todavía.
+            No posts yet.
           </p>
         ) : (
           filteredPosts.map((p) => (
@@ -233,20 +233,20 @@ export default function BlogDashboardPage() {
                 {p.status === "published" ? (
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                     <span className="size-1.5 rounded-full bg-green-500" />
-                    Publicado
+                    Published
                   </span>
                 ) : (
                   <span className="bg-sand-100 text-petroleum-500 inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
                     <span className="bg-petroleum-300 size-1.5 rounded-full" />
-                    Borrador
+                    Draft
                   </span>
                 )}
               </div>
               <p className="text-petroleum-400 mt-1 text-xs">
-                {p.category?.name ?? "Sin categoría"}
+                {p.category?.name ?? "No category"}
                 {p.published_at
-                  ? ` · Publicado ${formatDate(p.published_at)}`
-                  : ` · Creado ${formatDate(p.created_at)}`}
+                  ? ` · Published ${formatDate(p.published_at)}`
+                  : ` · Created ${formatDate(p.created_at)}`}
               </p>
             </div>
           ))
@@ -260,19 +260,19 @@ export default function BlogDashboardPage() {
             <thead>
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Título
+                  Title
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Categoría
+                  Category
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Estado
+                  Status
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Publicado
+                  Published
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Creado
+                  Created
                 </th>
               </tr>
             </thead>
@@ -308,7 +308,7 @@ export default function BlogDashboardPage() {
                     colSpan={5}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No hay posts todavía.
+                    No posts yet.
                   </td>
                 </tr>
               ) : (
@@ -328,12 +328,12 @@ export default function BlogDashboardPage() {
                       {p.status === "published" ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                           <span className="size-1.5 rounded-full bg-green-500" />
-                          Publicado
+                          Published
                         </span>
                       ) : (
                         <span className="bg-sand-100 text-petroleum-500 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
                           <span className="bg-petroleum-300 size-1.5 rounded-full" />
-                          Borrador
+                          Draft
                         </span>
                       )}
                     </td>

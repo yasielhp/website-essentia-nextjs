@@ -8,37 +8,61 @@ import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
 
-// Server-side client (anon key — RLS allows reading published posts)
 const db = createClient({
   baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
   anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
 });
 
+const SELECT_FIELDS =
+  "id, title, slug, slug_es, excerpt, content, title_es, excerpt_es, content_es, cover_image_url, published_at, seo_title, seo_description, seo_og_image_url, seo_title_es, seo_description_es, category:blog_categories(name, slug, name_es), author:profiles(full_name)";
+
 type Post = {
   id: string;
   title: string;
   slug: string;
+  slug_es: string | null;
   excerpt: string | null;
   content: string | null;
+  title_es: string | null;
+  excerpt_es: string | null;
+  content_es: string | null;
   cover_image_url: string | null;
   published_at: string | null;
   seo_title: string | null;
   seo_description: string | null;
   seo_og_image_url: string | null;
-  category: { name: string; slug: string } | null;
+  seo_title_es: string | null;
+  seo_description_es: string | null;
+  category: { name: string; slug: string; name_es: string | null } | null;
   author: { full_name: string | null } | null;
 };
 
-async function getPost(slug: string): Promise<Post | null> {
+async function getPost(slug: string, locale: string): Promise<Post | null> {
+  if (locale === "es") {
+    const { data } = await db.database
+      .from("blog_posts")
+      .select(SELECT_FIELDS)
+      .eq("slug_es", slug)
+      .eq("status", "published")
+      .single();
+    if (data) return data as Post;
+  }
   const { data } = await db.database
     .from("blog_posts")
-    .select(
-      "id, title, slug, excerpt, content, cover_image_url, published_at, seo_title, seo_description, seo_og_image_url, category:blog_categories(name, slug), author:profiles(full_name)",
-    )
+    .select(SELECT_FIELDS)
     .eq("slug", slug)
     .eq("status", "published")
     .single();
   return (data as Post | null) ?? null;
+}
+
+function formatDate(iso: string | null, locale: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export async function generateMetadata({
@@ -46,13 +70,18 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string; locale: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const t = await getTranslations("blog.post");
-  const post = await getPost(slug);
+  const post = await getPost(slug, locale);
   if (!post) return { title: t("notFound") };
 
-  const title = post.seo_title ?? post.title;
-  const description = post.seo_description ?? post.excerpt ?? undefined;
+  const isEs = locale === "es";
+  const title = isEs
+    ? (post.seo_title_es ?? post.title_es ?? post.title)
+    : (post.seo_title ?? post.title);
+  const description = isEs
+    ? (post.seo_description_es ?? post.excerpt_es ?? post.excerpt ?? undefined)
+    : (post.seo_description ?? post.excerpt ?? undefined);
   const image = post.seo_og_image_url ?? post.cover_image_url ?? undefined;
 
   return {
@@ -74,15 +103,6 @@ export async function generateMetadata({
   };
 }
 
-function formatDate(iso: string | null, locale: string) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export default async function BlogPostPage({
   params,
 }: {
@@ -90,17 +110,33 @@ export default async function BlogPostPage({
 }) {
   const { slug, locale } = await params;
   const t = await getTranslations("blog.post");
-  const post = await getPost(slug);
+  const post = await getPost(slug, locale);
   if (!post) notFound();
 
-  const html = post.content ? await marked(post.content) : "";
+  const isEs = locale === "es";
+
+  const displayTitle = isEs ? (post.title_es ?? post.title) : post.title;
+  const displayExcerpt = isEs
+    ? (post.excerpt_es ?? post.excerpt)
+    : post.excerpt;
+  const rawContent = isEs ? (post.content_es ?? post.content) : post.content;
+  const displayCategory = isEs
+    ? (post.category?.name_es ?? post.category?.name)
+    : post.category?.name;
+
+  const html = rawContent ? await marked(rawContent) : "";
 
   const siteUrl = `https://${contact.domain}`;
+  const canonicalSlug = isEs ? (post.slug_es ?? post.slug) : post.slug;
+  const canonicalPath = isEs
+    ? `/es/blog/${canonicalSlug}`
+    : `/blog/${post.slug}`;
+
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.seo_title ?? post.title,
-    description: post.seo_description ?? post.excerpt ?? undefined,
+    headline: displayTitle,
+    description: displayExcerpt ?? undefined,
     image: post.seo_og_image_url ?? post.cover_image_url ?? undefined,
     datePublished: post.published_at ?? undefined,
     author: {
@@ -115,7 +151,7 @@ export default async function BlogPostPage({
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${siteUrl}/blog/${post.slug}`,
+      "@id": `${siteUrl}${canonicalPath}`,
     },
   };
 
@@ -132,26 +168,23 @@ export default async function BlogPostPage({
             breadcrumbSchema([
               { name: t("breadcrumbHome"), url: "/" },
               { name: t("breadcrumbBlog"), url: "/blog" },
-              { name: post.title, url: `/blog/${post.slug}` },
+              { name: displayTitle, url: canonicalPath },
             ]),
           ),
         }}
       />
-      <article className="bg-sand-50 text-petroleum-700 px-4 py-20 sm:px-8">
+      <article className="bg-sand-50 text-petroleum-700 px-4 pt-36 pb-20 sm:px-8 lg:pt-48">
         <div className="mx-auto max-w-3xl">
-          {/* Category badge */}
-          {post.category && (
+          {displayCategory && (
             <span className="bg-petroleum-50 text-petroleum-500 mb-4 inline-block rounded-full px-3 py-1 text-xs font-medium">
-              {post.category.name}
+              {displayCategory}
             </span>
           )}
 
-          {/* Title */}
           <h1 className="font-display text-petroleum-700 mb-4 text-4xl leading-tight sm:text-5xl">
-            {post.title}
+            {displayTitle}
           </h1>
 
-          {/* Meta */}
           <div className="text-petroleum-400 mb-8 flex flex-wrap items-center gap-3 text-sm">
             {post.author?.full_name && <span>{post.author.full_name}</span>}
             {post.author?.full_name && post.published_at && <span>·</span>}
@@ -160,12 +193,11 @@ export default async function BlogPostPage({
             )}
           </div>
 
-          {/* Cover image */}
           {post.cover_image_url && (
             <div className="mb-10 overflow-hidden rounded-2xl">
               <Image
                 src={post.cover_image_url}
-                alt={post.title}
+                alt={displayTitle}
                 width={896}
                 height={504}
                 unoptimized
@@ -174,14 +206,12 @@ export default async function BlogPostPage({
             </div>
           )}
 
-          {/* Excerpt */}
-          {post.excerpt && (
+          {displayExcerpt && (
             <p className="text-petroleum-500 border-petroleum-100 mb-8 border-l-2 pl-4 text-lg leading-relaxed italic">
-              {post.excerpt}
+              {displayExcerpt}
             </p>
           )}
 
-          {/* Content */}
           {html && (
             <div
               className="prose prose-lg prose-headings:font-display max-w-none"

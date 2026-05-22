@@ -1,22 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { insforge } from "@/lib/insforge";
 
+type PostCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  name_es: string | null;
+};
+
 type Post = {
   id: string;
   title: string;
   slug: string;
+  slug_es: string | null;
+  title_es: string | null;
   excerpt: string | null;
+  excerpt_es: string | null;
   cover_image_url: string | null;
   published_at: string | null;
-  category: { name: string; slug: string } | null;
+  category: PostCategory | null;
 };
-
-type Category = { id: string; name: string; slug: string };
 
 function formatDate(iso: string | null, locale: string) {
   if (!iso) return "";
@@ -30,35 +38,40 @@ function formatDate(iso: string | null, locale: string) {
 export function BlogList() {
   const t = useTranslations("blog");
   const locale = useLocale();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const isEs = locale === "es";
+
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     insforge.database
-      .from("blog_categories")
-      .select("id, name, slug")
-      .order("name")
-      .then(({ data }) => setCategories((data as Category[] | null) ?? []));
-  }, []);
-
-  useEffect(() => {
-    const q = insforge.database
       .from("blog_posts")
       .select(
-        "id, title, slug, excerpt, cover_image_url, published_at, category:blog_categories(name, slug)",
+        "id, title, slug, slug_es, title_es, excerpt, excerpt_es, cover_image_url, published_at, category:blog_categories(id, name, slug, name_es)",
       )
       .eq("status", "published")
-      .order("published_at", { ascending: false });
-
-    (activeCategory ? q.eq("category_id", activeCategory) : q).then(
-      ({ data }) => {
-        setPosts((data as Post[] | null) ?? []);
+      .order("published_at", { ascending: false })
+      .then(({ data }) => {
+        setAllPosts((data as Post[] | null) ?? []);
         setLoading(false);
-      },
+      });
+  }, []);
+
+  // Categories derived from loaded posts — only those with ≥1 published post
+  const categories = useMemo<PostCategory[]>(() => {
+    const map = new Map<string, PostCategory>();
+    allPosts.forEach((p) => {
+      if (p.category) map.set(p.category.id, p.category);
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
     );
-  }, [activeCategory]);
+  }, [allPosts]);
+
+  const posts = activeCategory
+    ? allPosts.filter((p) => p.category?.id === activeCategory)
+    : allPosts;
 
   return (
     <section className="text-primary min-h-dvh px-4 py-20 sm:px-8 lg:px-16">
@@ -72,7 +85,7 @@ export function BlogList() {
         </div>
 
         {/* Category filter */}
-        {categories.length > 0 && (
+        {!loading && categories.length > 0 && (
           <div className="mb-10 flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setActiveCategory(null)}
@@ -86,7 +99,7 @@ export function BlogList() {
                 onClick={() => setActiveCategory(c.id)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${activeCategory === c.id ? "bg-primary text-white" : "bg-primary/10 text-primary hover:bg-primary/15"}`}
               >
-                {c.name}
+                {isEs ? (c.name_es ?? c.name) : c.name}
               </button>
             ))}
           </div>
@@ -114,48 +127,62 @@ export function BlogList() {
           <p className="text-primary/40 py-20 text-center">{t("empty")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((p) => (
-              <Link
-                key={p.id}
-                href={`/blog/${p.slug}`}
-                className="group border-primary/10 overflow-hidden rounded-2xl border bg-white transition-shadow hover:shadow-lg"
-              >
-                {p.cover_image_url ? (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <Image
-                      src={p.cover_image_url}
-                      alt={p.title}
-                      width={640}
-                      height={360}
-                      unoptimized
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+            {posts.map((p) => {
+              const displayTitle = isEs ? (p.title_es ?? p.title) : p.title;
+              const displayExcerpt = isEs
+                ? (p.excerpt_es ?? p.excerpt)
+                : p.excerpt;
+              const displayCategory = isEs
+                ? (p.category?.name_es ?? p.category?.name)
+                : p.category?.name;
+              const postSlug = isEs ? (p.slug_es ?? p.slug) : p.slug;
+              const postHref = isEs
+                ? `/es/blog/${postSlug}`
+                : `/blog/${p.slug}`;
+
+              return (
+                <Link
+                  key={p.id}
+                  href={postHref}
+                  className="group border-primary/10 overflow-hidden rounded-2xl border bg-white transition-shadow hover:shadow-lg"
+                >
+                  {p.cover_image_url ? (
+                    <div className="aspect-video w-full overflow-hidden">
+                      <Image
+                        src={p.cover_image_url}
+                        alt={displayTitle}
+                        width={640}
+                        height={360}
+                        unoptimized
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="from-primary/10 to-primary/5 aspect-video w-full bg-gradient-to-br" />
+                  )}
+                  <div className="p-5">
+                    {displayCategory && (
+                      <span className="bg-primary/10 text-primary mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
+                        {displayCategory}
+                      </span>
+                    )}
+                    <h2 className="text-primary mb-2 text-lg leading-snug font-semibold group-hover:underline group-hover:underline-offset-2">
+                      {displayTitle}
+                    </h2>
+                    {displayExcerpt && (
+                      <p className="text-primary/60 mb-3 line-clamp-2 text-sm">
+                        {displayExcerpt}
+                      </p>
+                    )}
+                    {p.published_at && (
+                      <p className="text-primary/40 text-xs">
+                        {formatDate(p.published_at, locale)}
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <div className="from-primary/10 to-primary/5 aspect-video w-full bg-gradient-to-br" />
-                )}
-                <div className="p-5">
-                  {p.category && (
-                    <span className="bg-primary/10 text-primary mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
-                      {p.category.name}
-                    </span>
-                  )}
-                  <h2 className="text-primary mb-2 text-lg leading-snug font-semibold group-hover:underline group-hover:underline-offset-2">
-                    {p.title}
-                  </h2>
-                  {p.excerpt && (
-                    <p className="text-primary/60 mb-3 line-clamp-2 text-sm">
-                      {p.excerpt}
-                    </p>
-                  )}
-                  {p.published_at && (
-                    <p className="text-primary/40 text-xs">
-                      {formatDate(p.published_at, locale)}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

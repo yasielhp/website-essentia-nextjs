@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, type Dispatch } from "react";
+import { useEffect, useReducer, useRef, useState, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ type Session = {
   id: string;
   title: string;
   description: string | null;
+  title_es: string | null;
+  description_es: string | null;
   date: string;
   duration_minutes: number | null;
   location: string | null;
@@ -43,6 +45,8 @@ type PageState = {
   error: string | null;
   title: string;
   description: string;
+  titleEs: string;
+  descriptionEs: string;
   date: string;
   time: string;
   duration: string;
@@ -58,6 +62,8 @@ type PageAction =
       payload: {
         title: string;
         description: string;
+        titleEs: string;
+        descriptionEs: string;
         date: string;
         time: string;
         duration: string;
@@ -75,6 +81,8 @@ type PageAction =
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_TITLE"; value: string }
   | { type: "SET_DESCRIPTION"; value: string }
+  | { type: "SET_TITLE_ES"; value: string }
+  | { type: "SET_DESCRIPTION_ES"; value: string }
   | { type: "SET_DATE"; value: string }
   | { type: "SET_TIME"; value: string }
   | { type: "SET_DURATION"; value: string }
@@ -92,6 +100,8 @@ const initialState: PageState = {
   error: null,
   title: "",
   description: "",
+  titleEs: "",
+  descriptionEs: "",
   date: "",
   time: "",
   duration: "",
@@ -121,6 +131,10 @@ function reducer(state: PageState, action: PageAction): PageState {
       return { ...state, title: action.value };
     case "SET_DESCRIPTION":
       return { ...state, description: action.value };
+    case "SET_TITLE_ES":
+      return { ...state, titleEs: action.value };
+    case "SET_DESCRIPTION_ES":
+      return { ...state, descriptionEs: action.value };
     case "SET_DATE":
       return { ...state, date: action.value };
     case "SET_TIME":
@@ -195,9 +209,16 @@ function DeleteModal({
 type DetailsFormProps = {
   state: PageState;
   dispatch: Dispatch<PageAction>;
+  titleEs: string;
+  descriptionEs: string;
 };
 
-function DetailsForm({ state, dispatch }: DetailsFormProps) {
+function DetailsForm({
+  state,
+  dispatch,
+  titleEs,
+  descriptionEs,
+}: DetailsFormProps) {
   const {
     loading,
     saving,
@@ -210,57 +231,127 @@ function DetailsForm({ state, dispatch }: DetailsFormProps) {
     maxParticipants,
     access,
   } = state;
+  const [lang, setLang] = useState<"en" | "es">("en");
+
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Details</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-petroleum-500 text-sm font-semibold">Details</h2>
+        <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
+          {(["en", "es"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              className={[
+                "rounded-md px-3 py-1 text-xs font-semibold tracking-wide uppercase transition-colors",
+                lang === l
+                  ? "text-petroleum-700 bg-white shadow-sm"
+                  : "text-petroleum-400 hover:text-petroleum-600",
+              ].join(" ")}
+            >
+              {l === "en" ? "English" : "Español"}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="space-y-4">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="edu-edit-title"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            Title <span className="text-red-400">*</span>
-          </label>
-          {loading ? (
-            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-          ) : (
-            <input
-              id="edu-edit-title"
-              type="text"
-              value={title}
-              onChange={(e) =>
-                dispatch({ type: "SET_TITLE", value: e.target.value })
-              }
-              disabled={saving}
-              className={INPUT_CLASS}
-            />
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="edu-edit-description"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            Description
-          </label>
-          {loading ? (
-            <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
-          ) : (
-            <textarea
-              id="edu-edit-description"
-              value={description}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_DESCRIPTION",
-                  value: e.target.value,
-                })
-              }
-              disabled={saving}
-              className={TEXTAREA_CLASS}
-            />
-          )}
-        </div>
+        {lang === "en" ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edu-edit-title"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Title <span className="text-red-400">*</span>
+              </label>
+              {loading ? (
+                <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+              ) : (
+                <input
+                  id="edu-edit-title"
+                  type="text"
+                  value={title}
+                  onChange={(e) =>
+                    dispatch({ type: "SET_TITLE", value: e.target.value })
+                  }
+                  disabled={saving}
+                  className={INPUT_CLASS}
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edu-edit-description"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Description <span className="text-red-400">*</span>
+              </label>
+              {loading ? (
+                <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+              ) : (
+                <textarea
+                  id="edu-edit-description"
+                  value={description}
+                  onChange={(e) =>
+                    dispatch({ type: "SET_DESCRIPTION", value: e.target.value })
+                  }
+                  disabled={saving}
+                  className={TEXTAREA_CLASS}
+                />
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edu-edit-title-es"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Title <span className="text-red-400">*</span>
+              </label>
+              {loading ? (
+                <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+              ) : (
+                <input
+                  id="edu-edit-title-es"
+                  type="text"
+                  value={titleEs}
+                  onChange={(e) =>
+                    dispatch({ type: "SET_TITLE_ES", value: e.target.value })
+                  }
+                  disabled={saving}
+                  className={INPUT_CLASS}
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edu-edit-description-es"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Description <span className="text-red-400">*</span>
+              </label>
+              {loading ? (
+                <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+              ) : (
+                <textarea
+                  id="edu-edit-description-es"
+                  value={descriptionEs}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_DESCRIPTION_ES",
+                      value: e.target.value,
+                    })
+                  }
+                  disabled={saving}
+                  className={TEXTAREA_CLASS}
+                />
+              )}
+            </div>
+          </>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
@@ -476,6 +567,8 @@ export default function EditSessionPage() {
     error,
     title,
     description,
+    titleEs,
+    descriptionEs,
     date,
     time,
     duration,
@@ -494,7 +587,7 @@ export default function EditSessionPage() {
       const { data } = await insforge.database
         .from("education_sessions")
         .select(
-          "id, title, description, date, duration_minutes, location, max_participants, image_url, access",
+          "id, title, description, title_es, description_es, date, duration_minutes, location, max_participants, image_url, access",
         )
         .eq("id", id)
         .limit(1);
@@ -514,6 +607,8 @@ export default function EditSessionPage() {
         payload: {
           title: row.title,
           description: row.description ?? "",
+          titleEs: row.title_es ?? "",
+          descriptionEs: row.description_es ?? "",
           date: dateStr,
           time: timeStr,
           duration:
@@ -553,6 +648,8 @@ export default function EditSessionPage() {
       .update({
         title: trimmedTitle,
         description: description.trim() || null,
+        title_es: titleEs.trim() || null,
+        description_es: descriptionEs.trim() || null,
         date: isoDateTime,
         duration_minutes: parseInt(duration) || null,
         location: location.trim() || null,
@@ -663,7 +760,12 @@ export default function EditSessionPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
-            <DetailsForm state={state} dispatch={dispatch} />
+            <DetailsForm
+              state={state}
+              dispatch={dispatch}
+              titleEs={titleEs}
+              descriptionEs={descriptionEs}
+            />
           </div>
 
           <div className="space-y-5">

@@ -1,23 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import gsap from "gsap";
 import { useTranslations, useLocale } from "next-intl";
 import { insforge } from "@/lib/insforge";
 
+type PostCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  name_es: string | null;
+};
+
 type Post = {
   id: string;
   title: string;
   slug: string;
+  slug_es: string | null;
+  title_es: string | null;
   excerpt: string | null;
+  excerpt_es: string | null;
   cover_image_url: string | null;
   published_at: string | null;
-  category: { name: string; slug: string } | null;
+  category: PostCategory | null;
 };
-
-type Category = { id: string; name: string; slug: string };
 
 function formatDate(iso: string | null, locale: string) {
   if (!iso) return "";
@@ -45,41 +53,42 @@ function SkeletonCard() {
 export default function PostsSection() {
   const t = useTranslations("blog");
   const locale = useLocale();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const isEs = locale === "es";
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     insforge.database
-      .from("blog_categories")
-      .select("id, name, slug")
-      .order("name")
-      .then(({ data }) => setCategories((data as Category[] | null) ?? []));
+      .from("blog_posts")
+      .select(
+        "id, title, slug, slug_es, title_es, excerpt, excerpt_es, cover_image_url, published_at, category:blog_categories(id, name, slug, name_es)",
+      )
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .then(({ data }) => {
+        setAllPosts((data as Post[] | null) ?? []);
+        setLoading(false);
+      });
   }, []);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const q = insforge.database
-        .from("blog_posts")
-        .select(
-          "id, title, slug, excerpt, cover_image_url, published_at, category:blog_categories(name, slug)",
-        )
-        .eq("status", "published")
-        .order("published_at", { ascending: false });
+  // Only categories that have ≥1 published post
+  const categories = useMemo<PostCategory[]>(() => {
+    const map = new Map<string, PostCategory>();
+    allPosts.forEach((p) => {
+      if (p.category) map.set(p.category.id, p.category);
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [allPosts]);
 
-      const { data } = await (activeCategory
-        ? q.eq("category_id", activeCategory)
-        : q);
-      setPosts((data as Post[] | null) ?? []);
-      setLoading(false);
-    }
-    void load();
-  }, [activeCategory]);
+  const posts = activeCategory
+    ? allPosts.filter((p) => p.category?.id === activeCategory)
+    : allPosts;
 
-  // Animar cards cuando aparecen
+  // Animate cards when they appear
   useEffect(() => {
     if (loading || !gridRef.current) return;
     const cards = Array.from(gridRef.current.children);
@@ -94,8 +103,8 @@ export default function PostsSection() {
   return (
     <section id="posts" className="bg-sand-50 px-5 py-20 md:py-28">
       <div className="mx-auto max-w-5xl">
-        {/* Filtros de categoría */}
-        {categories.length > 0 && (
+        {/* Category filters — only shown when loaded and there are categories */}
+        {!loading && categories.length > 0 && (
           <div className="mb-12 flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setActiveCategory(null)}
@@ -117,13 +126,13 @@ export default function PostsSection() {
                     : "bg-sand-200 text-petroleum-500 hover:bg-sand-200"
                 }`}
               >
-                {c.name}
+                {isEs ? (c.name_es ?? c.name) : c.name}
               </button>
             ))}
           </div>
         )}
 
-        {/* Grid de posts */}
+        {/* Posts grid */}
         {loading ? (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -139,48 +148,62 @@ export default function PostsSection() {
             ref={gridRef}
             className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {posts.map((p) => (
-              <Link
-                key={p.id}
-                href={`/blog/${p.slug}`}
-                className="group border-sand-200 overflow-hidden rounded-2xl border bg-white transition-shadow hover:shadow-md"
-              >
-                {p.cover_image_url ? (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <Image
-                      src={p.cover_image_url}
-                      alt={p.title}
-                      width={640}
-                      height={360}
-                      unoptimized
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+            {posts.map((p) => {
+              const displayTitle = isEs ? (p.title_es ?? p.title) : p.title;
+              const displayExcerpt = isEs
+                ? (p.excerpt_es ?? p.excerpt)
+                : p.excerpt;
+              const displayCategory = isEs
+                ? (p.category?.name_es ?? p.category?.name)
+                : p.category?.name;
+              const postSlug = isEs ? (p.slug_es ?? p.slug) : p.slug;
+              const postHref = isEs
+                ? `/es/blog/${postSlug}`
+                : `/blog/${p.slug}`;
+
+              return (
+                <Link
+                  key={p.id}
+                  href={postHref}
+                  className="group border-sand-200 overflow-hidden rounded-2xl border bg-white transition-shadow hover:shadow-md"
+                >
+                  {p.cover_image_url ? (
+                    <div className="aspect-video w-full overflow-hidden">
+                      <Image
+                        src={p.cover_image_url}
+                        alt={displayTitle}
+                        width={640}
+                        height={360}
+                        unoptimized
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-sand-100 aspect-video w-full" />
+                  )}
+                  <div className="p-5">
+                    {displayCategory && (
+                      <span className="bg-sand-100 text-petroleum-500 mb-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
+                        {displayCategory}
+                      </span>
+                    )}
+                    <h2 className="text-petroleum-700 mb-2 text-base leading-snug font-semibold group-hover:underline group-hover:underline-offset-2">
+                      {displayTitle}
+                    </h2>
+                    {displayExcerpt && (
+                      <p className="text-petroleum-400 mb-4 line-clamp-2 text-sm leading-relaxed">
+                        {displayExcerpt}
+                      </p>
+                    )}
+                    {p.published_at && (
+                      <p className="text-petroleum-300 text-xs">
+                        {formatDate(p.published_at, locale)}
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <div className="bg-sand-100 aspect-video w-full" />
-                )}
-                <div className="p-5">
-                  {p.category && (
-                    <span className="bg-sand-100 text-petroleum-500 mb-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
-                      {p.category.name}
-                    </span>
-                  )}
-                  <h2 className="text-petroleum-700 mb-2 text-base leading-snug font-semibold group-hover:underline group-hover:underline-offset-2">
-                    {p.title}
-                  </h2>
-                  {p.excerpt && (
-                    <p className="text-petroleum-400 mb-4 line-clamp-2 text-sm leading-relaxed">
-                      {p.excerpt}
-                    </p>
-                  )}
-                  {p.published_at && (
-                    <p className="text-petroleum-300 text-xs">
-                      {formatDate(p.published_at, locale)}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
