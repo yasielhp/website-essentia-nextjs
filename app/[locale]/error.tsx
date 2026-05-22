@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
+import { useLocale } from "next-intl";
 import { Button } from "@components/ui/button";
 
 type ErrorProps = {
@@ -9,11 +10,8 @@ type ErrorProps = {
 };
 
 export default function Error({ error, reset }: ErrorProps) {
-  const isEs = useSyncExternalStore(
-    () => () => {},
-    () => /(?:^|;\s*)NEXT_LOCALE=es(?:;|$)/.test(document.cookie),
-    () => false,
-  );
+  const locale = useLocale();
+  const isEs = locale === "es";
 
   useEffect(() => {
     console.error(error);

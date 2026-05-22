@@ -2,12 +2,7 @@ import { getLocale } from "next-intl/server";
 import { Button } from "@components/ui/button";
 
 export default async function NotFound() {
-  let locale = "en";
-  try {
-    locale = await getLocale();
-  } catch {
-    // fuera del contexto next-intl → inglés por defecto
-  }
+  const locale = await getLocale();
   const isEs = locale === "es";
 
   return (
