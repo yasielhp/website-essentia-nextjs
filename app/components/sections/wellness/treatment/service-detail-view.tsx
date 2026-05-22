@@ -51,10 +51,10 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          {service.title}.
+          {t(`${service.id}.title`)}.
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          {service.description}
+          {t(`${service.id}.description`)}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -162,17 +162,19 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
                 {t("aboutHeading")}
               </h2>
               <p className="text-petroleum-500 mt-6 leading-relaxed">
-                {service.body}
+                {t(`${service.id}.body`)}
               </p>
             </div>
 
             {/* Highlights grid */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {service.highlights.map((h, i) => (
+              {service.highlights.map((_, i) => (
                 <div key={i} className="bg-sand-100 rounded-2xl p-6">
-                  <h3 className="text-petroleum-700 font-medium">{h.title}</h3>
+                  <h3 className="text-petroleum-700 font-medium">
+                    {t(`${service.id}.highlights.${i}.title`)}
+                  </h3>
                   <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
-                    {h.description}
+                    {t(`${service.id}.highlights.${i}.description`)}
                   </p>
                 </div>
               ))}
@@ -256,7 +258,7 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
               {t("ctaHeading")}
             </h2>
             <p className="text-sand-500 max-w-md leading-relaxed">
-              {t("ctaBody", { service: service.title })}
+              {t("ctaBody", { service: t(`${service.id}.title`) })}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
               <Button

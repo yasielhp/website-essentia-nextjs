@@ -124,7 +124,216 @@
       "ctaBody": "Reserva tu sesión de {service} en Essentia Wellness Club — Baobab Suites, Costa Adeje, Tenerife.",
       "bookSession": "Reservar una sesión",
       "learnMore": "Más información",
-      "viewAll": "Ver todos los tratamientos"
+      "viewAll": "Ver todos los tratamientos",
+      "espira": {
+        "title": "Espira",
+        "description": "Ritual exprés para cuello y hombros. Aceites y presión precisa disuelven la tensión en 30 minutos.",
+        "body": "Espira es un ritual exprés diseñado para quienes necesitan desconectar en un margen de tiempo reducido. En 30 minutos, nuestro terapeuta trabaja con precisión sobre la espalda alta, el cuello y los hombros — las zonas donde se acumula la tensión del día a día. Las maniobras de deslizamiento profundo se combinan con presión localizada sobre los nudos de tensión, usando aceites esenciales seleccionados por sus propiedades relajantes y descontracturantes. Es el punto de partida ideal si nunca has recibido un masaje terapéutico o si buscas un momento de pausa durante la semana.",
+        "highlights": {
+          "0": {
+            "title": "Alivio inmediato",
+            "description": "Trabaja directamente sobre los puntos de tensión del cuello y el trapecio, con resultados perceptibles desde la primera sesión."
+          },
+          "1": {
+            "title": "Aceites esenciales terapéuticos",
+            "description": "La combinación de aromaterapia y tacto activa el sistema nervioso parasimpático, induciendo calma en pocos minutos."
+          },
+          "2": {
+            "title": "Formato exprés sin compromiso",
+            "description": "30 minutos de eficacia concentrada. Ideal para combinar con otras experiencias del centro o como ritual de bienestar semanal."
+          }
+        }
+      },
+      "pulse": {
+        "title": "Pulse",
+        "description": "Masaje de tejido profundo para contracturas crónicas. Alcanza capas que el masaje convencional no puede.",
+        "body": "Pulse está diseñado para el cuerpo que trabaja duro. Con 45 minutos de duración y una presión por encima de la media, este masaje aborda contracturas musculares arraigadas, rigidez postural y puntos de dolor que no ceden con el descanso ordinario. En cada sesión, nuestro terapeuta identifica las zonas bajo mayor carga y aplica técnicas de fricción profunda, compresión isquémica y movilización pasiva para restaurar el tono muscular óptimo. Especialmente recomendado para personas con trabajos sedentarios, deportistas en períodos de alta carga, o cualquiera que cargue con tensión crónica acumulada.",
+        "highlights": {
+          "0": {
+            "title": "Presión profunda controlada",
+            "description": "Técnica de tejido profundo que alcanza las capas musculares que el masaje convencional no puede abordar, disolviendo contracturas reales."
+          },
+          "1": {
+            "title": "Evaluación en cada sesión",
+            "description": "El terapeuta adapta la presión y las zonas de trabajo a tu estado en el momento, en lugar de seguir un protocolo fijo."
+          },
+          "2": {
+            "title": "Recuperación acelerada",
+            "description": "Reduce el tiempo de recuperación muscular, mejora la circulación local y alivia la tensión nerviosa asociada a las contracturas."
+          }
+        }
+      },
+      "drenaje-linfatico": {
+        "title": "Drenaje Linfático Brasileño",
+        "description": "Drenaje rítmico para reducir la retención de líquidos, esculpir la figura y suavizar la piel.",
+        "body": "El Drenaje Linfático Brasileño es una técnica de origen brasileño que combina el drenaje linfático manual clásico con maniobras específicas de contorno. A través de movimientos rítmicos y direccionales, se estimula el flujo linfático superficial, ayudando a eliminar líquidos retenidos y toxinas. El resultado es una figura más definida, una piel más suave y una sensación inmediata de ligereza. Es especialmente efectivo cuando se realiza en ciclos de sesiones regulares, ya que los efectos son acumulativos. Indicado para personas con retención de líquidos, celulitis, hinchazón en las piernas, o como complemento a un proceso de transformación corporal.",
+        "highlights": {
+          "0": {
+            "title": "Reducción de la retención de líquidos",
+            "description": "Estimula el sistema linfático para drenar el exceso de líquido intersticial, reduciendo visiblemente la hinchazón."
+          },
+          "1": {
+            "title": "Efecto reafirmante",
+            "description": "Las maniobras brasileñas trabajan la capa hipodérmica para suavizar la piel de naranja y refinar los contornos corporales."
+          },
+          "2": {
+            "title": "Mejora de la circulación",
+            "description": "Activa la microcirculación y el retorno venoso, aliviando las piernas cansadas y mejorando la oxigenación de los tejidos."
+          }
+        }
+      },
+      "essentia-active": {
+        "title": "Essentia Active",
+        "description": "Masaje de recuperación deportiva. Reduce la fatiga, previene lesiones y restaura la movilidad.",
+        "body": "Essentia Active es el protocolo de recuperación diseñado para el cuerpo en movimiento. Combina técnicas de masaje deportivo, compresión neuromuscular y estiramientos asistidos para acelerar la recuperación muscular, reducir la fatiga acumulada y mantener la función tisular entre sesiones de entrenamiento. El trabajo se centra especialmente en las cadenas musculares del tren inferior — cuádriceps, isquiotibiales, gemelos y glúteos — sin descuidar la región lumbar y los flexores de cadera. Ideal antes y después de eventos deportivos, o como mantenimiento semanal para quienes entrenan con regularidad.",
+        "highlights": {
+          "0": {
+            "title": "Recuperación muscular activa",
+            "description": "Técnicas específicas para reducir las agujetas y acelerar el retorno a la actividad."
+          },
+          "1": {
+            "title": "Prevención de lesiones",
+            "description": "Detecta y trata las zonas sobrecargadas antes de que se conviertan en lesiones, preservando la calidad del tejido muscular."
+          },
+          "2": {
+            "title": "Mejora de la movilidad articular",
+            "description": "Los estiramientos asistidos al final de la sesión restauran la longitud muscular y el rango de movimiento articular."
+          }
+        }
+      },
+      "nurtura": {
+        "title": "Nurtura",
+        "description": "Masaje prenatal para aliviar el dolor de espalda, reducir la hinchazón y crear una calma profunda.",
+        "body": "Nurtura es un masaje prenatal diseñado específicamente para acompañar al cuerpo durante el embarazo. Con un posicionamiento adecuado y técnicas de presión suave, alivia las molestias lumbares y de la espalda alta comunes durante la gestación, reduce la hinchazón en las extremidades y proporciona un espacio de calma profunda tanto para la madre como para el bebé. Cada maniobra está adaptada al segundo y tercer trimestre, evitando zonas contraindicadas y usando aceites de origen vegetal seguros para la piel sensibilizada por el embarazo. Una experiencia que cuida a través del tacto.",
+        "highlights": {
+          "0": {
+            "title": "Alivio del dolor lumbar",
+            "description": "Trabaja los músculos paravertebrales y el sacro, que soportan una carga creciente a medida que avanza el embarazo."
+          },
+          "1": {
+            "title": "Reducción del edema",
+            "description": "Maniobras de drenaje suave en piernas y tobillos para aliviar la retención de líquidos típica del tercer trimestre."
+          },
+          "2": {
+            "title": "Calma profunda compartida",
+            "description": "Reducir el cortisol materno tiene un efecto directo en el bienestar del bebé, convirtiendo la sesión en un momento de conexión."
+          }
+        }
+      },
+      "serenna": {
+        "title": "Serenna",
+        "description": "Relajación total: aceites calientes y movimientos lentos para resetear el sistema nervioso.",
+        "body": "Serenna es un masaje de relajación total que combina largas maniobras envolventes con trabajo circulatorio y estimulación del sistema nervioso parasimpático. La sesión comienza con un ejercicio de respiración guiada para facilitar la entrega al descanso, seguido de un recorrido completo por el cuerpo con aceites calientes y movimientos rítmicos que imitan el flujo del agua. No hay puntos de presión intensa ni trabajo profundo — el objetivo es desconectar por completo, bajar el ritmo y salir renovado. Es la elección ideal para quienes viven con el sistema nervioso simpático permanentemente activado.",
+        "highlights": {
+          "0": {
+            "title": "Regulación a la baja del sistema nervioso",
+            "description": "Las maniobras lentas y continuas envían señales de seguridad al sistema nervioso, reduciendo la frecuencia cardíaca y el cortisol."
+          },
+          "1": {
+            "title": "Circulación y calor",
+            "description": "El effleurage con aceites calientes mejora la circulación superficial y deja la piel nutrida y luminosa."
+          },
+          "2": {
+            "title": "Recuperación del sueño",
+            "description": "Muchos clientes reportan una mejoría notable en la calidad del sueño en los días posteriores a una sesión de Serenna."
+          }
+        }
+      },
+      "solea": {
+        "title": "Soléa",
+        "description": "Ritual post-solar: envoltura de aloe vera y masaje de cuerpo completo para calmar y restaurar la piel.",
+        "body": "Soléa es el tratamiento esencial para restaurar la piel tras la exposición solar. La sesión comienza con una envoltura de aloe vera puro con acción antiinflamatoria y calmante, aplicado caliente por todo el cuerpo para calmar el enrojecimiento, hidratar en profundidad y restaurar la barrera cutánea. Tras un período de absorción, el terapeuta realiza un masaje de cuerpo completo con movimientos suaves y deslizantes que potencian la penetración de los activos y trabajan la musculatura superficial. La piel emerge hidratada, calmada y visiblemente más uniforme.",
+        "highlights": {
+          "0": {
+            "title": "Envoltura activa de aloe vera",
+            "description": "El aloe vera concentrado calma la inflamación, detiene la descamación y acelera la regeneración celular de la piel dañada por el sol."
+          },
+          "1": {
+            "title": "Hidratación profunda",
+            "description": "La combinación de calor y activos naturales abre los poros y permite que la hidratación máxima penetre en la dermis."
+          },
+          "2": {
+            "title": "Masaje de cuerpo completo incluido",
+            "description": "No es solo un tratamiento estético: el masaje que sigue trabaja la musculatura y el sistema nervioso para una recuperación holística."
+          }
+        }
+      },
+      "soma": {
+        "title": "Soma",
+        "description": "Liberación miofascial intensiva para dolor crónico, contracturas y movimiento restringido.",
+        "body": "Soma es el protocolo más intensivo de nuestro menú de masajes. Durante 60 minutos, el terapeuta trabaja sistemáticamente sobre las capas musculares profundas, la fascia restrictiva y los puntos gatillo que generan dolor referido. Se utilizan técnicas de tejido profundo, liberación miofascial y movilización articular para restaurar la movilidad perdida, disolver las adherencias tisulares y calmar los patrones de dolor crónico. El trabajo es deliberado y preciso: cada maniobra tiene un propósito claro. Recomendado para personas con cervicalgia crónica, lumbalgia recurrente, síndrome del trapecio, o movimiento restringido tras una lesión.",
+        "highlights": {
+          "0": {
+            "title": "Liberación miofascial profunda",
+            "description": "Trabaja la fascia muscular para deshacer las adherencias que limitan el movimiento y perpetúan los patrones de dolor."
+          },
+          "1": {
+            "title": "Puntos gatillo activos",
+            "description": "La compresión isquémica sobre los puntos gatillo desactiva las fuentes de dolor referido y normaliza el tono muscular."
+          },
+          "2": {
+            "title": "Movilización articular",
+            "description": "Las técnicas de movilización pasiva restauran los movimientos articulares accesorios que se pierden tras una lesión o inmovilización."
+          }
+        }
+      },
+      "lume": {
+        "title": "Lume",
+        "description": "Masaje craneofacial, reflexología podal y aromaterapia personalizada en una sola sesión.",
+        "body": "Lume es nuestra experiencia multisensorial más completa. Durante 80 minutos, tres disciplinas se entretejen en un flujo ininterrumpido: masaje craneofacial para liberar la tensión almacenada en la cabeza, el cuero cabelludo, la mandíbula y el cuello; reflexología podal para estimular los órganos internos a través de los puntos reflejos de la planta del pie; y aromaterapia personalizada con aceites esenciales elegidos según el estado emocional del cliente antes de la sesión. El resultado es una desconexión completa del sistema nervioso que va más allá de la simple relajación muscular — Lume trabaja sobre el sistema nervioso autónomo, el estado mental y la percepción corporal.",
+        "highlights": {
+          "0": {
+            "title": "Masaje craneofacial",
+            "description": "Libera la tensión de la mandíbula, las sienes, el cuero cabelludo y el cuello — las zonas donde se almacena el estrés emocional."
+          },
+          "1": {
+            "title": "Reflexología podal",
+            "description": "Estimula los puntos reflejos de los órganos en la planta del pie, equilibrando la función de los sistemas internos."
+          },
+          "2": {
+            "title": "Aromaterapia personalizada",
+            "description": "Los aceites esenciales se seleccionan en una consulta previa según el objetivo de la sesión: descanso, claridad mental o equilibrio emocional."
+          }
+        }
+      },
+      "alure-duo": {
+        "title": "Alure Duo",
+        "description": "Un ritual para dos: terapeutas sincronizados, trabajo de respiración y tacto guiado.",
+        "body": "Alure Duo es una experiencia diseñada para dos personas que desean compartir un espacio de bienestar y reconexión. Dos terapeutas trabajan en sincronía dentro de una sala privada con una atmósfera cuidadosamente preparada — iluminación suave, música ambiental en directo y aromaterapia ambiental. La sesión combina técnicas de masaje relajante en pareja con ejercicios de respiración sincronizada y momentos de tacto consciente guiado. Es una experiencia para parejas, amigos o familia que quieren compartir un tiempo de calidad fuera de la rutina. No se requiere experiencia previa en bienestar.",
+        "highlights": {
+          "0": {
+            "title": "Dos terapeutas sincronizados",
+            "description": "Trabajar en pareja, con dos profesionales coordinados, crea una experiencia de mayor profundidad e inmersión sensorial."
+          },
+          "1": {
+            "title": "Una sala privada preparada",
+            "description": "Un entorno íntimo con iluminación, aromaterapia y música diseñados específicamente para la experiencia compartida."
+          },
+          "2": {
+            "title": "Reconexión a través del tacto",
+            "description": "Los ejercicios de tacto consciente guiado fomentan la presencia mutua y el vínculo emocional entre los participantes."
+          }
+        }
+      },
+      "essentia-signature": {
+        "title": "Essentia",
+        "description": "Nuestra firma: peeling, envoltura hidratante, facial rejuvenecedor y masaje de cuerpo completo.",
+        "body": "Essentia es nuestra experiencia signature: el protocolo más completo que ofrecemos, diseñado para una transformación total del cuerpo, la piel y el estado mental en 120 minutos. La sesión se abre con un peeling corporal de sales minerales para eliminar las células muertas y preparar la piel. A continuación, se aplica una envoltura de manteca y aceites ultra-hidratantes que se absorbe durante el siguiente paso: un masaje facial rejuvenecedor combinado con un masaje craneofacial que trabaja la expresión facial, la circulación cutánea y la tensión craneal. La sesión concluye con un masaje de cuerpo completo de intensidad media que integra todo el trabajo anterior en una experiencia cohesiva. Exclusivo del centro — no disponible en habitación.",
+        "highlights": {
+          "0": {
+            "title": "Un protocolo de cuatro fases",
+            "description": "Peeling, envoltura, facial y masaje corporal se suceden sin interrupciones, cada fase amplificando los efectos de la siguiente."
+          },
+          "1": {
+            "title": "Transformación completa de la piel",
+            "description": "La piel emerge exfoliada, profundamente hidratada y luminosa. Los resultados son inmediatamente visibles y duran varios días."
+          },
+          "2": {
+            "title": "Integración cuerpo-mente",
+            "description": "El masaje craneofacial al cierre del protocolo integra la experiencia en el sistema nervioso, dejando una sensación duradera de plenitud y calma."
+          }
+        }
+      }
     },
     "contrast-therapy": {
       "title": "Contraste Térmico.",
