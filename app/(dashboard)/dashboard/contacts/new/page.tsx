@@ -19,12 +19,13 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
+  language: string;
 };
 
 type FormAction =
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone";
+      field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
   | { type: "SUBMIT_START" }
@@ -38,6 +39,7 @@ const initialFormState: FormState = {
   lastName: "",
   email: "",
   phone: "",
+  language: "en",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -60,7 +62,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
 export default function NewContactPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialFormState);
-  const { submitting, error, firstName, lastName, email, phone } = state;
+  const { submitting, error, firstName, lastName, email, phone, language } =
+    state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,6 +90,7 @@ export default function NewContactPage() {
           last_name: lastName.trim() || null,
           email: trimmedEmail,
           phone: phone.trim() || null,
+          preferred_language: language === "es" ? "es" : "en",
         },
       ]);
 
@@ -235,6 +239,31 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="language"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Preferred language
+                </label>
+                <select
+                  id="language"
+                  value={language}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "language",
+                      value: e.target.value,
+                    })
+                  }
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                >
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
               </div>
             </div>
           </div>

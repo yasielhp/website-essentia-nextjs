@@ -26,6 +26,7 @@ export type BookingNotificationPayload = {
   date: string;
   time: string;
   duration?: string | null;
+  locale?: "en" | "es";
 };
 
 function formatDate(dateStr: string): string {
@@ -68,6 +69,7 @@ export async function notifyBooking(
     serviceId,
     sessionType,
     duration,
+    locale = "en",
   } = payload;
 
   const date = formatDate(payload.date);
@@ -86,6 +88,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        locale,
       }),
     confirmed: () =>
       bookingConfirmedEmail({
@@ -95,6 +98,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        locale,
       }),
     cancelled: () =>
       bookingCancelledEmail({
@@ -104,6 +108,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        locale,
       }),
     rescheduled: () =>
       bookingRescheduledEmail({
@@ -113,15 +118,24 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        locale,
       }),
   };
 
-  const clientSubjects: Record<BookingNotificationEvent, string> = {
-    received: `Booking request received — ${service}`,
-    confirmed: `Booking confirmed — ${service}`,
-    cancelled: `Booking cancelled — ${service}`,
-    rescheduled: `Booking rescheduled — ${service}`,
-  };
+  const clientSubjects: Record<BookingNotificationEvent, string> =
+    locale === "es"
+      ? {
+          received: `Solicitud de reserva recibida — ${service}`,
+          confirmed: `Tu reserva ha sido confirmada — ${service}`,
+          cancelled: `Reserva cancelada — ${service}`,
+          rescheduled: `Sesión reprogramada — ${service}`,
+        }
+      : {
+          received: `Booking request received — ${service}`,
+          confirmed: `Booking confirmed — ${service}`,
+          cancelled: `Booking cancelled — ${service}`,
+          rescheduled: `Booking rescheduled — ${service}`,
+        };
 
   await sendEmail({
     to: clientEmail,

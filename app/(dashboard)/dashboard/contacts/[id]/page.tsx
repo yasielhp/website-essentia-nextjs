@@ -21,6 +21,7 @@ type Contact = {
   email: string | null;
   phone: string | null;
   newsletter_subscribed: boolean | null;
+  preferred_language: string | null;
 };
 
 type Booking = {
@@ -105,6 +106,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
+  language: string;
   newsletterSubscribed: boolean;
   error: string | null;
   saving: boolean;
@@ -119,11 +121,12 @@ type FormAction =
       lastName: string;
       email: string;
       phone: string;
+      language: string;
       newsletterSubscribed: boolean;
     }
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone";
+      field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
   | { type: "TOGGLE_NEWSLETTER" }
@@ -139,6 +142,7 @@ const initialFormState: FormState = {
   lastName: "",
   email: "",
   phone: "",
+  language: "en",
   newsletterSubscribed: false,
   error: null,
   saving: false,
@@ -155,6 +159,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
         lastName: action.lastName,
         email: action.email,
         phone: action.phone,
+        language: action.language,
         newsletterSubscribed: action.newsletterSubscribed,
       };
     case "TOGGLE_NEWSLETTER":
@@ -273,6 +278,7 @@ function ContactDetailsCard({
   lastName,
   email,
   phone,
+  language,
   newsletterSubscribed,
   loading,
   saving,
@@ -282,13 +288,14 @@ function ContactDetailsCard({
   lastName: string;
   email: string;
   phone: string;
+  language: string;
   newsletterSubscribed: boolean;
   loading: boolean;
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
 }) {
   function field(
-    f: "firstName" | "lastName" | "email" | "phone",
+    f: "firstName" | "lastName" | "email" | "phone" | "language",
     value: string,
   ) {
     dispatchForm({ type: "SET_FIELD", field: f, value });
@@ -384,6 +391,29 @@ function ContactDetailsCard({
               disabled={saving}
               className={INPUT_CLASS}
             />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="language"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Preferred language
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <select
+              id="language"
+              value={language}
+              onChange={(e) => field("language", e.target.value)}
+              disabled={saving}
+              className={INPUT_CLASS}
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
           )}
         </div>
 
@@ -624,6 +654,7 @@ export default function ContactDetailPage() {
     lastName,
     email,
     phone,
+    language,
     newsletterSubscribed,
     error,
     saving,
@@ -644,7 +675,7 @@ export default function ContactDetailPage() {
         insforge.database
           .from("contacts")
           .select(
-            "id, first_name, last_name, email, phone, newsletter_subscribed",
+            "id, first_name, last_name, email, phone, newsletter_subscribed, preferred_language",
           )
           .eq("id", id)
           .limit(1),
@@ -679,6 +710,7 @@ export default function ContactDetailPage() {
         lastName: contact.last_name ?? "",
         email: contact.email ?? "",
         phone: contact.phone ?? "",
+        language: contact.preferred_language ?? "en",
         newsletterSubscribed: initialNewsletter,
       });
 
@@ -766,6 +798,7 @@ export default function ContactDetailPage() {
         last_name: lastName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
+        preferred_language: language === "es" ? "es" : "en",
         newsletter_subscribed: newsletterSubscribed,
       })
       .eq("id", id);
@@ -871,6 +904,7 @@ export default function ContactDetailPage() {
           lastName={lastName}
           email={email}
           phone={phone}
+          language={language}
           newsletterSubscribed={newsletterSubscribed}
           loading={loading}
           saving={saving}
