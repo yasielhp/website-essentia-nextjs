@@ -1,0 +1,100 @@
+{
+  "wellness": "Bienestar",
+  "medicine": "Medicina",
+  "community": "Comunidad",
+  "essentia": "Essentia",
+  "about": "Sobre nosotros",
+  "blog": "Blog",
+  "shop": "Tienda",
+  "contact": "Contacto",
+  "items": {
+    "wellness": {
+      "manualTherapies": "Terapias manuales",
+      "thermalContrast": "Contraste térmico",
+      "breathingSessions": "Sesiones de respiración",
+      "redLightTherapy": "Terapia de luz roja",
+      "functionalWellBeing": "Bienestar funcional"
+    },
+    "medicine": {
+      "regenerativeMedicine": "Medicina regenerativa",
+      "intravenousTherapy": "Terapia intravenosa",
+      "hyperbaricChambers": "Cámaras hiperbáricas"
+    },
+    "community": {
+      "runningClub": "Club de running",
+      "educationAndPrograms": "Educación y programas",
+      "memberships": "Membresías"
+    }
+  },
+  "cards": {
+    "wellness": {
+      "title": "Bienestar",
+      "description": "Contraste térmico, terapias manuales y trabajo de respiración — un viaje diseñado para restaurar el equilibrio natural de tu cuerpo."
+    },
+    "medicine": {
+      "title": "Medicina",
+      "description": "Protocolos clínicos que integran la ciencia regenerativa y la medicina integrativa para abordar las causas raíz del desequilibrio."
+    },
+    "community": {
+      "title": "Comunidad",
+      "description": "Un ecosistema vivo de personas unidas por un compromiso compartido con la salud, el movimiento, el aprendizaje y la conexión auténtica."
+    },
+    "manualTherapies": {
+      "title": "Terapias Manuales",
+      "description": "Manos expertas que liberan la tensión, restauran la movilidad y profundizan tu sensación de bienestar físico."
+    },
+    "thermalContrast": {
+      "title": "Contraste Térmico",
+      "description": "Inmersión en frío y saunas secas para activar el sistema nervioso, mejorar la circulación y fortalecer la resiliencia mental."
+    },
+    "breathingSessions": {
+      "title": "Sesiones de Respiración",
+      "description": "Trabajo de respiración estructurado para calmar la mente, regular el sistema nervioso y cultivar una serenidad interior duradera."
+    },
+    "redLightTherapy": {
+      "title": "Terapia de Luz Roja",
+      "description": "Luz roja e infrarroja dirigida para acelerar la reparación celular, reducir la inflamación y favorecer la recuperación profunda de los tejidos."
+    },
+    "functionalWellBeing": {
+      "title": "Bienestar Funcional",
+      "description": "Protocolos personalizados que alinean el movimiento, la recuperación y el estilo de vida con tus objetivos de salud únicos."
+    },
+    "regenerativeMedicine": {
+      "title": "Medicina Regenerativa",
+      "description": "Tratamientos que activan los mecanismos de reparación propios del cuerpo, promoviendo una sanación profunda y duradera desde dentro."
+    },
+    "intravenousTherapy": {
+      "title": "Terapia Intravenosa",
+      "description": "Vitaminas, minerales y nutrientes infundidos directamente en el torrente sanguíneo para un impacto celular inmediato."
+    },
+    "hyperbaricChambers": {
+      "title": "Cámaras Hiperbáricas",
+      "description": "Terapia de oxígeno presurizado que inunda los tejidos de oxígeno reparador, acelerando la recuperación y agudizando el foco mental."
+    },
+    "runningClub": {
+      "title": "Club de Running",
+      "description": "Rutas curadas en grupo — entrenamiento estructurado con la energía y el compromiso de una comunidad afín."
+    },
+    "educationAndPrograms": {
+      "title": "Educación y Programas",
+      "description": "Charlas, talleres y programas inmersivos que profundizan tu conocimiento sobre la salud y te empoderan para un cambio real y duradero."
+    },
+    "memberships": {
+      "title": "Membresías",
+      "description": "Membresías por niveles para un acceso continuo al ecosistema completo de Essentia: wellness, medicina y comunidad."
+    }
+  },
+  "legal": {
+    "legal": "Legal",
+    "privacy": "Privacidad",
+    "terms": "Condiciones",
+    "cookies": "Cookies"
+  },
+  "account": {
+    "title": "Mi cuenta",
+    "overview": "Resumen",
+    "myBookings": "Mis reservas",
+    "myRaces": "Mis carreras",
+    "mySessions": "Mis sesiones"
+  }
+}

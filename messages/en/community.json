@@ -1,0 +1,298 @@
+{
+  "meta": {
+    "title": "Community | Essentia Tenerife",
+    "description": "Join the Essentia community — running club, longevity education programs, member events, and exclusive memberships in Tenerife."
+  },
+  "hero": {
+    "headline": "Health is better together.",
+    "title": "Where longevity",
+    "titleBreak": "meets community.",
+    "body": "A private club where shared purpose builds real connection. Run, learn, and grow alongside people who take their health seriously.",
+    "ctaExplore": "Explore community",
+    "ctaTalk": "Talk to us",
+    "ctaJoin": "Join the community",
+    "ctaLearn": "Explore memberships"
+  },
+  "programs": {
+    "heading": "The community.",
+    "subheading": "Two programmes. One shared direction.",
+    "runningClub": {
+      "title": "Running Club",
+      "description": "Weekly coastal routes through Costa Adeje. All levels welcome."
+    },
+    "education": {
+      "title": "Education Programs",
+      "description": "Monthly masterclasses with researchers and longevity practitioners."
+    }
+  },
+  "values": {
+    "heading": "Why community",
+    "headingBreak": "matters here.",
+    "body": "Essentia is more than a place to train and recover. It is a network of people who understand that living well is both a personal discipline and a shared practice.",
+    "items": {
+      "intention": {
+        "title": "Shared intention",
+        "description": "Every member is here for the same reason: to live better, longer. That shared purpose makes the community unlike any other."
+      },
+      "connection": {
+        "title": "Real connection",
+        "description": "From early morning runs to member dinners, the relationships built here extend well beyond the club."
+      },
+      "growth": {
+        "title": "Collective growth",
+        "description": "Knowledge shared in our programmes and gatherings compounds across the whole community."
+      }
+    }
+  },
+  "cta": {
+    "heading": "Ready to join?",
+    "body": "Community access is included with every Essentia membership. Choose your tier and become part of something that lasts.",
+    "ctaPrimary": "View memberships",
+    "ctaSecondary": "Talk to us first"
+  },
+  "runningClub": {
+    "heading": "Running Club.",
+    "subheading": "Every Saturday, 7:30am.",
+    "body": "Curated routes through Costa Adeje, all fitness levels welcome. More than a run — it is the weekly ritual that anchors the Essentia community.",
+    "cta": "Join the run",
+    "meta": {
+      "title": "Running Club | Essentia Community",
+      "description": "Join Essentia's running club in Tenerife. Every Saturday at 7:30 am — curated coastal routes, paced groups, and shared breakfast."
+    },
+    "hero": {
+      "title": "Running Club.",
+      "body": "Every Saturday morning we run together through some of the most dramatic coastline in the Canary Islands. No race, no ego, just movement and good company.",
+      "imageAlt": "Essentia Running Club — coastal route in Costa Adeje",
+      "ctaNextRun": "Next run",
+      "ctaJoin": "Join the community"
+    },
+    "next": {
+      "heading": "Next run.",
+      "subheading": "Show up, run, share breakfast. Every Saturday without exception.",
+      "comingSoon": "Coming soon.",
+      "comingSoonBody": "Details for the next run will be announced soon.",
+      "noImage": "No image yet",
+      "altDefault": "Next Essentia run",
+      "dash": "—",
+      "membersOnly": "Members only",
+      "openToAll": "Open to all",
+      "cta": "Register for this run"
+    },
+    "expect": {
+      "heading": "What to expect.",
+      "body": "The Saturday run is open to all Essentia members. No sign-up needed: just show up at 7:30, ready to move.",
+      "items": {
+        "routes": {
+          "title": "Curated routes",
+          "description": "Each week a different route through Costa Adeje: coastal paths, volcanic trails, and clifftop roads with Atlantic views."
+        },
+        "paced": {
+          "title": "Paced groups",
+          "description": "We split into pace groups so no one is left behind. Whether you run 5 min/km or 7, there is a group for you."
+        },
+        "community": {
+          "title": "Community first",
+          "description": "The run ends with a shared breakfast. The best conversations happen after the last kilometre."
+        }
+      }
+    },
+    "ctaBlock": {
+      "heading": "See you Saturday.",
+      "body": "Running Club access is included with every Essentia membership. Choose your tier and join the community.",
+      "cta": "Join memberships"
+    },
+    "register": {
+      "meta": {
+        "title": "Register for the Run | Essentia Running Club",
+        "description": "Register for the next Essentia Running Club session in Costa Adeje, Tenerife."
+      },
+      "imageAlt": "Essentia Running Club",
+      "title": "Register for this run",
+      "membersOnly": "Members only",
+      "details": {
+        "title": "Your details.",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "firstNamePlaceholder": "Jane",
+        "lastNamePlaceholder": "Smith",
+        "emailPlaceholder": "jane@example.com",
+        "phonePlaceholder": "+34 600 000 000",
+        "consent": "I accept the",
+        "consentAnd": "and",
+        "terms": "Terms",
+        "privacy": "Privacy Policy",
+        "consentError": "You must accept the terms and privacy policy to register.",
+        "submit": "Confirm registration",
+        "submitting": "Checking…"
+      },
+      "dataProtection": {
+        "heading": "Data protection information",
+        "controller": "Data controller:",
+        "controllerValue": "Essentia Social Wellness Club",
+        "purpose": "Purpose:",
+        "purposeValue": "managing your run registration",
+        "legalBasis": "Legal basis:",
+        "legalBasisValue": "your consent (GDPR art. 6.1.a)",
+        "rights": "Your rights:",
+        "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
+        "rightsFull": "Full details in our",
+        "privacy": "Privacy Policy"
+      },
+      "memberBlocker": {
+        "heading": "Active membership found",
+        "body": "This email is linked to an active Essentia membership. Sign in to register with your member benefits.",
+        "signIn": "Sign in to my account",
+        "continue": "Continue as guest"
+      },
+      "confirm": {
+        "heading": "Confirm your registration.",
+        "registeringAs": "Registering as",
+        "submit": "Confirm registration",
+        "submitting": "Confirming…"
+      },
+      "success": {
+        "title": "You're registered.",
+        "bodyPrefix": "We've received your registration for the",
+        "bodySuffix": "run.",
+        "fallbackTitle": "next run",
+        "seeYouAt": "See you at",
+        "atMeetingPoint": "the meeting point",
+        "back": "Back to Running Club"
+      }
+    }
+  },
+  "education": {
+    "heading": "Education & Programs.",
+    "subheading": "Knowledge that changes how you live.",
+    "body": "Monthly masterclasses, workshops, and immersive programs with leading researchers, clinicians, and practitioners. All members are welcome.",
+    "cta": "View programs",
+    "meta": {
+      "title": "Education Programs | Essentia Community",
+      "description": "Monthly masterclasses with leading researchers, clinicians, and practitioners. Science you can use, delivered in person."
+    },
+    "hero": {
+      "title": "Education",
+      "titleBreak": "Programs.",
+      "body": "Monthly masterclasses with leading researchers, clinicians, and practitioners. Science you can use, delivered in person.",
+      "imageAlt": "Essentia Education Programs",
+      "ctaNext": "Next session",
+      "ctaJoin": "Join the community"
+    },
+    "next": {
+      "heading": "Next session.",
+      "subheading": "One evening a month. One topic that changes how you think about your health.",
+      "comingSoon": "Coming soon.",
+      "comingSoonBody": "Details for the next session will be announced soon.",
+      "altDefault": "Next Essentia masterclass",
+      "dash": "—",
+      "membersOnly": "Members only",
+      "free": "Free",
+      "paid": "Paid",
+      "paidMembersFreeSuffix": "free for members",
+      "paidMembersFree": "Paid · free for members",
+      "openSeats": "Open seats",
+      "limitedTo": "Limited to {seats} seats",
+      "membersOnlyNote": "This session is available to Essentia members only.",
+      "ctaJoin": "Join to reserve your seat",
+      "ctaReserve": "Reserve your seat"
+    },
+    "format": {
+      "heading": "How it works.",
+      "body": "Each programme runs one evening per month at the Essentia club. Seats are limited and reserved for members.",
+      "items": {
+        "experts": {
+          "title": "Expert speakers",
+          "description": "Each session features a researcher, clinician, or practitioner at the frontier of longevity science."
+        },
+        "practical": {
+          "title": "Practical takeaways",
+          "description": "Every talk closes with a set of protocols or habits you can apply the following week."
+        },
+        "dialogue": {
+          "title": "Open dialogue",
+          "description": "The second hour is reserved for Q&A and discussion. Bring your questions."
+        }
+      }
+    },
+    "ctaBlock": {
+      "heading": "Knowledge is the longest-lasting protocol.",
+      "body": "Education Programs are included with every Essentia membership. Choose your tier and reserve your seat.",
+      "cta": "Join memberships"
+    },
+    "register": {
+      "meta": {
+        "title": "Reserve your seat | Education Programs | Essentia",
+        "description": "Reserve your seat for the next Essentia masterclass. Members only."
+      },
+      "title": "Reserve your seat.",
+      "imageAlt": "Essentia Education Programs",
+      "membersOnly": "Members only",
+      "free": "Free",
+      "openSeats": "Open seats",
+      "limitedTo": "Limited to {seats} seats",
+      "whatToBring": "What to bring",
+      "items": {
+        "card": "Essentia membership card",
+        "notebook": "Notebook and pen",
+        "questions": "Your questions"
+      },
+      "details": {
+        "title": "Your details.",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "firstNamePlaceholder": "Jane",
+        "lastNamePlaceholder": "Smith",
+        "emailPlaceholder": "jane@example.com",
+        "phonePlaceholder": "+34 600 000 000",
+        "consent": "I accept the",
+        "consentAnd": "and",
+        "terms": "Terms",
+        "privacy": "Privacy Policy",
+        "consentError": "You must accept the terms and privacy policy to register.",
+        "submit": "Confirm registration",
+        "submitting": "Checking…"
+      },
+      "dataProtection": {
+        "heading": "Data protection information",
+        "controller": "Data controller:",
+        "controllerValue": "Essentia Social Wellness Club",
+        "purpose": "Purpose:",
+        "purposeValue": "managing your session registration",
+        "legalBasis": "Legal basis:",
+        "legalBasisValue": "your consent (GDPR art. 6.1.a)",
+        "rights": "Your rights:",
+        "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
+        "rightsFull": "Full details in our",
+        "privacy": "Privacy Policy"
+      },
+      "memberBlocker": {
+        "heading": "Active membership found",
+        "body": "This email is linked to an active Essentia membership. Sign in to register with your member benefits.",
+        "signIn": "Sign in to my account",
+        "continue": "Continue as guest"
+      },
+      "confirm": {
+        "heading": "Confirm your registration.",
+        "registeringAs": "Registering as",
+        "submit": "Confirm registration",
+        "submitting": "Confirming…"
+      },
+      "success": {
+        "title": "You're registered.",
+        "bodyPrefix": "We've received your registration for",
+        "bodyOn": "on",
+        "back": "Back to Education Programs"
+      }
+    }
+  },
+  "events": {
+    "heading": "Member Events.",
+    "subheading": "Connection beyond the protocols.",
+    "body": "Private dinners, wellness retreats, and seasonal celebrations — moments that make the club feel like a second home.",
+    "cta": "Explore events"
+  }
+}

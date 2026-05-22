@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "title": "Memberships | Essentia Social Wellness Club",
+    "description": "Exclusive membership plans at Essentia giving you full access to our longevity center, wellness protocols, and community in Tenerife."
+  },
+  "hero": {
+    "imageAlt": "Essentia Membership",
+    "badge": "Membership",
+    "heading": "Membership",
+    "heading2": "that fits your life.",
+    "body": "Every membership includes full access to the Essentia space. What changes is the depth of your protocols, the priority of your booking, and the closeness of your care.",
+    "ctaPrimary": "See memberships",
+    "ctaSecondary": "Talk to us first",
+    "alreadyMember": "Already a member?",
+    "signIn": "Sign in"
+  },
+  "selector": {
+    "heading": "Choose your membership.",
+    "subheading": "Select a tier to see what's included.",
+    "perMonth": "/month",
+    "becomeMember": "Become a member",
+    "loading": "Loading…",
+    "successHeading": "Welcome to Essentia!",
+    "successBody": "Your membership is confirmed. You'll receive a confirmation email shortly."
+  },
+  "tiers": {
+    "essential": {
+      "badge": "Entry",
+      "name": "Essential",
+      "tagline": "Access to the full space",
+      "description": "Full access to all wellness facilities, group sessions, and community events. The complete Essentia experience.",
+      "features": [
+        "All wellness facilities",
+        "Contrast therapy zone",
+        "Red light therapy",
+        "Group breathwork sessions",
+        "Community events",
+        "Essentia app access"
+      ],
+      "cta": "Learn more"
+    },
+    "premium": {
+      "badge": "Most popular",
+      "name": "Premium",
+      "tagline": "Depth and priority",
+      "description": "Everything in Essential, plus priority booking, personalized wellness protocols, and monthly medical consultations.",
+      "features": [
+        "Everything in Essential",
+        "Priority booking",
+        "Personalized wellness protocol",
+        "Monthly medical consultation",
+        "IV therapy discount (20%)",
+        "Guest privileges (2 per month)",
+        "Exclusive member workshops"
+      ],
+      "cta": "Get started"
+    },
+    "founder": {
+      "badge": "Exclusive",
+      "name": "Founder",
+      "tagline": "The full ecosystem",
+      "description": "Full ecosystem access with a dedicated health advisor, unlimited guest privileges, and founding member status.",
+      "features": [
+        "Everything in Premium",
+        "Dedicated health advisor",
+        "Unlimited guest privileges",
+        "Quarterly longevity panel",
+        "Priority treatment access",
+        "Founding member events",
+        "Private lounge access"
+      ],
+      "cta": "Apply now"
+    }
+  },
+  "comparison": {
+    "heading": "What's included.",
+    "subheading": "A clear look at what each tier gives you.",
+    "feature": "Feature",
+    "monthlyPrice": "Monthly price",
+    "perMonthShort": "/mo",
+    "rows": {
+      "wellnessFacilities": "Wellness facilities",
+      "groupSessions": "Group sessions",
+      "communityEvents": "Community events",
+      "priorityBooking": "Priority booking",
+      "personalizedProtocol": "Personalized protocol",
+      "medicalConsultations": "Medical consultations",
+      "monthly": "Monthly",
+      "quarterlyPanel": "Quarterly panel",
+      "guestPrivileges": "Guest privileges",
+      "guestPerMonth": "2 / month",
+      "unlimited": "Unlimited",
+      "healthAdvisor": "Health advisor",
+      "founderEvents": "Founding member events",
+      "privateLounge": "Private lounge access"
+    }
+  },
+  "faq": {
+    "heading": "Common questions.",
+    "stillQuestions": "Still have questions?",
+    "getInTouch": "Get in touch",
+    "items": [
+      {
+        "question": "How do I become a member?",
+        "answer": "Start by getting in touch through our contact page or booking form. Our team will walk you through the tiers, answer your questions, and arrange a tour of the space before you commit."
+      },
+      {
+        "question": "Can I try Essentia before joining?",
+        "answer": "Yes. We offer introductory visits for prospective members. Contact us to schedule a guided tour and a complimentary session so you can experience the space first-hand."
+      },
+      {
+        "question": "How does billing work?",
+        "answer": "Memberships are billed monthly. You can cancel at any time with 30 days written notice."
+      },
+      {
+        "question": "Can I cancel or pause my membership?",
+        "answer": "You may cancel your membership with 30 days written notice. Pauses may be available in certain circumstances — speak to our team."
+      },
+      {
+        "question": "What is the difference between Essential and Premium in practice?",
+        "answer": "Essential gives you full access to all shared facilities and group sessions. Premium adds the ability to book specific equipment slots ahead of time, a personalised wellness protocol reviewed monthly, and access to medical consultations with our clinical team."
+      },
+      {
+        "question": "Who is the Founder membership for?",
+        "answer": "Founder is designed for those who want a truly bespoke longevity experience. You get a dedicated health advisor who coordinates all your protocols, unlimited guest access, and seats at invitation-only events. It is limited to a small number of members."
+      }
+    ]
+  },
+  "cta": {
+    "heading": "Ready to begin?",
+    "body": "Our team will help you choose the right tier and answer any questions before you commit to anything.",
+    "ctaPrimary": "Choose a membership",
+    "ctaSecondary": "Talk to us first",
+    "alreadyMember": "Already a member? Sign in"
+  }
+}

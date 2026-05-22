@@ -1,0 +1,19 @@
+{
+  "bookSession": "Book a session",
+  "learnMore": "Learn more",
+  "back": "Back",
+  "next": "Next",
+  "loading": "Loading…",
+  "submit": "Submit",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "confirm": "Confirm",
+  "close": "Close",
+  "booking": "Booking",
+  "signOut": "Sign out",
+  "memberLogin": "Member login",
+  "perMonth": "/month",
+  "allRightsReserved": "All rights reserved"
+}

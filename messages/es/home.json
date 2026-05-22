@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "title": "Essentia | Longevity Center & Social Wellness Club",
+    "description": "Essentia es un centro de longevidad y club social de bienestar en Tenerife que combina medicina regenerativa, protocolos de bienestar y una comunidad exclusiva."
+  },
+  "hero": {
+    "headline": "Para quienes",
+    "headline2": "piensan a largo plazo.",
+    "subheadline": "Longevity Center & Social Wellness Club en Tenerife",
+    "ctaBook": "Reserva tu visita",
+    "ctaMembership": "Explorar membresías",
+    "videoTitle": "Essentia - branded film",
+    "togglePlay": "Activar o pausar el vídeo",
+    "unmute": "Activar sonido",
+    "mute": "Silenciar vídeo"
+  },
+  "brandStatement": {
+    "headline": "Una vida más larga también debería ser mejor.",
+    "body": "Essentia reúne medicina regenerativa, protocolos de longevidad y una comunidad exclusiva en un espacio intencional, arraigado en Tenerife, diseñado para quienes entienden que cómo vives importa tanto como cuánto."
+  },
+  "servicesOverview": {
+    "sectionHeadline": "Tres pilares,",
+    "sectionHeadline2": "una intención.",
+    "sectionSubheadline": "Ciencia, cuerpo y comunidad: trabajando como uno.",
+    "services": {
+      "wellness": {
+        "title": "Bienestar",
+        "description": "Contraste térmico, terapias manuales, respiración y luz roja — un espectro completo de restauración.",
+        "cta": "Explorar Bienestar"
+      },
+      "medicine": {
+        "title": "Medicina",
+        "description": "Protocolos regenerativos, terapia IV y oxígeno hiperbárico — ciencia clínica y cuidado de precisión al servicio de la longevidad.",
+        "cta": "Explorar Medicina"
+      },
+      "community": {
+        "title": "Comunidad",
+        "description": "Club de running, programas educativos y membresías exclusivas — una pertenencia real a algo significativo.",
+        "cta": "Explorar Comunidad"
+      }
+    }
+  },
+  "membershipTeaser": {
+    "headline": "Elige tu",
+    "headline2": "nivel de acceso.",
+    "subheadline": "Cada nivel incluye acceso completo al espacio Essentia: lo que cambia es la profundidad, la prioridad y el sentido de pertenencia.",
+    "perMonth": "/mes",
+    "tiers": {
+      "essential": {
+        "badge": "Inicial",
+        "name": "Essential",
+        "description": "Acceso completo a todas las instalaciones de bienestar, sesiones grupales y eventos de la comunidad.",
+        "features": {
+          "0": "instalaciones de bienestar",
+          "1": "Sesiones grupales",
+          "2": "Eventos de comunidad"
+        },
+        "cta": "Saber más"
+      },
+      "premium": {
+        "badge": "Más popular",
+        "name": "Premium",
+        "description": "Todos los beneficios Essential más reserva prioritaria, protocolos personalizados y consultas médicas.",
+        "features": {
+          "0": "Todo lo de Essential",
+          "1": "Reserva prioritaria",
+          "2": "Protocolos personalizados",
+          "3": "Consultas médicas",
+          "4": "Privilegios de invitado (2/mes)"
+        },
+        "cta": "Explorar Premium"
+      },
+      "founder": {
+        "badge": "Exclusivo",
+        "name": "Founder",
+        "description": "Acceso completo al ecosistema con un asesor de salud dedicado, privilegios de invitado ilimitados y estatus de miembro fundador.",
+        "features": {
+          "0": "Todo lo de Premium",
+          "1": "Asesor de salud dedicado",
+          "2": "Privilegios de invitado ilimitados",
+          "3": "Eventos para miembros fundadores",
+          "4": "Acceso prioritario a tratamientos"
+        },
+        "cta": "Saber más"
+      }
+    }
+  },
+  "testimonials": {
+    "headline": "Lo que dicen",
+    "headline2": "quienes lo viven.",
+    "items": {
+      "0": {
+        "quote": "Essentia cambió mi forma de entender el tiempo. No solo vivir más — vivir mejor, ahora mismo.",
+        "name": "Marcus V.",
+        "age": "47 años"
+      },
+      "1": {
+        "quote": "La combinación de protocolos médicos y la comunidad aquí es algo que no había experimentado en ningún otro lugar.",
+        "name": "Claudia R.",
+        "age": "39 años"
+      },
+      "2": {
+        "quote": "Vine por las terapias. Me quedé por las personas. El club de running ha transformado mi relación con el movimiento.",
+        "name": "James H.",
+        "age": "52 años"
+      },
+      "3": {
+        "quote": "Las sesiones hiperbáricas combinadas con los protocolos personalizados han marcado una diferencia medible en mi recuperación.",
+        "name": "Dra. Sofia M.",
+        "age": "44 años"
+      },
+      "4": {
+        "quote": "Venir dos veces por semana se ha vuelto innegociable. Es donde me reinicio y vuelvo más enfocado.",
+        "name": "Elena K.",
+        "age": "41 años"
+      },
+      "5": {
+        "quote": "Los protocolos IV y la exposición al frío han transformado genuinamente mis niveles de energía. Respaldado por la ciencia y orientado a resultados.",
+        "name": "Thomas B.",
+        "age": "55 años"
+      },
+      "6": {
+        "quote": "Jamás esperé encontrar una comunidad real en un club de bienestar. Las personas aquí son extraordinarias.",
+        "name": "Natalie W.",
+        "age": "36 años"
+      },
+      "7": {
+        "quote": "Como médico, soy selectivo con las promesas de longevidad. Essentia ofrece un cuidado basado en evidencia con integridad real.",
+        "name": "Dr. Rafael A.",
+        "age": "49 años"
+      },
+      "8": {
+        "quote": "El espacio en sí inspira. Cada detalle — la luz, los materiales, el silencio — te dice que este lugar es serio.",
+        "name": "Isabelle D.",
+        "age": "43 años"
+      },
+      "9": {
+        "quote": "La terapia de luz roja y los baños de contraste se han convertido en mi ancla semanal. Mi recuperación nunca había sido tan constante.",
+        "name": "Oliver P.",
+        "age": "38 años"
+      },
+      "10": {
+        "quote": "La membresía fundadora es la mejor inversión que he hecho en mí mismo. El acceso y la relación con el asesor no tienen comparación.",
+        "name": "Caroline F.",
+        "age": "46 años"
+      },
+      "11": {
+        "quote": "He estado en clubs de bienestar por toda Europa. Nada se compara con lo que Essentia ha construido en Tenerife.",
+        "name": "Marco L.",
+        "age": "51 años"
+      }
+    }
+  },
+  "theSpace": {
+    "headline": "Diseñado para quienes invierten en sí mismos.",
+    "body": "Encaramado en los acantilados de Costa Adeje en Tenerife, Essentia es un lugar donde la arquitectura, la luz y el propósito se alinean, diseñado para ralentizarte de todas las maneras correctas.",
+    "cta": "Descubre Essentia",
+    "stats": {
+      "totalSpace": {
+        "value": "1.200 m²",
+        "label": "Superficie total"
+      },
+      "floors": {
+        "value": "3",
+        "label": "Plantas de bienestar"
+      },
+      "location": {
+        "value": "Tenerife",
+        "label": "Costa Adeje, España"
+      }
+    }
+  },
+  "community": {
+    "headline": "Una vida bien vivida",
+    "headline2": "rara vez se vive en soledad.",
+    "runningClub": {
+      "badge": "Club de Running",
+      "headline": "Cada sábado por la mañana, 7:30h",
+      "description": "Rutas curadas por Costa Adeje, todos los niveles son bienvenidos.",
+      "cta": "Únete al running →"
+    },
+    "educationPrograms": {
+      "badge": "Programas",
+      "headline": "Serie de Masterclasses de Longevidad",
+      "description": "Sesiones mensuales en profundidad con investigadores, clínicos y especialistas líderes, abiertas a todos los miembros.",
+      "cta": "Ver programas"
+    },
+    "events": {
+      "badge": "Eventos",
+      "headline": "Encuentros de Miembros",
+      "description": "Cenas privadas, retiros de bienestar y celebraciones de temporada: momentos que hacen que el club se sienta como en casa.",
+      "cta": "Explorar eventos"
+    }
+  }
+}

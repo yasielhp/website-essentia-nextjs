@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "title": "Contact Essentia | Get in Touch",
+    "description": "Contact Essentia's team in Tenerife to learn more about our longevity center, wellness programs, and membership options."
+  },
+  "heading": "Get in touch.",
+  "subheading": "Whether you want to learn more about membership, book a session, or just ask a question: we'd love to hear from you.",
+  "form": {
+    "firstName": "First name",
+    "firstNamePlaceholder": "Jane",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Smith",
+    "email": "Email",
+    "emailPlaceholder": "jane@example.com",
+    "interest": "I'm interested in",
+    "interestPlaceholder": "Select a topic",
+    "message": "Message",
+    "messagePlaceholder": "Tell us a bit about what you're looking for...",
+    "submit": "Send message",
+    "submitting": "Sending…",
+    "interests": {
+      "membership": "Membership",
+      "wellness": "Wellness programmes",
+      "medicine": "Medicine protocols",
+      "community": "Community & events",
+      "other": "Something else"
+    }
+  },
+  "success": {
+    "heading": "Message received.",
+    "body": "Thank you for reaching out. A member of our team will get back to you within one business day.",
+    "sendAnother": "Send another message"
+  },
+  "info": {
+    "location": "Location",
+    "contact": "Contact",
+    "followUs": "Follow us"
+  }
+}

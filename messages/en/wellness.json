@@ -1,0 +1,343 @@
+{
+  "meta": {
+    "title": "Wellness | Essentia Social Wellness Club",
+    "description": "Discover Essentia's comprehensive wellness protocols in Tenerife — contrast therapy, breathwork, red light therapy, manual therapies, and functional well-being."
+  },
+  "hero": {
+    "headlineLine1": "Full-spectrum",
+    "headlineLine2": "restoration.",
+    "body": "Every protocol is designed to work with your body's natural intelligence: activating recovery, building resilience, and calibrating your system from the inside out.",
+    "ctaProtocols": "See protocols",
+    "ctaContact": "Talk to us"
+  },
+  "protocols": {
+    "heading": "The protocols.",
+    "subheading": "Five modalities. One integrated system.",
+    "items": {
+      "contrast-therapy": {
+        "title": "Contrast Therapy",
+        "tagline": "Heat & Cold",
+        "description": "Heat and cold to activate recovery and reduce inflammation."
+      },
+      "breathing-sessions": {
+        "title": "Breathing Sessions",
+        "tagline": "Breathwork",
+        "description": "Guided breathwork to shift from stress to active recovery."
+      },
+      "red-light-therapy": {
+        "title": "Red Light Therapy",
+        "tagline": "Photobiomodulation",
+        "description": "Red and infrared light to stimulate cellular repair and regeneration."
+      },
+      "manual-therapies": {
+        "title": "Manual Therapies",
+        "tagline": "Touch & Restoration",
+        "description": "Precise manual work to release tension and restore mobility."
+      },
+      "functional-well-being": {
+        "title": "Functional Well-being",
+        "tagline": "Movement & Performance",
+        "description": "Movement and strength training designed around longevity."
+      }
+    }
+  },
+  "approach": {
+    "headingLine1": "How we think",
+    "headingLine2": "about wellness.",
+    "body": "Essentia is not a spa and not a gym. It is a precision wellness environment where every protocol is chosen for its measurable effect on your biology and your experience of being alive.",
+    "principles": {
+      "I": {
+        "title": "Full spectrum",
+        "description": "No single modality is enough. Thermal, light, breath, touch, and movement work as one integrated system."
+      },
+      "II": {
+        "title": "Adaptive",
+        "description": "Each session follows your current state — recovery, activation, or calibration. The protocol adapts to you."
+      },
+      "III": {
+        "title": "Cumulative",
+        "description": "Restoration compounds over time. Regular practice builds a baseline of resilience that changes how your body responds to stress."
+      }
+    }
+  },
+  "cta": {
+    "heading": "Ready to restore?",
+    "body": "Access to all wellness protocols is included with every Essentia membership. Your tier determines the depth of your programme and the priority of your bookings.",
+    "ctaMembership": "View memberships",
+    "ctaContact": "Talk to us first"
+  },
+  "treatments": {
+    "manualTherapiesHeading": "Our treatments.",
+    "manualTherapiesSubtitle": "Each treatment is designed with a specific purpose. Choose the one that fits what your body needs today.",
+    "exploreTreatments": "Explore treatments",
+    "bookSession": "Book a session",
+    "viewMemberships": "View memberships",
+    "serviceDetail": {
+      "aboutHeading": "About this treatment.",
+      "ctaHeading": "Ready to begin?",
+      "ctaBody": "Reserve your {service} session at Essentia Wellness Club — Baobab Suites, Costa Adeje, Tenerife.",
+      "bookSession": "Book a session",
+      "learnMore": "Learn more",
+      "viewAll": "View all treatments"
+    },
+    "contrast-therapy": {
+      "title": "Contrast Therapy.",
+      "tagline": "Heat & Cold",
+      "heroAlt": "Contrast therapy — sauna and cold plunge at Essentia",
+      "price": "€45",
+      "duration": "60 min",
+      "intro": "Alternating heat and cold is one of the most studied recovery modalities in sports science. At Essentia, we have designed a structured protocol that maximises the cardiovascular, hormonal, and anti-inflammatory response of each transition.",
+      "benefitsHeading": "What it does.",
+      "benefitsSubtitle": "The science behind thermal contrast is well established. These are the mechanisms that matter most.",
+      "benefits": {
+        "0": {
+          "title": "Reduces inflammation",
+          "description": "Cold immersion constricts blood vessels and clears metabolic waste. Repeated transitions accelerate the clearance of inflammatory markers after training or injury."
+        },
+        "1": {
+          "title": "Stimulates heat shock proteins",
+          "description": "Sustained sauna exposure triggers HSP production — molecular chaperones that repair damaged proteins and protect cells against future stress."
+        },
+        "2": {
+          "title": "Improves cardiovascular resilience",
+          "description": "The rapid vasoconstriction and vasodilation cycle trains the autonomic nervous system and improves heart rate variability over time."
+        },
+        "3": {
+          "title": "Enhances sleep quality",
+          "description": "The drop in core temperature after cold exposure signals the brain to enter deeper sleep phases, shortening sleep onset and increasing slow-wave duration."
+        }
+      },
+      "sessionHeading": "What a session looks like.",
+      "sessionSubtitle": "Sessions are guided. You will never be left to figure it out alone.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duration",
+          "description": "60 minutes. Three alternating rounds: 12–15 minutes in the sauna followed by 2–3 minutes in the cold plunge. Short rest between rounds."
+        },
+        "II": {
+          "title": "Format",
+          "description": "Solo or shared. Our therapist sets the protocol based on your goal: recovery, activation, or adaptation. First session includes a brief assessment."
+        },
+        "III": {
+          "title": "Frequency",
+          "description": "Two to three sessions per week is optimal for most members. We track your response and adjust the protocol as your baseline improves."
+        }
+      },
+      "ctaHeading": "Start your first session.",
+      "ctaBody": "Contrast Therapy is included in all Essentia memberships. Book your first session or join the community to get started."
+    },
+    "breathing-sessions": {
+      "title": "Breathing Sessions.",
+      "tagline": "Breathwork",
+      "heroAlt": "Breathwork session at Essentia Tenerife",
+      "price": "€35",
+      "duration": "45 min",
+      "intro": "Controlled respiration is the fastest lever we have over the autonomic nervous system. Our guided breathwork sessions are built on the evidence: Wim Hof, coherence breathing, box breathing, and CO2 tolerance work — applied to your current state.",
+      "benefitsHeading": "What it does.",
+      "benefitsSubtitle": "Breath is the only autonomic function you can consciously control. That makes it uniquely powerful.",
+      "benefits": {
+        "0": {
+          "title": "Reduces cortisol",
+          "description": "Slow, rhythmic breathing activates the vagus nerve and shifts the nervous system from sympathetic dominance into parasympathetic recovery — measurably lowering cortisol within minutes."
+        },
+        "1": {
+          "title": "Improves heart rate variability",
+          "description": "Coherence breathing at five breaths per minute synchronises heart rate, blood pressure, and baroreflex sensitivity, improving HRV — a key marker of recovery capacity."
+        },
+        "2": {
+          "title": "Enhances CO2 tolerance",
+          "description": "Most people over-breathe. Training your tolerance to CO2 improves oxygen delivery to tissues (the Bohr effect) and reduces anxiety responses triggered by hypocapnia."
+        },
+        "3": {
+          "title": "Sharpens focus and resilience",
+          "description": "Cyclic hyperventilation followed by breath retention activates the sympathetic system in a controlled way, building mental resilience and cognitive clarity under stress."
+        }
+      },
+      "sessionHeading": "What a session looks like.",
+      "sessionSubtitle": "Every session is guided by a trained instructor. No prior experience required.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duration",
+          "description": "45 minutes. Opening check-in, a 30-minute guided protocol, and a 10-minute integration rest. You may feel light-headed during the session — that is normal and expected."
+        },
+        "II": {
+          "title": "Format",
+          "description": "Group sessions run twice a week. Private 1:1 sessions are available for members who prefer a personalised protocol or have specific performance or therapeutic goals."
+        },
+        "III": {
+          "title": "Frequency",
+          "description": "One to two sessions per week produces consistent results. Many members combine breathwork with contrast therapy on the same day for a more complete recovery protocol."
+        }
+      },
+      "ctaHeading": "Breathe differently.",
+      "ctaBody": "Breathing Sessions are included in all Essentia memberships. Book your first session or join the community to get started."
+    },
+    "red-light-therapy": {
+      "title": "Red Light Therapy.",
+      "tagline": "Photobiomodulation",
+      "heroAlt": "Red light therapy panel at Essentia",
+      "price": "€25",
+      "duration": "20 min",
+      "intro": "Photobiomodulation uses specific wavelengths of red and near-infrared light to penetrate skin and tissue, stimulating the mitochondria at a cellular level. At Essentia we use medical-grade full-body panels calibrated to the wavelengths with the strongest clinical evidence.",
+      "benefitsHeading": "What it does.",
+      "benefitsSubtitle": "Light therapy works at the cellular level. The effects accumulate with consistent use.",
+      "benefits": {
+        "0": {
+          "title": "Stimulates mitochondrial function",
+          "description": "Near-infrared light (810–850 nm) is absorbed by cytochrome c oxidase in the mitochondrial membrane, increasing ATP production and cellular energy availability."
+        },
+        "1": {
+          "title": "Accelerates tissue repair",
+          "description": "Red light (630–670 nm) promotes fibroblast proliferation and collagen synthesis, speeding recovery from muscle damage, tendon injuries, and skin conditions."
+        },
+        "2": {
+          "title": "Reduces systemic inflammation",
+          "description": "Photobiomodulation consistently reduces markers of oxidative stress and pro-inflammatory cytokines in controlled studies across a wide range of conditions."
+        },
+        "3": {
+          "title": "Supports thyroid and hormonal health",
+          "description": "Emerging research shows near-infrared light applied to the thyroid gland can improve function in subclinical hypothyroidism and reduce dependence on medication."
+        }
+      },
+      "sessionHeading": "What a session looks like.",
+      "sessionSubtitle": "Simple, passive, and highly effective. No preparation required.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duration",
+          "description": "10–20 minutes per session. You stand or sit in front of the full-body panel at the prescribed distance. Eyes should be protected with the provided goggles."
+        },
+        "II": {
+          "title": "Format",
+          "description": "Solo sessions in a private booth. Skin should be clean and free of sunscreen or thick moisturisers to allow maximum light penetration. Clothing is removed for target areas."
+        },
+        "III": {
+          "title": "Frequency",
+          "description": "Three to five sessions per week delivers the best cumulative effect. Many members integrate a 15-minute red light session before or after contrast therapy."
+        }
+      },
+      "ctaHeading": "Charge your cells.",
+      "ctaBody": "Red Light Therapy is included in all Essentia memberships. Book your first session or join the community to get started."
+    },
+    "manual-therapies": {
+      "title": "Manual Therapies.",
+      "tagline": "Touch & Restoration",
+      "heroAlt": "Manual therapy session at Essentia",
+      "price": "€80 / €110",
+      "duration": "60 or 90 min",
+      "intro": "Our manual therapists work with the whole body: fascia, muscle, joint, and nervous system. Every session is an assessment as much as a treatment — finding what is restricted, what is compensating, and what needs to be released before it becomes a problem.",
+      "benefitsHeading": "What it does.",
+      "benefitsSubtitle": "Skilled hands accomplish what no machine can replicate. These are the outcomes we target.",
+      "benefits": {
+        "0": {
+          "title": "Releases fascial restrictions",
+          "description": "Fascial adhesions from training, injury, or prolonged sitting limit range of motion and force the body into compensatory patterns. Manual release restores optimal tissue glide."
+        },
+        "1": {
+          "title": "Reduces chronic tension and pain",
+          "description": "Targeted pressure on trigger points deactivates pain referral patterns and restores normal muscle tone in ways that foam rolling or self-massage cannot replicate."
+        },
+        "2": {
+          "title": "Improves joint mobility",
+          "description": "Articular mobilisation techniques restore the accessory movements within joints that are lost after injury or immobilisation, reducing pain and improving function."
+        },
+        "3": {
+          "title": "Enhances recovery between sessions",
+          "description": "Regular manual work reduces the accumulation of mechanical stress, keeping tissue quality high and reducing the risk of overuse injuries during high-training periods."
+        }
+      },
+      "sessionHeading": "What a session looks like.",
+      "sessionSubtitle": "Every session begins with a brief assessment. Nothing is done without a reason.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duration",
+          "description": "60 or 90 minutes. We recommend 90-minute sessions for the first appointment to allow time for a full postural and movement assessment before treatment begins."
+        },
+        "II": {
+          "title": "Format",
+          "description": "1:1 with a certified therapist. Modalities include deep tissue massage, myofascial release, joint mobilisation, and dry needling depending on presentation and preference."
+        },
+        "III": {
+          "title": "Frequency",
+          "description": "Acute issues typically resolve in three to five sessions. Maintenance for active members is one session every two to four weeks to sustain tissue quality and prevent recurrence."
+        }
+      },
+      "ctaHeading": "Release what is holding you back.",
+      "ctaBody": "Manual Therapies are available to all Essentia members. Book your first session or join the community to get started."
+    },
+    "functional-well-being": {
+      "title": "Functional Well-being.",
+      "tagline": "Movement & Performance",
+      "heroAlt": "Functional movement session at Essentia",
+      "price": "€65",
+      "duration": "50 min",
+      "intro": "Muscle mass and movement quality are two of the strongest predictors of longevity. Our coaches build programmes around the specific physical capacities that matter most for a long, capable life — strength, mobility, cardiovascular efficiency, and balance.",
+      "benefitsHeading": "What it does.",
+      "benefitsSubtitle": "Training for longevity is different from training for aesthetics. These are the outcomes that matter.",
+      "benefits": {
+        "0": {
+          "title": "Preserves and builds muscle mass",
+          "description": "Sarcopenia — the age-related loss of muscle — begins in the 30s and accelerates with each decade. Resistance training is the most effective intervention we have to slow and reverse it."
+        },
+        "1": {
+          "title": "Improves metabolic health",
+          "description": "Skeletal muscle is the largest glucose sink in the body. More muscle mass means better insulin sensitivity, lower HbA1c, and a reduced risk of metabolic disease."
+        },
+        "2": {
+          "title": "Maintains joint health and mobility",
+          "description": "Strength training through full ranges of motion loads cartilage, stimulates synovial fluid production, and maintains the joint integrity needed to stay active across decades."
+        },
+        "3": {
+          "title": "Reduces all-cause mortality",
+          "description": "VO2 max and grip strength are among the most predictive markers of longevity. Our programmes systematically improve both through targeted aerobic and resistance work."
+        }
+      },
+      "sessionHeading": "What a session looks like.",
+      "sessionSubtitle": "Training here is structured, progressive, and built around your specific goals and baseline.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duration",
+          "description": "50 minutes. A brief warm-up, a focused strength or conditioning block, and a mobility cool-down. Sessions are dense — no filler, no wasted time."
+        },
+        "II": {
+          "title": "Format",
+          "description": "Your first session is a movement and capacity assessment. From that baseline, your coach builds a progressive 12-week plan. Sessions are 1:1 or in small groups of three."
+        },
+        "III": {
+          "title": "Frequency",
+          "description": "Two to three strength sessions per week is the minimum effective dose for meaningful adaptation. We coordinate scheduling with your other Essentia protocols for optimal recovery."
+        }
+      },
+      "ctaHeading": "Train for the long game.",
+      "ctaBody": "Functional Well-being is included in all Essentia memberships. Book your first session or join the community to get started."
+    }
+  },
+  "pages": {
+    "breathing-sessions": {
+      "metaTitle": "Breathing Sessions | Essentia Wellness",
+      "metaDescription": "Guided breathwork sessions at Essentia to balance body and mind, reduce stress, and enhance performance.",
+      "breadcrumb": "Breathing Sessions"
+    },
+    "contrast-therapy": {
+      "metaTitle": "Contrast Therapy | Essentia Wellness",
+      "metaDescription": "Thermal contrast therapy at Essentia Tenerife — alternating hot and cold for accelerated recovery and enhanced wellbeing.",
+      "breadcrumb": "Contrast Therapy"
+    },
+    "manual-therapies": {
+      "metaTitle": "Manual Therapies | Essentia Wellness",
+      "metaDescription": "Expert manual therapy sessions at Essentia to relieve tension, improve mobility, and restore your body's natural balance.",
+      "breadcrumb": "Manual Therapies"
+    },
+    "red-light-therapy": {
+      "metaTitle": "Red Light Therapy | Essentia Wellness",
+      "metaDescription": "Photobiomodulation and red light therapy at Essentia Tenerife for cellular regeneration, recovery, and skin health.",
+      "breadcrumb": "Red Light Therapy"
+    },
+    "functional-well-being": {
+      "metaTitle": "Functional Well-being | Essentia Wellness",
+      "metaDescription": "Functional wellness programs at Essentia designed to optimize your physical performance, health, and longevity.",
+      "breadcrumb": "Functional Well-being"
+    },
+    "breadcrumbHome": "Home",
+    "breadcrumbWellness": "Wellness"
+  }
+}

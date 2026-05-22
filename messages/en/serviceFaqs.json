@@ -1,0 +1,175 @@
+{
+  "sectionHeading": "Frequently asked questions.",
+  "contrast-therapy": {
+    "0": {
+      "question": "What is contrast therapy?",
+      "answer": "Contrast therapy alternates between heat exposure (sauna, 80–90°C) and cold immersion (cold plunge, 10–15°C). The rapid shifts in temperature force the cardiovascular system to adapt, driving vasodilation and vasoconstriction in cycles that reduce inflammation, accelerate recovery, and improve autonomic function."
+    },
+    "1": {
+      "question": "How long does a contrast therapy session last at Essentia?",
+      "answer": "Sessions are 60 minutes. The protocol includes three alternating rounds: 12–15 minutes in the sauna followed by 2–3 minutes in the cold plunge, with a short rest between rounds. Every session is guided by one of our therapists."
+    },
+    "2": {
+      "question": "How often should I do contrast therapy?",
+      "answer": "Two to three sessions per week is optimal for most members. We track your response and adjust the protocol as your baseline adapts. Many members combine contrast therapy with red light therapy on the same day."
+    },
+    "3": {
+      "question": "Is contrast therapy safe for everyone?",
+      "answer": "Contrast therapy is not recommended for people with uncontrolled hypertension, severe cardiovascular disease, acute infections, or pregnancy. If you have any existing medical conditions, we recommend a brief consultation with our team before your first session."
+    },
+    "4": {
+      "question": "What should I wear and bring to a session?",
+      "answer": "Bring a swimsuit and a towel. We provide robes, sandals, and mineral water. Arrive well hydrated and avoid heavy meals in the two hours before your session."
+    }
+  },
+  "breathing-sessions": {
+    "0": {
+      "question": "What is breathwork?",
+      "answer": "Breathwork is the deliberate manipulation of breathing rhythm, depth, and pattern to shift the state of the nervous system. At Essentia, sessions draw from evidence-based methods including Wim Hof breathing, coherence breathing, box breathing, and CO2 tolerance training."
+    },
+    "1": {
+      "question": "Will I feel lightheaded during a breathing session?",
+      "answer": "Yes, mild tingling or lightheadedness is normal and expected during certain protocols, particularly cyclic hyperventilation. This is a physiological response to changes in CO2 levels, not a sign of danger. Our instructors guide you through every stage and adapt the intensity to your level."
+    },
+    "2": {
+      "question": "Do I need prior experience to attend a breathing session?",
+      "answer": "No experience is required. Sessions are designed to be accessible for beginners and challenging enough for experienced practitioners. Every session starts with an instructor check-in to calibrate the protocol to your current state."
+    },
+    "3": {
+      "question": "How often should I practise breathwork?",
+      "answer": "One to two sessions per week produces consistent improvements in heart rate variability, stress resilience, and CO2 tolerance. Many members combine breathwork with contrast therapy on the same visit for a complete recovery protocol."
+    },
+    "4": {
+      "question": "Are group and private sessions available?",
+      "answer": "Yes. Group sessions run twice a week and are included in all Essentia memberships. Private 1:1 sessions are available for members who prefer a personalised protocol or have specific performance or therapeutic goals."
+    }
+  },
+  "red-light-therapy": {
+    "0": {
+      "question": "What is red light therapy?",
+      "answer": "Red light therapy (photobiomodulation) uses specific wavelengths of red (630–670 nm) and near-infrared light (810–850 nm) to penetrate skin and tissue. The light is absorbed by mitochondria, increasing ATP production, reducing inflammation, and stimulating tissue repair at a cellular level."
+    },
+    "1": {
+      "question": "How long does a red light therapy session last?",
+      "answer": "Sessions are 10–20 minutes. You stand or sit in front of our full-body medical-grade panels at the prescribed distance. Eye protection is provided and must be worn during the session."
+    },
+    "2": {
+      "question": "How often should I use red light therapy?",
+      "answer": "Three to five sessions per week delivers the best cumulative effect. The benefits of photobiomodulation are dose-dependent — consistency matters more than session length. Many members do a 15-minute session before or after contrast therapy."
+    },
+    "3": {
+      "question": "Is red light therapy safe?",
+      "answer": "Red light therapy is non-invasive, non-thermal, and has an excellent safety profile in clinical literature. It is not recommended for people taking photosensitising medications or with active skin conditions in the target area. Consult your doctor if you are pregnant or have a history of skin cancer."
+    },
+    "4": {
+      "question": "What conditions does red light therapy help with?",
+      "answer": "Clinical evidence supports red light therapy for accelerating muscle recovery, reducing joint pain and inflammation, improving skin texture and collagen density, supporting thyroid function, and enhancing sleep quality through its effect on circadian rhythm regulation."
+    }
+  },
+  "manual-therapies": {
+    "0": {
+      "question": "What manual therapy treatments are available at Essentia?",
+      "answer": "We offer ten distinct treatments ranging from 30 to 120 minutes: Espira (express ritual), Pulse (deep tissue), Brazilian Lymphatic Drainage, Essentia Active (sports recovery), Nurtura (prenatal), Serenna (full-body relaxation), Soléa (post-sun), Soma (myofascial release), Lume (craniofacial and reflexology), and Alure Duo (paired ritual)."
+    },
+    "1": {
+      "question": "Do I need to book a manual therapy session in advance?",
+      "answer": "Yes. All manual therapy sessions must be booked in advance through our booking system or by contacting reception. We recommend booking at least 24 hours ahead, especially for popular slots."
+    },
+    "2": {
+      "question": "What is the difference between the manual therapy treatments?",
+      "answer": "The treatments vary in technique, depth, and goal. Pulse focuses on deep tissue and myofascial work for structural tension. Serenna is a lighter relaxation-focused full-body massage. Soma targets fascial restrictions. Lume combines craniofacial, reflexology, and aromatherapy for a holistic neurological reset. Our team can help you select the right treatment based on your current needs."
+    },
+    "3": {
+      "question": "How often should I have manual therapy?",
+      "answer": "For acute issues, three to five sessions typically produce lasting results. For maintenance and injury prevention, active members benefit from one session every two to four weeks to sustain tissue quality and prevent compensatory patterns from developing."
+    },
+    "4": {
+      "question": "Are the therapists qualified?",
+      "answer": "Yes. All Essentia therapists are certified in their respective disciplines and undergo ongoing professional development. Each session begins with a brief assessment to ensure the treatment plan is appropriate for your current condition."
+    }
+  },
+  "functional-well-being": {
+    "0": {
+      "question": "What is functional well-being at Essentia?",
+      "answer": "Functional well-being at Essentia combines strength training, mobility work, cardiovascular conditioning, and balance training into programmes designed specifically for longevity. Unlike conventional gym programmes, we focus on the physical capacities most predictive of long-term health: muscle mass, movement quality, VO2 max, and balance."
+    },
+    "1": {
+      "question": "Who are the functional well-being sessions for?",
+      "answer": "Sessions are designed for adults who want to invest in long-term physical health, not just short-term aesthetics. We work with members across all fitness levels — from complete beginners to competitive athletes — adapting intensity and modality to each individual."
+    },
+    "2": {
+      "question": "What does a functional well-being session include?",
+      "answer": "Sessions are 50 minutes and led by a certified coach. They typically include a movement assessment, a structured training block (strength, mobility, or cardiovascular), and a brief cool-down. Your programme evolves based on your progress and goals."
+    },
+    "3": {
+      "question": "How does functional training support longevity?",
+      "answer": "Muscle mass and movement quality are two of the strongest predictors of all-cause mortality. Sarcopenia — age-related muscle loss — begins in the 30s and accelerates with each decade. Resistance training combined with cardiovascular conditioning is the most evidence-backed intervention to preserve both healthspan and lifespan."
+    }
+  },
+  "hyperbaric-chambers": {
+    "0": {
+      "question": "What is hyperbaric oxygen therapy (HBOT)?",
+      "answer": "Hyperbaric oxygen therapy delivers 100% pure oxygen at pressures 1.5–3 times higher than atmospheric pressure. This allows blood plasma to carry far more oxygen to tissues than is possible under normal conditions, accelerating healing, reducing inflammation, and supporting neurological recovery."
+    },
+    "1": {
+      "question": "How long does an HBOT session last at Essentia?",
+      "answer": "Sessions are 60 minutes at pressure. Each session is medically supervised by our team. You will experience a brief pressurisation period (similar to the sensation of descending in an aeroplane) before reaching the target pressure."
+    },
+    "2": {
+      "question": "How many HBOT sessions do I need?",
+      "answer": "Protocol length depends on your goals. Performance and recovery applications typically require 10–20 sessions. Therapeutic protocols for specific conditions may require 40 or more sessions. Our medical team will design a programme after an initial assessment."
+    },
+    "3": {
+      "question": "Is hyperbaric oxygen therapy safe?",
+      "answer": "HBOT has been used in clinical medicine for decades and has a well-established safety profile. At Essentia, all sessions are medically supervised. Contraindications include untreated pneumothorax, certain medications, and some ear or sinus conditions. A medical screening is completed before your first session."
+    },
+    "4": {
+      "question": "What conditions does HBOT treat or support?",
+      "answer": "Clinical evidence supports HBOT for wound healing, post-surgical recovery, traumatic brain injury, long COVID, decompression sickness, radiation injury, and performance recovery. At Essentia, we also use HBOT protocols for cognitive optimisation and longevity applications."
+    }
+  },
+  "intravenous-therapy": {
+    "0": {
+      "question": "What is intravenous (IV) therapy?",
+      "answer": "IV therapy delivers nutrients, vitamins, minerals, and amino acids directly into the bloodstream, bypassing the digestive system. This allows for 100% bioavailability — far higher than what is achievable through oral supplementation — making it the most efficient method of nutritional repletion."
+    },
+    "1": {
+      "question": "What IV formulas are available at Essentia?",
+      "answer": "We offer personalised IV protocols designed around your health goals and lab results. Common formulations include high-dose Vitamin C, NAD+ therapy, Myers cocktail (B vitamins, magnesium, calcium, Vitamin C), glutathione, and custom amino acid blends for recovery or performance."
+    },
+    "2": {
+      "question": "How long does an IV therapy session take?",
+      "answer": "Most IV infusions take between 45 and 90 minutes depending on the formulation and drip rate. NAD+ infusions typically require 2–3 hours. Sessions are conducted in a comfortable, supervised environment."
+    },
+    "3": {
+      "question": "Is IV therapy safe?",
+      "answer": "IV therapy at Essentia is administered by qualified medical professionals. Each protocol is preceded by a consultation and, where appropriate, blood testing. Side effects are rare and typically mild. We do not administer IV therapy to patients with kidney disease or certain cardiac conditions without prior medical clearance."
+    },
+    "4": {
+      "question": "How often should I have IV therapy?",
+      "answer": "Frequency depends on your goals. For general wellbeing and nutritional support, one session every two to four weeks is common. For recovery from illness, intensive training periods, or specific therapeutic goals, higher frequency protocols may be recommended by our medical team."
+    }
+  },
+  "regenerative-medicine": {
+    "0": {
+      "question": "What is regenerative medicine?",
+      "answer": "Regenerative medicine uses the body's own biological mechanisms — or introduces bioactive substances — to repair, restore, or replace damaged cells, tissues, and organs. At Essentia, we focus on evidence-backed regenerative interventions including PRP therapy, peptide protocols, and cellular rejuvenation approaches integrated with our longevity framework."
+    },
+    "1": {
+      "question": "What regenerative treatments are available at Essentia?",
+      "answer": "Our regenerative medicine offering includes platelet-rich plasma (PRP) therapy, peptide protocols for hormonal and metabolic optimisation, ozone therapy, and personalised longevity assessments that identify biological age and target the key drivers of cellular decline."
+    },
+    "2": {
+      "question": "Who is regenerative medicine for?",
+      "answer": "Regenerative medicine is for people who want to address the root causes of ageing and disease rather than manage symptoms. It is particularly relevant for those experiencing early metabolic dysfunction, hormonal imbalance, joint degeneration, post-injury recovery challenges, or who want to proactively extend their healthspan."
+    },
+    "3": {
+      "question": "Is a consultation required before treatment?",
+      "answer": "Yes. All regenerative medicine treatments begin with a medical consultation and, where appropriate, comprehensive blood and biomarker testing. This allows our team to design a protocol that is safe, targeted, and measurable."
+    },
+    "4": {
+      "question": "How is Essentia's approach to regenerative medicine different?",
+      "answer": "We integrate regenerative medicine within a broader longevity framework — combining it with nutrition, sleep, movement, and wellness protocols. We do not offer standalone treatments in isolation. Every protocol is contextualised within your overall health picture and tracked over time."
+    }
+  }
+}

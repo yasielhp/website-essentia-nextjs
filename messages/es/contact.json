@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "title": "Contacto Essentia | Ponte en contacto",
+    "description": "Ponte en contacto con el equipo de Essentia en Tenerife para conocer nuestro centro de longevidad, programas de bienestar y opciones de membresía."
+  },
+  "heading": "Ponte en contacto.",
+  "subheading": "Si quieres saber más sobre la membresía, reservar una sesión o simplemente hacer una pregunta: nos encantará saber de ti.",
+  "form": {
+    "firstName": "Nombre",
+    "firstNamePlaceholder": "María",
+    "lastName": "Apellidos",
+    "lastNamePlaceholder": "García",
+    "email": "Correo electrónico",
+    "emailPlaceholder": "maria@ejemplo.com",
+    "interest": "Me interesa",
+    "interestPlaceholder": "Seleccionar un tema",
+    "message": "Mensaje",
+    "messagePlaceholder": "Cuéntanos un poco sobre lo que buscas...",
+    "submit": "Enviar mensaje",
+    "submitting": "Enviando…",
+    "interests": {
+      "membership": "Membresía",
+      "wellness": "Programas de bienestar",
+      "medicine": "Protocolos médicos",
+      "community": "Comunidad y eventos",
+      "other": "Otro asunto"
+    }
+  },
+  "success": {
+    "heading": "Mensaje recibido.",
+    "body": "Gracias por ponerte en contacto. Un miembro de nuestro equipo te responderá en el plazo de un día hábil.",
+    "sendAnother": "Enviar otro mensaje"
+  },
+  "info": {
+    "location": "Ubicación",
+    "contact": "Contacto",
+    "followUs": "Síguenos"
+  }
+}

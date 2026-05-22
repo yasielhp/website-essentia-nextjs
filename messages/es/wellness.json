@@ -1,0 +1,343 @@
+{
+  "meta": {
+    "title": "Bienestar | Essentia Social Wellness Club",
+    "description": "Descubre los protocolos integrales de bienestar de Essentia en Tenerife — contraste térmico, respiración, terapia de luz roja, terapias manuales y bienestar funcional."
+  },
+  "hero": {
+    "headlineLine1": "Restauración",
+    "headlineLine2": "de espectro completo.",
+    "body": "Cada protocolo está diseñado para trabajar con la inteligencia natural de tu cuerpo: activando la recuperación, construyendo resiliencia y calibrando tu sistema desde dentro.",
+    "ctaProtocols": "Ver protocolos",
+    "ctaContact": "Habla con nosotros"
+  },
+  "protocols": {
+    "heading": "Los protocolos.",
+    "subheading": "Cinco modalidades. Un sistema integrado.",
+    "items": {
+      "contrast-therapy": {
+        "title": "Contraste Térmico",
+        "tagline": "Calor y frío",
+        "description": "Calor y frío para activar la recuperación y reducir la inflamación."
+      },
+      "breathing-sessions": {
+        "title": "Sesiones de Respiración",
+        "tagline": "Trabajo de respiración",
+        "description": "Respiración guiada para pasar del estrés a la recuperación activa."
+      },
+      "red-light-therapy": {
+        "title": "Terapia de Luz Roja",
+        "tagline": "Fotobiomodulación",
+        "description": "Luz roja e infrarroja para estimular la reparación y regeneración celular."
+      },
+      "manual-therapies": {
+        "title": "Terapias Manuales",
+        "tagline": "Tacto y restauración",
+        "description": "Trabajo manual preciso para liberar tensión y restaurar la movilidad."
+      },
+      "functional-well-being": {
+        "title": "Bienestar Funcional",
+        "tagline": "Movimiento y rendimiento",
+        "description": "Entrenamiento de movimiento y fuerza diseñado para la longevidad."
+      }
+    }
+  },
+  "approach": {
+    "headingLine1": "Cómo entendemos",
+    "headingLine2": "el bienestar.",
+    "body": "Essentia no es un spa ni un gimnasio. Es un entorno de bienestar de precisión donde cada protocolo se elige por su efecto medible en tu biología y en tu experiencia de estar vivo.",
+    "principles": {
+      "I": {
+        "title": "Espectro completo",
+        "description": "Una sola modalidad no es suficiente. Lo térmico, la luz, la respiración, el tacto y el movimiento funcionan como un sistema integrado."
+      },
+      "II": {
+        "title": "Adaptativo",
+        "description": "Cada sesión sigue tu estado actual — recuperación, activación o calibración. El protocolo se adapta a ti."
+      },
+      "III": {
+        "title": "Acumulativo",
+        "description": "La restauración se acumula con el tiempo. La práctica regular construye una base de resiliencia que cambia cómo responde tu cuerpo al estrés."
+      }
+    }
+  },
+  "cta": {
+    "heading": "¿Listo para restaurarte?",
+    "body": "El acceso a todos los protocolos de bienestar está incluido en cada membresía de Essentia. Tu nivel determina la profundidad de tu programa y la prioridad de tus reservas.",
+    "ctaMembership": "Ver membresías",
+    "ctaContact": "Habla con nosotros primero"
+  },
+  "treatments": {
+    "manualTherapiesHeading": "Nuestros tratamientos.",
+    "manualTherapiesSubtitle": "Cada tratamiento está diseñado con un propósito específico. Elige el que se ajuste a lo que tu cuerpo necesita hoy.",
+    "exploreTreatments": "Explorar tratamientos",
+    "bookSession": "Reservar una sesión",
+    "viewMemberships": "Ver membresías",
+    "serviceDetail": {
+      "aboutHeading": "Sobre este tratamiento.",
+      "ctaHeading": "¿Listo para comenzar?",
+      "ctaBody": "Reserva tu sesión de {service} en Essentia Wellness Club — Baobab Suites, Costa Adeje, Tenerife.",
+      "bookSession": "Reservar una sesión",
+      "learnMore": "Más información",
+      "viewAll": "Ver todos los tratamientos"
+    },
+    "contrast-therapy": {
+      "title": "Contraste Térmico.",
+      "tagline": "Calor y frío",
+      "heroAlt": "Contraste térmico — sauna y piscina fría en Essentia",
+      "price": "€45",
+      "duration": "60 min",
+      "intro": "Alternar calor y frío es una de las modalidades de recuperación más estudiadas en la ciencia deportiva. En Essentia hemos diseñado un protocolo estructurado que maximiza la respuesta cardiovascular, hormonal y antiinflamatoria de cada transición.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "La ciencia detrás del contraste térmico está bien establecida. Estos son los mecanismos que más importan.",
+      "benefits": {
+        "0": {
+          "title": "Reduce la inflamación",
+          "description": "La inmersión en frío contrae los vasos sanguíneos y elimina los residuos metabólicos. Las transiciones repetidas aceleran la eliminación de marcadores inflamatorios tras el entrenamiento o una lesión."
+        },
+        "1": {
+          "title": "Estimula las proteínas de choque térmico",
+          "description": "La exposición sostenida a la sauna activa la producción de HSP — chaperonas moleculares que reparan proteínas dañadas y protegen las células frente al estrés futuro."
+        },
+        "2": {
+          "title": "Mejora la resiliencia cardiovascular",
+          "description": "El ciclo rápido de vasoconstricción y vasodilatación entrena el sistema nervioso autónomo y mejora la variabilidad de la frecuencia cardíaca con el tiempo."
+        },
+        "3": {
+          "title": "Mejora la calidad del sueño",
+          "description": "La caída de la temperatura corporal central tras la exposición al frío indica al cerebro que entre en fases de sueño más profundo, reduciendo el tiempo de inicio y aumentando la duración de las ondas lentas."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Las sesiones son guiadas. Nunca te dejaremos solo.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "60 minutos. Tres rondas alternas: 12–15 minutos en la sauna seguidos de 2–3 minutos en la piscina de agua fría. Descanso breve entre rondas."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Individual o compartido. Nuestro terapeuta establece el protocolo según tu objetivo: recuperación, activación o adaptación. La primera sesión incluye una breve evaluación."
+        },
+        "III": {
+          "title": "Frecuencia",
+          "description": "Dos o tres sesiones por semana es lo óptimo para la mayoría de los miembros. Seguimos tu respuesta y ajustamos el protocolo a medida que mejora tu línea de base."
+        }
+      },
+      "ctaHeading": "Comienza tu primera sesión.",
+      "ctaBody": "El Contraste Térmico está incluido en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+    },
+    "breathing-sessions": {
+      "title": "Sesiones de Respiración.",
+      "tagline": "Trabajo de respiración",
+      "heroAlt": "Sesión de trabajo de respiración en Essentia Tenerife",
+      "price": "€35",
+      "duration": "45 min",
+      "intro": "La respiración controlada es la palanca más rápida que tenemos sobre el sistema nervioso autónomo. Nuestras sesiones de respiración guiadas se basan en la evidencia: método Wim Hof, respiración de coherencia, respiración cuadrada y entrenamiento de tolerancia al CO2 — aplicados a tu estado actual.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "La respiración es la única función autónoma que puedes controlar conscientemente. Eso la hace excepcionalmente poderosa.",
+      "benefits": {
+        "0": {
+          "title": "Reduce el cortisol",
+          "description": "La respiración lenta y rítmica activa el nervio vago y desplaza el sistema nervioso desde la dominancia simpática hacia la recuperación parasimpática — reduciendo el cortisol de forma medible en minutos."
+        },
+        "1": {
+          "title": "Mejora la variabilidad de la frecuencia cardíaca",
+          "description": "La respiración de coherencia a cinco respiraciones por minuto sincroniza la frecuencia cardíaca, la presión arterial y la sensibilidad del barorreflejo, mejorando la VFC — un indicador clave de la capacidad de recuperación."
+        },
+        "2": {
+          "title": "Aumenta la tolerancia al CO2",
+          "description": "La mayoría de las personas respira en exceso. Entrenar tu tolerancia al CO2 mejora el aporte de oxígeno a los tejidos (efecto Bohr) y reduce las respuestas de ansiedad desencadenadas por la hipocapnia."
+        },
+        "3": {
+          "title": "Agudiza el foco y la resiliencia",
+          "description": "La hiperventilación cíclica seguida de retención de la respiración activa el sistema simpático de forma controlada, construyendo resiliencia mental y claridad cognitiva bajo estrés."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Cada sesión está guiada por un instructor formado. No se requiere experiencia previa.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "45 minutos. Check-in inicial, un protocolo guiado de 30 minutos y un descanso de integración de 10 minutos. Puede que sientas mareos durante la sesión — es normal y esperado."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Las sesiones grupales se realizan dos veces a la semana. Las sesiones privadas 1:1 están disponibles para miembros que prefieren un protocolo personalizado o tienen objetivos específicos de rendimiento o terapéuticos."
+        },
+        "III": {
+          "title": "Frecuencia",
+          "description": "Una o dos sesiones por semana produce resultados consistentes. Muchos miembros combinan la respiración con el contraste térmico el mismo día para un protocolo de recuperación más completo."
+        }
+      },
+      "ctaHeading": "Respira diferente.",
+      "ctaBody": "Las Sesiones de Respiración están incluidas en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+    },
+    "red-light-therapy": {
+      "title": "Terapia de Luz Roja.",
+      "tagline": "Fotobiomodulación",
+      "heroAlt": "Panel de terapia de luz roja en Essentia",
+      "price": "€25",
+      "duration": "20 min",
+      "intro": "La fotobiomodulación utiliza longitudes de onda específicas de luz roja e infrarroja cercana para penetrar en la piel y los tejidos, estimulando las mitocondrias a nivel celular. En Essentia utilizamos paneles de cuerpo completo de grado médico calibrados a las longitudes de onda con mayor evidencia clínica.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "La terapia de luz actúa a nivel celular. Los efectos se acumulan con el uso consistente.",
+      "benefits": {
+        "0": {
+          "title": "Estimula la función mitocondrial",
+          "description": "La luz infrarroja cercana (810–850 nm) es absorbida por el citocromo c oxidasa en la membrana mitocondrial, aumentando la producción de ATP y la disponibilidad de energía celular."
+        },
+        "1": {
+          "title": "Acelera la reparación tisular",
+          "description": "La luz roja (630–670 nm) promueve la proliferación de fibroblastos y la síntesis de colágeno, acelerando la recuperación de daño muscular, lesiones tendinosas y afecciones cutáneas."
+        },
+        "2": {
+          "title": "Reduce la inflamación sistémica",
+          "description": "La fotobiomodulación reduce consistentemente los marcadores de estrés oxidativo y las citocinas proinflamatorias en estudios controlados para una amplia gama de condiciones."
+        },
+        "3": {
+          "title": "Apoya la salud tiroidea y hormonal",
+          "description": "Investigaciones emergentes muestran que la luz infrarroja cercana aplicada en la glándula tiroides puede mejorar la función en el hipotiroidismo subclínico y reducir la dependencia de medicación."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Simple, pasiva y altamente efectiva. No requiere preparación.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "10–20 minutos por sesión. Te colocas de pie o sentado frente al panel de cuerpo completo a la distancia indicada. Los ojos deben protegerse con las gafas proporcionadas."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Sesiones individuales en una cabina privada. La piel debe estar limpia y sin protector solar ni hidratantes gruesos para permitir la máxima penetración de la luz. Se retira la ropa en las zonas a tratar."
+        },
+        "III": {
+          "title": "Frecuencia",
+          "description": "Tres a cinco sesiones por semana proporciona el mejor efecto acumulativo. Muchos miembros integran una sesión de luz roja de 15 minutos antes o después del contraste térmico."
+        }
+      },
+      "ctaHeading": "Carga tus células.",
+      "ctaBody": "La Terapia de Luz Roja está incluida en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+    },
+    "manual-therapies": {
+      "title": "Terapias Manuales.",
+      "tagline": "Tacto y restauración",
+      "heroAlt": "Sesión de terapia manual en Essentia",
+      "price": "€80 / €110",
+      "duration": "60 o 90 min",
+      "intro": "Nuestros terapeutas manuales trabajan con el cuerpo completo: fascia, músculo, articulación y sistema nervioso. Cada sesión es tanto una evaluación como un tratamiento — identificando lo que está restringido, lo que está compensando y lo que necesita liberarse antes de convertirse en un problema.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "Las manos expertas logran lo que ninguna máquina puede replicar. Estos son los resultados que perseguimos.",
+      "benefits": {
+        "0": {
+          "title": "Libera restricciones fasciales",
+          "description": "Las adherencias fasciales derivadas del entrenamiento, lesiones o sedentarismo limitan el rango de movimiento y fuerzan al cuerpo a adoptar patrones compensatorios. La liberación manual restaura el deslizamiento óptimo de los tejidos."
+        },
+        "1": {
+          "title": "Reduce la tensión y el dolor crónico",
+          "description": "La presión dirigida sobre los puntos gatillo desactiva los patrones de dolor referido y restaura el tono muscular normal de maneras que el foam roller o el automasaje no pueden replicar."
+        },
+        "2": {
+          "title": "Mejora la movilidad articular",
+          "description": "Las técnicas de movilización articular restauran los movimientos accesorios dentro de las articulaciones que se pierden tras una lesión o inmovilización, reduciendo el dolor y mejorando la función."
+        },
+        "3": {
+          "title": "Potencia la recuperación entre sesiones",
+          "description": "El trabajo manual regular reduce la acumulación de estrés mecánico, manteniendo alta la calidad tisular y reduciendo el riesgo de lesiones por sobreuso durante períodos de entrenamiento intenso."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Cada sesión comienza con una breve evaluación. Nada se hace sin una razón.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "60 o 90 minutos. Recomendamos sesiones de 90 minutos para la primera cita para tener tiempo de realizar una evaluación postural y de movimiento completa antes del tratamiento."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "1:1 con un terapeuta certificado. Las modalidades incluyen masaje de tejido profundo, liberación miofascial, movilización articular y punción seca según la presentación y las preferencias."
+        },
+        "III": {
+          "title": "Frecuencia",
+          "description": "Los problemas agudos suelen resolverse en tres a cinco sesiones. El mantenimiento para miembros activos es una sesión cada dos a cuatro semanas para mantener la calidad tisular y prevenir recurrencias."
+        }
+      },
+      "ctaHeading": "Libera lo que te frena.",
+      "ctaBody": "Las Terapias Manuales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+    },
+    "functional-well-being": {
+      "title": "Bienestar Funcional.",
+      "tagline": "Movimiento y rendimiento",
+      "heroAlt": "Sesión de movimiento funcional en Essentia",
+      "price": "€65",
+      "duration": "50 min",
+      "intro": "La masa muscular y la calidad del movimiento son dos de los predictores más sólidos de la longevidad. Nuestros entrenadores construyen programas en torno a las capacidades físicas específicas que más importan para una vida larga y capaz — fuerza, movilidad, eficiencia cardiovascular y equilibrio.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "Entrenar para la longevidad es diferente a entrenar para la estética. Estos son los resultados que importan.",
+      "benefits": {
+        "0": {
+          "title": "Preserva y desarrolla la masa muscular",
+          "description": "La sarcopenia — la pérdida de músculo relacionada con la edad — comienza en los 30 y se acelera con cada década. El entrenamiento de resistencia es la intervención más efectiva para ralentizarla y revertirla."
+        },
+        "1": {
+          "title": "Mejora la salud metabólica",
+          "description": "El músculo esquelético es el mayor sumidero de glucosa del cuerpo. Más masa muscular significa mejor sensibilidad a la insulina, menor HbA1c y menor riesgo de enfermedad metabólica."
+        },
+        "2": {
+          "title": "Mantiene la salud articular y la movilidad",
+          "description": "El entrenamiento de fuerza a través de rangos completos de movimiento carga el cartílago, estimula la producción de líquido sinovial y mantiene la integridad articular necesaria para mantenerse activo durante décadas."
+        },
+        "3": {
+          "title": "Reduce la mortalidad por todas las causas",
+          "description": "El VO2 máximo y la fuerza de agarre son algunos de los marcadores más predictivos de la longevidad. Nuestros programas mejoran sistemáticamente ambos a través del trabajo aeróbico y de resistencia dirigido."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "El entrenamiento aquí es estructurado, progresivo y construido en torno a tus objetivos y punto de partida específicos.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "50 minutos. Un breve calentamiento, un bloque de fuerza o acondicionamiento enfocado y un enfriamiento de movilidad. Las sesiones son densas — sin relleno, sin tiempo desperdiciado."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Tu primera sesión es una evaluación de movimiento y capacidad. A partir de esa línea de base, tu entrenador construye un plan progresivo de 12 semanas. Las sesiones son 1:1 o en grupos pequeños de tres."
+        },
+        "III": {
+          "title": "Frecuencia",
+          "description": "Dos o tres sesiones de fuerza por semana es la dosis mínima efectiva para una adaptación significativa. Coordinamos la programación con tus otros protocolos de Essentia para una recuperación óptima."
+        }
+      },
+      "ctaHeading": "Entrena para el largo plazo.",
+      "ctaBody": "El Bienestar Funcional está incluido en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+    }
+  },
+  "pages": {
+    "breathing-sessions": {
+      "metaTitle": "Sesiones de Respiración | Essentia Wellness",
+      "metaDescription": "Sesiones guiadas de breathwork en Essentia para equilibrar cuerpo y mente, reducir el estrés y mejorar el rendimiento.",
+      "breadcrumb": "Sesiones de Respiración"
+    },
+    "contrast-therapy": {
+      "metaTitle": "Contraste Térmico | Essentia Wellness",
+      "metaDescription": "Contraste térmico en Essentia Tenerife — alternancia de calor y frío para una recuperación acelerada y un mayor bienestar.",
+      "breadcrumb": "Contraste Térmico"
+    },
+    "manual-therapies": {
+      "metaTitle": "Terapias Manuales | Essentia Wellness",
+      "metaDescription": "Sesiones expertas de terapia manual en Essentia para aliviar la tensión, mejorar la movilidad y restaurar el equilibrio natural de tu cuerpo.",
+      "breadcrumb": "Terapias Manuales"
+    },
+    "red-light-therapy": {
+      "metaTitle": "Terapia de Luz Roja | Essentia Wellness",
+      "metaDescription": "Fotobiomodulación y terapia de luz roja en Essentia Tenerife para regeneración celular, recuperación y salud de la piel.",
+      "breadcrumb": "Terapia de Luz Roja"
+    },
+    "functional-well-being": {
+      "metaTitle": "Bienestar Funcional | Essentia Wellness",
+      "metaDescription": "Programas de bienestar funcional en Essentia diseñados para optimizar tu rendimiento físico, salud y longevidad.",
+      "breadcrumb": "Bienestar Funcional"
+    },
+    "breadcrumbHome": "Inicio",
+    "breadcrumbWellness": "Bienestar"
+  }
+}

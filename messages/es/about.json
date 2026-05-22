@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "title": "Sobre Essentia | Nuestra filosofía y equipo",
+    "description": "Conoce la filosofía de Essentia, nuestro equipo experto y nuestro compromiso con el bienestar holístico y la longevidad en Tenerife."
+  },
+  "hero": {
+    "imageAlt": "Essentia — interior del club en Costa Adeje",
+    "headingLine1": "Hecho para personas",
+    "headingLine2": "que se toman la salud en serio.",
+    "body": "Un club de longevidad en Costa Adeje, Tenerife. Medicina, bienestar y comunidad bajo un mismo techo.",
+    "joinCta": "Únete a la comunidad",
+    "talkCta": "Habla con nosotros"
+  },
+  "story": {
+    "heading": "Por qué existimos.",
+    "p1": "Essentia se fundó con una sola pregunta: ¿qué se necesita realmente para vivir bien durante más tiempo? No en teoría, sino en la práctica, todos los días.",
+    "p2": "Reunimos lo mejor de la medicina de longevidad, el bienestar basado en evidencia y la conexión humana genuina, y construimos un lugar en las Islas Canarias donde los tres ocurren bajo un mismo techo.",
+    "p3": "La membresía no es un pase de gimnasio. Es acceso a un equipo médico, a una comunidad de personas con los mismos estándares y a los protocolos que lo respaldan.",
+    "imageAlt": "Sala de tratamiento de Essentia",
+    "stats": {
+      "founded": "Fundado",
+      "disciplines": "Disciplinas expertas",
+      "location": "Costa Adeje"
+    }
+  },
+  "principles": {
+    "heading": "Cómo pensamos.",
+    "body": "Tres principios que guían cada decisión que tomamos, desde los protocolos que ofrecemos hasta las personas que contratamos."
+  },
+  "team": {
+    "heading": "Las personas.",
+    "body": "Un equipo pequeño y experto. Cada persona está aquí porque cree de verdad en el trabajo.",
+    "subheading": "Clínicos, entrenadores y especialistas unidos por un compromiso compartido con la práctica basada en evidencia."
+  },
+  "cta": {
+    "heading": "El mejor momento para empezar es ahora.",
+    "body": "La membresía te da acceso a medicina, bienestar, comunidad y educación. Elige tu nivel y empieza.",
+    "viewMemberships": "Ver membresías",
+    "talkFirst": "Habla con nosotros primero"
+  }
+}

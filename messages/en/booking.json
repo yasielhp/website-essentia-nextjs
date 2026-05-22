@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "title": "Book a Session | Essentia",
+    "description": "Book your wellness or medicine session at Essentia Tenerife."
+  },
+  "heading": "Book a session.",
+  "subheading": "Choose your service, pick a time, and we will take care of the rest.",
+  "steps": {
+    "service": "Service",
+    "duration": "Duration",
+    "datetime": "Date & Time",
+    "details": "Details",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "back": "Back",
+    "checking": "Checking…",
+    "nextStep": "Next step",
+    "nextWithLabel": "Next: {label}",
+    "requestBooking": "Request booking",
+    "submitting": "Submitting…"
+  },
+  "memberBlocker": {
+    "title": "Active membership found",
+    "body": "This email is linked to an active Essentia membership. Sign in to book with your member benefits.",
+    "signIn": "Sign in to my account",
+    "continueAsGuest": "Continue as guest"
+  },
+  "serviceStep": {
+    "label": "Which service would you like to book?",
+    "placeholder": "Select a service",
+    "modalTitle": "Select a service",
+    "wellness": "Wellness",
+    "medicine": "Medicine",
+    "close": "Close"
+  },
+  "durationStep": {
+    "label": "Choose a duration",
+    "fixedDescription": "This service has a fixed session type.",
+    "chooseDescription": "Choose your session type.",
+    "sessionType": "Session type",
+    "selectSessionType": "Select a session type",
+    "modalTitle": "Select a session type",
+    "noneAvailable": "No session types available for this service.",
+    "standard": "Standard",
+    "close": "Close"
+  },
+  "locationStep": {
+    "label": "Where would you like to receive the service?",
+    "selectLocation": "Select a location",
+    "modalTitle": "Select a location",
+    "atTheCenter": "At the center",
+    "homeVisit": "Home visit",
+    "homeVisitDescription": "We come to your address",
+    "street": "Street & number",
+    "streetPlaceholder": "Calle El Peñón, 23",
+    "building": "Block, floor & door",
+    "buildingPlaceholder": "Block 3, 2nd floor, apt B",
+    "postalCode": "Postal code",
+    "postalCodePlaceholder": "38670",
+    "municipality": "Municipality",
+    "municipalityPlaceholder": "Adeje",
+    "close": "Close"
+  },
+  "datetimeStep": {
+    "selectDate": "Select a date",
+    "selectTime": "Select a time",
+    "noSlotsAvailable": "No slots available for this date",
+    "loadingSlots": "Loading available times…",
+    "availableTimes": "Available times",
+    "noAvailability": "No availability for this day",
+    "tryAnother": "Please choose a different date.",
+    "chooseAnother": "Choose another date",
+    "date": "Date"
+  },
+  "detailsStep": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email address",
+    "phone": "Phone",
+    "notes": "Notes",
+    "notesPlaceholder": "Any preferences, health considerations, or questions…",
+    "firstNamePlaceholder": "Jane",
+    "lastNamePlaceholder": "Smith",
+    "emailPlaceholder": "jane@example.com",
+    "phonePlaceholder": "+34 600 000 000",
+    "notesPlaceholderShort": "Anything we should know before your session? (optional)",
+    "consentPrefix": "I accept the",
+    "consentAnd": "and",
+    "consentSuffix": ".",
+    "terms": "Terms",
+    "privacyPolicy": "Privacy Policy",
+    "dataProtectionTitle": "Data protection information",
+    "dataController": "Data controller:",
+    "dataControllerValue": "Essentia Social Wellness Club",
+    "purpose": "Purpose:",
+    "purposeValue": "managing your session booking",
+    "legalBasis": "Legal basis:",
+    "legalBasisValue": "your consent (GDPR art. 6.1.a)",
+    "rights": "Your rights:",
+    "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
+    "fullDetails": "Full details in our"
+  },
+  "confirmStep": {
+    "date": "Date",
+    "time": "Time",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "location": "Location",
+    "atTheCenter": "At the center",
+    "toBeConfirmed": "To be confirmed",
+    "channel": "phone or WhatsApp",
+    "paymentNotice": "Once you submit your request, we will contact you by phone or WhatsApp at {phone} to confirm your appointment. Payment will be collected at the center on the day of your session.",
+    "paymentNoticePrefix": "Once you submit your request, we will contact you by",
+    "paymentNoticeAt": "at",
+    "paymentNoticeSuffix": "to confirm your appointment. Payment will be collected at the center on the day of your session."
+  },
+  "paymentOverlay": {
+    "redirecting": "Redirecting to secure payment…",
+    "takingYou": "We are taking you to the Redsys payment gateway.",
+    "cancel": "Cancel"
+  },
+  "successState": {
+    "heading": "Booking requested.",
+    "body": "{service} on {date} at {time}.",
+    "contactNote": "We will contact you by phone or WhatsApp at <strong>{phone}</strong> to confirm your appointment.",
+    "cta": "Back to home"
+  },
+  "confirmation": {
+    "heading": "Booking confirmed.",
+    "subheading": "See you soon.",
+    "body": "Your payment has been processed and your appointment is confirmed. See you soon!",
+    "detail": {
+      "service": "Service",
+      "date": "Date",
+      "time": "Time"
+    },
+    "contactNote": "A confirmation has been sent to your email.",
+    "contactNoteWithPhone": "A confirmation has been sent to your email and to <phone>{phoneValue}</phone>.",
+    "cta": "Back to home"
+  },
+  "requested": {
+    "heading": "Request received.",
+    "body": "We've received your request and will be in touch shortly to confirm your appointment.",
+    "detail": {
+      "service": "Service",
+      "date": "Date",
+      "time": "Time"
+    },
+    "contactNote": "Please keep an eye on your email. We will reach out to confirm your appointment.",
+    "contactNoteWithPhone": "Please keep an eye on your email and phone <phone>{phoneValue}</phone>. We will reach out to confirm your appointment.",
+    "cta": "Back to home"
+  }
+}

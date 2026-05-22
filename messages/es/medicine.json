@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "title": "Medicina | Essentia Longevity Center",
+    "description": "Medicina preventiva avanzada y protocolos de longevidad en Essentia en Tenerife. Tratamientos respaldados por la ciencia para extender los años de salud."
+  },
+  "hero": {
+    "headlineLine1": "Medicina",
+    "headlineLine2": "de longevidad.",
+    "body": "Protocolos clínicos respaldados por la ciencia, calibrados a tu biología. Medicina que trabaja con el tiempo, no contra él.",
+    "ctaTreatments": "Ver tratamientos",
+    "ctaContact": "Habla con nosotros"
+  },
+  "treatments": {
+    "heading": "Los tratamientos.",
+    "subheading": "Tres protocolos clínicos. Un sistema de longevidad.",
+    "items": {
+      "hyperbaric-chambers": {
+        "title": "Oxígeno Hiperbárico",
+        "description": "Oxígeno presurizado para acelerar la reparación de tejidos y reducir la inflamación."
+      },
+      "intravenous-therapy": {
+        "title": "Terapia IV",
+        "description": "Aporte directo de nutrientes para una absorción rápida y soporte celular."
+      },
+      "regenerative-medicine": {
+        "title": "Medicina Regenerativa",
+        "description": "Protocolos que activan los propios mecanismos de reparación de tu cuerpo."
+      }
+    }
+  },
+  "approach": {
+    "headingLine1": "Cómo entendemos",
+    "headingLine2": "la medicina.",
+    "body": "Essentia Medicine no es atención sanitaria reactiva. Es un sistema de precisión construido para detectar, prevenir y revertir los procesos biológicos que aceleran el envejecimiento.",
+    "principles": {
+      "I": {
+        "title": "Basado en la ciencia",
+        "description": "Cada protocolo se basa en investigación de longevidad revisada por pares y evidencia clínica."
+      },
+      "II": {
+        "title": "Prevención primero",
+        "description": "Nos centramos en lo que puede abordarse antes de que aparezcan los síntomas, no solo en lo que ya lo ha hecho."
+      },
+      "III": {
+        "title": "Precisión",
+        "description": "Los protocolos se calibran a tus biomarcadores y biología, no a líneas de base genéricas."
+      }
+    }
+  },
+  "cta": {
+    "heading": "¿Listo para invertir en tu longevidad?",
+    "body": "El acceso a los protocolos de Essentia Medicine está incluido en niveles seleccionados de membresía. Tu programa se calibra a tus biomarcadores y tus objetivos.",
+    "ctaMembership": "Ver membresías",
+    "ctaContact": "Habla con nosotros primero"
+  },
+  "treatmentDetails": {
+    "hyperbaric-chambers": {
+      "title": "Oxígeno Hiperbárico.",
+      "heroAlt": "Cámara de oxígeno hiperbárico en Essentia",
+      "price": "€120",
+      "duration": "60 min",
+      "intro": "La terapia de oxígeno hiperbárico (TOHB) administra oxígeno al 100% a presiones superiores a la atmosférica, permitiendo que el plasma sanguíneo transporte mucho más oxígeno a los tejidos. En Essentia, nuestros protocolos están supervisados por nuestro equipo médico y adaptados a tus objetivos de salud.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "La evidencia clínica de la TOHB abarca décadas y múltiples disciplinas. Estos son los mecanismos con mayor respaldo.",
+      "benefits": {
+        "0": {
+          "title": "Acelera la reparación tisular",
+          "description": "La elevada disponibilidad de oxígeno estimula la angiogénesis — la formación de nuevos vasos sanguíneos — y acelera dramáticamente la curación en tejidos hipóxicos o dañados."
+        },
+        "1": {
+          "title": "Reduce la inflamación sistémica",
+          "description": "La TOHB suprime de forma consistente las citocinas proinflamatorias y los marcadores de estrés oxidativo, con efectos que persisten mucho más allá de la propia sesión."
+        },
+        "2": {
+          "title": "Mejora la neuroplasticidad",
+          "description": "Investigaciones emergentes muestran que las sesiones repetidas de TOHB aumentan el BDNF y promueven la neurogénesis, con aplicaciones clínicas en la recuperación postconmoción y el rendimiento cognitivo."
+        },
+        "3": {
+          "title": "Apoya la función inmunitaria",
+          "description": "El oxígeno presurizado potencia la capacidad bactericida de los glóbulos blancos y promueve la eliminación de infecciones crónicas que prosperan en entornos bajos en oxígeno."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Cada sesión de TOHB está supervisada médicamente. La seguridad y la precisión no son negociables.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "60 minutos dentro de la cámara a 1,5–2,0 ATA, precedidos por una fase de presurización de 10 minutos y seguidos de una despresurización gradual. Tiempo total: aproximadamente 80 minutos."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Cámaras individuales para mayor privacidad y comodidad. Puedes leer, descansar o usar una tablet durante la sesión. Se requiere ropa holgada de fibra natural. Sin electrónicos dentro."
+        },
+        "III": {
+          "title": "Protocolo",
+          "description": "Nuestro equipo médico prescribe una serie de sesiones según tus objetivos y línea de base. La mayoría de los protocolos terapéuticos comprenden 10–40 sesiones. El mantenimiento es una sesión por semana."
+        }
+      },
+      "ctaHeading": "Acelera tu recuperación.",
+      "ctaBody": "La Terapia de Oxígeno Hiperbárico está disponible para los miembros de Essentia. Reserva una consulta con nuestro equipo médico o tu primera sesión directamente."
+    },
+    "intravenous-therapy": {
+      "title": "Terapia IV.",
+      "heroAlt": "Terapia IV en Essentia Tenerife",
+      "price": "€95",
+      "duration": "45 min",
+      "intro": "La terapia nutricional intravenosa evita por completo el sistema digestivo, administrando vitaminas, minerales y aminoácidos directamente al torrente sanguíneo en concentraciones imposibles de alcanzar por vía oral. En Essentia, cada fórmula IV está prescrita por nuestro equipo médico tras revisar tus análisis.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "La terapia IV no es una tendencia de bienestar. Es una intervención médica con indicaciones específicas y resultados medibles.",
+      "benefits": {
+        "0": {
+          "title": "Biodisponibilidad del 100%",
+          "description": "Los suplementos orales se absorben al 10–50% según la salud intestinal, la ingesta de alimentos y la variación individual. La administración IV alcanza una absorción del 100% independientemente del estado digestivo."
+        },
+        "1": {
+          "title": "Reposición celular rápida",
+          "description": "Las deficiencias de magnesio, vitaminas B, vitamina C y zinc son comunes y tienen efectos sistémicos amplios. La reposición IV restaura los niveles óptimos en una sola sesión."
+        },
+        "2": {
+          "title": "Apoya la producción de glutatión",
+          "description": "Las dosis altas de vitamina C y los precursores de glutatión por vía IV potencian significativamente el principal sistema antioxidante del cuerpo, reduciendo el daño oxidativo y apoyando la función inmunitaria y hepática."
+        },
+        "3": {
+          "title": "Mejora la energía y la recuperación",
+          "description": "Los protocolos IV de NAD+ reponen directamente los niveles intracelulares de NAD — una coenzima crítica para la función mitocondrial que disminuye drásticamente con la edad — restaurando la producción de energía celular."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión.",
+      "sessionSubtitle": "Cada sesión comienza con una revisión. No administramos nada sin entender tu línea de base.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "45–90 minutos según la formulación. Los protocolos de NAD+ tardan más debido a la velocidad de infusión más lenta requerida. Estarás sentado cómodamente durante todo el proceso."
+        },
+        "II": {
+          "title": "Formato",
+          "description": "Sala de tratamiento privada. Un profesional médico o de enfermería coloca la cánula IV y supervisa durante todo el proceso. La mayoría de los miembros leen, escuchan música o descansan durante la infusión."
+        },
+        "III": {
+          "title": "Protocolo",
+          "description": "La primera sesión incluye revisión de analíticas y una breve consulta para seleccionar la fórmula adecuada. Protocolos comunes: cóctel de Myers, vitamina C en dosis altas, NAD+ o mezclas personalizadas."
+        }
+      },
+      "ctaHeading": "Repón en el origen.",
+      "ctaBody": "La Terapia IV está disponible para todos los miembros de Essentia. Reserva una consulta con nuestro equipo médico o tu primera sesión directamente."
+    },
+    "regenerative-medicine": {
+      "title": "Medicina Regenerativa.",
+      "heroAlt": "Consulta de medicina regenerativa en Essentia",
+      "price": "Desde €250",
+      "duration": "Consulta + protocolo",
+      "intro": "La medicina regenerativa activa los propios mecanismos de reparación del cuerpo utilizando señales biológicas — péptidos, factores de crecimiento y protocolos avanzados que actúan sobre los procesos celulares que subyacen al envejecimiento y a la lesión. En Essentia, estos tratamientos los prescribe y supervisa nuestro director médico.",
+      "benefitsHeading": "Qué hace.",
+      "benefitsSubtitle": "Esta es la frontera de la medicina de longevidad. La evidencia crece rápidamente.",
+      "benefits": {
+        "0": {
+          "title": "Terapia con péptidos",
+          "description": "Péptidos dirigidos como BPC-157, TB-500 y GHK-Cu modulan la inflamación, aceleran la reparación tisular y apoyan la integridad intestinal a través de vías de señalización específicas de receptor."
+        },
+        "1": {
+          "title": "Optimización hormonal",
+          "description": "El declive hormonal asociado a la edad no es inevitable. Nuestro equipo médico evalúa tu panel hormonal completo y prescribe protocolos de optimización basados en evidencia bajo monitorización continua."
+        },
+        "2": {
+          "title": "Senolíticos y protocolos de longevidad",
+          "description": "La acumulación de células senescentes es uno de los principales motores del envejecimiento biológico. Los protocolos senolíticos dirigidos — dasatinib, quercetina, fisetina — se prescriben en función de tu perfil de biomarcadores."
+        },
+        "3": {
+          "title": "PRP y terapias de factores de crecimiento",
+          "description": "El plasma rico en plaquetas derivado de tu propia sangre se utiliza para acelerar la reparación en articulaciones, tendones y piel — concentrando los factores de crecimiento que tu cuerpo ya produce."
+        }
+      },
+      "sessionHeading": "Cómo es un protocolo.",
+      "sessionSubtitle": "La medicina regenerativa no es una sola sesión. Es un programa estructurado y monitorizado.",
+      "sessionDetails": {
+        "I": {
+          "title": "Consulta",
+          "description": "Una consulta de 60 minutos con nuestro Director Médico. Revisamos tus analíticas, historia clínica y objetivos antes de prescribir nada. Se incluye un panel analítico completo."
+        },
+        "II": {
+          "title": "Diseño del protocolo",
+          "description": "Se diseña un protocolo personalizado en torno a tus biomarcadores y objetivos específicos. Los protocolos suelen durar 3–6 meses con revisiones periódicas y reevaluación analítica."
+        },
+        "III": {
+          "title": "Monitorización continua",
+          "description": "Seguimos tu respuesta a cada intervención con marcadores objetivos. Los protocolos se ajustan en función de los resultados. Nada se mantiene sin evidencia de que está funcionando para ti."
+        }
+      },
+      "ctaHeading": "Invierte en tu biología.",
+      "ctaBody": "Los protocolos de Medicina Regenerativa están disponibles para los miembros de Essentia. Comienza con una consulta con nuestro Director Médico."
+    }
+  },
+  "pages": {
+    "hyperbaric-chambers": {
+      "metaTitle": "Cámaras Hiperbáricas | Essentia Medicine",
+      "metaDescription": "Terapia de oxígeno hiperbárico en Essentia Tenerife. Acelera la recuperación, reduce la inflamación y potencia la regeneración celular.",
+      "breadcrumb": "Cámaras Hiperbáricas"
+    },
+    "intravenous-therapy": {
+      "metaTitle": "Terapia IV | Essentia Medicine",
+      "metaDescription": "Terapia de infusión intravenosa personalizada para una nutrición y recuperación óptimas en Essentia, el principal centro de longevidad de Tenerife.",
+      "breadcrumb": "Terapia IV"
+    },
+    "regenerative-medicine": {
+      "metaTitle": "Medicina Regenerativa | Essentia Tenerife",
+      "metaDescription": "Tratamientos de medicina regenerativa de vanguardia para restaurar y optimizar tu salud en Essentia Longevity Center, Tenerife.",
+      "breadcrumb": "Medicina Regenerativa"
+    },
+    "breadcrumbHome": "Inicio",
+    "breadcrumbMedicine": "Medicina"
+  }
+}

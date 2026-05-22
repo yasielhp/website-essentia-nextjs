@@ -1,0 +1,100 @@
+{
+  "wellness": "Wellness",
+  "medicine": "Medicine",
+  "community": "Community",
+  "essentia": "Essentia",
+  "about": "About",
+  "blog": "Blog",
+  "shop": "Shop",
+  "contact": "Contact",
+  "items": {
+    "wellness": {
+      "manualTherapies": "Manual therapies",
+      "thermalContrast": "Thermal contrast",
+      "breathingSessions": "Breathing sessions",
+      "redLightTherapy": "Red light therapy",
+      "functionalWellBeing": "Functional well-being"
+    },
+    "medicine": {
+      "regenerativeMedicine": "Regenerative medicine",
+      "intravenousTherapy": "Intravenous therapy",
+      "hyperbaricChambers": "Hyperbaric chambers"
+    },
+    "community": {
+      "runningClub": "Running club",
+      "educationAndPrograms": "Education and programs",
+      "memberships": "Memberships"
+    }
+  },
+  "cards": {
+    "wellness": {
+      "title": "Wellness",
+      "description": "Thermal contrast, manual therapies, and breathwork — a curated journey to restore your body's natural balance."
+    },
+    "medicine": {
+      "title": "Medicine",
+      "description": "Clinical protocols bridging regenerative science and integrative medicine to address the root causes of imbalance."
+    },
+    "community": {
+      "title": "Community",
+      "description": "A living ecosystem of people united by a shared commitment to health, movement, learning, and meaningful connection."
+    },
+    "manualTherapies": {
+      "title": "Manual Therapies",
+      "description": "Skilled hands releasing tension, restoring mobility, and deepening your sense of physical ease."
+    },
+    "thermalContrast": {
+      "title": "Thermal contrast",
+      "description": "Cold immersion and dry saunas to activate the nervous system, boost circulation, and sharpen mental resilience."
+    },
+    "breathingSessions": {
+      "title": "Breathing Sessions",
+      "description": "Structured breathwork to calm the mind, regulate the nervous system, and cultivate lasting inner stillness."
+    },
+    "redLightTherapy": {
+      "title": "Red Light Therapy",
+      "description": "Targeted red and near-infrared light to accelerate cellular repair, reduce inflammation, and support deep tissue recovery."
+    },
+    "functionalWellBeing": {
+      "title": "Functional Well-being",
+      "description": "Personalized protocols aligning movement, recovery, and lifestyle around your unique health goals."
+    },
+    "regenerativeMedicine": {
+      "title": "Regenerative Medicine",
+      "description": "Treatments that activate the body's own repair mechanisms — promoting deep, long-term healing from within."
+    },
+    "intravenousTherapy": {
+      "title": "Intravenous Therapy",
+      "description": "Vitamins, minerals, and nutrients infused directly into the bloodstream for immediate cellular impact."
+    },
+    "hyperbaricChambers": {
+      "title": "Hyperbaric Chambers",
+      "description": "Pressurized oxygen therapy that floods tissues with healing oxygen — speeding recovery and sharpening focus."
+    },
+    "runningClub": {
+      "title": "Running Club",
+      "description": "Group runs along curated routes — structured training with the energy and accountability of a like-minded community."
+    },
+    "educationAndPrograms": {
+      "title": "Education and Programs",
+      "description": "Talks, workshops, and immersive programs that deepen your health knowledge and empower real, lasting change."
+    },
+    "memberships": {
+      "title": "Memberships",
+      "description": "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and community."
+    }
+  },
+  "legal": {
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "cookies": "Cookies"
+  },
+  "account": {
+    "title": "Account",
+    "overview": "Overview",
+    "myBookings": "My Bookings",
+    "myRaces": "My Races",
+    "mySessions": "My Sessions"
+  }
+}

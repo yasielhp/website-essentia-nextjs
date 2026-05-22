@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "title": "Reservar Sesión | Essentia",
+    "description": "Reserva tu sesión de bienestar o medicina en Essentia Tenerife."
+  },
+  "heading": "Reserva una sesión.",
+  "subheading": "Elige tu servicio, selecciona un horario y nosotros nos encargamos del resto.",
+  "steps": {
+    "service": "Servicio",
+    "duration": "Duración",
+    "datetime": "Fecha y hora",
+    "details": "Tus datos",
+    "confirm": "Confirmar"
+  },
+  "nav": {
+    "back": "Volver",
+    "checking": "Comprobando…",
+    "nextStep": "Siguiente paso",
+    "nextWithLabel": "Siguiente: {label}",
+    "requestBooking": "Solicitar reserva",
+    "submitting": "Enviando…"
+  },
+  "memberBlocker": {
+    "title": "Membresía activa encontrada",
+    "body": "Este correo está vinculado a una membresía activa de Essentia. Inicia sesión para reservar con tus beneficios de miembro.",
+    "signIn": "Iniciar sesión en mi cuenta",
+    "continueAsGuest": "Continuar como invitado"
+  },
+  "serviceStep": {
+    "label": "¿Qué servicio deseas reservar?",
+    "placeholder": "Seleccionar un servicio",
+    "modalTitle": "Seleccionar un servicio",
+    "wellness": "Bienestar",
+    "medicine": "Medicina",
+    "close": "Cerrar"
+  },
+  "durationStep": {
+    "label": "Elige una duración",
+    "fixedDescription": "Este servicio tiene un tipo de sesión fijo.",
+    "chooseDescription": "Elige tu tipo de sesión.",
+    "sessionType": "Tipo de sesión",
+    "selectSessionType": "Seleccionar un tipo de sesión",
+    "modalTitle": "Seleccionar un tipo de sesión",
+    "noneAvailable": "No hay tipos de sesión disponibles para este servicio.",
+    "standard": "Estándar",
+    "close": "Cerrar"
+  },
+  "locationStep": {
+    "label": "¿Dónde quieres recibir el servicio?",
+    "selectLocation": "Seleccionar una ubicación",
+    "modalTitle": "Seleccionar una ubicación",
+    "atTheCenter": "En el centro",
+    "homeVisit": "A domicilio",
+    "homeVisitDescription": "Vamos a tu dirección",
+    "street": "Calle y número",
+    "streetPlaceholder": "Calle El Peñón, 23",
+    "building": "Bloque, piso y puerta",
+    "buildingPlaceholder": "Bloque 3, 2.ª planta, apt B",
+    "postalCode": "Código postal",
+    "postalCodePlaceholder": "38670",
+    "municipality": "Municipio",
+    "municipalityPlaceholder": "Adeje",
+    "close": "Cerrar"
+  },
+  "datetimeStep": {
+    "selectDate": "Seleccionar fecha",
+    "selectTime": "Seleccionar hora",
+    "noSlotsAvailable": "No hay horarios disponibles para esta fecha",
+    "loadingSlots": "Cargando horarios disponibles…",
+    "availableTimes": "Horarios disponibles",
+    "noAvailability": "Sin disponibilidad para este día",
+    "tryAnother": "Por favor, elige otra fecha.",
+    "chooseAnother": "Elegir otra fecha",
+    "date": "Fecha"
+  },
+  "detailsStep": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "notes": "Notas",
+    "notesPlaceholder": "Preferencias, consideraciones de salud o preguntas…",
+    "firstNamePlaceholder": "María",
+    "lastNamePlaceholder": "García",
+    "emailPlaceholder": "maria@ejemplo.com",
+    "phonePlaceholder": "+34 600 000 000",
+    "notesPlaceholderShort": "¿Algo que debamos saber antes de tu sesión? (opcional)",
+    "consentPrefix": "Acepto los",
+    "consentAnd": "y la",
+    "consentSuffix": ".",
+    "terms": "Términos",
+    "privacyPolicy": "Política de Privacidad",
+    "dataProtectionTitle": "Información sobre protección de datos",
+    "dataController": "Responsable del tratamiento:",
+    "dataControllerValue": "Essentia Social Wellness Club",
+    "purpose": "Finalidad:",
+    "purposeValue": "gestionar tu reserva de sesión",
+    "legalBasis": "Base legal:",
+    "legalBasisValue": "tu consentimiento (RGPD art. 6.1.a)",
+    "rights": "Tus derechos:",
+    "rightsValue": "acceso, rectificación, supresión, limitación, portabilidad y oposición: escribe a",
+    "fullDetails": "Más detalles en nuestra"
+  },
+  "confirmStep": {
+    "date": "Fecha",
+    "time": "Hora",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "location": "Ubicación",
+    "atTheCenter": "En el centro",
+    "toBeConfirmed": "Por confirmar",
+    "channel": "teléfono o WhatsApp",
+    "paymentNotice": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por teléfono o WhatsApp al {phone} para confirmar tu cita. El pago se realizará en el centro el día de tu sesión.",
+    "paymentNoticePrefix": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por",
+    "paymentNoticeAt": "al",
+    "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión."
+  },
+  "paymentOverlay": {
+    "redirecting": "Redirigiendo al pago seguro…",
+    "takingYou": "Te estamos llevando a la pasarela de pago de Redsys.",
+    "cancel": "Cancelar"
+  },
+  "successState": {
+    "heading": "Reserva solicitada.",
+    "body": "{service} el {date} a las {time}.",
+    "contactNote": "Nos pondremos en contacto contigo por teléfono o WhatsApp al <strong>{phone}</strong> para confirmar tu cita.",
+    "cta": "Volver al inicio"
+  },
+  "confirmation": {
+    "heading": "Reserva confirmada.",
+    "subheading": "Hasta pronto.",
+    "body": "Tu pago se ha procesado y tu cita está confirmada. ¡Hasta pronto!",
+    "detail": {
+      "service": "Servicio",
+      "date": "Fecha",
+      "time": "Hora"
+    },
+    "contactNote": "Se ha enviado una confirmación a tu correo electrónico.",
+    "contactNoteWithPhone": "Se ha enviado una confirmación a tu correo electrónico y al <phone>{phoneValue}</phone>.",
+    "cta": "Volver al inicio"
+  },
+  "requested": {
+    "heading": "Solicitud recibida.",
+    "body": "Hemos recibido tu solicitud y nos pondremos en contacto contigo en breve para confirmar tu cita.",
+    "detail": {
+      "service": "Servicio",
+      "date": "Fecha",
+      "time": "Hora"
+    },
+    "contactNote": "Por favor, mantente atento a tu correo. Nos pondremos en contacto contigo para confirmar tu cita.",
+    "contactNoteWithPhone": "Por favor, mantente atento a tu correo y al teléfono <phone>{phoneValue}</phone>. Nos pondremos en contacto contigo para confirmar tu cita.",
+    "cta": "Volver al inicio"
+  }
+}

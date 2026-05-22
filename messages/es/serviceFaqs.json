@@ -1,0 +1,175 @@
+{
+  "sectionHeading": "Preguntas frecuentes.",
+  "contrast-therapy": {
+    "0": {
+      "question": "¿Qué es la terapia de contraste?",
+      "answer": "La terapia de contraste alterna entre exposición al calor (sauna, 80–90°C) e inmersión en frío (piscina fría, 10–15°C). Los cambios rápidos de temperatura obligan al sistema cardiovascular a adaptarse, impulsando ciclos de vasodilatación y vasoconstricción que reducen la inflamación, aceleran la recuperación y mejoran la función autónoma."
+    },
+    "1": {
+      "question": "¿Cuánto dura una sesión de terapia de contraste en Essentia?",
+      "answer": "Las sesiones son de 60 minutos. El protocolo incluye tres rondas alternas: 12–15 minutos en la sauna seguidos de 2–3 minutos en la piscina fría, con un breve descanso entre rondas. Cada sesión está guiada por uno de nuestros terapeutas."
+    },
+    "2": {
+      "question": "¿Con qué frecuencia debo hacer terapia de contraste?",
+      "answer": "Dos o tres sesiones por semana es lo óptimo para la mayoría de los miembros. Seguimos tu respuesta y ajustamos el protocolo a medida que se adapta tu línea de base. Muchos miembros combinan la terapia de contraste con la terapia de luz roja el mismo día."
+    },
+    "3": {
+      "question": "¿La terapia de contraste es segura para todos?",
+      "answer": "La terapia de contraste no está recomendada para personas con hipertensión no controlada, enfermedad cardiovascular grave, infecciones agudas o embarazo. Si tienes alguna condición médica existente, recomendamos una breve consulta con nuestro equipo antes de tu primera sesión."
+    },
+    "4": {
+      "question": "¿Qué debo llevar a una sesión?",
+      "answer": "Trae un bañador y una toalla. Nosotros proporcionamos albornoces, sandalias y agua mineral. Llega bien hidratado y evita comidas abundantes en las dos horas previas a la sesión."
+    }
+  },
+  "breathing-sessions": {
+    "0": {
+      "question": "¿Qué es el breathwork?",
+      "answer": "El breathwork es la manipulación deliberada del ritmo, la profundidad y el patrón de respiración para cambiar el estado del sistema nervioso. En Essentia, las sesiones se basan en métodos con evidencia científica: respiración Wim Hof, respiración de coherencia, respiración cuadrada y entrenamiento de tolerancia al CO2."
+    },
+    "1": {
+      "question": "¿Sentiré mareos durante una sesión de respiración?",
+      "answer": "Sí, un hormigueo leve o mareos son normales y esperados durante ciertos protocolos, especialmente la hiperventilación cíclica. Es una respuesta fisiológica a los cambios en los niveles de CO2, no una señal de peligro. Nuestros instructores te guían en cada etapa y adaptan la intensidad a tu nivel."
+    },
+    "2": {
+      "question": "¿Necesito experiencia previa para asistir a una sesión de respiración?",
+      "answer": "No se requiere experiencia. Las sesiones están diseñadas para ser accesibles para principiantes y suficientemente desafiantes para practicantes con experiencia. Cada sesión comienza con un check-in del instructor para calibrar el protocolo a tu estado actual."
+    },
+    "3": {
+      "question": "¿Con qué frecuencia debo practicar el breathwork?",
+      "answer": "Una o dos sesiones por semana produce mejoras consistentes en la variabilidad de la frecuencia cardíaca, la resiliencia al estrés y la tolerancia al CO2. Muchos miembros combinan el breathwork con la terapia de contraste en la misma visita para un protocolo de recuperación completo."
+    },
+    "4": {
+      "question": "¿Hay sesiones grupales y privadas disponibles?",
+      "answer": "Sí. Las sesiones grupales se realizan dos veces a la semana y están incluidas en todas las membresías de Essentia. Las sesiones privadas 1:1 están disponibles para miembros que prefieren un protocolo personalizado o tienen objetivos específicos de rendimiento o terapéuticos."
+    }
+  },
+  "red-light-therapy": {
+    "0": {
+      "question": "¿Qué es la terapia de luz roja?",
+      "answer": "La terapia de luz roja (fotobiomodulación) utiliza longitudes de onda específicas de luz roja (630–670 nm) e infrarroja cercana (810–850 nm) para penetrar en la piel y los tejidos. La luz es absorbida por las mitocondrias, aumentando la producción de ATP, reduciendo la inflamación y estimulando la reparación tisular a nivel celular."
+    },
+    "1": {
+      "question": "¿Cuánto dura una sesión de terapia de luz roja?",
+      "answer": "Las sesiones son de 10–20 minutos. Te colocas de pie o sentado frente a nuestros paneles de grado médico de cuerpo completo a la distancia prescrita. Se proporciona protección ocular y debe usarse durante la sesión."
+    },
+    "2": {
+      "question": "¿Con qué frecuencia debo usar la terapia de luz roja?",
+      "answer": "Tres a cinco sesiones por semana proporciona el mejor efecto acumulativo. Los beneficios de la fotobiomodulación dependen de la dosis — la consistencia importa más que la duración de la sesión. Muchos miembros hacen una sesión de 15 minutos antes o después de la terapia de contraste."
+    },
+    "3": {
+      "question": "¿Es segura la terapia de luz roja?",
+      "answer": "La terapia de luz roja es no invasiva, no térmica y tiene un excelente perfil de seguridad en la literatura clínica. No está recomendada para personas que tomen medicamentos fotosensibilizantes o con condiciones cutáneas activas en la zona objetivo. Consulta a tu médico si estás embarazada o tienes antecedentes de cáncer de piel."
+    },
+    "4": {
+      "question": "¿Para qué condiciones ayuda la terapia de luz roja?",
+      "answer": "La evidencia clínica respalda la terapia de luz roja para acelerar la recuperación muscular, reducir el dolor e inflamación articular, mejorar la textura de la piel y la densidad del colágeno, apoyar la función tiroidea y mejorar la calidad del sueño a través de su efecto en la regulación del ritmo circadiano."
+    }
+  },
+  "manual-therapies": {
+    "0": {
+      "question": "¿Qué tratamientos de terapia manual están disponibles en Essentia?",
+      "answer": "Ofrecemos diez tratamientos distintos de 30 a 120 minutos: Espira (ritual exprés), Pulse (tejido profundo), Drenaje Linfático Brasileño, Essentia Active (recuperación deportiva), Nurtura (prenatal), Serenna (relajación de cuerpo completo), Soléa (post-solar), Soma (liberación miofascial), Lume (craneofacial y reflexología) y Alure Duo (ritual en pareja)."
+    },
+    "1": {
+      "question": "¿Necesito reservar una sesión de terapia manual con antelación?",
+      "answer": "Sí. Todas las sesiones de terapia manual deben reservarse con antelación a través de nuestro sistema de reservas o contactando con recepción. Recomendamos reservar con al menos 24 horas de antelación, especialmente para los horarios más solicitados."
+    },
+    "2": {
+      "question": "¿Cuál es la diferencia entre los tratamientos de terapia manual?",
+      "answer": "Los tratamientos varían en técnica, profundidad y objetivo. Pulse se centra en el trabajo de tejido profundo y miofascial para la tensión estructural. Serenna es un masaje de cuerpo completo más ligero orientado a la relajación. Soma aborda las restricciones fasciales. Lume combina craneofacial, reflexología y aromaterapia para un reinicio neurológico holístico. Nuestro equipo puede ayudarte a elegir el tratamiento adecuado según tus necesidades actuales."
+    },
+    "3": {
+      "question": "¿Con qué frecuencia debo recibir terapia manual?",
+      "answer": "Para problemas agudos, tres a cinco sesiones suelen producir resultados duraderos. Para el mantenimiento y la prevención de lesiones, los miembros activos se benefician de una sesión cada dos a cuatro semanas para mantener la calidad tisular y prevenir el desarrollo de patrones compensatorios."
+    },
+    "4": {
+      "question": "¿Los terapeutas están cualificados?",
+      "answer": "Sí. Todos los terapeutas de Essentia están certificados en sus respectivas disciplinas y se someten a un desarrollo profesional continuo. Cada sesión comienza con una breve evaluación para asegurarse de que el plan de tratamiento sea apropiado para tu condición actual."
+    }
+  },
+  "functional-well-being": {
+    "0": {
+      "question": "¿Qué es el bienestar funcional en Essentia?",
+      "answer": "El bienestar funcional en Essentia combina entrenamiento de fuerza, trabajo de movilidad, acondicionamiento cardiovascular y entrenamiento de equilibrio en programas diseñados específicamente para la longevidad. A diferencia de los programas de gimnasio convencionales, nos centramos en las capacidades físicas más predictivas de la salud a largo plazo: masa muscular, calidad del movimiento, VO2 máximo y equilibrio."
+    },
+    "1": {
+      "question": "¿Para quién son las sesiones de bienestar funcional?",
+      "answer": "Las sesiones están diseñadas para adultos que quieren invertir en su salud física a largo plazo, no solo en la estética a corto plazo. Trabajamos con miembros de todos los niveles de condición física — desde principiantes completos hasta atletas competitivos — adaptando la intensidad y la modalidad a cada individuo."
+    },
+    "2": {
+      "question": "¿Qué incluye una sesión de bienestar funcional?",
+      "answer": "Las sesiones son de 50 minutos y están dirigidas por un entrenador certificado. Normalmente incluyen una evaluación del movimiento, un bloque de entrenamiento estructurado (fuerza, movilidad o cardiovascular) y un breve enfriamiento. Tu programa evoluciona según tu progreso y objetivos."
+    },
+    "3": {
+      "question": "¿Cómo apoya el entrenamiento funcional la longevidad?",
+      "answer": "La masa muscular y la calidad del movimiento son dos de los predictores más sólidos de la mortalidad por todas las causas. La sarcopenia — pérdida muscular relacionada con la edad — comienza en los 30 y se acelera con cada década. El entrenamiento de resistencia combinado con el acondicionamiento cardiovascular es la intervención más respaldada por la evidencia para preservar tanto la vida sana como la esperanza de vida."
+    }
+  },
+  "hyperbaric-chambers": {
+    "0": {
+      "question": "¿Qué es la terapia de oxígeno hiperbárico (TOHB)?",
+      "answer": "La terapia de oxígeno hiperbárico administra oxígeno puro al 100% a presiones 1,5–3 veces superiores a la presión atmosférica. Esto permite que el plasma sanguíneo transporte mucho más oxígeno a los tejidos de lo posible en condiciones normales, acelerando la curación, reduciendo la inflamación y apoyando la recuperación neurológica."
+    },
+    "1": {
+      "question": "¿Cuánto dura una sesión de TOHB en Essentia?",
+      "answer": "Las sesiones son de 60 minutos a presión. Cada sesión está supervisada médicamente por nuestro equipo. Experimentarás un breve período de presurización (similar a la sensación de descender en un avión) antes de alcanzar la presión objetivo."
+    },
+    "2": {
+      "question": "¿Cuántas sesiones de TOHB necesito?",
+      "answer": "La duración del protocolo depende de tus objetivos. Las aplicaciones de rendimiento y recuperación suelen requerir 10–20 sesiones. Los protocolos terapéuticos para condiciones específicas pueden requerir 40 o más sesiones. Nuestro equipo médico diseñará un programa tras una evaluación inicial."
+    },
+    "3": {
+      "question": "¿Es segura la terapia de oxígeno hiperbárico?",
+      "answer": "La TOHB se ha utilizado en medicina clínica durante décadas y tiene un perfil de seguridad bien establecido. En Essentia, todas las sesiones están supervisadas médicamente. Las contraindicaciones incluyen neumotórax no tratado, ciertos medicamentos y algunas condiciones de oído o senos nasales. Se realiza un cribado médico antes de tu primera sesión."
+    },
+    "4": {
+      "question": "¿Qué condiciones trata o apoya la TOHB?",
+      "answer": "La evidencia clínica respalda la TOHB para la curación de heridas, la recuperación postquirúrgica, la lesión cerebral traumática, el COVID prolongado, la enfermedad de descompresión, la lesión por radiación y la recuperación del rendimiento. En Essentia, también utilizamos protocolos de TOHB para la optimización cognitiva y aplicaciones de longevidad."
+    }
+  },
+  "intravenous-therapy": {
+    "0": {
+      "question": "¿Qué es la terapia intravenosa (IV)?",
+      "answer": "La terapia IV administra nutrientes, vitaminas, minerales y aminoácidos directamente en el torrente sanguíneo, evitando el sistema digestivo. Esto permite una biodisponibilidad del 100% — muy superior a lo alcanzable mediante suplementación oral — convirtiéndola en el método más eficiente de reposición nutricional."
+    },
+    "1": {
+      "question": "¿Qué fórmulas IV están disponibles en Essentia?",
+      "answer": "Ofrecemos protocolos IV personalizados diseñados en torno a tus objetivos de salud y resultados de laboratorio. Las formulaciones habituales incluyen vitamina C en dosis altas, terapia NAD+, cóctel de Myers (vitaminas B, magnesio, calcio, vitamina C), glutatión y mezclas personalizadas de aminoácidos para recuperación o rendimiento."
+    },
+    "2": {
+      "question": "¿Cuánto tiempo dura una sesión de terapia IV?",
+      "answer": "La mayoría de las infusiones IV duran entre 45 y 90 minutos según la formulación y la velocidad de goteo. Las infusiones de NAD+ suelen requerir 2–3 horas. Las sesiones se realizan en un entorno cómodo y supervisado."
+    },
+    "3": {
+      "question": "¿Es segura la terapia IV?",
+      "answer": "La terapia IV en Essentia es administrada por profesionales médicos cualificados. Cada protocolo va precedido de una consulta y, cuando procede, análisis de sangre. Los efectos secundarios son raros y generalmente leves. No administramos terapia IV a pacientes con enfermedad renal o ciertas condiciones cardíacas sin autorización médica previa."
+    },
+    "4": {
+      "question": "¿Con qué frecuencia debo recibir terapia IV?",
+      "answer": "La frecuencia depende de tus objetivos. Para el bienestar general y el apoyo nutricional, una sesión cada dos a cuatro semanas es habitual. Para la recuperación de enfermedades, períodos de entrenamiento intensivo o objetivos terapéuticos específicos, nuestro equipo médico puede recomendar protocolos de mayor frecuencia."
+    }
+  },
+  "regenerative-medicine": {
+    "0": {
+      "question": "¿Qué es la medicina regenerativa?",
+      "answer": "La medicina regenerativa utiliza los propios mecanismos biológicos del cuerpo — o introduce sustancias bioactivas — para reparar, restaurar o reemplazar células, tejidos y órganos dañados. En Essentia, nos centramos en intervenciones regenerativas respaldadas por evidencia, incluyendo terapia PRP, protocolos de péptidos y enfoques de rejuvenecimiento celular integrados en nuestro marco de longevidad."
+    },
+    "1": {
+      "question": "¿Qué tratamientos regenerativos están disponibles en Essentia?",
+      "answer": "Nuestra oferta de medicina regenerativa incluye terapia con plasma rico en plaquetas (PRP), protocolos de péptidos para la optimización hormonal y metabólica, ozonoterapia y evaluaciones de longevidad personalizadas que identifican la edad biológica y los principales factores del declive celular."
+    },
+    "2": {
+      "question": "¿Para quién es la medicina regenerativa?",
+      "answer": "La medicina regenerativa es para personas que quieren abordar las causas raíz del envejecimiento y la enfermedad en lugar de gestionar síntomas. Es especialmente relevante para quienes experimentan disfunción metabólica temprana, desequilibrio hormonal, degeneración articular, dificultades de recuperación post-lesión o que quieren extender proactivamente su vida sana."
+    },
+    "3": {
+      "question": "¿Se requiere una consulta antes del tratamiento?",
+      "answer": "Sí. Todos los tratamientos de medicina regenerativa comienzan con una consulta médica y, cuando procede, análisis de sangre y biomarcadores completos. Esto permite a nuestro equipo diseñar un protocolo seguro, dirigido y medible."
+    },
+    "4": {
+      "question": "¿En qué se diferencia el enfoque de Essentia en medicina regenerativa?",
+      "answer": "Integramos la medicina regenerativa dentro de un marco de longevidad más amplio — combinándola con nutrición, sueño, movimiento y protocolos de bienestar. No ofrecemos tratamientos independientes en aislamiento. Cada protocolo se contextualiza dentro de tu cuadro de salud general y se sigue en el tiempo."
+    }
+  }
+}

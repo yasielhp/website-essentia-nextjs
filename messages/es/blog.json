@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Blog | Essentia Longevidad y Bienestar",
+    "description": "Protocolos, perspectivas y ciencia del equipo de Essentia — escrito para personas que se toman su salud en serio.",
+    "ogTitle": "Blog | Essentia Longevidad y Bienestar",
+    "ogDescription": "Protocolos, perspectivas y ciencia del equipo de Essentia."
+  },
+  "hero": {
+    "badge": "Revista",
+    "heading": "Ideas para",
+    "heading2": "una vida más larga.",
+    "body": "Protocolos, perspectivas y ciencia del equipo de Essentia — escrito para personas que se toman su salud en serio.",
+    "imageAlt": "Blog Essentia",
+    "ctaRead": "Leer artículos",
+    "ctaSubscribe": "Suscribirme"
+  },
+  "list": {
+    "title": "Blog",
+    "subtitle": "Artículos, guías y recursos sobre bienestar, salud y longevidad."
+  },
+  "filters": {
+    "all": "Todos"
+  },
+  "empty": "Aún no hay artículos publicados.",
+  "readMore": "Leer más",
+  "readingTime": "{minutes} min de lectura",
+  "publishedOn": "Publicado el {date}",
+  "backToBlog": "Volver al blog",
+  "relatedPosts": "Artículos relacionados",
+  "noPosts": "Aún no hay publicaciones. Vuelve pronto.",
+  "post": {
+    "notFound": "Artículo no encontrado | Blog Essentia",
+    "titleSuffix": "Blog Essentia",
+    "breadcrumbHome": "Inicio",
+    "breadcrumbBlog": "Blog",
+    "defaultAuthor": "Equipo Essentia"
+  },
+  "categories": {
+    "all": "Todos",
+    "wellness": "Bienestar",
+    "medicine": "Medicina",
+    "nutrition": "Nutrición",
+    "community": "Comunidad",
+    "longevity": "Longevidad"
+  }
+}

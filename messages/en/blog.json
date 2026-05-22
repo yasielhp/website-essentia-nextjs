@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Blog | Essentia Longevity & Wellness",
+    "description": "Protocols, perspectives, and science from the Essentia team — written for people who take their health seriously.",
+    "ogTitle": "Blog | Essentia Longevity & Wellness",
+    "ogDescription": "Protocols, perspectives, and science from the Essentia team."
+  },
+  "hero": {
+    "badge": "Journal",
+    "heading": "Insights for",
+    "heading2": "a longer life.",
+    "body": "Protocols, perspectives, and science from the Essentia team — written for people who take their health seriously.",
+    "imageAlt": "Essentia Blog",
+    "ctaRead": "Read articles",
+    "ctaSubscribe": "Subscribe"
+  },
+  "list": {
+    "title": "Blog",
+    "subtitle": "Articles, guides, and resources on wellness, health and longevity."
+  },
+  "filters": {
+    "all": "All"
+  },
+  "empty": "No articles published yet.",
+  "readMore": "Read more",
+  "readingTime": "{minutes} min read",
+  "publishedOn": "Published {date}",
+  "backToBlog": "Back to blog",
+  "relatedPosts": "Related posts",
+  "noPosts": "No posts yet. Check back soon.",
+  "post": {
+    "notFound": "Post not found | Essentia Blog",
+    "titleSuffix": "Essentia Blog",
+    "breadcrumbHome": "Home",
+    "breadcrumbBlog": "Blog",
+    "defaultAuthor": "Essentia Team"
+  },
+  "categories": {
+    "all": "All",
+    "wellness": "Wellness",
+    "medicine": "Medicine",
+    "nutrition": "Nutrition",
+    "community": "Community",
+    "longevity": "Longevity"
+  }
+}

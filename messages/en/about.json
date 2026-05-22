@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "title": "About Essentia | Our Philosophy & Team",
+    "description": "Learn about Essentia's philosophy, our expert team, and our commitment to holistic wellness and longevity in Tenerife."
+  },
+  "hero": {
+    "imageAlt": "Essentia — interior of the club in Costa Adeje",
+    "headingLine1": "Built for people",
+    "headingLine2": "who take health seriously.",
+    "body": "A longevity club in Costa Adeje, Tenerife. Medicine, wellness, and community under one roof.",
+    "joinCta": "Join the community",
+    "talkCta": "Talk to us"
+  },
+  "story": {
+    "heading": "Why we exist.",
+    "p1": "Essentia was founded with one question: what does it actually take to live well for longer? Not in theory, but in practice, every day.",
+    "p2": "We brought together the best of longevity medicine, evidence-based wellness, and genuine human connection, and built a place in the Canary Islands where all three happen under one roof.",
+    "p3": "Membership is not a gym pass. It is access to a medical team, a community of people with the same standards, and the protocols to match.",
+    "imageAlt": "Essentia treatment room",
+    "stats": {
+      "founded": "Founded",
+      "disciplines": "Expert disciplines",
+      "location": "Costa Adeje"
+    }
+  },
+  "principles": {
+    "heading": "How we think.",
+    "body": "Three principles that guide every decision we make, from the protocols we offer to the people we hire."
+  },
+  "team": {
+    "heading": "The people.",
+    "body": "A small, expert team. Each person here because they genuinely believe in the work.",
+    "subheading": "Clinicians, coaches, and practitioners united by a shared commitment to evidence-based practice."
+  },
+  "cta": {
+    "heading": "The best time to start is now.",
+    "body": "Membership gives you access to medicine, wellness, community, and education. Choose your tier and begin.",
+    "viewMemberships": "View memberships",
+    "talkFirst": "Talk to us first"
+  }
+}

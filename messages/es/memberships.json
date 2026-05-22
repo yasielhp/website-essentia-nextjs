@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "title": "Membresías | Essentia Social Wellness Club",
+    "description": "Planes de membresía exclusivos en Essentia que te dan acceso completo a nuestro centro de longevidad, protocolos de bienestar y comunidad en Tenerife."
+  },
+  "hero": {
+    "imageAlt": "Membresía Essentia",
+    "badge": "Membresía",
+    "heading": "Membresía",
+    "heading2": "que se adapta a tu vida.",
+    "body": "Cada membresía incluye acceso completo al espacio Essentia. Lo que cambia es la profundidad de tus protocolos, la prioridad de tus reservas y la cercanía de tu acompañamiento.",
+    "ctaPrimary": "Ver membresías",
+    "ctaSecondary": "Habla primero con nosotros",
+    "alreadyMember": "¿Ya eres miembro?",
+    "signIn": "Inicia sesión"
+  },
+  "selector": {
+    "heading": "Elige tu membresía.",
+    "subheading": "Selecciona un nivel para ver qué incluye.",
+    "perMonth": "/mes",
+    "becomeMember": "Hacerme miembro",
+    "loading": "Cargando…",
+    "successHeading": "¡Bienvenido a Essentia!",
+    "successBody": "Tu membresía está confirmada. Recibirás un email de confirmación en breve."
+  },
+  "tiers": {
+    "essential": {
+      "badge": "Inicial",
+      "name": "Essential",
+      "tagline": "Acceso al espacio completo",
+      "description": "Acceso completo a todas las instalaciones de bienestar, sesiones grupales y eventos de la comunidad. La experiencia Essentia al completo.",
+      "features": [
+        "Todas las instalaciones de bienestar",
+        "Zona de contraste",
+        "Terapia de luz roja",
+        "Sesiones grupales de respiración",
+        "Eventos de comunidad",
+        "Acceso a la app Essentia"
+      ],
+      "cta": "Saber más"
+    },
+    "premium": {
+      "badge": "Más popular",
+      "name": "Premium",
+      "tagline": "Profundidad y prioridad",
+      "description": "Todo lo de Essential más reserva prioritaria, protocolos de bienestar personalizados y consultas médicas mensuales.",
+      "features": [
+        "Todo lo de Essential",
+        "Reserva prioritaria",
+        "Protocolo de bienestar personalizado",
+        "Consulta médica mensual",
+        "Descuento del 20% en sueroterapia",
+        "Privilegios de invitado (2 al mes)",
+        "Talleres exclusivos para miembros"
+      ],
+      "cta": "Comenzar"
+    },
+    "founder": {
+      "badge": "Exclusivo",
+      "name": "Founder",
+      "tagline": "El ecosistema completo",
+      "description": "Acceso completo al ecosistema con un asesor de salud dedicado, privilegios de invitado ilimitados y estatus de miembro fundador.",
+      "features": [
+        "Todo lo de Premium",
+        "Asesor de salud dedicado",
+        "Privilegios de invitado ilimitados",
+        "Panel trimestral de longevidad",
+        "Acceso prioritario a tratamientos",
+        "Eventos para miembros fundadores",
+        "Acceso al lounge privado"
+      ],
+      "cta": "Solicitar ahora"
+    }
+  },
+  "comparison": {
+    "heading": "Qué incluye.",
+    "subheading": "Una mirada clara a lo que ofrece cada nivel.",
+    "feature": "Característica",
+    "monthlyPrice": "Precio mensual",
+    "perMonthShort": "/mes",
+    "rows": {
+      "wellnessFacilities": "instalaciones de bienestar",
+      "groupSessions": "Sesiones grupales",
+      "communityEvents": "Eventos de comunidad",
+      "priorityBooking": "Reserva prioritaria",
+      "personalizedProtocol": "Protocolo personalizado",
+      "medicalConsultations": "Consultas médicas",
+      "monthly": "Mensual",
+      "quarterlyPanel": "Panel trimestral",
+      "guestPrivileges": "Privilegios de invitado",
+      "guestPerMonth": "2 / mes",
+      "unlimited": "Ilimitado",
+      "healthAdvisor": "Asesor de salud",
+      "founderEvents": "Eventos para miembros fundadores",
+      "privateLounge": "Acceso al lounge privado"
+    }
+  },
+  "faq": {
+    "heading": "Preguntas frecuentes.",
+    "stillQuestions": "¿Aún tienes preguntas?",
+    "getInTouch": "Ponte en contacto",
+    "items": [
+      {
+        "question": "¿Cómo me hago miembro?",
+        "answer": "Empieza por ponerte en contacto a través de nuestra página de contacto o formulario de reserva. Nuestro equipo te explicará los niveles, responderá tus preguntas y organizará una visita al espacio antes de que decidas."
+      },
+      {
+        "question": "¿Puedo probar Essentia antes de unirme?",
+        "answer": "Sí. Ofrecemos visitas introductorias para futuros miembros. Contáctanos para agendar una visita guiada y una sesión gratuita y vivir el espacio en primera persona."
+      },
+      {
+        "question": "¿Cómo funciona la facturación?",
+        "answer": "Las membresías se facturan mensualmente. Puedes cancelar en cualquier momento con 30 días de preaviso por escrito."
+      },
+      {
+        "question": "¿Puedo cancelar o pausar mi membresía?",
+        "answer": "Puedes cancelar tu membresía con 30 días de preaviso por escrito. En ciertas circunstancias se pueden ofrecer pausas — habla con nuestro equipo."
+      },
+      {
+        "question": "¿Cuál es la diferencia entre Essential y Premium en la práctica?",
+        "answer": "Essential te da acceso completo a todas las instalaciones compartidas y sesiones grupales. Premium añade la posibilidad de reservar espacios concretos con antelación, un protocolo de bienestar personalizado revisado mensualmente y acceso a consultas médicas con nuestro equipo clínico."
+      },
+      {
+        "question": "¿Para quién es la membresía Founder?",
+        "answer": "Founder está diseñada para quienes buscan una experiencia de longevidad realmente a medida. Tienes un asesor de salud dedicado que coordina todos tus protocolos, acceso ilimitado para invitados y plazas en eventos exclusivos por invitación. Está limitada a un número reducido de miembros."
+      }
+    ]
+  },
+  "cta": {
+    "heading": "¿Listo para empezar?",
+    "body": "Nuestro equipo te ayudará a elegir el nivel adecuado y a resolver cualquier duda antes de que te comprometas.",
+    "ctaPrimary": "Elegir una membresía",
+    "ctaSecondary": "Habla primero con nosotros",
+    "alreadyMember": "¿Ya eres miembro? Inicia sesión"
+  }
+}
