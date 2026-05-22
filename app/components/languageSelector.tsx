@@ -1,5 +1,6 @@
 "use client";
 import { useLocale } from "next-intl";
+import { usePathname, useRouter } from "../../i18n/navigation";
 import { IconWorld } from "@components/ui/icons";
 
 const labels: Record<string, string> = {
@@ -9,11 +10,11 @@ const labels: Record<string, string> = {
 
 export default function LanguageSelector() {
   const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value;
-    document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`;
-    window.location.reload();
+    router.replace(pathname, { locale: e.target.value });
   };
 
   return (

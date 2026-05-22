@@ -375,6 +375,7 @@ function BookingContentInner() {
   const { user } = useAuth();
   const locale = useLocale();
   const tSteps = useTranslations("booking.steps");
+  const tServiceStep = useTranslations("booking.serviceStep");
   const { push } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -458,6 +459,7 @@ function BookingContentInner() {
       .then((r) => r.json())
       .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
       .catch(() => setHasCalendar(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedService?.id]);
 
   const rawSteps = buildSteps(hasCalendar);
@@ -628,7 +630,7 @@ function BookingContentInner() {
         clientName: `${details.firstName} ${details.lastName}`.trim(),
         clientEmail: details.email,
         clientPhone: details.phone || null,
-        service: selectedService.title,
+        service: tServiceStep(`services.${selectedService.id}.title`),
         serviceId: selectedService.id,
         sessionType: selectedTierLabel ?? null,
         date: dateStr ?? "",

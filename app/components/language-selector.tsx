@@ -1,14 +1,14 @@
 "use client";
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "../../i18n/navigation";
 
 export function LanguageSelector() {
   const locale = useLocale();
+  const pathname = usePathname();
   const router = useRouter();
 
   const switchLocale = (next: string) => {
-    document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`;
-    router.refresh();
+    router.replace(pathname, { locale: next });
   };
 
   return (
