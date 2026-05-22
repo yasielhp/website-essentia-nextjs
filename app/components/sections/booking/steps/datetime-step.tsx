@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import {
@@ -130,6 +131,9 @@ export function DateTimeStep({
   onSelectDate: (d: Date) => void;
   onSelectTime: (t: string) => void;
 }) {
+  const t = useTranslations("booking.datetimeStep");
+  const locale = useLocale();
+  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
   const today = new Date();
   const [viewYear, setViewYear] = useState(() => today.getFullYear());
   const [viewMonth, setViewMonth] = useState(() => today.getMonth());
@@ -274,9 +278,9 @@ export function DateTimeStep({
         className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200"
       >
         <div className="flex flex-col gap-1">
-          <p className="text-petroleum-400 text-xs">Date</p>
+          <p className="text-petroleum-400 text-xs">{t("date")}</p>
           <p className="text-petroleum-700 font-medium">
-            {selectedDate!.toLocaleDateString("en-GB", {
+            {selectedDate!.toLocaleDateString(dateLocale, {
               weekday: "long",
               day: "numeric",
               month: "long",
@@ -288,7 +292,7 @@ export function DateTimeStep({
       </button>
 
       <div className="flex flex-col gap-3">
-        <p className="text-petroleum-400 text-sm">Available times</p>
+        <p className="text-petroleum-400 text-sm">{t("availableTimes")}</p>
         {loadingSlots ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -301,16 +305,14 @@ export function DateTimeStep({
         ) : availableSlots.length === 0 ? (
           <div className="border-sand-200 bg-sand-50 flex flex-col items-center gap-3 rounded-2xl border px-4 py-8 text-center">
             <p className="text-petroleum-500 text-sm font-medium">
-              No availability for this day
+              {t("noAvailability")}
             </p>
-            <p className="text-petroleum-400 text-xs">
-              Please choose a different date.
-            </p>
+            <p className="text-petroleum-400 text-xs">{t("tryAnother")}</p>
             <button
               onClick={handleChangeDate}
               className="bg-petroleum-700 hover:bg-petroleum-600 mt-1 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
             >
-              Choose another date
+              {t("chooseAnother")}
             </button>
           </div>
         ) : (

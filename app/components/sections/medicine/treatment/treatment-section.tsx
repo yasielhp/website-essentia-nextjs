@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { MedicineTreatmentData } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -11,6 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── Hero ─────────────────────────────────────────────────────
 
 function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
+  const t = useTranslations(`medicine.treatmentDetails.${data.slug}`);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src={data.heroImage}
-        alt={data.heroAlt}
+        alt={t("heroAlt")}
         fill
         priority
         sizes="100vw"
@@ -48,10 +50,10 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          {data.title}
+          {t("title")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          {data.intro}
+          {t("intro")}
         </p>
         {/* Book a session / View memberships — not available yet
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -79,6 +81,7 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
 // ─── Benefits ─────────────────────────────────────────────────
 
 function BenefitsSection({ data }: { data: MedicineTreatmentData }) {
+  const t = useTranslations(`medicine.treatmentDetails.${data.slug}`);
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -149,23 +152,23 @@ function BenefitsSection({ data }: { data: MedicineTreatmentData }) {
           <div ref={bodyRef} className="flex flex-col gap-12">
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                {data.benefitsHeading}
+                {t("benefitsHeading")}
               </h2>
               <p className="text-petroleum-400 mt-4 leading-relaxed">
-                {data.benefitsSubtitle}
+                {t("benefitsSubtitle")}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {data.benefits.map((benefit) => (
+              {data.benefits.map((benefit, i) => (
                 <div
                   key={benefit.title}
                   className="bg-sand-100 rounded-2xl p-6"
                 >
                   <h3 className="text-petroleum-700 font-medium">
-                    {benefit.title}
+                    {t(`benefits.${i}.title`)}
                   </h3>
                   <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
-                    {benefit.description}
+                    {t(`benefits.${i}.description`)}
                   </p>
                 </div>
               ))}
@@ -180,6 +183,7 @@ function BenefitsSection({ data }: { data: MedicineTreatmentData }) {
 // ─── Session ──────────────────────────────────────────────────
 
 function SessionSection({ data }: { data: MedicineTreatmentData }) {
+  const t = useTranslations(`medicine.treatmentDetails.${data.slug}`);
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -250,10 +254,10 @@ function SessionSection({ data }: { data: MedicineTreatmentData }) {
           <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
             <div className="md:max-w-lg">
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                {data.sessionHeading}
+                {t("sessionHeading")}
               </h2>
               <p className="text-sand-500 mt-4 leading-relaxed">
-                {data.sessionSubtitle}
+                {t("sessionSubtitle")}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -263,10 +267,10 @@ function SessionSection({ data }: { data: MedicineTreatmentData }) {
                     {detail.number}
                   </span>
                   <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {detail.title}
+                    {t(`sessionDetails.${detail.number}.title`)}
                   </h3>
                   <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {detail.description}
+                    {t(`sessionDetails.${detail.number}.description`)}
                   </p>
                 </div>
               ))}
@@ -281,6 +285,7 @@ function SessionSection({ data }: { data: MedicineTreatmentData }) {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection({ data }: { data: MedicineTreatmentData }) {
+  const t = useTranslations(`medicine.treatmentDetails.${data.slug}`);
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -346,10 +351,10 @@ function CtaSection({ data }: { data: MedicineTreatmentData }) {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-              {data.ctaHeading}
+              {t("ctaHeading")}
             </h2>
             <p className="text-petroleum-400 max-w-md leading-relaxed">
-              {data.ctaBody}
+              {t("ctaBody")}
             </p>
             {/* Book a session / View memberships — not available yet
             <div className="flex flex-col items-center gap-3 sm:flex-row">

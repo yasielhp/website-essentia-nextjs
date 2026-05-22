@@ -3,11 +3,13 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { values } from "./data";
+import { useTranslations } from "next-intl";
+import { valueKeys, valueNumbers } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ValuesSection() {
+  const t = useTranslations("community.values");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -79,29 +81,27 @@ export default function ValuesSection() {
             {/* ── Header ── */}
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                Why community
+                {t("heading")}
                 <br />
-                matters here.
+                {t("headingBreak")}
               </h2>
               <p className="text-petroleum-400 mt-4 leading-relaxed">
-                Essentia is more than a place to train and recover. It is a
-                network of people who understand that living well is both a
-                personal discipline and a shared practice.
+                {t("body")}
               </p>
             </div>
 
             {/* ── Values ── */}
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {values.map((v) => (
-                <div key={v.number}>
+              {valueKeys.map((k) => (
+                <div key={k}>
                   <span className="font-display text-petroleum-200 text-5xl">
-                    {v.number}
+                    {valueNumbers[k]}
                   </span>
                   <h3 className="text-petroleum-700 mt-3 text-lg font-medium">
-                    {v.title}
+                    {t(`items.${k}.title`)}
                   </h3>
                   <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                    {v.description}
+                    {t(`items.${k}.description`)}
                   </p>
                 </div>
               ))}

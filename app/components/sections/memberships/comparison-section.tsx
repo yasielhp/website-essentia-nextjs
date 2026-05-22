@@ -3,8 +3,9 @@
 import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
-import { TierId, tiers, pricing, featureRows } from "./data";
+import { TierId, tierIds, pricing, featureRows } from "./data";
 import { IconCheck, IconMinus } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -38,6 +39,8 @@ function ComparisonCell({ value }: { value: string | boolean }) {
 // ─── ComparisonSection ───────────────────────────────────────
 
 export default function ComparisonSection() {
+  const t = useTranslations("memberships.comparison");
+  const tt = useTranslations("memberships.tiers");
   const [comparisonTier, setComparisonTier] = useState<TierId>("essential");
   const [dbPrices, setDbPrices] = useState<Record<string, number>>({});
 
@@ -120,7 +123,7 @@ export default function ComparisonSection() {
     return () => ctx.revert();
   }, []);
 
-  const activeTier = tiers.find((t) => t.id === comparisonTier)!;
+  const activeTierId = comparisonTier;
 
   return (
     <section ref={sectionRef} className="bg-sand-100 md:h-[320vh]">
@@ -130,10 +133,10 @@ export default function ComparisonSection() {
             {/* ── Header ── */}
             <div className="text-center">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                What&apos;s included.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mx-auto mt-4 max-w-lg leading-relaxed">
-                A clear look at what each tier gives you.
+                {t("subheading")}
               </p>
             </div>
 
@@ -145,50 +148,65 @@ export default function ComparisonSection() {
                   <thead>
                     <tr className="bg-sand-50 border-petroleum-100 border-b">
                       <th className="text-petroleum-400 w-1/2 p-4 text-left text-xs font-medium tracking-wider uppercase">
-                        Feature
+                        {t("feature")}
                       </th>
-                      {(["Essential", "Premium", "Founder"] as const).map(
-                        (name) => (
-                          <th
-                            key={name}
-                            className="text-petroleum-700 font-display p-4 text-center text-base font-normal"
-                          >
-                            {name}
-                          </th>
-                        ),
-                      )}
+                      {tierIds.map((id) => (
+                        <th
+                          key={id}
+                          className="text-petroleum-700 font-display p-4 text-center text-base font-normal"
+                        >
+                          {tt(`${id}.name`)}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="bg-sand-50/80 border-petroleum-100 border-b">
                       <td className="text-petroleum-400 px-4 py-3 text-xs font-medium tracking-wider uppercase">
-                        Monthly price
+                        {t("monthlyPrice")}
                       </td>
-                      {(["essential", "premium", "founder"] as TierId[]).map(
-                        (id) => (
-                          <td
-                            key={id}
-                            className="text-petroleum-700 font-display px-4 py-3 text-center text-base font-normal"
-                          >
-                            €{dbPrices[id] ?? pricing[id]}/mo
-                          </td>
-                        ),
-                      )}
+                      {tierIds.map((id) => (
+                        <td
+                          key={id}
+                          className="text-petroleum-700 font-display px-4 py-3 text-center text-base font-normal"
+                        >
+                          €{dbPrices[id] ?? pricing[id]}
+                          {t("perMonthShort")}
+                        </td>
+                      ))}
                     </tr>
                     {featureRows.map((row, i) => (
                       <tr
-                        key={row.label}
+                        key={row.labelKey}
                         className={[
                           "border-petroleum-100 border-b last:border-0",
                           i % 2 === 0 ? "bg-white" : "bg-sand-50/50",
                         ].join(" ")}
                       >
                         <td className="text-petroleum-500 px-4 py-3 font-medium">
-                          {row.label}
+                          {t(`rows.${row.labelKey}`)}
                         </td>
-                        <ComparisonCell value={row.essential} />
-                        <ComparisonCell value={row.premium} />
-                        <ComparisonCell value={row.founder} />
+                        <ComparisonCell
+                          value={
+                            typeof row.essential === "string"
+                              ? t(`rows.${row.essential}`)
+                              : row.essential
+                          }
+                        />
+                        <ComparisonCell
+                          value={
+                            typeof row.premium === "string"
+                              ? t(`rows.${row.premium}`)
+                              : row.premium
+                          }
+                        />
+                        <ComparisonCell
+                          value={
+                            typeof row.founder === "string"
+                              ? t(`rows.${row.founder}`)
+                              : row.founder
+                          }
+                        />
                       </tr>
                     ))}
                   </tbody>
@@ -198,18 +216,18 @@ export default function ComparisonSection() {
               {/* Mobile: switcher + single card */}
               <div className="md:hidden">
                 <div className="bg-petroleum-100 mb-5 flex rounded-full p-1">
-                  {tiers.map((tier) => (
+                  {tierIds.map((id) => (
                     <button
-                      key={tier.id}
-                      onClick={() => setComparisonTier(tier.id)}
+                      key={id}
+                      onClick={() => setComparisonTier(id)}
                       className={[
                         "flex-1 rounded-full py-2 text-sm font-medium transition-all duration-200",
-                        comparisonTier === tier.id
+                        comparisonTier === id
                           ? "bg-petroleum-700 text-sand-50 shadow-sm"
                           : "text-petroleum-500",
                       ].join(" ")}
                     >
-                      {tier.name}
+                      {tt(`${id}.name`)}
                     </button>
                   ))}
                 </div>
@@ -218,32 +236,32 @@ export default function ComparisonSection() {
                   <div className="bg-sand-50 border-petroleum-100 flex items-center justify-between border-b px-5 py-4">
                     <div>
                       <span className="text-petroleum-400 text-xs font-medium tracking-wider uppercase">
-                        {activeTier.badge}
+                        {tt(`${activeTierId}.badge`)}
                       </span>
                       <h3 className="font-display text-petroleum-700 mt-0.5 text-xl">
-                        {activeTier.name}
+                        {tt(`${activeTierId}.name`)}
                       </h3>
                     </div>
                     <div className="text-right">
                       <span className="font-display text-petroleum-700 text-2xl">
-                        €{dbPrices[activeTier.id] ?? pricing[activeTier.id]}
+                        €{dbPrices[activeTierId] ?? pricing[activeTierId]}
                       </span>
                       <span className="text-petroleum-400 block text-xs">
-                        /month
+                        {t("perMonthShort")}
                       </span>
                     </div>
                   </div>
 
                   <ul className="divide-petroleum-100 divide-y bg-white">
                     {featureRows.map((row) => {
-                      const value = row[activeTier.id];
+                      const value = row[activeTierId];
                       return (
                         <li
-                          key={row.label}
+                          key={row.labelKey}
                           className="flex items-center justify-between px-5 py-3"
                         >
                           <span className="text-petroleum-500 text-sm">
-                            {row.label}
+                            {t(`rows.${row.labelKey}`)}
                           </span>
                           <span className="ml-3 shrink-0">
                             {value === true && (
@@ -254,7 +272,7 @@ export default function ComparisonSection() {
                             )}
                             {typeof value === "string" && (
                               <span className="text-petroleum-500 text-xs">
-                                {value}
+                                {t(`rows.${value}`)}
                               </span>
                             )}
                           </span>

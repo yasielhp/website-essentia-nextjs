@@ -1,18 +1,13 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { testimonials, type Testimonial } from "@data/testimonials-data";
 import { IconQuote } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const GROUPS = [
-  testimonials.slice(0, 4),
-  testimonials.slice(4, 8),
-  testimonials.slice(8, 12),
-];
 
 // ─── TestimonialCard ───────────────────────────────────────────
 
@@ -23,6 +18,7 @@ function TestimonialCard({
   t: Testimonial;
   compact?: boolean;
 }) {
+  // `t` already contains localized quote/name/age and static styling fields.
   return (
     <div
       className={`${t.bgColor} relative flex h-full flex-col justify-between rounded-2xl ${
@@ -68,15 +64,16 @@ function TestimonialCard({
 type DesktopSliderProps = {
   sliderRef: { current: HTMLDivElement | null };
   groupRefs: { current: (HTMLDivElement | null)[] };
+  groups: Testimonial[][];
 };
 
-function DesktopSlider({ sliderRef, groupRefs }: DesktopSliderProps) {
+function DesktopSlider({ sliderRef, groupRefs, groups }: DesktopSliderProps) {
   return (
     <div
       ref={sliderRef}
       className="relative hidden h-64 overflow-hidden md:block"
     >
-      {GROUPS.map((group, gi) => (
+      {groups.map((group, gi) => (
         <div
           key={gi}
           ref={(el) => {
@@ -97,9 +94,10 @@ function DesktopSlider({ sliderRef, groupRefs }: DesktopSliderProps) {
 
 type MobileSliderProps = {
   mobileTrackRef: { current: HTMLDivElement | null };
+  items: Testimonial[];
 };
 
-function MobileSlider({ mobileTrackRef }: MobileSliderProps) {
+function MobileSlider({ mobileTrackRef, items }: MobileSliderProps) {
   return (
     <div className="px-5 md:hidden">
       <div
@@ -107,7 +105,7 @@ function MobileSlider({ mobileTrackRef }: MobileSliderProps) {
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
         style={{ scrollbarWidth: "none" }}
       >
-        {testimonials.map((t) => (
+        {items.map((t) => (
           <div
             key={t.name}
             className="shrink-0 snap-center"
@@ -130,6 +128,8 @@ type SliderDotsProps = {
   mobileTrackRef: { current: HTMLDivElement | null };
   transitionTo: (idx: number) => void;
   resetAutoplay: () => void;
+  items: Testimonial[];
+  groups: Testimonial[][];
 };
 
 function SliderDots({
@@ -139,12 +139,14 @@ function SliderDots({
   mobileTrackRef,
   transitionTo,
   resetAutoplay,
+  items,
+  groups,
 }: SliderDotsProps) {
   return (
     <div ref={dotsRef}>
       {/* Mobile: 1 dot per testimonial */}
       <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
-        {testimonials.map((t, i) => (
+        {items.map((t, i) => (
           <button
             key={t.name}
             aria-label={`Go to testimonial ${i + 1}`}
@@ -152,7 +154,7 @@ function SliderDots({
             onClick={() => {
               const track = mobileTrackRef.current;
               if (!track) return;
-              const cardWidth = track.scrollWidth / testimonials.length;
+              const cardWidth = track.scrollWidth / items.length;
               track.scrollTo({ left: i * cardWidth, behavior: "smooth" });
             }}
           >
@@ -169,7 +171,7 @@ function SliderDots({
 
       {/* Desktop: 1 dot per group */}
       <div className="mt-8 hidden items-center justify-center gap-3 md:flex">
-        {GROUPS.map((_, gi) => (
+        {groups.map((_, gi) => (
           <button
             key={gi}
             aria-label={`Go to slide ${gi + 1}`}
@@ -194,6 +196,30 @@ function SliderDots({
 // ─── Testimonials ──────────────────────────────────────────────
 
 export default function Testimonials() {
+  const t = useTranslations("home.testimonials");
+  const tItems = useTranslations("home.testimonials.items");
+
+  // Merge static styling (testimonials data) with translated quote/name/age.
+  const localizedTestimonials = useMemo<Testimonial[]>(
+    () =>
+      testimonials.map((item, i) => ({
+        ...item,
+        quote: tItems(`${i}.quote`),
+        name: tItems(`${i}.name`),
+        age: tItems(`${i}.age`),
+      })),
+    [tItems],
+  );
+
+  const groups = useMemo<Testimonial[][]>(
+    () => [
+      localizedTestimonials.slice(0, 4),
+      localizedTestimonials.slice(4, 8),
+      localizedTestimonials.slice(8, 12),
+    ],
+    [localizedTestimonials],
+  );
+
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -372,22 +398,24 @@ export default function Testimonials() {
   useEffect(() => {
     const track = mobileTrackRef.current;
     if (!track) return;
+    const itemCount = localizedTestimonials.length;
+    const groupCount = groups.length;
     const onScroll = () => {
       const { scrollLeft, scrollWidth, clientWidth } = track;
       const maxScroll = scrollWidth - clientWidth;
       if (maxScroll <= 0) return;
       const cardIdx = Math.min(
-        testimonials.length - 1,
-        Math.round((scrollLeft / maxScroll) * (testimonials.length - 1)),
+        itemCount - 1,
+        Math.round((scrollLeft / maxScroll) * (itemCount - 1)),
       );
       setMobileActiveCard(cardIdx);
-      const group = Math.min(GROUPS.length - 1, Math.floor(cardIdx / 4));
+      const group = Math.min(groupCount - 1, Math.floor(cardIdx / 4));
       setActiveGroup(group);
       activeGroupRef.current = group;
     };
     track.addEventListener("scroll", onScroll, { passive: true });
     return () => track.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [localizedTestimonials.length, groups.length]);
 
   // ─── Render ──────────────────────────────────────────────────
 
@@ -405,17 +433,24 @@ export default function Testimonials() {
             className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl"
           >
             <h2 className="font-display text-petroleum-700 mt-3 mb-4 text-3xl md:text-5xl">
-              Heard from
+              {t("headline")}
               <br />
-              those who know.
+              {t("headline2")}
             </h2>
           </div>
 
           {/* Desktop slider — FULL WIDTH, no horizontal padding */}
-          <DesktopSlider sliderRef={sliderRef} groupRefs={groupRefs} />
+          <DesktopSlider
+            sliderRef={sliderRef}
+            groupRefs={groupRefs}
+            groups={groups}
+          />
 
           {/* Mobile slider — padded */}
-          <MobileSlider mobileTrackRef={mobileTrackRef} />
+          <MobileSlider
+            mobileTrackRef={mobileTrackRef}
+            items={localizedTestimonials}
+          />
 
           {/* Dots — hidden until animation reveals them */}
           <SliderDots
@@ -425,6 +460,8 @@ export default function Testimonials() {
             mobileTrackRef={mobileTrackRef}
             transitionTo={transitionTo}
             resetAutoplay={resetAutoplay}
+            items={localizedTestimonials}
+            groups={groups}
           />
         </div>
       </div>

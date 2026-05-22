@@ -3,11 +3,13 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { principles } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ApproachSection() {
+  const t = useTranslations("wellness.approach");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -79,14 +81,12 @@ export default function ApproachSection() {
             {/* ── Header ── */}
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                How we think
+                {t("headingLine1")}
                 <br />
-                about wellness.
+                {t("headingLine2")}
               </h2>
               <p className="text-petroleum-400 mt-4 leading-relaxed">
-                Essentia is not a spa and not a gym. It is a precision wellness
-                environment where every protocol is chosen for its measurable
-                effect on your biology and your experience of being alive.
+                {t("body")}
               </p>
             </div>
 
@@ -98,10 +98,10 @@ export default function ApproachSection() {
                     {p.number}
                   </span>
                   <h3 className="text-petroleum-700 mt-3 text-lg font-medium">
-                    {p.title}
+                    {t(`principles.${p.number}.title`)}
                   </h3>
                   <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                    {p.description}
+                    {t(`principles.${p.number}.description`)}
                   </p>
                 </div>
               ))}

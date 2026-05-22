@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@components/ui/button";
 
@@ -26,6 +27,7 @@ function videoReducer(state: VideoState, action: VideoAction): VideoState {
 }
 
 export default function Hero() {
+  const t = useTranslations("home.hero");
   const videoRef = useRef<HTMLVideoElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -216,14 +218,14 @@ export default function Hero() {
             }}
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
             referrerPolicy="strict-origin-when-cross-origin"
-            title="Essentia - branded film"
+            title={t("videoTitle")}
           />
           {vimeoVisible && (
             <>
               <button
                 onClick={handleTogglePlay}
                 className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
-                aria-label="Toggle video playback"
+                aria-label={t("togglePlay")}
               >
                 <span
                   className={`rounded-full bg-black/40 p-5 backdrop-blur-sm transition-opacity duration-500 ${showIcon ? "opacity-100" : "opacity-0"}`}
@@ -252,7 +254,7 @@ export default function Hero() {
               <button
                 onClick={handleToggleMute}
                 className="absolute right-6 bottom-6 z-40 flex cursor-pointer items-center justify-center rounded-full bg-black/40 p-3 backdrop-blur-sm transition-opacity duration-300 hover:bg-black/60"
-                aria-label={isMuted ? "Unmute video" : "Mute video"}
+                aria-label={isMuted ? t("unmute") : t("mute")}
               >
                 {isMuted ? (
                   <svg
@@ -284,12 +286,12 @@ export default function Hero() {
           className="relative z-10 mx-auto w-full max-w-4xl text-center"
         >
           <p className="font-display xs:text-6xl text-4xl tracking-wide text-white lg:text-7xl">
-            For those who
+            {t("headline")}
             <br />
-            take the long view.
+            {t("headline2")}
           </p>
           <h1 className="mt-4 text-base text-pretty text-white/80 md:text-lg">
-            Longevity Center & Social Wellness Club in Tenerife
+            {t("subheadline")}
           </h1>
           <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 md:flex-row">
             <Button
@@ -298,7 +300,7 @@ export default function Hero() {
               size="lg"
               className="w-full md:w-auto"
             >
-              Reserve Your Visit
+              {t("ctaBook")}
             </Button>
             <Button
               href="/community/memberships"
@@ -306,7 +308,7 @@ export default function Hero() {
               size="lg"
               className="w-full md:w-auto"
             >
-              Explore Membership
+              {t("ctaMembership")}
             </Button>
           </div>
         </div>

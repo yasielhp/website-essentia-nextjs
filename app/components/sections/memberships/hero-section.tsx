@@ -5,11 +5,13 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
+  const t = useTranslations("memberships.hero");
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function HeroSection() {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src="/images/memberships/hero.webp"
-        alt="Essentia Membership"
+        alt={t("imageAlt")}
         fill
         priority
         sizes="100vw"
@@ -47,12 +49,10 @@ export default function HeroSection() {
       />
       <div ref={contentRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-4xl leading-tight tracking-tight text-balance md:text-6xl">
-          Membership
+          {t("heading")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          Every membership includes full access to the Essentia space. What
-          changes is the depth of your protocols, the priority of your booking,
-          and the closeness of your care.
+          {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -67,19 +67,19 @@ export default function HeroSection() {
               }
             }}
           >
-            See memberships
+            {t("ctaPrimary")}
           </Button>
           <Button variant="outline-white" size="md" href="/contact">
-            Talk to us first
+            {t("ctaSecondary")}
           </Button>
         </div>
         <p className="text-sand-500/70 mt-6 text-sm">
-          Already a member?{" "}
+          {t("alreadyMember")}{" "}
           <Link
             href="/sign-in"
             className="text-sand-400 underline underline-offset-2 transition-opacity hover:opacity-80"
           >
-            Sign in
+            {t("signIn")}
           </Link>
         </p>
       </div>

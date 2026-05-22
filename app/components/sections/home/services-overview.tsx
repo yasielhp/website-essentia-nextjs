@@ -5,44 +5,45 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(ScrollTrigger);
 
 // ─── Data ──────────────────────────────────────────────────────
 
-const services = [
+type ServiceKey = "wellness" | "medicine" | "community";
+
+const services: ReadonlyArray<{
+  key: ServiceKey;
+  number: string;
+  href: string;
+  img: string;
+}> = [
   {
+    key: "wellness",
     number: "01",
     href: "/wellness",
     img: "/images/menu/wellness.webp",
-    title: "Wellness",
-    description:
-      "Thermal contrast, manual therapies, breathwork, and red light — a full spectrum of restoration.",
-    cta: "Explore Wellness",
   },
   {
+    key: "medicine",
     number: "02",
     href: "/medicine",
     img: "/images/menu/medicine.webp",
-    title: "Medicine",
-    description:
-      "Regenerative protocols, IV therapy, and hyperbaric oxygen — clinical science and precision care in service of longevity.",
-    cta: "Explore Medicine",
   },
   {
+    key: "community",
     number: "03",
     href: "/community",
     img: "/images/menu/community.webp",
-    title: "Community",
-    description:
-      "Running club, education programs, and exclusive memberships — true belonging to something meaningful.",
-    cta: "Explore Community",
   },
 ];
 
 // ─── ServicesOverview ──────────────────────────────────────────
 
 export default function ServicesOverview() {
+  const t = useTranslations("home.servicesOverview");
+  const tServices = useTranslations("home.servicesOverview.services");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -130,51 +131,49 @@ export default function ServicesOverview() {
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <h2 className="font-display text-petroleum-700 text-3xl md:text-5xl">
-              Three pillars,
+              {t("sectionHeadline")}
               <br />
-              one intention.
+              {t("sectionHeadline2")}
             </h2>
-            <p className="text-petroleum-400 mt-2">
-              Science, body, and community: working as one.
-            </p>
+            <p className="text-petroleum-400 mt-2">{t("sectionSubheadline")}</p>
           </div>
 
           {/* ─── Cards Grid ───────────────────────────────────── */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {services.map((service) => (
-              <Link
-                key={service.href}
-                href={service.href}
-                data-service-card
-                className="group relative h-80 overflow-hidden rounded-2xl md:h-96"
-              >
-                <Image
-                  src={service.img}
-                  alt={service.title}
-                  fill
-                  sizes="(max-width: 767px) 100vw, 33vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.3), transparent)",
-                  }}
-                />
-                <span className="absolute top-4 right-4 text-xs text-white/50">
-                  {service.number}
-                </span>
-                <div className="absolute bottom-0 left-0 p-6">
-                  <h3 className="font-body text-2xl text-white">
-                    {service.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-white/70">
-                    {service.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
+            {services.map((service) => {
+              const title = tServices(`${service.key}.title`);
+              const description = tServices(`${service.key}.description`);
+              return (
+                <Link
+                  key={service.href}
+                  href={service.href}
+                  data-service-card
+                  className="group relative h-80 overflow-hidden rounded-2xl md:h-96"
+                >
+                  <Image
+                    src={service.img}
+                    alt={title}
+                    fill
+                    sizes="(max-width: 767px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.3), transparent)",
+                    }}
+                  />
+                  <span className="absolute top-4 right-4 text-xs text-white/50">
+                    {service.number}
+                  </span>
+                  <div className="absolute bottom-0 left-0 p-6">
+                    <h3 className="font-body text-2xl text-white">{title}</h3>
+                    <p className="mt-1 text-sm text-white/70">{description}</p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

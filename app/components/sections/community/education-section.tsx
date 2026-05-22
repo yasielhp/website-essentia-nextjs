@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { Calendar, Clock, Lock, Globe, Tag, Users } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
@@ -28,9 +29,9 @@ type NextSession = {
   image_url: string | null;
 };
 
-function formatSessionDate(iso: string | null): string {
+function formatSessionDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -42,17 +43,19 @@ function formatSessionDate(iso: string | null): string {
 function formatSessionTimeRange(
   iso: string | null,
   durationMinutes: number | null,
+  locale: string,
 ): string {
   if (!iso) return "—";
+  const intl = locale === "es" ? "es-ES" : "en-GB";
   const start = new Date(iso);
-  const startStr = start.toLocaleTimeString("en-GB", {
+  const startStr = start.toLocaleTimeString(intl, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Atlantic/Canary",
   });
   if (durationMinutes) {
     const end = new Date(start.getTime() + durationMinutes * 60_000);
-    const endStr = end.toLocaleTimeString("en-GB", {
+    const endStr = end.toLocaleTimeString(intl, {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "Atlantic/Canary",
@@ -62,18 +65,32 @@ function formatSessionTimeRange(
   return startStr;
 }
 
-function formatAccess(access: AccessType, priceCents: number | null): string {
+type AccessLabels = {
+  membersOnly: string;
+  free: string;
+  paid: string;
+  paidMembersFree: string;
+  paidMembersFreeSuffix: string;
+};
+
+function formatAccess(
+  access: AccessType,
+  priceCents: number | null,
+  labels: AccessLabels,
+): string {
   switch (access) {
     case "members_only":
-      return "Members only";
+      return labels.membersOnly;
     case "open":
-      return "Free";
+      return labels.free;
     case "paid":
-      return priceCents != null ? `€${(priceCents / 100).toFixed(2)}` : "Paid";
+      return priceCents != null
+        ? `€${(priceCents / 100).toFixed(2)}`
+        : labels.paid;
     case "paid_members_free":
       return priceCents != null
-        ? `€${(priceCents / 100).toFixed(2)} · free for members`
-        : "Paid · free for members";
+        ? `€${(priceCents / 100).toFixed(2)} · ${labels.paidMembersFreeSuffix}`
+        : labels.paidMembersFree;
   }
 }
 
@@ -88,30 +105,17 @@ function accessIcon(access: AccessType) {
   }
 }
 
-const pillars = [
-  {
-    number: "I",
-    title: "Expert speakers",
-    description:
-      "Each session features a researcher, clinician, or practitioner at the frontier of longevity science.",
-  },
-  {
-    number: "II",
-    title: "Practical takeaways",
-    description:
-      "Every talk closes with a set of protocols or habits you can apply the following week.",
-  },
-  {
-    number: "III",
-    title: "Open dialogue",
-    description:
-      "The second hour is reserved for Q&A and discussion. Bring your questions.",
-  },
-];
+const pillarKeys = ["experts", "practical", "dialogue"] as const;
+const pillarNumbers: Record<(typeof pillarKeys)[number], string> = {
+  experts: "I",
+  practical: "II",
+  dialogue: "III",
+};
 
 // ─── Hero ─────────────────────────────────────────────────────
 
 function EducationHero() {
+  const t = useTranslations("community.education.hero");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,7 +138,7 @@ function EducationHero() {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src="/images/menu/education-programs.webp"
-        alt="Essentia Education Programs"
+        alt={t("imageAlt")}
         fill
         priority
         sizes="100vw"
@@ -149,13 +153,12 @@ function EducationHero() {
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          Education
+          {t("title")}
           <br />
-          Programs.
+          {t("titleBreak")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          Monthly masterclasses with leading researchers, clinicians, and
-          practitioners. Science you can use, delivered in person.
+          {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -170,14 +173,14 @@ function EducationHero() {
               }
             }}
           >
-            Next session
+            {t("ctaNext")}
           </Button>
           <Button
             variant="outline-white"
             size="md"
             href="/community/memberships"
           >
-            Join the community
+            {t("ctaJoin")}
           </Button>
         </div>
       </div>
@@ -194,28 +197,46 @@ function NextSessionSection({
   session: NextSession | null;
   isMember: boolean;
 }) {
+  const t = useTranslations("community.education.next");
+  const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const AccessIcon = session ? accessIcon(session.access) : Lock;
 
+  const accessLabels: AccessLabels = {
+    membersOnly: t("membersOnly"),
+    free: t("free"),
+    paid: t("paid"),
+    paidMembersFree: t("paidMembersFree"),
+    paidMembersFreeSuffix: t("paidMembersFreeSuffix"),
+  };
+
   const sessionDetails = session
     ? [
-        { icon: Calendar, value: formatSessionDate(session.date) },
+        { icon: Calendar, value: formatSessionDate(session.date, locale) },
         {
           icon: Clock,
-          value: formatSessionTimeRange(session.date, session.duration_minutes),
+          value: formatSessionTimeRange(
+            session.date,
+            session.duration_minutes,
+            locale,
+          ),
         },
         {
           icon: AccessIcon,
-          value: formatAccess(session.access, session.price_cents),
+          value: formatAccess(
+            session.access,
+            session.price_cents,
+            accessLabels,
+          ),
         },
         {
           icon: Users,
           value: session.max_participants
-            ? `Limited to ${session.max_participants} seats`
-            : "Open seats",
+            ? t("limitedTo", { seats: session.max_participants })
+            : t("openSeats"),
         },
       ]
     : [];
@@ -305,11 +326,10 @@ function NextSessionSection({
           <div ref={bodyRef} className="flex flex-col gap-8">
             <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                Next session.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mt-2 leading-relaxed">
-                One evening a month. One topic that changes how you think about
-                your health.
+                {t("subheading")}
               </p>
             </div>
 
@@ -319,7 +339,7 @@ function NextSessionSection({
                   src={
                     session?.image_url ?? "/images/menu/education-programs.webp"
                   }
-                  alt={session?.title ?? "Next Essentia masterclass"}
+                  alt={session?.title ?? t("altDefault")}
                   fill
                   sizes="(max-width: 767px) 100vw, 50vw"
                   className="object-cover"
@@ -329,12 +349,11 @@ function NextSessionSection({
                 <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      {session ? session.title : "Coming soon."}
+                      {session ? session.title : t("comingSoon")}
                     </h3>
                   </div>
                   <p className="text-petroleum-500 text-sm leading-relaxed">
-                    {session?.description ??
-                      "Details for the next session will be announced soon."}
+                    {session?.description ?? t("comingSoonBody")}
                   </p>
                 </div>
 
@@ -362,10 +381,10 @@ function NextSessionSection({
                       href="/community/memberships"
                       className="w-full md:w-auto md:self-start"
                     >
-                      Join to reserve your seat
+                      {t("ctaJoin")}
                     </Button>
                     <p className="text-petroleum-400 text-xs">
-                      This session is available to Essentia members only.
+                      {t("membersOnlyNote")}
                     </p>
                   </div>
                 ) : (
@@ -379,7 +398,7 @@ function NextSessionSection({
                     }
                     className="w-full md:w-auto md:self-start"
                   >
-                    Reserve your seat
+                    {t("ctaReserve")}
                   </Button>
                 )}
               </div>
@@ -394,6 +413,7 @@ function NextSessionSection({
 // ─── Format ───────────────────────────────────────────────────
 
 function FormatSection() {
+  const t = useTranslations("community.education.format");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -464,24 +484,21 @@ function FormatSection() {
           <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
             <div className="md:max-w-lg">
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                How it works.
+                {t("heading")}
               </h2>
-              <p className="text-sand-500 mt-4 leading-relaxed">
-                Each programme runs one evening per month at the Essentia club.
-                Seats are limited and reserved for members.
-              </p>
+              <p className="text-sand-500 mt-4 leading-relaxed">{t("body")}</p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {pillars.map((p) => (
-                <div key={p.number}>
+              {pillarKeys.map((k) => (
+                <div key={k}>
                   <span className="font-display text-petroleum-500 text-5xl">
-                    {p.number}
+                    {pillarNumbers[k]}
                   </span>
                   <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {p.title}
+                    {t(`items.${k}.title`)}
                   </h3>
                   <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {p.description}
+                    {t(`items.${k}.description`)}
                   </p>
                 </div>
               ))}
@@ -496,6 +513,7 @@ function FormatSection() {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection() {
+  const t = useTranslations("community.education.ctaBlock");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -561,14 +579,13 @@ function CtaSection() {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-              Knowledge is the longest-lasting protocol.
+              {t("heading")}
             </h2>
             <p className="text-petroleum-400 max-w-md leading-relaxed">
-              Education Programs are included with every Essentia membership.
-              Choose your tier and reserve your seat.
+              {t("body")}
             </p>
             <Button variant="solid" size="md" href="/community/memberships">
-              Join memberships
+              {t("cta")}
             </Button>
           </div>
         </div>

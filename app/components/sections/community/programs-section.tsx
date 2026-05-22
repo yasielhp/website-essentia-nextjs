@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { programs } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -12,6 +13,9 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── ProgramCard ──────────────────────────────────────────────
 
 function ProgramCard({ program }: { program: (typeof programs)[number] }) {
+  const t = useTranslations("community.programs");
+  const title = t(`${program.key}.title`);
+  const description = t(`${program.key}.description`);
   return (
     <Link
       href={program.href}
@@ -20,7 +24,7 @@ function ProgramCard({ program }: { program: (typeof programs)[number] }) {
     >
       <Image
         src={program.img}
-        alt={program.title}
+        alt={title}
         fill
         sizes="(max-width: 767px) 100vw, 50vw"
         className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -33,9 +37,9 @@ function ProgramCard({ program }: { program: (typeof programs)[number] }) {
         }}
       />
       <div className="absolute bottom-0 left-0 p-6">
-        <h3 className="font-body text-xl text-white">{program.title}</h3>
+        <h3 className="font-body text-xl text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
-          {program.description}
+          {description}
         </p>
       </div>
     </Link>
@@ -45,6 +49,7 @@ function ProgramCard({ program }: { program: (typeof programs)[number] }) {
 // ─── ProgramsSection ──────────────────────────────────────────
 
 export default function ProgramsSection() {
+  const t = useTranslations("community.programs");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -157,10 +162,10 @@ export default function ProgramsSection() {
             {/* ── Header ── */}
             <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                The community.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mt-2 leading-relaxed">
-                Two programmes. One shared direction.
+                {t("subheading")}
               </p>
             </div>
 

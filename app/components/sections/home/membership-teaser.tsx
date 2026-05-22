@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { IconCheck } from "@/components/ui/icons";
 
@@ -10,13 +11,12 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── Types ────────────────────────────────────────────────────
 
+type TierKey = "essential" | "premium" | "founder";
+
 type Tier = {
-  badge: string;
-  name: string;
+  key: TierKey;
   price: number;
-  description: string;
-  features: string[];
-  ctaLabel: string;
+  featureCount: number;
   ctaVariant: "outline" | "solid";
 };
 
@@ -24,45 +24,21 @@ type Tier = {
 
 const tiers: Tier[] = [
   {
-    badge: "Entry",
-    name: "Essential",
+    key: "essential",
     price: 199,
-    description:
-      "Full access to all wellness facilities, group sessions, and community events.",
-    features: ["Wellness facilities", "Group sessions", "Community events"],
-    ctaLabel: "Learn more",
+    featureCount: 3,
     ctaVariant: "outline",
   },
   {
-    badge: "Most popular",
-    name: "Premium",
+    key: "premium",
     price: 349,
-    description:
-      "All Essential benefits plus priority booking, personalized protocols, and medical consultations.",
-    features: [
-      "Everything in Essential",
-      "Priority booking",
-      "Personalized protocols",
-      "Medical consultations",
-      "Guest privileges (2/month)",
-    ],
-    ctaLabel: "Explore Premium",
+    featureCount: 5,
     ctaVariant: "solid",
   },
   {
-    badge: "Exclusive",
-    name: "Founder",
+    key: "founder",
     price: 699,
-    description:
-      "Full ecosystem access with a dedicated health advisor, unlimited guest privileges, and founding member status.",
-    features: [
-      "Everything in Premium",
-      "Dedicated health advisor",
-      "Unlimited guest privileges",
-      "Founding member events",
-      "Priority treatment access",
-    ],
-    ctaLabel: "Learn more",
+    featureCount: 5,
     ctaVariant: "outline",
   },
 ];
@@ -70,32 +46,38 @@ const tiers: Tier[] = [
 // ─── Card ─────────────────────────────────────────────────────
 
 function TierCard({ tier }: { tier: Tier }) {
-  const tierId = tier.name.toLowerCase();
+  const t = useTranslations(`home.membershipTeaser.tiers.${tier.key}`);
+  const tCommon = useTranslations("home.membershipTeaser");
+  const name = t("name");
+  const tierId = name.toLowerCase();
+  const features = Array.from({ length: tier.featureCount }, (_, i) =>
+    t(`features.${i}`),
+  );
 
   return (
     <article className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-7">
       <span className="bg-petroleum-100 text-petroleum-500 self-start rounded-full px-3 py-1 text-xs tracking-wider uppercase">
-        {tier.badge}
+        {t("badge")}
       </span>
 
       <div>
-        <h3 className="font-display text-petroleum-700 text-2xl">
-          {tier.name}
-        </h3>
+        <h3 className="font-display text-petroleum-700 text-2xl">{name}</h3>
         <div className="mt-3 flex items-end gap-1">
           <span className="font-display text-petroleum-700 text-3xl leading-none">
             €{tier.price}
           </span>
-          <span className="text-petroleum-400 mb-0.5 text-xs">/month</span>
+          <span className="text-petroleum-400 mb-0.5 text-xs">
+            {tCommon("perMonth")}
+          </span>
         </div>
       </div>
 
       <p className="text-petroleum-500 text-sm leading-relaxed">
-        {tier.description}
+        {t("description")}
       </p>
 
       <ul className="flex flex-col gap-2">
-        {tier.features.map((feature) => (
+        {features.map((feature) => (
           <li
             key={feature}
             className="text-petroleum-500 flex items-start gap-2 text-sm"
@@ -113,7 +95,7 @@ function TierCard({ tier }: { tier: Tier }) {
           href={`/community/memberships?tier=${tierId}#tiers`}
           className="w-full md:w-auto"
         >
-          {tier.ctaLabel}
+          {t("cta")}
         </Button>
       </div>
     </article>
@@ -123,6 +105,7 @@ function TierCard({ tier }: { tier: Tier }) {
 // ─── MembershipTeaser ─────────────────────────────────────────
 
 export default function MembershipTeaser() {
+  const t = useTranslations("home.membershipTeaser");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -207,13 +190,12 @@ export default function MembershipTeaser() {
             className="flex flex-col items-center gap-5 text-center"
           >
             <h2 className="font-display text-sand-50 mt-3 text-center text-3xl text-balance md:text-5xl">
-              Choose your
+              {t("headline")}
               <br />
-              level of access.
+              {t("headline2")}
             </h2>
             <p className="text-sand-500 mx-auto max-w-lg text-center leading-relaxed">
-              Every tier includes full access to the Essentia space: what
-              changes is depth, priority, and belonging.
+              {t("subheadline")}
             </p>
           </div>
 
@@ -223,7 +205,7 @@ export default function MembershipTeaser() {
             className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3"
           >
             {tiers.map((tier) => (
-              <TierCard key={tier.name} tier={tier} />
+              <TierCard key={tier.key} tier={tier} />
             ))}
           </div>
         </div>

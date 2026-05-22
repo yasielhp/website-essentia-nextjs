@@ -2,6 +2,7 @@
 
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { notifyBooking } from "@/actions/booking-notifications";
 import {
   updateDraftBookingMeta,
@@ -146,21 +147,19 @@ function initState({ slug, startStep }: InitArg): BookingState {
 }
 
 function MemberBlockerModal({ onContinue }: { onContinue: () => void }) {
+  const t = useTranslations("booking.memberBlocker");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Active membership found
+            {t("title")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This email is linked to an active Essentia membership. Sign in to
-            book with your member benefits.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button variant="solid" size="md" href="/sign-in" className="w-full">
-            Sign in to my account
+            {t("signIn")}
           </Button>
           <Button
             variant="ghost"
@@ -168,7 +167,7 @@ function MemberBlockerModal({ onContinue }: { onContinue: () => void }) {
             onClick={onContinue}
             className="w-full"
           >
-            Continue as guest
+            {t("continueAsGuest")}
           </Button>
         </div>
       </div>
@@ -199,6 +198,7 @@ function BookingNavigation({
   onNext,
   onConfirm,
 }: BookingNavigationProps) {
+  const t = useTranslations("booking.nav");
   return (
     <div className="flex w-full items-center justify-center gap-3">
       {step > 0 && (
@@ -209,7 +209,7 @@ function BookingNavigation({
           disabled={loading}
           className="flex-1 sm:flex-none"
         >
-          Back
+          {t("back")}
         </Button>
       )}
       {!isLastStep ? (
@@ -221,10 +221,10 @@ function BookingNavigation({
           className="flex-1 sm:flex-none"
         >
           {checking
-            ? "Checking…"
+            ? t("checking")
             : nextStepLabel
-              ? `Next: ${nextStepLabel}`
-              : "Next step"}
+              ? t("nextWithLabel", { label: nextStepLabel })
+              : t("nextStep")}
         </Button>
       ) : (
         <Button
@@ -234,7 +234,7 @@ function BookingNavigation({
           disabled={loading}
           className="flex-1 sm:flex-none"
         >
-          {loading ? "Submitting…" : "Request booking"}
+          {loading ? t("submitting") : t("requestBooking")}
         </Button>
       )}
     </div>
@@ -242,14 +242,13 @@ function BookingNavigation({
 }
 
 function BookingHeader() {
+  const t = useTranslations("booking");
   return (
     <div className="flex flex-col gap-2">
       <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-        Book a session.
+        {t("heading")}
       </h1>
-      <p className="text-petroleum-400">
-        Choose your service, pick a time, and we will take care of the rest.
-      </p>
+      <p className="text-petroleum-400">{t("subheading")}</p>
     </div>
   );
 }
@@ -374,6 +373,8 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
 
 function BookingContentInner() {
   const { user } = useAuth();
+  const locale = useLocale();
+  const tSteps = useTranslations("booking.steps");
   const { push } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -451,13 +452,21 @@ function BookingContentInner() {
 
   useEffect(() => {
     if (!state.selectedService) return;
-    fetch(`/api/google/calendar/has-calendar?service_id=${state.selectedService.id}`)
+    fetch(
+      `/api/google/calendar/has-calendar?service_id=${state.selectedService.id}`,
+    )
       .then((r) => r.json())
       .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
       .catch(() => setHasCalendar(false));
   }, [state.selectedService?.id]);
 
-  const activeSteps = buildSteps(hasCalendar);
+  const rawSteps = buildSteps(hasCalendar);
+  const activeSteps = rawSteps.map((s) => ({
+    ...s,
+    label: tSteps(
+      s.id as "service" | "duration" | "datetime" | "details" | "confirm",
+    ),
+  }));
   const currentStepId = activeSteps[step]?.id ?? "service";
   const isLastStep = step === activeSteps.length - 1;
   const nextStepLabel = activeSteps[step + 1]?.label;
@@ -501,6 +510,7 @@ function BookingContentInner() {
           p_first_name: details.firstName,
           p_last_name: details.lastName,
           p_phone: details.phone,
+          p_language: locale,
         },
       );
 
@@ -556,7 +566,9 @@ function BookingContentInner() {
     if (!selectedService || !selectedTierId) return;
     dispatch({ type: "CONFIRM_START" });
 
-    const dateStr = selectedDate ? selectedDate.toISOString().split("T")[0] : null;
+    const dateStr = selectedDate
+      ? selectedDate.toISOString().split("T")[0]
+      : null;
     const timeStr = selectedTime ?? null;
 
     let resolvedBookingId = bookingId;

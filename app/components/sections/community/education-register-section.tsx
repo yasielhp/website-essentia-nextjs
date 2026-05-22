@@ -12,6 +12,7 @@ import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
+import { useLocale, useTranslations } from "next-intl";
 
 type Session = {
   id: string;
@@ -97,9 +98,9 @@ const initialState: RegisterState = {
   form: { firstName: "", lastName: "", email: "", phone: "" },
 };
 
-function formatSessionDate(iso: string | null): string {
+function formatSessionDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -111,17 +112,19 @@ function formatSessionDate(iso: string | null): string {
 function formatSessionTimeRange(
   iso: string | null,
   durationMinutes: number | null,
+  locale: string,
 ): string {
   if (!iso) return "—";
+  const intl = locale === "es" ? "es-ES" : "en-GB";
   const start = new Date(iso);
-  const startStr = start.toLocaleTimeString("en-GB", {
+  const startStr = start.toLocaleTimeString(intl, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Atlantic/Canary",
   });
   if (durationMinutes) {
     const end = new Date(start.getTime() + durationMinutes * 60_000);
-    const endStr = end.toLocaleTimeString("en-GB", {
+    const endStr = end.toLocaleTimeString(intl, {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "Atlantic/Canary",
@@ -131,20 +134,19 @@ function formatSessionTimeRange(
   return startStr;
 }
 
-function formatPrice(priceCents: number | null): string {
-  if (priceCents === null) return "Members only";
-  if (priceCents === 0) return "Free";
+function formatPrice(
+  priceCents: number | null,
+  labels: { membersOnly: string; free: string },
+): string {
+  if (priceCents === null) return labels.membersOnly;
+  if (priceCents === 0) return labels.free;
   return `€${(priceCents / 100).toFixed(2)}`;
 }
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-300 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-200";
 
-const whatToBring = [
-  "Essentia membership card",
-  "Notebook and pen",
-  "Your questions",
-];
+const whatToBringKeys = ["card", "notebook", "questions"] as const;
 
 function Field({
   label,
@@ -176,6 +178,7 @@ function SessionInfoPanel({
   sessionDetails: SessionDetail[];
   displayTitle: string;
 }) {
+  const t = useTranslations("community.education.register");
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -193,7 +196,7 @@ function SessionInfoPanel({
       <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
         <Image
           src="/images/menu/education-programs.webp"
-          alt="Essentia Education Programs"
+          alt={t("imageAlt")}
           fill
           sizes="(max-width: 767px) 100vw, 50vw"
           className="object-cover"
@@ -219,16 +222,16 @@ function SessionInfoPanel({
 
       <div>
         <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
-          What to bring
+          {t("whatToBring")}
         </p>
         <ul className="flex flex-col gap-2">
-          {whatToBring.map((item) => (
+          {whatToBringKeys.map((key) => (
             <li
-              key={item}
+              key={key}
               className="text-petroleum-500 flex items-center gap-2 text-sm"
             >
               <span className="bg-petroleum-200 size-1 shrink-0 rounded-full" />
-              {item}
+              {t(`items.${key}`)}
             </li>
           ))}
         </ul>
@@ -238,24 +241,22 @@ function SessionInfoPanel({
 }
 
 function MemberBlockerModal({ onBack }: { onBack: () => void }) {
+  const t = useTranslations("community.education.register.memberBlocker");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Active membership found
+            {t("heading")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This email is linked to an active Essentia membership. Sign in to
-            register with your member benefits.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button variant="solid" size="md" href="/sign-in" className="w-full">
-            Sign in to my account
+            {t("signIn")}
           </Button>
           <Button variant="ghost" size="md" onClick={onBack} className="w-full">
-            Continue as guest
+            {t("continue")}
           </Button>
         </div>
       </div>
@@ -282,35 +283,37 @@ function GuestRegistrationForm({
   onConsent,
   onSubmit,
 }: GuestFormProps) {
+  const td = useTranslations("community.education.register.details");
+  const tdp = useTranslations("community.education.register.dataProtection");
   return (
     <div className="bg-sand-100 rounded-2xl p-8">
       <h2 className="font-display text-petroleum-700 mb-6 text-2xl">
-        Your details.
+        {td("title")}
       </h2>
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="First name" id="first-name">
+          <Field label={td("firstName")} id="first-name">
             <input
               id="first-name"
               name="firstName"
               type="text"
               required
               autoComplete="given-name"
-              placeholder="Jane"
+              placeholder={td("firstNamePlaceholder")}
               value={form.firstName}
               onChange={(e) => onField("firstName", e.target.value)}
               disabled={checking}
               className={inputClass}
             />
           </Field>
-          <Field label="Last name" id="last-name">
+          <Field label={td("lastName")} id="last-name">
             <input
               id="last-name"
               name="lastName"
               type="text"
               required
               autoComplete="family-name"
-              placeholder="Smith"
+              placeholder={td("lastNamePlaceholder")}
               value={form.lastName}
               onChange={(e) => onField("lastName", e.target.value)}
               disabled={checking}
@@ -319,14 +322,14 @@ function GuestRegistrationForm({
           </Field>
         </div>
 
-        <Field label="Email" id="email">
+        <Field label={td("email")} id="email">
           <input
             id="email"
             name="email"
             type="email"
             required
             autoComplete="email"
-            placeholder="jane@example.com"
+            placeholder={td("emailPlaceholder")}
             value={form.email}
             onChange={(e) => onField("email", e.target.value)}
             disabled={checking}
@@ -334,14 +337,14 @@ function GuestRegistrationForm({
           />
         </Field>
 
-        <Field label="Phone" id="phone">
+        <Field label={td("phone")} id="phone">
           <input
             id="phone"
             name="phone"
             type="tel"
             required
             autoComplete="tel"
-            placeholder="+34 600 000 000"
+            placeholder={td("phonePlaceholder")}
             value={form.phone}
             onChange={(e) => onField("phone", e.target.value)}
             disabled={checking}
@@ -358,21 +361,21 @@ function GuestRegistrationForm({
           error={consentError}
           label={
             <span className="text-petroleum-400 text-sm">
-              I accept the{" "}
+              {td("consent")}{" "}
               <Link
                 href="/terms"
                 className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Terms
+                {td("terms")}
               </Link>{" "}
-              and{" "}
+              {td("consentAnd")}{" "}
               <Link
                 href="/privacy"
                 className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Privacy Policy
+                {td("privacy")}
               </Link>
               .
             </span>
@@ -386,43 +389,42 @@ function GuestRegistrationForm({
           disabled={checking}
           className="w-full"
         >
-          {checking ? "Checking…" : "Confirm registration"}
+          {checking ? td("submitting") : td("submit")}
         </Button>
 
         {/* Información RGPD art. 13 */}
         <Accordion className="border-sand-500 rounded-2xl border px-6">
           <Accordion.Header iconClassName="text-petroleum-400">
             <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
-              Data protection information
+              {tdp("heading")}
             </span>
           </Accordion.Header>
           <Accordion.Content>
             <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
-              <strong className="font-medium">Data controller:</strong> Essentia
-              Social Wellness Club
+              <strong className="font-medium">{tdp("controller")}</strong>{" "}
+              {tdp("controllerValue")}
               <br />
-              <strong className="font-medium">Purpose:</strong> managing your
-              session registration
+              <strong className="font-medium">{tdp("purpose")}</strong>{" "}
+              {tdp("purposeValue")}
               <br />
-              <strong className="font-medium">Legal basis:</strong> your consent
-              (GDPR art. 6.1.a)
+              <strong className="font-medium">{tdp("legalBasis")}</strong>{" "}
+              {tdp("legalBasisValue")}
               <br />
-              <strong className="font-medium">Your rights:</strong> access,
-              rectification, erasure, restriction, portability, and objection:
-              write to{" "}
+              <strong className="font-medium">{tdp("rights")}</strong>{" "}
+              {tdp("rightsValue")}{" "}
               <a
                 href={`mailto:${contact.email}`}
                 className="underline underline-offset-2"
               >
                 {contact.email}
               </a>
-              . Full details in our{" "}
+              . {tdp("rightsFull")}{" "}
               <Link
                 href="/privacy"
                 className="underline underline-offset-2"
                 target="_blank"
               >
-                Privacy Policy
+                {tdp("privacy")}
               </Link>
               .
             </p>
@@ -436,6 +438,8 @@ function GuestRegistrationForm({
 function EducationRegisterContent() {
   const { get } = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const locale = useLocale();
+  const t = useTranslations("community.education.register");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(registerReducer, initialState);
   const { session, stage, loading, checking, consent, consentError, form } =
@@ -472,24 +476,39 @@ function EducationRegisterContent() {
     return () => ctx.revert();
   }, []);
 
-  const displayTitle = session?.title ?? "Reserve your seat.";
-  const displayDate = session ? formatSessionDate(session.date) : "";
+  const displayTitle = session?.title ?? t("title");
+  const displayDate = session ? formatSessionDate(session.date, locale) : "";
 
   const sessionDetails: SessionDetail[] = session
     ? [
-        { id: "date", icon: Calendar, value: formatSessionDate(session.date) },
+        {
+          id: "date",
+          icon: Calendar,
+          value: formatSessionDate(session.date, locale),
+        },
         {
           id: "time",
           icon: Clock,
-          value: formatSessionTimeRange(session.date, session.duration_minutes),
+          value: formatSessionTimeRange(
+            session.date,
+            session.duration_minutes,
+            locale,
+          ),
         },
-        { id: "access", icon: Lock, value: formatPrice(session.price_cents) },
+        {
+          id: "access",
+          icon: Lock,
+          value: formatPrice(session.price_cents, {
+            membersOnly: t("membersOnly"),
+            free: t("free"),
+          }),
+        },
         {
           id: "seats",
           icon: Users,
           value: session.max_participants
-            ? `Limited to ${session.max_participants} seats`
-            : "Open seats",
+            ? t("limitedTo", { seats: session.max_participants })
+            : t("openSeats"),
         },
       ]
     : [];
@@ -499,7 +518,7 @@ function EducationRegisterContent() {
     if (!consent) {
       dispatch({
         type: "SET_CONSENT_ERROR",
-        error: "You must accept the terms and privacy policy to register.",
+        error: t("details.consentError"),
       });
       return;
     }
@@ -519,6 +538,7 @@ function EducationRegisterContent() {
       p_first_name: form.firstName,
       p_last_name: form.lastName,
       p_phone: form.phone,
+      p_language: locale,
     });
 
     await insforge.database.rpc("register_for_education", {
@@ -554,30 +574,33 @@ function EducationRegisterContent() {
               {stage === "success" ? (
                 <div className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-8">
                   <p className="font-display text-petroleum-700 text-2xl">
-                    You&apos;re registered.
+                    {t("success.title")}
                   </p>
                   <p className="text-petroleum-400 text-sm leading-relaxed">
-                    We&apos;ve received your registration for{" "}
+                    {t("success.bodyPrefix")}{" "}
                     <strong className="text-petroleum-500 font-medium">
                       {displayTitle}
                     </strong>
-                    {displayDate ? ` on ${displayDate}` : ""}.
+                    {displayDate
+                      ? ` ${t("success.bodyOn")} ${displayDate}`
+                      : ""}
+                    .
                   </p>
                   <Link
                     href="/community/education-programs"
                     className="text-petroleum-500 hover:text-petroleum-700 mt-2 text-sm underline underline-offset-4 transition-colors"
                   >
-                    Back to Education Programs
+                    {t("success.back")}
                   </Link>
                 </div>
               ) : !authLoading && user ? (
                 <div className="bg-sand-100 flex flex-col gap-6 rounded-2xl p-8">
                   <div>
                     <h2 className="font-display text-petroleum-700 text-2xl">
-                      Confirm your registration.
+                      {t("confirm.heading")}
                     </h2>
                     <p className="text-petroleum-400 mt-2 text-sm">
-                      Registering as{" "}
+                      {t("confirm.registeringAs")}{" "}
                       <span className="text-petroleum-500 font-medium">
                         {user.email}
                       </span>
@@ -590,7 +613,7 @@ function EducationRegisterContent() {
                     disabled={loading || !session}
                     className="w-full"
                   >
-                    {loading ? "Confirming…" : "Confirm registration"}
+                    {loading ? t("confirm.submitting") : t("confirm.submit")}
                   </Button>
                 </div>
               ) : (

@@ -3,6 +3,7 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -71,6 +72,7 @@ const inputClass =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2";
 
 export default function SignUpForm() {
+  const t = useTranslations("auth.signUp");
   const router = useRouter();
   const { push, refresh } = router;
 
@@ -94,7 +96,7 @@ export default function SignUpForm() {
     if (signUpError) {
       dispatch({
         type: "SET_ERROR",
-        payload: signUpError.message ?? "Sign up failed. Please try again.",
+        payload: signUpError.message ?? t("errorGeneric"),
       });
       return;
     }
@@ -124,12 +126,12 @@ export default function SignUpForm() {
       if (verifyError.statusCode === 400) {
         dispatch({
           type: "SET_ERROR",
-          payload: "Invalid or expired code. Please try again.",
+          payload: t("verify.errorInvalidCode"),
         });
       } else {
         dispatch({
           type: "SET_ERROR",
-          payload: verifyError.message ?? "Verification failed.",
+          payload: verifyError.message ?? t("verify.errorGeneric"),
         });
       }
       return;
@@ -155,11 +157,13 @@ export default function SignUpForm() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-            Check your email.
+            {t("verify.heading")}
           </h1>
           <p className="text-petroleum-400">
-            We sent a 6-digit code to{" "}
-            <span className="font-medium">{email}</span>.
+            {t.rich("verify.subheading", {
+              email,
+              strong: (chunks) => <span className="font-medium">{chunks}</span>,
+            })}
           </p>
         </div>
 
@@ -169,7 +173,7 @@ export default function SignUpForm() {
               htmlFor="otp"
               className="text-petroleum-700 text-sm font-medium"
             >
-              Verification code
+              {t("verify.code")}
             </label>
             <input
               id="otp"
@@ -186,7 +190,7 @@ export default function SignUpForm() {
               }
               required
               autoComplete="one-time-code"
-              placeholder="123456"
+              placeholder={t("verify.codePlaceholder")}
               className={inputClass}
             />
           </div>
@@ -204,18 +208,18 @@ export default function SignUpForm() {
             disabled={loading || otp.length !== 6}
             className="w-full"
           >
-            {loading ? "Verifying…" : "Verify email"}
+            {loading ? t("verify.submitting") : t("verify.submit")}
           </Button>
         </form>
 
         <p className="text-petroleum-400 text-center text-sm">
-          Did not receive the code?{" "}
+          {t("verify.didNotReceive")}{" "}
           <button
             type="button"
             onClick={handleResend}
             className="text-petroleum-700 font-medium underline underline-offset-2"
           >
-            Resend
+            {t("verify.resend")}
           </button>
         </p>
       </div>
@@ -226,11 +230,9 @@ export default function SignUpForm() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          Create account.
+          {t("heading")}
         </h1>
-        <p className="text-petroleum-400">
-          Join Essentia to manage your sessions.
-        </p>
+        <p className="text-petroleum-400">{t("subheading")}</p>
       </div>
 
       <form onSubmit={handleRegister} className="flex flex-col gap-4">
@@ -239,7 +241,7 @@ export default function SignUpForm() {
             htmlFor="name"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Full name
+            {t("fullName")}
           </label>
           <input
             id="name"
@@ -249,7 +251,7 @@ export default function SignUpForm() {
               dispatch({ type: "SET_NAME", payload: e.target.value })
             }
             autoComplete="name"
-            placeholder="Jane Doe"
+            placeholder={t("fullNamePlaceholder")}
             className={inputClass}
           />
         </div>
@@ -259,7 +261,7 @@ export default function SignUpForm() {
             htmlFor="email"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Email
+            {t("email")}
           </label>
           <input
             id="email"
@@ -270,7 +272,7 @@ export default function SignUpForm() {
             }
             required
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("emailPlaceholder")}
             className={inputClass}
           />
         </div>
@@ -280,7 +282,7 @@ export default function SignUpForm() {
             htmlFor="password"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Password
+            {t("password")}
           </label>
           <PasswordInput
             id="password"
@@ -290,7 +292,7 @@ export default function SignUpForm() {
             }
             required
             autoComplete="new-password"
-            placeholder="••••••••"
+            placeholder={t("passwordPlaceholder")}
           />
         </div>
 
@@ -307,17 +309,17 @@ export default function SignUpForm() {
           disabled={loading}
           className="w-full"
         >
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? t("submitting") : t("submit")}
         </Button>
       </form>
 
       <p className="text-petroleum-400 text-center text-sm">
-        Already have an account?{" "}
+        {t("hasAccount")}{" "}
         <Link
           href="/sign-in"
           className="text-petroleum-700 font-medium underline underline-offset-2"
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </div>

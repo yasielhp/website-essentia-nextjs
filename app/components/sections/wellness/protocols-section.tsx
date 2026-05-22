@@ -5,9 +5,15 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { treatments } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Extract slug from href like "/wellness/contrast-therapy"
+function slugFromHref(href: string): string {
+  return href.split("/").pop() ?? "";
+}
 
 // ─── TreatmentCard ────────────────────────────────────────────
 
@@ -18,6 +24,9 @@ function TreatmentCard({
   treatment: (typeof treatments)[number];
   tall?: boolean;
 }) {
+  const t = useTranslations("wellness.protocols.items");
+  const slug = slugFromHref(treatment.href);
+  const title = t(`${slug}.title`);
   return (
     <Link
       href={treatment.href}
@@ -29,7 +38,7 @@ function TreatmentCard({
     >
       <Image
         src={treatment.img}
-        alt={treatment.title}
+        alt={title}
         fill
         sizes="(max-width: 767px) 100vw, 50vw"
         className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -42,9 +51,9 @@ function TreatmentCard({
         }}
       />
       <div className="absolute bottom-0 left-0 p-6">
-        <h3 className="font-body text-xl text-white">{treatment.title}</h3>
+        <h3 className="font-body text-xl text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65 md:max-w-xs">
-          {treatment.description}
+          {t(`${slug}.description`)}
         </p>
       </div>
     </Link>
@@ -54,6 +63,7 @@ function TreatmentCard({
 // ─── ProtocolsSection ─────────────────────────────────────────
 
 export default function ProtocolsSection() {
+  const t = useTranslations("wellness.protocols");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -172,10 +182,10 @@ export default function ProtocolsSection() {
             {/* ── Header ── */}
             <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                The protocols.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mt-2 leading-relaxed">
-                Five modalities. One integrated system.
+                {t("subheading")}
               </p>
             </div>
 

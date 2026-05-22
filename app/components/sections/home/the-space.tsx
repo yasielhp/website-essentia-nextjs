@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -11,6 +12,8 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── TheSpace ──────────────────────────────────────────────────
 
 export default function TheSpace() {
+  const t = useTranslations("home.theSpace");
+  const tStats = useTranslations("home.theSpace.stats");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
@@ -130,16 +133,14 @@ export default function TheSpace() {
               data-space-header
               className="font-display text-sand-50 mt-3 max-w-lg text-3xl md:text-5xl"
             >
-              Built for those who invest in themselves.
+              {t("headline")}
             </h2>
 
             <p
               data-space-header
               className="text-sand-500 mt-5 max-w-2xl leading-relaxed"
             >
-              Perched on the cliffs of Costa Adeje in Tenerife, Essentia is a
-              place where architecture, light, and purpose align, designed to
-              slow you down in all the right ways.
+              {t("body")}
             </p>
 
             <Button
@@ -149,7 +150,7 @@ export default function TheSpace() {
               href="/about"
               className="mt-8 w-full md:w-auto"
             >
-              Discover Essentia
+              {t("cta")}
             </Button>
           </div>
 
@@ -206,10 +207,10 @@ export default function TheSpace() {
               className="flex flex-col items-center gap-1 text-center"
             >
               <span className="font-display text-sand-50 text-2xl md:text-3xl">
-                1,200 m²
+                {tStats("totalSpace.value")}
               </span>
               <span className="text-sand-600 text-xs tracking-wider uppercase">
-                Total space
+                {tStats("totalSpace.label")}
               </span>
             </div>
 
@@ -218,10 +219,10 @@ export default function TheSpace() {
               className="flex flex-col items-center gap-1 text-center"
             >
               <span className="font-display text-sand-50 text-2xl md:text-3xl">
-                3
+                {tStats("floors.value")}
               </span>
               <span className="text-sand-600 text-xs tracking-wider uppercase">
-                Floors of wellness
+                {tStats("floors.label")}
               </span>
             </div>
 
@@ -230,10 +231,10 @@ export default function TheSpace() {
               className="flex flex-col items-center gap-1 text-center"
             >
               <span className="font-display text-sand-50 text-xl">
-                Tenerife
+                {tStats("location.value")}
               </span>
               <span className="text-sand-600 text-xs tracking-wider uppercase">
-                Costa Adeje, Spain
+                {tStats("location.label")}
               </span>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -58,6 +59,7 @@ const inputClass =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-100 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2";
 
 export default function ForgotPasswordForm() {
+  const t = useTranslations("auth.forgotPassword");
   const router = useRouter();
   const { push } = router;
 
@@ -82,7 +84,7 @@ export default function ForgotPasswordForm() {
     } catch {
       dispatch({
         type: "SET_ERROR",
-        payload: "Failed to send reset code. Please try again.",
+        payload: t("errorSendCode"),
       });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -100,12 +102,14 @@ export default function ForgotPasswordForm() {
 
       if (exchangeError || !data) {
         if (exchangeError?.statusCode === 400) {
-          dispatch({ type: "SET_ERROR", payload: "Invalid or expired code." });
+          dispatch({
+            type: "SET_ERROR",
+            payload: t("reset.errorInvalidCode"),
+          });
         } else {
           dispatch({
             type: "SET_ERROR",
-            payload:
-              exchangeError?.message ?? "Reset failed. Please try again.",
+            payload: exchangeError?.message ?? t("reset.errorResetFailed"),
           });
         }
         dispatch({ type: "SET_LOADING", payload: false });
@@ -120,7 +124,7 @@ export default function ForgotPasswordForm() {
       if (resetError) {
         dispatch({
           type: "SET_ERROR",
-          payload: resetError.message ?? "Reset failed. Please try again.",
+          payload: resetError.message ?? t("reset.errorResetFailed"),
         });
         dispatch({ type: "SET_LOADING", payload: false });
         return;
@@ -130,7 +134,7 @@ export default function ForgotPasswordForm() {
     } catch {
       dispatch({
         type: "SET_ERROR",
-        payload: "Something went wrong. Please try again.",
+        payload: t("errorGeneric"),
       });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -144,7 +148,7 @@ export default function ForgotPasswordForm() {
     } catch {
       dispatch({
         type: "SET_ERROR",
-        payload: "Failed to resend code. Please try again.",
+        payload: t("reset.errorResendFailed"),
       });
     }
   };
@@ -154,11 +158,13 @@ export default function ForgotPasswordForm() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-            Enter your new password.
+            {t("reset.heading")}
           </h1>
           <p className="text-petroleum-400">
-            We sent a 6-digit code to{" "}
-            <span className="font-medium">{email}</span>.
+            {t.rich("reset.subheading", {
+              email,
+              strong: (chunks) => <span className="font-medium">{chunks}</span>,
+            })}
           </p>
         </div>
 
@@ -168,7 +174,7 @@ export default function ForgotPasswordForm() {
               htmlFor="otp"
               className="text-petroleum-700 text-sm font-medium"
             >
-              Verification code
+              {t("reset.code")}
             </label>
             <input
               id="otp"
@@ -185,7 +191,7 @@ export default function ForgotPasswordForm() {
               }
               required
               autoComplete="one-time-code"
-              placeholder="123456"
+              placeholder={t("reset.codePlaceholder")}
               className={inputClass}
             />
           </div>
@@ -195,7 +201,7 @@ export default function ForgotPasswordForm() {
               htmlFor="new-password"
               className="text-petroleum-700 text-sm font-medium"
             >
-              New password
+              {t("reset.newPassword")}
             </label>
             <PasswordInput
               id="new-password"
@@ -205,7 +211,7 @@ export default function ForgotPasswordForm() {
               }
               required
               autoComplete="new-password"
-              placeholder="••••••••"
+              placeholder={t("reset.newPasswordPlaceholder")}
             />
           </div>
 
@@ -222,18 +228,18 @@ export default function ForgotPasswordForm() {
             disabled={loading || otp.length !== 6 || newPassword.length === 0}
             className="w-full"
           >
-            {loading ? "Resetting…" : "Reset password"}
+            {loading ? t("reset.submitting") : t("reset.submit")}
           </Button>
         </form>
 
         <p className="text-petroleum-400 text-center text-sm">
-          Did not receive the code?{" "}
+          {t("reset.didNotReceive")}{" "}
           <button
             type="button"
             onClick={handleResend}
             className="text-petroleum-700 font-medium underline underline-offset-2"
           >
-            Resend code
+            {t("reset.resend")}
           </button>
         </p>
       </div>
@@ -244,11 +250,9 @@ export default function ForgotPasswordForm() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          Reset your password.
+          {t("heading")}
         </h1>
-        <p className="text-petroleum-400">
-          Enter your email and we&apos;ll send you a code.
-        </p>
+        <p className="text-petroleum-400">{t("subheading")}</p>
       </div>
 
       <form onSubmit={handleSendCode} className="flex flex-col gap-4">
@@ -257,7 +261,7 @@ export default function ForgotPasswordForm() {
             htmlFor="email"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Email
+            {t("email")}
           </label>
           <input
             id="email"
@@ -268,7 +272,7 @@ export default function ForgotPasswordForm() {
             }
             required
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("emailPlaceholder")}
             className={inputClass}
           />
         </div>
@@ -286,7 +290,7 @@ export default function ForgotPasswordForm() {
           disabled={loading}
           className="w-full"
         >
-          {loading ? "Sending…" : "Send reset code"}
+          {loading ? t("submitting") : t("submit")}
         </Button>
       </form>
 
@@ -295,7 +299,7 @@ export default function ForgotPasswordForm() {
           href="/sign-in"
           className="text-petroleum-700 font-medium underline underline-offset-2"
         >
-          Back to sign in
+          {t("backToSignIn")}
         </Link>
       </p>
     </div>

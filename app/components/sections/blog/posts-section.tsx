@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import gsap from "gsap";
+import { useTranslations, useLocale } from "next-intl";
 import { insforge } from "@/lib/insforge";
 
 type Post = {
@@ -18,9 +19,9 @@ type Post = {
 
 type Category = { id: string; name: string; slug: string };
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, locale: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("es-ES", {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -42,6 +43,8 @@ function SkeletonCard() {
 }
 
 export default function PostsSection() {
+  const t = useTranslations("blog");
+  const locale = useLocale();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -102,7 +105,7 @@ export default function PostsSection() {
                   : "bg-sand-200 text-petroleum-500 hover:bg-sand-200"
               }`}
             >
-              All
+              {t("filters.all")}
             </button>
             {categories.map((c) => (
               <button
@@ -129,7 +132,7 @@ export default function PostsSection() {
           </div>
         ) : posts.length === 0 ? (
           <p className="text-petroleum-400 py-20 text-center text-sm">
-            No articles published yet.
+            {t("empty")}
           </p>
         ) : (
           <div
@@ -172,7 +175,7 @@ export default function PostsSection() {
                   )}
                   {p.published_at && (
                     <p className="text-petroleum-300 text-xs">
-                      {formatDate(p.published_at)}
+                      {formatDate(p.published_at, locale)}
                     </p>
                   )}
                 </div>

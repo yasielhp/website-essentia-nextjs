@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Check, X } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 
@@ -20,12 +21,12 @@ export type TierSelection = {
   price: number | null;
 };
 
-function tierLabel(t: Tier): string {
+function tierLabel(t: Tier, fallback: string): string {
   const parts: string[] = [];
   if (t.label) parts.push(t.label);
   if (t.duration_minutes != null) parts.push(`${t.duration_minutes} min`);
   if (t.price_eur != null) parts.push(`€${t.price_eur}`);
-  return parts.join(" · ") || "Standard";
+  return parts.join(" · ") || fallback;
 }
 
 function TierItems({
@@ -37,6 +38,7 @@ function TierItems({
   selectedId: string | null;
   onSelect: (t: Tier) => void;
 }) {
+  const tt = useTranslations("booking.durationStep");
   return (
     <div className="p-3">
       {tiers.map((t) => (
@@ -47,7 +49,7 @@ function TierItems({
         >
           <div className="flex flex-col gap-0.5">
             <span className="text-petroleum-700 font-medium">
-              {t.label ?? "Standard"}
+              {t.label ?? tt("standard")}
             </span>
             {(t.duration_minutes != null || t.price_eur != null) && (
               <span className="text-petroleum-400 text-xs">
@@ -80,6 +82,7 @@ function TierSelect({
   selectedId: string | null;
   onSelect: (t: Tier) => void;
 }) {
+  const tt = useTranslations("booking.durationStep");
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -148,14 +151,14 @@ function TierSelect({
       >
         {selected ? (
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Session type</p>
+            <p className="text-petroleum-400 text-xs">{tt("sessionType")}</p>
             <p className="text-petroleum-700 font-medium">
-              {tierLabel(selected)}
+              {tierLabel(selected, tt("standard"))}
             </p>
           </div>
         ) : (
           <p className="text-petroleum-400 flex-1 text-sm">
-            Select a session type
+            {tt("selectSessionType")}
           </p>
         )}
         <ChevronDown
@@ -193,12 +196,12 @@ function TierSelect({
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
               <h3 className="text-petroleum-700 font-medium">
-                Select a session type
+                {tt("modalTitle")}
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label="Close"
+                aria-label={tt("close")}
               >
                 <X size={20} className="text-petroleum-400" />
               </button>
@@ -228,6 +231,7 @@ export function DurationStep({
   onSelect: (sel: TierSelection) => void;
   preselectedLabel?: string | null;
 }) {
+  const tt = useTranslations("booking.durationStep");
   const [tiers, setTiers] = useState<Tier[] | null>(null);
   const onSelectRef = useRef(onSelect);
 
@@ -281,11 +285,7 @@ export function DurationStep({
   }
 
   if (tiers.length === 0) {
-    return (
-      <p className="text-petroleum-400 text-sm">
-        No session types available for this service.
-      </p>
-    );
+    return <p className="text-petroleum-400 text-sm">{tt("noneAvailable")}</p>;
   }
 
   const isFixed = tiers.length === 1;
@@ -294,16 +294,14 @@ export function DurationStep({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-petroleum-400 text-sm">
-        {isFixed
-          ? "This service has a fixed session type."
-          : "Choose your session type."}
+        {isFixed ? tt("fixedDescription") : tt("chooseDescription")}
       </p>
       {isFixed ? (
         <div className="border-sand-300 bg-sand-50 flex items-center gap-4 rounded-2xl border p-4">
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Session type</p>
+            <p className="text-petroleum-400 text-xs">{tt("sessionType")}</p>
             <p className="text-petroleum-700 font-medium">
-              {tierLabel(singleTier)}
+              {tierLabel(singleTier, tt("standard"))}
             </p>
           </div>
           <Check className="text-petroleum-100 shrink-0" size={16} />

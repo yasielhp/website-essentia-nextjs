@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
@@ -50,6 +51,7 @@ export function DetailsStep({
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
 }) {
+  const t = useTranslations("booking.detailsStep");
   const set =
     (key: keyof DetailsState) => (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...details, [key]: e.target.value });
@@ -60,7 +62,7 @@ export function DetailsStep({
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field
-          label="First name"
+          label={t("firstName")}
           id="first-name"
           required
           error={errors.firstName}
@@ -69,14 +71,14 @@ export function DetailsStep({
             id="first-name"
             type="text"
             autoComplete="given-name"
-            placeholder="Jane"
+            placeholder={t("firstNamePlaceholder")}
             value={details.firstName}
             onChange={set("firstName")}
             className={`${inputClass} ${errors.firstName ? inputErr : inputOk}`}
           />
         </Field>
         <Field
-          label="Last name"
+          label={t("lastName")}
           id="last-name"
           required
           error={errors.lastName}
@@ -85,39 +87,39 @@ export function DetailsStep({
             id="last-name"
             type="text"
             autoComplete="family-name"
-            placeholder="Smith"
+            placeholder={t("lastNamePlaceholder")}
             value={details.lastName}
             onChange={set("lastName")}
             className={`${inputClass} ${errors.lastName ? inputErr : inputOk}`}
           />
         </Field>
       </div>
-      <Field label="Email" id="email" required error={errors.email}>
+      <Field label={t("email")} id="email" required error={errors.email}>
         <input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="jane@example.com"
+          placeholder={t("emailPlaceholder")}
           value={details.email}
           onChange={set("email")}
           className={`${inputClass} ${errors.email ? inputErr : inputOk}`}
         />
       </Field>
-      <Field label="Phone" id="phone" required error={errors.phone}>
+      <Field label={t("phone")} id="phone" required error={errors.phone}>
         <input
           id="phone"
           type="tel"
           autoComplete="tel"
-          placeholder="+34 600 000 000"
+          placeholder={t("phonePlaceholder")}
           value={details.phone}
           onChange={set("phone")}
           className={`${inputClass} ${errors.phone ? inputErr : inputOk}`}
         />
       </Field>
-      <Field label="Notes" id="notes">
+      <Field label={t("notes")} id="notes">
         <textarea
           id="notes"
-          placeholder="Anything we should know before your session? (optional)"
+          placeholder={t("notesPlaceholderShort")}
           value={details.notes ?? ""}
           rows={3}
           onChange={(e) => {
@@ -137,23 +139,23 @@ export function DetailsStep({
           }}
           label={
             <span className="text-petroleum-400 text-sm">
-              I accept the{" "}
+              {t("consentPrefix")}{" "}
               <Link
                 href="/terms"
                 className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Terms
+                {t("terms")}
               </Link>{" "}
-              and{" "}
+              {t("consentAnd")}{" "}
               <Link
                 href="/privacy"
                 className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Privacy Policy
+                {t("privacyPolicy")}
               </Link>
-              .
+              {t("consentSuffix")}
             </span>
           }
         />
@@ -165,36 +167,35 @@ export function DetailsStep({
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">
           <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
-            Data protection information
+            {t("dataProtectionTitle")}
           </span>
         </Accordion.Header>
         <Accordion.Content>
           <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
-            <strong className="font-medium">Data controller:</strong> Essentia
-            Social Wellness Club
+            <strong className="font-medium">{t("dataController")}</strong>{" "}
+            {t("dataControllerValue")}
             <br />
-            <strong className="font-medium">Purpose:</strong> managing your
-            session booking
+            <strong className="font-medium">{t("purpose")}</strong>{" "}
+            {t("purposeValue")}
             <br />
-            <strong className="font-medium">Legal basis:</strong> your consent
-            (GDPR art. 6.1.a)
+            <strong className="font-medium">{t("legalBasis")}</strong>{" "}
+            {t("legalBasisValue")}
             <br />
-            <strong className="font-medium">Your rights:</strong> access,
-            rectification, erasure, restriction, portability, and objection:
-            write to{" "}
+            <strong className="font-medium">{t("rights")}</strong>{" "}
+            {t("rightsValue")}{" "}
             <a
               href={`mailto:${contact.email}`}
               className="underline underline-offset-2"
             >
               {contact.email}
             </a>
-            . Full details in our{" "}
+            . {t("fullDetails")}{" "}
             <Link
               href="/privacy"
               className="underline underline-offset-2"
               target="_blank"
             >
-              Privacy Policy
+              {t("privacyPolicy")}
             </Link>
             .
           </p>

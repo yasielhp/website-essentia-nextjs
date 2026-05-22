@@ -60,6 +60,7 @@ function Header({
       aria-expanded={isOpen}
       aria-controls={panelId}
       onClick={toggle}
+      suppressHydrationWarning
       className="text-petroleum-700 flex w-full cursor-pointer items-center justify-between gap-4 py-2.5 transition-colors duration-200"
     >
       <span>{children}</span>
@@ -81,6 +82,7 @@ function Content({ children }: { children: ReactNode }) {
       id={panelId}
       role="region"
       aria-labelledby={triggerId}
+      suppressHydrationWarning
       className="grid transition-all duration-300 ease-in-out"
       style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
     >

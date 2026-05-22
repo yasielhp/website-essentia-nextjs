@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { signInSchema, parseErrors } from "@/lib/schemas";
 import { Button } from "@components/ui/button";
@@ -10,6 +11,7 @@ import { PasswordInput } from "@components/ui/input";
 import { useAuth } from "@/components/auth-provider";
 
 export default function SignInForm() {
+  const t = useTranslations("auth.signIn");
   const router = useRouter();
   const { push } = router;
   const { refreshUser } = useAuth();
@@ -42,9 +44,9 @@ export default function SignInForm() {
 
     if (error) {
       if (error.statusCode === 403) {
-        setError("Please verify your email before signing in.");
+        setError(t("errorVerify"));
       } else {
-        setError(error.message ?? "Sign in failed. Please try again.");
+        setError(error.message ?? t("errorGeneric"));
       }
       return;
     }
@@ -73,9 +75,9 @@ export default function SignInForm() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          Welcome back.
+          {t("heading")}
         </h1>
-        <p className="text-petroleum-400">Sign in to manage your sessions.</p>
+        <p className="text-petroleum-400">{t("subheading")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -84,7 +86,7 @@ export default function SignInForm() {
             htmlFor="email"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Email
+            {t("email")}
           </label>
           <input
             id="email"
@@ -95,7 +97,7 @@ export default function SignInForm() {
               setFieldErrors((p) => ({ ...p, email: undefined }));
             }}
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("emailPlaceholder")}
             className={`text-petroleum-700 placeholder:text-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
           />
           {fieldErrors.email && (
@@ -108,7 +110,7 @@ export default function SignInForm() {
             htmlFor="password"
             className="text-petroleum-700 text-sm font-medium"
           >
-            Password
+            {t("password")}
           </label>
           <PasswordInput
             id="password"
@@ -118,7 +120,7 @@ export default function SignInForm() {
               setFieldErrors((p) => ({ ...p, password: undefined }));
             }}
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder={t("passwordPlaceholder")}
           />
           {fieldErrors.password && (
             <p className="text-xs text-red-500">{fieldErrors.password}</p>
@@ -130,7 +132,7 @@ export default function SignInForm() {
             href="/forgot-password"
             className="text-petroleum-400 hover:text-petroleum-700 text-xs transition-colors"
           >
-            Forgot password?
+            {t("forgotPassword")}
           </Link>
         </div>
 
@@ -147,7 +149,7 @@ export default function SignInForm() {
           disabled={loading}
           className="w-full"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? t("submitting") : t("submit")}
         </Button>
       </form>
     </div>

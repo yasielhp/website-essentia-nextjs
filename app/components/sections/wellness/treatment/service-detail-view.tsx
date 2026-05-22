@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { ManualTherapyTreatment } from "@/data/services-data";
 
@@ -12,6 +13,7 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── Hero ─────────────────────────────────────────────────────
 
 function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
+  const t = useTranslations("wellness.treatments.serviceDetail");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,7 +62,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
             size="md"
             href={`/booking?service=manual-therapies&treatment=${service.id}`}
           >
-            Book a session
+            {t("bookSession")}
           </Button>
           <Button
             variant="outline-white"
@@ -74,7 +76,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
               }
             }}
           >
-            Learn more
+            {t("learnMore")}
           </Button>
         </div>
       </div>
@@ -85,6 +87,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
 // ─── Details ──────────────────────────────────────────────────
 
 function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
+  const t = useTranslations("wellness.treatments.serviceDetail");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -156,7 +159,7 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
             {/* Body text */}
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                About this treatment.
+                {t("aboutHeading")}
               </h2>
               <p className="text-petroleum-500 mt-6 leading-relaxed">
                 {service.body}
@@ -184,6 +187,7 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
+  const t = useTranslations("wellness.treatments.serviceDetail");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -249,11 +253,10 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
-              Ready to begin?
+              {t("ctaHeading")}
             </h2>
             <p className="text-sand-500 max-w-md leading-relaxed">
-              Reserve your {service.title} session at Essentia Wellness Club —
-              Baobab Suites, Costa Adeje, Tenerife.
+              {t("ctaBody", { service: service.title })}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
               <Button
@@ -261,14 +264,14 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
                 size="md"
                 href={`/booking?service=manual-therapies&treatment=${service.id}`}
               >
-                Book a session
+                {t("bookSession")}
               </Button>
               <Button
                 variant="outline-white"
                 size="md"
                 href="/wellness/manual-therapies#treatments"
               >
-                View all treatments
+                {t("viewAll")}
               </Button>
             </div>
           </div>

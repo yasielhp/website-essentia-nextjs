@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -12,6 +13,10 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── CommunitySection ─────────────────────────────────────────
 
 export default function CommunitySection() {
+  const t = useTranslations("home.community");
+  const tRun = useTranslations("home.community.runningClub");
+  const tEdu = useTranslations("home.community.educationPrograms");
+  const tEvents = useTranslations("home.community.events");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -125,9 +130,9 @@ export default function CommunitySection() {
           {/* ─── Header ───────────────────────────────────────── */}
           <div ref={headerRef} className="mb-10 text-center md:text-left">
             <h2 className="font-display text-petroleum-700 mt-3 text-3xl md:max-w-lg md:text-5xl">
-              A life well-lived
+              {t("headline")}
               <br />
-              is rarely lived alone.
+              {t("headline2")}
             </h2>
           </div>
 
@@ -148,19 +153,19 @@ export default function CommunitySection() {
               <div className="from-petroleum-900/90 via-petroleum-800/40 absolute inset-0 bg-gradient-to-t to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 text-white">
                 <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs tracking-wider uppercase backdrop-blur-sm">
-                  Running Club
+                  {tRun("badge")}
                 </span>
                 <h3 className="font-display text-xl text-white">
-                  Every Saturday morning, 7:30am
+                  {tRun("headline")}
                 </h3>
                 <p className="mt-1 text-sm text-white/70">
-                  Curated routes through Costa Adeje, all levels welcome.
+                  {tRun("description")}
                 </p>
                 <Link
                   href="/community/running-club"
                   className="text-sand-300 mt-3 inline-block text-sm transition-colors duration-150 hover:text-white"
                 >
-                  Join the run →
+                  {tRun("cta")}
                 </Link>
               </div>
             </div>
@@ -170,14 +175,13 @@ export default function CommunitySection() {
               {/* ─── Education Programs Card ───────────────── */}
               <div className="bg-petroleum-700 rounded-2xl p-5">
                 <p className="text-sand-600 text-xs tracking-wider uppercase">
-                  Programs
+                  {tEdu("badge")}
                 </p>
                 <h3 className="font-display text-sand-50 mt-2 text-xl">
-                  Longevity Masterclass Series
+                  {tEdu("headline")}
                 </h3>
                 <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                  Monthly deep-dives with leading researchers, clinicians, and
-                  practitioners, open to all members.
+                  {tEdu("description")}
                 </p>
                 <Button
                   variant="outline-white"
@@ -185,21 +189,20 @@ export default function CommunitySection() {
                   href="/community/education-programs"
                   className="mt-4 w-full md:w-auto"
                 >
-                  View Programs
+                  {tEdu("cta")}
                 </Button>
               </div>
 
               {/* ─── Events Card ───────────────────────────── */}
               <div className="bg-sand-50 rounded-2xl p-5">
                 <p className="text-petroleum-400 text-xs tracking-wider uppercase">
-                  Events
+                  {tEvents("badge")}
                 </p>
                 <h3 className="font-display text-petroleum-700 mt-2 text-xl">
-                  Member Gatherings
+                  {tEvents("headline")}
                 </h3>
                 <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                  Private dinners, wellness retreats, and seasonal celebrations:
-                  moments that make the club feel like home.
+                  {tEvents("description")}
                 </p>
                 <Button
                   variant="outline"
@@ -207,7 +210,7 @@ export default function CommunitySection() {
                   href="/community"
                   className="mt-4 w-full md:w-auto"
                 >
-                  Explore Events
+                  {tEvents("cta")}
                 </Button>
               </div>
             </div>

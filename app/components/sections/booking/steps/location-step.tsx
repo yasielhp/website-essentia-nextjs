@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Building2, Home, ChevronDown, Check, X } from "lucide-react";
 import { contact } from "@/constants/contact";
 
@@ -14,25 +15,30 @@ export type LocationAddress = {
 
 export type BookingLocation = "centro" | "domicilio";
 
-const LOCATIONS: {
+type LocationOption = {
   id: BookingLocation;
   label: string;
   description: string;
   Icon: React.FC<{ size?: number; className?: string }>;
-}[] = [
-  {
-    id: "centro",
-    label: "At the center",
-    description: contact.address,
-    Icon: Building2,
-  },
-  {
-    id: "domicilio",
-    label: "Home visit",
-    description: "We come to your address",
-    Icon: Home,
-  },
-];
+};
+
+function useLocationOptions(): LocationOption[] {
+  const t = useTranslations("booking.locationStep");
+  return [
+    {
+      id: "centro",
+      label: t("atTheCenter"),
+      description: contact.address,
+      Icon: Building2,
+    },
+    {
+      id: "domicilio",
+      label: t("homeVisit"),
+      description: t("homeVisitDescription"),
+      Icon: Home,
+    },
+  ];
+}
 
 const INPUT_BASE =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
@@ -48,9 +54,10 @@ function LocationItems({
   selected: BookingLocation | null;
   onSelect: (l: BookingLocation) => void;
 }) {
+  const locations = useLocationOptions();
   return (
     <div className="p-3">
-      {LOCATIONS.map(({ id, label, description, Icon }) => (
+      {locations.map(({ id, label, description, Icon }) => (
         <button
           key={id}
           onClick={() => onSelect(id)}
@@ -79,6 +86,8 @@ function LocationSelect({
   selected: BookingLocation | null;
   onSelect: (l: BookingLocation) => void;
 }) {
+  const t = useTranslations("booking.locationStep");
+  const locations = useLocationOptions();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -126,7 +135,7 @@ function LocationSelect({
     };
   }, [isOpen]);
 
-  const active = LOCATIONS.find((l) => l.id === selected);
+  const active = locations.find((l) => l.id === selected);
 
   const handleSelect = (l: BookingLocation) => {
     onSelect(l);
@@ -169,7 +178,7 @@ function LocationSelect({
               <span className="text-petroleum-100 text-lg">+</span>
             </div>
             <p className="text-petroleum-400 flex-1 text-sm">
-              Select a location
+              {t("selectLocation")}
             </p>
             <ChevronDown
               className={[
@@ -203,12 +212,12 @@ function LocationSelect({
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
               <h3 className="text-petroleum-700 font-medium">
-                Select a location
+                {t("modalTitle")}
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label="Close"
+                aria-label={t("close")}
               >
                 <X size={20} className="text-petroleum-400" />
               </button>
@@ -254,6 +263,7 @@ function AddressFields({
   onChange: (addr: LocationAddress) => void;
   onClearError?: (key: keyof LocationAddress) => void;
 }) {
+  const t = useTranslations("booking.locationStep");
   const set =
     (key: keyof LocationAddress) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,14 +278,15 @@ function AddressFields({
           htmlFor="addr-street"
           className="text-petroleum-500 text-sm font-medium"
         >
-          Street & number<span className="ml-0.5 text-red-400">*</span>
+          {t("street")}
+          <span className="ml-0.5 text-red-400">*</span>
         </label>
         <input
           id="addr-street"
           type="text"
           value={address.street}
           onChange={set("street")}
-          placeholder="Calle El Peñón, 23"
+          placeholder={t("streetPlaceholder")}
           autoComplete="address-line1"
           className={errors.street ? INPUT_ERR : INPUT_CLASS}
         />
@@ -288,14 +299,14 @@ function AddressFields({
           htmlFor="addr-building"
           className="text-petroleum-500 text-sm font-medium"
         >
-          Block, floor & door
+          {t("building")}
         </label>
         <input
           id="addr-building"
           type="text"
           value={address.building}
           onChange={set("building")}
-          placeholder="Block 3, 2nd floor, apt B"
+          placeholder={t("buildingPlaceholder")}
           autoComplete="address-line2"
           className={INPUT_CLASS}
         />
@@ -306,7 +317,8 @@ function AddressFields({
             htmlFor="addr-postal"
             className="text-petroleum-500 text-sm font-medium"
           >
-            Postal code<span className="ml-0.5 text-red-400">*</span>
+            {t("postalCode")}
+            <span className="ml-0.5 text-red-400">*</span>
           </label>
           <input
             id="addr-postal"
@@ -315,7 +327,7 @@ function AddressFields({
             maxLength={5}
             value={address.postalCode}
             onChange={set("postalCode")}
-            placeholder="38670"
+            placeholder={t("postalCodePlaceholder")}
             autoComplete="postal-code"
             className={errors.postalCode ? INPUT_ERR : INPUT_CLASS}
           />
@@ -328,7 +340,8 @@ function AddressFields({
             htmlFor="addr-municipality"
             className="text-petroleum-500 text-sm font-medium"
           >
-            Municipality<span className="ml-0.5 text-red-400">*</span>
+            {t("municipality")}
+            <span className="ml-0.5 text-red-400">*</span>
           </label>
           <input
             id="addr-municipality"
@@ -336,7 +349,7 @@ function AddressFields({
             list="tenerife-municipalities"
             value={address.municipality}
             onChange={set("municipality")}
-            placeholder="Adeje"
+            placeholder={t("municipalityPlaceholder")}
             autoComplete="address-level2"
             className={errors.municipality ? INPUT_ERR : INPUT_CLASS}
           />
@@ -369,11 +382,10 @@ export function LocationStep({
   onAddressChange: (address: LocationAddress) => void;
   onClearAddressError?: (key: keyof LocationAddress) => void;
 }) {
+  const t = useTranslations("booking.locationStep");
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-petroleum-400 text-sm">
-        Where would you like to receive the service?
-      </p>
+      <p className="text-petroleum-400 text-sm">{t("label")}</p>
       <LocationSelect
         selected={selected as BookingLocation | null}
         onSelect={onSelect}

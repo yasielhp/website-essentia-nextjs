@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function BrandStatement() {
+  const t = useTranslations("home.brandStatement");
   const sectionRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
@@ -167,16 +169,13 @@ export default function BrandStatement() {
             ref={titleRef}
             className="font-display text-3xl text-pretty md:max-w-lg md:text-4xl lg:text-5xl"
           >
-            A longer life should also be a better one.
+            {t("headline")}
           </p>
           <p
             ref={descRef}
             className="text-petroleum-400 leading-relaxed text-pretty md:max-w-3xl"
           >
-            Essentia brings together regenerative medicine, longevity protocols,
-            and an exclusive community in one intentional space, rooted in
-            Tenerife, designed for those who understand that how you live
-            matters as much as how long.
+            {t("body")}
           </p>
         </div>
 

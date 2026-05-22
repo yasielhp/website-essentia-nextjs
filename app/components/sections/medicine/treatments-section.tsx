@@ -5,9 +5,15 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { treatments } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Extract slug from href like "/medicine/hyperbaric-chambers"
+function slugFromHref(href: string): string {
+  return href.split("/").pop() ?? "";
+}
 
 // ─── TreatmentCard ────────────────────────────────────────────
 
@@ -16,6 +22,9 @@ function TreatmentCard({
 }: {
   treatment: (typeof treatments)[number];
 }) {
+  const t = useTranslations("medicine.treatments.items");
+  const slug = slugFromHref(treatment.href);
+  const title = t(`${slug}.title`);
   return (
     <Link
       href={treatment.href}
@@ -24,7 +33,7 @@ function TreatmentCard({
     >
       <Image
         src={treatment.img}
-        alt={treatment.title}
+        alt={title}
         fill
         sizes="(max-width: 767px) 100vw, 33vw"
         className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -37,9 +46,9 @@ function TreatmentCard({
         }}
       />
       <div className="absolute bottom-0 left-0 p-6">
-        <h3 className="font-body text-xl text-white">{treatment.title}</h3>
+        <h3 className="font-body text-xl text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
-          {treatment.description}
+          {t(`${slug}.description`)}
         </p>
       </div>
     </Link>
@@ -49,6 +58,7 @@ function TreatmentCard({
 // ─── TreatmentsSection ────────────────────────────────────────
 
 export default function TreatmentsSection() {
+  const t = useTranslations("medicine.treatments");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -165,10 +175,10 @@ export default function TreatmentsSection() {
             {/* ── Header ── */}
             <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                The treatments.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mt-2 leading-relaxed">
-                Three clinical protocols. One longevity system.
+                {t("subheading")}
               </p>
             </div>
 

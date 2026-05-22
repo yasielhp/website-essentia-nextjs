@@ -3,9 +3,11 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 export default function BlogHeroSection() {
+  const t = useTranslations("blog.hero");
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function BlogHeroSection() {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src="/images/community/hero.webp"
-        alt="Essentia Blog"
+        alt={t("imageAlt")}
         fill
         priority
         sizes="100vw"
@@ -43,12 +45,12 @@ export default function BlogHeroSection() {
       />
       <div ref={contentRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          Insights for
-          <br />a longer life.
+          {t("heading")}
+          <br />
+          {t("heading2")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          Protocols, perspectives, and science from the Essentia team — written
-          for people who take their health seriously.
+          {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -63,7 +65,7 @@ export default function BlogHeroSection() {
               }
             }}
           >
-            Read articles
+            {t("ctaRead")}
           </Button>
           <Button
             variant="outline-white"
@@ -77,7 +79,7 @@ export default function BlogHeroSection() {
               }
             }}
           >
-            Subscribe
+            {t("ctaSubscribe")}
           </Button>
         </div>
       </div>

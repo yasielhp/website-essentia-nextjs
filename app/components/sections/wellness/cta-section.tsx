@@ -3,11 +3,13 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function CtaSection() {
+  const t = useTranslations("wellness.cta");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -73,19 +75,17 @@ export default function CtaSection() {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
-              Ready to restore?
+              {t("heading")}
             </h2>
             <p className="text-sand-500 max-w-md leading-relaxed">
-              Access to all wellness protocols is included with every Essentia
-              membership. Your tier determines the depth of your programme and
-              the priority of your bookings.
+              {t("body")}
             </p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button variant="white" size="md" href="/community/memberships">
-                View memberships
+                {t("ctaMembership")}
               </Button>
               <Button variant="outline-white" size="md" href="/contact">
-                Talk to us first
+                {t("ctaContact")}
               </Button>
             </div>
           </div>

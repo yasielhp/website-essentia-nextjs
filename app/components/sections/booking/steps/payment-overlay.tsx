@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 export type RedsysFormData = {
   formUrl: string;
@@ -17,6 +18,7 @@ export function PaymentOverlay({
   formData: RedsysFormData;
   onClose: () => void;
 }) {
+  const t = useTranslations("booking.paymentOverlay");
   const formRef = useRef<HTMLFormElement>(null);
 
   // Auto-submit the form → redirects to Redsys gateway
@@ -66,18 +68,16 @@ export function PaymentOverlay({
         <div className="border-petroleum-200 border-t-petroleum-600 size-10 animate-spin rounded-full border-4" />
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-petroleum-700 text-sm font-semibold">
-            Redirigiendo al pago seguro…
+            {t("redirecting")}
           </p>
-          <p className="text-petroleum-400 text-xs">
-            Te estamos llevando a la pasarela de pago de Redsys.
-          </p>
+          <p className="text-petroleum-400 text-xs">{t("takingYou")}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="text-petroleum-400 hover:text-petroleum-500 text-xs underline transition-colors"
         >
-          Cancelar
+          {t("cancel")}
         </button>
       </div>
     </div>

@@ -4,13 +4,14 @@ import { useRef, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
 import {
   PaymentOverlay,
   type RedsysFormData,
 } from "@/components/sections/booking/steps/payment-overlay";
-import { TierId, VALID_TIERS, tiers, pricing } from "./data";
+import { TierId, VALID_TIERS, tierIds, pricing } from "./data";
 import { IconCheck } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -24,20 +25,21 @@ function TierTabs({
   selected: TierId;
   onChange: (id: TierId) => void;
 }) {
+  const t = useTranslations("memberships.tiers");
   return (
     <div className="bg-petroleum-100 inline-flex rounded-full p-1">
-      {tiers.map((tier) => (
+      {tierIds.map((id) => (
         <button
-          key={tier.id}
-          onClick={() => onChange(tier.id)}
+          key={id}
+          onClick={() => onChange(id)}
           className={[
             "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-            selected === tier.id
+            selected === id
               ? "bg-petroleum-700 text-sand-50 shadow-sm"
               : "text-petroleum-500 hover:text-petroleum-700",
           ].join(" ")}
         >
-          {tier.name}
+          {t(`${id}.name`)}
         </button>
       ))}
     </div>
@@ -47,20 +49,22 @@ function TierTabs({
 // ─── TierDisplay ─────────────────────────────────────────────
 
 function TierDisplay({
-  tier,
+  tierId,
   price,
   features,
   displayRef,
   onBecomeMember,
   loading,
 }: {
-  tier: (typeof tiers)[number];
+  tierId: TierId;
   price: number;
   features: readonly string[];
   displayRef: React.RefObject<HTMLDivElement | null>;
   onBecomeMember: () => void;
   loading: boolean;
 }) {
+  const t = useTranslations("memberships.tiers");
+  const ts = useTranslations("memberships.selector");
   return (
     <div
       ref={displayRef}
@@ -71,26 +75,28 @@ function TierDisplay({
         {/* Left: name + price (+ description + button on mobile only) */}
         <div className="flex flex-col md:w-1/2 md:pr-12">
           <span className="bg-petroleum-100 text-petroleum-500 self-start rounded-full px-3 py-1 text-xs tracking-wider uppercase">
-            {tier.badge}
+            {t(`${tierId}.badge`)}
           </span>
 
           <h3 className="font-display text-petroleum-700 mt-4 text-5xl md:text-6xl">
-            {tier.name}
+            {t(`${tierId}.name`)}
           </h3>
           <p className="text-petroleum-400 mt-1 text-xs tracking-widest uppercase">
-            {tier.tagline}
+            {t(`${tierId}.tagline`)}
           </p>
 
           <div className="mt-7 flex items-end gap-1.5">
             <span className="font-display text-petroleum-700 text-5xl leading-none">
               €{price}
             </span>
-            <span className="text-petroleum-400 mb-1 text-sm">/month</span>
+            <span className="text-petroleum-400 mb-1 text-sm">
+              {ts("perMonth")}
+            </span>
           </div>
 
           {/* Mobile-only: description + button */}
           <p className="text-petroleum-500 mt-5 text-sm leading-relaxed md:hidden">
-            {tier.description}
+            {t(`${tierId}.description`)}
           </p>
           <div className="mt-auto pt-7 md:hidden">
             <Button
@@ -100,7 +106,7 @@ function TierDisplay({
               disabled={loading}
               className="w-full"
             >
-              {loading ? "Loading…" : "Become a member"}
+              {loading ? ts("loading") : ts("becomeMember")}
             </Button>
           </div>
         </div>
@@ -124,7 +130,7 @@ function TierDisplay({
       {/* ── Desktop-only bottom: description + button full width ── */}
       <div className="hidden pt-8 md:block">
         <p className="text-petroleum-500 text-sm leading-relaxed">
-          {tier.description}
+          {t(`${tierId}.description`)}
         </p>
         <div className="mt-6">
           <Button
@@ -134,7 +140,7 @@ function TierDisplay({
             disabled={loading}
             className="w-full md:w-auto"
           >
-            {loading ? "Loading…" : "Become a member"}
+            {loading ? ts("loading") : ts("becomeMember")}
           </Button>
         </div>
       </div>
@@ -145,6 +151,7 @@ function TierDisplay({
 // ─── Success Banner ───────────────────────────────────────────
 
 function SuccessBanner() {
+  const t = useTranslations("memberships.selector");
   return (
     <div className="mx-auto max-w-2xl rounded-2xl bg-green-50 px-8 py-10 text-center">
       <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100">
@@ -165,11 +172,10 @@ function SuccessBanner() {
         </svg>
       </div>
       <h3 className="text-petroleum-700 font-display text-2xl">
-        Welcome to Essentia!
+        {t("successHeading")}
       </h3>
       <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
-        Your membership is confirmed. You&apos;ll receive a confirmation email
-        shortly.
+        {t("successBody")}
       </p>
     </div>
   );
@@ -178,6 +184,8 @@ function SuccessBanner() {
 // ─── TierSelector ─────────────────────────────────────────────
 
 function TierSelectorInner() {
+  const t = useTranslations("memberships.selector");
+  const tt = useTranslations("memberships.tiers");
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const paramValue = get("tier") as TierId | null;
@@ -388,9 +396,9 @@ function TierSelectorInner() {
     }
   }
 
-  const activeTier = tiers.find((t) => t.id === selectedTier)!;
-  const activePrice = dbPrices[activeTier.id] ?? pricing[activeTier.id];
-  const activeFeatures = dbFeaturesList[activeTier.id] ?? activeTier.features;
+  const activePrice = dbPrices[selectedTier] ?? pricing[selectedTier];
+  const translatedFeatures = tt.raw(`${selectedTier}.features`) as string[];
+  const activeFeatures = dbFeaturesList[selectedTier] ?? translatedFeatures;
 
   return (
     <>
@@ -400,10 +408,10 @@ function TierSelectorInner() {
             <div ref={bodyRef} className="flex flex-col gap-8">
               <div className="text-center">
                 <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                  Choose your membership.
+                  {t("heading")}
                 </h2>
                 <p className="text-petroleum-400 mx-auto mt-4 max-w-lg leading-relaxed">
-                  Select a tier to see what&apos;s included.
+                  {t("subheading")}
                 </p>
               </div>
 
@@ -415,7 +423,7 @@ function TierSelectorInner() {
                 <SuccessBanner />
               ) : (
                 <TierDisplay
-                  tier={activeTier}
+                  tierId={selectedTier}
                   price={activePrice}
                   features={activeFeatures}
                   displayRef={displayRef}

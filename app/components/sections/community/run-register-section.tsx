@@ -12,6 +12,7 @@ import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
+import { useLocale, useTranslations } from "next-intl";
 
 type Race = {
   id: string;
@@ -94,16 +95,19 @@ const initialState: RegisterState = {
   form: { firstName: "", lastName: "", email: "", phone: "" },
 };
 
-function formatRaceDate(iso: string | null): string {
+function formatRaceDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
   const datePart = iso.split("T")[0];
   const [y, m, d] = datePart.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(y, m - 1, d).toLocaleDateString(
+    locale === "es" ? "es-ES" : "en-GB",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 }
 
 function formatRaceTime(iso: string | null): string {
@@ -148,11 +152,12 @@ function RaceInfoPanel({
   displayDate: string;
   raceTime: string;
 }) {
+  const t = useTranslations("community.runningClub.register");
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          {displayDate || "Register for this run"}.
+          {displayDate || t("title")}.
         </h1>
         {raceTime && (
           <p className="text-petroleum-400 mt-2 text-sm">{raceTime}</p>
@@ -162,7 +167,7 @@ function RaceInfoPanel({
       <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
         <Image
           src="/images/community/running-club-next.webp"
-          alt="Essentia Running Club"
+          alt={t("imageAlt")}
           fill
           sizes="(max-width: 767px) 100vw, 50vw"
           className="object-cover"
@@ -190,24 +195,22 @@ function RaceInfoPanel({
 }
 
 function MemberBlockerModal({ onBack }: { onBack: () => void }) {
+  const t = useTranslations("community.runningClub.register.memberBlocker");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Active membership found
+            {t("heading")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This email is linked to an active Essentia membership. Sign in to
-            register with your member benefits.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button variant="solid" size="md" href="/sign-in" className="w-full">
-            Sign in to my account
+            {t("signIn")}
           </Button>
           <Button variant="ghost" size="md" onClick={onBack} className="w-full">
-            Continue as guest
+            {t("continue")}
           </Button>
         </div>
       </div>
@@ -234,35 +237,37 @@ function GuestRegistrationForm({
   onConsent,
   onSubmit,
 }: GuestFormProps) {
+  const td = useTranslations("community.runningClub.register.details");
+  const tdp = useTranslations("community.runningClub.register.dataProtection");
   return (
     <div className="bg-sand-100 rounded-2xl p-8">
       <h2 className="font-display text-petroleum-700 mb-6 text-2xl">
-        Your details.
+        {td("title")}
       </h2>
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="First name" id="first-name">
+          <Field label={td("firstName")} id="first-name">
             <input
               id="first-name"
               name="firstName"
               type="text"
               required
               autoComplete="given-name"
-              placeholder="Jane"
+              placeholder={td("firstNamePlaceholder")}
               value={form.firstName}
               onChange={(e) => onField("firstName", e.target.value)}
               disabled={checking}
               className={inputClass}
             />
           </Field>
-          <Field label="Last name" id="last-name">
+          <Field label={td("lastName")} id="last-name">
             <input
               id="last-name"
               name="lastName"
               type="text"
               required
               autoComplete="family-name"
-              placeholder="Smith"
+              placeholder={td("lastNamePlaceholder")}
               value={form.lastName}
               onChange={(e) => onField("lastName", e.target.value)}
               disabled={checking}
@@ -271,14 +276,14 @@ function GuestRegistrationForm({
           </Field>
         </div>
 
-        <Field label="Email" id="email">
+        <Field label={td("email")} id="email">
           <input
             id="email"
             name="email"
             type="email"
             required
             autoComplete="email"
-            placeholder="jane@example.com"
+            placeholder={td("emailPlaceholder")}
             value={form.email}
             onChange={(e) => onField("email", e.target.value)}
             disabled={checking}
@@ -286,14 +291,14 @@ function GuestRegistrationForm({
           />
         </Field>
 
-        <Field label="Phone" id="phone">
+        <Field label={td("phone")} id="phone">
           <input
             id="phone"
             name="phone"
             type="tel"
             required
             autoComplete="tel"
-            placeholder="+34 600 000 000"
+            placeholder={td("phonePlaceholder")}
             value={form.phone}
             onChange={(e) => onField("phone", e.target.value)}
             disabled={checking}
@@ -310,21 +315,21 @@ function GuestRegistrationForm({
           error={consentError}
           label={
             <span className="text-petroleum-400 text-sm">
-              I accept the{" "}
+              {td("consent")}{" "}
               <Link
                 href="/terms"
                 className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Terms
+                {td("terms")}
               </Link>{" "}
-              and{" "}
+              {td("consentAnd")}{" "}
               <Link
                 href="/privacy"
                 className="text-petroleum-500 hover:text-petroleum-800 underline underline-offset-2 transition-colors"
                 target="_blank"
               >
-                Privacy Policy
+                {td("privacy")}
               </Link>
               .
             </span>
@@ -338,43 +343,42 @@ function GuestRegistrationForm({
           disabled={checking}
           className="w-full"
         >
-          {checking ? "Checking…" : "Confirm registration"}
+          {checking ? td("submitting") : td("submit")}
         </Button>
 
         {/* Información RGPD art. 13 */}
         <Accordion className="border-sand-500 rounded-2xl border px-6">
           <Accordion.Header iconClassName="text-petroleum-400">
             <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">
-              Data protection information
+              {tdp("heading")}
             </span>
           </Accordion.Header>
           <Accordion.Content>
             <p className="text-petroleum-400 pb-3 text-xs leading-relaxed">
-              <strong className="font-medium">Data controller:</strong> Essentia
-              Social Wellness Club
+              <strong className="font-medium">{tdp("controller")}</strong>{" "}
+              {tdp("controllerValue")}
               <br />
-              <strong className="font-medium">Purpose:</strong> managing your
-              run registration
+              <strong className="font-medium">{tdp("purpose")}</strong>{" "}
+              {tdp("purposeValue")}
               <br />
-              <strong className="font-medium">Legal basis:</strong> your consent
-              (GDPR art. 6.1.a)
+              <strong className="font-medium">{tdp("legalBasis")}</strong>{" "}
+              {tdp("legalBasisValue")}
               <br />
-              <strong className="font-medium">Your rights:</strong> access,
-              rectification, erasure, restriction, portability, and objection:
-              write to{" "}
+              <strong className="font-medium">{tdp("rights")}</strong>{" "}
+              {tdp("rightsValue")}{" "}
               <a
                 href={`mailto:${contact.email}`}
                 className="underline underline-offset-2"
               >
                 {contact.email}
               </a>
-              . Full details in our{" "}
+              . {tdp("rightsFull")}{" "}
               <Link
                 href="/privacy"
                 className="underline underline-offset-2"
                 target="_blank"
               >
-                Privacy Policy
+                {tdp("privacy")}
               </Link>
               .
             </p>
@@ -388,6 +392,8 @@ function GuestRegistrationForm({
 function RunRegisterContent() {
   const { get } = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const locale = useLocale();
+  const t = useTranslations("community.runningClub.register");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(registerReducer, initialState);
   const { race, stage, loading, checking, consent, consentError, form } = state;
@@ -424,17 +430,21 @@ function RunRegisterContent() {
   }, []);
 
   const raceTime = formatRaceTime(race?.date ?? null);
-  const displayDate = race ? formatRaceDate(race.date) : "";
+  const displayDate = race ? formatRaceDate(race.date, locale) : "";
 
   const raceDetails: RaceDetail[] = race
     ? [
-        { id: "date", icon: Calendar, value: formatRaceDate(race.date) },
+        {
+          id: "date",
+          icon: Calendar,
+          value: formatRaceDate(race.date, locale),
+        },
         {
           id: "distance",
           icon: Route,
           value: race.distance_km ? `${race.distance_km} km` : "—",
         },
-        { id: "access", icon: Lock, value: "Members only" },
+        { id: "access", icon: Lock, value: t("membersOnly") },
         { id: "location", icon: MapPin, value: race.location ?? "—" },
       ]
     : [];
@@ -444,7 +454,7 @@ function RunRegisterContent() {
     if (!consent) {
       dispatch({
         type: "SET_CONSENT_ERROR",
-        error: "You must accept the terms and privacy policy to register.",
+        error: t("details.consentError"),
       });
       return;
     }
@@ -464,6 +474,7 @@ function RunRegisterContent() {
       p_first_name: form.firstName,
       p_last_name: form.lastName,
       p_phone: form.phone,
+      p_language: locale,
     });
 
     await insforge.database.rpc("register_for_race", {
@@ -500,33 +511,33 @@ function RunRegisterContent() {
               {stage === "success" ? (
                 <div className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-8">
                   <p className="font-display text-petroleum-700 text-2xl">
-                    You&apos;re registered.
+                    {t("success.title")}
                   </p>
                   <p className="text-petroleum-400 text-sm leading-relaxed">
-                    We&apos;ve received your registration for the{" "}
+                    {t("success.bodyPrefix")}{" "}
                     <strong className="text-petroleum-500 font-medium">
-                      {displayDate || race?.title || "next run"}
+                      {displayDate || race?.title || t("success.fallbackTitle")}
                     </strong>{" "}
-                    run.
+                    {t("success.bodySuffix")}
                     {raceTime
-                      ? ` See you at ${raceTime} at ${race?.location ?? "the meeting point"}.`
+                      ? ` ${t("success.seeYouAt")} ${raceTime} ${race?.location ?? t("success.atMeetingPoint")}.`
                       : ""}
                   </p>
                   <Link
                     href="/community/running-club"
                     className="text-petroleum-500 hover:text-petroleum-700 mt-2 text-sm underline underline-offset-4 transition-colors"
                   >
-                    Back to Running Club
+                    {t("success.back")}
                   </Link>
                 </div>
               ) : !authLoading && user ? (
                 <div className="bg-sand-100 flex flex-col gap-6 rounded-2xl p-8">
                   <div>
                     <h2 className="font-display text-petroleum-700 text-2xl">
-                      Confirm your registration.
+                      {t("confirm.heading")}
                     </h2>
                     <p className="text-petroleum-400 mt-2 text-sm">
-                      Registering as{" "}
+                      {t("confirm.registeringAs")}{" "}
                       <span className="text-petroleum-500 font-medium">
                         {user.email}
                       </span>
@@ -539,7 +550,7 @@ function RunRegisterContent() {
                     disabled={loading || !race}
                     className="w-full"
                   >
-                    {loading ? "Confirming…" : "Confirm registration"}
+                    {loading ? t("confirm.submitting") : t("confirm.submit")}
                   </Button>
                 </div>
               ) : (

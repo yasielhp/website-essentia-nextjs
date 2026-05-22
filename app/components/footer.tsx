@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { legalMenu, maiMenu } from "@/constants/menu";
 
@@ -10,8 +11,71 @@ import { contact } from "@/constants/contact";
 import { Accordion, type AccordionGroupHandle } from "@components/ui/accordion";
 import { AnimatedLink, AnimatedIconLink } from "@components/ui/animated-text";
 
+// Map the hardcoded `maiMenu` href slugs to the keys defined in
+// `messages/{locale}/nav.json`.
+const menuNameKeyByHref: Record<string, string> = {
+  "/wellness": "wellness",
+  "/medicine": "medicine",
+  "/community": "community",
+  "/": "essentia",
+};
+
+const sectionKeyByMenuHref: Record<
+  string,
+  "wellness" | "medicine" | "community" | null
+> = {
+  "/wellness": "wellness",
+  "/medicine": "medicine",
+  "/community": "community",
+  "/": null,
+};
+
+const itemKeyByHref: Record<string, string> = {
+  "/wellness/manual-therapies": "manualTherapies",
+  "/wellness/contrast-therapy": "thermalContrast",
+  "/wellness/breathing-sessions": "breathingSessions",
+  "/wellness/red-light-therapy": "redLightTherapy",
+  "/wellness/functional-well-being": "functionalWellBeing",
+  "/medicine/regenerative-medicine": "regenerativeMedicine",
+  "/medicine/intravenous-therapy": "intravenousTherapy",
+  "/medicine/hyperbaric-chambers": "hyperbaricChambers",
+  "/community/running-club": "runningClub",
+  "/community/education-programs": "educationAndPrograms",
+  "/community/memberships": "memberships",
+  "/about": "about",
+  "/blog": "blog",
+  "/shop": "shop",
+  "/contact": "contact",
+};
+
+const legalKeyByHref: Record<string, string> = {
+  "/legal": "legal",
+  "/privacy": "privacy",
+  "/terms": "terms",
+  "/cookies": "cookies",
+};
+
 export const Footer = () => {
   const accordionRef = useRef<AccordionGroupHandle>(null);
+  const tNav = useTranslations("nav");
+  const tCommon = useTranslations("common");
+  const tFooter = useTranslations("footer");
+
+  const translateMenuName = (href: string, fallback: string) => {
+    const key = menuNameKeyByHref[href];
+    return key ? tNav(key) : fallback;
+  };
+
+  const translateItemName = (
+    menuHref: string,
+    itemHref: string,
+    fallback: string,
+  ) => {
+    const itemKey = itemKeyByHref[itemHref];
+    if (!itemKey) return fallback;
+    const sectionKey = sectionKeyByMenuHref[menuHref];
+    return sectionKey ? tNav(`items.${sectionKey}.${itemKey}`) : tNav(itemKey);
+  };
 
   return (
     <footer className="bg-petroleum-700 text-sand-500 z-10 -mt-6 flex w-full flex-col rounded-tl-3xl rounded-tr-3xl">
@@ -22,19 +86,25 @@ export const Footer = () => {
           {maiMenu.map((item) => (
             <div key={item.name} className="hidden flex-col gap-2 md:flex">
               <span className="text-sand-700 text-base font-semibold">
-                {item.name}
+                {translateMenuName(item.href, item.name)}
               </span>
               <ul className="flex flex-col gap-1 text-sm md:gap-1">
                 {item.itemMenu.map((subItem) => (
                   <li key={subItem.itemName}>
                     <AnimatedLink href={subItem.href}>
-                      {subItem.itemName}
+                      {translateItemName(
+                        item.href,
+                        subItem.href,
+                        subItem.itemName,
+                      )}
                     </AnimatedLink>
                   </li>
                 ))}
                 {item.name === "Community" && (
                   <li>
-                    <AnimatedLink href="/sign-in">Member login</AnimatedLink>
+                    <AnimatedLink href="/sign-in">
+                      {tCommon("memberLogin")}
+                    </AnimatedLink>
                   </li>
                 )}
               </ul>
@@ -52,7 +122,7 @@ export const Footer = () => {
                   <Accordion>
                     <Accordion.Header iconClassName="text-sand-500">
                       <div className="text-sand-500 font-medium">
-                        {menu.name}
+                        {translateMenuName(menu.href, menu.name)}
                       </div>
                     </Accordion.Header>
                     <Accordion.Content>
@@ -68,7 +138,11 @@ export const Footer = () => {
                               onClick={() => accordionRef.current?.close()}
                             >
                               <span className="text-sand-700 text-sm font-medium">
-                                {item.itemName}
+                                {translateItemName(
+                                  menu.href,
+                                  item.href,
+                                  item.itemName,
+                                )}
                               </span>
                             </AnimatedLink>
                           </li>
@@ -81,7 +155,7 @@ export const Footer = () => {
                               onClick={() => accordionRef.current?.close()}
                             >
                               <span className="text-sand-700 text-sm font-medium">
-                                Member login
+                                {tCommon("memberLogin")}
                               </span>
                             </AnimatedLink>
                           </li>
@@ -141,13 +215,16 @@ export const Footer = () => {
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-between gap-3 md:flex-row">
           <LanguageSelector />
           <ul className="flex gap-8 md:gap-6">
-            {legalMenu.map((item) => (
-              <li key={item.name}>
-                <AnimatedLink href={item.href} className="text-sm">
-                  {item.name}
-                </AnimatedLink>
-              </li>
-            ))}
+            {legalMenu.map((item) => {
+              const legalKey = legalKeyByHref[item.href];
+              return (
+                <li key={item.name}>
+                  <AnimatedLink href={item.href} className="text-sm">
+                    {legalKey ? tNav(`legal.${legalKey}`) : item.name}
+                  </AnimatedLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
@@ -162,8 +239,10 @@ export const Footer = () => {
             © {new Date().getFullYear()}
           </span>
           {"  "}
-          <h2> Essentia | Longevity Center & Social Wellness Club</h2>
-          <span className="hidden md:inline">. All rights reserved</span>
+          <h2> {tFooter("copyright")}</h2>
+          <span className="hidden md:inline">
+            . {tFooter("allRightsReserved")}
+          </span>
         </div>
       </section>
     </footer>

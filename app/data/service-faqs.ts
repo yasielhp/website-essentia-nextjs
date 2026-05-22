@@ -214,7 +214,8 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
         "Yes. All regenerative medicine treatments begin with a medical consultation and, where appropriate, comprehensive blood and biomarker testing. This allows our team to design a protocol that is safe, targeted, and measurable.",
     },
     {
-      question: "How is Essentia's approach to regenerative medicine different?",
+      question:
+        "How is Essentia's approach to regenerative medicine different?",
       answer:
         "We integrate regenerative medicine within a broader longevity framework — combining it with nutrition, sleep, movement, and wellness protocols. We do not offer standalone treatments in isolation. Every protocol is contextualised within your overall health picture and tracked over time.",
     },

@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { MapPin, Route, Lock, Globe } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
 import { IconRunner } from "@/components/ui/icons";
@@ -23,9 +24,9 @@ type NextRace = {
   access: "members" | "open" | null;
 };
 
-function formatRaceDate(iso: string | null): string {
+function formatRaceDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -40,30 +41,17 @@ function formatRaceTime(iso: string | null): string {
   return match[1] === "00:00" ? "" : match[1];
 }
 
-const expects = [
-  {
-    number: "I",
-    title: "Curated routes",
-    description:
-      "Each week a different route through Costa Adeje: coastal paths, volcanic trails, and clifftop roads with Atlantic views.",
-  },
-  {
-    number: "II",
-    title: "Paced groups",
-    description:
-      "We split into pace groups so no one is left behind. Whether you run 5 min/km or 7, there is a group for you.",
-  },
-  {
-    number: "III",
-    title: "Community first",
-    description:
-      "The run ends with a shared breakfast. The best conversations happen after the last kilometre.",
-  },
-];
+const expectKeys = ["routes", "paced", "community"] as const;
+const expectNumbers: Record<(typeof expectKeys)[number], string> = {
+  routes: "I",
+  paced: "II",
+  community: "III",
+};
 
 // ─── Hero ─────────────────────────────────────────────────────
 
 function RunningClubHero() {
+  const t = useTranslations("community.runningClub.hero");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,7 +74,7 @@ function RunningClubHero() {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src="/images/community/running-club-hero.webp"
-        alt="Essentia Running Club — coastal route in Costa Adeje"
+        alt={t("imageAlt")}
         fill
         priority
         sizes="100vw"
@@ -101,12 +89,10 @@ function RunningClubHero() {
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          Running Club.
+          {t("title")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          Every Saturday morning we run together through some of the most
-          dramatic coastline in the Canary Islands. No race, no ego, just
-          movement and good company.
+          {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -121,14 +107,14 @@ function RunningClubHero() {
               }
             }}
           >
-            Next run
+            {t("ctaNextRun")}
           </Button>
           <Button
             variant="outline-white"
             size="md"
             href="/community/memberships"
           >
-            Join the community
+            {t("ctaJoin")}
           </Button>
         </div>
       </div>
@@ -139,6 +125,8 @@ function RunningClubHero() {
 // ─── Next run ─────────────────────────────────────────────────
 
 function NextRunSection({ race }: { race: NextRace | null }) {
+  const t = useTranslations("community.runningClub.next");
+  const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -149,16 +137,21 @@ function NextRunSection({ race }: { race: NextRace | null }) {
     {
       id: "distance",
       icon: Route,
-      value: race?.distance_km ? `${race.distance_km} km` : "—",
+      value: race?.distance_km ? `${race.distance_km} km` : t("dash"),
       wide: false,
     },
     {
       id: "access",
       icon: race?.access === "open" ? Globe : Lock,
-      value: race?.access === "open" ? "Open to all" : "Members only",
+      value: race?.access === "open" ? t("openToAll") : t("membersOnly"),
       wide: false,
     },
-    { id: "location", icon: MapPin, value: race?.location ?? "—", wide: true },
+    {
+      id: "location",
+      icon: MapPin,
+      value: race?.location ?? t("dash"),
+      wide: true,
+    },
   ];
 
   useEffect(() => {
@@ -242,10 +235,10 @@ function NextRunSection({ race }: { race: NextRace | null }) {
           <div ref={bodyRef} className="flex flex-col gap-8">
             <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                Next run.
+                {t("heading")}
               </h2>
               <p className="text-petroleum-400 mt-2 leading-relaxed">
-                Show up, run, share breakfast. Every Saturday without exception.
+                {t("subheading")}
               </p>
             </div>
             <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
@@ -253,7 +246,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                 {race?.image_url ? (
                   <Image
                     src={race.image_url}
-                    alt={race.title}
+                    alt={race.title || t("altDefault")}
                     fill
                     sizes="(max-width: 767px) 100vw, 50vw"
                     className="object-cover"
@@ -262,7 +255,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                   <div className="bg-petroleum-700 flex h-full w-full flex-col items-center justify-center gap-4">
                     <IconRunner className="text-petroleum-500 opacity-60" />
                     <span className="text-petroleum-400 text-xs tracking-widest uppercase">
-                      No image yet
+                      {t("noImage")}
                     </span>
                   </div>
                 )}
@@ -271,7 +264,9 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                 <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      {race ? formatRaceDate(race.date) : "Coming soon."}
+                      {race
+                        ? formatRaceDate(race.date, locale)
+                        : t("comingSoon")}
                     </h3>
                     {raceTime && (
                       <p className="text-petroleum-400 mt-1 text-sm">
@@ -282,7 +277,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                   <p className="text-petroleum-500 text-sm leading-relaxed">
                     {race
                       ? `${race.title}. ${race.description ?? ""}`
-                      : "Details for the next run will be announced soon."}
+                      : t("comingSoonBody")}
                   </p>
                 </div>
                 <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
@@ -311,7 +306,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                   }
                   className="w-full md:w-auto md:self-start"
                 >
-                  Register for this run
+                  {t("cta")}
                 </Button>
               </div>
             </div>
@@ -325,6 +320,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
 // ─── What to expect ───────────────────────────────────────────
 
 function ExpectSection() {
+  const t = useTranslations("community.runningClub.expect");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -395,24 +391,21 @@ function ExpectSection() {
           <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
             <div className="md:max-w-lg">
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                What to expect.
+                {t("heading")}
               </h2>
-              <p className="text-sand-500 mt-4 leading-relaxed">
-                The Saturday run is open to all Essentia members. No sign-up
-                needed: just show up at 7:30, ready to move.
-              </p>
+              <p className="text-sand-500 mt-4 leading-relaxed">{t("body")}</p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {expects.map((e) => (
-                <div key={e.number}>
+              {expectKeys.map((k) => (
+                <div key={k}>
                   <span className="font-display text-petroleum-500 text-5xl">
-                    {e.number}
+                    {expectNumbers[k]}
                   </span>
                   <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {e.title}
+                    {t(`items.${k}.title`)}
                   </h3>
                   <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {e.description}
+                    {t(`items.${k}.description`)}
                   </p>
                 </div>
               ))}
@@ -427,6 +420,7 @@ function ExpectSection() {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection() {
+  const t = useTranslations("community.runningClub.ctaBlock");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -492,14 +486,13 @@ function CtaSection() {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-              See you Saturday.
+              {t("heading")}
             </h2>
             <p className="text-petroleum-400 max-w-md leading-relaxed">
-              Running Club access is included with every Essentia membership.
-              Choose your tier and join the community.
+              {t("body")}
             </p>
             <Button variant="solid" size="md" href="/community/memberships">
-              Join memberships
+              {t("cta")}
             </Button>
           </div>
         </div>

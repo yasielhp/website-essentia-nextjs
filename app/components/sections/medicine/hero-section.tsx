@@ -4,11 +4,13 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
+  const t = useTranslations("medicine.hero");
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,13 +48,12 @@ export default function HeroSection() {
       />
       <div ref={contentRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          Longevity
+          {t("headlineLine1")}
           <br />
-          medicine.
+          {t("headlineLine2")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          Clinical protocols backed by science, calibrated to your biology.
-          Medicine that works with time, not against it.
+          {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -67,10 +68,10 @@ export default function HeroSection() {
               }
             }}
           >
-            See treatments
+            {t("ctaTreatments")}
           </Button>
           <Button variant="outline-white" size="md" href="/contact">
-            Talk to us
+            {t("ctaContact")}
           </Button>
         </div>
       </div>

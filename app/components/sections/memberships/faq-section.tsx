@@ -4,12 +4,16 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Accordion } from "@components/ui/accordion";
-import { faqs } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
 
+type FaqItem = { question: string; answer: string };
+
 export default function FaqSection() {
+  const t = useTranslations("memberships.faq");
+  const faqs = t.raw("items") as FaqItem[];
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -81,7 +85,7 @@ export default function FaqSection() {
             {/* ── Header ── */}
             <div className="text-center">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                Common questions.
+                {t("heading")}
               </h2>
             </div>
 
@@ -89,27 +93,27 @@ export default function FaqSection() {
             <div>
               <Accordion.Group className="divide-petroleum-100 divide-y">
                 {faqs.map((faq) => (
-                  <Accordion key={faq.q} className="py-1">
+                  <Accordion key={faq.question} className="py-1">
                     <Accordion.Header>
                       <span className="text-petroleum-700 text-left text-base font-medium">
-                        {faq.q}
+                        {faq.question}
                       </span>
                     </Accordion.Header>
                     <Accordion.Content>
                       <p className="text-petroleum-500 pb-5 text-sm leading-7">
-                        {faq.a}
+                        {faq.answer}
                       </p>
                     </Accordion.Content>
                   </Accordion>
                 ))}
               </Accordion.Group>
               <p className="text-petroleum-400 mt-10 text-center text-sm">
-                Still have questions?{" "}
+                {t("stillQuestions")}{" "}
                 <Link
                   href="/contact"
                   className="text-petroleum-700 underline underline-offset-2 transition-opacity hover:opacity-70"
                 >
-                  Get in touch
+                  {t("getInTouch")}
                 </Link>
               </p>
             </div>

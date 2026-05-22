@@ -3,6 +3,7 @@
 import { useReducer, useEffect, useRef, type Ref, type RefObject } from "react";
 import Link from "next/link";
 import gsap from "gsap";
+import { useTranslations } from "next-intl";
 
 import { maiMenu } from "@/constants/menu";
 import { contact } from "@/constants/contact";
@@ -15,14 +16,62 @@ import { IconChevronDown, IconUserCircle } from "@components/ui/icons";
 import { AnimatedLink } from "@components/ui/animated-text";
 import { useAuth } from "@/components/auth-provider";
 
-const memberMenuItems = [
-  { href: "/account", label: "Overview" },
-  { href: "/account/bookings", label: "My Bookings" },
-  { href: "/account/races", label: "My Races" },
-  { href: "/account/education", label: "My Sessions" },
+// ─── i18n mappings ────────────────────────────────────────────
+// Map the hardcoded `maiMenu` href slugs to the keys defined in
+// `messages/{locale}/nav.json`. Keeping the constant untouched avoids
+// breaking external consumers while we route the displayed strings
+// through next-intl.
+
+const menuNameKeyByHref: Record<string, string> = {
+  "/wellness": "wellness",
+  "/medicine": "medicine",
+  "/community": "community",
+  "/": "essentia",
+};
+
+const itemKeyByHref: Record<string, string> = {
+  // wellness
+  "/wellness/manual-therapies": "manualTherapies",
+  "/wellness/contrast-therapy": "thermalContrast",
+  "/wellness/breathing-sessions": "breathingSessions",
+  "/wellness/red-light-therapy": "redLightTherapy",
+  "/wellness/functional-well-being": "functionalWellBeing",
+  // medicine
+  "/medicine/regenerative-medicine": "regenerativeMedicine",
+  "/medicine/intravenous-therapy": "intravenousTherapy",
+  "/medicine/hyperbaric-chambers": "hyperbaricChambers",
+  // community
+  "/community/running-club": "runningClub",
+  "/community/education-programs": "educationAndPrograms",
+  "/community/memberships": "memberships",
+  // essentia
+  "/about": "about",
+  "/blog": "blog",
+  "/shop": "shop",
+  "/contact": "contact",
+};
+
+// Section keys used to resolve nested item labels under `nav.items.*`.
+const sectionKeyByMenuHref: Record<
+  string,
+  "wellness" | "medicine" | "community" | null
+> = {
+  "/wellness": "wellness",
+  "/medicine": "medicine",
+  "/community": "community",
+  "/": null,
+};
+
+// Member account links — labels resolved at render time via `nav.account.*`.
+// Admin links live under /dashboard and are deliberately not translated.
+const memberMenuItems: { href: string; labelKey: string }[] = [
+  { href: "/account", labelKey: "account.overview" },
+  { href: "/account/bookings", labelKey: "account.myBookings" },
+  { href: "/account/races", labelKey: "account.myRaces" },
+  { href: "/account/education", labelKey: "account.mySessions" },
 ];
 
-const adminMenuItems = [
+const adminMenuItems: { href: string; label: string }[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/bookings", label: "Bookings" },
   { href: "/dashboard/races", label: "Races" },
@@ -113,6 +162,44 @@ function DesktopDropdown({
   scheduleClose,
   cardTextRef,
 }: DesktopDropdownProps) {
+  const tNav = useTranslations("nav");
+
+  // Resolve the section key (wellness | medicine | community) for the
+  // currently displayed top-level menu. The Essentia menu maps to `null`
+  // because its items live at the root of the `nav` namespace.
+  const sectionKey = displayedMenu
+    ? (sectionKeyByMenuHref[displayedMenu.href] ?? null)
+    : null;
+
+  const translateItemName = (item: ItemMenu): string => {
+    const key = itemKeyByHref[item.href];
+    if (!key) return item.itemName;
+    return sectionKey ? tNav(`items.${sectionKey}.${key}`) : tNav(key);
+  };
+
+  const translateCard = (
+    card: NonNullable<ItemMenu["card"]> | NonNullable<MenuItem["card"]>,
+    sourceHref: string,
+  ): { title: string | null; description: string | null } => {
+    // Top-level menu card → use `cards.{menuKey}`.
+    const menuKey = menuNameKeyByHref[sourceHref];
+    if (menuKey && menuKey !== "essentia") {
+      return {
+        title: tNav(`cards.${menuKey}.title`),
+        description: tNav(`cards.${menuKey}.description`),
+      };
+    }
+    // Sub-item card → use `cards.{itemKey}`.
+    const itemKey = itemKeyByHref[sourceHref];
+    if (itemKey) {
+      return {
+        title: tNav(`cards.${itemKey}.title`),
+        description: tNav(`cards.${itemKey}.description`),
+      };
+    }
+    return { title: card.title ?? null, description: card.description ?? null };
+  };
+
   return (
     <div
       ref={ref}
@@ -140,7 +227,7 @@ function DesktopDropdown({
                   setActiveItem(null);
                 }}
               >
-                {item.itemName}
+                {translateItemName(item)}
               </AnimatedLink>
             ))}
           </div>
@@ -148,6 +235,8 @@ function DesktopDropdown({
             {(() => {
               const card = activeItem?.card ?? displayedMenu?.card;
               if (!card) return null;
+              const sourceHref = activeItem?.href ?? displayedMenu.href;
+              const translated = translateCard(card, sourceHref);
               return (
                 <div
                   className="relative flex min-h-50 w-112.5 flex-col justify-end overflow-hidden rounded-2xl p-5"
@@ -174,8 +263,10 @@ function DesktopDropdown({
                     />
                   )}
                   <div ref={cardTextRef} className="relative z-10 text-white">
-                    <p className="text-2xl font-medium">{card.title}</p>
-                    <p className="text-sm opacity-80">{card.description}</p>
+                    <p className="text-2xl font-medium">{translated.title}</p>
+                    <p className="text-sm opacity-80">
+                      {translated.description}
+                    </p>
                   </div>
                 </div>
               );
@@ -204,8 +295,17 @@ function MobileMenu({
   isLoggedIn,
   userRole,
 }: MobileMenuProps) {
+  const tNav = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const isAdmin = userRole === "admin" || userRole === "staff";
-  const mobileAccountItems = isAdmin ? adminMenuItems : memberMenuItems;
+  // Member items are user-facing → translated via `nav.account.*`.
+  // Admin items live under /dashboard and are intentionally untranslated.
+  const mobileAccountItems = isAdmin
+    ? adminMenuItems
+    : memberMenuItems.map((it) => ({
+        href: it.href,
+        label: tNav(it.labelKey),
+      }));
   return (
     <div
       ref={ref}
@@ -213,44 +313,58 @@ function MobileMenu({
       style={{ height: 0, opacity: 0 }}
     >
       <Accordion.Group>
-        {maiMenu.slice(0, 3).map((menu) => (
-          <nav
-            key={menu.href}
-            data-menu-item
-            className="border-petroleum-100 border-b px-5"
-          >
-            <Accordion>
-              <Accordion.Header>
-                <div className="font-medium">{menu.name}</div>
-              </Accordion.Header>
-              <Accordion.Content>
-                <ul className="pb-3">
-                  {menu.itemMenu.map((item) => (
-                    <li
-                      key={item.href}
-                      className="border-sand-200 border-l pr-5 pl-3"
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpenMobileMenu(false)}
-                        className="flex flex-col pb-2"
-                      >
-                        <span className="text-sand-700 text-sm font-medium">
-                          {item.itemName}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </Accordion.Content>
-            </Accordion>
-          </nav>
-        ))}
+        {maiMenu.slice(0, 3).map((menu) => {
+          const menuKey = menuNameKeyByHref[menu.href];
+          const sectionKey = sectionKeyByMenuHref[menu.href];
+          return (
+            <nav
+              key={menu.href}
+              data-menu-item
+              className="border-petroleum-100 border-b px-5"
+            >
+              <Accordion>
+                <Accordion.Header>
+                  <div className="font-medium">
+                    {menuKey ? tNav(menuKey) : menu.name}
+                  </div>
+                </Accordion.Header>
+                <Accordion.Content>
+                  <ul className="pb-3">
+                    {menu.itemMenu.map((item) => {
+                      const itemKey = itemKeyByHref[item.href];
+                      const label = itemKey
+                        ? sectionKey
+                          ? tNav(`items.${sectionKey}.${itemKey}`)
+                          : tNav(itemKey)
+                        : item.itemName;
+                      return (
+                        <li
+                          key={item.href}
+                          className="border-sand-200 border-l pr-5 pl-3"
+                        >
+                          <Link
+                            href={item.href}
+                            onClick={() => setOpenMobileMenu(false)}
+                            className="flex flex-col pb-2"
+                          >
+                            <span className="text-sand-700 text-sm font-medium">
+                              {label}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Accordion.Content>
+              </Accordion>
+            </nav>
+          );
+        })}
         {isLoggedIn && (
           <nav data-menu-item className="border-petroleum-100 border-b px-5">
             <Accordion>
               <Accordion.Header>
-                <div className="font-medium">Account</div>
+                <div className="font-medium">{tNav("account.title")}</div>
               </Accordion.Header>
               <Accordion.Content>
                 <ul className="pb-3">
@@ -280,7 +394,7 @@ function MobileMenu({
                         }}
                         className="text-petroleum-400 flex flex-col pb-2 text-sm font-medium"
                       >
-                        Sign out
+                        {tCommon("signOut")}
                       </button>
                     </li>
                   )}
@@ -314,6 +428,8 @@ function AccountDropdown({
   onClose,
   onSignOut,
 }: AccountDropdownProps) {
+  const tHeader = useTranslations("header");
+  const tCommon = useTranslations("common");
   return (
     <div
       ref={ref}
@@ -323,7 +439,7 @@ function AccountDropdown({
         {isAdmin && (
           <li className="px-4 pt-0.5 pb-1.5">
             <span className="text-petroleum-300 text-xs font-semibold tracking-widest uppercase">
-              Admin
+              {tHeader("adminBadge")}
             </span>
           </li>
         )}
@@ -344,7 +460,7 @@ function AccountDropdown({
             onClick={onSignOut}
             className="text-petroleum-400 hover:text-petroleum-500 w-full py-2.5 text-left text-sm font-medium transition-colors"
           >
-            Sign out
+            {tCommon("signOut")}
           </button>
         </li>
       </ul>
@@ -365,12 +481,14 @@ function DesktopNav({
   onMenuEnter,
   onMouseLeave,
 }: DesktopNavProps) {
+  const tNav = useTranslations("nav");
   return (
     <nav className="hidden md:flex">
       <ul className="flex gap-2">
         {maiMenu.slice(0, 3).map((menu) => {
           const isActive = activeMenu?.href === menu.href;
           const isDimmed = activeMenu !== null && !isActive;
+          const menuKey = menuNameKeyByHref[menu.href];
           return (
             <li key={menu.href} className="relative">
               <AnimatedLink
@@ -380,7 +498,7 @@ function DesktopNav({
                 onMouseEnter={() => onMenuEnter(menu)}
                 onMouseLeave={onMouseLeave}
               >
-                {menu.name}
+                {menuKey ? tNav(menuKey) : menu.name}
                 <span
                   className="transition-transform duration-300 ease-in-out"
                   style={{
@@ -402,8 +520,17 @@ function DesktopNav({
 
 export const Header = () => {
   const { user, signOut } = useAuth();
+  const tNav = useTranslations("nav");
+  const tHeader = useTranslations("header");
+  const tCommon = useTranslations("common");
   const isAdmin = user?.role === "admin" || user?.role === "staff";
-  const desktopMenuItems = isAdmin ? adminMenuItems : memberMenuItems;
+  // Admin items intentionally stay untranslated (dashboard area).
+  const desktopMenuItems: { href: string; label: string }[] = isAdmin
+    ? adminMenuItems
+    : memberMenuItems.map((it) => ({
+        href: it.href,
+        label: tNav(it.labelKey),
+      }));
   const [
     { openMobileMenu, activeMenu, displayedMenu, activeItem, openAccountMenu },
     dispatch,
@@ -605,7 +732,7 @@ export const Header = () => {
         <Link
           className="mb-1"
           href="/"
-          aria-label="Home"
+          aria-label={tHeader("logoAriaLabel")}
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           <Logo />
@@ -622,7 +749,7 @@ export const Header = () => {
             <div ref={accountMenuRef} className="relative hidden md:block">
               <button
                 type="button"
-                aria-label="My account"
+                aria-label={tHeader("myAccountAriaLabel")}
                 onClick={() => dispatch({ type: "TOGGLE_ACCOUNT_MENU" })}
                 className="text-petroleum-500 hover:text-petroleum-700 flex items-center rounded-full border border-current p-2 transition-colors"
               >
@@ -643,7 +770,7 @@ export const Header = () => {
             </div>
           ) : (
             <Button variant="solid" size="md" href="/booking">
-              Booking
+              {tCommon("booking")}
             </Button>
           )}
           <HamburgerButton

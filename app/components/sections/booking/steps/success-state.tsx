@@ -1,4 +1,7 @@
+"use client";
+
 import { Check } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { BookableService } from "@/data/services-data";
 
@@ -13,6 +16,15 @@ export function SuccessState({
   time: string;
   phone: string;
 }) {
+  const t = useTranslations("booking.successState");
+  const locale = useLocale();
+  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
+  const formattedDate = date.toLocaleDateString(dateLocale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">
       <div className="bg-petroleum-700 flex size-16 items-center justify-center rounded-full">
@@ -20,25 +32,22 @@ export function SuccessState({
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="font-display text-petroleum-700 text-3xl">
-          Booking requested.
+          {t("heading")}
         </h2>
         <p className="text-petroleum-500 text-balance">
-          {service.title} on{" "}
-          {date.toLocaleDateString("en-GB", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}{" "}
-          at {time}.
+          {t("body", { service: service.title, date: formattedDate, time })}
         </p>
         <p className="text-petroleum-400 mt-1 text-sm text-balance">
-          We will contact you by phone or WhatsApp at{" "}
-          <span className="text-petroleum-500 font-medium">{phone}</span> to
-          confirm your appointment.
+          {t.rich("contactNote", {
+            phone,
+            strong: (chunks) => (
+              <span className="text-petroleum-500 font-medium">{chunks}</span>
+            ),
+          })}
         </p>
       </div>
       <Button variant="solid" size="md" href="/">
-        Back to home
+        {t("cta")}
       </Button>
     </div>
   );

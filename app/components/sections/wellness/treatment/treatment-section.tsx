@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
 import { manualTherapyTreatments } from "@/data/services-data";
@@ -14,6 +15,8 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── Hero ─────────────────────────────────────────────────────
 
 function TreatmentHero({ data }: { data: TreatmentData }) {
+  const t = useTranslations(`wellness.treatments.${data.slug}`);
+  const tShared = useTranslations("wellness.treatments");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +39,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
         src={data.heroImage}
-        alt={data.heroAlt}
+        alt={t("heroAlt")}
         fill
         priority
         sizes="100vw"
@@ -51,10 +54,10 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
-          {data.title}
+          {t("title")}
         </h1>
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
-          {data.intro}
+          {t("intro")}
         </p>
         {data.slug === "manual-therapies" && (
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -70,7 +73,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
                 }
               }}
             >
-              Explore treatments
+              {tShared("exploreTreatments")}
             </Button>
           </div>
         )}
@@ -82,6 +85,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
 // ─── Manual Therapies — treatment grid ───────────────────────
 
 function ManualTherapiesSection() {
+  const t = useTranslations("wellness.treatments");
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -122,11 +126,10 @@ function ManualTherapiesSection() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-12 text-center">
           <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-            Our treatments.
+            {t("manualTherapiesHeading")}
           </h2>
           <p className="text-petroleum-400 mx-auto mt-3 max-w-lg leading-relaxed">
-            Each treatment is designed with a specific purpose. Choose the one
-            that fits what your body needs today.
+            {t("manualTherapiesSubtitle")}
           </p>
         </div>
 
@@ -174,6 +177,7 @@ function ManualTherapiesSection() {
 // ─── Benefits ─────────────────────────────────────────────────
 
 function BenefitsSection({ data }: { data: TreatmentData }) {
+  const t = useTranslations(`wellness.treatments.${data.slug}`);
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -244,23 +248,23 @@ function BenefitsSection({ data }: { data: TreatmentData }) {
           <div ref={bodyRef} className="flex flex-col gap-12">
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                {data.benefitsHeading}
+                {t("benefitsHeading")}
               </h2>
               <p className="text-petroleum-400 mt-4 leading-relaxed">
-                {data.benefitsSubtitle}
+                {t("benefitsSubtitle")}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {data.benefits.map((benefit) => (
+              {data.benefits.map((benefit, i) => (
                 <div
                   key={benefit.title}
                   className="bg-sand-100 rounded-2xl p-6"
                 >
                   <h3 className="text-petroleum-700 font-medium">
-                    {benefit.title}
+                    {t(`benefits.${i}.title`)}
                   </h3>
                   <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
-                    {benefit.description}
+                    {t(`benefits.${i}.description`)}
                   </p>
                 </div>
               ))}
@@ -275,6 +279,7 @@ function BenefitsSection({ data }: { data: TreatmentData }) {
 // ─── Session ──────────────────────────────────────────────────
 
 function SessionSection({ data }: { data: TreatmentData }) {
+  const t = useTranslations(`wellness.treatments.${data.slug}`);
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -345,10 +350,10 @@ function SessionSection({ data }: { data: TreatmentData }) {
           <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
             <div className="md:max-w-lg">
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                {data.sessionHeading}
+                {t("sessionHeading")}
               </h2>
               <p className="text-sand-500 mt-4 leading-relaxed">
-                {data.sessionSubtitle}
+                {t("sessionSubtitle")}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -358,10 +363,10 @@ function SessionSection({ data }: { data: TreatmentData }) {
                     {detail.number}
                   </span>
                   <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {detail.title}
+                    {t(`sessionDetails.${detail.number}.title`)}
                   </h3>
                   <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {detail.description}
+                    {t(`sessionDetails.${detail.number}.description`)}
                   </p>
                 </div>
               ))}
@@ -376,6 +381,8 @@ function SessionSection({ data }: { data: TreatmentData }) {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection({ data }: { data: TreatmentData }) {
+  const t = useTranslations(`wellness.treatments.${data.slug}`);
+  const tShared = useTranslations("wellness.treatments");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -441,10 +448,10 @@ function CtaSection({ data }: { data: TreatmentData }) {
         <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
           <div ref={bodyRef} className="flex flex-col items-center gap-6">
             <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-              {data.ctaHeading}
+              {t("ctaHeading")}
             </h2>
             <p className="text-petroleum-400 max-w-md leading-relaxed">
-              {data.ctaBody}
+              {t("ctaBody")}
             </p>
             {data.slug === "manual-therapies" && (
               <div className="flex flex-col items-center gap-3 sm:flex-row">
@@ -453,14 +460,14 @@ function CtaSection({ data }: { data: TreatmentData }) {
                   size="md"
                   href={`/booking?wellness=${data.slug}`}
                 >
-                  Book a session
+                  {tShared("bookSession")}
                 </Button>
                 <Button
                   variant="outline"
                   size="md"
                   href="/community/memberships"
                 >
-                  View memberships
+                  {tShared("viewMemberships")}
                 </Button>
               </div>
             )}

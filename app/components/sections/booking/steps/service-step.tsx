@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Check, X } from "lucide-react";
 import { bookableServices, type BookableService } from "@/data/services-data";
 
@@ -17,6 +18,7 @@ function ServiceItems({
   imageClass?: string;
   imageSizes?: string;
 }) {
+  const t = useTranslations("booking.serviceStep");
   const wellness = bookableServices.filter((s) => s.category === "wellness");
   const medicine = bookableServices.filter((s) => s.category === "medicine");
 
@@ -43,7 +45,7 @@ function ServiceItems({
           {s.description}
         </p>
         <p className="text-petroleum-500 text-xs">
-          {s.category === "wellness" ? "Wellness" : "Medicine"}
+          {s.category === "wellness" ? t("wellness") : t("medicine")}
         </p>
       </div>
       {selected?.id === s.id && (
@@ -57,7 +59,7 @@ function ServiceItems({
       {wellness.length > 0 && (
         <>
           <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">
-            Wellness
+            {t("wellness")}
           </p>
           {wellness.map(row)}
         </>
@@ -65,7 +67,7 @@ function ServiceItems({
       {medicine.length > 0 && (
         <>
           <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">
-            Medicine
+            {t("medicine")}
           </p>
           {medicine.map(row)}
         </>
@@ -81,6 +83,7 @@ function ServiceSelect({
   selected: BookableService | null;
   onSelect: (s: BookableService | null) => void;
 }) {
+  const t = useTranslations("booking.serviceStep");
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -180,7 +183,7 @@ function ServiceSelect({
               <span className="text-petroleum-100 text-lg">+</span>
             </div>
             <p className="text-petroleum-400 flex-1 text-sm">
-              Select a service
+              {t("placeholder")}
             </p>
             <ChevronDown
               className={[
@@ -214,12 +217,12 @@ function ServiceSelect({
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
               <h3 className="text-petroleum-700 font-medium">
-                Select a service
+                {t("modalTitle")}
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label="Close"
+                aria-label={t("close")}
               >
                 <X size={20} className="text-petroleum-400" />
               </button>
@@ -246,11 +249,10 @@ export function ServiceStep({
   selected: BookableService | null;
   onSelect: (s: BookableService | null) => void;
 }) {
+  const t = useTranslations("booking.serviceStep");
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-petroleum-400 text-sm">
-        Which service would you like to book?
-      </p>
+      <p className="text-petroleum-400 text-sm">{t("label")}</p>
       <ServiceSelect selected={selected} onSelect={onSelect} />
     </div>
   );
