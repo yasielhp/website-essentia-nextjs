@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@insforge/sdk";
-import { getValidAccessToken, getStaffServiceAccessToken } from "@/lib/google-calendar";
+import {
+  getValidAccessToken,
+  getStaffServiceAccessToken,
+} from "@/lib/google-calendar";
 
 function getAdminClient() {
   return createClient({
@@ -28,8 +31,12 @@ export async function GET(request: NextRequest) {
       .eq("service_id", serviceId)
       .not("google_access_token", "is", null);
 
-    const assignedStaff = ((staffRows ?? []) as { staff_id: string; google_access_token: string | null }[])
-      .filter((r) => !!r.google_access_token);
+    const assignedStaff = (
+      (staffRows ?? []) as {
+        staff_id: string;
+        google_access_token: string | null;
+      }[]
+    ).filter((r) => !!r.google_access_token);
 
     for (const { staff_id } of assignedStaff) {
       const token = await getStaffServiceAccessToken(staff_id, serviceId);

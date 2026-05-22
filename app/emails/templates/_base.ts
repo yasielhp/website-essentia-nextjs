@@ -2,12 +2,14 @@
 export function emailBase({
   preheader,
   body,
+  locale = "en",
 }: {
   preheader: string;
   body: string;
+  locale?: "en" | "es";
 }): string {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -60,19 +62,40 @@ export function bookingDetailsCard({
   date,
   time,
   duration,
+  locale = "en",
 }: {
   service: string;
   sessionType?: string | null;
   date: string;
   time: string;
   duration?: string | null;
+  locale?: "en" | "es";
 }): string {
+  const t =
+    locale === "es"
+      ? {
+          sectionLabel: "Detalles de la sesión",
+          service: "Servicio",
+          sessionType: "Tipo de sesión",
+          date: "Fecha",
+          time: "Hora",
+          duration: "Duración",
+        }
+      : {
+          sectionLabel: "Session details",
+          service: "Service",
+          sessionType: "Session type",
+          date: "Date",
+          time: "Time",
+          duration: "Duration",
+        };
+
   const rows: [string, string][] = [
-    ["Service", service],
-    ...(sessionType ? [["Session type", sessionType] as [string, string]] : []),
-    ["Date", date],
-    ["Time", time],
-    ...(duration ? [["Duration", duration] as [string, string]] : []),
+    [t.service, service],
+    ...(sessionType ? [[t.sessionType, sessionType] as [string, string]] : []),
+    [t.date, date],
+    [t.time, time],
+    ...(duration ? [[t.duration, duration] as [string, string]] : []),
   ];
 
   const rowsHtml = rows
@@ -89,7 +112,7 @@ export function bookingDetailsCard({
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f2ed;border-radius:8px;border:1px solid #d7dbd9;margin-bottom:24px;">
     <tr>
       <td style="padding:20px 24px;">
-        <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Session details</p>
+        <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${t.sectionLabel}</p>
         <table width="100%" cellpadding="0" cellspacing="0">
           ${rowsHtml}
         </table>

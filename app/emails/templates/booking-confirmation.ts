@@ -4,15 +4,55 @@ export function bookingConfirmationEmail({
   date,
   time,
   duration,
+  locale = "en",
 }: {
   name: string;
   serviceName: string;
   date: string;
   time: string;
   duration: string;
+  locale?: "en" | "es";
 }): string {
+  const isEs = locale === "es";
+
+  const labels = isEs
+    ? {
+        title: "Reserva confirmada",
+        heading: `Tu reserva ha sido confirmada, ${name}`,
+        intro:
+          "Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión.",
+        sectionLabel: "Detalles de la sesión",
+        service: "Servicio",
+        date: "Fecha",
+        time: "Hora",
+        duration: "Duración",
+        locationLabel: "Ubicación",
+        locationLine1: "C/ La Noria 14",
+        locationLine2: "Santa Cruz de Tenerife",
+        footer:
+          "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
+        footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
+      }
+    : {
+        title: "Booking Confirmed",
+        heading: `Your booking is confirmed, ${name}`,
+        intro:
+          "We look forward to seeing you. Here are the details of your upcoming session.",
+        sectionLabel: "Session details",
+        service: "Service",
+        date: "Date",
+        time: "Time",
+        duration: "Duration",
+        locationLabel: "Location",
+        locationLine1: "C/ La Noria 14",
+        locationLine2: "Santa Cruz de Tenerife",
+        footer:
+          "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
+        footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
+      };
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -35,34 +75,34 @@ export function bookingConfirmationEmail({
           <!-- Body -->
           <tr>
             <td style="padding:32px;">
-              <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Booking Confirmed</p>
+              <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${labels.title}</p>
               <h1 style="margin:0 0 24px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-                Your booking is confirmed, ${name}
+                ${labels.heading}
               </h1>
               <p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
-                We look forward to seeing you. Here are the details of your upcoming session.
+                ${labels.intro}
               </p>
 
               <!-- Booking details -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f2ed;border-radius:8px;border:1px solid #d7dbd9;margin-bottom:24px;">
                 <tr>
                   <td style="padding:20px 24px;">
-                    <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Session details</p>
+                    <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${labels.sectionLabel}</p>
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;width:40%;">Service</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;width:40%;">${labels.service}</td>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${serviceName}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">Date</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">${labels.date}</td>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${date}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">Time</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">${labels.time}</td>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${time}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;font-size:14px;color:#4a6767;">Duration</td>
+                        <td style="padding:6px 0;font-size:14px;color:#4a6767;">${labels.duration}</td>
                         <td style="padding:6px 0;font-size:14px;font-weight:500;color:#103838;">${duration}</td>
                       </tr>
                     </table>
@@ -74,17 +114,17 @@ export function bookingConfirmationEmail({
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
                 <tr>
                   <td style="padding:0;">
-                    <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Location</p>
+                    <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${labels.locationLabel}</p>
                     <p style="margin:0;font-size:15px;color:#103838;line-height:1.5;">
-                      C/ La Noria 14<br />
-                      Santa Cruz de Tenerife
+                      ${labels.locationLine1}<br />
+                      ${labels.locationLine2}
                     </p>
                   </td>
                 </tr>
               </table>
 
               <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
-                If you need to cancel or reschedule, please contact us at least 24 hours before your session.
+                ${labels.footer}
               </p>
             </td>
           </tr>
@@ -94,7 +134,7 @@ export function bookingConfirmationEmail({
             <td style="padding:20px 32px;border-top:1px solid #d7dbd9;">
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;">
                 Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
-                C/ La Noria 14, Santa Cruz de Tenerife
+                ${labels.footerAddress}
               </p>
             </td>
           </tr>

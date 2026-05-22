@@ -29,10 +29,13 @@ export async function updateUserProfile(
   const { userId, email, firstName, lastName, phone, role, currentEmail } =
     input;
   const trimEmail = email.trim().toLowerCase();
-  const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+  const fullName = [firstName.trim(), lastName.trim()]
+    .filter(Boolean)
+    .join(" ");
 
   // Sync auth.users email via Insforge admin REST API (GoTrue-compatible)
-  const emailChanged = trimEmail && trimEmail !== currentEmail.trim().toLowerCase();
+  const emailChanged =
+    trimEmail && trimEmail !== currentEmail.trim().toLowerCase();
   if (emailChanged) {
     const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL!.replace(/\/$/, "");
     const res = await fetch(`${baseUrl}/auth/v1/admin/users/${userId}`, {
@@ -46,7 +49,9 @@ export async function updateUserProfile(
     });
     if (!res.ok) {
       const body = await res.text();
-      return { error: `Error al actualizar el email de autenticación: ${body}` };
+      return {
+        error: `Error al actualizar el email de autenticación: ${body}`,
+      };
     }
   }
 
