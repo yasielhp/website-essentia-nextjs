@@ -32,6 +32,14 @@ type BookingDetail = {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
+function canPartnerEdit(date: string | null, time: string | null): boolean {
+  if (!date || !time) return true;
+  const [h, m] = time.split(":").map(Number) as [number, number];
+  const [y, mo, d] = date.split("-").map(Number) as [number, number, number];
+  const appt = new Date(y, mo - 1, d, h, m);
+  return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
@@ -283,13 +291,15 @@ export default function BookingDetailPage() {
               Delete
             </Button>
           )}
-          <Button
-            variant="solid"
-            size="md"
-            href={`/dashboard/bookings/${id}/edit`}
-          >
-            Edit
-          </Button>
+          {(!isPartner || canPartnerEdit(booking.date, booking.time)) && (
+            <Button
+              variant="solid"
+              size="md"
+              href={`/dashboard/bookings/${id}/edit`}
+            >
+              Edit
+            </Button>
+          )}
         </div>
       </div>
 

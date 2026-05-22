@@ -155,6 +155,14 @@ const STATUSES: {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
+function canPartnerEdit(date: string | null, time: string | null): boolean {
+  if (!date || !time) return true;
+  const [h, m] = time.split(":").map(Number) as [number, number];
+  const [y, mo, d] = date.split("-").map(Number) as [number, number, number];
+  const appt = new Date(y, mo - 1, d, h, m);
+  return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
+}
+
 function tierLabel(t: Tier, location: DashboardLocation | "" = ""): string {
   const parts: string[] = [];
   if (t.label) parts.push(t.label);
@@ -1489,10 +1497,7 @@ function DateTimeSection({
                 })}
               </p>
             </div>
-            <ChevronDown
-              className="text-petroleum-400 shrink-0"
-              size={16}
-            />
+            <ChevronDown className="text-petroleum-400 shrink-0" size={16} />
           </button>
           <div className="flex flex-col gap-3">
             <p className="text-petroleum-400 text-sm">Available times</p>
@@ -1677,6 +1682,9 @@ export default function EditBookingPage() {
   });
   const { open: deleteOpen, pending: deleting } = deleteState;
 
+  const [origBookingDate, setOrigBookingDate] = useState<string | null>(null);
+  const [origBookingTime, setOrigBookingTime] = useState<string>("");
+
   const pendingTierId = useRef<string>("");
   const originalRef = useRef<{
     status: string;
@@ -1716,6 +1724,13 @@ export default function EditBookingPage() {
   const fullNameForCrumb =
     [firstName, lastName].filter(Boolean).join(" ") || null;
   useDynamicBreadcrumb(!bookingLoading ? fullNameForCrumb : null);
+
+  useEffect(() => {
+    if (bookingLoading || !role || role !== "partner") return;
+    if (!canPartnerEdit(origBookingDate, origBookingTime)) {
+      push(`/dashboard/bookings/${id}`);
+    }
+  }, [bookingLoading, role, origBookingDate, origBookingTime, id, push]);
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
@@ -1763,7 +1778,9 @@ export default function EditBookingPage() {
           `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
         );
         if (res.ok) {
-          const json = (await res.json()) as { busy: { start: string; end: string }[] };
+          const json = (await res.json()) as {
+            busy: { start: string; end: string }[];
+          };
           busy = json.busy ?? [];
         }
       } catch {
@@ -1771,7 +1788,9 @@ export default function EditBookingPage() {
       }
       if (!cancelled) setMonthFreeBusy({ busy, loading: false });
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId, viewYear, viewMonth]);
 
   const fullyBlockedDates = useMemo(() => {
@@ -1811,14 +1830,18 @@ export default function EditBookingPage() {
         const r = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
         );
-        const json = (await r.json()) as { busy?: { start: string; end: string }[] };
+        const json = (await r.json()) as {
+          busy?: { start: string; end: string }[];
+        };
         busy = json.busy ?? [];
       } catch {
         // fail-open
       }
       if (!cancelled) setSlotsFreeBusy({ busy, loading: false });
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, serviceId]);
 
   const timeSlots = selectedDate
@@ -1946,6 +1969,8 @@ export default function EditBookingPage() {
         serviceId: b.service_id ?? "",
         googleEventId: b.google_event_id ?? null,
       };
+      setOrigBookingDate(b.date ?? null);
+      setOrigBookingTime(b.time ?? "");
 
       dispatchForm({
         type: "LOAD_BOOKING",
