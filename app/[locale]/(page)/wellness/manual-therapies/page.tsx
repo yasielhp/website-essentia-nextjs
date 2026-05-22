@@ -41,7 +41,7 @@ export default async function ManualTherapiesPage() {
         }}
       />
       <TreatmentSection data={treatments["manual-therapies"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="manual-therapies" />
     </>
   );
 }

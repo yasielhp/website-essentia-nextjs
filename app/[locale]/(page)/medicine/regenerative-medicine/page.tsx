@@ -41,7 +41,7 @@ export default async function RegenerativePage() {
         }}
       />
       <TreatmentSection data={treatments["regenerative-medicine"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="regenerative-medicine" />
     </>
   );
 }

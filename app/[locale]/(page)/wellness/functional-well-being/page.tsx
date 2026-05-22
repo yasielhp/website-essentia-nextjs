@@ -41,7 +41,7 @@ export default async function FunctionalWellnessPage() {
         }}
       />
       <TreatmentSection data={treatments["functional-well-being"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="functional-well-being" />
     </>
   );
 }

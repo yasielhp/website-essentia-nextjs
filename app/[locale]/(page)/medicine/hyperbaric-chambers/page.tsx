@@ -41,7 +41,7 @@ export default async function HyperbaricChambersPage() {
         }}
       />
       <TreatmentSection data={treatments["hyperbaric-chambers"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="hyperbaric-chambers" />
     </>
   );
 }

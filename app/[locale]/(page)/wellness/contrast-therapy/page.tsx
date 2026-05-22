@@ -41,7 +41,7 @@ export default async function ContrastTherapyPage() {
         }}
       />
       <TreatmentSection data={treatments["contrast-therapy"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="contrast-therapy" />
     </>
   );
 }

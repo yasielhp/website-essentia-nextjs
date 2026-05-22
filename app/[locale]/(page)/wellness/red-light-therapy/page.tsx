@@ -41,7 +41,7 @@ export default async function RedLightTherapyPage() {
         }}
       />
       <TreatmentSection data={treatments["red-light-therapy"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="red-light-therapy" />
     </>
   );
 }

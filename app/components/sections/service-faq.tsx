@@ -5,7 +5,13 @@ import { useTranslations } from "next-intl";
 
 export type FaqItem = { question: string; answer: string };
 
-export function ServiceFaq({ faqs }: { faqs: FaqItem[] }) {
+export function ServiceFaq({
+  faqs,
+  serviceSlug,
+}: {
+  faqs: FaqItem[];
+  serviceSlug: string;
+}) {
   const t = useTranslations("serviceFaqs");
   const [open, setOpen] = useState<number | null>(null);
 
@@ -17,7 +23,7 @@ export function ServiceFaq({ faqs }: { faqs: FaqItem[] }) {
         </h2>
 
         <div className="divide-sand-200 divide-y">
-          {faqs.map((faq, i) => (
+          {faqs.map((_, i) => (
             <div key={i} className="py-5">
               <button
                 type="button"
@@ -26,7 +32,7 @@ export function ServiceFaq({ faqs }: { faqs: FaqItem[] }) {
                 aria-expanded={open === i}
               >
                 <h3 className="text-petroleum-700 text-base leading-snug font-medium">
-                  {faq.question}
+                  {t(`${serviceSlug}.${i}.question`)}
                 </h3>
                 <span
                   className="text-petroleum-400 mt-0.5 shrink-0 text-lg leading-none transition-transform duration-200"
@@ -41,7 +47,7 @@ export function ServiceFaq({ faqs }: { faqs: FaqItem[] }) {
 
               {open === i && (
                 <p className="text-petroleum-500 mt-4 leading-relaxed">
-                  {faq.answer}
+                  {t(`${serviceSlug}.${i}.answer`)}
                 </p>
               )}
             </div>

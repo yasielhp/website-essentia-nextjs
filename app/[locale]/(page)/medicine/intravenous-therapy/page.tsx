@@ -41,7 +41,7 @@ export default async function IvTherapyPage() {
         }}
       />
       <TreatmentSection data={treatments["intravenous-therapy"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="intravenous-therapy" />
     </>
   );
 }

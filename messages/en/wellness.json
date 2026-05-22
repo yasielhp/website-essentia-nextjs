@@ -72,6 +72,52 @@
     "exploreTreatments": "Explore treatments",
     "bookSession": "Book a session",
     "viewMemberships": "View memberships",
+    "manualTherapiesCards": {
+      "espira": {
+        "title": "Espira",
+        "description": "Express ritual for neck and shoulders. Oils and precise pressure dissolve tension in 30 minutes."
+      },
+      "pulse": {
+        "title": "Pulse",
+        "description": "Deep-tissue massage for chronic contractures. Reaches layers ordinary massage cannot."
+      },
+      "drenaje-linfatico": {
+        "title": "Drenaje Linfático Brasileño",
+        "description": "Rhythmic drainage to reduce fluid retention, sculpt the figure, and smooth the skin."
+      },
+      "essentia-active": {
+        "title": "Essentia Active",
+        "description": "Sports recovery massage. Reduces fatigue, prevents injury, and restores mobility."
+      },
+      "nurtura": {
+        "title": "Nurtura",
+        "description": "Prenatal massage to ease back pain, reduce swelling, and create deep calm."
+      },
+      "serenna": {
+        "title": "Serenna",
+        "description": "Full-body relaxation: warm oils and slow movements to reset the nervous system."
+      },
+      "solea": {
+        "title": "Soléa",
+        "description": "Post-sun ritual: aloe vera wrap and full-body massage to calm and restore the skin."
+      },
+      "soma": {
+        "title": "Soma",
+        "description": "Intensive myofascial release for chronic pain, contractures, and restricted movement."
+      },
+      "lume": {
+        "title": "Lume",
+        "description": "Craniofacial massage, foot reflexology, and personalised aromatherapy in one session."
+      },
+      "alure-duo": {
+        "title": "Alure Duo",
+        "description": "A ritual for two: synchronised therapists, breathwork, and guided touch."
+      },
+      "essentia-signature": {
+        "title": "Essentia",
+        "description": "Our signature: peel, hydrating wrap, rejuvenating facial, and full-body massage."
+      }
+    },
     "serviceDetail": {
       "aboutHeading": "About this treatment.",
       "ctaHeading": "Ready to begin?",

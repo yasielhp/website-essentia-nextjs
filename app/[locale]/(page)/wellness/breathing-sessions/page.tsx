@@ -41,7 +41,7 @@ export default async function BreathworkPage() {
         }}
       />
       <TreatmentSection data={treatments["breathing-sessions"]} />
-      <ServiceFaq faqs={faqs} />
+      <ServiceFaq faqs={faqs} serviceSlug="breathing-sessions" />
     </>
   );
 }

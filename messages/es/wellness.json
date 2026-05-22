@@ -72,6 +72,52 @@
     "exploreTreatments": "Explorar tratamientos",
     "bookSession": "Reservar una sesión",
     "viewMemberships": "Ver membresías",
+    "manualTherapiesCards": {
+      "espira": {
+        "title": "Espira",
+        "description": "Ritual express para cuello y hombros. Aceites y presión precisa disuelven la tensión en 30 minutos."
+      },
+      "pulse": {
+        "title": "Pulse",
+        "description": "Masaje de tejido profundo para contracturas crónicas. Alcanza capas que el masaje convencional no puede."
+      },
+      "drenaje-linfatico": {
+        "title": "Drenaje Linfático Brasileño",
+        "description": "Drenaje rítmico para reducir la retención de líquidos, esculpir la figura y suavizar la piel."
+      },
+      "essentia-active": {
+        "title": "Essentia Active",
+        "description": "Masaje de recuperación deportiva. Reduce la fatiga, previene lesiones y restaura la movilidad."
+      },
+      "nurtura": {
+        "title": "Nurtura",
+        "description": "Masaje prenatal para aliviar el dolor de espalda, reducir la hinchazón y crear calma profunda."
+      },
+      "serenna": {
+        "title": "Serenna",
+        "description": "Relajación de cuerpo completo: aceites cálidos y movimientos lentos para resetear el sistema nervioso."
+      },
+      "solea": {
+        "title": "Soléa",
+        "description": "Ritual post-solar: envoltura de aloe vera y masaje corporal para calmar y restaurar la piel."
+      },
+      "soma": {
+        "title": "Soma",
+        "description": "Liberación miofascial intensiva para el dolor crónico, contracturas y movilidad restringida."
+      },
+      "lume": {
+        "title": "Lume",
+        "description": "Masaje craneofacial, reflexología podal y aromaterapia personalizada en una sola sesión."
+      },
+      "alure-duo": {
+        "title": "Alure Duo",
+        "description": "Un ritual para dos: terapeutas sincronizados, trabajo de respiración y tacto guiado."
+      },
+      "essentia-signature": {
+        "title": "Essentia",
+        "description": "Nuestra firma: exfoliación, envoltura hidratante, facial rejuvenecedor y masaje corporal completo."
+      }
+    },
     "serviceDetail": {
       "aboutHeading": "Sobre este tratamiento.",
       "ctaHeading": "¿Listo para comenzar?",

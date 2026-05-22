@@ -143,7 +143,7 @@ function ManualTherapiesSection() {
             >
               <Image
                 src={service.image}
-                alt={service.title}
+                alt={t(`manualTherapiesCards.${service.id}.title`)}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -160,10 +160,10 @@ function ManualTherapiesSection() {
               </span>
               <div className="absolute right-0 bottom-0 left-0 p-5">
                 <h3 className="font-body text-lg text-white">
-                  {service.title}
+                  {t(`manualTherapiesCards.${service.id}.title`)}
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-white/70">
-                  {service.description}
+                  {t(`manualTherapiesCards.${service.id}.description`)}
                 </p>
               </div>
             </Link>
@@ -487,7 +487,7 @@ export default function TreatmentSection({ data }: { data: TreatmentData }) {
       {data.slug === "manual-therapies" && <ManualTherapiesSection />}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
-      <CtaSection data={data} />
+      {data.slug !== "manual-therapies" && <CtaSection data={data} />}
     </>
   );
 }
