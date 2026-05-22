@@ -24,12 +24,17 @@ type FormState = {
   slug: string;
   excerpt: string;
   content: string;
+  titleEs: string;
+  excerptEs: string;
+  contentEs: string;
   coverImageUrl: string;
   categoryId: string;
   status: "draft" | "published";
   publishedAt: string | null;
   seoTitle: string;
   seoDescription: string;
+  seoTitleEs: string;
+  seoDescriptionEs: string;
 };
 
 type Action =
@@ -65,12 +70,17 @@ const init: FormState = {
   slug: "",
   excerpt: "",
   content: "",
+  titleEs: "",
+  excerptEs: "",
+  contentEs: "",
   coverImageUrl: "",
   categoryId: "",
   status: "draft",
   publishedAt: null,
   seoTitle: "",
   seoDescription: "",
+  seoTitleEs: "",
+  seoDescriptionEs: "",
 };
 
 function reducer(s: FormState, a: Action): FormState {
@@ -109,19 +119,28 @@ export default function EditPostPage() {
     slug,
     excerpt,
     content,
+    titleEs,
+    excerptEs,
+    contentEs,
     coverImageUrl,
     categoryId,
     status,
     seoTitle,
     seoDescription,
+    seoTitleEs,
+    seoDescriptionEs,
   } = state;
+
+  function set(field: string, value: string) {
+    dispatch({ type: "SET", field, value });
+  }
 
   useEffect(() => {
     Promise.all([
       insforge.database
         .from("blog_posts")
         .select(
-          "title, slug, excerpt, content, cover_image_url, category_id, status, published_at, seo_title, seo_description",
+          "title, slug, excerpt, content, title_es, excerpt_es, content_es, cover_image_url, category_id, status, published_at, seo_title, seo_description, seo_title_es, seo_description_es",
         )
         .eq("id", id)
         .single(),
@@ -140,12 +159,17 @@ export default function EditPostPage() {
         slug: string;
         excerpt: string | null;
         content: string | null;
+        title_es: string | null;
+        excerpt_es: string | null;
+        content_es: string | null;
         cover_image_url: string | null;
         category_id: string | null;
         status: "draft" | "published";
         published_at: string | null;
         seo_title: string | null;
         seo_description: string | null;
+        seo_title_es: string | null;
+        seo_description_es: string | null;
       };
       dispatch({
         type: "LOADED",
@@ -154,12 +178,17 @@ export default function EditPostPage() {
           slug: p.slug,
           excerpt: p.excerpt ?? "",
           content: p.content ?? "",
+          titleEs: p.title_es ?? "",
+          excerptEs: p.excerpt_es ?? "",
+          contentEs: p.content_es ?? "",
           coverImageUrl: p.cover_image_url ?? "",
           categoryId: p.category_id ?? "",
           status: p.status,
           publishedAt: p.published_at,
           seoTitle: p.seo_title ?? "",
           seoDescription: p.seo_description ?? "",
+          seoTitleEs: p.seo_title_es ?? "",
+          seoDescriptionEs: p.seo_description_es ?? "",
         },
       });
     });
@@ -183,6 +212,9 @@ export default function EditPostPage() {
         slug: slug.trim(),
         excerpt: excerpt.trim() || null,
         content: content.trim() || null,
+        title_es: titleEs.trim() || null,
+        excerpt_es: excerptEs.trim() || null,
+        content_es: contentEs.trim() || null,
         cover_image_url: coverImageUrl.trim() || null,
         category_id: categoryId || null,
         status,
@@ -193,6 +225,8 @@ export default function EditPostPage() {
             : state.publishedAt,
         seo_title: seoTitle.trim() || null,
         seo_description: seoDescription.trim() || null,
+        seo_title_es: seoTitleEs.trim() || null,
+        seo_description_es: seoDescriptionEs.trim() || null,
         seo_og_image_url: coverImageUrl.trim() || null,
       })
       .eq("id", id);
@@ -261,9 +295,10 @@ export default function EditPostPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Main — 2/3 */}
           <div className="space-y-6 lg:col-span-2">
+            {/* English content */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Content
+                Content (EN)
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -276,13 +311,7 @@ export default function EditPostPage() {
                     <input
                       type="text"
                       value={title}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET",
-                          field: "title",
-                          value: e.target.value,
-                        })
-                      }
+                      onChange={(e) => set("title", e.target.value)}
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
@@ -302,13 +331,7 @@ export default function EditPostPage() {
                       <input
                         type="text"
                         value={slug}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET",
-                            field: "slug",
-                            value: e.target.value,
-                          })
-                        }
+                        onChange={(e) => set("slug", e.target.value)}
                         disabled={saving}
                         className={`${INPUT_CLASS} rounded-l-none border-l-0`}
                       />
@@ -324,13 +347,7 @@ export default function EditPostPage() {
                   ) : (
                     <textarea
                       value={excerpt}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET",
-                          field: "excerpt",
-                          value: e.target.value,
-                        })
-                      }
+                      onChange={(e) => set("excerpt", e.target.value)}
                       rows={2}
                       disabled={saving}
                       className={`${INPUT_CLASS} resize-y`}
@@ -347,13 +364,70 @@ export default function EditPostPage() {
                     <div data-color-mode="light">
                       <MDEditor
                         value={content}
-                        onChange={(val) =>
-                          dispatch({
-                            type: "SET",
-                            field: "content",
-                            value: val ?? "",
-                          })
-                        }
+                        onChange={(val) => set("content", val ?? "")}
+                        height={480}
+                        preview="edit"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Spanish content */}
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+                Content (ES)
+              </h2>
+              <p className="text-petroleum-400 mb-4 text-xs">
+                Optional Spanish translation.
+              </p>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-petroleum-500 text-xs font-medium">
+                    Título
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <input
+                      type="text"
+                      value={titleEs}
+                      onChange={(e) => set("titleEs", e.target.value)}
+                      placeholder="Mi primer artículo"
+                      disabled={saving}
+                      className={INPUT_CLASS}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-petroleum-500 text-xs font-medium">
+                    Extracto
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
+                  ) : (
+                    <textarea
+                      value={excerptEs}
+                      onChange={(e) => set("excerptEs", e.target.value)}
+                      placeholder="Breve descripción del artículo…"
+                      rows={2}
+                      disabled={saving}
+                      className={`${INPUT_CLASS} resize-y`}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-petroleum-500 mb-1 text-xs font-medium">
+                    Contenido
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
+                  ) : (
+                    <div data-color-mode="light">
+                      <MDEditor
+                        value={contentEs}
+                        onChange={(val) => set("contentEs", val ?? "")}
                         height={480}
                         preview="edit"
                       />
@@ -402,13 +476,7 @@ export default function EditPostPage() {
                   apiEndpoint="/api/blog/upload"
                   folder="covers"
                   value={coverImageUrl || undefined}
-                  onChange={(url) =>
-                    dispatch({
-                      type: "SET",
-                      field: "coverImageUrl",
-                      value: url,
-                    })
-                  }
+                  onChange={(url) => set("coverImageUrl", url)}
                 />
               )}
             </div>
@@ -421,34 +489,26 @@ export default function EditPostPage() {
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
               ) : (
-                <>
-                  <select
-                    value={categoryId}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET",
-                        field: "categoryId",
-                        value: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={SELECT_CLASS}
-                  >
-                    <option value="">No category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </>
+                <select
+                  value={categoryId}
+                  onChange={(e) => set("categoryId", e.target.value)}
+                  disabled={saving}
+                  className={SELECT_CLASS}
+                >
+                  <option value="">No category</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
-            {/* SEO */}
+            {/* SEO EN */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                SEO
+                SEO (EN)
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
                 How it appears in search engines and social media.
@@ -465,13 +525,7 @@ export default function EditPostPage() {
                       <input
                         type="text"
                         value={seoTitle}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET",
-                            field: "seoTitle",
-                            value: e.target.value,
-                          })
-                        }
+                        onChange={(e) => set("seoTitle", e.target.value)}
                         placeholder={title}
                         disabled={saving}
                         className={INPUT_CLASS}
@@ -492,19 +546,70 @@ export default function EditPostPage() {
                     <>
                       <textarea
                         value={seoDescription}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET",
-                            field: "seoDescription",
-                            value: e.target.value,
-                          })
-                        }
+                        onChange={(e) => set("seoDescription", e.target.value)}
                         rows={3}
                         disabled={saving}
                         className={`${INPUT_CLASS} resize-none`}
                       />
                       <p className="text-petroleum-400 text-xs">
                         {seoDescription.length}/160 characters
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* SEO ES */}
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+                SEO (ES)
+              </h2>
+              <p className="text-petroleum-400 mb-4 text-xs">
+                Versión en español para buscadores.
+              </p>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-petroleum-500 text-xs font-medium">
+                    Meta título
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value={seoTitleEs}
+                        onChange={(e) => set("seoTitleEs", e.target.value)}
+                        placeholder={titleEs || "Título para buscadores"}
+                        disabled={saving}
+                        className={INPUT_CLASS}
+                      />
+                      <p className="text-petroleum-400 text-xs">
+                        {seoTitleEs.length}/60 caracteres
+                      </p>
+                    </>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-petroleum-500 text-xs font-medium">
+                    Meta descripción
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+                  ) : (
+                    <>
+                      <textarea
+                        value={seoDescriptionEs}
+                        onChange={(e) =>
+                          set("seoDescriptionEs", e.target.value)
+                        }
+                        rows={3}
+                        disabled={saving}
+                        className={`${INPUT_CLASS} resize-none`}
+                      />
+                      <p className="text-petroleum-400 text-xs">
+                        {seoDescriptionEs.length}/160 caracteres
                       </p>
                     </>
                   )}
