@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function ForgotPasswordPage() {
   return (
     <section className="bg-sand-50 min-h-dvh">
-      <div className="mx-auto max-w-md px-5 pt-32 pb-24 md:pt-48">
+      <div className="mx-auto max-w-xl px-5 pt-32 pb-24 md:pt-48">
         <ForgotPasswordForm />
       </div>
     </section>
