@@ -751,7 +751,7 @@ export const Header = () => {
                 type="button"
                 aria-label={tHeader("myAccountAriaLabel")}
                 onClick={() => dispatch({ type: "TOGGLE_ACCOUNT_MENU" })}
-                className="text-petroleum-500 hover:text-petroleum-700 flex items-center rounded-full border border-current p-2 transition-colors"
+                className="text-petroleum-500 hover:text-petroleum-700 flex cursor-pointer items-center rounded-full transition-colors"
               >
                 <IconUserCircle />
               </button>

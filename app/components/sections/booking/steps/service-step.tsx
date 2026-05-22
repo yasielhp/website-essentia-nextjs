@@ -41,11 +41,11 @@ function ServiceItems({
       </div>
       <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
         <p className="text-petroleum-700 text-sm font-medium">
-            {t(`services.${s.id}.title`)}
-          </p>
-          <p className="text-petroleum-400 line-clamp-1 text-xs">
-            {t(`services.${s.id}.description`)}
-          </p>
+          {t(`services.${s.id}.title`)}
+        </p>
+        <p className="text-petroleum-400 line-clamp-1 text-xs">
+          {t(`services.${s.id}.description`)}
+        </p>
         <p className="text-petroleum-500 text-xs">
           {s.category === "wellness" ? t("wellness") : t("medicine")}
         </p>

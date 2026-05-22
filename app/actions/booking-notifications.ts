@@ -29,14 +29,12 @@ export type BookingNotificationPayload = {
   locale?: "en" | "es";
 };
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: "en" | "es" = "en"): string {
   const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(y, m - 1, d).toLocaleDateString(
+    locale === "es" ? "es-ES" : "en-GB",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric" },
+  );
 }
 
 async function getStaffEmail(serviceId: string): Promise<string | null> {
@@ -72,7 +70,7 @@ export async function notifyBooking(
     locale = "en",
   } = payload;
 
-  const date = formatDate(payload.date);
+  const date = formatDate(payload.date, locale);
   const time = payload.time;
 
   const dashboardUrl =

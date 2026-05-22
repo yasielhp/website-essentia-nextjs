@@ -161,6 +161,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
 
             {/* Consentimiento explícito — RGPD art. 7 / LOPDGDD art. 6 */}
             <Checkbox
+              id="newsletter-consent"
               name="consent"
               checked={consent}
               onChange={(e) => {
@@ -207,13 +208,21 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
               </Accordion.Header>
               <Accordion.Content>
                 <p className={`${th.muted} pb-3 text-xs leading-relaxed`}>
-                  <strong className="font-medium">{t("dataController")}:</strong>{" "}
+                  <strong className="font-medium">
+                    {t("dataController")}:
+                  </strong>{" "}
                   {t("dataControllerValue")} <br />
-                  <strong className="font-medium">{t("dataPurpose")}:</strong>{" "}
+                  <strong className="font-medium">
+                    {t("dataPurpose")}:
+                  </strong>{" "}
                   {t("dataPurposeValue")} <br />
-                  <strong className="font-medium">{t("dataLegalBasis")}:</strong>{" "}
+                  <strong className="font-medium">
+                    {t("dataLegalBasis")}:
+                  </strong>{" "}
                   {t("dataLegalBasisValue")} <br />
-                  <strong className="font-medium">{t("dataRights")}:</strong>{" "}
+                  <strong className="font-medium">
+                    {t("dataRights")}:
+                  </strong>{" "}
                   {t("dataRightsValue")}{" "}
                   <a
                     href={`mailto:${contact.email}`}

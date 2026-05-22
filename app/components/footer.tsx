@@ -189,11 +189,6 @@ export const Footer = () => {
             <AnimatedLink href={`tel:${contact.phone}`} target="_blank">
               {contact.phone}
             </AnimatedLink>
-            {contact.phone2 && (
-              <AnimatedLink href={`tel:${contact.phone2}`} target="_blank">
-                {contact.phone2}
-              </AnimatedLink>
-            )}
           </div>
           {/*Contact Social Media*/}
           <div className="flex w-full justify-center gap-5 md:justify-end">
