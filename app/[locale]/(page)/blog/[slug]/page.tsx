@@ -37,6 +37,19 @@ type Post = {
   author: { full_name: string | null } | null;
 };
 
+function normalizePost(data: Record<string, unknown>): Post {
+  const raw = data as Record<string, unknown>;
+  return {
+    ...raw,
+    category: Array.isArray(raw.category)
+      ? (raw.category[0] ?? null)
+      : (raw.category as Post["category"]),
+    author: Array.isArray(raw.author)
+      ? (raw.author[0] ?? null)
+      : (raw.author as Post["author"]),
+  } as Post;
+}
+
 async function getPost(slug: string, locale: string): Promise<Post | null> {
   if (locale === "es") {
     const { data } = await db.database
@@ -45,7 +58,7 @@ async function getPost(slug: string, locale: string): Promise<Post | null> {
       .eq("slug_es", slug)
       .eq("status", "published")
       .single();
-    if (data) return data as Post;
+    if (data) return normalizePost(data as Record<string, unknown>);
   }
   const { data } = await db.database
     .from("blog_posts")
@@ -53,7 +66,7 @@ async function getPost(slug: string, locale: string): Promise<Post | null> {
     .eq("slug", slug)
     .eq("status", "published")
     .single();
-  return (data as Post | null) ?? null;
+  return data ? normalizePost(data as Record<string, unknown>) : null;
 }
 
 function formatDate(iso: string | null, locale: string) {
