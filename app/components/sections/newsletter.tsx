@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Checkbox } from "@components/ui/input";
 import { Button } from "@components/ui/button";
@@ -45,19 +46,6 @@ const theme = {
 type FormState = "idle" | "loading" | "success" | "error";
 type FormErrors = { email?: string; consent?: string };
 
-function validate(email: string, consent: boolean): FormErrors {
-  const errors: FormErrors = {};
-  if (!email.trim()) {
-    errors.email = "Enter your email address.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = "Enter a valid email address.";
-  }
-  if (!consent) {
-    errors.consent = "You must accept the privacy policy to subscribe.";
-  }
-  return errors;
-}
-
 // ─── Componente ───────────────────────────────────────────────
 
 type NewsletterProps = { variant?: Variant };
@@ -69,7 +57,21 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("idle");
 
-  const t = theme[variant];
+  const t = useTranslations("common.newsletter");
+  const th = theme[variant];
+
+  function validate(emailVal: string, consentVal: boolean): FormErrors {
+    const errs: FormErrors = {};
+    if (!emailVal.trim()) {
+      errs.email = t("emailValidationRequired");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      errs.email = t("emailValidationInvalid");
+    }
+    if (!consentVal) {
+      errs.consent = t("consentValidationRequired");
+    }
+    return errs;
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,34 +95,31 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
   };
 
   return (
-    <section className={`${t.section} w-full px-5 py-16 md:py-24`}>
+    <section className={`${th.section} w-full px-5 py-16 md:py-24`}>
       <div className="mx-auto max-w-4xl">
         {/* Cabecera */}
         <div className="mx-auto mb-10 max-w-lg text-center">
           <p
-            className={`${t.heading} text-2xl font-medium text-balance md:text-3xl`}
+            className={`${th.heading} text-2xl font-medium text-balance md:text-3xl`}
           >
-            Intelligence for those who take their health seriously.
+            {t("heading")}
           </p>
-          <p className={`${t.subheading} mt-2 text-balance`}>
-            Protocols, insights, and community updates: sent when it&apos;s
-            worth your attention.
+          <p className={`${th.subheading} mt-2 text-balance`}>
+            {t("subheading")}
           </p>
         </div>
 
         {state === "success" ? (
           <div className="flex flex-col gap-1 text-center">
-            <p className={`${t.heading} font-medium`}>You&apos;re in.</p>
-            <p className={`${t.subheading} text-sm`}>
-              You&apos;ll hear from us when it&apos;s worth your attention.
-            </p>
-            <p className={`${t.muted} mt-3 text-xs`}>
-              Changed your mind?{" "}
+            <p className={`${th.heading} font-medium`}>{t("successHeading")}</p>
+            <p className={`${th.subheading} text-sm`}>{t("successBody")}</p>
+            <p className={`${th.muted} mt-3 text-xs`}>
+              {t("successUnsubscribe")}{" "}
               <Link
                 href={`/newsletter/unsubscribe?email=${encodeURIComponent(submittedEmail)}`}
-                className={`${t.link} underline underline-offset-2 transition-colors`}
+                className={`${th.link} underline underline-offset-2 transition-colors`}
               >
-                Unsubscribe
+                {t("unsubscribeLink")}
               </Link>
             </p>
           </div>
@@ -137,7 +136,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
                 type="email"
                 name="email"
                 autoComplete="email"
-                placeholder="Your email address"
+                placeholder={t("emailPlaceholder")}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -148,7 +147,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
                 aria-required="true"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
-                className={`${errors.email ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : t.input} h-10 w-full rounded-full border bg-transparent px-5 py-2.5 text-sm transition-all duration-200 outline-none focus:ring-2 disabled:opacity-50`}
+                className={`${errors.email ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : th.input} h-10 w-full rounded-full border bg-transparent px-5 py-2.5 text-sm transition-all duration-200 outline-none focus:ring-2 disabled:opacity-50`}
               />
               {errors.email && (
                 <p
@@ -172,64 +171,63 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
               disabled={state === "loading"}
               error={errors.consent}
               label={
-                <span className={t.label}>
-                  I agree to the{" "}
+                <span className={th.label}>
+                  {t("consentLabel")}{" "}
                   <Link
                     href="/privacy"
-                    className={`${t.link} underline underline-offset-2 transition-colors duration-150`}
+                    className={`${th.link} underline underline-offset-2 transition-colors duration-150`}
                     target="_blank"
                   >
-                    Privacy Policy
+                    {t("privacyPolicy")}
                   </Link>{" "}
-                  and consent to receive Essentia&apos;s newsletter.
+                  {t("consentSuffix")}
                 </span>
               }
             />
 
             <Button
               type="submit"
-              variant={t.button}
+              variant={th.button}
               size="md"
               disabled={state === "loading"}
               aria-busy={state === "loading"}
               className="w-full"
             >
-              {state === "loading" ? "Subscribing…" : "Subscribe"}
+              {state === "loading" ? t("subscribing") : t("subscribe")}
             </Button>
 
             {/* Toggle de información RGPD art. 13 */}
             <Accordion className="border-sand-200 rounded-2xl border px-6">
-              <Accordion.Header iconClassName={t.accordion}>
+              <Accordion.Header iconClassName={th.accordion}>
                 <span
-                  className={`${t.accordion} w-full text-center text-xs tracking-wide uppercase`}
+                  className={`${th.accordion} w-full text-center text-xs tracking-wide uppercase`}
                 >
-                  Data protection information
+                  {t("dataProtectionToggle")}
                 </span>
               </Accordion.Header>
               <Accordion.Content>
-                <p className={`${t.muted} pb-3 text-xs leading-relaxed`}>
-                  <strong className="font-medium">Data controller:</strong>{" "}
-                  Essentia Social Wellness Club <br />
-                  <strong className="font-medium">Purpose:</strong> sending our
-                  newsletter <br />
-                  <strong className="font-medium">Legal basis:</strong> your
-                  consent (GDPR art. 6.1.a) <br />
-                  <strong className="font-medium">Your rights:</strong> access,
-                  rectification, erasure, restriction, portability, and
-                  objection: write to{" "}
+                <p className={`${th.muted} pb-3 text-xs leading-relaxed`}>
+                  <strong className="font-medium">{t("dataController")}:</strong>{" "}
+                  {t("dataControllerValue")} <br />
+                  <strong className="font-medium">{t("dataPurpose")}:</strong>{" "}
+                  {t("dataPurposeValue")} <br />
+                  <strong className="font-medium">{t("dataLegalBasis")}:</strong>{" "}
+                  {t("dataLegalBasisValue")} <br />
+                  <strong className="font-medium">{t("dataRights")}:</strong>{" "}
+                  {t("dataRightsValue")}{" "}
                   <a
                     href={`mailto:${contact.email}`}
                     className="underline underline-offset-2"
                   >
                     {contact.email}
                   </a>
-                  . Full details in our{" "}
+                  . {t("dataFullDetails")}{" "}
                   <Link
                     href="/privacy"
                     className="underline underline-offset-2"
                     target="_blank"
                   >
-                    Privacy Policy
+                    {t("privacyPolicy")}
                   </Link>
                   .
                 </p>
@@ -238,7 +236,7 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
 
             {state === "error" && (
               <p role="alert" className="text-xs text-red-500">
-                Something went wrong. Please try again later.
+                {t("errorMessage")}
               </p>
             )}
           </form>

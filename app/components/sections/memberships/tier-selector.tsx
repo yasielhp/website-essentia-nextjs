@@ -249,11 +249,13 @@ function TierSelectorInner() {
       for (const p of data as {
         id: string;
         price_monthly: number;
-        features: string | null;
+        features: string | string[] | null;
       }[]) {
         prices[p.id] = p.price_monthly;
         if (p.features) {
-          features[p.id] = p.features.split(",").map((f) => f.trim());
+          features[p.id] = Array.isArray(p.features)
+            ? p.features
+            : p.features.split(",").map((f) => f.trim());
         }
       }
       setDbPrices(prices);

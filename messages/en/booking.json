@@ -32,7 +32,41 @@
     "modalTitle": "Select a service",
     "wellness": "Wellness",
     "medicine": "Medicine",
-    "close": "Close"
+    "close": "Close",
+    "services": {
+      "manual-therapies": {
+        "title": "Manual Therapies",
+        "description": "Precise manual work to release tension and restore mobility."
+      },
+      "contrast-therapy": {
+        "title": "Contrast Therapy",
+        "description": "Alternating heat and cold to activate recovery and reduce inflammation."
+      },
+      "breathing-sessions": {
+        "title": "Breathing Sessions",
+        "description": "Guided breathwork to shift from stress to active recovery."
+      },
+      "red-light-therapy": {
+        "title": "Red Light Therapy",
+        "description": "Red and infrared light to stimulate cellular repair and regeneration."
+      },
+      "functional-well-being": {
+        "title": "Functional Well-being",
+        "description": "Movement and strength training designed around longevity."
+      },
+      "hyperbaric-chambers": {
+        "title": "Hyperbaric Oxygen",
+        "description": "Pressurised oxygen to accelerate tissue repair and reduce inflammation."
+      },
+      "intravenous-therapy": {
+        "title": "IV Therapy",
+        "description": "Direct nutrient delivery for rapid absorption and cellular support."
+      },
+      "regenerative-medicine": {
+        "title": "Regenerative Medicine",
+        "description": "Protocols that activate your body's own repair mechanisms."
+      }
+    }
   },
   "durationStep": {
     "label": "Choose a duration",

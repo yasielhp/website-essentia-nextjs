@@ -28,6 +28,25 @@ export function buildSteps(hasDatetime = true) {
   return steps;
 }
 
+export function getLocalizedMonthName(
+  locale: string,
+  year: number,
+  month: number,
+): string {
+  return new Intl.DateTimeFormat(locale, { month: "long" }).format(
+    new Date(year, month, 1),
+  );
+}
+
+export function getLocalizedDayNames(locale: string): string[] {
+  // Jan 6 2025 is a Monday — use Mon–Sun as base week
+  return Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+      new Date(2025, 0, 6 + i),
+    ),
+  );
+}
+
 export function isAvailableDay(date: Date): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

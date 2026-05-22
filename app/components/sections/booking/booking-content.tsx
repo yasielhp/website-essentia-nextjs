@@ -634,6 +634,7 @@ function BookingContentInner() {
         date: dateStr ?? "",
         time: timeStr ?? "",
         duration: selectedDuration,
+        locale: locale === "es" ? "es" : "en",
       });
     } catch {
       // Email failed silently — booking is already saved

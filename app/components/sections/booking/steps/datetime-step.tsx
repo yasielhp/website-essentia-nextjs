@@ -5,13 +5,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
 import {
-  MONTH_NAMES,
-  DAY_NAMES,
   isAvailableDay,
   isSameDay,
   getCalendarDays,
   getTimeSlots,
   getTimeSlotsForDashboard,
+  getLocalizedMonthName,
+  getLocalizedDayNames,
 } from "@/utils/calendar-helpers";
 
 type BusyInterval = { start: string; end: string };
@@ -29,6 +29,7 @@ function CalendarView({
   onNextMonth,
   fullyBlockedDates,
   loadingMonth,
+  locale,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
@@ -38,9 +39,12 @@ function CalendarView({
   onNextMonth: () => void;
   fullyBlockedDates: Set<string>;
   loadingMonth: boolean;
+  locale: string;
 }) {
   const today = new Date();
   const days = getCalendarDays(viewYear, viewMonth);
+  const monthName = getLocalizedMonthName(locale, viewYear, viewMonth);
+  const dayNames = getLocalizedDayNames(locale);
 
   return (
     <div className="flex flex-col gap-4">
@@ -52,8 +56,8 @@ function CalendarView({
           <ChevronLeft size={16} />
         </button>
         <div className="flex items-center gap-2">
-          <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
-            {MONTH_NAMES[viewMonth]} {viewYear}
+          <p className="text-petroleum-700 text-sm font-semibold tracking-wide capitalize">
+            {monthName} {viewYear}
           </p>
           {loadingMonth && (
             <span className="border-petroleum-300 size-3 animate-spin rounded-full border border-t-transparent" />
@@ -68,7 +72,7 @@ function CalendarView({
       </div>
 
       <div className="grid grid-cols-7">
-        {DAY_NAMES.map((d) => (
+        {dayNames.map((d) => (
           <div
             key={d}
             className="text-petroleum-400 py-2 text-center text-xs font-semibold tracking-wide uppercase"
@@ -269,6 +273,7 @@ export function DateTimeStep({
         onNextMonth={handleNextMonth}
         fullyBlockedDates={fullyBlockedDates}
         loadingMonth={loadingMonth}
+        locale={dateLocale}
       />
     </div>
   ) : (

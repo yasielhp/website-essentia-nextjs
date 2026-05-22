@@ -40,10 +40,12 @@ function ServiceItems({
         />
       </div>
       <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        <p className="text-petroleum-700 text-sm font-medium">{s.title}</p>
-        <p className="text-petroleum-400 line-clamp-1 text-xs">
-          {s.description}
-        </p>
+        <p className="text-petroleum-700 text-sm font-medium">
+            {t(`services.${s.id}.title`)}
+          </p>
+          <p className="text-petroleum-400 line-clamp-1 text-xs">
+            {t(`services.${s.id}.description`)}
+          </p>
         <p className="text-petroleum-500 text-xs">
           {s.category === "wellness" ? t("wellness") : t("medicine")}
         </p>
@@ -161,9 +163,11 @@ function ServiceSelect({
               />
             </div>
             <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
-              <p className="text-petroleum-700 font-medium">{selected.title}</p>
+              <p className="text-petroleum-700 font-medium">
+                {t(`services.${selected.id}.title`)}
+              </p>
               <p className="text-petroleum-400 line-clamp-2 text-sm">
-                {selected.description}
+                {t(`services.${selected.id}.description`)}
               </p>
               <p className="text-petroleum-500 text-sm capitalize">
                 {selected.category}

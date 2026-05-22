@@ -32,7 +32,41 @@
     "modalTitle": "Seleccionar un servicio",
     "wellness": "Bienestar",
     "medicine": "Medicina",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "services": {
+      "manual-therapies": {
+        "title": "Terapias Manuales",
+        "description": "Trabajo manual preciso para liberar la tensión y restaurar la movilidad."
+      },
+      "contrast-therapy": {
+        "title": "Terapia de Contraste",
+        "description": "Alternancia de calor y frío para activar la recuperación y reducir la inflamación."
+      },
+      "breathing-sessions": {
+        "title": "Sesiones de Respiración",
+        "description": "Trabajo de respiración guiado para pasar del estrés a la recuperación activa."
+      },
+      "red-light-therapy": {
+        "title": "Terapia de Luz Roja",
+        "description": "Luz roja e infrarroja para estimular la reparación y regeneración celular."
+      },
+      "functional-well-being": {
+        "title": "Bienestar Funcional",
+        "description": "Entrenamiento de fuerza y movimiento diseñado para la longevidad."
+      },
+      "hyperbaric-chambers": {
+        "title": "Oxígeno Hiperbárico",
+        "description": "Oxígeno a presión para acelerar la reparación tisular y reducir la inflamación."
+      },
+      "intravenous-therapy": {
+        "title": "Terapia IV",
+        "description": "Suministro directo de nutrientes para una absorción rápida y soporte celular."
+      },
+      "regenerative-medicine": {
+        "title": "Medicina Regenerativa",
+        "description": "Protocolos que activan los mecanismos de reparación propios del cuerpo."
+      }
+    }
   },
   "durationStep": {
     "label": "Elige una duración",
