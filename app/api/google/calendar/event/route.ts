@@ -3,6 +3,7 @@ import { createClient } from "@insforge/sdk";
 import {
   getValidAccessToken,
   createCalendarEvent,
+  updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/lib/google-calendar";
 
@@ -94,6 +95,78 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // Fail-open: calendar sync failure must not break the booking
     console.error("[google/calendar/event] error:", err);
+    return NextResponse.json({ ok: true });
+  }
+}
+
+type UpdateRequestBody = EventRequestBody & { event_id: string };
+
+export async function PATCH(request: NextRequest) {
+  let body: UpdateRequestBody;
+
+  try {
+    body = (await request.json()) as UpdateRequestBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const {
+    service_id,
+    event_id,
+    summary,
+    description,
+    location,
+    colorId,
+    date,
+    time,
+    duration_minutes,
+    timezone = "Atlantic/Canary",
+  } = body;
+
+  if (!service_id || !event_id || !summary || !date || !time || !duration_minutes) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(service_id);
+
+    if (!accessToken) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const adminClient = getAdminClient();
+    const { data: config } = await adminClient.database
+      .from("service_configs")
+      .select("google_calendar_id")
+      .eq("service_id", service_id)
+      .single<{ google_calendar_id: string | null }>();
+
+    const calendarId = config?.google_calendar_id ?? "primary";
+
+    const startDateTime = `${date}T${time}:00`;
+    const [startHour, startMinute] = time.split(":").map(Number);
+    const totalStartMinutes = startHour * 60 + startMinute + duration_minutes;
+    const endHour = Math.floor(totalStartMinutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const endMinute = (totalStartMinutes % 60).toString().padStart(2, "0");
+    const endDateTime = `${date}T${endHour}:${endMinute}:00`;
+
+    await updateCalendarEvent(accessToken, calendarId, event_id, {
+      summary,
+      description,
+      ...(location ? { location } : {}),
+      ...(colorId ? { colorId } : {}),
+      start: { dateTime: startDateTime, timeZone: timezone },
+      end: { dateTime: endDateTime, timeZone: timezone },
+    });
+
+    return NextResponse.json({ ok: true, eventId: event_id });
+  } catch (err) {
+    console.error("[google/calendar/event PATCH] error:", err);
     return NextResponse.json({ ok: true });
   }
 }

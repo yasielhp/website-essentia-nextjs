@@ -178,6 +178,36 @@ export async function getFreeBusy(
 }
 
 /**
+ * Update (PATCH) an existing Google Calendar event.
+ */
+export async function updateCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  event: GoogleCalendarEvent,
+): Promise<string> {
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    },
+  );
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Google updateEvent failed: ${res.status} ${body}`);
+  }
+
+  const data = (await res.json()) as { id: string };
+  return data.id;
+}
+
+/**
  * Delete a Google Calendar event by its ID.
  */
 export async function deleteCalendarEvent(
