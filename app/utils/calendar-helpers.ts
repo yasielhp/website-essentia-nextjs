@@ -78,9 +78,8 @@ export function getCalendarDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
-const OPENING_MINUTES = 8 * 60;  // 08:00
+const OPENING_MINUTES = 8 * 60; // 08:00
 const CLOSING_MINUTES = 19 * 60; // 19:00
-const SLOT_STEP_MINUTES = 30;
 const BUFFER_MINUTES = 10;
 
 function computeSlots(
@@ -90,6 +89,7 @@ function computeSlots(
   busyIntervals: { start: string; end: string }[],
 ): { time: string; booked: boolean }[] {
   const BUFFER_MS = BUFFER_MINUTES * 60 * 1000;
+  const step = durationMinutes + BUFFER_MINUTES;
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
   const slots: { time: string; booked: boolean }[] = [];
@@ -97,7 +97,7 @@ function computeSlots(
   for (
     let startMin = OPENING_MINUTES;
     startMin + durationMinutes <= CLOSING_MINUTES;
-    startMin += SLOT_STEP_MINUTES
+    startMin += step
   ) {
     const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
     const mm = String(startMin % 60).padStart(2, "0");
