@@ -78,43 +78,44 @@ export function getCalendarDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
+const OPENING_MINUTES = 8 * 60;  // 08:00
+const CLOSING_MINUTES = 19 * 60; // 19:00
+const SLOT_STEP_MINUTES = 30;
+const BUFFER_MINUTES = 10;
+
 function computeSlots(
   date: Date,
-  category: string | undefined | null,
+  _category: string | undefined | null,
   durationMinutes: number,
   busyIntervals: { start: string; end: string }[],
 ): { time: string; booked: boolean }[] {
-  const base =
-    category === "medicine"
-      ? ["08:00", "09:30", "11:00", "12:30", "14:00", "15:30", "17:00"]
-      : [
-          "08:00",
-          "09:00",
-          "10:00",
-          "11:00",
-          "12:00",
-          "13:00",
-          "14:00",
-          "15:00",
-          "16:00",
-          "17:00",
-          "18:00",
-          "19:00",
-        ];
-
-  const BUFFER_MS = 10 * 60 * 1000;
+  const BUFFER_MS = BUFFER_MINUTES * 60 * 1000;
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-  return base.map((time) => {
+  const slots: { time: string; booked: boolean }[] = [];
+
+  for (
+    let startMin = OPENING_MINUTES;
+    startMin + durationMinutes <= CLOSING_MINUTES;
+    startMin += SLOT_STEP_MINUTES
+  ) {
+    const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
+    const mm = String(startMin % 60).padStart(2, "0");
+    const time = `${hh}:${mm}`;
+
     const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
     const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
+
     const booked = busyIntervals.some(({ start, end }) => {
       const busyStartMs = new Date(start).getTime();
       const busyEndMs = new Date(end).getTime() + BUFFER_MS;
       return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
     });
-    return { time, booked };
-  });
+
+    slots.push({ time, booked });
+  }
+
+  return slots;
 }
 
 export function getTimeSlots(
