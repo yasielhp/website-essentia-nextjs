@@ -77,7 +77,13 @@
     "modalTitle": "Seleccionar un tipo de sesión",
     "noneAvailable": "No hay tipos de sesión disponibles para este servicio.",
     "standard": "Estándar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "therapistDescription": "Indica tu preferencia de terapeuta para esta sesión.",
+    "therapistLabel": "Preferencia de terapeuta",
+    "selectTherapist": "Seleccionar terapeuta",
+    "therapistModalTitle": "Seleccionar terapeuta",
+    "therapistMale": "Terapeuta masculino",
+    "therapistFemale": "Terapeuta femenina"
   },
   "locationStep": {
     "label": "¿Dónde quieres recibir el servicio?",

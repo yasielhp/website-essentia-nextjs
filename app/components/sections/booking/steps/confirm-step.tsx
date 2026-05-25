@@ -13,6 +13,7 @@ export function ConfirmStep({
   date,
   time,
   details,
+  therapistGender,
 }: {
   service: BookableService;
   duration: string;
@@ -20,8 +21,10 @@ export function ConfirmStep({
   date: Date | null;
   time: string | null;
   details: DetailsState;
+  therapistGender?: "male" | "female" | null;
 }) {
   const t = useTranslations("booking.confirmStep");
+  const tt = useTranslations("booking.durationStep");
   const locale = useLocale();
   const dateLocale = locale === "es" ? "es-ES" : "en-GB";
   const priceLine = [duration || null, price != null ? `€${price}` : null]
@@ -72,6 +75,17 @@ export function ConfirmStep({
             { label: t("email"), value: details.email },
             { label: t("phone"), value: details.phone },
             { label: t("location"), value: t("atTheCenter") },
+            ...(therapistGender
+              ? [
+                  {
+                    label: tt("therapistLabel"),
+                    value:
+                      therapistGender === "male"
+                        ? tt("therapistMale")
+                        : tt("therapistFemale"),
+                  },
+                ]
+              : []),
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-petroleum-400 text-xs">{label}</p>

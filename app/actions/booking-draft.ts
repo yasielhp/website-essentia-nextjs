@@ -16,15 +16,24 @@ export async function updateDraftBookingMeta(
   createdByUserId: string | null,
   createdByRole: string,
   notes: string | null,
+  therapistGender: "male" | "female" | null = null,
 ): Promise<void> {
   const adminClient = getAdminClient();
+  const therapistNote =
+    therapistGender === "male"
+      ? "Terapeuta: Masculino"
+      : therapistGender === "female"
+        ? "Terapeuta: Femenina"
+        : null;
+  const composedNotes =
+    [therapistNote, notes].filter(Boolean).join("\n\n") || null;
   await adminClient.database
     .from("bookings")
     .update({
       tier_id: tierId,
       price_eur: tierPrice,
       location: "centro",
-      ...(notes ? { notes } : {}),
+      ...(composedNotes ? { notes: composedNotes } : {}),
       ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),
       created_by_role: createdByRole,
     })

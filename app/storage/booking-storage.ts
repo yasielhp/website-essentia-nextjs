@@ -10,6 +10,7 @@ export type BookingStorage = {
   selectedDuration: string | null;
   selectedDate: string | null;
   selectedTime: string | null;
+  therapistGender: "male" | "female" | null;
   details: DetailsState;
 };
 

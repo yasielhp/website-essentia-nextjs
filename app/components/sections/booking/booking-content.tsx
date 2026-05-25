@@ -47,6 +47,7 @@ type BookingState = {
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
+  therapistGender: "male" | "female" | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -63,6 +64,7 @@ type BookingAction =
       duration: string | null;
       price: number | null;
     }
+  | { type: "SELECT_THERAPIST_GENDER"; gender: "male" | "female" }
   | { type: "SELECT_DATE"; date: Date | null }
   | { type: "SELECT_TIME"; time: string }
   | { type: "SET_STEP"; step: number }
@@ -82,6 +84,7 @@ function bookingReducer(
         selectedTierId: null,
         selectedTierPrice: null,
         selectedDuration: null,
+        therapistGender: null,
       };
     case "SELECT_TIER":
       return {
@@ -91,6 +94,8 @@ function bookingReducer(
         selectedTierPrice: action.price,
         selectedDuration: action.duration,
       };
+    case "SELECT_THERAPIST_GENDER":
+      return { ...state, therapistGender: action.gender };
     case "SELECT_DATE":
       return { ...state, selectedDate: action.date };
     case "SELECT_TIME":
@@ -119,6 +124,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
       selectedTierLabel: null,
       selectedTierPrice: null,
       selectedDuration: null,
+      therapistGender: null,
       selectedDate: null,
       selectedTime: null,
       details: saved.details ?? EMPTY_DETAILS,
@@ -138,6 +144,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
       null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
+    therapistGender: saved.therapistGender ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
     selectedTime: saved.selectedTime ?? null,
     details: saved.details ?? EMPTY_DETAILS,
@@ -259,6 +266,7 @@ type BookingStepRendererProps = {
   selectedTierId: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
+  therapistGender: "male" | "female" | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -274,6 +282,7 @@ function BookingStepRenderer({
   selectedTierId,
   selectedTierPrice,
   selectedDuration,
+  therapistGender,
   selectedDate,
   selectedTime,
   details,
@@ -294,6 +303,7 @@ function BookingStepRenderer({
         <DurationStep
           serviceId={selectedService.id}
           selectedTierId={selectedTierId}
+          therapistGender={therapistGender}
           preselectedLabel={preselectedLabel}
           onSelect={(sel: TierSelection) =>
             dispatch({
@@ -303,6 +313,9 @@ function BookingStepRenderer({
               duration: sel.duration,
               price: sel.price,
             })
+          }
+          onSelectGender={(g) =>
+            dispatch({ type: "SELECT_THERAPIST_GENDER", gender: g })
           }
         />
       )}
@@ -337,6 +350,7 @@ function BookingStepRenderer({
           date={selectedDate}
           time={selectedTime}
           details={details}
+          therapistGender={therapistGender}
         />
       )}
     </div>
@@ -423,6 +437,7 @@ function BookingContentInner() {
     selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
+    therapistGender,
     selectedDate,
     selectedTime,
     details,
@@ -436,6 +451,7 @@ function BookingContentInner() {
       selectedTierId,
       selectedTierPrice,
       selectedDuration,
+      therapistGender,
       selectedDate: selectedDate?.toISOString() ?? null,
       selectedTime,
       details,
@@ -446,6 +462,7 @@ function BookingContentInner() {
     selectedTierId,
     selectedTierPrice,
     selectedDuration,
+    therapistGender,
     selectedDate,
     selectedTime,
     details,
@@ -459,7 +476,7 @@ function BookingContentInner() {
       .then((r) => r.json())
       .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
       .catch(() => setHasCalendar(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedService?.id]);
 
   const rawSteps = buildSteps(hasCalendar);
@@ -473,9 +490,10 @@ function BookingContentInner() {
   const isLastStep = step === activeSteps.length - 1;
   const nextStepLabel = activeSteps[step + 1]?.label;
 
+  const isManualTherapies = selectedService?.id === "manual-therapies";
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    duration: !!selectedTierId,
+    duration: !!selectedTierId && (!isManualTherapies || !!therapistGender),
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
     confirm: !hasCalendar || !!(selectedDate && selectedTime),
@@ -546,6 +564,7 @@ function BookingContentInner() {
         user?.id ?? null,
         user?.id ? "client" : "anonymous",
         details.notes?.trim() || null,
+        therapistGender,
       );
     }
 
@@ -584,6 +603,16 @@ function BookingContentInner() {
         timeStr ?? "",
       );
     } else {
+      const therapistNote =
+        therapistGender === "male"
+          ? "Terapeuta: Masculino"
+          : therapistGender === "female"
+            ? "Terapeuta: Femenina"
+            : null;
+      const composedNotes =
+        [therapistNote, details.notes?.trim() || null]
+          .filter(Boolean)
+          .join("\n\n") || null;
       const { data } = await insforge.database
         .from("bookings")
         .insert([
@@ -596,7 +625,7 @@ function BookingContentInner() {
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
             location: "centro",
-            ...(details.notes?.trim() ? { notes: details.notes.trim() } : {}),
+            ...(composedNotes ? { notes: composedNotes } : {}),
             ...(dateStr ? { date: dateStr } : {}),
             ...(timeStr ? { time: timeStr } : {}),
             first_name: details.firstName,
@@ -688,6 +717,7 @@ function BookingContentInner() {
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}
+        therapistGender={therapistGender}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         details={details}
