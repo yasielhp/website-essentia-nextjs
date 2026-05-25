@@ -123,7 +123,14 @@ export async function PATCH(request: NextRequest) {
     timezone = "Atlantic/Canary",
   } = body;
 
-  if (!service_id || !event_id || !summary || !date || !time || !duration_minutes) {
+  if (
+    !service_id ||
+    !event_id ||
+    !summary ||
+    !date ||
+    !time ||
+    !duration_minutes
+  ) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 },
