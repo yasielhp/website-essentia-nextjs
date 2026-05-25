@@ -883,6 +883,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
+  therapistGender: "male" | "female" | "";
 };
 
 type FormAction =
@@ -901,6 +902,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
+  | { type: "SET_THERAPIST_GENDER"; value: "male" | "female" | "" }
   | { type: "RESET_TIERS" };
 
 const formInitial: FormState = {
@@ -918,12 +920,13 @@ const formInitial: FormState = {
   lastName: "",
   email: "",
   phone: "",
+  therapistGender: "",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_SERVICE":
-      return { ...state, serviceId: action.id, tierId: "" };
+      return { ...state, serviceId: action.id, tierId: "", therapistGender: "" };
     case "SET_TIER":
       return { ...state, tierId: action.id };
     case "SET_LOCATION":
@@ -957,6 +960,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
+    case "SET_THERAPIST_GENDER":
+      return { ...state, therapistGender: action.value };
     default:
       return state;
   }
@@ -1027,6 +1032,7 @@ function NewBookingPageInner() {
     lastName,
     email,
     phone,
+    therapistGender,
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
@@ -1211,7 +1217,13 @@ function NewBookingPageInner() {
           time: selectedTime || null,
           location: location || null,
           location_address: locationAddress,
-          ...(notes.trim() ? { notes: notes.trim() } : {}),
+          ...(() => {
+            const therapistNote =
+              therapistGender === "male" ? "Terapeuta: Masculino" :
+              therapistGender === "female" ? "Terapeuta: Femenina" : "";
+            const composedNotes = [therapistNote, notes.trim()].filter(Boolean).join("\n\n");
+            return composedNotes ? { notes: composedNotes } : {};
+          })(),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           email: email.trim(),
@@ -1691,15 +1703,38 @@ function NewBookingPageInner() {
                       No session types configured for this service.
                     </p>
                   ) : (
-                    <TierSelect
-                      tiers={tiers}
-                      selectedId={tierId}
-                      location={location}
-                      onSelect={(t) => {
-                        dispatchForm({ type: "SET_TIER", id: t.id });
-                        setEditingStep(null);
-                      }}
-                    />
+                    <div className="flex flex-col gap-4">
+                      <TierSelect
+                        tiers={tiers}
+                        selectedId={tierId}
+                        location={location}
+                        onSelect={(t) => {
+                          dispatchForm({ type: "SET_TIER", id: t.id });
+                          setEditingStep(null);
+                        }}
+                      />
+                      {serviceId === "manual-therapies" && (
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-petroleum-500 text-xs font-medium">
+                            Therapist preference
+                          </label>
+                          <select
+                            value={therapistGender}
+                            onChange={(e) =>
+                              dispatchForm({
+                                type: "SET_THERAPIST_GENDER",
+                                value: e.target.value as "male" | "female" | "",
+                              })
+                            }
+                            className={INPUT_CLASS}
+                          >
+                            <option value="">Select therapist preference</option>
+                            <option value="male">Male therapist</option>
+                            <option value="female">Female therapist</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

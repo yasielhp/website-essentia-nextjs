@@ -1075,6 +1075,7 @@ type FormState = {
   email: string;
   phone: string;
   status: string;
+  therapistGender: "male" | "female" | "";
 };
 
 type FormAction =
@@ -1094,6 +1095,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "status";
       value: string;
     }
+  | { type: "SET_THERAPIST_GENDER"; value: "male" | "female" | "" }
   | { type: "RESET_TIERS" };
 
 const formInitial: FormState = {
@@ -1112,6 +1114,7 @@ const formInitial: FormState = {
   email: "",
   phone: "",
   status: "pending",
+  therapistGender: "",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -1153,6 +1156,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
+    case "SET_THERAPIST_GENDER":
+      return { ...state, therapistGender: action.value };
     default:
       return state;
   }
@@ -1719,6 +1724,7 @@ export default function EditBookingPage() {
     email,
     phone,
     status,
+    therapistGender,
   } = form;
 
   const fullNameForCrumb =
@@ -1972,6 +1978,17 @@ export default function EditBookingPage() {
       setOrigBookingDate(b.date ?? null);
       setOrigBookingTime(b.time ?? "");
 
+      // Parse therapist gender from notes prefix
+      let parsedTherapistGender: "male" | "female" | "" = "";
+      let parsedNotes = b.notes ?? "";
+      if (parsedNotes.startsWith("Terapeuta: Masculino")) {
+        parsedTherapistGender = "male";
+        parsedNotes = parsedNotes.slice("Terapeuta: Masculino".length).replace(/^\n\n/, "");
+      } else if (parsedNotes.startsWith("Terapeuta: Femenina")) {
+        parsedTherapistGender = "female";
+        parsedNotes = parsedNotes.slice("Terapeuta: Femenina".length).replace(/^\n\n/, "");
+      }
+
       dispatchForm({
         type: "LOAD_BOOKING",
         payload: {
@@ -1979,7 +1996,7 @@ export default function EditBookingPage() {
           location: (b.location as DashboardLocation) ?? "",
           roomNumber: parsedRoomNumber,
           reservationNumber: parsedReservationNumber,
-          notes: b.notes ?? "",
+          notes: parsedNotes,
           address: parsedAddress,
           selectedDate: parsedDate,
           selectedTime: b.time ?? "",
@@ -1989,6 +2006,7 @@ export default function EditBookingPage() {
           email: b.email ?? "",
           phone: b.phone ?? "",
           status: b.status ?? "pending",
+          therapistGender: parsedTherapistGender,
         },
       });
       dispatchAsync({ type: "BOOKING_LOADED" });
@@ -2086,7 +2104,13 @@ export default function EditBookingPage() {
         time: selectedTime || null,
         location: location || null,
         location_address: locationAddress,
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
+        ...(() => {
+          const therapistNote =
+            therapistGender === "male" ? "Terapeuta: Masculino" :
+            therapistGender === "female" ? "Terapeuta: Femenina" : "";
+          const composedNotes = [therapistNote, notes.trim()].filter(Boolean).join("\n\n");
+          return composedNotes ? { notes: composedNotes } : {};
+        })(),
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
@@ -2394,6 +2418,34 @@ export default function EditBookingPage() {
             location={location}
             onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
           />
+
+          {/* ── 4b. Therapist preference (manual-therapies only) ── */}
+          {serviceId === "manual-therapies" && (
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Therapist preference
+              </h2>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-petroleum-500 text-xs font-medium">
+                  Therapist preference
+                </label>
+                <select
+                  value={therapistGender}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_THERAPIST_GENDER",
+                      value: e.target.value as "male" | "female" | "",
+                    })
+                  }
+                  className={INPUT_CLASS}
+                >
+                  <option value="">Select therapist preference</option>
+                  <option value="male">Male therapist</option>
+                  <option value="female">Female therapist</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* ── 5. Date & Time ── */}
           <DateTimeSection
