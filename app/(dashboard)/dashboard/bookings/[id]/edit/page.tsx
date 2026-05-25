@@ -1466,7 +1466,7 @@ function DateTimeSection({
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Date & Time
+        Date & Time <span className="text-red-400">*</span>
       </h2>
       {calendarView === "date" ? (
         <CalendarView
@@ -2049,6 +2049,14 @@ export default function EditBookingPage() {
       });
       return;
     }
+    if (!selectedDate) {
+      dispatchAsync({ type: "SET_ERROR", payload: "Please select a date." });
+      return;
+    }
+    if (!selectedTime) {
+      dispatchAsync({ type: "SET_ERROR", payload: "Please select a time." });
+      return;
+    }
 
     let locationAddress: string | null = null;
     if (location === "habitacion")
@@ -2238,28 +2246,50 @@ export default function EditBookingPage() {
         ? `${serviceName} · ${tierInfo} — ${clientName}`
         : `${serviceName} — ${clientName}`;
 
+      const existingEventId = originalRef.current?.googleEventId ?? null;
+
       try {
-        const calRes = await fetch("/api/google/calendar/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            service_id: serviceId,
-            summary: calSummary,
-            description: descLines.join("\n"),
-            location: calLocation || undefined,
-            colorId: "7",
-            date: dateStr,
-            time: selectedTime,
-            duration_minutes: selectedTier?.duration_minutes ?? 60,
-          }),
-        });
-        if (calRes.ok) {
-          const calData = (await calRes.json()) as { eventId?: string };
-          if (calData.eventId) {
-            void insforge.database
-              .from("bookings")
-              .update({ google_event_id: calData.eventId })
-              .eq("id", id);
+        if (existingEventId) {
+          // Update existing calendar event instead of creating a duplicate
+          await fetch("/api/google/calendar/event", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              service_id: serviceId,
+              event_id: existingEventId,
+              summary: calSummary,
+              description: descLines.join("\n"),
+              location: calLocation || undefined,
+              colorId: "7",
+              date: dateStr,
+              time: selectedTime,
+              duration_minutes: selectedTier?.duration_minutes ?? 60,
+            }),
+          });
+        } else {
+          // No existing event — create one
+          const calRes = await fetch("/api/google/calendar/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              service_id: serviceId,
+              summary: calSummary,
+              description: descLines.join("\n"),
+              location: calLocation || undefined,
+              colorId: "7",
+              date: dateStr,
+              time: selectedTime,
+              duration_minutes: selectedTier?.duration_minutes ?? 60,
+            }),
+          });
+          if (calRes.ok) {
+            const calData = (await calRes.json()) as { eventId?: string };
+            if (calData.eventId) {
+              void insforge.database
+                .from("bookings")
+                .update({ google_event_id: calData.eventId })
+                .eq("id", id);
+            }
           }
         }
       } catch {
