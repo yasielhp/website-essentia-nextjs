@@ -24,6 +24,7 @@ type Booking = {
   time: string | null;
   status: string | null;
   location: string | null;
+  location_address: string | null;
   created_at: string | null;
   created_by_role: string | null;
   created_by_user_id: string | null;
@@ -531,7 +532,7 @@ export default function BookingsPage() {
     let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, duration, tier_id, service_tiers(label), first_name, last_name, email, phone, date, time, status, location, created_at, created_by_role, created_by_user_id",
+        "id, service_title, duration, tier_id, service_tiers(label), first_name, last_name, email, phone, date, time, status, location, location_address, created_at, created_by_role, created_by_user_id",
         { count: "exact" },
       );
 
@@ -735,12 +736,39 @@ export default function BookingsPage() {
                     </span>
                   )}
                 </div>
-                <div className="mt-1.5 flex items-center gap-3">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3">
                   <p className="text-petroleum-400 text-xs">
                     {formatBookingDate(b.date)}
                     {b.time ? ` · ${b.time}` : ""}
                   </p>
-                  <LocationBadge location={b.location} />
+                  <div className="flex flex-col gap-0.5">
+                    <LocationBadge location={b.location} />
+                    {(b.location === "centro" ||
+                      b.location === "habitacion") &&
+                      b.location_address &&
+                      (() => {
+                        try {
+                          const addr = JSON.parse(
+                            b.location_address,
+                          ) as Record<string, string>;
+                          const parts = [
+                            addr.reservationNumber
+                              ? `#${addr.reservationNumber}`
+                              : null,
+                            addr.roomNumber
+                              ? `Room ${addr.roomNumber}`
+                              : null,
+                          ].filter(Boolean);
+                          return parts.length > 0 ? (
+                            <p className="text-petroleum-400 text-xs">
+                              {parts.join(" · ")}
+                            </p>
+                          ) : null;
+                        } catch {
+                          return null;
+                        }
+                      })()}
+                  </div>
                   {(() => {
                     const src =
                       SOURCE_BADGE[b.created_by_role ?? ""] ??
@@ -879,6 +907,31 @@ export default function BookingsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <LocationBadge location={b.location} />
+                      {(b.location === "centro" ||
+                        b.location === "habitacion") &&
+                        b.location_address &&
+                        (() => {
+                          try {
+                            const addr = JSON.parse(
+                              b.location_address,
+                            ) as Record<string, string>;
+                            const parts = [
+                              addr.reservationNumber
+                                ? `#${addr.reservationNumber}`
+                                : null,
+                              addr.roomNumber
+                                ? `Room ${addr.roomNumber}`
+                                : null,
+                            ].filter(Boolean);
+                            return parts.length > 0 ? (
+                              <p className="text-petroleum-400 mt-1 text-xs">
+                                {parts.join(" · ")}
+                              </p>
+                            ) : null;
+                          } catch {
+                            return null;
+                          }
+                        })()}
                     </td>
                     <td className="px-5 py-4">
                       <p className="text-petroleum-500">
