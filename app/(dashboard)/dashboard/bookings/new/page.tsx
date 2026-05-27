@@ -926,7 +926,12 @@ const formInitial: FormState = {
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_SERVICE":
-      return { ...state, serviceId: action.id, tierId: "", therapistGender: "" };
+      return {
+        ...state,
+        serviceId: action.id,
+        tierId: "",
+        therapistGender: "",
+      };
     case "SET_TIER":
       return { ...state, tierId: action.id };
     case "SET_LOCATION":
@@ -1176,16 +1181,19 @@ function NewBookingPageInner() {
       dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
       return;
     }
-    if (location === "habitacion" && !reservationNumber.trim()) {
+    if (
+      (location === "habitacion" || location === "centro") &&
+      !reservationNumber.trim()
+    ) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: "Reservation number is required for room bookings.",
+        payload: "Reservation number is required.",
       });
       return;
     }
 
     let locationAddress: string | null = null;
-    if (location === "habitacion") {
+    if (location === "habitacion" || location === "centro") {
       locationAddress = JSON.stringify({ roomNumber, reservationNumber });
     } else if (location === "domicilio") {
       locationAddress = JSON.stringify(address);
@@ -1219,9 +1227,14 @@ function NewBookingPageInner() {
           location_address: locationAddress,
           ...(() => {
             const therapistNote =
-              therapistGender === "male" ? "Terapeuta: Masculino" :
-              therapistGender === "female" ? "Terapeuta: Femenina" : "";
-            const composedNotes = [therapistNote, notes.trim()].filter(Boolean).join("\n\n");
+              therapistGender === "male"
+                ? "Terapeuta: Masculino"
+                : therapistGender === "female"
+                  ? "Terapeuta: Femenina"
+                  : "";
+            const composedNotes = [therapistNote, notes.trim()]
+              .filter(Boolean)
+              .join("\n\n");
             return composedNotes ? { notes: composedNotes } : {};
           })(),
           first_name: firstName.trim(),
@@ -1359,7 +1372,7 @@ function NewBookingPageInner() {
 
   const locationLabel = (() => {
     const base = allowedLocations.find((l) => l.id === location)?.label ?? "";
-    if (location === "habitacion") {
+    if (location === "centro" || location === "habitacion") {
       const parts: string[] = [];
       if (reservationNumber.trim())
         parts.push(`Reservation: ${reservationNumber.trim()}`);
@@ -1465,14 +1478,72 @@ function NewBookingPageInner() {
                       selected={location || null}
                       onSelect={(l) => {
                         dispatchForm({ type: "SET_LOCATION", value: l });
-                        if (l === "centro") {
-                          setEditingStep(null);
-                        } else {
-                          setEditingStep("location");
-                        }
+                        setEditingStep("location");
                       }}
                       locations={allowedLocations}
                     />
+
+                    {location === "centro" && (
+                      <div className="animate-fade-in-up flex flex-col gap-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label
+                              htmlFor="centro-reservationNumber"
+                              className="text-petroleum-500 text-xs font-medium"
+                            >
+                              Reservation number{" "}
+                              <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              id="centro-reservationNumber"
+                              type="text"
+                              value={reservationNumber}
+                              onChange={(e) =>
+                                dispatchForm({
+                                  type: "SET_RESERVATION_NUMBER",
+                                  value: e.target.value,
+                                })
+                              }
+                              placeholder="83943"
+                              disabled={submitting}
+                              className={INPUT_CLASS}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label
+                              htmlFor="centro-roomNumber"
+                              className="text-petroleum-500 text-xs font-medium"
+                            >
+                              Room number
+                            </label>
+                            <input
+                              id="centro-roomNumber"
+                              type="text"
+                              value={roomNumber}
+                              onChange={(e) =>
+                                dispatchForm({
+                                  type: "SET_ROOM_NUMBER",
+                                  value: e.target.value,
+                                })
+                              }
+                              placeholder="AK201"
+                              disabled={submitting}
+                              className={INPUT_CLASS}
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          size="sm"
+                          disabled={!reservationNumber.trim()}
+                          onClick={() => setEditingStep(null)}
+                          className="self-start"
+                        >
+                          Confirm location
+                        </Button>
+                      </div>
+                    )}
 
                     {location === "habitacion" && (
                       <div className="animate-fade-in-up flex flex-col gap-4">
@@ -1728,7 +1799,9 @@ function NewBookingPageInner() {
                             }
                             className={INPUT_CLASS}
                           >
-                            <option value="">Select therapist preference</option>
+                            <option value="">
+                              Select therapist preference
+                            </option>
                             <option value="male">Male therapist</option>
                             <option value="female">Female therapist</option>
                           </select>
