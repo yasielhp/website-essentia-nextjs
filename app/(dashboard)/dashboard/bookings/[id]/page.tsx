@@ -273,6 +273,12 @@ export default function BookingDetailPage() {
 
   const { booking, creator } = state;
   const addrParsed = parseLocationAddress(booking.location_address);
+  const therapistLabel = (() => {
+    const n = booking.notes ?? "";
+    if (n.startsWith("Terapeuta: Masculino")) return "Male";
+    if (n.startsWith("Terapeuta: Femenina")) return "Female";
+    return null;
+  })();
   const fullName =
     [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—";
 
@@ -304,31 +310,31 @@ export default function BookingDetailPage() {
       </div>
 
       {/* Meta strip */}
-      <div className="border-sand-200 divide-sand-200 mb-6 grid grid-cols-2 divide-x rounded-2xl border bg-white sm:grid-cols-4">
+      <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-4">
         <div className="flex flex-col gap-1.5 px-5 py-4">
           <p className="text-petroleum-400 text-xs">Status</p>
           <div className="flex items-center gap-1.5">
             <span
-              className={`size-2 shrink-0 rounded-full ${statusDotClasses[booking.status ?? ""] ?? "bg-petroleum-300"}`}
+              className={`size-2 shrink-0 rounded-full ${statusDotClasses[booking.status ?? ""] ?? "bg-petroleum-400"}`}
             />
             <span className="text-petroleum-700 text-sm font-medium capitalize">
               {booking.status ?? "—"}
             </span>
           </div>
         </div>
-        <div className="flex flex-col gap-1.5 px-5 py-4">
+        <div className="border-sand-200 flex flex-col gap-1.5 border-l px-5 py-4">
           <p className="text-petroleum-400 text-xs">Location</p>
           <p className="text-petroleum-700 text-sm">
             {locationLabels[booking.location ?? ""] ?? "—"}
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0">
+        <div className="border-sand-200 flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0 sm:border-l">
           <p className="text-petroleum-400 text-xs">Created</p>
           <p className="text-petroleum-700 text-sm">
             {formatCreated(booking.created_at)}
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0">
+        <div className="border-sand-200 flex flex-col gap-1.5 border-t border-l px-5 py-4 sm:border-t-0">
           <p className="text-petroleum-400 text-xs">Reserved by</p>
           {(() => {
             const src =
@@ -352,7 +358,7 @@ export default function BookingDetailPage() {
             Service
           </h2>
           <div className="flex items-center gap-4">
-            <div className="bg-petroleum-100 flex size-14 shrink-0 items-center justify-center rounded-xl">
+            <div className="bg-petroleum-100 hidden size-14 shrink-0 items-center justify-center rounded-xl sm:flex">
               <span className="text-petroleum-700 text-xl font-bold">
                 {booking.service_title?.[0]?.toUpperCase() ?? "?"}
               </span>
@@ -361,11 +367,14 @@ export default function BookingDetailPage() {
               <p className="text-petroleum-700 font-medium">
                 {booking.service_title ?? "—"}
               </p>
-              {(booking.duration || booking.price_eur != null) && (
+              {(booking.duration ||
+                booking.price_eur != null ||
+                therapistLabel) && (
                 <p className="text-petroleum-400 text-sm">
                   {[
                     booking.duration,
                     booking.price_eur != null ? `€${booking.price_eur}` : null,
+                    therapistLabel,
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -413,23 +422,24 @@ export default function BookingDetailPage() {
               )}
 
               {booking.location === "centro" && (
-                <p className="text-petroleum-400 text-sm">
-                  Baobab Suites, Costa Adeje, Tenerife
-                </p>
+                <>
+                  {addrParsed &&
+                    (addrParsed.reservationNumber || addrParsed.roomNumber) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="Reservation number">
+                          {addrParsed.reservationNumber || "—"}
+                        </Field>
+                        <Field label="Room number">
+                          {addrParsed.roomNumber || "—"}
+                        </Field>
+                      </div>
+                    )}
+                  <p className="text-petroleum-400 text-sm">
+                    Baobab Suites, Costa Adeje, Tenerife
+                  </p>
+                </>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Notes */}
-        {booking.notes && (
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Notes
-            </h2>
-            <p className="text-petroleum-700 text-sm leading-relaxed whitespace-pre-line">
-              {booking.notes}
-            </p>
           </div>
         )}
 
@@ -456,13 +466,32 @@ export default function BookingDetailPage() {
           </div>
         </div>
 
+        {/* Notes */}
+        {(() => {
+          const rawNotes = booking.notes ?? "";
+          const displayNotes = rawNotes
+            .replace(/^Terapeuta: Masculino\s*/, "")
+            .replace(/^Terapeuta: Femenina\s*/, "")
+            .trim();
+          return displayNotes ? (
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Notes
+              </h2>
+              <p className="text-petroleum-700 text-sm leading-relaxed whitespace-pre-line">
+                {displayNotes}
+              </p>
+            </div>
+          ) : null;
+        })()}
+
         {/* Reserved by */}
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
             Reserved by
           </h2>
           <div className="flex items-start gap-4">
-            <div className="bg-petroleum-100 flex size-10 shrink-0 items-center justify-center rounded-full">
+            <div className="bg-petroleum-100 hidden size-10 shrink-0 items-center justify-center rounded-full sm:flex">
               <span className="text-petroleum-700 text-sm font-bold">
                 {(creator?.full_name ??
                   booking.created_by_role ??
