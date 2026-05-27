@@ -1248,7 +1248,7 @@ function LocationSection({
           locations={allowedLocations}
         />
 
-        {location === "habitacion" && (
+        {(location === "centro" || location === "habitacion") && (
           <div className="animate-fade-in-up flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
@@ -1938,7 +1938,7 @@ export default function EditBookingPage() {
             string,
             string
           >;
-          if (b.location === "habitacion") {
+          if (b.location === "habitacion" || b.location === "centro") {
             parsedRoomNumber = parsed.roomNumber ?? "";
             parsedReservationNumber = parsed.reservationNumber ?? "";
           } else if (b.location === "domicilio") {
@@ -1983,10 +1983,14 @@ export default function EditBookingPage() {
       let parsedNotes = b.notes ?? "";
       if (parsedNotes.startsWith("Terapeuta: Masculino")) {
         parsedTherapistGender = "male";
-        parsedNotes = parsedNotes.slice("Terapeuta: Masculino".length).replace(/^\n\n/, "");
+        parsedNotes = parsedNotes
+          .slice("Terapeuta: Masculino".length)
+          .replace(/^\n\n/, "");
       } else if (parsedNotes.startsWith("Terapeuta: Femenina")) {
         parsedTherapistGender = "female";
-        parsedNotes = parsedNotes.slice("Terapeuta: Femenina".length).replace(/^\n\n/, "");
+        parsedNotes = parsedNotes
+          .slice("Terapeuta: Femenina".length)
+          .replace(/^\n\n/, "");
       }
 
       dispatchForm({
@@ -2060,10 +2064,13 @@ export default function EditBookingPage() {
       dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
       return;
     }
-    if (location === "habitacion" && !reservationNumber.trim()) {
+    if (
+      (location === "habitacion" || location === "centro") &&
+      !reservationNumber.trim()
+    ) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: "Reservation number is required for room bookings.",
+        payload: "Reservation number is required.",
       });
       return;
     }
@@ -2077,7 +2084,7 @@ export default function EditBookingPage() {
     }
 
     let locationAddress: string | null = null;
-    if (location === "habitacion")
+    if (location === "habitacion" || location === "centro")
       locationAddress = JSON.stringify({ roomNumber, reservationNumber });
     else if (location === "domicilio")
       locationAddress = JSON.stringify(address);
@@ -2106,9 +2113,14 @@ export default function EditBookingPage() {
         location_address: locationAddress,
         ...(() => {
           const therapistNote =
-            therapistGender === "male" ? "Terapeuta: Masculino" :
-            therapistGender === "female" ? "Terapeuta: Femenina" : "";
-          const composedNotes = [therapistNote, notes.trim()].filter(Boolean).join("\n\n");
+            therapistGender === "male"
+              ? "Terapeuta: Masculino"
+              : therapistGender === "female"
+                ? "Terapeuta: Femenina"
+                : "";
+          const composedNotes = [therapistNote, notes.trim()]
+            .filter(Boolean)
+            .join("\n\n");
           return composedNotes ? { notes: composedNotes } : {};
         })(),
         first_name: firstName.trim(),
