@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { getLogoSvgUrl } from "@/lib/og-logo";
 
 export const runtime = "edge";
 export const alt =
@@ -57,18 +58,13 @@ export default function Image() {
         }}
       >
         {/* Wordmark */}
-        <div
-          style={{
-            fontSize: "96px",
-            fontWeight: "300",
-            color: "#f0ede6",
-            letterSpacing: "0.25em",
-            textTransform: "uppercase",
-            display: "flex",
-          }}
-        >
-          ESSENTIA
-        </div>
+        <img
+          src={getLogoSvgUrl()}
+          width={464}
+          height={104}
+          alt="Essentia"
+          style={{ display: "flex" }}
+        />
 
         {/* Separador */}
         <div
@@ -100,7 +96,7 @@ export default function Image() {
           style={{
             fontSize: "15px",
             fontWeight: "400",
-            color: "#335554",
+            color: "#7ab3b2",
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             marginTop: "16px",
@@ -117,7 +113,7 @@ export default function Image() {
           position: "absolute",
           bottom: "28px",
           fontSize: "13px",
-          color: "#335554",
+          color: "#7ab3b2",
           letterSpacing: "0.08em",
           display: "flex",
         }}
