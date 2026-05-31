@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
+import { Link } from "../../i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import { legalMenu, maiMenu } from "@/constants/menu";
@@ -91,7 +91,7 @@ export const Footer = () => {
               <ul className="flex flex-col gap-1 text-sm md:gap-1">
                 {item.itemMenu.map((subItem) => (
                   <li key={subItem.itemName}>
-                    <AnimatedLink href={subItem.href}>
+                    <AnimatedLink href={subItem.href as any}>
                       {translateItemName(
                         item.href,
                         subItem.href,
@@ -133,7 +133,7 @@ export const Footer = () => {
                             className="border-petroleum-500 border-l pr-5 pl-3"
                           >
                             <AnimatedLink
-                              href={item.href}
+                              href={item.href as any}
                               className="flex flex-col pb-2"
                               onClick={() => accordionRef.current?.close()}
                             >
@@ -175,7 +175,7 @@ export const Footer = () => {
           {/*Contact Address*/}
           <div className="border-petroleum-500 flex w-full max-w-72 text-center md:max-w-full md:border-r md:text-left">
             <Link
-              href="https://maps.app.goo.gl/63DC95GEfWDydgrg8"
+              href={"https://maps.app.goo.gl/63DC95GEfWDydgrg8" as any}
               target="_blank"
             >
               {contact.address}
@@ -183,10 +183,10 @@ export const Footer = () => {
           </div>
           {/*Contact Email and Phone*/}
           <div className="border-petroleum-500 flex w-full flex-col items-center text-center md:border-r">
-            <AnimatedLink href={`mailto:${contact.email}`} target="_blank">
+            <AnimatedLink href={`mailto:${contact.email}` as any} target="_blank">
               {contact.email}
             </AnimatedLink>
-            <AnimatedLink href={`tel:${contact.phone}`} target="_blank">
+            <AnimatedLink href={`tel:${contact.phone}` as any} target="_blank">
               {contact.phone}
             </AnimatedLink>
           </div>
@@ -195,7 +195,7 @@ export const Footer = () => {
             {contact.socialMedia.map((social) => (
               <AnimatedIconLink
                 key={social.name}
-                href={social.url}
+                href={social.url as any}
                 target="_blank"
                 className="border-petroleum-500 rounded-full border p-2 text-center"
               >
@@ -214,7 +214,7 @@ export const Footer = () => {
               const legalKey = legalKeyByHref[item.href];
               return (
                 <li key={item.name}>
-                  <AnimatedLink href={item.href} className="text-sm">
+                  <AnimatedLink href={item.href as any} className="text-sm">
                     {legalKey ? tNav(`legal.${legalKey}`) : item.name}
                   </AnimatedLink>
                 </li>

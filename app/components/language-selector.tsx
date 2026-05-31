@@ -8,7 +8,8 @@ export function LanguageSelector() {
   const router = useRouter();
 
   const switchLocale = (next: string) => {
-    router.replace(pathname, { locale: next });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.replace(pathname as any, { locale: next });
   };
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, Children, type ReactNode } from "react";
-import Link from "next/link";
+import { Link } from "../../../i18n/navigation";
 import gsap from "gsap";
 import type { ComponentPropsWithoutRef } from "react";
 
