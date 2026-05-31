@@ -69,75 +69,94 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const schemaOrg = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": `${siteUrl}/#organization`,
-      name: "Essentia Wellness Club",
-      url: siteUrl,
-      logo: {
-        "@type": "ImageObject",
-        url: `${siteUrl}/images/logo-for-google.png`,
+function buildSchemaOrg(locale: string) {
+  const isEs = locale === "es";
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        name: "Essentia Wellness Club",
+        url: siteUrl,
+        logo: {
+          "@type": "ImageObject",
+          url: `${siteUrl}/images/logo-for-google.png`,
+        },
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Baobab Suites",
+          addressLocality: "Costa Adeje",
+          addressRegion: "Tenerife",
+          postalCode: "38660",
+          addressCountry: "ES",
+        },
+        contactPoint: {
+          "@type": "ContactPoint",
+          telephone: contact.phone,
+          email: contact.email,
+          contactType: isEs ? "servicio al cliente" : "customer service",
+          availableLanguage: ["Spanish", "English"],
+        },
+        sameAs: contact.socialMedia.map((s) => s.url),
       },
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "Baobab Suites",
-        addressLocality: "Costa Adeje",
-        addressRegion: "Tenerife",
-        postalCode: "38660",
-        addressCountry: "ES",
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
+        name: "Essentia Wellness Club",
+        publisher: { "@id": `${siteUrl}/#organization` },
+        inLanguage: ["en-US", "es-ES"],
       },
-      contactPoint: {
-        "@type": "ContactPoint",
+      {
+        "@type": ["LocalBusiness", "HealthAndBeautyBusiness", "MedicalClinic"],
+        "@id": `${siteUrl}/#localbusiness`,
+        name: "Essentia Wellness Club",
+        image: `${siteUrl}/images/logo-for-google.png`,
+        url: siteUrl,
         telephone: contact.phone,
         email: contact.email,
-        contactType: "customer service",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Baobab Suites",
+          addressLocality: "Costa Adeje",
+          addressRegion: "Tenerife",
+          postalCode: "38660",
+          addressCountry: "ES",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: "28.0863",
+          longitude: "-16.7307",
+        },
+        priceRange: "€€€",
+        medicalSpecialty: isEs
+          ? ["Medicina Preventiva", "Medicina Regenerativa"]
+          : ["Preventive Medicine", "Regenerative Medicine"],
+        availableService: isEs
+          ? [
+              {
+                "@type": "MedicalTherapy",
+                name: "Terapia de Oxígeno Hiperbárico",
+              },
+              { "@type": "MedicalTherapy", name: "Terapia Intravenosa" },
+              { "@type": "MedicalTherapy", name: "Medicina Regenerativa" },
+              { "@type": "MedicalTherapy", name: "Terapia de Contraste" },
+              { "@type": "MedicalTherapy", name: "Terapia de Luz Roja" },
+              { "@type": "MedicalTherapy", name: "Terapias Manuales" },
+            ]
+          : [
+              { "@type": "MedicalTherapy", name: "Hyperbaric Oxygen Therapy" },
+              { "@type": "MedicalTherapy", name: "Intravenous Therapy" },
+              { "@type": "MedicalTherapy", name: "Regenerative Medicine" },
+              { "@type": "MedicalTherapy", name: "Contrast Therapy" },
+              { "@type": "MedicalTherapy", name: "Red Light Therapy" },
+              { "@type": "MedicalTherapy", name: "Manual Therapies" },
+            ],
       },
-      sameAs: contact.socialMedia.map((s) => s.url),
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${siteUrl}/#website`,
-      url: siteUrl,
-      name: "Essentia Wellness Club",
-      publisher: { "@id": `${siteUrl}/#organization` },
-    },
-    {
-      "@type": ["LocalBusiness", "HealthAndBeautyBusiness", "MedicalClinic"],
-      "@id": `${siteUrl}/#localbusiness`,
-      name: "Essentia Wellness Club",
-      image: `${siteUrl}/images/logo-for-google.png`,
-      url: siteUrl,
-      telephone: contact.phone,
-      email: contact.email,
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "Baobab Suites",
-        addressLocality: "Costa Adeje",
-        addressRegion: "Tenerife",
-        postalCode: "38660",
-        addressCountry: "ES",
-      },
-      geo: {
-        "@type": "GeoCoordinates",
-        latitude: "28.0863",
-        longitude: "-16.7307",
-      },
-      priceRange: "€€€",
-      medicalSpecialty: ["Preventive Medicine", "Regenerative Medicine"],
-      availableService: [
-        { "@type": "MedicalTherapy", name: "Hyperbaric Oxygen Therapy" },
-        { "@type": "MedicalTherapy", name: "Intravenous Therapy" },
-        { "@type": "MedicalTherapy", name: "Regenerative Medicine" },
-        { "@type": "MedicalTherapy", name: "Contrast Therapy" },
-        { "@type": "MedicalTherapy", name: "Red Light Therapy" },
-        { "@type": "MedicalTherapy", name: "Manual Therapies" },
-      ],
-    },
-  ],
-};
+    ],
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -147,6 +166,7 @@ export default async function RootLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "/";
   const locale = pathname.startsWith("/es") ? "es" : "en";
+  const schemaOrg = buildSchemaOrg(locale);
   return (
     <html lang={locale} className={`${jedira.variable} ${dmSans.variable}`}>
       <head>
