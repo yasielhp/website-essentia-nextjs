@@ -1,11 +1,9 @@
-export type ProviderName = "stripe" | "redsys";
+export type ProviderName = "redsys";
 
 // ─── Shared params / results ──────────────────────────────────
 
 export type CreateCheckoutParams = {
-  /** Pre-registered Stripe price ID — preferred over amount+description */
-  priceId?: string;
-  /** Amount in smallest currency unit (cents). Required when priceId is absent. */
+  /** Amount in smallest currency unit (cents). */
   amount?: number;
   currency: string;
   description: string;
@@ -13,11 +11,8 @@ export type CreateCheckoutParams = {
   cancelUrl: string;
   metadata?: Record<string, string>;
   customerId?: string;
-  /** Pre-fills the email field in Stripe Checkout */
   customerEmail?: string;
-  /** Used for Stripe tax/billing prefill (first + last name) */
   customerName?: string;
-  /** ISO 3166-1 alpha-2 country code for billing address prefill */
   customerCountry?: string;
 };
 
@@ -58,12 +53,6 @@ export interface PaymentProvider {
 
 // ─── Configuration shapes ─────────────────────────────────────
 
-export type StripeConfig = {
-  secretKey: string;
-  webhookSecret: string;
-  publishableKey?: string;
-};
-
 export type RedsysConfig = {
   merchantCode: string;
   terminal: string;
@@ -72,6 +61,4 @@ export type RedsysConfig = {
   currency?: string;
 };
 
-export type PaymentConfig =
-  | { provider: "stripe"; config: StripeConfig }
-  | { provider: "redsys"; config: RedsysConfig };
+export type PaymentConfig = { provider: "redsys"; config: RedsysConfig };
