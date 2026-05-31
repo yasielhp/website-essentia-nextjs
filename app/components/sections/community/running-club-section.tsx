@@ -176,6 +176,8 @@ function NextRunSection({ race }: { race: NextRace | null }) {
       const children = Array.from(body.children) as HTMLElement[];
       const mm = gsap.matchMedia();
 
+      if (!race) return;
+
       mm.add("(min-width: 768px)", () => {
         gsap.set(children, { opacity: 0, y: 40 });
         const tl = gsap.timeline({
@@ -226,10 +228,14 @@ function NextRunSection({ race }: { race: NextRace | null }) {
       ctx.revert();
       window.removeEventListener("reveal-next-run", revealAll);
     };
-  }, []);
+  }, [race]);
 
   return (
-    <section ref={sectionRef} id="next-run" className="bg-sand-50 md:h-[280vh]">
+    <section
+      ref={sectionRef}
+      id="next-run"
+      className={`bg-sand-50 ${race ? "md:h-[280vh]" : ""}`}
+    >
       <div ref={innerRef} className="overflow-hidden md:h-screen">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
           <div ref={bodyRef} className="flex flex-col gap-8">
@@ -241,75 +247,74 @@ function NextRunSection({ race }: { race: NextRace | null }) {
                 {t("subheading")}
               </p>
             </div>
-            <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
-              <div className="relative h-56 md:h-auto md:min-h-72">
-                {race?.image_url ? (
-                  <Image
-                    src={race.image_url}
-                    alt={race.title || t("altDefault")}
-                    fill
-                    sizes="(max-width: 767px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="bg-petroleum-700 flex h-full w-full flex-col items-center justify-center gap-4">
-                    <IconRunner className="text-petroleum-500 opacity-60" />
-                    <span className="text-petroleum-400 text-xs tracking-widest uppercase">
-                      {t("noImage")}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      {race
-                        ? formatRaceDate(race.date, locale)
-                        : t("comingSoon")}
-                    </h3>
-                    {raceTime && (
-                      <p className="text-petroleum-400 mt-1 text-sm">
-                        {raceTime}
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-petroleum-500 text-sm leading-relaxed">
-                    {race
-                      ? `${race.title}. ${race.description ?? ""}`
-                      : t("comingSoonBody")}
-                  </p>
-                </div>
-                <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
-                  {details.map(({ id, icon: Icon, value, wide }) => (
-                    <div
-                      key={id}
-                      className={`flex items-start gap-2${wide ? "col-span-2" : ""}`}
-                    >
-                      <Icon
-                        className="text-petroleum-400 mt-0.5 shrink-0"
-                        size={15}
-                      />
-                      <p className="text-petroleum-500 text-sm leading-snug">
-                        {value}
-                      </p>
+
+            {race ? (
+              <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
+                <div className="relative h-56 md:h-auto md:min-h-72">
+                  {race.image_url ? (
+                    <Image
+                      src={race.image_url}
+                      alt={race.title || t("altDefault")}
+                      fill
+                      sizes="(max-width: 767px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="bg-petroleum-700 flex h-full w-full flex-col items-center justify-center gap-4">
+                      <IconRunner className="text-petroleum-500 opacity-60" />
+                      <span className="text-petroleum-400 text-xs tracking-widest uppercase">
+                        {t("noImage")}
+                      </span>
                     </div>
-                  ))}
+                  )}
                 </div>
-                <Button
-                  variant="solid"
-                  size="md"
-                  href={
-                    race
-                      ? `/community/running-club/register?id=${race.id}`
-                      : "/community/running-club/register"
-                  }
-                  className="w-full md:w-auto md:self-start"
-                >
-                  {t("cta")}
-                </Button>
+                <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                        {formatRaceDate(race.date, locale)}
+                      </h3>
+                      {raceTime && (
+                        <p className="text-petroleum-400 mt-1 text-sm">
+                          {raceTime}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-petroleum-500 text-sm leading-relaxed">
+                      {`${race.title}. ${race.description ?? ""}`}
+                    </p>
+                  </div>
+                  <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
+                    {details.map(({ id, icon: Icon, value, wide }) => (
+                      <div
+                        key={id}
+                        className={`flex items-start gap-2 ${wide ? "col-span-2" : ""}`}
+                      >
+                        <Icon
+                          className="text-petroleum-400 mt-0.5 shrink-0"
+                          size={15}
+                        />
+                        <p className="text-petroleum-500 text-sm leading-snug">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="solid"
+                    size="md"
+                    href={`/community/running-club/register?id=${race.id}`}
+                    className="w-full md:w-auto md:self-start"
+                  >
+                    {t("cta")}
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-petroleum-400 leading-relaxed">
+                {t("noRaces")}
+              </p>
+            )}
           </div>
         </div>
       </div>
