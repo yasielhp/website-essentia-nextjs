@@ -1,9 +1,9 @@
-import { contact } from "@/constants/contact";
+import { siteBase } from "@/lib/sitemap-data";
 
 export const revalidate = 3600;
 
 export async function GET() {
-  const base = `https://${contact.domain}`;
+  const base = siteBase;
   const today = new Date().toISOString().split("T")[0];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
