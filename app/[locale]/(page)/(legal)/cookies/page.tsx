@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Cookie Policy | Essentia",
-  description:
-    "Learn how Essentia uses cookies and similar technologies on our website, and how to manage your preferences.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isEs = locale === "es";
+
+  return {
+    title: isEs ? "Política de Cookies | Essentia" : "Cookie Policy | Essentia",
+    description: isEs
+      ? "Descubre cómo Essentia utiliza cookies y tecnologías similares en nuestro sitio web, y cómo gestionar tus preferencias."
+      : "Learn how Essentia uses cookies and similar technologies on our website, and how to manage your preferences.",
+    alternates: {
+      canonical: isEs ? "/es/cookies" : "/en/cookies",
+      languages: {
+        "es": "/es/cookies",
+        "en": "/en/cookies",
+      },
+    },
+  };
+}
 
 export default async function CookiePolicyPage() {
   const locale = await getLocale();

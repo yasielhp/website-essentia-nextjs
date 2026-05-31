@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Legal Notice | Essentia",
-  description:
-    "Legal notice and regulatory information for Essentia Social Wellness Club, located in Costa Adeje, Tenerife.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isEs = locale === "es";
+
+  return {
+    title: isEs ? "Aviso Legal | Essentia" : "Legal Notice | Essentia",
+    description: isEs
+      ? "Aviso legal e información regulatoria de Essentia Social Wellness Club, ubicado en Costa Adeje, Tenerife."
+      : "Legal notice and regulatory information for Essentia Social Wellness Club, located in Costa Adeje, Tenerife.",
+    alternates: {
+      canonical: isEs ? "/es/legal" : "/en/legal",
+      languages: {
+        "es": "/es/legal",
+        "en": "/en/legal",
+      },
+    },
+  };
+}
 
 export default async function LegalNoticePage() {
   const locale = await getLocale();

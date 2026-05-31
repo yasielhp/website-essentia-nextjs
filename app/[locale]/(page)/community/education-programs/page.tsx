@@ -10,6 +10,29 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+const educationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Course",
+  name: "Essentia Education Programs",
+  description:
+    "Monthly masterclasses with leading researchers, clinicians, and longevity practitioners.",
+  provider: {
+    "@type": "Organization",
+    name: "Essentia Wellness Club",
+    url: "https://essentiawellnessclub.com",
+  },
+  courseMode: "onsite",
+  inLanguage: ["es", "en"],
+};
+
 export default function EducationPage() {
-  return <EducationSection />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(educationSchema) }}
+      />
+      <EducationSection />
+    </>
+  );
 }

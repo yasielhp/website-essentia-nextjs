@@ -69,16 +69,62 @@ const staticRoutes: {
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const treatmentRoutes: MetadataRoute.Sitemap = manualTherapyTreatments.map(
-    (t) => ({
-      url: `${base}/wellness/manual-therapies/${t.id}`,
-      priority: 0.7,
-      changeFrequency: "monthly",
-    }),
+  // Static routes — one entry per locale, each with alternates.languages
+  const staticEntries: MetadataRoute.Sitemap = staticRoutes.flatMap((r) => {
+    const enUrl = `${base}${r.url}`;
+    const esUrl = `${base}/es${r.url}`;
+    const alternates = {
+      languages: {
+        en: enUrl,
+        es: esUrl,
+      },
+    };
+    return [
+      {
+        url: enUrl,
+        priority: r.priority,
+        changeFrequency: r.changeFrequency,
+        alternates,
+      },
+      {
+        url: esUrl,
+        priority: r.priority,
+        changeFrequency: r.changeFrequency,
+        alternates,
+      },
+    ];
+  });
+
+  // Treatment routes — one entry per locale
+  const treatmentEntries: MetadataRoute.Sitemap = manualTherapyTreatments.flatMap(
+    (t) => {
+      const enUrl = `${base}/wellness/manual-therapies/${t.id}`;
+      const esUrl = `${base}/es/wellness/manual-therapies/${t.id}`;
+      const alternates = {
+        languages: {
+          en: enUrl,
+          es: esUrl,
+        },
+      };
+      return [
+        {
+          url: enUrl,
+          priority: 0.7,
+          changeFrequency: "monthly" as const,
+          alternates,
+        },
+        {
+          url: esUrl,
+          priority: 0.7,
+          changeFrequency: "monthly" as const,
+          alternates,
+        },
+      ];
+    },
   );
 
-  // Fetch published blog posts
-  let blogRoutes: MetadataRoute.Sitemap = [];
+  // Blog routes — one entry per locale
+  let blogEntries: MetadataRoute.Sitemap = [];
   try {
     const db = createClient({
       baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
@@ -90,21 +136,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq("status", "published")
       .order("published_at", { ascending: false });
 
-    blogRoutes = (
+    blogEntries = (
       (data as { slug: string; published_at: string | null }[]) ?? []
-    ).map((post) => ({
-      url: `${base}/blog/${post.slug}`,
-      lastModified: post.published_at ? new Date(post.published_at) : undefined,
-      priority: 0.6,
-      changeFrequency: "monthly" as const,
-    }));
+    ).flatMap((post) => {
+      const enUrl = `${base}/blog/${post.slug}`;
+      const esUrl = `${base}/es/blog/${post.slug}`;
+      const lastModified = post.published_at
+        ? new Date(post.published_at)
+        : undefined;
+      const alternates = {
+        languages: {
+          en: enUrl,
+          es: esUrl,
+        },
+      };
+      return [
+        {
+          url: enUrl,
+          lastModified,
+          priority: 0.6,
+          changeFrequency: "monthly" as const,
+          alternates,
+        },
+        {
+          url: esUrl,
+          lastModified,
+          priority: 0.6,
+          changeFrequency: "monthly" as const,
+          alternates,
+        },
+      ];
+    });
   } catch {
     // Blog posts fetch failed silently — sitemap still works without them
   }
 
-  return [
-    ...staticRoutes.map((r) => ({ ...r, url: `${base}${r.url}` })),
-    ...treatmentRoutes,
-    ...blogRoutes,
-  ];
+  return [...staticEntries, ...treatmentEntries, ...blogEntries];
 }

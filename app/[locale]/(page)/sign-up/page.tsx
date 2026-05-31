@@ -6,6 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.signUp.meta");
   return {
     title: t("title"),
+    robots: { index: false, follow: false },
   };
 }
 

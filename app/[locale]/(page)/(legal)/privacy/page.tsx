@@ -2,11 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Essentia",
-  description:
-    "Essentia's privacy policy: how we collect, use, and protect your personal data in compliance with GDPR and Spanish data protection law.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isEs = locale === "es";
+
+  return {
+    title: isEs ? "Política de Privacidad | Essentia" : "Privacy Policy | Essentia",
+    description: isEs
+      ? "Política de privacidad de Essentia: cómo recopilamos, usamos y protegemos tus datos personales conforme al RGPD y la legislación española."
+      : "Essentia's privacy policy: how we collect, use, and protect your personal data in compliance with GDPR and Spanish data protection law.",
+    alternates: {
+      canonical: isEs ? "/es/privacy" : "/en/privacy",
+      languages: {
+        "es": "/es/privacy",
+        "en": "/en/privacy",
+      },
+    },
+  };
+}
 
 export default async function PrivacyPolicyPage() {
   const locale = await getLocale();

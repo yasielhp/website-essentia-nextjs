@@ -6,6 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.forgotPassword.meta");
   return {
     title: t("title"),
+    robots: { index: false, follow: false },
   };
 }
 

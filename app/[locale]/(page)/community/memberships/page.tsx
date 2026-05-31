@@ -11,10 +11,31 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+const membershipSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: "Essentia Membership",
+  description:
+    "Exclusive wellness club membership with access to longevity programs, running club, and medical services.",
+  brand: { "@type": "Brand", name: "Essentia Wellness Club" },
+  offers: {
+    "@type": "AggregateOffer",
+    priceCurrency: "EUR",
+    availability: "https://schema.org/InStock",
+    url: "https://essentiawellnessclub.com/community/memberships",
+  },
+};
+
 export default function MembershipsPage() {
   return (
-    <Suspense>
-      <MembershipsContent />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(membershipSchema) }}
+      />
+      <Suspense>
+        <MembershipsContent />
+      </Suspense>
+    </>
   );
 }

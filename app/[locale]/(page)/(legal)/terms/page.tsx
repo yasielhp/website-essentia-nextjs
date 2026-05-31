@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions | Essentia",
-  description:
-    "Read Essentia's terms and conditions for membership, bookings, and use of our longevity and wellness services in Costa Adeje, Tenerife.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isEs = locale === "es";
+
+  return {
+    title: isEs ? "Términos y Condiciones | Essentia" : "Terms & Conditions | Essentia",
+    description: isEs
+      ? "Lee los términos y condiciones de Essentia para membresías, reservas y uso de nuestros servicios de longevidad y bienestar en Costa Adeje, Tenerife."
+      : "Read Essentia's terms and conditions for membership, bookings, and use of our longevity and wellness services in Costa Adeje, Tenerife.",
+    alternates: {
+      canonical: isEs ? "/es/terms" : "/en/terms",
+      languages: {
+        "es": "/es/terms",
+        "en": "/en/terms",
+      },
+    },
+  };
+}
 
 export default async function TermsPage() {
   const locale = await getLocale();

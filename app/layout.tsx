@@ -45,6 +45,7 @@ const siteUrl = `https://${contact.domain}`;
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "/";
+  const locale = pathname.startsWith("/es") ? "es" : "en";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -59,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       siteName: "Essentia Wellness Club",
-      locale: "en_US",
+      locale: locale === "es" ? "es_ES" : "en_US",
       type: "website",
     },
     twitter: {
@@ -138,13 +139,16 @@ const schemaOrg = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "/";
+  const locale = pathname.startsWith("/es") ? "es" : "en";
   return (
-    <html lang="en" className={`${jedira.variable} ${dmSans.variable}`}>
+    <html lang={locale} className={`${jedira.variable} ${dmSans.variable}`}>
       <head>
         <script
           type="application/ld+json"
