@@ -3,39 +3,30 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { MembershipsContent } from "./content";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("memberships.meta");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "memberships.meta" });
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: locale === "es" ? "/es/community/memberships" : "/community/memberships",
+      languages: {
+        "en": "/community/memberships",
+        "es": "/es/community/memberships",
+        "x-default": "/community/memberships",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 
-const membershipSchema = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  name: "Essentia Membership",
-  description:
-    "Exclusive wellness club membership with access to longevity programs, running club, and medical services.",
-  brand: { "@type": "Brand", name: "Essentia Wellness Club" },
-  offers: {
-    "@type": "AggregateOffer",
-    priceCurrency: "EUR",
-    availability: "https://schema.org/InStock",
-    url: "https://essentiawellnessclub.com/community/memberships",
-  },
-};
-
 export default function MembershipsPage() {
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(membershipSchema) }}
-      />
-      <Suspense>
-        <MembershipsContent />
-      </Suspense>
-    </>
+    <Suspense>
+      <MembershipsContent />
+    </Suspense>
   );
 }

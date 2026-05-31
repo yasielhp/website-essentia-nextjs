@@ -6,11 +6,23 @@ import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("wellness.pages.breathing-sessions");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "wellness.pages.breathing-sessions" });
   return {
     title: { absolute: t("metaTitle") },
     description: t("metaDescription"),
+    alternates: {
+      canonical: locale === "es" ? "/es/wellness/breathing-sessions" : "/wellness/breathing-sessions",
+      languages: {
+        "en": "/wellness/breathing-sessions",
+        "es": "/es/wellness/breathing-sessions",
+        "x-default": "/wellness/breathing-sessions",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 

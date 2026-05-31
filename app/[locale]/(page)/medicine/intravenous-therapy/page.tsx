@@ -6,11 +6,23 @@ import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("medicine.pages.intravenous-therapy");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "medicine.pages.intravenous-therapy" });
   return {
     title: { absolute: t("metaTitle") },
     description: t("metaDescription"),
+    alternates: {
+      canonical: locale === "es" ? "/es/medicine/intravenous-therapy" : "/medicine/intravenous-therapy",
+      languages: {
+        "en": "/medicine/intravenous-therapy",
+        "es": "/es/medicine/intravenous-therapy",
+        "x-default": "/medicine/intravenous-therapy",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 

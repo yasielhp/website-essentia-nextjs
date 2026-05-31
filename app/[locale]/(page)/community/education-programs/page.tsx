@@ -2,37 +2,26 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import EducationSection from "@components/sections/community/education-section";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("community.education.meta");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "community.education.meta" });
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: locale === "es" ? "/es/community/education-programs" : "/community/education-programs",
+      languages: {
+        "en": "/community/education-programs",
+        "es": "/es/community/education-programs",
+        "x-default": "/community/education-programs",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 
-const educationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Course",
-  name: "Essentia Education Programs",
-  description:
-    "Monthly masterclasses with leading researchers, clinicians, and longevity practitioners.",
-  provider: {
-    "@type": "Organization",
-    name: "Essentia Wellness Club",
-    url: "https://essentiawellnessclub.com",
-  },
-  courseMode: "onsite",
-  inLanguage: ["es", "en"],
-};
-
 export default function EducationPage() {
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(educationSchema) }}
-      />
-      <EducationSection />
-    </>
-  );
+  return <EducationSection />;
 }

@@ -2,46 +2,26 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import RunningClubSection from "@components/sections/community/running-club-section";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("community.runningClub.meta");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "community.runningClub.meta" });
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: locale === "es" ? "/es/community/running-club" : "/community/running-club",
+      languages: {
+        "en": "/community/running-club",
+        "es": "/es/community/running-club",
+        "x-default": "/community/running-club",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 
-const runningClubSchema = {
-  "@context": "https://schema.org",
-  "@type": "SportsEvent",
-  name: "Essentia Running Club — Saturday Run",
-  description:
-    "Weekly coastal running group in Costa Adeje. All fitness levels welcome.",
-  organizer: { "@type": "Organization", name: "Essentia Wellness Club" },
-  location: {
-    "@type": "Place",
-    name: "Costa Adeje, Tenerife",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Costa Adeje",
-      addressRegion: "Tenerife",
-      addressCountry: "ES",
-    },
-  },
-  eventSchedule: {
-    "@type": "Schedule",
-    repeatFrequency: "P1W",
-    byDay: "https://schema.org/Saturday",
-  },
-};
-
 export default function RunningClubPage() {
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(runningClubSchema) }}
-      />
-      <RunningClubSection />
-    </>
-  );
+  return <RunningClubSection />;
 }

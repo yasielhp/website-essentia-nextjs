@@ -5,11 +5,23 @@ import ProtocolsSection from "@components/sections/wellness/protocols-section";
 import ApproachSection from "@components/sections/wellness/approach-section";
 import CtaSection from "@components/sections/wellness/cta-section";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("wellness.meta");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "wellness.meta" });
   return {
     title: { absolute: t("title") },
     description: t("description"),
+    alternates: {
+      canonical: locale === "es" ? "/es/wellness" : "/wellness",
+      languages: {
+        "en": "/wellness",
+        "es": "/es/wellness",
+        "x-default": "/wellness",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+    },
   };
 }
 
