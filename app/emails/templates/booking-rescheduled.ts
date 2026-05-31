@@ -1,4 +1,9 @@
-import { emailBase, bookingDetailsCard } from "./_base";
+import {
+  emailBase,
+  bookingDetailsCard,
+  googleCalendarUrl,
+  calendarButton,
+} from "./_base";
 
 export function bookingRescheduledEmail({
   name,
@@ -7,6 +12,7 @@ export function bookingRescheduledEmail({
   date,
   time,
   duration,
+  dateIso,
   locale = "en",
 }: {
   name: string;
@@ -15,8 +21,21 @@ export function bookingRescheduledEmail({
   date: string;
   time: string;
   duration?: string | null;
+  dateIso?: string;
   locale?: "en" | "es";
 }): string {
+  const calBtn = dateIso
+    ? calendarButton(
+        googleCalendarUrl({
+          dateIso,
+          time,
+          service,
+          duration,
+          location: "Baobab Suites, Costa Adeje, Tenerife",
+        }),
+        locale,
+      )
+    : "";
   if (locale === "es") {
     return emailBase({
       locale,
@@ -32,7 +51,9 @@ export function bookingRescheduledEmail({
 
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
-        <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
+        ${calBtn}
+
+        <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si esta fecha no te viene bien, llámanos al <strong style="color:#103838;">+34 683 240 986</strong> y estaremos encantados de ayudarte.
         </p>
       `,
@@ -53,7 +74,9 @@ export function bookingRescheduledEmail({
 
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
-      <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
+      ${calBtn}
+
+      <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
         If this date does not work for you, please call us at <strong style="color:#103838;">+34 683 240 986</strong> and we will be happy to help.
       </p>
     `,

@@ -31,6 +31,7 @@ export async function handleBookingPaid(bookingId: string) {
       }),
       time: booking.time as string,
       duration: booking.duration as string,
+      dateIso: booking.date as string,
     }),
   });
 

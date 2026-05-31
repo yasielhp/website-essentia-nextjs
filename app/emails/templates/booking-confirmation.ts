@@ -1,9 +1,12 @@
+import { googleCalendarUrl, calendarButton } from "./_base";
+
 export function bookingConfirmationEmail({
   name,
   serviceName,
   date,
   time,
   duration,
+  dateIso,
   locale = "en",
 }: {
   name: string;
@@ -11,6 +14,7 @@ export function bookingConfirmationEmail({
   date: string;
   time: string;
   duration: string;
+  dateIso?: string;
   locale?: "en" | "es";
 }): string {
   const isEs = locale === "es";
@@ -50,6 +54,19 @@ export function bookingConfirmationEmail({
           "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
         footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
       };
+
+  const calBtn = dateIso
+    ? calendarButton(
+        googleCalendarUrl({
+          dateIso,
+          time,
+          service: serviceName,
+          duration,
+          location: "C/ La Noria 14, Santa Cruz de Tenerife",
+        }),
+        locale,
+      )
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="${locale}">
@@ -123,7 +140,9 @@ export function bookingConfirmationEmail({
                 </tr>
               </table>
 
-              <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
+              ${calBtn}
+
+              <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
                 ${labels.footer}
               </p>
             </td>

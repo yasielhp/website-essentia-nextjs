@@ -1,4 +1,9 @@
-import { emailBase, bookingDetailsCard } from "./_base";
+import {
+  emailBase,
+  bookingDetailsCard,
+  googleCalendarUrl,
+  calendarButton,
+} from "./_base";
 
 export function bookingConfirmedEmail({
   name,
@@ -7,6 +12,7 @@ export function bookingConfirmedEmail({
   date,
   time,
   duration,
+  dateIso,
   locale = "en",
 }: {
   name: string;
@@ -15,8 +21,21 @@ export function bookingConfirmedEmail({
   date: string;
   time: string;
   duration?: string | null;
+  dateIso?: string;
   locale?: "en" | "es";
 }): string {
+  const calBtn = dateIso
+    ? calendarButton(
+        googleCalendarUrl({
+          dateIso,
+          time,
+          service,
+          duration,
+          location: "Baobab Suites, Costa Adeje, Tenerife",
+        }),
+        locale,
+      )
+    : "";
   if (locale === "es") {
     return emailBase({
       locale,
@@ -43,7 +62,9 @@ export function bookingConfirmedEmail({
           </tr>
         </table>
 
-        <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
+        ${calBtn}
+
+        <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.
         </p>
       `,
@@ -75,7 +96,9 @@ export function bookingConfirmedEmail({
         </tr>
       </table>
 
-      <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
+      ${calBtn}
+
+      <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
         If you need to cancel or reschedule, please contact us at least 24 hours before your session.
       </p>
     `,

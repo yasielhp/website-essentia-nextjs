@@ -55,6 +55,74 @@ export function emailBase({
 </html>`;
 }
 
+/**
+ * Builds a Google Calendar "add event" URL from raw ISO date + HH:MM time.
+ * Dates are passed as floating local time (no Z) — Google Calendar shows them
+ * as-is in the user's local timezone.
+ */
+export function googleCalendarUrl({
+  dateIso,
+  time,
+  service,
+  duration,
+  location,
+}: {
+  dateIso: string;
+  time: string;
+  service: string;
+  duration?: string | null;
+  location: string;
+}): string {
+  const [y, mo, d] = dateIso.split("-");
+  const [hh, mm] = time.split(":");
+  const startStr = `${y}${mo}${d}T${hh}${mm}00`;
+
+  const durationMins = duration ? parseInt(duration, 10) || 60 : 60;
+  const endMs =
+    Date.UTC(
+      parseInt(y),
+      parseInt(mo) - 1,
+      parseInt(d),
+      parseInt(hh),
+      parseInt(mm),
+      0,
+    ) +
+    durationMins * 60_000;
+  const e = new Date(endMs);
+  const endStr = `${e.getUTCFullYear()}${String(e.getUTCMonth() + 1).padStart(2, "0")}${String(e.getUTCDate()).padStart(2, "0")}T${String(e.getUTCHours()).padStart(2, "0")}${String(e.getUTCMinutes()).padStart(2, "0")}00`;
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Essentia – ${service}`,
+    dates: `${startStr}/${endStr}`,
+    details:
+      "Essentia Wellness Club · essentiawellnessclub.com · +34 683 240 986",
+    location,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** Renders an "Add to Google Calendar" CTA button. */
+export function calendarButton(
+  url: string,
+  locale: "en" | "es" = "en",
+): string {
+  const label =
+    locale === "es" ? "Añadir al calendario" : "Add to Google Calendar";
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+    <tr>
+      <td align="center">
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+           style="display:inline-block;padding:12px 28px;background-color:#103838;color:#f5f2ed;text-decoration:none;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">
+          ${label}
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}
+
 /** Renders the booking details card (service / session type / date / time / duration). */
 export function bookingDetailsCard({
   service,

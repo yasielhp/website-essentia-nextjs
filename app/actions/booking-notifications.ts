@@ -96,6 +96,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        dateIso: payload.date,
         locale,
       }),
     cancelled: () =>
@@ -116,6 +117,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        dateIso: payload.date,
         locale,
       }),
   };
