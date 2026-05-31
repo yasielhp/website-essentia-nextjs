@@ -40,7 +40,8 @@ const dmSans = localFont({
   display: "swap",
 });
 
-const siteUrl = `https://${contact.domain}`;
+const siteUrl =
+  process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
