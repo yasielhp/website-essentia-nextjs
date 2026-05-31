@@ -7,6 +7,7 @@ import { createClient } from "@insforge/sdk";
 import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
+import { defaultOgImage } from "@/constants/metadata";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -124,7 +125,7 @@ export async function generateMetadata({
       description,
       type: "article",
       publishedTime: post.published_at ?? undefined,
-      ...(image ? { images: [{ url: image }] } : {}),
+      images: image ? [{ url: image }] : defaultOgImage,
     },
     twitter: {
       card: "summary_large_image",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { defaultOgImage } from "@/constants/metadata";
 import HeroSection from "@components/sections/medicine/hero-section";
 import TreatmentsSection from "@components/sections/medicine/treatments-section";
 import ApproachSection from "@components/sections/medicine/approach-section";
@@ -25,6 +26,7 @@ export async function generateMetadata({
     },
     openGraph: {
       locale: locale === "es" ? "es_ES" : "en_US",
+      images: defaultOgImage,
     },
   };
 }
