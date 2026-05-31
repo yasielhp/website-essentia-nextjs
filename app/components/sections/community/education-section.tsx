@@ -263,6 +263,8 @@ function NextSessionSection({
       const children = Array.from(body.children) as HTMLElement[];
       const mm = gsap.matchMedia();
 
+      if (!session) return;
+
       mm.add("(min-width: 768px)", () => {
         gsap.set(children, { opacity: 0, y: 40 });
         const tl = gsap.timeline({
@@ -313,13 +315,13 @@ function NextSessionSection({
       ctx.revert();
       window.removeEventListener("reveal-next-session", revealAll);
     };
-  }, []);
+  }, [session]);
 
   return (
     <section
       ref={sectionRef}
       id="next-session"
-      className="bg-sand-50 md:h-[280vh]"
+      className={`bg-sand-50 ${session ? "md:h-[280vh]" : ""}`}
     >
       <div ref={innerRef} className="overflow-hidden md:h-screen">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:pt-32 md:pb-16">
@@ -333,31 +335,29 @@ function NextSessionSection({
               </p>
             </div>
 
-            <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
-              <div className="relative h-56 md:h-auto md:min-h-72">
-                <Image
-                  src={
-                    session?.image_url ?? "/images/menu/education-programs.webp"
-                  }
-                  alt={session?.title ?? t("altDefault")}
-                  fill
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                      {session ? session.title : t("comingSoon")}
-                    </h3>
-                  </div>
-                  <p className="text-petroleum-500 text-sm leading-relaxed">
-                    {session?.description ?? t("comingSoonBody")}
-                  </p>
+            {session ? (
+              <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
+                <div className="relative h-56 md:h-auto md:min-h-72">
+                  <Image
+                    src={session.image_url ?? "/images/menu/education-programs.webp"}
+                    alt={session.title}
+                    fill
+                    sizes="(max-width: 767px) 100vw, 50vw"
+                    className="object-cover"
+                  />
                 </div>
+                <div className="flex flex-col justify-between gap-6 p-8 md:p-10">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <h3 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+                        {session.title}
+                      </h3>
+                    </div>
+                    <p className="text-petroleum-500 text-sm leading-relaxed">
+                      {session.description}
+                    </p>
+                  </div>
 
-                {session && (
                   <div className="border-sand-500 grid grid-cols-2 gap-4 border-t pt-6">
                     {sessionDetails.map(({ icon: Icon, value }) => (
                       <div key={value} className="flex items-start gap-2">
@@ -371,38 +371,38 @@ function NextSessionSection({
                       </div>
                     ))}
                   </div>
-                )}
 
-                {session?.access === "members_only" && !isMember ? (
-                  <div className="flex flex-col gap-2">
+                  {session.access === "members_only" && !isMember ? (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="solid"
+                        size="md"
+                        href="/community/memberships"
+                        className="w-full md:w-auto md:self-start"
+                      >
+                        {t("ctaJoin")}
+                      </Button>
+                      <p className="text-petroleum-400 text-xs">
+                        {t("membersOnlyNote")}
+                      </p>
+                    </div>
+                  ) : (
                     <Button
                       variant="solid"
                       size="md"
-                      href="/community/memberships"
+                      href={`/community/education-programs/register?id=${session.id}`}
                       className="w-full md:w-auto md:self-start"
                     >
-                      {t("ctaJoin")}
+                      {t("ctaReserve")}
                     </Button>
-                    <p className="text-petroleum-400 text-xs">
-                      {t("membersOnlyNote")}
-                    </p>
-                  </div>
-                ) : (
-                  <Button
-                    variant="solid"
-                    size="md"
-                    href={
-                      session
-                        ? `/community/education-programs/register?id=${session.id}`
-                        : "/community/education-programs/register"
-                    }
-                    className="w-full md:w-auto md:self-start"
-                  >
-                    {t("ctaReserve")}
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-petroleum-400 leading-relaxed">
+                {t("noSessions")}
+              </p>
+            )}
           </div>
         </div>
       </div>
