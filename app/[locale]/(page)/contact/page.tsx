@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import ContactSection from "@components/sections/contact/contact-section";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "contact.meta" });
   return {
@@ -11,8 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: locale === "es" ? "/es/contact" : "/contact",
       languages: {
-        "en": "/contact",
-        "es": "/es/contact",
+        en: "/contact",
+        es: "/es/contact",
         "x-default": "/contact",
       },
     },

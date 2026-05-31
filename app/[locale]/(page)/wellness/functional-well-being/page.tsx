@@ -6,17 +6,27 @@ import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "wellness.pages.functional-well-being" });
+  const t = await getTranslations({
+    locale,
+    namespace: "wellness.pages.functional-well-being",
+  });
   return {
     title: { absolute: t("metaTitle") },
     description: t("metaDescription"),
     alternates: {
-      canonical: locale === "es" ? "/es/wellness/functional-well-being" : "/wellness/functional-well-being",
+      canonical:
+        locale === "es"
+          ? "/es/wellness/functional-well-being"
+          : "/wellness/functional-well-being",
       languages: {
-        "en": "/wellness/functional-well-being",
-        "es": "/es/wellness/functional-well-being",
+        en: "/wellness/functional-well-being",
+        es: "/es/wellness/functional-well-being",
         "x-default": "/wellness/functional-well-being",
       },
     },

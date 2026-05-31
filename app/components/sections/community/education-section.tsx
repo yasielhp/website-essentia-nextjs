@@ -339,7 +339,10 @@ function NextSessionSection({
               <div className="bg-sand-100 grid grid-cols-1 overflow-hidden rounded-3xl md:grid-cols-2">
                 <div className="relative h-56 md:h-auto md:min-h-72">
                   <Image
-                    src={session.image_url ?? "/images/menu/education-programs.webp"}
+                    src={
+                      session.image_url ??
+                      "/images/menu/education-programs.webp"
+                    }
                     alt={session.title}
                     fill
                     sizes="(max-width: 767px) 100vw, 50vw"

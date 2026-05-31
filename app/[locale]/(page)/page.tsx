@@ -8,7 +8,11 @@ import Testimonials from "@components/sections/home/testimonials";
 import TheSpace from "@components/sections/home/the-space";
 import CommunitySection from "@components/sections/home/community-section";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home.meta" });
   return {
@@ -19,8 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: locale === "es" ? "/es" : "/",
       languages: {
-        "en": "/",
-        "es": "/es",
+        en: "/",
+        es: "/es",
         "x-default": "/",
       },
     },

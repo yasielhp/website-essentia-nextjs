@@ -5,7 +5,11 @@ import ProgramsSection from "@components/sections/community/programs-section";
 import ValuesSection from "@components/sections/community/values-section";
 import CtaSection from "@components/sections/community/cta-section";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "community.meta" });
   return {
@@ -14,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: locale === "es" ? "/es/community" : "/community",
       languages: {
-        "en": "/community",
-        "es": "/es/community",
+        en: "/community",
+        es: "/es/community",
         "x-default": "/community",
       },
     },

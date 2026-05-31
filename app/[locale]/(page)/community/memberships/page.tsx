@@ -3,17 +3,24 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { MembershipsContent } from "./content";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "memberships.meta" });
   return {
     title: t("title"),
     description: t("description"),
     alternates: {
-      canonical: locale === "es" ? "/es/community/memberships" : "/community/memberships",
+      canonical:
+        locale === "es"
+          ? "/es/community/memberships"
+          : "/community/memberships",
       languages: {
-        "en": "/community/memberships",
-        "es": "/es/community/memberships",
+        en: "/community/memberships",
+        es: "/es/community/memberships",
         "x-default": "/community/memberships",
       },
     },

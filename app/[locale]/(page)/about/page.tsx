@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import AboutSection from "@components/sections/about/about-section";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "about.meta" });
   return {
@@ -11,8 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: locale === "es" ? "/es/about" : "/about",
       languages: {
-        "en": "/about",
-        "es": "/es/about",
+        en: "/about",
+        es: "/es/about",
         "x-default": "/about",
       },
     },

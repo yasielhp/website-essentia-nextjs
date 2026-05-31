@@ -5,7 +5,11 @@ import ProtocolsSection from "@components/sections/wellness/protocols-section";
 import ApproachSection from "@components/sections/wellness/approach-section";
 import CtaSection from "@components/sections/wellness/cta-section";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "wellness.meta" });
   return {
@@ -14,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: locale === "es" ? "/es/wellness" : "/wellness",
       languages: {
-        "en": "/wellness",
-        "es": "/es/wellness",
+        en: "/wellness",
+        es: "/es/wellness",
         "x-default": "/wellness",
       },
     },

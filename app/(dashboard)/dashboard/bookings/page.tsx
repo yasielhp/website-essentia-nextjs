@@ -743,21 +743,19 @@ export default function BookingsPage() {
                   </p>
                   <div className="flex flex-col gap-0.5">
                     <LocationBadge location={b.location} />
-                    {(b.location === "centro" ||
-                      b.location === "habitacion") &&
+                    {(b.location === "centro" || b.location === "habitacion") &&
                       b.location_address &&
                       (() => {
                         try {
-                          const addr = JSON.parse(
-                            b.location_address,
-                          ) as Record<string, string>;
+                          const addr = JSON.parse(b.location_address) as Record<
+                            string,
+                            string
+                          >;
                           const parts = [
                             addr.reservationNumber
                               ? `#${addr.reservationNumber}`
                               : null,
-                            addr.roomNumber
-                              ? `Room ${addr.roomNumber}`
-                              : null,
+                            addr.roomNumber ? `Room ${addr.roomNumber}` : null,
                           ].filter(Boolean);
                           return parts.length > 0 ? (
                             <p className="text-petroleum-400 text-xs">
