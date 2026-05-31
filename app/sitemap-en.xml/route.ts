@@ -16,9 +16,7 @@ function urlEntry(
 ) {
   const enUrl = `${siteBase}${enPath}`;
   const esUrl = `${siteBase}/es${esPath}`;
-  const lastModStr = lastMod
-    ? `\n    <lastmod>${lastMod}</lastmod>`
-    : "";
+  const lastModStr = lastMod ? `\n    <lastmod>${lastMod}</lastmod>` : "";
   const changefreqStr = changefreq
     ? `\n    <changefreq>${changefreq}</changefreq>`
     : "";
