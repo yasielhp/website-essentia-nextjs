@@ -68,6 +68,7 @@ export function useTextAnimation<T extends HTMLElement>() {
 
 export function AnimatedIconLink({
   children,
+  href,
   className,
   ...props
 }: AnimatedLinkProps) {
@@ -87,6 +88,7 @@ export function AnimatedIconLink({
   return (
     <Link
       ref={ref}
+      href={href as IntlHref}
       className={className}
       onMouseEnter={handleMouseEnter}
       {...props}
@@ -99,12 +101,16 @@ export function AnimatedIconLink({
 // ─── AnimatedLink ─────────────────────────────────────────────
 // Link de Next.js con animación de texto por caracteres al hover.
 
-type AnimatedLinkProps = ComponentPropsWithoutRef<typeof Link> & {
+type AnimatedLinkProps = Omit<ComponentPropsWithoutRef<typeof Link>, "href"> & {
+  href: ComponentPropsWithoutRef<typeof Link>["href"] | string;
   children: ReactNode;
 };
 
+type IntlHref = ComponentPropsWithoutRef<typeof Link>["href"];
+
 export function AnimatedLink({
   children,
+  href,
   onMouseEnter,
   className,
   ...props
@@ -114,6 +120,7 @@ export function AnimatedLink({
   return (
     <Link
       ref={ref}
+      href={href as IntlHref}
       className={className}
       onMouseEnter={(e) => {
         handleMouseEnter();

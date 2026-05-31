@@ -1,7 +1,9 @@
 "use client";
 
-import { useReducer, useEffect, useRef, type Ref, type RefObject } from "react";
+import { useReducer, useEffect, useRef, type Ref, type RefObject, type ComponentProps } from "react";
 import { Link } from "../../i18n/navigation";
+
+type IntlHref = ComponentProps<typeof Link>["href"];
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
 
@@ -213,7 +215,7 @@ function DesktopDropdown({
             {displayedMenu.itemMenu.map((item) => (
               <AnimatedLink
                 key={item.href}
-                href={item.href as any}
+                href={item.href as IntlHref}
                 data-desktop-item
                 className="block py-1.5 transition-opacity duration-150"
                 style={{
@@ -343,7 +345,7 @@ function MobileMenu({
                           className="border-sand-200 border-l pr-5 pl-3"
                         >
                           <Link
-                            href={item.href as any}
+                            href={item.href as IntlHref}
                             onClick={() => setOpenMobileMenu(false)}
                             className="flex flex-col pb-2"
                           >
@@ -374,7 +376,7 @@ function MobileMenu({
                       className="border-sand-200 border-l pr-5 pl-3"
                     >
                       <Link
-                        href={item.href as any}
+                        href={item.href as IntlHref}
                         onClick={() => setOpenMobileMenu(false)}
                         className="flex flex-col pb-2"
                       >
@@ -446,7 +448,7 @@ function AccountDropdown({
         {menuItems.map((item) => (
           <li key={item.href}>
             <Link
-              href={item.href as any}
+              href={item.href as IntlHref}
               onClick={onClose}
               className="text-petroleum-500 hover:bg-sand-50 block px-4 py-2.5 text-sm font-medium transition-colors"
             >
@@ -492,7 +494,7 @@ function DesktopNav({
           return (
             <li key={menu.href} className="relative">
               <AnimatedLink
-                href={menu.href as any}
+                href={menu.href as IntlHref}
                 className="flex items-center gap-1 p-4 font-medium transition-opacity duration-200"
                 style={{ opacity: isDimmed ? 0.5 : 1 }}
                 onMouseEnter={() => onMenuEnter(menu)}

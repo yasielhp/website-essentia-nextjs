@@ -240,7 +240,7 @@ export default function ContactSection() {
                   {contact.socialMedia.map((social) => (
                     <AnimatedIconLink
                       key={social.name}
-                      href={social.url as any}
+                      href={social.url}
                       target="_blank"
                       aria-label={social.name}
                       className="border-petroleum-500 text-petroleum-500 rounded-full border p-2 text-center"
