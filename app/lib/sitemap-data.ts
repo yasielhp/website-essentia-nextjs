@@ -2,7 +2,8 @@ import { createClient } from "@insforge/sdk";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { contact } from "@/constants/contact";
 
-export const siteBase = `https://${contact.domain}`;
+export const siteBase =
+  process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
 export const staticRoutes = [
   { path: "/", esPath: "/", priority: 1.0, changeFrequency: "weekly" },
