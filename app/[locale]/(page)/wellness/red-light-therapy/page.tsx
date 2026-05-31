@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/wellness/red-light-therapy"
+          ? "/es/bienestar/terapia-de-luz-roja"
           : "/wellness/red-light-therapy",
       languages: {
         en: "/wellness/red-light-therapy",
-        es: "/es/wellness/red-light-therapy",
+        es: "/es/bienestar/terapia-de-luz-roja",
         "x-default": "/wellness/red-light-therapy",
       },
     },

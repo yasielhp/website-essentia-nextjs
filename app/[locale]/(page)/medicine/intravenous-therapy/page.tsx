@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/medicine/intravenous-therapy"
+          ? "/es/medicina/terapia-intravenosa"
           : "/medicine/intravenous-therapy",
       languages: {
         en: "/medicine/intravenous-therapy",
-        es: "/es/medicine/intravenous-therapy",
+        es: "/es/medicina/terapia-intravenosa",
         "x-default": "/medicine/intravenous-therapy",
       },
     },

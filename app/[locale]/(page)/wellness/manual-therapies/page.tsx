@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/wellness/manual-therapies"
+          ? "/es/bienestar/terapias-manuales"
           : "/wellness/manual-therapies",
       languages: {
         en: "/wellness/manual-therapies",
-        es: "/es/wellness/manual-therapies",
+        es: "/es/bienestar/terapias-manuales",
         "x-default": "/wellness/manual-therapies",
       },
     },

@@ -16,11 +16,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/community/memberships"
+          ? "/es/comunidad/membresias"
           : "/community/memberships",
       languages: {
         en: "/community/memberships",
-        es: "/es/community/memberships",
+        es: "/es/comunidad/membresias",
         "x-default": "/community/memberships",
       },
     },

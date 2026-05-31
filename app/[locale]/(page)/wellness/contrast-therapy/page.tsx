@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/wellness/contrast-therapy"
+          ? "/es/bienestar/terapia-de-contraste"
           : "/wellness/contrast-therapy",
       languages: {
         en: "/wellness/contrast-therapy",
-        es: "/es/wellness/contrast-therapy",
+        es: "/es/bienestar/terapia-de-contraste",
         "x-default": "/wellness/contrast-therapy",
       },
     },

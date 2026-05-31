@@ -20,11 +20,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/community/running-club"
+          ? "/es/comunidad/running-club"
           : "/community/running-club",
       languages: {
         en: "/community/running-club",
-        es: "/es/community/running-club",
+        es: "/es/comunidad/running-club",
         "x-default": "/community/running-club",
       },
     },

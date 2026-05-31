@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/wellness/functional-well-being"
+          ? "/es/bienestar/bienestar-funcional"
           : "/wellness/functional-well-being",
       languages: {
         en: "/wellness/functional-well-being",
-        es: "/es/wellness/functional-well-being",
+        es: "/es/bienestar/bienestar-funcional",
         "x-default": "/wellness/functional-well-being",
       },
     },

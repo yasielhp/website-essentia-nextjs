@@ -168,7 +168,7 @@ export default async function RootLayout({
   const locale = pathname.startsWith("/es") ? "es" : "en";
   const schemaOrg = buildSchemaOrg(locale);
   return (
-    <html lang={locale} className={`${jedira.variable} ${dmSans.variable}`}>
+    <html lang={locale} data-scroll-behavior="smooth" className={`${jedira.variable} ${dmSans.variable}`}>
       <head>
         <script
           type="application/ld+json"

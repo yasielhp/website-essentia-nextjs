@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/medicine/regenerative-medicine"
+          ? "/es/medicina/medicina-regenerativa"
           : "/medicine/regenerative-medicine",
       languages: {
         en: "/medicine/regenerative-medicine",
-        es: "/es/medicine/regenerative-medicine",
+        es: "/es/medicina/medicina-regenerativa",
         "x-default": "/medicine/regenerative-medicine",
       },
     },

@@ -20,11 +20,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/community/education-programs"
+          ? "/es/comunidad/programas-educativos"
           : "/community/education-programs",
       languages: {
         en: "/community/education-programs",
-        es: "/es/community/education-programs",
+        es: "/es/comunidad/programas-educativos",
         "x-default": "/community/education-programs",
       },
     },

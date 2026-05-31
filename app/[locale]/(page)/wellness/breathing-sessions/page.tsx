@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/wellness/breathing-sessions"
+          ? "/es/bienestar/sesiones-de-respiracion"
           : "/wellness/breathing-sessions",
       languages: {
         en: "/wellness/breathing-sessions",
-        es: "/es/wellness/breathing-sessions",
+        es: "/es/bienestar/sesiones-de-respiracion",
         "x-default": "/wellness/breathing-sessions",
       },
     },

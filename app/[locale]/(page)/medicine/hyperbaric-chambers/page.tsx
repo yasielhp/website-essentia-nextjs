@@ -22,11 +22,11 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/medicine/hyperbaric-chambers"
+          ? "/es/medicina/camaras-hiperbaricas"
           : "/medicine/hyperbaric-chambers",
       languages: {
         en: "/medicine/hyperbaric-chambers",
-        es: "/es/medicine/hyperbaric-chambers",
+        es: "/es/medicina/camaras-hiperbaricas",
         "x-default": "/medicine/hyperbaric-chambers",
       },
     },

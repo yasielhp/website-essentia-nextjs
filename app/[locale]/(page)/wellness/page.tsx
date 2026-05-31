@@ -16,10 +16,10 @@ export async function generateMetadata({
     title: { absolute: t("title") },
     description: t("description"),
     alternates: {
-      canonical: locale === "es" ? "/es/wellness" : "/wellness",
+      canonical: locale === "es" ? "/es/bienestar" : "/wellness",
       languages: {
         en: "/wellness",
-        es: "/es/wellness",
+        es: "/es/bienestar",
         "x-default": "/wellness",
       },
     },
