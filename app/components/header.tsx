@@ -1,6 +1,13 @@
 "use client";
 
-import { useReducer, useEffect, useRef, type Ref, type RefObject, type ComponentProps } from "react";
+import {
+  useReducer,
+  useEffect,
+  useRef,
+  type Ref,
+  type RefObject,
+  type ComponentProps,
+} from "react";
 import { Link } from "../../i18n/navigation";
 
 type IntlHref = ComponentProps<typeof Link>["href"];

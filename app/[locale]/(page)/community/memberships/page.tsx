@@ -16,9 +16,7 @@ export async function generateMetadata({
     description: t("description"),
     alternates: {
       canonical:
-        locale === "es"
-          ? "/es/comunidad/membresias"
-          : "/community/memberships",
+        locale === "es" ? "/es/comunidad/membresias" : "/community/memberships",
       languages: {
         en: "/community/memberships",
         es: "/es/comunidad/membresias",

@@ -145,11 +145,17 @@ export const fetchBlogPosts = unstable_cache(
         .eq("status", "published")
         .order("published_at", { ascending: false });
       return (
-        (data as { slug: string; slug_es: string | null; published_at: string | null }[]) ?? []
+        (data as {
+          slug: string;
+          slug_es: string | null;
+          published_at: string | null;
+        }[]) ?? []
       ).map((post) => ({
         slug: post.slug,
         slugEs: post.slug_es ?? null,
-        lastModified: post.published_at ? new Date(post.published_at) : undefined,
+        lastModified: post.published_at
+          ? new Date(post.published_at)
+          : undefined,
       }));
     } catch {
       return [];

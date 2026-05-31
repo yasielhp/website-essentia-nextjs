@@ -11,5 +11,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!dashboard|api|_next|opengraph-image|twitter-image|.*\\..*).*)"],
+  matcher: [
+    "/((?!dashboard|api|_next|opengraph-image|twitter-image|.*\\..*).*)",
+  ],
 };

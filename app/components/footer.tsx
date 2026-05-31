@@ -183,10 +183,7 @@ export const Footer = () => {
           </div>
           {/*Contact Email and Phone*/}
           <div className="border-petroleum-500 flex w-full flex-col items-center text-center md:border-r">
-            <AnimatedLink
-              href={`mailto:${contact.email}`}
-              target="_blank"
-            >
+            <AnimatedLink href={`mailto:${contact.email}`} target="_blank">
               {contact.email}
             </AnimatedLink>
             <AnimatedLink href={`tel:${contact.phone}`} target="_blank">

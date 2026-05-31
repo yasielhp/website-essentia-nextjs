@@ -2,8 +2,7 @@ import type { MetadataRoute } from "next";
 import { contact } from "@/constants/contact";
 
 export default function robots(): MetadataRoute.Robots {
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
   return {
     rules: [
       {

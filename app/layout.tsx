@@ -40,8 +40,7 @@ const dmSans = localFont({
   display: "swap",
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
@@ -171,7 +170,11 @@ export default async function RootLayout({
   const locale = pathname.startsWith("/es") ? "es" : "en";
   const schemaOrg = buildSchemaOrg(locale);
   return (
-    <html lang={locale} data-scroll-behavior="smooth" className={`${jedira.variable} ${dmSans.variable}`}>
+    <html
+      lang={locale}
+      data-scroll-behavior="smooth"
+      className={`${jedira.variable} ${dmSans.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"
