@@ -24,6 +24,6 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "Googlebot-Extended", disallow: "/" }, // Google AI training
       { userAgent: "cohere-ai", disallow: "/" },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: [`${base}/sitemap-en.xml`, `${base}/sitemap-es.xml`],
   };
 }
