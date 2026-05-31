@@ -176,6 +176,7 @@ export default async function RootLayout({
       className={`${jedira.variable} ${dmSans.variable}`}
     >
       <head>
+        <link rel="alternate" type="text/plain" title="LLMs.txt" href="/llms.txt" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
