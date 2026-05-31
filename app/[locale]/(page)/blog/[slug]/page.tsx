@@ -8,6 +8,9 @@ import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
 
+export const revalidate = 3600;
+export const dynamicParams = true;
+
 const db = createClient({
   baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
   anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
@@ -76,6 +79,22 @@ function formatDate(iso: string | null, locale: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+export async function generateStaticParams() {
+  try {
+    const { data } = await db.database
+      .from("blog_posts")
+      .select("slug, slug_es")
+      .eq("status", "published");
+    const posts = (data as { slug: string; slug_es: string | null }[]) ?? [];
+    return posts.flatMap((post) => [
+      { locale: "en", slug: post.slug },
+      { locale: "es", slug: post.slug_es ?? post.slug },
+    ]);
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
