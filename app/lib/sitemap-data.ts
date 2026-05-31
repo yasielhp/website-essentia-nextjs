@@ -5,72 +5,123 @@ import { contact } from "@/constants/contact";
 export const siteBase = `https://${contact.domain}`;
 
 export const staticRoutes = [
-  { path: "/", priority: 1.0, changeFrequency: "weekly" },
-  { path: "/wellness", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/", esPath: "/", priority: 1.0, changeFrequency: "weekly" },
+  {
+    path: "/wellness",
+    esPath: "/bienestar",
+    priority: 0.9,
+    changeFrequency: "weekly",
+  },
   {
     path: "/wellness/contrast-therapy",
+    esPath: "/bienestar/terapia-de-contraste",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/wellness/red-light-therapy",
+    esPath: "/bienestar/terapia-de-luz-roja",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/wellness/breathing-sessions",
+    esPath: "/bienestar/sesiones-de-respiracion",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/wellness/manual-therapies",
+    esPath: "/bienestar/terapias-manuales",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/wellness/functional-well-being",
+    esPath: "/bienestar/bienestar-funcional",
     priority: 0.8,
     changeFrequency: "monthly",
   },
-  { path: "/medicine", priority: 0.9, changeFrequency: "weekly" },
+  {
+    path: "/medicine",
+    esPath: "/medicina",
+    priority: 0.9,
+    changeFrequency: "weekly",
+  },
   {
     path: "/medicine/hyperbaric-chambers",
+    esPath: "/medicina/camaras-hiperbaricas",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/medicine/intravenous-therapy",
+    esPath: "/medicina/terapia-intravenosa",
     priority: 0.8,
     changeFrequency: "monthly",
   },
   {
     path: "/medicine/regenerative-medicine",
+    esPath: "/medicina/medicina-regenerativa",
     priority: 0.8,
     changeFrequency: "monthly",
   },
-  { path: "/community", priority: 0.8, changeFrequency: "weekly" },
-  { path: "/community/memberships", priority: 0.85, changeFrequency: "weekly" },
+  {
+    path: "/community",
+    esPath: "/comunidad",
+    priority: 0.8,
+    changeFrequency: "weekly",
+  },
+  {
+    path: "/community/memberships",
+    esPath: "/comunidad/membresias",
+    priority: 0.85,
+    changeFrequency: "weekly",
+  },
   {
     path: "/community/running-club",
+    esPath: "/comunidad/running-club",
     priority: 0.7,
     changeFrequency: "monthly",
   },
   {
     path: "/community/education-programs",
+    esPath: "/comunidad/programas-educativos",
     priority: 0.7,
     changeFrequency: "monthly",
   },
-  { path: "/about", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/blog", priority: 0.8, changeFrequency: "daily" },
-  { path: "/shop", priority: 0.6, changeFrequency: "weekly" },
-  { path: "/contact", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/booking", priority: 0.9, changeFrequency: "weekly" },
+  {
+    path: "/about",
+    esPath: "/nosotros",
+    priority: 0.7,
+    changeFrequency: "monthly",
+  },
+  { path: "/blog", esPath: "/blog", priority: 0.8, changeFrequency: "daily" },
+  {
+    path: "/shop",
+    esPath: "/tienda",
+    priority: 0.6,
+    changeFrequency: "weekly",
+  },
+  {
+    path: "/contact",
+    esPath: "/contacto",
+    priority: 0.7,
+    changeFrequency: "monthly",
+  },
+  {
+    path: "/booking",
+    esPath: "/reserva",
+    priority: 0.9,
+    changeFrequency: "weekly",
+  },
 ] as const;
 
-export function getTreatmentPaths(): string[] {
-  return manualTherapyTreatments.map(
-    (t) => `/wellness/manual-therapies/${t.id}`,
-  );
+export function getTreatmentPaths(): { path: string; esPath: string }[] {
+  return manualTherapyTreatments.map((t) => ({
+    path: `/wellness/manual-therapies/${t.id}`,
+    esPath: `/bienestar/terapias-manuales/${t.id}`,
+  }));
 }
 
 export type BlogPost = {

@@ -8,13 +8,14 @@ import {
 export const revalidate = 3600;
 
 function urlEntry(
-  path: string,
+  enPath: string,
+  esPath: string,
   lastMod?: Date,
   changefreq?: string,
   priority?: number,
 ) {
-  const enUrl = `${siteBase}${path}`;
-  const esUrl = `${siteBase}/es${path}`;
+  const enUrl = `${siteBase}${enPath}`;
+  const esUrl = `${siteBase}/es${esPath}`;
   const lastModStr = lastMod
     ? `\n    <lastmod>${lastMod.toISOString().split("T")[0]}</lastmod>`
     : "";
@@ -36,16 +37,26 @@ export async function GET() {
   const blogPosts = await fetchBlogPosts();
 
   const staticEntries = staticRoutes
-    .map((r) => urlEntry(r.path, undefined, r.changeFrequency, r.priority))
+    .map((r) =>
+      urlEntry(r.path, r.esPath, undefined, r.changeFrequency, r.priority),
+    )
     .join("");
 
   const treatmentEntries = getTreatmentPaths()
-    .map((path) => urlEntry(path, undefined, "monthly", 0.7))
+    .map(({ path, esPath }) =>
+      urlEntry(path, esPath, undefined, "monthly", 0.7),
+    )
     .join("");
 
   const blogEntries = blogPosts
     .map((post) =>
-      urlEntry(`/blog/${post.slug}`, post.lastModified, "monthly", 0.6),
+      urlEntry(
+        `/blog/${post.slug}`,
+        `/blog/${post.slug}`,
+        post.lastModified,
+        "monthly",
+        0.6,
+      ),
     )
     .join("");
 
