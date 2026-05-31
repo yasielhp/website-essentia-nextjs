@@ -126,6 +126,7 @@ export function getTreatmentPaths(): { path: string; esPath: string }[] {
 
 export type BlogPost = {
   slug: string;
+  slugEs: string | null;
   lastModified?: Date;
 };
 
@@ -137,13 +138,14 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
     });
     const { data } = await db.database
       .from("blog_posts")
-      .select("slug, published_at")
+      .select("slug, slug_es, published_at")
       .eq("status", "published")
       .order("published_at", { ascending: false });
     return (
-      (data as { slug: string; published_at: string | null }[]) ?? []
+      (data as { slug: string; slug_es: string | null; published_at: string | null }[]) ?? []
     ).map((post) => ({
       slug: post.slug,
+      slugEs: post.slug_es ?? null,
       lastModified: post.published_at ? new Date(post.published_at) : undefined,
     }));
   } catch {
