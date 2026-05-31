@@ -129,7 +129,7 @@ export function getTreatmentPaths(): { path: string; esPath: string }[] {
 export type BlogPost = {
   slug: string;
   slugEs: string | null;
-  lastModified?: Date;
+  lastModified?: string;
 };
 
 export const fetchBlogPosts = unstable_cache(
@@ -154,7 +154,7 @@ export const fetchBlogPosts = unstable_cache(
         slug: post.slug,
         slugEs: post.slug_es ?? null,
         lastModified: post.published_at
-          ? new Date(post.published_at)
+          ? post.published_at.split("T")[0]
           : undefined,
       }));
     } catch {

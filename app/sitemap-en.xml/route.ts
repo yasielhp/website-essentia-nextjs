@@ -10,14 +10,14 @@ export const revalidate = 3600;
 function urlEntry(
   enPath: string,
   esPath: string,
-  lastMod?: Date,
+  lastMod?: string,
   changefreq?: string,
   priority?: number,
 ) {
   const enUrl = `${siteBase}${enPath}`;
   const esUrl = `${siteBase}/es${esPath}`;
   const lastModStr = lastMod
-    ? `\n    <lastmod>${lastMod.toISOString().split("T")[0]}</lastmod>`
+    ? `\n    <lastmod>${lastMod}</lastmod>`
     : "";
   const changefreqStr = changefreq
     ? `\n    <changefreq>${changefreq}</changefreq>`

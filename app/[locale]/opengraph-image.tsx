@@ -17,15 +17,6 @@ const copy = {
   },
 };
 
-export function generateImageMetadata({
-  params,
-}: {
-  params: { locale: string };
-}) {
-  const t = copy[params.locale as keyof typeof copy] ?? copy.en;
-  return [{ id: "default", alt: t.alt }];
-}
-
 export default function Image({ params }: { params: { locale: string } }) {
   const t = copy[params.locale as keyof typeof copy] ?? copy.en;
 
