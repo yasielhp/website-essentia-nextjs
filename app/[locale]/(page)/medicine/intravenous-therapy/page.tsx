@@ -5,7 +5,7 @@ import { treatments } from "@components/sections/medicine/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
-import { defaultOgImage } from "@/constants/metadata";
+import { getOgImage } from "@/constants/metadata";
 
 export async function generateMetadata({
   params,
@@ -33,7 +33,7 @@ export async function generateMetadata({
     },
     openGraph: {
       locale: locale === "es" ? "es_ES" : "en_US",
-      images: defaultOgImage,
+      images: getOgImage(locale),
     },
   };
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const revalidate = 3600;
 import { getTranslations } from "next-intl/server";
-import { defaultOgImage } from "@/constants/metadata";
+import { getOgImage } from "@/constants/metadata";
 import EducationSection from "@components/sections/community/education-section";
 
 export async function generateMetadata({
@@ -31,7 +31,7 @@ export async function generateMetadata({
     },
     openGraph: {
       locale: locale === "es" ? "es_ES" : "en_US",
-      images: defaultOgImage,
+      images: getOgImage(locale),
     },
   };
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { defaultOgImage } from "@/constants/metadata";
+import { getOgImage } from "@/constants/metadata";
 import Hero from "@components/sections/home/hero";
 import BrandStatement from "@components/sections/home/brand-statement";
 import ServicesOverview from "@components/sections/home/services-overview";
@@ -31,7 +31,7 @@ export async function generateMetadata({
     },
     openGraph: {
       locale: locale === "es" ? "es_ES" : "en_US",
-      images: defaultOgImage,
+      images: getOgImage(locale),
     },
   };
 }

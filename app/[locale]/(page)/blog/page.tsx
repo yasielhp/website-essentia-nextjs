@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const revalidate = 3600;
 import { getTranslations } from "next-intl/server";
-import { defaultOgImage } from "@/constants/metadata";
+import { getOgImage } from "@/constants/metadata";
 import BlogHeroSection from "@/components/sections/blog/hero-section";
 import PostsSection from "@/components/sections/blog/posts-section";
 import Newsletter from "@/components/sections/newsletter";
@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: t("ogDescription"),
       type: "website",
       locale: locale === "es" ? "es_ES" : "en_US",
-      images: defaultOgImage,
+      images: getOgImage(locale),
     },
   };
 }
