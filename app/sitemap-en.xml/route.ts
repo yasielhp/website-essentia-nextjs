@@ -27,9 +27,9 @@ function urlEntry(
   return `
   <url>
     <loc>${enUrl}</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="${enUrl}"/>
-    <xhtml:link rel="alternate" hreflang="es" href="${esUrl}"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="${enUrl}"/>${lastModStr}${changefreqStr}${priorityStr}
+    <x:link rel="alternate" hreflang="en" href="${enUrl}"/>
+    <x:link rel="alternate" hreflang="es" href="${esUrl}"/>
+    <x:link rel="alternate" hreflang="x-default" href="${enUrl}"/>${lastModStr}${changefreqStr}${priorityStr}
   </url>`;
 }
 
@@ -52,7 +52,7 @@ export async function GET() {
     .map((post) =>
       urlEntry(
         `/blog/${post.slug}`,
-        `/blog/${post.slug}`,
+        `/blog/${post.slugEs ?? post.slug}`,
         post.lastModified,
         "monthly",
         0.6,
@@ -62,7 +62,7 @@ export async function GET() {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">${staticEntries}${treatmentEntries}${blogEntries}
+        xmlns:x="http://www.w3.org/1999/xhtml">${staticEntries}${treatmentEntries}${blogEntries}
 </urlset>`;
 
   return new Response(xml, {
