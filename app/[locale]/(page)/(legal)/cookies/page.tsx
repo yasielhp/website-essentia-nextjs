@@ -11,10 +11,11 @@ export async function generateMetadata(): Promise<Metadata> {
       ? "Descubre cómo Essentia utiliza cookies y tecnologías similares en nuestro sitio web, y cómo gestionar tus preferencias."
       : "Learn how Essentia uses cookies and similar technologies on our website, and how to manage your preferences.",
     alternates: {
-      canonical: isEs ? "/es/cookies" : "/en/cookies",
+      canonical: isEs ? "/es/cookies" : "/cookies",
       languages: {
-        "es": "/es/cookies",
-        "en": "/en/cookies",
+        en: "/cookies",
+        es: "/es/cookies",
+        "x-default": "/cookies",
       },
     },
   };

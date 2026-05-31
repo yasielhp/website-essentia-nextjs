@@ -11,10 +11,11 @@ export async function generateMetadata(): Promise<Metadata> {
       ? "Aviso legal e información regulatoria de Essentia Social Wellness Club, ubicado en Costa Adeje, Tenerife."
       : "Legal notice and regulatory information for Essentia Social Wellness Club, located in Costa Adeje, Tenerife.",
     alternates: {
-      canonical: isEs ? "/es/legal" : "/en/legal",
+      canonical: isEs ? "/es/legal" : "/legal",
       languages: {
-        "es": "/es/legal",
-        "en": "/en/legal",
+        en: "/legal",
+        es: "/es/legal",
+        "x-default": "/legal",
       },
     },
   };

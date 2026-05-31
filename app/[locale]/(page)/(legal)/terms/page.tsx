@@ -6,15 +6,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const isEs = locale === "es";
 
   return {
-    title: isEs ? "Términos y Condiciones | Essentia" : "Terms & Conditions | Essentia",
+    title: isEs
+      ? "Términos y Condiciones | Essentia"
+      : "Terms & Conditions | Essentia",
     description: isEs
       ? "Lee los términos y condiciones de Essentia para membresías, reservas y uso de nuestros servicios de longevidad y bienestar en Costa Adeje, Tenerife."
       : "Read Essentia's terms and conditions for membership, bookings, and use of our longevity and wellness services in Costa Adeje, Tenerife.",
     alternates: {
-      canonical: isEs ? "/es/terms" : "/en/terms",
+      canonical: isEs ? "/es/terms" : "/terms",
       languages: {
-        "es": "/es/terms",
-        "en": "/en/terms",
+        en: "/terms",
+        es: "/es/terms",
+        "x-default": "/terms",
       },
     },
   };

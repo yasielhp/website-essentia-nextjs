@@ -7,15 +7,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const isEs = locale === "es";
 
   return {
-    title: isEs ? "Política de Privacidad | Essentia" : "Privacy Policy | Essentia",
+    title: isEs
+      ? "Política de Privacidad | Essentia"
+      : "Privacy Policy | Essentia",
     description: isEs
       ? "Política de privacidad de Essentia: cómo recopilamos, usamos y protegemos tus datos personales conforme al RGPD y la legislación española."
       : "Essentia's privacy policy: how we collect, use, and protect your personal data in compliance with GDPR and Spanish data protection law.",
     alternates: {
-      canonical: isEs ? "/es/privacy" : "/en/privacy",
+      canonical: isEs ? "/es/privacy" : "/privacy",
       languages: {
-        "es": "/es/privacy",
-        "en": "/en/privacy",
+        en: "/privacy",
+        es: "/es/privacy",
+        "x-default": "/privacy",
       },
     },
   };
