@@ -42,8 +42,12 @@ export default async function LegalNoticePage() {
         <p>
           <strong>Nombre comercial:</strong> Essentia Social Wellness Club
           <br />
-          <strong>Domicilio social:</strong> Baobab Suites, Costa Adeje,
-          Tenerife, Islas Canarias, España
+          <strong>Titular/Responsable:</strong> Yusleidy Caridad Jiménez Pérez
+          <br />
+          <strong>NIE:</strong> Y8199130N
+          <br />
+          <strong>Domicilio:</strong> Calle Arure 29, San Isidro, 38611 Santa
+          Cruz de Tenerife, Islas Canarias, España
           <br />
           <strong>Correo electrónico de contacto:</strong>{" "}
           <a href="mailto:info@essentiawellnessclub.com">
@@ -152,8 +156,12 @@ export default async function LegalNoticePage() {
       <p>
         <strong>Trading name:</strong> Essentia Social Wellness Club
         <br />
-        <strong>Registered address:</strong> Baobab Suites, Costa Adeje,
-        Tenerife, Islas Canarias, España
+        <strong>Owner/Responsible party:</strong> Yusleidy Caridad Jiménez Pérez
+        <br />
+        <strong>NIE:</strong> Y8199130N
+        <br />
+        <strong>Address:</strong> Calle Arure 29, San Isidro, 38611 Santa Cruz
+        de Tenerife, Islas Canarias, España
         <br />
         <strong>Contact email:</strong>{" "}
         <a href="mailto:info@essentiawellnessclub.com">

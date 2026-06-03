@@ -48,9 +48,14 @@ export default async function PrivacyPolicyPage() {
 
         <h2>1. Responsable del tratamiento</h2>
         <p>
-          <strong>Essentia Social Wellness Club</strong>
+          <strong>Yusleidy Caridad Jiménez Pérez</strong>
           <br />
-          Baobab Suites, Costa Adeje, Tenerife, Islas Canarias, España
+          NIE: Y8199130N
+          <br />
+          Nombre comercial: Essentia Social Wellness Club
+          <br />
+          Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife, Islas
+          Canarias, España
           <br />
           <a href="mailto:info@essentiawellnessclub.com">
             info@essentiawellnessclub.com
@@ -228,8 +233,8 @@ export default async function PrivacyPolicyPage() {
           <a href="mailto:info@essentiawellnessclub.com">
             info@essentiawellnessclub.com
           </a>{" "}
-          o por correo postal a Baobab Suites, Costa Adeje, Tenerife, Islas
-          Canarias, España.
+          o por correo postal a Calle Arure 29, San Isidro, 38611 Santa Cruz de
+          Tenerife, Islas Canarias, España.
         </p>
       </>
     );
@@ -253,9 +258,14 @@ export default async function PrivacyPolicyPage() {
 
       <h2>1. Data Controller</h2>
       <p>
-        <strong>Essentia Social Wellness Club</strong>
+        <strong>Yusleidy Caridad Jiménez Pérez</strong>
         <br />
-        Baobab Suites, Costa Adeje, Tenerife, Islas Canarias, España
+        NIE: Y8199130N
+        <br />
+        Trading name: Essentia Social Wellness Club
+        <br />
+        Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife, Islas
+        Canarias, España
         <br />
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
@@ -409,8 +419,8 @@ export default async function PrivacyPolicyPage() {
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
         </a>{" "}
-        or by post to Baobab Suites, Costa Adeje, Tenerife, Islas Canarias,
-        España.
+        or by post to Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife,
+        Islas Canarias, España.
       </p>
     </>
   );
