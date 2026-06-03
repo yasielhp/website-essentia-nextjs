@@ -77,37 +77,48 @@ public/
 ## Key Architectural Patterns
 
 ### i18n
+
 Every page under `app/[locale]/(page)/` exports `generateMetadata` using `getTranslations()` from the page's namespace (`messages/en/<page>.json` / `messages/es/<page>.json`). The `meta.title` and `meta.description` keys drive SEO. **Title max 65 chars, description max 155 chars.**
 
 ### Database (Insforge SDK)
+
 Two client modes:
+
 - `app/lib/insforge.ts` — anon key, used in Server Components/Actions for user-scoped queries
 - `createClient({ anonKey: INSFORGE_SERVICE_KEY })` — service key, used in Server Actions that need admin access (booking mutations, email lookups, Google token storage). Never import `INSFORGE_SERVICE_KEY` in client components.
 
 ### Booking Flow
+
 1. Client picks service/date/time on `/booking` → Server Action creates a draft booking via `create_draft_booking` RPC
 2. Staff confirms from dashboard → `notifyBooking({ event: "confirmed", …, dateIso })` sends email with Google Calendar button
 3. Optional Redsys payment → `/api/checkout/booking-session` → Redsys → webhook at `/api/webhooks/redsys` → `handleBookingPaid()` → confirmation email
 
 ### Email System
+
 All templates are plain TypeScript functions returning HTML strings (no JSX/React Email). `_base.ts` provides `emailBase()`, `bookingDetailsCard()`, `googleCalendarUrl()`, and `calendarButton()`. `sendEmail()` auto-BCCs the admin email fetched from `profiles` table. Always pass `dateIso` (YYYY-MM-DD) alongside the formatted `date` to templates that include the calendar button.
 
 ### Google Calendar Integration
+
 Each bookable service has its own OAuth tokens stored in `service_configs`. `getValidAccessToken(serviceId)` in `app/lib/google-calendar.ts` auto-refreshes expired tokens (60s buffer). The FreeBusy endpoint (`/api/google/calendar/freebusy`) is called by the MCP `get_availability` tool and by the booking UI.
 
 ### MCP Server
+
 `app/api/[transport]/route.ts` exposes three tools to AI agents: `list_services`, `get_availability`, `create_booking`. Uses `mcp-handler` (not `@vercel/mcp-adapter`). Config: `basePath: "/api"`, `maxDuration: 60`. Accessible at `/api/mcp`.
 
 ### OG Images
+
 - `app/opengraph-image.tsx` — EN only (root fallback)
 - `app/[locale]/opengraph-image.tsx` — locale-aware EN/ES copy. No `generateImageMetadata` (incompatible with edge runtime + dynamic parent segment).
 - `app/lib/og-logo.ts` — `getLogoSvgUrl(color?)` builds a clean SVG data URL from hardcoded path data (avoids React-specific attributes and `currentColor` from `public/logo.svg`).
 
 ### Sitemaps
+
 Three routes: `/sitemap.xml` (index), `/sitemap-en.xml`, `/sitemap-es.xml`. Blog posts fetched via `fetchBlogPosts()` wrapped in `unstable_cache` (1h TTL). `BlogPost.lastModified` is a `string` (YYYY-MM-DD), not a `Date` — `unstable_cache` serializes to JSON which strips Date methods.
 
 ### Design System
+
 Defined in `DESIGN.md`. Key tokens:
+
 - `#103838` petroleum-700 — primary dark (buttons, header bg in emails)
 - `#f0ede6` sand-100 — primary light background
 - `#c2baa5` sand-500 — body text on dark
@@ -120,6 +131,7 @@ Defined in `DESIGN.md`. Key tokens:
 ## Environment Variables
 
 See `env.example` for the full list. Critical ones:
+
 - `NEXT_PUBLIC_INSFORGE_URL` + `NEXT_PUBLIC_INSFORGE_ANON_KEY` — DB (browser-safe)
 - `INSFORGE_SERVICE_KEY` — admin DB access (server only)
 - `RESEND_API_KEY` + `RESEND_FROM_EMAIL` — email sending
