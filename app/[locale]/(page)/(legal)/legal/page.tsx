@@ -55,7 +55,7 @@ export default async function LegalNoticePage() {
           </a>
           <br />
           <strong>Teléfono:</strong>{" "}
-          <a href="tel:+34922123456">+34 922 123 456</a>
+          <a href="tel:+34683240986">+34 683 24 09 86</a>
           <br />
           <strong>Sitio web:</strong> essentiawellnessclub.com
         </p>
@@ -168,7 +168,7 @@ export default async function LegalNoticePage() {
           info@essentiawellnessclub.com
         </a>
         <br />
-        <strong>Phone:</strong> <a href="tel:+34922123456">+34 922 123 456</a>
+        <strong>Phone:</strong> <a href="tel:+34683240986">+34 683 24 09 86</a>
         <br />
         <strong>Website:</strong> essentiawellnessclub.com
       </p>

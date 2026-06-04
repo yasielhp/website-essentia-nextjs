@@ -183,7 +183,7 @@ export default async function TermsPage() {
           <a href="mailto:info@essentiawellnessclub.com">
             info@essentiawellnessclub.com
           </a>{" "}
-          o por teléfono en <a href="tel:+34922123456">+34 922 123 456</a>.
+          o por teléfono en <a href="tel:+34683240986">+34 683 24 09 86</a>.
         </p>
       </>
     );
@@ -327,7 +327,7 @@ export default async function TermsPage() {
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
         </a>{" "}
-        or by phone at <a href="tel:+34922123456">+34 922 123 456</a>.
+        or by phone at <a href="tel:+34683240986">+34 683 24 09 86</a>.
       </p>
     </>
   );
