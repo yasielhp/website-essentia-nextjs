@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Phone } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
@@ -97,15 +97,9 @@ export function ConfirmStep({
 
       {/* Payment & confirmation notice */}
       <div className="border-sand-200 flex items-start gap-3 rounded-2xl border bg-white p-5">
-        <Phone size={16} className="text-petroleum-400 mt-0.5 shrink-0" />
+        <CreditCard size={16} className="text-petroleum-400 mt-0.5 shrink-0" />
         <p className="text-petroleum-500 text-sm leading-relaxed">
-          {t("paymentNoticePrefix")}{" "}
-          <strong className="text-petroleum-700 font-medium">
-            {t("channel")}
-          </strong>{" "}
-          {t("paymentNoticeAt")}{" "}
-          <span className="font-medium">{details.phone}</span>{" "}
-          {t("paymentNoticeSuffix")}
+          {t("paymentNotice")}
         </p>
       </div>
     </div>

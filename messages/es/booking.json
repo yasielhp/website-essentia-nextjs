@@ -151,7 +151,7 @@
     "atTheCenter": "En el centro",
     "toBeConfirmed": "Por confirmar",
     "channel": "teléfono o WhatsApp",
-    "paymentNotice": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por teléfono o WhatsApp al {phone} para confirmar tu cita. El pago se realizará en el centro el día de tu sesión.",
+    "paymentNotice": "Serás redirigido a la pasarela de pago seguro de Redsys para completar tu reserva. Una vez confirmado el pago, nuestro equipo coordinará tu cita.",
     "paymentNoticePrefix": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por",
     "paymentNoticeAt": "al",
     "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión."

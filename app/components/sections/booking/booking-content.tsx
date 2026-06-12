@@ -3,7 +3,6 @@
 import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { notifyBooking } from "@/actions/booking-notifications";
 import {
   updateDraftBookingMeta,
   confirmDraftBooking,
@@ -28,6 +27,7 @@ import { DetailsStep, type DetailsErrors } from "./steps/details-step";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
+import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 
@@ -401,6 +401,7 @@ function BookingContentInner() {
 
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
+  const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
   const [hasCalendar, setHasCalendar] = useState<boolean>(true);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
@@ -434,7 +435,6 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedTierId,
-    selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
     therapistGender,
@@ -651,58 +651,36 @@ function BookingContentInner() {
         .neq("status", "client");
     }
 
-    // Email notifications (non-blocking)
-    try {
-      await notifyBooking({
+    // Redirect to Redsys payment
+    const res = await fetch("/api/checkout/booking-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         bookingId: resolvedBookingId ?? "",
-        event: "received",
-        clientName: `${details.firstName} ${details.lastName}`.trim(),
-        clientEmail: details.email,
-        clientPhone: details.phone || null,
-        service: tServiceStep(`services.${selectedService.id}.title`),
-        serviceId: selectedService.id,
-        sessionType: selectedTierLabel ?? null,
-        date: dateStr ?? "",
-        time: timeStr ?? "",
-        duration: selectedDuration,
-        locale: locale === "es" ? "es" : "en",
-      });
-    } catch {
-      // Email failed silently — booking is already saved
+        tierId: selectedTierId,
+        amountEur: selectedTierPrice,
+        email: details.email,
+        name: `${details.firstName} ${details.lastName}`.trim(),
+        description: tServiceStep(`services.${selectedService.id}.title`),
+        date: dateStr ?? undefined,
+        time: timeStr ?? undefined,
+        phone: details.phone || undefined,
+      }),
+    });
+
+    if (!res.ok) {
+      dispatch({ type: "CONFIRM_SUCCESS" });
+      clearStorage();
+      push(
+        `/booking/requested?service=${encodeURIComponent(selectedService.title)}`,
+      );
+      return;
     }
 
-    // Create Google Calendar event only if date/time are available
-    if (dateStr && timeStr) {
-      try {
-        await fetch("/api/google/calendar/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            service_id: selectedService.id,
-            summary: `${selectedService.title} — ${details.firstName} ${details.lastName}`,
-            description: `Booking #${resolvedBookingId ?? ""}\nPhone: ${details.phone}\nEmail: ${details.email}`,
-            date: dateStr,
-            time: timeStr,
-            duration_minutes: selectedDuration
-              ? parseInt(selectedDuration, 10)
-              : 60,
-          }),
-        });
-      } catch {
-        // Calendar sync failed silently — booking is already saved
-      }
-    }
-
+    const formData = (await res.json()) as RedsysFormData;
     dispatch({ type: "CONFIRM_SUCCESS" });
     clearStorage();
-
-    const params = new URLSearchParams({
-      service: selectedService.title,
-      ...(dateStr ? { date: selectedDate!.toISOString() } : {}),
-      ...(timeStr ? { time: timeStr } : {}),
-      phone: details.phone,
-    });
-    push(`/booking/requested?${params.toString()}`);
+    setRedsysForm(formData);
   };
 
   return (
@@ -754,6 +732,13 @@ function BookingContentInner() {
           dispatch({ type: "SET_STEP", step: step + 1 });
         }}
       />
+
+      {redsysForm && (
+        <PaymentOverlay
+          formData={redsysForm}
+          onClose={() => setRedsysForm(null)}
+        />
+      )}
     </div>
   );
 }

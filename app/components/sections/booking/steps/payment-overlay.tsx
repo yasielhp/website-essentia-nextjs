@@ -21,13 +21,32 @@ export function PaymentOverlay({
   const t = useTranslations("booking.paymentOverlay");
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Auto-submit the form → redirects to Redsys gateway
+  // Auto-submit via dynamically created form to guarantee correct encoding
   useEffect(() => {
-    const t = setTimeout(() => {
-      formRef.current?.submit();
-    }, 600); // brief delay so the user sees the redirect message
-    return () => clearTimeout(t);
-  }, []);
+    const timer = setTimeout(() => {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = formData.formUrl;
+
+      const fields: Record<string, string> = {
+        Ds_SignatureVersion: formData.Ds_SignatureVersion,
+        Ds_MerchantParameters: formData.Ds_MerchantParameters,
+        Ds_Signature: formData.Ds_Signature,
+      };
+
+      for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [formData]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -39,7 +58,7 @@ export function PaymentOverlay({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      {/* Hidden Redsys form — auto-submitted */}
+      {/* Hidden Redsys form — kept for fallback reference */}
       <form
         ref={formRef}
         action={formData.formUrl}

@@ -33,9 +33,13 @@ export async function POST(req: NextRequest) {
   let body: {
     bookingId: string;
     tierId: string;
+    amountEur?: number | null;
     email: string;
     name: string;
     description: string;
+    date?: string;
+    time?: string;
+    phone?: string;
   };
   try {
     body = (await req.json()) as typeof body;
@@ -43,7 +47,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { bookingId, tierId, email, name, description } = body;
+  const {
+    bookingId,
+    tierId,
+    amountEur: bodyAmountEur,
+    email,
+    name,
+    description,
+    date,
+    time,
+    phone,
+  } = body;
   if (!bookingId || !tierId) {
     return NextResponse.json(
       { error: "bookingId and tierId are required" },
@@ -51,15 +65,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: tier } = await insforge.database
-    .from("service_tiers")
-    .select("price_eur")
-    .eq("id", tierId)
-    .single();
-
-  const priceEur = Number(
-    (tier as { price_eur: number | null } | null)?.price_eur ?? 0,
-  );
+  // Use client-provided price if available; fall back to DB lookup
+  let priceEur = bodyAmountEur != null ? Number(bodyAmountEur) : 0;
+  if (priceEur <= 0) {
+    const { data: tier } = await insforge.database
+      .from("service_tiers")
+      .select("price_eur, price_center_eur")
+      .eq("id", tierId)
+      .single();
+    const t = tier as {
+      price_eur: number | null;
+      price_center_eur: number | null;
+    } | null;
+    priceEur = Number(t?.price_eur ?? t?.price_center_eur ?? 0);
+  }
   if (priceEur <= 0) {
     return NextResponse.json(
       { error: "Tier has no price configured" },
@@ -72,7 +91,12 @@ export async function POST(req: NextRequest) {
     amount: Math.round(priceEur * 100), // Redsys expects cents
     currency: "978", // EUR
     description: description || "Booking",
-    successUrl: `${appUrl}/booking/confirmation?bookingId=${bookingId}&description=${encodeURIComponent(description || "")}`,
+    successUrl:
+      `${appUrl}/booking/confirmation?bookingId=${bookingId}` +
+      `&description=${encodeURIComponent(description || "")}` +
+      (date ? `&date=${encodeURIComponent(date)}` : "") +
+      (time ? `&time=${encodeURIComponent(time)}` : "") +
+      (phone ? `&phone=${encodeURIComponent(phone)}` : ""),
     cancelUrl: `${appUrl}/booking?payment=cancel&bookingId=${bookingId}`,
     customerEmail: email || undefined,
     customerName: name || undefined,
