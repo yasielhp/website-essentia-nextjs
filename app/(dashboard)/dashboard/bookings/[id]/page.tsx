@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
+import { deleteBooking } from "@/actions/booking-draft";
 import { Button } from "@/components/ui/button";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
@@ -225,7 +226,7 @@ export default function BookingDetailPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    await insforge.database.from("bookings").delete().eq("id", id);
+    await deleteBooking(id);
     push("/dashboard/bookings");
   }
 

@@ -17,6 +17,7 @@ import {
 import { insforge } from "@/lib/insforge";
 import { bookableServices } from "@/data/services-data";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { deleteBooking, updateBookingByAdmin } from "@/actions/booking-draft";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
@@ -2099,46 +2100,40 @@ export default function EditBookingPage() {
 
     dispatchAsync({ type: "SUBMIT_START" });
 
-    const { error: updateError } = await insforge.database
-      .from("bookings")
-      .update({
-        service_id: serviceId,
-        service_title: selectedService?.title ?? serviceId,
-        tier_id: tierId || null,
-        price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
-        ...(durationText !== null ? { duration: durationText } : {}),
-        date: dateStr,
-        time: selectedTime || null,
-        location: location || null,
-        location_address: locationAddress,
-        ...(() => {
-          const therapistNote =
-            therapistGender === "male"
-              ? "Terapeuta: Masculino"
-              : therapistGender === "female"
-                ? "Terapeuta: Femenina"
-                : "";
-          const composedNotes = [therapistNote, notes.trim()]
-            .filter(Boolean)
-            .join("\n\n");
-          return composedNotes ? { notes: composedNotes } : {};
-        })(),
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        email: email.trim(),
-        phone: phone.trim() || null,
-        status,
-      })
-      .eq("id", id);
+    const therapistNote =
+      therapistGender === "male"
+        ? "Terapeuta: Masculino"
+        : therapistGender === "female"
+          ? "Terapeuta: Femenina"
+          : "";
+    const composedNotes = [therapistNote, notes.trim()]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const { error: updateErrorMsg } = await updateBookingByAdmin(id, {
+      service_id: serviceId,
+      service_title: selectedService?.title ?? serviceId,
+      tier_id: tierId || null,
+      price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
+      duration: durationText,
+      date: dateStr,
+      time: selectedTime || null,
+      location: location || null,
+      location_address: locationAddress,
+      notes: composedNotes || null,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: email.trim(),
+      phone: phone.trim() || null,
+      status,
+    });
 
     dispatchAsync({ type: "SUBMIT_END" });
 
-    if (updateError) {
+    if (updateErrorMsg) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload:
-          (updateError as { message?: string })?.message ??
-          "Failed to save booking.",
+        payload: updateErrorMsg ?? "Failed to save booking.",
       });
       return;
     }
@@ -2338,7 +2333,7 @@ export default function EditBookingPage() {
 
   async function handleDelete() {
     setDeleteState((prev) => ({ ...prev, pending: true }));
-    await insforge.database.from("bookings").delete().eq("id", id);
+    await deleteBooking(id);
     push("/dashboard/bookings");
   }
 
