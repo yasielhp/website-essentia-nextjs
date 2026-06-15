@@ -18,6 +18,7 @@ function getAdminClient() {
   return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
     anonKey: process.env.INSFORGE_SERVICE_KEY!,
+    isServerMode: true,
   });
 }
 
@@ -92,10 +93,7 @@ export async function updateNewsletterForUser(
 
   if (!resendResult.ok) return resendResult;
 
-  const adminClient = createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
+  const adminClient = getAdminClient();
 
   const { error: dbError } = await adminClient.database
     .from("profiles")

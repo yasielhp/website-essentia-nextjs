@@ -30,6 +30,7 @@ import { ConfirmStep } from "./steps/confirm-step";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
+import { notifyBooking } from "@/actions/booking-notifications";
 
 const EMPTY_DETAILS: DetailsState = {
   firstName: "",
@@ -435,6 +436,7 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedTierId,
+    selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
     therapistGender,
@@ -649,6 +651,24 @@ function BookingContentInner() {
         .update({ status: "client" })
         .eq("id", contactId)
         .neq("status", "client");
+    }
+
+    // Send "received" notification to client and staff as soon as booking is created
+    if (resolvedBookingId && details.email && dateStr) {
+      notifyBooking({
+        bookingId: resolvedBookingId,
+        event: "received",
+        clientName: `${details.firstName} ${details.lastName}`.trim(),
+        clientEmail: details.email,
+        clientPhone: details.phone || null,
+        service: selectedService.title,
+        serviceId: selectedService.id,
+        sessionType: selectedTierLabel,
+        date: dateStr,
+        time: timeStr ?? "",
+        duration: selectedDuration ?? null,
+        locale: locale as "en" | "es",
+      }).catch(() => {});
     }
 
     // Redirect to Redsys payment

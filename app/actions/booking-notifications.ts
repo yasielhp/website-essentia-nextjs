@@ -37,11 +37,43 @@ function formatDate(dateStr: string, locale: "en" | "es" = "en"): string {
   );
 }
 
-async function getStaffEmail(serviceId: string): Promise<string | null> {
-  const adminClient = createClient({
+function getAdminClient() {
+  return createClient({
     baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
     anonKey: process.env.INSFORGE_SERVICE_KEY!,
+    isServerMode: true,
   });
+}
+
+async function upsertContact(
+  email: string,
+  firstName: string,
+  lastName: string,
+  phone: string | null | undefined,
+  status: "lead" | "client",
+): Promise<void> {
+  try {
+    const [first_name, ...rest] = firstName.trim().split(" ");
+    const last_name = lastName.trim() || rest.join(" ") || null;
+    await getAdminClient()
+      .database.from("contacts")
+      .upsert(
+        {
+          email,
+          first_name: first_name ?? "",
+          last_name,
+          phone: phone ?? null,
+          status,
+        },
+        { onConflict: "email" },
+      );
+  } catch {
+    // fail-open: contact sync must not block the notification flow
+  }
+}
+
+async function getStaffEmail(serviceId: string): Promise<string | null> {
+  const adminClient = getAdminClient();
   const { data } = await adminClient.database
     .from("service_configs")
     .select("google_connected_email")
@@ -142,6 +174,18 @@ export async function notifyBooking(
     subject: clientSubjects[event],
     html: clientTemplates[event](),
   });
+
+  // ── Sync contact record ────────────────────────────────────────
+  if (event === "received" || event === "confirmed") {
+    const [firstName, ...lastParts] = clientName.trim().split(" ");
+    void upsertContact(
+      clientEmail,
+      firstName ?? clientName,
+      lastParts.join(" "),
+      clientPhone,
+      "client",
+    );
+  }
 
   // ── Staff notification (on new bookings, whether pending or confirmed) ───
   if ((event === "received" || event === "confirmed") && serviceId) {
