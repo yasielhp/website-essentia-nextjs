@@ -240,22 +240,8 @@ export default function MembersPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4">
-        <StatCard
-          label="Active Members"
-          value={activeCount ?? 0}
-          loading={activeCount === null}
-        />
-        <StatCard
-          label="Total Members"
-          value={total}
-          loading={loading && total === 0}
-        />
-      </div>
-
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <Button
           onClick={() => push("/dashboard/members/new")}
           className="flex items-center gap-2"
@@ -298,6 +284,20 @@ export default function MembersPage() {
             Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
           </Button>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4">
+        <StatCard
+          label="Active Members"
+          value={activeCount ?? 0}
+          loading={activeCount === null}
+        />
+        <StatCard
+          label="Total Members"
+          value={total}
+          loading={loading && total === 0}
+        />
       </div>
 
       {/* Table */}

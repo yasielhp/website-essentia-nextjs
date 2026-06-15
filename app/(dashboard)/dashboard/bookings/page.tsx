@@ -618,32 +618,8 @@ export default function BookingsPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Pending"
-          value={statusCounts.pending ?? 0}
-          loading={statusCounts.pending === null}
-        />
-        <StatCard
-          label="Confirmed"
-          value={statusCounts.confirmed ?? 0}
-          loading={statusCounts.confirmed === null}
-        />
-        <StatCard
-          label="Cancelled"
-          value={statusCounts.cancelled ?? 0}
-          loading={statusCounts.cancelled === null}
-        />
-        <StatCard
-          label="Total Bookings"
-          value={total}
-          loading={loading && total === 0}
-        />
-      </div>
-
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <Button
           variant="solid"
           size="md"
@@ -675,6 +651,30 @@ export default function BookingsPage() {
             Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
           </Button>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Pending"
+          value={statusCounts.pending ?? 0}
+          loading={statusCounts.pending === null}
+        />
+        <StatCard
+          label="Confirmed"
+          value={statusCounts.confirmed ?? 0}
+          loading={statusCounts.confirmed === null}
+        />
+        <StatCard
+          label="Cancelled"
+          value={statusCounts.cancelled ?? 0}
+          loading={statusCounts.cancelled === null}
+        />
+        <StatCard
+          label="Total Bookings"
+          value={total}
+          loading={loading && total === 0}
+        />
       </div>
 
       {/* Mobile cards */}
