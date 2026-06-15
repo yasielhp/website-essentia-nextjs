@@ -12,8 +12,10 @@ import { IconFilter } from "@/components/ui/icons";
 type BookingRow = {
   id: string;
   service_title: string | null;
+  duration: string | null;
   first_name: string | null;
   last_name: string | null;
+  email: string | null;
   date: string | null;
   status: string | null;
   payment_status: string | null;
@@ -57,7 +59,9 @@ type UnifiedRow = {
   id: string;
   type: TxType;
   title: string;
+  subtitle: string | null;
   client: string;
+  clientEmail: string | null;
   date: string | null;
   amount: number | null;
   status: string | null;
@@ -450,7 +454,7 @@ export default function TransactionsPage() {
           insforge.database
             .from("bookings")
             .select(
-              "id, service_title, first_name, last_name, date, status, payment_status, price_eur, created_at",
+              "id, service_title, duration, first_name, last_name, email, date, status, payment_status, price_eur, created_at",
             )
             .order("created_at", { ascending: false })
             .limit(100),
@@ -484,7 +488,9 @@ export default function TransactionsPage() {
           id: r.id,
           type: "booking",
           title: r.service_title ?? "—",
+          subtitle: r.duration ?? null,
           client: [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
+          clientEmail: r.email ?? null,
           date: r.date,
           amount: r.price_eur,
           status:
@@ -503,7 +509,9 @@ export default function TransactionsPage() {
           id: r.id,
           type: "membership",
           title: "Membership",
+          subtitle: null,
           client: fullName(r.contacts, r.contact_id),
+          clientEmail: null,
           date: r.start_date,
           amount: null,
           status: r.status,
@@ -517,7 +525,9 @@ export default function TransactionsPage() {
           type: "race",
           title:
             r.races?.title ?? (r.race_id ? `${r.race_id.slice(0, 8)}…` : "—"),
+          subtitle: null,
           client: fullName(r.contacts, r.contact_id),
+          clientEmail: null,
           date: r.created_at,
           amount: null,
           status: "confirmed",
@@ -534,7 +544,9 @@ export default function TransactionsPage() {
           title:
             r.education_sessions?.title ??
             (r.session_id ? `${r.session_id.slice(0, 8)}…` : "—"),
+          subtitle: null,
           client: fullName(r.contacts, r.contact_id),
+          clientEmail: null,
           date: r.created_at,
           amount: null,
           status: "confirmed",
@@ -669,9 +681,19 @@ export default function TransactionsPage() {
                   <p className="text-petroleum-700 mt-1.5 leading-snug font-medium">
                     {row.title}
                   </p>
-                  <p className="text-petroleum-400 mt-0.5 text-sm">
+                  {row.subtitle && (
+                    <p className="text-petroleum-400 mt-0.5 text-xs">
+                      {row.subtitle}
+                    </p>
+                  )}
+                  <p className="text-petroleum-500 mt-0.5 text-sm">
                     {row.client}
                   </p>
+                  {row.clientEmail && (
+                    <p className="text-petroleum-400 text-xs">
+                      {row.clientEmail}
+                    </p>
+                  )}
                   <div className="mt-1.5 flex items-center gap-3">
                     {row.created_at && (
                       <span className="text-petroleum-300 text-xs">
@@ -708,10 +730,7 @@ export default function TransactionsPage() {
                     Status
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Type
-                  </th>
-                  <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Title
+                    Service
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
                     Client
@@ -734,17 +753,15 @@ export default function TransactionsPage() {
                       <td className="px-5 py-4">
                         <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
                       </td>
-                      {/* Type */}
-                      <td className="px-5 py-4">
-                        <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
-                      </td>
-                      {/* Title */}
+                      {/* Service */}
                       <td className="px-5 py-4">
                         <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                        <div className="bg-sand-100 mt-1.5 h-3 w-24 animate-pulse rounded" />
                       </td>
                       {/* Client */}
                       <td className="px-5 py-4">
                         <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                        <div className="bg-sand-100 mt-1.5 h-3 w-40 animate-pulse rounded" />
                       </td>
                       {/* Amount (right-aligned) */}
                       <td className="px-5 py-4 text-right">
@@ -755,7 +772,7 @@ export default function TransactionsPage() {
                 ) : pageRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       className="text-petroleum-400 px-6 py-12 text-center"
                     >
                       No transactions found.
@@ -781,17 +798,29 @@ export default function TransactionsPage() {
                           <StatusBadge status={row.status} />
                         </td>
                         <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tb.cls}`}
-                          >
-                            {tb.label}
-                          </span>
+                          <p className="text-petroleum-700 leading-snug font-medium">
+                            {row.title}
+                          </p>
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tb.cls}`}
+                            >
+                              {tb.label}
+                            </span>
+                            {row.subtitle && (
+                              <span className="text-petroleum-400 text-xs">
+                                · {row.subtitle}
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="text-petroleum-700 px-5 py-4 font-medium">
-                          {row.title}
-                        </td>
-                        <td className="text-petroleum-500 px-5 py-4">
-                          {row.client}
+                        <td className="px-5 py-4">
+                          <p className="text-petroleum-500">{row.client}</p>
+                          {row.clientEmail && (
+                            <p className="text-petroleum-400 mt-0.5 text-xs">
+                              {row.clientEmail}
+                            </p>
+                          )}
                         </td>
                         <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
                           {formatAmount(row.amount)}
