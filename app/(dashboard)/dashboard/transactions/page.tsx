@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
+import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconFilter } from "@/components/ui/icons";
 
 // ─── Source row types ─────────────────────────────────────────
@@ -73,6 +74,7 @@ const TYPE_BADGE: Record<TxType, { label: string; cls: string }> = {
 };
 
 const STATUS_CLS: Record<string, string> = {
+  completed: "bg-green-50 text-green-700",
   paid: "bg-green-50 text-green-700",
   confirmed: "bg-green-50 text-green-700",
   active: "bg-green-50 text-green-700",
@@ -155,9 +157,8 @@ function FilterModal({
               className={fieldCls}
             >
               <option value="">All statuses</option>
-              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
               <option value="active">Active</option>
-              <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="cancelled">Cancelled</option>
               <option value="expired">Expired</option>
@@ -307,7 +308,13 @@ export default function TransactionsPage() {
           client: [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
           date: r.date,
           amount: r.price_eur,
-          status: r.payment_status ?? r.status,
+          status:
+            r.payment_status === "paid" ||
+            (r.status === "confirmed" &&
+              r.payment_status !== "failed" &&
+              r.payment_status !== "refunded")
+              ? "completed"
+              : (r.payment_status ?? r.status),
           created_at: r.created_at,
         });
       }
@@ -368,6 +375,15 @@ export default function TransactionsPage() {
     void load();
   }, []);
 
+  const stats = useMemo(() => {
+    const completed = rows.filter((r) => r.status === "completed").length;
+    const pending = rows.filter((r) => r.status === "pending").length;
+    const revenue = rows
+      .filter((r) => r.status === "completed" && r.amount !== null)
+      .reduce((sum, r) => sum + (r.amount ?? 0), 0);
+    return { completed, pending, revenue, total: rows.length };
+  }, [rows]);
+
   const filteredRows = rows.filter((r) => {
     if (appliedFilter.type && r.type !== appliedFilter.type) return false;
     if (appliedFilter.status && r.status !== appliedFilter.status) return false;
@@ -393,6 +409,31 @@ export default function TransactionsPage() {
           <IconFilter />
           Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
         </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="border-sand-200 rounded-2xl border bg-white p-6">
+          <p className="text-petroleum-400 text-sm">Ingresos</p>
+          {loading ? (
+            <div className="bg-sand-100 mt-2 h-8 w-24 animate-pulse rounded-lg" />
+          ) : (
+            <p className="font-display text-petroleum-700 mt-1 text-3xl">
+              {new Intl.NumberFormat("es-ES", {
+                style: "currency",
+                currency: "EUR",
+                maximumFractionDigits: 0,
+              }).format(stats.revenue)}
+            </p>
+          )}
+        </div>
+        <StatCard
+          label="Completadas"
+          value={stats.completed}
+          loading={loading}
+        />
+        <StatCard label="Pendientes" value={stats.pending} loading={loading} />
+        <StatCard label="Total" value={stats.total} loading={loading} />
       </div>
 
       {/* ── Mobile cards ── */}
