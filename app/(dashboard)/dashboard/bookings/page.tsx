@@ -802,9 +802,10 @@ export default function BookingsPage() {
           <DateRangeButton
             dateFrom={appliedFilters.dateFrom}
             dateTo={appliedFilters.dateTo}
-            onChange={(from, to) =>
-              setAppliedFilters((p) => ({ ...p, dateFrom: from, dateTo: to }))
-            }
+            onChange={(from, to) => {
+              setAppliedFilters((p) => ({ ...p, dateFrom: from, dateTo: to }));
+              dispatch({ type: "RESET_PAGE" });
+            }}
           />
           {isAdmin && (
             <Button
