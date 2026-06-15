@@ -2,7 +2,6 @@
 
 import { useEffect, useReducer, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
   subscribeToNewsletter,
@@ -10,50 +9,20 @@ import {
 } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
+import {
+  fetchContactDetail,
+  updateContact,
+  type ContactBooking,
+  type ContactRaceReg,
+  type ContactEduReg,
+} from "@/actions/contacts";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
-type Contact = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  newsletter_subscribed: boolean | null;
-  preferred_language: string | null;
-};
-
-type Booking = {
-  id: string;
-  service_title: string | null;
-  date: string | null;
-  time: string | null;
-  status: string | null;
-  created_at: string | null;
-};
-
-type RaceReg = {
-  id: string;
-  created_at: string | null;
-  race_id: string;
-  race: {
-    title: string | null;
-    date: string | null;
-    location: string | null;
-  } | null;
-};
-
-type EduReg = {
-  id: string;
-  created_at: string | null;
-  session_id: string;
-  session: {
-    title: string | null;
-    date: string | null;
-    location: string | null;
-  } | null;
-};
+type Booking = ContactBooking;
+type RaceReg = ContactRaceReg;
+type EduReg = ContactEduReg;
 
 // ─── Load reducer ─────────────────────────────────────────────
 
@@ -666,42 +635,13 @@ export default function ContactDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const [
-        { data: contacts },
-        { data: bookingData },
-        { data: raceRegData },
-        { data: eduRegData },
-      ] = await Promise.all([
-        insforge.database
-          .from("contacts")
-          .select(
-            "id, first_name, last_name, email, phone, newsletter_subscribed, preferred_language",
-          )
-          .eq("id", id)
-          .limit(1),
-        insforge.database
-          .from("bookings")
-          .select("id, service_title, date, time, status, created_at")
-          .eq("contact_id", id)
-          .order("created_at", { ascending: false }),
-        insforge.database
-          .from("race_registrations")
-          .select("id, created_at, race_id")
-          .eq("contact_id", id)
-          .order("created_at", { ascending: false }),
-        insforge.database
-          .from("education_registrations")
-          .select("id, created_at, session_id")
-          .eq("contact_id", id)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      const contact = (contacts as Contact[] | null)?.[0];
-      if (!contact) {
+      const result = await fetchContactDetail(id);
+      if (!result.found) {
         dispatch({ type: "NOT_FOUND" });
         return;
       }
 
+      const { contact, bookings, raceRegs, eduRegs } = result;
       const initialNewsletter = contact.newsletter_subscribed ?? false;
       originalNewsletter.current = initialNewsletter;
       dispatchForm({
@@ -714,66 +654,7 @@ export default function ContactDetailPage() {
         newsletterSubscribed: initialNewsletter,
       });
 
-      const raceRows =
-        (raceRegData as
-          | { id: string; created_at: string | null; race_id: string }[]
-          | null) ?? [];
-      const eduRows =
-        (eduRegData as
-          | { id: string; created_at: string | null; session_id: string }[]
-          | null) ?? [];
-
-      const raceIds = raceRows.map((r) => r.race_id);
-      const sessionIds = eduRows.map((r) => r.session_id);
-
-      const [{ data: racesData }, { data: sessionsData }] = await Promise.all([
-        raceIds.length > 0
-          ? insforge.database
-              .from("races")
-              .select("id, title, date, location")
-              .in("id", raceIds)
-          : Promise.resolve({ data: [] }),
-        sessionIds.length > 0
-          ? insforge.database
-              .from("education_sessions")
-              .select("id, title, date, location")
-              .in("id", sessionIds)
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      const racesMap = new Map(
-        (
-          (racesData as {
-            id: string;
-            title: string | null;
-            date: string | null;
-            location: string | null;
-          }[]) ?? []
-        ).map((r) => [r.id, r]),
-      );
-      const sessionsMap = new Map(
-        (
-          (sessionsData as {
-            id: string;
-            title: string | null;
-            date: string | null;
-            location: string | null;
-          }[]) ?? []
-        ).map((s) => [s.id, s]),
-      );
-
-      dispatch({
-        type: "LOADED",
-        bookings: (bookingData as Booking[] | null) ?? [],
-        raceRegs: raceRows.map((r) => ({
-          ...r,
-          race: racesMap.get(r.race_id) ?? null,
-        })),
-        eduRegs: eduRows.map((r) => ({
-          ...r,
-          session: sessionsMap.get(r.session_id) ?? null,
-        })),
-      });
+      dispatch({ type: "LOADED", bookings, raceRegs, eduRegs });
     }
 
     void load();
@@ -791,26 +672,21 @@ export default function ContactDetailPage() {
 
     dispatchForm({ type: "SAVING_START" });
 
-    const { error: updateError } = await insforge.database
-      .from("contacts")
-      .update({
-        first_name: trimmedFirst,
-        last_name: lastName.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-        preferred_language: language === "es" ? "es" : "en",
-        newsletter_subscribed: newsletterSubscribed,
-      })
-      .eq("id", id);
+    const { error: updateErrorMsg } = await updateContact(id, {
+      first_name: trimmedFirst,
+      last_name: lastName.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+      preferred_language: language === "es" ? "es" : "en",
+      newsletter_subscribed: newsletterSubscribed,
+    });
 
     dispatchForm({ type: "SAVING_END" });
 
-    if (updateError) {
+    if (updateErrorMsg) {
       dispatchForm({
         type: "SET_ERROR",
-        error:
-          (updateError as { message?: string })?.message ??
-          "Failed to save contact.",
+        error: updateErrorMsg ?? "Failed to save contact.",
       });
       return;
     }

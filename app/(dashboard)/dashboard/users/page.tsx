@@ -3,22 +3,17 @@
 import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  fetchContacts,
+  fetchContactRoleCounts,
+  type ContactRow,
+} from "@/actions/contacts";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 
 // ─── Types ────────────────────────────────────────────────────
-
-type ContactRow = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  created_at: string | null;
-};
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -258,19 +253,8 @@ export default function UsersPage() {
   // ── Load contacts ──
   const loadContacts = useCallback(async (page: number) => {
     dispatchContacts({ type: "SET_LOADING" });
-    const { data, count } = await insforge.database
-      .from("contacts")
-      .select("id, first_name, last_name, email, phone, status, created_at", {
-        count: "exact",
-      })
-      .order("created_at", { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-
-    dispatchContacts({
-      type: "LOADED",
-      contacts: (data as ContactRow[] | null) ?? [],
-      total: count ?? 0,
-    });
+    const { contacts, total } = await fetchContacts(page, PAGE_SIZE);
+    dispatchContacts({ type: "LOADED", contacts, total });
   }, []);
 
   useEffect(() => {
@@ -297,14 +281,7 @@ export default function UsersPage() {
   // ── Load role counts ──
   useEffect(() => {
     void Promise.all([
-      insforge.database
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .or("status.eq.lead,status.is.null"),
-      insforge.database
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "client"),
+      fetchContactRoleCounts(),
       insforge.database
         .from("profiles")
         .select("id", { count: "exact", head: true })
@@ -313,10 +290,10 @@ export default function UsersPage() {
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("role", "partner"),
-    ]).then(([leads, clients, staff, partner]) => {
+    ]).then(([contactCounts, staff, partner]) => {
       setRoleCounts({
-        leads: (leads as { count: number | null }).count ?? 0,
-        clients: (clients as { count: number | null }).count ?? 0,
+        leads: contactCounts.leads,
+        clients: contactCounts.clients,
         staff: (staff as { count: number | null }).count ?? 0,
         partner: (partner as { count: number | null }).count ?? 0,
       });
@@ -358,6 +335,28 @@ export default function UsersPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <Button
+          variant="solid"
+          size="md"
+          href="/dashboard/users/new"
+          className="gap-2"
+        >
+          <IconPlus />
+          Add user
+        </Button>
+        <Button
+          variant={activeFilterCount > 0 ? "soft" : "outline"}
+          size="md"
+          onClick={openModal}
+          className="gap-2"
+        >
+          <IconFilter />
+          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+        </Button>
+      </div>
+
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -380,28 +379,6 @@ export default function UsersPage() {
           value={roleCounts.partner ?? 0}
           loading={roleCounts.partner === null}
         />
-      </div>
-
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <Button
-          variant="solid"
-          size="md"
-          href="/dashboard/users/new"
-          className="gap-2"
-        >
-          <IconPlus />
-          Add user
-        </Button>
-        <Button
-          variant={activeFilterCount > 0 ? "soft" : "outline"}
-          size="md"
-          onClick={openModal}
-          className="gap-2"
-        >
-          <IconFilter />
-          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
-        </Button>
       </div>
 
       {/* Mobile cards */}
