@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
@@ -105,17 +105,183 @@ const emptyTxFilter: TxFilter = {
   dateTo: "",
 };
 
+// ─── Date range picker ────────────────────────────────────────
+
+const DATE_PRESETS = [
+  { label: "Last 7 days", days: 7 },
+  { label: "Last 30 days", days: 30 },
+  { label: "Last 3 months", days: 90 },
+  { label: "This year", days: -1 },
+] as const;
+
+function presetDates(days: number): [string, string] {
+  const today = new Date().toISOString().split("T")[0]!;
+  if (days === -1) {
+    const d = new Date();
+    d.setMonth(0, 1);
+    return [d.toISOString().split("T")[0]!, today];
+  }
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return [d.toISOString().split("T")[0]!, today];
+}
+
+function dateRangeLabel(from: string, to: string): string {
+  if (!from && !to) return "All dates";
+  const today = new Date().toISOString().split("T")[0]!;
+  for (const { label, days } of DATE_PRESETS) {
+    const [f] = presetDates(days);
+    if (from === f && to === today) return label;
+  }
+  const fmt = (s: string) =>
+    new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  if (from && to) return `${fmt(from)} – ${fmt(to)}`;
+  if (from) return `From ${fmt(from)}`;
+  return `Until ${fmt(to)}`;
+}
+
+function DateRangeButton({
+  dateFrom,
+  dateTo,
+  onChange,
+}: {
+  dateFrom: string;
+  dateTo: string;
+  onChange: (from: string, to: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [localFrom, setLocalFrom] = useState("");
+  const [localTo, setLocalTo] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  function handleOpen() {
+    setLocalFrom(dateFrom);
+    setLocalTo(dateTo);
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const isActive = !!(dateFrom || dateTo);
+
+  return (
+    <div className="relative" ref={ref}>
+      <Button
+        variant={isActive ? "soft" : "outline"}
+        size="md"
+        onClick={() => (open ? setOpen(false) : handleOpen())}
+        className="gap-2"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        {dateRangeLabel(dateFrom, dateTo)}
+      </Button>
+
+      {open && (
+        <div className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl">
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {DATE_PRESETS.map(({ label, days }) => {
+              const [f, t] = presetDates(days);
+              const active = dateFrom === f && dateTo === t;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    onChange(f, t);
+                    setOpen(false);
+                  }}
+                  className={[
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    active
+                      ? "bg-petroleum-700 text-white"
+                      : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-sand-100 mb-3 border-t" />
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-petroleum-300 text-xs">From</span>
+              <input
+                type="date"
+                value={localFrom}
+                onChange={(e) => setLocalFrom(e.target.value)}
+                className={fieldCls}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-petroleum-300 text-xs">To</span>
+              <input
+                type="date"
+                value={localTo}
+                onChange={(e) => setLocalTo(e.target.value)}
+                className={fieldCls}
+              />
+            </label>
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("", "");
+                setOpen(false);
+              }}
+              className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
+            >
+              Clear
+            </button>
+            <Button
+              variant="solid"
+              size="md"
+              onClick={() => {
+                onChange(localFrom, localTo);
+                setOpen(false);
+              }}
+            >
+              Apply
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FilterModal({
   pending,
   onChange,
-  onDatePreset,
   onApply,
   onClear,
   onClose,
 }: {
   pending: TxFilter;
   onChange: (key: keyof TxFilter, value: string) => void;
-  onDatePreset: (from: string, to: string) => void;
   onApply: () => void;
   onClear: () => void;
   onClose: () => void;
@@ -127,7 +293,7 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
           <button
@@ -178,71 +344,6 @@ function FilterModal({
               <option value="refunded">Refunded</option>
             </select>
           </label>
-          <div className="flex flex-col gap-2">
-            <span className="text-petroleum-400 text-xs font-medium">
-              Period
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {(
-                [
-                  { label: "7 days", days: 7 },
-                  { label: "30 days", days: 30 },
-                  { label: "3 months", days: 90 },
-                  { label: "This year", days: -1 },
-                ] as { label: string; days: number }[]
-              ).map(({ label, days }) => {
-                function getFrom() {
-                  if (days === -1) {
-                    const d = new Date();
-                    d.setMonth(0, 1);
-                    return d.toISOString().split("T")[0]!;
-                  }
-                  const d = new Date();
-                  d.setDate(d.getDate() - days);
-                  return d.toISOString().split("T")[0]!;
-                }
-                const todayStr = new Date().toISOString().split("T")[0]!;
-                const fromStr = getFrom();
-                const isActive =
-                  pending.dateFrom === fromStr && pending.dateTo === todayStr;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => onDatePreset(fromStr, todayStr)}
-                    className={[
-                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      isActive
-                        ? "bg-petroleum-700 text-white"
-                        : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
-                    ].join(" ")}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="flex flex-col gap-1">
-                <span className="text-petroleum-300 text-xs">From</span>
-                <input
-                  type="date"
-                  value={pending.dateFrom}
-                  onChange={(e) => onChange("dateFrom", e.target.value)}
-                  className={fieldCls}
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-petroleum-300 text-xs">To</span>
-                <input
-                  type="date"
-                  value={pending.dateTo}
-                  onChange={(e) => onChange("dateTo", e.target.value)}
-                  className={fieldCls}
-                />
-              </label>
-            </div>
-          </div>
         </div>
         <div className="flex items-center justify-between pt-1">
           <button
@@ -324,9 +425,7 @@ export default function TransactionsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(0);
   const activeFilterCount =
-    (appliedFilter.type ? 1 : 0) +
-    (appliedFilter.status ? 1 : 0) +
-    (appliedFilter.dateFrom || appliedFilter.dateTo ? 1 : 0);
+    (appliedFilter.type ? 1 : 0) + (appliedFilter.status ? 1 : 0);
 
   function openModal() {
     setPendingFilter(appliedFilter);
@@ -490,7 +589,14 @@ export default function TransactionsPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       {/* Header */}
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex items-center justify-end gap-2">
+        <DateRangeButton
+          dateFrom={appliedFilter.dateFrom}
+          dateTo={appliedFilter.dateTo}
+          onChange={(from, to) =>
+            setAppliedFilter((p) => ({ ...p, dateFrom: from, dateTo: to }))
+          }
+        />
         <Button
           variant={activeFilterCount > 0 ? "soft" : "outline"}
           size="md"
@@ -717,9 +823,6 @@ export default function TransactionsPage() {
           pending={pendingFilter}
           onChange={(key, val) =>
             setPendingFilter((p) => ({ ...p, [key]: val }))
-          }
-          onDatePreset={(from, to) =>
-            setPendingFilter((p) => ({ ...p, dateFrom: from, dateTo: to }))
           }
           onApply={applyFilters}
           onClear={clearFilters}
