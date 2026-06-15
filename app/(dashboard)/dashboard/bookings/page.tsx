@@ -35,7 +35,7 @@ type Filters = {
   status: string;
   location: string;
   service: string;
-  client: string;
+  reservedBy: string;
   dateFrom: string;
   dateTo: string;
 };
@@ -44,7 +44,7 @@ const emptyFilters: Filters = {
   status: "",
   location: "",
   service: "",
-  client: "",
+  reservedBy: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -372,8 +372,6 @@ function FilterModal({
   onClose: () => void;
 }) {
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
-  const [clientOptions, setClientOptions] = useState<string[]>([]);
-  const clientDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load services once on mount
   useEffect(() => {
@@ -390,38 +388,6 @@ function FilterModal({
         );
       });
   }, []);
-
-  // Live client search with debounce
-  useEffect(() => {
-    if (clientDebounce.current) clearTimeout(clientDebounce.current);
-    if (!pending.client) {
-      clientDebounce.current = setTimeout(() => setClientOptions([]), 0);
-      return;
-    }
-
-    clientDebounce.current = setTimeout(async () => {
-      const term = pending.client;
-      const { data } = await insforge.database
-        .from("bookings")
-        .select("first_name, last_name")
-        .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
-        .limit(30);
-
-      const seen = new Set<string>();
-      const names: string[] = [];
-      for (const b of (data ?? []) as {
-        first_name: string | null;
-        last_name: string | null;
-      }[]) {
-        const name = [b.first_name, b.last_name].filter(Boolean).join(" ");
-        if (name && !seen.has(name)) {
-          seen.add(name);
-          names.push(name);
-        }
-      }
-      setClientOptions(names);
-    }, 300);
-  }, [pending.client]);
 
   return (
     <div
@@ -495,17 +461,23 @@ function FilterModal({
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Client
+              Reserved by
             </span>
-            <AutocompleteInput
-              value={pending.client}
-              onChange={(v) => onChange("client", v)}
-              options={clientOptions}
-              placeholder="Search client…"
-            />
-          </div>
+            <select
+              value={pending.reservedBy}
+              onChange={(e) => onChange("reservedBy", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+              <option value="partner">Partner</option>
+              <option value="client">Client</option>
+              <option value="anonymous">Web</option>
+            </select>
+          </label>
         </div>
 
         {/* Actions */}
@@ -615,7 +587,7 @@ export default function BookingsPage() {
     (appliedFilters.status ? 1 : 0) +
     (appliedFilters.location ? 1 : 0) +
     (appliedFilters.service ? 1 : 0) +
-    (appliedFilters.client ? 1 : 0);
+    (appliedFilters.reservedBy ? 1 : 0);
 
   function openModal() {
     setPendingFilters(appliedFilters);
@@ -639,7 +611,7 @@ export default function BookingsPage() {
     status: fStatus,
     location: fLocation,
     service: fService,
-    client: fClient,
+    reservedBy: fReservedBy,
     dateFrom: fDateFrom,
     dateTo: fDateTo,
   } = appliedFilters;
@@ -710,18 +682,7 @@ export default function BookingsPage() {
     if (fStatus) query = query.eq("status", fStatus);
     if (fLocation) query = query.eq("location", fLocation);
     if (fService) query = query.ilike("service_title", `%${fService}%`);
-    if (fClient) {
-      const parts = fClient.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        query = query
-          .ilike("first_name", `%${parts[0]}%`)
-          .ilike("last_name", `%${parts[1]}%`);
-      } else {
-        query = query.or(
-          `first_name.ilike.%${fClient}%,last_name.ilike.%${fClient}%`,
-        );
-      }
-    }
+    if (fReservedBy) query = query.eq("created_by_role", fReservedBy);
     if (fDateFrom) query = query.gte("date", fDateFrom);
     if (fDateTo) query = query.lte("date", fDateTo);
 
@@ -770,7 +731,7 @@ export default function BookingsPage() {
     fStatus,
     fLocation,
     fService,
-    fClient,
+    fReservedBy,
     fDateFrom,
     fDateTo,
     isPartner,
@@ -799,14 +760,6 @@ export default function BookingsPage() {
           Create Booking
         </Button>
         <div className="flex items-center gap-2">
-          <DateRangeButton
-            dateFrom={appliedFilters.dateFrom}
-            dateTo={appliedFilters.dateTo}
-            onChange={(from, to) => {
-              setAppliedFilters((p) => ({ ...p, dateFrom: from, dateTo: to }));
-              dispatch({ type: "RESET_PAGE" });
-            }}
-          />
           {isAdmin && (
             <Button
               variant="outline"
@@ -818,6 +771,14 @@ export default function BookingsPage() {
               Settings
             </Button>
           )}
+          <DateRangeButton
+            dateFrom={appliedFilters.dateFrom}
+            dateTo={appliedFilters.dateTo}
+            onChange={(from, to) => {
+              setAppliedFilters((p) => ({ ...p, dateFrom: from, dateTo: to }));
+              dispatch({ type: "RESET_PAGE" });
+            }}
+          />
           <Button
             variant={activeCount > 0 ? "soft" : "outline"}
             size="md"
