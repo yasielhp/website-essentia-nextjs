@@ -16,6 +16,7 @@ type BookingRow = {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  created_by_role: string | null;
   date: string | null;
   status: string | null;
   payment_status: string | null;
@@ -62,6 +63,7 @@ type UnifiedRow = {
   subtitle: string | null;
   client: string;
   clientEmail: string | null;
+  reservedBy: string | null;
   date: string | null;
   amount: number | null;
   status: string | null;
@@ -77,6 +79,14 @@ const TYPE_BADGE: Record<TxType, { label: string; cls: string }> = {
   education: { label: "Education", cls: "bg-yellow-50 text-yellow-700" },
 };
 
+const SOURCE_BADGE: Record<string, { label: string; cls: string }> = {
+  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
+  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
+  client: { label: "Client", cls: "bg-green-50 text-green-700" },
+  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
+};
+
 const STATUS_CLS: Record<string, string> = {
   completed: "bg-green-50 text-green-700",
   paid: "bg-green-50 text-green-700",
@@ -89,7 +99,7 @@ const STATUS_CLS: Record<string, string> = {
   refunded: "bg-yellow-50 text-yellow-700",
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 // ─── Filter ───────────────────────────────────────────────────
 
@@ -99,12 +109,14 @@ const fieldCls =
 type TxFilter = {
   type: string;
   status: string;
+  reservedBy: string;
   dateFrom: string;
   dateTo: string;
 };
 const emptyTxFilter: TxFilter = {
   type: "",
   status: "",
+  reservedBy: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -348,6 +360,23 @@ function FilterModal({
               <option value="refunded">Refunded</option>
             </select>
           </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Reserved by
+            </span>
+            <select
+              value={pending.reservedBy}
+              onChange={(e) => onChange("reservedBy", e.target.value)}
+              className={fieldCls}
+            >
+              <option value="">All</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+              <option value="partner">Partner</option>
+              <option value="client">Client</option>
+              <option value="anonymous">Web</option>
+            </select>
+          </label>
         </div>
         <div className="flex items-center justify-between pt-1">
           <button
@@ -429,7 +458,9 @@ export default function TransactionsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(0);
   const activeFilterCount =
-    (appliedFilter.type ? 1 : 0) + (appliedFilter.status ? 1 : 0);
+    (appliedFilter.type ? 1 : 0) +
+    (appliedFilter.status ? 1 : 0) +
+    (appliedFilter.reservedBy ? 1 : 0);
 
   function openModal() {
     setPendingFilter(appliedFilter);
@@ -454,7 +485,7 @@ export default function TransactionsPage() {
           insforge.database
             .from("bookings")
             .select(
-              "id, service_title, duration, first_name, last_name, email, date, status, payment_status, price_eur, created_at",
+              "id, service_title, duration, first_name, last_name, email, created_by_role, date, status, payment_status, price_eur, created_at",
             )
             .order("created_at", { ascending: false })
             .limit(100),
@@ -491,6 +522,7 @@ export default function TransactionsPage() {
           subtitle: r.duration ?? null,
           client: [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
           clientEmail: r.email ?? null,
+          reservedBy: r.created_by_role ?? null,
           date: r.date,
           amount: r.price_eur,
           status:
@@ -512,6 +544,7 @@ export default function TransactionsPage() {
           subtitle: null,
           client: fullName(r.contacts, r.contact_id),
           clientEmail: null,
+          reservedBy: null,
           date: r.start_date,
           amount: null,
           status: r.status,
@@ -528,6 +561,7 @@ export default function TransactionsPage() {
           subtitle: null,
           client: fullName(r.contacts, r.contact_id),
           clientEmail: null,
+          reservedBy: null,
           date: r.created_at,
           amount: null,
           status: "confirmed",
@@ -547,6 +581,7 @@ export default function TransactionsPage() {
           subtitle: null,
           client: fullName(r.contacts, r.contact_id),
           clientEmail: null,
+          reservedBy: null,
           date: r.created_at,
           amount: null,
           status: "confirmed",
@@ -571,6 +606,10 @@ export default function TransactionsPage() {
       if (appliedFilter.type && r.type !== appliedFilter.type) return false;
       if (appliedFilter.status && r.status !== appliedFilter.status)
         return false;
+      if (appliedFilter.reservedBy) {
+        const role = r.reservedBy ?? "anonymous";
+        if (role !== appliedFilter.reservedBy) return false;
+      }
       if (appliedFilter.dateFrom && r.created_at) {
         if (r.created_at.slice(0, 10) < appliedFilter.dateFrom) return false;
       }
@@ -605,9 +644,10 @@ export default function TransactionsPage() {
         <DateRangeButton
           dateFrom={appliedFilter.dateFrom}
           dateTo={appliedFilter.dateTo}
-          onChange={(from, to) =>
-            setAppliedFilter((p) => ({ ...p, dateFrom: from, dateTo: to }))
-          }
+          onChange={(from, to) => {
+            setAppliedFilter((p) => ({ ...p, dateFrom: from, dateTo: to }));
+            setPage(0);
+          }}
         />
         <Button
           variant={activeFilterCount > 0 ? "soft" : "outline"}
@@ -623,7 +663,7 @@ export default function TransactionsPage() {
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
-          <p className="text-petroleum-400 text-sm">Ingresos</p>
+          <p className="text-petroleum-400 text-sm">Revenue</p>
           {loading ? (
             <div className="bg-sand-100 mt-2 h-8 w-24 animate-pulse rounded-lg" />
           ) : (
@@ -636,12 +676,8 @@ export default function TransactionsPage() {
             </p>
           )}
         </div>
-        <StatCard
-          label="Completadas"
-          value={stats.completed}
-          loading={loading}
-        />
-        <StatCard label="Pendientes" value={stats.pending} loading={loading} />
+        <StatCard label="Completed" value={stats.completed} loading={loading} />
+        <StatCard label="Pending" value={stats.pending} loading={loading} />
         <StatCard label="Total" value={stats.total} loading={loading} />
       </div>
 
@@ -694,6 +730,19 @@ export default function TransactionsPage() {
                       {row.clientEmail}
                     </p>
                   )}
+                  {row.reservedBy &&
+                    (() => {
+                      const src =
+                        SOURCE_BADGE[row.reservedBy] ??
+                        SOURCE_BADGE["anonymous"];
+                      return (
+                        <span
+                          className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${src.cls}`}
+                        >
+                          {src.label}
+                        </span>
+                      );
+                    })()}
                   <div className="mt-1.5 flex items-center gap-3">
                     {row.created_at && (
                       <span className="text-petroleum-300 text-xs">
@@ -735,6 +784,9 @@ export default function TransactionsPage() {
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
                     Client
                   </th>
+                  <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
+                    Reserved by
+                  </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-right text-xs font-medium">
                     Amount
                   </th>
@@ -763,6 +815,10 @@ export default function TransactionsPage() {
                         <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
                         <div className="bg-sand-100 mt-1.5 h-3 w-40 animate-pulse rounded" />
                       </td>
+                      {/* Reserved by */}
+                      <td className="px-5 py-4">
+                        <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                      </td>
                       {/* Amount (right-aligned) */}
                       <td className="px-5 py-4 text-right">
                         <div className="bg-sand-100 ml-auto h-4 w-16 animate-pulse rounded" />
@@ -772,7 +828,7 @@ export default function TransactionsPage() {
                 ) : pageRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="text-petroleum-400 px-6 py-12 text-center"
                     >
                       No transactions found.
@@ -822,6 +878,22 @@ export default function TransactionsPage() {
                             </p>
                           )}
                         </td>
+                        <td className="px-5 py-4">
+                          {(() => {
+                            const src =
+                              SOURCE_BADGE[row.reservedBy ?? "anonymous"] ??
+                              SOURCE_BADGE["anonymous"];
+                            return row.reservedBy !== null ? (
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                              >
+                                {src.label}
+                              </span>
+                            ) : (
+                              <span className="text-petroleum-300">—</span>
+                            );
+                          })()}
+                        </td>
                         <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
                           {formatAmount(row.amount)}
                         </td>
@@ -835,7 +907,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {filteredRows.length > PAGE_SIZE && (
+      {totalPages > 1 && (
         <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
           <Pagination
             page={page}
