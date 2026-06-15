@@ -92,18 +92,30 @@ const PAGE_SIZE = 20;
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
-type TxFilter = { type: string; status: string };
-const emptyTxFilter: TxFilter = { type: "", status: "" };
+type TxFilter = {
+  type: string;
+  status: string;
+  dateFrom: string;
+  dateTo: string;
+};
+const emptyTxFilter: TxFilter = {
+  type: "",
+  status: "",
+  dateFrom: "",
+  dateTo: "",
+};
 
 function FilterModal({
   pending,
   onChange,
+  onDatePreset,
   onApply,
   onClear,
   onClose,
 }: {
   pending: TxFilter;
   onChange: (key: keyof TxFilter, value: string) => void;
+  onDatePreset: (from: string, to: string) => void;
   onApply: () => void;
   onClear: () => void;
   onClose: () => void;
@@ -115,7 +127,7 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
           <button
@@ -166,6 +178,71 @@ function FilterModal({
               <option value="refunded">Refunded</option>
             </select>
           </label>
+          <div className="flex flex-col gap-2">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Period
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { label: "7 days", days: 7 },
+                  { label: "30 days", days: 30 },
+                  { label: "3 months", days: 90 },
+                  { label: "This year", days: -1 },
+                ] as { label: string; days: number }[]
+              ).map(({ label, days }) => {
+                function getFrom() {
+                  if (days === -1) {
+                    const d = new Date();
+                    d.setMonth(0, 1);
+                    return d.toISOString().split("T")[0]!;
+                  }
+                  const d = new Date();
+                  d.setDate(d.getDate() - days);
+                  return d.toISOString().split("T")[0]!;
+                }
+                const todayStr = new Date().toISOString().split("T")[0]!;
+                const fromStr = getFrom();
+                const isActive =
+                  pending.dateFrom === fromStr && pending.dateTo === todayStr;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => onDatePreset(fromStr, todayStr)}
+                    className={[
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      isActive
+                        ? "bg-petroleum-700 text-white"
+                        : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-petroleum-300 text-xs">From</span>
+                <input
+                  type="date"
+                  value={pending.dateFrom}
+                  onChange={(e) => onChange("dateFrom", e.target.value)}
+                  className={fieldCls}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-petroleum-300 text-xs">To</span>
+                <input
+                  type="date"
+                  value={pending.dateTo}
+                  onChange={(e) => onChange("dateTo", e.target.value)}
+                  className={fieldCls}
+                />
+              </label>
+            </div>
+          </div>
         </div>
         <div className="flex items-center justify-between pt-1">
           <button
@@ -246,7 +323,10 @@ export default function TransactionsPage() {
   const [pendingFilter, setPendingFilter] = useState<TxFilter>(emptyTxFilter);
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(0);
-  const activeFilterCount = Object.values(appliedFilter).filter(Boolean).length;
+  const activeFilterCount =
+    (appliedFilter.type ? 1 : 0) +
+    (appliedFilter.status ? 1 : 0) +
+    (appliedFilter.dateFrom || appliedFilter.dateTo ? 1 : 0);
 
   function openModal() {
     setPendingFilter(appliedFilter);
@@ -375,20 +455,31 @@ export default function TransactionsPage() {
     void load();
   }, []);
 
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (appliedFilter.type && r.type !== appliedFilter.type) return false;
+      if (appliedFilter.status && r.status !== appliedFilter.status)
+        return false;
+      if (appliedFilter.dateFrom && r.created_at) {
+        if (r.created_at.slice(0, 10) < appliedFilter.dateFrom) return false;
+      }
+      if (appliedFilter.dateTo && r.created_at) {
+        if (r.created_at.slice(0, 10) > appliedFilter.dateTo) return false;
+      }
+      return true;
+    });
+  }, [rows, appliedFilter]);
+
   const stats = useMemo(() => {
-    const completed = rows.filter((r) => r.status === "completed").length;
-    const pending = rows.filter((r) => r.status === "pending").length;
-    const revenue = rows
+    const completed = filteredRows.filter(
+      (r) => r.status === "completed",
+    ).length;
+    const pending = filteredRows.filter((r) => r.status === "pending").length;
+    const revenue = filteredRows
       .filter((r) => r.status === "completed" && r.amount !== null)
       .reduce((sum, r) => sum + (r.amount ?? 0), 0);
-    return { completed, pending, revenue, total: rows.length };
-  }, [rows]);
-
-  const filteredRows = rows.filter((r) => {
-    if (appliedFilter.type && r.type !== appliedFilter.type) return false;
-    if (appliedFilter.status && r.status !== appliedFilter.status) return false;
-    return true;
-  });
+    return { completed, pending, revenue, total: filteredRows.length };
+  }, [filteredRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const pageRows = filteredRows.slice(
@@ -626,6 +717,9 @@ export default function TransactionsPage() {
           pending={pendingFilter}
           onChange={(key, val) =>
             setPendingFilter((p) => ({ ...p, [key]: val }))
+          }
+          onDatePreset={(from, to) =>
+            setPendingFilter((p) => ({ ...p, dateFrom: from, dateTo: to }))
           }
           onApply={applyFilters}
           onClear={clearFilters}

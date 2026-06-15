@@ -36,7 +36,8 @@ type Filters = {
   location: string;
   service: string;
   client: string;
-  date: string;
+  dateFrom: string;
+  dateTo: string;
 };
 
 const emptyFilters: Filters = {
@@ -44,7 +45,8 @@ const emptyFilters: Filters = {
   location: "",
   service: "",
   client: "",
-  date: "",
+  dateFrom: "",
+  dateTo: "",
 };
 
 const PAGE_SIZE = 10;
@@ -191,12 +193,14 @@ function AutocompleteInput({
 function FilterModal({
   pending,
   onChange,
+  onDatePreset,
   onApply,
   onClear,
   onClose,
 }: {
   pending: Filters;
   onChange: (key: keyof Filters, value: string) => void;
+  onDatePreset: (from: string, to: string) => void;
   onApply: () => void;
   onClear: () => void;
   onClose: () => void;
@@ -260,7 +264,7 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
@@ -337,15 +341,71 @@ function FilterModal({
             />
           </div>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">Date</span>
-            <input
-              type="date"
-              value={pending.date}
-              onChange={(e) => onChange("date", e.target.value)}
-              className={fieldCls}
-            />
-          </label>
+          <div className="flex flex-col gap-2">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Appointment date
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { label: "7 days", days: 7 },
+                  { label: "30 days", days: 30 },
+                  { label: "3 months", days: 90 },
+                  { label: "This year", days: -1 },
+                ] as { label: string; days: number }[]
+              ).map(({ label, days }) => {
+                function getFrom() {
+                  if (days === -1) {
+                    const d = new Date();
+                    d.setMonth(0, 1);
+                    return d.toISOString().split("T")[0]!;
+                  }
+                  const d = new Date();
+                  d.setDate(d.getDate() - days);
+                  return d.toISOString().split("T")[0]!;
+                }
+                const todayStr = new Date().toISOString().split("T")[0]!;
+                const fromStr = getFrom();
+                const isActive =
+                  pending.dateFrom === fromStr && pending.dateTo === todayStr;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => onDatePreset(fromStr, todayStr)}
+                    className={[
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      isActive
+                        ? "bg-petroleum-700 text-white"
+                        : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-petroleum-300 text-xs">From</span>
+                <input
+                  type="date"
+                  value={pending.dateFrom}
+                  onChange={(e) => onChange("dateFrom", e.target.value)}
+                  className={fieldCls}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-petroleum-300 text-xs">To</span>
+                <input
+                  type="date"
+                  value={pending.dateTo}
+                  onChange={(e) => onChange("dateTo", e.target.value)}
+                  className={fieldCls}
+                />
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Actions */}
@@ -447,48 +507,16 @@ export default function BookingsPage() {
       });
   }, [isStaff, userId]);
 
-  const [statusCounts, setStatusCounts] = useState<{
-    pending: number | null;
-    confirmed: number | null;
-    cancelled: number | null;
-  }>({ pending: null, confirmed: null, cancelled: null });
-
-  useEffect(() => {
-    // Wait until we know the staff's service list
-    if (isStaff && staffServiceIds === null) return;
-    if (isPartner && !userId) return;
-
-    const makeQuery = (status: string) => {
-      let q = insforge.database
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status);
-      if (isPartner) q = q.eq("partner_id", userId!);
-      if (isStaff && staffServiceIds && staffServiceIds.length > 0)
-        q = q.in("service_id", staffServiceIds);
-      if (isStaff && staffServiceIds?.length === 0)
-        return Promise.resolve({ count: 0 });
-      return q;
-    };
-
-    void Promise.all([
-      makeQuery("pending"),
-      makeQuery("confirmed"),
-      makeQuery("cancelled"),
-    ]).then(([p, c, x]) =>
-      setStatusCounts({
-        pending: (p as { count: number | null }).count ?? 0,
-        confirmed: (c as { count: number | null }).count ?? 0,
-        cancelled: (x as { count: number | null }).count ?? 0,
-      }),
-    );
-  }, [isPartner, isStaff, userId, staffServiceIds]);
-
   const [appliedFilters, setAppliedFilters] = useState<Filters>(emptyFilters);
   const [pendingFilters, setPendingFilters] = useState<Filters>(emptyFilters);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const activeCount = Object.values(appliedFilters).filter(Boolean).length;
+  const activeCount =
+    (appliedFilters.status ? 1 : 0) +
+    (appliedFilters.location ? 1 : 0) +
+    (appliedFilters.service ? 1 : 0) +
+    (appliedFilters.client ? 1 : 0) +
+    (appliedFilters.dateFrom || appliedFilters.dateTo ? 1 : 0);
 
   function openModal() {
     setPendingFilters(appliedFilters);
@@ -513,8 +541,48 @@ export default function BookingsPage() {
     location: fLocation,
     service: fService,
     client: fClient,
-    date: fDate,
+    dateFrom: fDateFrom,
+    dateTo: fDateTo,
   } = appliedFilters;
+
+  const [statusCounts, setStatusCounts] = useState<{
+    pending: number | null;
+    confirmed: number | null;
+    cancelled: number | null;
+  }>({ pending: null, confirmed: null, cancelled: null });
+
+  useEffect(() => {
+    // Wait until we know the staff's service list
+    if (isStaff && staffServiceIds === null) return;
+    if (isPartner && !userId) return;
+
+    const makeQuery = (status: string) => {
+      let q = insforge.database
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status);
+      if (isPartner) q = q.eq("partner_id", userId!);
+      if (isStaff && staffServiceIds && staffServiceIds.length > 0)
+        q = q.in("service_id", staffServiceIds);
+      if (isStaff && staffServiceIds?.length === 0)
+        return Promise.resolve({ count: 0 });
+      if (fDateFrom) q = q.gte("date", fDateFrom);
+      if (fDateTo) q = q.lte("date", fDateTo);
+      return q;
+    };
+
+    void Promise.all([
+      makeQuery("pending"),
+      makeQuery("confirmed"),
+      makeQuery("cancelled"),
+    ]).then(([p, c, x]) =>
+      setStatusCounts({
+        pending: (p as { count: number | null }).count ?? 0,
+        confirmed: (c as { count: number | null }).count ?? 0,
+        cancelled: (x as { count: number | null }).count ?? 0,
+      }),
+    );
+  }, [isPartner, isStaff, userId, staffServiceIds, fDateFrom, fDateTo]);
 
   const fetchBookings = useCallback(async () => {
     // Wait until staff service IDs are loaded
@@ -555,7 +623,8 @@ export default function BookingsPage() {
         );
       }
     }
-    if (fDate) query = query.eq("date", fDate);
+    if (fDateFrom) query = query.gte("date", fDateFrom);
+    if (fDateTo) query = query.lte("date", fDateTo);
 
     const { data, count } = await query
       .order("created_at", { ascending: false })
@@ -603,7 +672,8 @@ export default function BookingsPage() {
     fLocation,
     fService,
     fClient,
-    fDate,
+    fDateFrom,
+    fDateTo,
     isPartner,
     isStaff,
     userId,
@@ -985,6 +1055,9 @@ export default function BookingsPage() {
           pending={pendingFilters}
           onChange={(key, value) =>
             setPendingFilters((prev) => ({ ...prev, [key]: value }))
+          }
+          onDatePreset={(from, to) =>
+            setPendingFilters((p) => ({ ...p, dateFrom: from, dateTo: to }))
           }
           onApply={applyFilters}
           onClear={clearFilters}
