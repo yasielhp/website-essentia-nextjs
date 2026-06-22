@@ -2,123 +2,39 @@
 
 import Image from "next/image";
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function BrandStatement() {
   const t = useTranslations("home.brandStatement");
-  const sectionRef = useRef<HTMLElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const descRef = useRef<HTMLParagraphElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const grid = gridRef.current;
-    if (!section || !grid) return;
-
     const title = titleRef.current;
     const desc = descRef.current;
+    if (!title || !desc) return;
 
     const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-
-      // Desktop
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(grid, {
-          gridTemplateColumns: "0fr 1fr 1fr 1fr 0fr",
-          gridTemplateRows: "0fr 1fr 1fr 1fr 0fr",
-        });
-        gsap.set([title, desc], { opacity: 0, y: 30 });
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: grid,
-          },
-        });
-
-        tl.to(title, { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 });
-        tl.to(
-          desc,
-          { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 },
-          "<0.05",
-        );
-
-        tl.to(grid, {
-          gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
-          gridTemplateRows: "1fr 1fr 1fr 1fr 1fr",
-          ease: "none",
-          duration: 0.65,
-        });
-
-        tl.to(
-          overlayRef.current,
-          { opacity: 1, ease: "power1.in", duration: 0.15 },
-          ">",
-        );
+      gsap.from([title, desc], {
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: title, start: "top 85%", once: true },
       });
-
-      // Mobile
-      mm.add("(max-width: 767px)", () => {
-        gsap.set(grid, { gridTemplateRows: "0fr 1fr 1fr 0fr" });
-        gsap.set([title, desc], { opacity: 0, y: 30 });
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: grid,
-          },
-        });
-
-        tl.to(title, { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 });
-        tl.to(
-          desc,
-          { opacity: 1, y: 0, ease: "power2.out", duration: 0.15 },
-          "<0.05",
-        );
-
-        tl.to(grid, {
-          gridTemplateRows: "0.6fr 1fr 1fr 0.6fr",
-          ease: "none",
-          duration: 0.65,
-        });
-
-        tl.to(
-          overlayRef.current,
-          { opacity: 1, ease: "power1.in", duration: 0.15 },
-          ">",
-        );
-      });
-    }, section);
+    });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="text-petroleum-700 bg-sand-100 h-[200vh]"
-    >
-      <div
-        ref={gridRef}
-        className="relative grid h-screen w-full grid-cols-2 md:grid-cols-5"
-      >
-        {/* Fade-out overlay */}
-        <div
-          ref={overlayRef}
-          className="bg-sand-100 pointer-events-none absolute inset-0 z-10 opacity-0"
-        />
+    <section className="text-petroleum-700 bg-sand-100">
+      <div className="relative grid h-screen w-full grid-cols-2 md:grid-cols-5">
         {/* Img 1 */}
         <div className="relative col-start-1 row-start-1 overflow-hidden md:row-span-2">
           <Image

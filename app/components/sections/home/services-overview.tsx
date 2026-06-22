@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -44,90 +44,41 @@ const services: ReadonlyArray<{
 export default function ServicesOverview() {
   const t = useTranslations("home.servicesOverview");
   const tServices = useTranslations("home.servicesOverview.services");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const inner = innerRef.current;
-    if (!section || !inner) return;
+    const header = headerRef.current;
+    const cards = cardsRef.current;
+    if (!header || !cards) return;
 
     const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-      const cards = inner.querySelectorAll("[data-service-card]");
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(headerRef.current, { opacity: 0, y: 40 });
-        gsap.set(cards, { opacity: 0, y: 60 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(headerRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.3,
-          ease: "power3.out",
-        });
-        tl.to(
-          cards,
-          {
-            opacity: 1,
-            y: 0,
-            stagger: 0.15,
-            duration: 0.5,
-            ease: "power3.out",
-          },
-          "-=0.1",
-        );
+      gsap.from(header, {
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: header, start: "top 85%", once: true },
       });
 
-      mm.add("(max-width: 767px)", () => {
-        gsap.from(headerRef.current, {
-          opacity: 0,
-          y: 30,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            once: true,
-          },
-        });
-        Array.from(cards).forEach((card) => {
-          gsap.fromTo(
-            card,
-            { opacity: 0, y: 50, scale: 0.96 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
+      const cardEls = cards.querySelectorAll("[data-service-card]");
+      gsap.from(cardEls, {
+        opacity: 0,
+        y: 50,
+        stagger: 0.1,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: { trigger: cards, start: "top 85%", once: true },
       });
-    }, section);
+    });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
+    <section className="bg-sand-50">
+      <div className="overflow-hidden">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
           {/* ─── Section Header ───────────────────────────────── */}
           <div ref={headerRef} className="mb-12">
             <h2 className="font-display text-petroleum-700 text-3xl md:text-5xl">
@@ -139,7 +90,7 @@ export default function ServicesOverview() {
           </div>
 
           {/* ─── Cards Grid ───────────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div ref={cardsRef} className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {services.map((service) => {
               const title = tServices(`${service.key}.title`);
               const description = tServices(`${service.key}.description`);

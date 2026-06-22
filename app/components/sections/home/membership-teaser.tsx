@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { IconCheck } from "@/components/ui/icons";
 
@@ -106,84 +106,41 @@ function TierCard({ tier }: { tier: Tier }) {
 
 export default function MembershipTeaser() {
   const t = useTranslations("home.membershipTeaser");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const inner = innerRef.current;
     const header = headerRef.current;
     const cards = cardsRef.current;
-    if (!section || !inner || !header || !cards) return;
+    if (!header || !cards) return;
 
     const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-      const cardEls = Array.from(cards.children);
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(header, { opacity: 0, y: 30 });
-        gsap.set(cardEls, { opacity: 0, y: 50 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(header, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" });
-        tl.to(
-          cardEls,
-          {
-            opacity: 1,
-            y: 0,
-            stagger: 0.15,
-            duration: 0.4,
-            ease: "power3.out",
-          },
-          "-=0.05",
-        );
+      gsap.from(header, {
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: header, start: "top 85%", once: true },
       });
 
-      mm.add("(max-width: 767px)", () => {
-        gsap.from(header, {
-          opacity: 0,
-          y: 30,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: { trigger: header, start: "top 85%", once: true },
-        });
-        cardEls.forEach((card) => {
-          gsap.fromTo(
-            card,
-            { opacity: 0, y: 50, scale: 0.96 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
+      const cardEls = cards.querySelectorAll("article");
+      gsap.from(cardEls, {
+        opacity: 0,
+        y: 50,
+        stagger: 0.12,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: { trigger: cards, start: "top 80%", once: true },
       });
-    }, section);
+    });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-32 pb-16 md:h-full md:justify-center md:pt-36 md:pb-16">
+    <section className="bg-petroleum-700">
+      <div className="overflow-hidden">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-32 pb-16 md:pt-36 md:pb-16">
           {/* ─── Header ── */}
           <div
             ref={headerRef}

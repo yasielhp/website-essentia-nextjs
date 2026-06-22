@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import Image from "next/image";
+import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Image from "next/image";
-import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -14,119 +14,55 @@ gsap.registerPlugin(ScrollTrigger);
 export default function TheSpace() {
   const t = useTranslations("home.theSpace");
   const tStats = useTranslations("home.theSpace.stats");
-  const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
     const inner = innerRef.current;
-    if (!section || !inner) return;
+    if (!inner) return;
 
     const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
       const headerEls = inner.querySelectorAll("[data-space-header]");
       const imgEls = inner.querySelectorAll("[data-space-img]");
       const statEls = inner.querySelectorAll("[data-space-stat]");
 
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(headerEls, { opacity: 0, y: 40 });
-        gsap.set(imgEls, { opacity: 0, scale: 0.97 });
-        gsap.set(statEls, { opacity: 0, y: 20 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(headerEls, {
-          opacity: 1,
-          y: 0,
-          stagger: 0.08,
-          duration: 0.3,
-          ease: "power3.out",
-        });
-        tl.to(
-          imgEls,
-          {
-            opacity: 1,
-            scale: 1,
-            stagger: 0.1,
-            duration: 0.35,
-            ease: "power2.out",
-            transformOrigin: "center",
-          },
-          "-=0.1",
-        );
-        tl.to(
-          statEls,
-          {
-            opacity: 1,
-            y: 0,
-            stagger: 0.08,
-            duration: 0.25,
-            ease: "power2.out",
-          },
-          "-=0.1",
-        );
+      gsap.from(headerEls, {
+        opacity: 0,
+        y: 40,
+        stagger: 0.1,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: inner, start: "top 80%", once: true },
       });
 
-      mm.add("(max-width: 767px)", () => {
-        gsap.from(Array.from(headerEls), {
-          opacity: 0,
-          y: 30,
-          stagger: 0.08,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: { trigger: inner, start: "top 80%", once: true },
-        });
-        const mainImg = imgEls[0];
-        if (mainImg) {
-          gsap.fromTo(
-            mainImg,
-            { opacity: 0, scale: 0.97 },
-            {
-              opacity: 1,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: mainImg,
-                start: "top 88%",
-                end: "top 30%",
-                scrub: 0.7,
-              },
-            },
-          );
-        }
-        Array.from(statEls).forEach((stat) => {
-          gsap.fromTo(
-            stat,
-            { opacity: 0, y: 20 },
-            {
-              opacity: 1,
-              y: 0,
-              ease: "none",
-              scrollTrigger: {
-                trigger: stat,
-                start: "top 90%",
-                end: "top 50%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
+      gsap.from(imgEls, {
+        opacity: 0,
+        scale: 0.97,
+        stagger: 0.1,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: inner, start: "top 80%", once: true },
       });
-    }, section);
+
+      gsap.from(statEls, {
+        opacity: 0,
+        y: 20,
+        stagger: 0.08,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: { trigger: inner, start: "top 75%", once: true },
+      });
+    }, inner);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 md:h-[280vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8 px-5 pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:pt-36 md:pb-16">
+    <section className="bg-petroleum-700">
+      <div className="overflow-hidden">
+        <div
+          ref={innerRef}
+          className="mx-auto flex max-w-4xl flex-col gap-8 px-5 pt-24 pb-16 md:gap-10 md:pt-36 md:pb-16"
+        >
           {/* ─── Header editorial ── */}
           <div>
             <h2

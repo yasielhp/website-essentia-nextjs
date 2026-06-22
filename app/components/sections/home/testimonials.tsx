@@ -4,10 +4,10 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTranslations } from "next-intl";
-import { testimonials, type Testimonial } from "@data/testimonials-data";
-import { IconQuote } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
+import { testimonials, type Testimonial } from "@data/testimonials-data";
+import { IconQuote } from "@/components/ui/icons";
 
 // ─── TestimonialCard ───────────────────────────────────────────
 
@@ -220,9 +220,6 @@ export default function Testimonials() {
     [localizedTestimonials],
   );
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<HTMLDivElement>(null);
   const mobileTrackRef = useRef<HTMLDivElement>(null);
@@ -230,10 +227,40 @@ export default function Testimonials() {
   const animatingRef = useRef(false);
   const activeGroupRef = useRef(0);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scrubDoneRef = useRef(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const [activeGroup, setActiveGroup] = useState(0);
   const [mobileActiveCard, setMobileActiveCard] = useState(0);
+
+  // ─── Initial state: groups 1 & 2 hidden, group 0 visible ───
+
+  useEffect(() => {
+    const group0 = groupRefs.current[0];
+    if (group0) gsap.set(group0, { opacity: 1, pointerEvents: "auto" });
+    [1, 2].forEach((i) => {
+      const el = groupRefs.current[i];
+      if (el) gsap.set(el, { opacity: 0, pointerEvents: "none" });
+    });
+  }, []);
+
+  // ─── Header entrance animation ─────────────────────────────
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from(header, {
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: header, start: "top 85%", once: true },
+      });
+    });
+
+    return () => ctx.revert();
+  }, []);
 
   // ─── Carousel transition (x-based slide) ───────────────────
 
@@ -281,12 +308,11 @@ export default function Testimonials() {
     });
   }, []);
 
-  // ─── Autoplay (only after scrub completes) ──────────────────
+  // ─── Autoplay ──────────────────────────────────────────────
 
   const resetAutoplay = useCallback(() => {
     if (autoplayRef.current) clearInterval(autoplayRef.current);
     autoplayRef.current = setInterval(() => {
-      if (!scrubDoneRef.current) return;
       transitionTo((activeGroupRef.current + 1) % 3);
     }, 5000);
   }, [transitionTo]);
@@ -296,101 +322,6 @@ export default function Testimonials() {
     return () => {
       if (autoplayRef.current) clearInterval(autoplayRef.current);
     };
-  }, [resetAutoplay]);
-
-  // ─── GSAP: pin+scrub desktop / entrance mobile ──────────────
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const inner = innerRef.current;
-    const header = headerRef.current;
-    const slider = sliderRef.current;
-    const dots = dotsRef.current;
-    const group0 = groupRefs.current[0];
-    if (!section || !inner || !header || !slider || !dots || !group0) return;
-
-    // Initial state: groups 1 & 2 hidden, group 0 visible, dots hidden
-    [1, 2].forEach((i) => {
-      const el = groupRefs.current[i];
-      if (el) gsap.set(el, { opacity: 0, pointerEvents: "none" });
-    });
-    gsap.set(group0, { opacity: 1, pointerEvents: "auto" });
-    gsap.set(dots, { opacity: 0 });
-
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-      const cards0 = Array.from(group0.children);
-
-      // ── Desktop: pin + scrub ────────────────────────────────
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(header, { opacity: 0, y: 30 });
-        gsap.set(cards0, { opacity: 0, x: 60 });
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-            onLeave: () => {
-              scrubDoneRef.current = true;
-              resetAutoplay();
-            },
-            onEnterBack: () => {
-              scrubDoneRef.current = false;
-              if (autoplayRef.current) clearInterval(autoplayRef.current);
-            },
-          },
-        });
-
-        tl.to(header, { opacity: 1, y: 0, duration: 0.2, ease: "power3.out" });
-        tl.to(
-          cards0,
-          {
-            opacity: 1,
-            x: 0,
-            stagger: 0.1,
-            duration: 0.35,
-            ease: "power3.out",
-          },
-          "-=0.05",
-        );
-        tl.to(dots, { opacity: 1, duration: 0.1 }, "-=0.05");
-      });
-
-      // ── Mobile: scroll-triggered entrance ──────────────────
-      mm.add("(max-width: 767px)", () => {
-        gsap.set(cards0, { opacity: 0, y: 30 });
-
-        gsap.from(header, {
-          opacity: 0,
-          y: 30,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: { trigger: header, start: "top 85%", once: true },
-        });
-
-        gsap.to(cards0, {
-          opacity: 1,
-          y: 0,
-          stagger: 0.1,
-          duration: 0.5,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: slider,
-            start: "top 80%",
-            once: true,
-            onEnter: () => {
-              gsap.to(dots, { opacity: 1, duration: 0.3, delay: 0.4 });
-              scrubDoneRef.current = true;
-            },
-          },
-        });
-      });
-    }, section);
-
-    return () => ctx.revert();
   }, [resetAutoplay]);
 
   // ─── Mobile scroll → sync dot ────────────────────────────────
@@ -420,18 +351,11 @@ export default function Testimonials() {
   // ─── Render ──────────────────────────────────────────────────
 
   return (
-    <section ref={sectionRef} className="bg-sand-100 md:h-[280vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        {/*
-          Desktop: flex-col, justify-center, gap-10 — header + full-width slider + dots stack vertically.
-          Mobile: single padded column as before.
-        */}
-        <div className="flex flex-col pt-24 pb-16 md:h-full md:justify-center md:gap-10 md:pt-36 md:pb-16">
+    <section className="bg-sand-100">
+      <div className="overflow-hidden">
+        <div className="flex flex-col pt-24 pb-16 md:gap-10 md:pt-36 md:pb-16">
           {/* Header — constrained width */}
-          <div
-            ref={headerRef}
-            className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl"
-          >
+          <div ref={headerRef} className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl">
             <h2 className="font-display text-petroleum-700 mt-3 mb-4 text-3xl md:text-5xl">
               {t("headline")}
               <br />
@@ -452,7 +376,7 @@ export default function Testimonials() {
             items={localizedTestimonials}
           />
 
-          {/* Dots — hidden until animation reveals them */}
+          {/* Dots */}
           <SliderDots
             dotsRef={dotsRef}
             mobileActiveCard={mobileActiveCard}
