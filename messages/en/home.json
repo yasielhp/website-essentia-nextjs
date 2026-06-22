@@ -172,25 +172,19 @@
     }
   },
   "community": {
-    "headline": "A life well-lived",
-    "headline2": "is rarely lived alone.",
+    "headline": "A pause designed",
+    "headline2": "to return to your essence.",
     "runningClub": {
       "badge": "Running Club",
       "headline": "Every Saturday morning, 7:30am",
       "description": "Curated routes through Costa Adeje, all levels welcome.",
       "cta": "Join the run →"
     },
-    "educationPrograms": {
-      "badge": "Programs",
-      "headline": "Longevity Masterclass Series",
-      "description": "Monthly deep-dives with leading researchers, clinicians, and practitioners, open to all members.",
-      "cta": "View Programs"
-    },
-    "events": {
-      "badge": "Events",
-      "headline": "Member Gatherings",
-      "description": "Private dinners, wellness retreats, and seasonal celebrations: moments that make the club feel like home.",
-      "cta": "Explore Events"
+    "nextRace": {
+      "badge": "Next Race",
+      "noRaceTitle": "No races scheduled",
+      "noRaceBody": "New races will be announced soon.",
+      "cta": "Learn more →"
     }
   }
 }

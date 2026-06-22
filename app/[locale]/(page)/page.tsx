@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
+import { insforge } from "@/lib/insforge";
 import Hero from "@components/sections/home/hero";
 import BrandStatement from "@components/sections/home/brand-statement";
 import ServicesOverview from "@components/sections/home/services-overview";
@@ -8,6 +9,7 @@ import ServicesOverview from "@components/sections/home/services-overview";
 import Testimonials from "@components/sections/home/testimonials";
 import TheSpace from "@components/sections/home/the-space";
 import CommunitySection from "@components/sections/home/community-section";
+import type { NextRace } from "@components/sections/home/community-section";
 
 export async function generateMetadata({
   params,
@@ -36,7 +38,17 @@ export async function generateMetadata({
   };
 }
 
-export default function Home() {
+export default async function Home() {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await insforge.database
+    .from("races")
+    .select("id, title, description, date, location, distance_km")
+    .gte("date", today)
+    .order("date", { ascending: true })
+    .limit(1);
+
+  const nextRace = (data as NextRace[] | null)?.[0] ?? null;
+
   return (
     <>
       <Hero />
@@ -45,7 +57,7 @@ export default function Home() {
       {/* <MembershipTeaser /> */}
       <Testimonials />
       <TheSpace />
-      <CommunitySection />
+      <CommunitySection race={nextRace} />
     </>
   );
 }

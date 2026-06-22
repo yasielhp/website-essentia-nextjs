@@ -172,25 +172,19 @@
     }
   },
   "community": {
-    "headline": "Una vida bien vivida",
-    "headline2": "rara vez se vive en soledad.",
+    "headline": "Una pausa diseñada",
+    "headline2": "para volver a tu esencia.",
     "runningClub": {
       "badge": "Club de Running",
       "headline": "Cada sábado por la mañana, 7:30h",
       "description": "Rutas curadas por Costa Adeje, todos los niveles son bienvenidos.",
       "cta": "Únete al running →"
     },
-    "educationPrograms": {
-      "badge": "Programas",
-      "headline": "Serie de Masterclasses de Longevidad",
-      "description": "Sesiones mensuales en profundidad con investigadores, clínicos y especialistas líderes, abiertas a todos los miembros.",
-      "cta": "Ver programas"
-    },
-    "events": {
-      "badge": "Eventos",
-      "headline": "Encuentros de Miembros",
-      "description": "Cenas privadas, retiros de bienestar y celebraciones de temporada: momentos que hacen que el club se sienta como en casa.",
-      "cta": "Explorar eventos"
+    "nextRace": {
+      "badge": "Próxima Carrera",
+      "noRaceTitle": "Sin carreras programadas",
+      "noRaceBody": "Próximamente anunciaremos nuevas carreras.",
+      "cta": "Más información →"
     }
   }
 }
