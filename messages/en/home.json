@@ -16,8 +16,8 @@
     "mute": "Mute video"
   },
   "brandStatement": {
-    "headline": "A longer life should also be a better one.",
-    "body": "Essentia brings together regenerative medicine, longevity protocols, and an exclusive community in one intentional space, rooted in Tenerife, designed for those who understand that how you live matters as much as how long."
+    "headline": "Caring for yourself today is building how you want to live tomorrow.",
+    "body": "A new concept of wellbeing in Tenerife, where manual therapy meets advanced technologies and protocols to care for the body from within."
   },
   "servicesOverview": {
     "sectionHeadline": "Three pillars,",
@@ -34,10 +34,10 @@
         "description": "Regenerative protocols, IV therapy, and hyperbaric oxygen — clinical science and precision care in service of longevity.",
         "cta": "Explore Medicine"
       },
-      "community": {
-        "title": "Community",
+      "experiences": {
+        "title": "Experiences",
         "description": "Running club, education programs, and exclusive memberships — true belonging to something meaningful.",
-        "cta": "Explore Community"
+        "cta": "Explore Experiences"
       }
     }
   },
