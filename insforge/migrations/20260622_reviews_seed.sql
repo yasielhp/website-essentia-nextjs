@@ -1,0 +1,15 @@
+-- Seed reviews from existing static testimonials (all published, display_order 1–12)
+INSERT INTO reviews (quote, name, age, initials, style, display_order, status) VALUES
+  ('Essentia changed how I think about time. Not just living longer — living better, right now.',                                                                                'Marcus V.',    'Age 47', 'MV', 'dark',  1,  'published'),
+  ('The combination of medical protocols and the community here is unlike anything I''ve experienced.',                                                                         'Claudia R.',   'Age 39', 'CR', 'light', 2,  'published'),
+  ('I came for the therapies. I stayed for the people. The running club has transformed my relationship with movement.',                                                         'James H.',     'Age 52', 'JH', 'light', 3,  'published'),
+  ('The hyperbaric sessions combined with personalized protocols have made a measurable difference in my recovery.',                                                             'Dr. Sofia M.', 'Age 44', 'SM', 'dark',  4,  'published'),
+  ('Coming here twice a week has become non-negotiable. It''s where I reset and come back sharper.',                                                                             'Elena K.',     'Age 41', 'EK', 'dark',  5,  'published'),
+  ('The IV protocols and cold exposure have genuinely shifted my energy levels. Science-backed and results-driven.',                                                             'Thomas B.',    'Age 55', 'TB', 'light', 6,  'published'),
+  ('I never expected to find a real community in a wellness club. The people here are extraordinary.',                                                                           'Natalie W.',   'Age 36', 'NW', 'light', 7,  'published'),
+  ('As a physician, I''m selective about longevity claims. Essentia delivers evidence-based care with real integrity.',                                                          'Dr. Rafael A.','Age 49', 'RA', 'dark',  8,  'published'),
+  ('The space itself inspires. Every detail — the light, the materials, the quiet — tells you this place is serious.',                                                           'Isabelle D.',  'Age 43', 'ID', 'dark',  9,  'published'),
+  ('Red light therapy and contrast bathing have become my weekly anchor. My recovery has never been this consistent.',                                                           'Oliver P.',    'Age 38', 'OP', 'light', 10, 'published'),
+  ('Founding membership was the best investment I''ve made in myself. The access and the advisor relationship are unmatched.',                                                   'Caroline F.',  'Age 46', 'CF', 'light', 11, 'published'),
+  ('I''ve been to wellness clubs across Europe. Nothing compares to what Essentia has built in Tenerife.',                                                                       'Marco L.',     'Age 51', 'ML', 'dark',  12, 'published')
+ON CONFLICT DO NOTHING;

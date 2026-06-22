@@ -1,0 +1,391 @@
+"use client";
+
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { IconQuote } from "@/components/ui/icons";
+
+gsap.registerPlugin(ScrollTrigger);
+
+export type TestimonialItem = {
+  quote: string;
+  name: string;
+  age: string;
+  initials: string;
+  bgColor: string;
+  textColor: string;
+  avatarBg: string;
+  avatarText: string;
+  mutedColor: string;
+};
+
+// ─── TestimonialCard ───────────────────────────────────────────
+
+function TestimonialCard({
+  t,
+  compact = false,
+}: {
+  t: TestimonialItem;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={`${t.bgColor} relative flex h-full flex-col justify-between rounded-2xl ${
+        compact ? "gap-4 p-5" : "gap-6 p-7"
+      }`}
+    >
+      <div
+        aria-hidden="true"
+        className={`absolute top-4 left-5 ${t.textColor}`}
+      >
+        <IconQuote className="h-8 w-8 opacity-15" />
+      </div>
+      <p
+        className={`font-body ${t.textColor} leading-snug ${
+          compact ? "pt-5 text-lg" : "pt-6 text-xl"
+        }`}
+      >
+        {t.quote}
+      </p>
+      <div className="flex items-center gap-3">
+        <div
+          className={`${t.avatarBg} ${t.avatarText} flex shrink-0 items-center justify-center rounded-full font-medium ${
+            compact ? "h-8 w-8 text-xs" : "h-10 w-10 text-xs"
+          }`}
+        >
+          {t.initials}
+        </div>
+        <div>
+          <p
+            className={`${t.textColor} font-medium ${compact ? "text-xs" : "text-sm"}`}
+          >
+            {t.name}
+          </p>
+          <p className={`${t.mutedColor} text-xs`}>{t.age}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DesktopSlider ─────────────────────────────────────────────
+
+function DesktopSlider({
+  sliderRef,
+  groupRefs,
+  groups,
+}: {
+  sliderRef: { current: HTMLDivElement | null };
+  groupRefs: { current: (HTMLDivElement | null)[] };
+  groups: TestimonialItem[][];
+}) {
+  return (
+    <div
+      ref={sliderRef}
+      className="relative hidden h-64 overflow-hidden md:block"
+    >
+      {groups.map((group, gi) => (
+        <div
+          key={gi}
+          ref={(el) => {
+            groupRefs.current[gi] = el;
+          }}
+          className="absolute inset-0 flex flex-row gap-4 px-5"
+        >
+          {group.map((t) => (
+            <TestimonialCard key={t.name} t={t} compact />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── MobileSlider ──────────────────────────────────────────────
+
+function MobileSlider({
+  mobileTrackRef,
+  items,
+}: {
+  mobileTrackRef: { current: HTMLDivElement | null };
+  items: TestimonialItem[];
+}) {
+  return (
+    <div className="px-5 md:hidden">
+      <div
+        ref={mobileTrackRef}
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {items.map((t) => (
+          <div
+            key={t.name}
+            className="shrink-0 snap-center"
+            style={{ width: "calc(100vw - 60px)" }}
+          >
+            <TestimonialCard t={t} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── SliderDots ────────────────────────────────────────────────
+
+function SliderDots({
+  dotsRef,
+  mobileActiveCard,
+  activeGroup,
+  mobileTrackRef,
+  transitionTo,
+  resetAutoplay,
+  items,
+  groups,
+}: {
+  dotsRef: { current: HTMLDivElement | null };
+  mobileActiveCard: number;
+  activeGroup: number;
+  mobileTrackRef: { current: HTMLDivElement | null };
+  transitionTo: (idx: number) => void;
+  resetAutoplay: () => void;
+  items: TestimonialItem[];
+  groups: TestimonialItem[][];
+}) {
+  return (
+    <div ref={dotsRef}>
+      {/* Mobile: 1 dot per testimonial */}
+      <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
+        {items.map((t, i) => (
+          <button
+            key={t.name}
+            aria-label={`Go to testimonial ${i + 1}`}
+            className="cursor-pointer p-1"
+            onClick={() => {
+              const track = mobileTrackRef.current;
+              if (!track) return;
+              const cardWidth = track.scrollWidth / items.length;
+              track.scrollTo({ left: i * cardWidth, behavior: "smooth" });
+            }}
+          >
+            <span
+              className={`block h-2 w-2 rounded-full transition-colors duration-300 ${
+                mobileActiveCard === i
+                  ? "bg-petroleum-500"
+                  : "bg-petroleum-500/10"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Desktop: 1 dot per group */}
+      <div className="mt-8 hidden items-center justify-center gap-3 md:flex">
+        {groups.map((_, gi) => (
+          <button
+            key={gi}
+            aria-label={`Go to slide ${gi + 1}`}
+            className="cursor-pointer p-2"
+            onClick={() => {
+              transitionTo(gi);
+              resetAutoplay();
+            }}
+          >
+            <span
+              className={`block h-3 w-3 rounded-full transition-colors duration-300 ${
+                activeGroup === gi ? "bg-petroleum-500" : "bg-petroleum-500/10"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── TestimonialsCarousel ──────────────────────────────────────
+
+export default function TestimonialsCarousel({
+  items,
+  headline,
+  headline2,
+}: {
+  items: TestimonialItem[];
+  headline: string;
+  headline2: string;
+}) {
+  const groupSize = 4;
+  const groups = useMemo<TestimonialItem[][]>(() => {
+    const result: TestimonialItem[][] = [];
+    for (let i = 0; i < items.length; i += groupSize) {
+      result.push(items.slice(i, i + groupSize));
+    }
+    return result.length > 0 ? result : [[]];
+  }, [items]);
+
+  const groupCount = groups.length;
+
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const dotsRef = useRef<HTMLDivElement>(null);
+  const mobileTrackRef = useRef<HTMLDivElement>(null);
+  const groupRefs = useRef<(HTMLDivElement | null)[]>(
+    Array.from({ length: groupCount }, () => null),
+  );
+  const animatingRef = useRef(false);
+  const activeGroupRef = useRef(0);
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const [activeGroup, setActiveGroup] = useState(0);
+  const [mobileActiveCard, setMobileActiveCard] = useState(0);
+
+  // ─── Initial state: groups 1+ hidden, group 0 visible ──────
+
+  useEffect(() => {
+    const group0 = groupRefs.current[0];
+    if (group0) gsap.set(group0, { opacity: 1, pointerEvents: "auto" });
+    for (let i = 1; i < groupCount; i++) {
+      const el = groupRefs.current[i];
+      if (el) gsap.set(el, { opacity: 0, pointerEvents: "none" });
+    }
+  }, [groupCount]);
+
+  // ─── Header entrance animation ──────────────────────────────
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const ctx = gsap.context(() => {
+      gsap.from(header, {
+        opacity: 0,
+        y: 30,
+        duration: 0.7,
+        ease: "power3.out",
+        scrollTrigger: { trigger: header, start: "top 85%", once: true },
+      });
+    });
+    return () => ctx.revert();
+  }, []);
+
+  // ─── Carousel transition ────────────────────────────────────
+
+  const transitionTo = useCallback((nextIdx: number) => {
+    if (animatingRef.current) return;
+    const prevIdx = activeGroupRef.current;
+    if (prevIdx === nextIdx) return;
+
+    const prevEl = groupRefs.current[prevIdx];
+    const nextEl = groupRefs.current[nextIdx];
+    if (!prevEl || !nextEl) return;
+
+    animatingRef.current = true;
+    activeGroupRef.current = nextIdx;
+    setActiveGroup(nextIdx);
+
+    const prevCards = Array.from(prevEl.children);
+    const nextCards = Array.from(nextEl.children);
+
+    gsap.to(prevCards, {
+      x: -50,
+      opacity: 0,
+      stagger: 0.05,
+      duration: 0.25,
+      ease: "power2.in",
+      onComplete: () => {
+        gsap.set(prevEl, { opacity: 0, pointerEvents: "none" });
+        gsap.set(prevCards, { x: 0 });
+        gsap.set(nextEl, { opacity: 1, pointerEvents: "auto" });
+        gsap.set(nextCards, { opacity: 0, x: 50 });
+        gsap.to(nextCards, {
+          opacity: 1,
+          x: 0,
+          stagger: 0.08,
+          duration: 0.4,
+          ease: "power3.out",
+          onComplete: () => {
+            animatingRef.current = false;
+          },
+        });
+      },
+    });
+  }, []);
+
+  // ─── Autoplay ───────────────────────────────────────────────
+
+  const resetAutoplay = useCallback(() => {
+    if (autoplayRef.current) clearInterval(autoplayRef.current);
+    autoplayRef.current = setInterval(() => {
+      transitionTo((activeGroupRef.current + 1) % groupCount);
+    }, 5000);
+  }, [transitionTo, groupCount]);
+
+  useEffect(() => {
+    resetAutoplay();
+    return () => {
+      if (autoplayRef.current) clearInterval(autoplayRef.current);
+    };
+  }, [resetAutoplay]);
+
+  // ─── Mobile scroll → sync dot ───────────────────────────────
+
+  useEffect(() => {
+    const track = mobileTrackRef.current;
+    if (!track) return;
+    const itemCount = items.length;
+    const onScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = track;
+      const maxScroll = scrollWidth - clientWidth;
+      if (maxScroll <= 0) return;
+      const cardIdx = Math.min(
+        itemCount - 1,
+        Math.round((scrollLeft / maxScroll) * (itemCount - 1)),
+      );
+      setMobileActiveCard(cardIdx);
+      const group = Math.min(groupCount - 1, Math.floor(cardIdx / groupSize));
+      setActiveGroup(group);
+      activeGroupRef.current = group;
+    };
+    track.addEventListener("scroll", onScroll, { passive: true });
+    return () => track.removeEventListener("scroll", onScroll);
+  }, [items.length, groupCount]);
+
+  // ─── Render ─────────────────────────────────────────────────
+
+  return (
+    <section className="bg-sand-100">
+      <div className="overflow-hidden">
+        <div className="flex flex-col pt-24 pb-16 md:gap-10 md:pt-36 md:pb-16">
+          <div
+            ref={headerRef}
+            className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl"
+          >
+            <h2 className="font-display text-petroleum-700 mt-3 mb-4 text-3xl md:text-5xl">
+              {headline}
+              <br />
+              {headline2}
+            </h2>
+          </div>
+
+          <DesktopSlider
+            sliderRef={sliderRef}
+            groupRefs={groupRefs}
+            groups={groups}
+          />
+
+          <MobileSlider mobileTrackRef={mobileTrackRef} items={items} />
+
+          <SliderDots
+            dotsRef={dotsRef}
+            mobileActiveCard={mobileActiveCard}
+            activeGroup={activeGroup}
+            mobileTrackRef={mobileTrackRef}
+            transitionTo={transitionTo}
+            resetAutoplay={resetAutoplay}
+            items={items}
+            groups={groups}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -7,6 +7,7 @@ import {
   IconReceipt,
   IconUsers,
   IconBlog,
+  IconQuote,
 } from "@/components/ui/icons";
 
 export const navLinks = [
@@ -15,6 +16,7 @@ export const navLinks = [
   { label: "Users", href: "/dashboard/users" },
   { label: "Members", href: "/dashboard/members" },
   { label: "Transactions", href: "/dashboard/transactions" },
+  { label: "Reviews", href: "/dashboard/reviews" },
   { label: "Races", href: "/dashboard/races" },
   { label: "Education", href: "/dashboard/education" },
   { label: "Blog", href: "/dashboard/blog" },
@@ -29,4 +31,5 @@ export const navIcons: Record<string, React.ReactNode> = {
   Education: <IconBook />,
   Blog: <IconBlog />,
   Transactions: <IconReceipt />,
+  Reviews: <IconQuote />,
 };
