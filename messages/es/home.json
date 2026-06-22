@@ -174,6 +174,18 @@
   "community": {
     "headline": "Una pausa diseñada",
     "headline2": "para volver a tu esencia.",
+    "experiences": {
+      "badge": "Experiencias",
+      "headline": "Donde la longevidad se encuentra con las experiencias.",
+      "description": "Club de running, masterclasses, eventos para miembros y más — todo en un mismo lugar.",
+      "cta": "Ver experiencias →"
+    },
+    "educationPrograms": {
+      "badge": "Programas",
+      "headline": "Programas Educativos",
+      "description": "Sesiones mensuales en profundidad con investigadores, clínicos y especialistas líderes, abiertas a todos los miembros.",
+      "cta": "Ver programas"
+    },
     "runningClub": {
       "badge": "Club de Running",
       "headline": "Cada sábado por la mañana, 7:30h",
