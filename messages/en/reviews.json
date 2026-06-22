@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Member Reviews | Essentia",
+    "description": "Read what Essentia members say about their experience with our longevity and wellness programmes in Costa Adeje, Tenerife."
+  },
+  "hero": {
+    "headline": "What our members",
+    "headline2": "say."
+  },
+  "cta": {
+    "heading": "Had a great experience?",
+    "body": "Share your story and help others discover what Essentia can do for them.",
+    "button": "Write a review"
+  },
+  "new": {
+    "headline": "Write a review",
+    "nameLabel": "Your name",
+    "namePlaceholder": "e.g. Marcus V.",
+    "ageLabel": "Your age",
+    "agePlaceholder": "47",
+    "quoteLabel": "Your review",
+    "quotePlaceholder": "Tell us about your experience at Essentia…",
+    "consentPrefix": "I accept the",
+    "consentAnd": "and",
+    "consentSuffix": ".",
+    "terms": "Terms",
+    "privacyPolicy": "Privacy Policy",
+    "consentError": "You must accept the terms to submit your review.",
+    "dataProtectionTitle": "Data protection information",
+    "dataController": "Data controller:",
+    "dataControllerValue": "Essentia Social Wellness Club",
+    "purpose": "Purpose:",
+    "purposeValue": "managing and publishing your review on our website",
+    "legalBasis": "Legal basis:",
+    "legalBasisValue": "your consent (GDPR art. 6.1.a)",
+    "rights": "Your rights:",
+    "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
+    "fullDetails": "Full details in our",
+    "submit": "Submit review",
+    "submitting": "Sending…",
+    "successHeadline": "Thank you!",
+    "successBody": "Your review has been received. We will read it and publish it shortly if approved.",
+    "errorFallback": "Something went wrong. Please try again.",
+    "seeAllReviews": "See all reviews"
+  }
+}

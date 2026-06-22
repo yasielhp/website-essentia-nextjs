@@ -1,0 +1,68 @@
+"use server";
+
+import { createClient } from "@insforge/sdk";
+
+function getAdminClient() {
+  return createClient({
+    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
+    anonKey: process.env.INSFORGE_SERVICE_KEY!,
+    isServerMode: true,
+  });
+}
+
+function computeInitials(name: string): string {
+  const parts = name
+    .replace(/^(Dr\.|Dra\.|Prof\.)\s*/i, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return (parts[0]![0] ?? "").toUpperCase();
+  return (
+    (parts[0]![0] ?? "").toUpperCase() +
+    (parts[parts.length - 1]![0] ?? "").toUpperCase()
+  );
+}
+
+export async function submitReview(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const name = (formData.get("name") as string | null)?.trim() ?? "";
+  const quote = (formData.get("quote") as string | null)?.trim() ?? "";
+  const age = (formData.get("age") as string | null)?.trim() ?? "";
+
+  if (!name || !quote || !age) {
+    return { error: "Name, age and review are required." };
+  }
+
+  const db = getAdminClient();
+
+  const { data: maxRow } = await db.database
+    .from("reviews")
+    .select("display_order")
+    .order("display_order", { ascending: false })
+    .limit(1);
+
+  const maxOrder =
+    ((maxRow as { display_order: number }[] | null)?.[0]?.display_order ?? 0) +
+    1;
+
+  const { error: dbError } = await db.database.from("reviews").insert({
+    quote,
+    name,
+    age,
+    initials: computeInitials(name),
+    display_order: maxOrder,
+    status: "draft",
+  });
+
+  if (dbError) {
+    console.error("[submit-review]", dbError);
+    return {
+      error:
+        (dbError as { message?: string })?.message ?? "Failed to save review.",
+    };
+  }
+
+  return {};
+}

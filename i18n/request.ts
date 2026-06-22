@@ -18,6 +18,7 @@ const namespaces = [
   "about",
   "memberships",
   "serviceFaqs",
+  "reviews",
 ] as const;
 
 export default getRequestConfig(async ({ requestLocale }) => {
