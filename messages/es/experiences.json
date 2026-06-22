@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "Comunidad | Essentia Tenerife",
-    "description": "Únete a la comunidad Essentia — club de running, programas de educación sobre longevidad, eventos para miembros y membresías exclusivas en Tenerife."
+    "title": "Experiencias | Essentia Tenerife",
+    "description": "Únete a las experiencias Essentia — club de running, programas de educación sobre longevidad, eventos para miembros y membresías exclusivas en Tenerife."
   },
   "hero": {
     "headline": "La salud es mejor en compañía.",
     "title": "Donde la longevidad",
-    "titleBreak": "se encuentra con la comunidad.",
+    "titleBreak": "se encuentra con las experiencias.",
     "body": "Un club privado donde un propósito compartido genera conexiones reales. Corre, aprende y crece junto a personas que se toman su salud en serio.",
-    "ctaExplore": "Explorar la comunidad",
+    "ctaExplore": "Explorar las experiencias",
     "ctaTalk": "Habla con nosotros",
-    "ctaJoin": "Únete a la comunidad",
+    "ctaJoin": "Únete a las experiencias",
     "ctaLearn": "Explorar membresías"
   },
   "programs": {
-    "heading": "La comunidad.",
+    "heading": "Las experiencias.",
     "subheading": "Dos programas. Una dirección compartida.",
     "runningClub": {
       "title": "Club de Running",
@@ -26,13 +26,13 @@
     }
   },
   "values": {
-    "heading": "Por qué la comunidad",
-    "headingBreak": "importa aquí.",
+    "heading": "Por qué las experiencias",
+    "headingBreak": "importan aquí.",
     "body": "Essentia es más que un lugar para entrenar y recuperarse. Es una red de personas que entienden que vivir bien es a la vez una disciplina personal y una práctica compartida.",
     "items": {
       "intention": {
         "title": "Intención compartida",
-        "description": "Cada miembro está aquí por la misma razón: vivir mejor y más tiempo. Ese propósito compartido hace que esta comunidad sea diferente a cualquier otra."
+        "description": "Cada miembro está aquí por la misma razón: vivir mejor y más tiempo. Ese propósito compartido hace que estas experiencias sean diferentes a cualquier otra."
       },
       "connection": {
         "title": "Conexión real",
@@ -40,23 +40,23 @@
       },
       "growth": {
         "title": "Crecimiento colectivo",
-        "description": "El conocimiento compartido en nuestros programas y encuentros se multiplica en toda la comunidad."
+        "description": "El conocimiento compartido en nuestros programas y encuentros se multiplica en todas las experiencias."
       }
     }
   },
   "cta": {
     "heading": "¿Listo para unirte?",
-    "body": "El acceso a la comunidad está incluido en cada membresía Essentia. Elige tu nivel y forma parte de algo duradero.",
+    "body": "El acceso a las experiencias está incluido en cada membresía Essentia. Elige tu nivel y forma parte de algo duradero.",
     "ctaPrimary": "Ver membresías",
     "ctaSecondary": "Habla primero con nosotros"
   },
   "runningClub": {
     "heading": "Club de Running.",
     "subheading": "Cada sábado, 7:30h.",
-    "body": "Rutas curadas por Costa Adeje, todos los niveles son bienvenidos. Más que una carrera — es el ritual semanal que ancla la comunidad Essentia.",
+    "body": "Rutas curadas por Costa Adeje, todos los niveles son bienvenidos. Más que una carrera — es el ritual semanal que ancla las experiencias Essentia.",
     "cta": "Únete a la carrera",
     "meta": {
-      "title": "Club de Running | Comunidad Essentia",
+      "title": "Club de Running | Experiencias Essentia",
       "description": "Únete al club de running de Essentia en Tenerife. Cada sábado a las 7:30 — rutas costeras curadas, grupos por ritmo y desayuno compartido."
     },
     "hero": {
@@ -64,7 +64,7 @@
       "body": "Cada sábado por la mañana corremos juntos por una de las costas más espectaculares de Canarias. Sin competición, sin ego, solo movimiento y buena compañía.",
       "imageAlt": "Club de Running Essentia — ruta costera en Costa Adeje",
       "ctaNextRun": "Próxima carrera",
-      "ctaJoin": "Únete a la comunidad"
+      "ctaJoin": "Únete a las experiencias"
     },
     "next": {
       "heading": "Próxima carrera.",
@@ -92,14 +92,14 @@
           "description": "Nos dividimos por ritmos para que nadie se quede atrás. Tanto si corres a 5 min/km como a 7, hay un grupo para ti."
         },
         "community": {
-          "title": "La comunidad primero",
+          "title": "Las experiencias primero",
           "description": "La carrera termina con un desayuno compartido. Las mejores conversaciones suceden después del último kilómetro."
         }
       }
     },
     "ctaBlock": {
       "heading": "Nos vemos el sábado.",
-      "body": "El acceso al Club de Running está incluido en cada membresía Essentia. Elige tu nivel y únete a la comunidad.",
+      "body": "El acceso al Club de Running está incluido en cada membresía Essentia. Elige tu nivel y únete a las experiencias.",
       "cta": "Ver membresías"
     },
     "register": {
@@ -170,7 +170,7 @@
     "body": "Masterclasses mensuales, talleres y programas inmersivos con investigadores, clínicos y especialistas líderes. Todos los miembros son bienvenidos.",
     "cta": "Ver programas",
     "meta": {
-      "title": "Programas de Educación | Comunidad Essentia",
+      "title": "Programas de Educación | Experiencias Essentia",
       "description": "Masterclasses mensuales con investigadores, clínicos y especialistas líderes. Ciencia que puedes aplicar, entregada en persona."
     },
     "hero": {
@@ -179,7 +179,7 @@
       "body": "Masterclasses mensuales con investigadores, clínicos y especialistas líderes. Ciencia que puedes aplicar, entregada en persona.",
       "imageAlt": "Programas de Educación Essentia",
       "ctaNext": "Próxima sesión",
-      "ctaJoin": "Únete a la comunidad"
+      "ctaJoin": "Únete a las experiencias"
     },
     "next": {
       "heading": "Próxima sesión.",

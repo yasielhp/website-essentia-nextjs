@@ -10,7 +10,7 @@ import { Button } from "@components/ui/button";
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
-  const t = useTranslations("community.hero");
+  const t = useTranslations("experiences.hero");
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

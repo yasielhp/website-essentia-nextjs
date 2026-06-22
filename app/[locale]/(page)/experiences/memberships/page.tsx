@@ -16,11 +16,13 @@ export async function generateMetadata({
     description: t("description"),
     alternates: {
       canonical:
-        locale === "es" ? "/es/comunidad/membresias" : "/community/memberships",
+        locale === "es"
+          ? "/es/experiencias/membresias"
+          : "/experiences/memberships",
       languages: {
-        en: "/community/memberships",
-        es: "/es/comunidad/membresias",
-        "x-default": "/community/memberships",
+        en: "/experiences/memberships",
+        es: "/es/experiencias/membresias",
+        "x-default": "/experiences/memberships",
       },
     },
     openGraph: {

@@ -15,7 +15,7 @@ import { AnimatedLink, AnimatedIconLink } from "@components/ui/animated-text";
 const menuNameKeyByHref: Record<string, string> = {
   "/wellness": "wellness",
   "/medicine": "medicine",
-  "/community": "community",
+  "/experiences": "community",
   "/": "essentia",
 };
 
@@ -25,7 +25,7 @@ const sectionKeyByMenuHref: Record<
 > = {
   "/wellness": "wellness",
   "/medicine": "medicine",
-  "/community": "community",
+  "/experiences": "community",
   "/": null,
 };
 
@@ -38,9 +38,9 @@ const itemKeyByHref: Record<string, string> = {
   "/medicine/regenerative-medicine": "regenerativeMedicine",
   "/medicine/intravenous-therapy": "intravenousTherapy",
   "/medicine/hyperbaric-chambers": "hyperbaricChambers",
-  "/community/running-club": "runningClub",
-  "/community/education-programs": "educationAndPrograms",
-  "/community/memberships": "memberships",
+  "/experiences/running-club": "runningClub",
+  "/experiences/education-programs": "educationAndPrograms",
+  "/experiences/memberships": "memberships",
   "/about": "about",
   "/blog": "blog",
   "/shop": "shop",
@@ -99,7 +99,7 @@ export const Footer = () => {
                     </AnimatedLink>
                   </li>
                 ))}
-                {item.name === "Community" && (
+                {item.name === "Experiences" && (
                   <li>
                     <AnimatedLink href="/sign-in">
                       {tCommon("memberLogin")}
@@ -146,7 +146,7 @@ export const Footer = () => {
                             </AnimatedLink>
                           </li>
                         ))}
-                        {menu.name === "Community" && (
+                        {menu.name === "Experiences" && (
                           <li className="border-petroleum-500 border-l pr-5 pl-3">
                             <AnimatedLink
                               href="/sign-in"

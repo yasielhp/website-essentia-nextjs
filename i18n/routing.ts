@@ -57,19 +57,19 @@ export const routing = defineRouting({
       es: "/medicina/medicina-regenerativa",
     },
 
-    // Community
-    "/community": { en: "/community", es: "/comunidad" },
-    "/community/memberships": {
-      en: "/community/memberships",
-      es: "/comunidad/membresias",
+    // Experiences
+    "/experiences": { en: "/experiences", es: "/experiencias" },
+    "/experiences/memberships": {
+      en: "/experiences/memberships",
+      es: "/experiencias/membresias",
     },
-    "/community/running-club": {
-      en: "/community/running-club",
-      es: "/comunidad/running-club",
+    "/experiences/running-club": {
+      en: "/experiences/running-club",
+      es: "/experiencias/running-club",
     },
-    "/community/education-programs": {
-      en: "/community/education-programs",
-      es: "/comunidad/programas-educativos",
+    "/experiences/education-programs": {
+      en: "/experiences/education-programs",
+      es: "/experiencias/programas-educativos",
     },
 
     // Untranslated routes (same in both locales)

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Route, Lock, Calendar, type LucideIcon } from "lucide-react";
+import { Calendar, Clock, Lock, Users, type LucideIcon } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
@@ -14,14 +14,17 @@ import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
 import { useLocale, useTranslations } from "next-intl";
 
-type Race = {
+type Session = {
   id: string;
   title: string;
   description: string | null;
   date: string | null;
+  duration_minutes: number | null;
   location: string | null;
-  distance_km: number | null;
   max_participants: number | null;
+  speaker: string | null;
+  speaker_role: string | null;
+  price_cents: number | null;
 };
 
 type Stage = "form" | "member-blocker" | "success";
@@ -33,7 +36,7 @@ type FormFields = {
 };
 
 type RegisterState = {
-  race: Race | null;
+  session: Session | null;
   stage: Stage;
   loading: boolean;
   checking: boolean;
@@ -43,7 +46,7 @@ type RegisterState = {
 };
 
 type RegisterAction =
-  | { type: "SET_RACE"; race: Race }
+  | { type: "SET_SESSION"; session: Session }
   | { type: "SET_STAGE"; stage: Stage }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_SUCCESS" }
@@ -59,8 +62,8 @@ function registerReducer(
   action: RegisterAction,
 ): RegisterState {
   switch (action.type) {
-    case "SET_RACE":
-      return { ...state, race: action.race };
+    case "SET_SESSION":
+      return { ...state, session: action.session };
     case "SET_STAGE":
       return { ...state, stage: action.stage };
     case "SUBMIT_START":
@@ -86,7 +89,7 @@ function registerReducer(
 }
 
 const initialState: RegisterState = {
-  race: null,
+  session: null,
   stage: "form",
   loading: false,
   checking: false,
@@ -95,30 +98,55 @@ const initialState: RegisterState = {
   form: { firstName: "", lastName: "", email: "", phone: "" },
 };
 
-function formatRaceDate(iso: string | null, locale: string): string {
+function formatSessionDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  const datePart = iso.split("T")[0];
-  const [y, m, d] = datePart.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(
-    locale === "es" ? "es-ES" : "en-GB",
-    {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    },
-  );
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Atlantic/Canary",
+  });
 }
 
-function formatRaceTime(iso: string | null): string {
-  if (!iso) return "";
-  const match = iso.match(/[T ](\d{2}:\d{2})/);
-  if (!match) return "";
-  return match[1] === "00:00" ? "" : match[1];
+function formatSessionTimeRange(
+  iso: string | null,
+  durationMinutes: number | null,
+  locale: string,
+): string {
+  if (!iso) return "—";
+  const intl = locale === "es" ? "es-ES" : "en-GB";
+  const start = new Date(iso);
+  const startStr = start.toLocaleTimeString(intl, {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Atlantic/Canary",
+  });
+  if (durationMinutes) {
+    const end = new Date(start.getTime() + durationMinutes * 60_000);
+    const endStr = end.toLocaleTimeString(intl, {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Atlantic/Canary",
+    });
+    return `${startStr} – ${endStr}`;
+  }
+  return startStr;
+}
+
+function formatPrice(
+  priceCents: number | null,
+  labels: { membersOnly: string; free: string },
+): string {
+  if (priceCents === null) return labels.membersOnly;
+  if (priceCents === 0) return labels.free;
+  return `€${(priceCents / 100).toFixed(2)}`;
 }
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-300 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-200";
+
+const whatToBringKeys = ["card", "notebook", "questions"] as const;
 
 function Field({
   label,
@@ -139,34 +167,35 @@ function Field({
   );
 }
 
-type RaceDetail = { id: string; icon: LucideIcon; value: string };
+type SessionDetail = { id: string; icon: LucideIcon; value: string };
 
-function RaceInfoPanel({
-  race,
-  raceDetails,
-  displayDate,
-  raceTime,
+function SessionInfoPanel({
+  session,
+  sessionDetails,
+  displayTitle,
 }: {
-  race: Race | null;
-  raceDetails: RaceDetail[];
-  displayDate: string;
-  raceTime: string;
+  session: Session | null;
+  sessionDetails: SessionDetail[];
+  displayTitle: string;
 }) {
-  const t = useTranslations("community.runningClub.register");
+  const t = useTranslations("experiences.education.register");
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          {displayDate || t("title")}.
+          {displayTitle}.
         </h1>
-        {raceTime && (
-          <p className="text-petroleum-400 mt-2 text-sm">{raceTime}</p>
+        {session?.speaker && (
+          <p className="text-petroleum-400 mt-2 text-sm">
+            {session.speaker}
+            {session.speaker_role ? ` · ${session.speaker_role}` : ""}
+          </p>
         )}
       </div>
 
       <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
         <Image
-          src="/images/community/running-club-next.webp"
+          src="/images/menu/education-programs.webp"
           alt={t("imageAlt")}
           fill
           sizes="(max-width: 767px) 100vw, 50vw"
@@ -174,9 +203,9 @@ function RaceInfoPanel({
         />
       </div>
 
-      {raceDetails.length > 0 && (
+      {sessionDetails.length > 0 && (
         <div className="flex flex-col gap-3">
-          {raceDetails.map(({ id, icon: Icon, value }) => (
+          {sessionDetails.map(({ id, icon: Icon, value }) => (
             <div key={id} className="flex items-center gap-3">
               <Icon className="text-petroleum-400 shrink-0" size={15} />
               <p className="text-petroleum-500 text-sm">{value}</p>
@@ -185,17 +214,34 @@ function RaceInfoPanel({
         </div>
       )}
 
-      {race?.description && (
+      {session?.description && (
         <p className="text-petroleum-500 text-sm leading-relaxed">
-          {race.description}
+          {session.description}
         </p>
       )}
+
+      <div>
+        <p className="text-petroleum-400 mb-3 text-xs tracking-widest uppercase">
+          {t("whatToBring")}
+        </p>
+        <ul className="flex flex-col gap-2">
+          {whatToBringKeys.map((key) => (
+            <li
+              key={key}
+              className="text-petroleum-500 flex items-center gap-2 text-sm"
+            >
+              <span className="bg-petroleum-200 size-1 shrink-0 rounded-full" />
+              {t(`items.${key}`)}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
 
 function MemberBlockerModal({ onBack }: { onBack: () => void }) {
-  const t = useTranslations("community.runningClub.register.memberBlocker");
+  const t = useTranslations("experiences.education.register.memberBlocker");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
@@ -237,8 +283,8 @@ function GuestRegistrationForm({
   onConsent,
   onSubmit,
 }: GuestFormProps) {
-  const td = useTranslations("community.runningClub.register.details");
-  const tdp = useTranslations("community.runningClub.register.dataProtection");
+  const td = useTranslations("experiences.education.register.details");
+  const tdp = useTranslations("experiences.education.register.dataProtection");
   return (
     <div className="bg-sand-100 rounded-2xl p-8">
       <h2 className="font-display text-petroleum-700 mb-6 text-2xl">
@@ -389,27 +435,28 @@ function GuestRegistrationForm({
   );
 }
 
-function RunRegisterContent() {
+function EducationRegisterContent() {
   const { get } = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const locale = useLocale();
-  const t = useTranslations("community.runningClub.register");
+  const t = useTranslations("experiences.education.register");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(registerReducer, initialState);
-  const { race, stage, loading, checking, consent, consentError, form } = state;
+  const { session, stage, loading, checking, consent, consentError, form } =
+    state;
 
   useEffect(() => {
     const id = get("id");
     if (!id) return;
     void insforge.database
-      .from("races")
+      .from("education_sessions")
       .select(
-        "id, title, description, date, location, distance_km, max_participants",
+        "id, title, description, date, duration_minutes, location, max_participants, speaker, speaker_role, price_cents",
       )
       .eq("id", id)
       .single()
       .then(({ data }) => {
-        if (data) dispatch({ type: "SET_RACE", race: data as Race });
+        if (data) dispatch({ type: "SET_SESSION", session: data as Session });
       });
   }, [get]);
 
@@ -429,23 +476,40 @@ function RunRegisterContent() {
     return () => ctx.revert();
   }, []);
 
-  const raceTime = formatRaceTime(race?.date ?? null);
-  const displayDate = race ? formatRaceDate(race.date, locale) : "";
+  const displayTitle = session?.title ?? t("title");
+  const displayDate = session ? formatSessionDate(session.date, locale) : "";
 
-  const raceDetails: RaceDetail[] = race
+  const sessionDetails: SessionDetail[] = session
     ? [
         {
           id: "date",
           icon: Calendar,
-          value: formatRaceDate(race.date, locale),
+          value: formatSessionDate(session.date, locale),
         },
         {
-          id: "distance",
-          icon: Route,
-          value: race.distance_km ? `${race.distance_km} km` : "—",
+          id: "time",
+          icon: Clock,
+          value: formatSessionTimeRange(
+            session.date,
+            session.duration_minutes,
+            locale,
+          ),
         },
-        { id: "access", icon: Lock, value: t("membersOnly") },
-        { id: "location", icon: MapPin, value: race.location ?? "—" },
+        {
+          id: "access",
+          icon: Lock,
+          value: formatPrice(session.price_cents, {
+            membersOnly: t("membersOnly"),
+            free: t("free"),
+          }),
+        },
+        {
+          id: "seats",
+          icon: Users,
+          value: session.max_participants
+            ? t("limitedTo", { seats: session.max_participants })
+            : t("openSeats"),
+        },
       ]
     : [];
 
@@ -477,8 +541,8 @@ function RunRegisterContent() {
       p_language: locale,
     });
 
-    await insforge.database.rpc("register_for_race", {
-      p_race_id: race?.id ?? "",
+    await insforge.database.rpc("register_for_education", {
+      p_session_id: session?.id ?? "",
       p_contact_id: (contactId as string) ?? undefined,
     });
 
@@ -486,10 +550,10 @@ function RunRegisterContent() {
   };
 
   const handleConfirm = async () => {
-    if (!user || !race) return;
+    if (!user || !session) return;
     dispatch({ type: "CONFIRM_START" });
-    await insforge.database.rpc("register_for_race", {
-      p_race_id: race.id,
+    await insforge.database.rpc("register_for_education", {
+      p_session_id: session.id,
       p_user_id: user.id,
     });
     dispatch({ type: "CONFIRM_SUCCESS" });
@@ -500,11 +564,10 @@ function RunRegisterContent() {
       <div className="mx-auto max-w-4xl px-5 pt-36 pb-24 md:pt-52">
         <div ref={wrapperRef} className="flex flex-col gap-12">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16">
-            <RaceInfoPanel
-              race={race}
-              raceDetails={raceDetails}
-              displayDate={displayDate}
-              raceTime={raceTime}
+            <SessionInfoPanel
+              session={session}
+              sessionDetails={sessionDetails}
+              displayTitle={displayTitle}
             />
 
             <div>
@@ -516,15 +579,15 @@ function RunRegisterContent() {
                   <p className="text-petroleum-400 text-sm leading-relaxed">
                     {t("success.bodyPrefix")}{" "}
                     <strong className="text-petroleum-500 font-medium">
-                      {displayDate || race?.title || t("success.fallbackTitle")}
-                    </strong>{" "}
-                    {t("success.bodySuffix")}
-                    {raceTime
-                      ? ` ${t("success.seeYouAt")} ${raceTime} ${race?.location ?? t("success.atMeetingPoint")}.`
+                      {displayTitle}
+                    </strong>
+                    {displayDate
+                      ? ` ${t("success.bodyOn")} ${displayDate}`
                       : ""}
+                    .
                   </p>
                   <Link
-                    href="/community/running-club"
+                    href="/experiences/education-programs"
                     className="text-petroleum-500 hover:text-petroleum-700 mt-2 text-sm underline underline-offset-4 transition-colors"
                   >
                     {t("success.back")}
@@ -547,7 +610,7 @@ function RunRegisterContent() {
                     variant="solid"
                     size="md"
                     onClick={() => void handleConfirm()}
-                    disabled={loading || !race}
+                    disabled={loading || !session}
                     className="w-full"
                   >
                     {loading ? t("confirm.submitting") : t("confirm.submit")}
@@ -582,10 +645,10 @@ function RunRegisterContent() {
   );
 }
 
-export default function RunRegisterSection() {
+export default function EducationRegisterSection() {
   return (
     <Suspense>
-      <RunRegisterContent />
+      <EducationRegisterContent />
     </Suspense>
   );
 }

@@ -13,7 +13,7 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── ProgramCard ──────────────────────────────────────────────
 
 function ProgramCard({ program }: { program: (typeof programs)[number] }) {
-  const t = useTranslations("community.programs");
+  const t = useTranslations("experiences.programs");
   const title = t(`${program.key}.title`);
   const description = t(`${program.key}.description`);
   return (
@@ -49,7 +49,7 @@ function ProgramCard({ program }: { program: (typeof programs)[number] }) {
 // ─── ProgramsSection ──────────────────────────────────────────
 
 export default function ProgramsSection() {
-  const t = useTranslations("community.programs");
+  const t = useTranslations("experiences.programs");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);

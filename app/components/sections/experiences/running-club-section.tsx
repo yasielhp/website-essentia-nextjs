@@ -51,7 +51,7 @@ const expectNumbers: Record<(typeof expectKeys)[number], string> = {
 // ─── Hero ─────────────────────────────────────────────────────
 
 function RunningClubHero() {
-  const t = useTranslations("community.runningClub.hero");
+  const t = useTranslations("experiences.runningClub.hero");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -112,7 +112,7 @@ function RunningClubHero() {
           <Button
             variant="outline-white"
             size="md"
-            href="/community/memberships"
+            href="/experiences/memberships"
           >
             {t("ctaJoin")}
           </Button>
@@ -125,7 +125,7 @@ function RunningClubHero() {
 // ─── Next run ─────────────────────────────────────────────────
 
 function NextRunSection({ race }: { race: NextRace | null }) {
-  const t = useTranslations("community.runningClub.next");
+  const t = useTranslations("experiences.runningClub.next");
   const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -325,7 +325,7 @@ function NextRunSection({ race }: { race: NextRace | null }) {
 // ─── What to expect ───────────────────────────────────────────
 
 function ExpectSection() {
-  const t = useTranslations("community.runningClub.expect");
+  const t = useTranslations("experiences.runningClub.expect");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -425,7 +425,7 @@ function ExpectSection() {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection() {
-  const t = useTranslations("community.runningClub.ctaBlock");
+  const t = useTranslations("experiences.runningClub.ctaBlock");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -496,7 +496,7 @@ function CtaSection() {
             <p className="text-petroleum-400 max-w-md leading-relaxed">
               {t("body")}
             </p>
-            <Button variant="solid" size="md" href="/community/memberships">
+            <Button variant="solid" size="md" href="/experiences/memberships">
               {t("cta")}
             </Button>
           </div>

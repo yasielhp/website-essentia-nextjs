@@ -1,7 +1,7 @@
 {
   "wellness": "Bienestar",
   "medicine": "Medicina",
-  "community": "Comunidad",
+  "community": "Experiencias",
   "essentia": "Essentia",
   "about": "Sobre nosotros",
   "blog": "Blog",
@@ -36,7 +36,7 @@
       "description": "Protocolos clínicos que integran la ciencia regenerativa y la medicina integrativa para abordar las causas raíz del desequilibrio."
     },
     "community": {
-      "title": "Comunidad",
+      "title": "Experiencias",
       "description": "Un ecosistema vivo de personas unidas por un compromiso compartido con la salud, el movimiento, el aprendizaje y la conexión auténtica."
     },
     "manualTherapies": {

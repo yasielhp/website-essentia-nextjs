@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
-import HeroSection from "@components/sections/community/hero-section";
-import ProgramsSection from "@components/sections/community/programs-section";
-import ValuesSection from "@components/sections/community/values-section";
-import CtaSection from "@components/sections/community/cta-section";
+import HeroSection from "@components/sections/experiences/hero-section";
+import ProgramsSection from "@components/sections/experiences/programs-section";
+import ValuesSection from "@components/sections/experiences/values-section";
+import CtaSection from "@components/sections/experiences/cta-section";
 
 export async function generateMetadata({
   params,
@@ -12,16 +12,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "community.meta" });
+  const t = await getTranslations({ locale, namespace: "experiences.meta" });
   return {
     title: t("title"),
     description: t("description"),
     alternates: {
-      canonical: locale === "es" ? "/es/comunidad" : "/community",
+      canonical: locale === "es" ? "/es/experiencias" : "/experiences",
       languages: {
-        en: "/community",
-        es: "/es/comunidad",
-        "x-default": "/community",
+        en: "/experiences",
+        es: "/es/experiencias",
+        "x-default": "/experiences",
       },
     },
     openGraph: {

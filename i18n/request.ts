@@ -10,7 +10,7 @@ const namespaces = [
   "home",
   "wellness",
   "medicine",
-  "community",
+  "experiences",
   "booking",
   "blog",
   "auth",

@@ -115,7 +115,7 @@ const pillarNumbers: Record<(typeof pillarKeys)[number], string> = {
 // ─── Hero ─────────────────────────────────────────────────────
 
 function EducationHero() {
-  const t = useTranslations("community.education.hero");
+  const t = useTranslations("experiences.education.hero");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,7 +178,7 @@ function EducationHero() {
           <Button
             variant="outline-white"
             size="md"
-            href="/community/memberships"
+            href="/experiences/memberships"
           >
             {t("ctaJoin")}
           </Button>
@@ -197,7 +197,7 @@ function NextSessionSection({
   session: NextSession | null;
   isMember: boolean;
 }) {
-  const t = useTranslations("community.education.next");
+  const t = useTranslations("experiences.education.next");
   const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -380,7 +380,7 @@ function NextSessionSection({
                       <Button
                         variant="solid"
                         size="md"
-                        href="/community/memberships"
+                        href="/experiences/memberships"
                         className="w-full md:w-auto md:self-start"
                       >
                         {t("ctaJoin")}
@@ -416,7 +416,7 @@ function NextSessionSection({
 // ─── Format ───────────────────────────────────────────────────
 
 function FormatSection() {
-  const t = useTranslations("community.education.format");
+  const t = useTranslations("experiences.education.format");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -516,7 +516,7 @@ function FormatSection() {
 // ─── CTA ──────────────────────────────────────────────────────
 
 function CtaSection() {
-  const t = useTranslations("community.education.ctaBlock");
+  const t = useTranslations("experiences.education.ctaBlock");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -587,7 +587,7 @@ function CtaSection() {
             <p className="text-petroleum-400 max-w-md leading-relaxed">
               {t("body")}
             </p>
-            <Button variant="solid" size="md" href="/community/memberships">
+            <Button variant="solid" size="md" href="/experiences/memberships">
               {t("cta")}
             </Button>
           </div>

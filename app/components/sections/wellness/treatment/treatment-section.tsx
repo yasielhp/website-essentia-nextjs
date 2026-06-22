@@ -465,7 +465,7 @@ function CtaSection({ data }: { data: TreatmentData }) {
                 <Button
                   variant="outline"
                   size="md"
-                  href="/community/memberships"
+                  href="/experiences/memberships"
                 >
                   {tShared("viewMemberships")}
                 </Button>

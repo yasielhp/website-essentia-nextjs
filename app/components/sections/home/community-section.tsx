@@ -100,7 +100,7 @@ export default function CommunitySection() {
                   {tRun("description")}
                 </p>
                 <Link
-                  href="/community/running-club"
+                  href="/experiences/running-club"
                   className="text-sand-300 mt-3 inline-block text-sm transition-colors duration-150 hover:text-white"
                 >
                   {tRun("cta")}
@@ -124,7 +124,7 @@ export default function CommunitySection() {
                 <Button
                   variant="outline-white"
                   size="sm"
-                  href="/community/education-programs"
+                  href="/experiences/education-programs"
                   className="mt-4 w-full md:w-auto"
                 >
                   {tEdu("cta")}
@@ -145,7 +145,7 @@ export default function CommunitySection() {
                 <Button
                   variant="outline"
                   size="sm"
-                  href="/community"
+                  href="/experiences"
                   className="mt-4 w-full md:w-auto"
                 >
                   {tEvents("cta")}

@@ -81,7 +81,7 @@ export default function CtaSection() {
               {t("body")}
             </p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button variant="white" size="md" href="/community/memberships">
+              <Button variant="white" size="md" href="/experiences/memberships">
                 {t("ctaMembership")}
               </Button>
               <Button variant="outline-white" size="md" href="/contact">

@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
     amount: Math.round(priceMonthly * 100),
     currency: "978",
     description: `Essentia — ${planData.label}`,
-    successUrl: `${appUrl}/community/memberships?payment=success&planId=${planId}`,
-    cancelUrl: `${appUrl}/community/memberships?payment=cancel`,
+    successUrl: `${appUrl}/experiences/memberships?payment=success&planId=${planId}`,
+    cancelUrl: `${appUrl}/experiences/memberships?payment=cancel`,
     customerEmail: email || undefined,
     metadata: { notifyUrl: `${appUrl}/api/webhooks/redsys` },
   });

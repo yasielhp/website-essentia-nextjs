@@ -34,7 +34,7 @@ import { useAuth } from "@/components/auth-provider";
 const menuNameKeyByHref: Record<string, string> = {
   "/wellness": "wellness",
   "/medicine": "medicine",
-  "/community": "community",
+  "/experiences": "community",
   "/": "essentia",
 };
 
@@ -49,10 +49,10 @@ const itemKeyByHref: Record<string, string> = {
   "/medicine/regenerative-medicine": "regenerativeMedicine",
   "/medicine/intravenous-therapy": "intravenousTherapy",
   "/medicine/hyperbaric-chambers": "hyperbaricChambers",
-  // community
-  "/community/running-club": "runningClub",
-  "/community/education-programs": "educationAndPrograms",
-  "/community/memberships": "memberships",
+  // experiences
+  "/experiences/running-club": "runningClub",
+  "/experiences/education-programs": "educationAndPrograms",
+  "/experiences/memberships": "memberships",
   // essentia
   "/about": "about",
   "/blog": "blog",
@@ -67,7 +67,7 @@ const sectionKeyByMenuHref: Record<
 > = {
   "/wellness": "wellness",
   "/medicine": "medicine",
-  "/community": "community",
+  "/experiences": "community",
   "/": null,
 };
 

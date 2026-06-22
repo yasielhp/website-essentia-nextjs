@@ -104,10 +104,10 @@ export const maiMenu = [
     ],
   },
   {
-    name: "Community",
-    href: "/community",
+    name: "Experiences",
+    href: "/experiences",
     card: {
-      title: "Community",
+      title: "Experiences",
       description:
         "A living ecosystem of people united by a shared commitment to health, movement, learning, and meaningful connection.",
       imagen: "/images/menu/community.webp",
@@ -115,7 +115,7 @@ export const maiMenu = [
     itemMenu: [
       {
         itemName: "Running club",
-        href: "/community/running-club",
+        href: "/experiences/running-club",
         card: {
           title: "Running Club",
           description:
@@ -125,7 +125,7 @@ export const maiMenu = [
       },
       {
         itemName: "Education and programs",
-        href: "/community/education-programs",
+        href: "/experiences/education-programs",
         card: {
           title: "Education and Programs",
           description:
@@ -135,11 +135,11 @@ export const maiMenu = [
       },
       {
         itemName: "Memberships",
-        href: "/community/memberships",
+        href: "/experiences/memberships",
         card: {
           title: "Memberships",
           description:
-            "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and community.",
+            "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and experiences.",
           imagen: "/images/menu/memberships.webp",
         },
       },

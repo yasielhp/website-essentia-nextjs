@@ -92,7 +92,7 @@ function TierCard({ tier }: { tier: Tier }) {
         <Button
           variant={tier.ctaVariant}
           size="md"
-          href={`/community/memberships?tier=${tierId}#tiers`}
+          href={`/experiences/memberships?tier=${tierId}#tiers`}
           className="w-full md:w-auto"
         >
           {t("cta")}

@@ -1,7 +1,7 @@
 {
   "wellness": "Wellness",
   "medicine": "Medicine",
-  "community": "Community",
+  "community": "Experiences",
   "essentia": "Essentia",
   "about": "About",
   "blog": "Blog",
@@ -36,7 +36,7 @@
       "description": "Clinical protocols bridging regenerative science and integrative medicine to address the root causes of imbalance."
     },
     "community": {
-      "title": "Community",
+      "title": "Experiences",
       "description": "A living ecosystem of people united by a shared commitment to health, movement, learning, and meaningful connection."
     },
     "manualTherapies": {

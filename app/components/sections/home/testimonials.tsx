@@ -355,7 +355,10 @@ export default function Testimonials() {
       <div className="overflow-hidden">
         <div className="flex flex-col pt-24 pb-16 md:gap-10 md:pt-36 md:pb-16">
           {/* Header — constrained width */}
-          <div ref={headerRef} className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl">
+          <div
+            ref={headerRef}
+            className="px-5 text-center md:mx-auto md:w-full md:max-w-4xl"
+          >
             <h2 className="font-display text-petroleum-700 mt-3 mb-4 text-3xl md:text-5xl">
               {t("headline")}
               <br />

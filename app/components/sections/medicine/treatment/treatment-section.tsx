@@ -67,7 +67,7 @@ function TreatmentHero({ data }: { data: MedicineTreatmentData }) {
           <Button
             variant="outline-white"
             size="md"
-            href="/community/memberships"
+            href="/experiences/memberships"
           >
             View memberships
           </Button>

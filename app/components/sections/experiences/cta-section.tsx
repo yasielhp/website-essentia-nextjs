@@ -4,12 +4,12 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTranslations } from "next-intl";
-import { valueKeys, valueNumbers } from "./data";
+import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function ValuesSection() {
-  const t = useTranslations("community.values");
+export default function CtaSection() {
+  const t = useTranslations("experiences.cta");
   const sectionRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -35,17 +35,13 @@ export default function ValuesSection() {
             pin: inner,
           },
         });
-        tl.to(children[0], {
+        tl.to(children, {
           opacity: 1,
           y: 0,
-          duration: 0.25,
+          stagger: 0.15,
+          duration: 0.35,
           ease: "power3.out",
         });
-        tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-          "-=0.05",
-        );
       });
 
       mm.add("(max-width: 767px)", () => {
@@ -74,37 +70,23 @@ export default function ValuesSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-100 md:h-[260vh]">
+    <section ref={sectionRef} className="bg-petroleum-700 md:h-[220vh]">
       <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
-            {/* ── Header ── */}
-            <div className="md:max-w-lg">
-              <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-                {t("heading")}
-                <br />
-                {t("headingBreak")}
-              </h2>
-              <p className="text-petroleum-400 mt-4 leading-relaxed">
-                {t("body")}
-              </p>
-            </div>
-
-            {/* ── Values ── */}
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {valueKeys.map((k) => (
-                <div key={k}>
-                  <span className="font-display text-petroleum-200 text-5xl">
-                    {valueNumbers[k]}
-                  </span>
-                  <h3 className="text-petroleum-700 mt-3 text-lg font-medium">
-                    {t(`items.${k}.title`)}
-                  </h3>
-                  <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">
-                    {t(`items.${k}.description`)}
-                  </p>
-                </div>
-              ))}
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
+          <div ref={bodyRef} className="flex flex-col items-center gap-6">
+            <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
+              {t("heading")}
+            </h2>
+            <p className="text-sand-500 max-w-md leading-relaxed">
+              {t("body")}
+            </p>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button variant="white" size="md" href="/experiences/memberships">
+                {t("ctaPrimary")}
+              </Button>
+              <Button variant="outline-white" size="md" href="/contact">
+                {t("ctaSecondary")}
+              </Button>
             </div>
           </div>
         </div>

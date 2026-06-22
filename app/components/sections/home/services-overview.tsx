@@ -11,7 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── Data ──────────────────────────────────────────────────────
 
-type ServiceKey = "wellness" | "medicine" | "community";
+type ServiceKey = "wellness" | "medicine" | "experiences";
 
 const services: ReadonlyArray<{
   key: ServiceKey;
@@ -32,9 +32,9 @@ const services: ReadonlyArray<{
     img: "/images/menu/medicine.webp",
   },
   {
-    key: "community",
+    key: "experiences",
     number: "03",
-    href: "/community",
+    href: "/experiences",
     img: "/images/menu/community.webp",
   },
 ];

@@ -35,7 +35,7 @@
 
 **Medicine** — Regenerative protocols, IV therapy, and hyperbaric oxygen. Clinical science and precision care in service of longevity.
 
-**Community** — Running club, education programs, and exclusive memberships. Belonging to something meaningful.
+**Experiences** — Running club, education programs, and exclusive memberships. Belonging to something meaningful.
 
 ---
 
@@ -185,7 +185,7 @@ All medicine services are medically supervised. Initial consultations and compre
 
 ## Memberships
 
-Bookable at: https://www.essentiawellnessclub.com/community/memberships
+Bookable at: https://www.essentiawellnessclub.com/experiences/memberships
 
 ### Essential — €199/month
 Full access to all wellness facilities, group sessions, and community events.
@@ -216,10 +216,10 @@ Full ecosystem access with a dedicated health advisor and founding member status
 
 ---
 
-## Community Programs
+## Experiences Programs
 
 ### Running Club
-- **URL:** https://www.essentiawellnessclub.com/community/running-club
+- **URL:** https://www.essentiawellnessclub.com/experiences/running-club
 - **Schedule:** Every Saturday at 7:30 AM
 - **Location:** Costa Adeje, Tenerife
 - **Description:** Weekly coastal routes through Costa Adeje. All fitness levels welcome. Shared breakfast after the run.
@@ -227,7 +227,7 @@ Full ecosystem access with a dedicated health advisor and founding member status
 - **Included in:** All membership tiers
 
 ### Education Programs
-- **URL:** https://www.essentiawellnessclub.com/community/education-programs
+- **URL:** https://www.essentiawellnessclub.com/experiences/education-programs
 - **Frequency:** Monthly masterclasses and workshops
 - **Description:** Talks, workshops, and immersive programs on longevity, nutrition, movement, and medicine. Led by researchers and longevity practitioners.
 - **Included in:** All membership tiers
@@ -250,8 +250,8 @@ Full ecosystem access with a dedicated health advisor and founding member status
 - Home: https://www.essentiawellnessclub.com
 - Wellness: https://www.essentiawellnessclub.com/wellness
 - Medicine: https://www.essentiawellnessclub.com/medicine
-- Community: https://www.essentiawellnessclub.com/community
-- Memberships: https://www.essentiawellnessclub.com/community/memberships
+- Experiences: https://www.essentiawellnessclub.com/experiences
+- Memberships: https://www.essentiawellnessclub.com/experiences/memberships
 - About: https://www.essentiawellnessclub.com/about
 - Blog: https://www.essentiawellnessclub.com/blog
 - Contact: https://www.essentiawellnessclub.com/contact

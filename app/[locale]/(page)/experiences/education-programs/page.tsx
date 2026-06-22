@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const revalidate = 3600;
 import { getTranslations } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
-import RunningClubSection from "@components/sections/community/running-club-section";
+import EducationSection from "@components/sections/experiences/education-section";
 
 export async function generateMetadata({
   params,
@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({
     locale,
-    namespace: "community.runningClub.meta",
+    namespace: "experiences.education.meta",
   });
   return {
     title: t("title"),
@@ -21,12 +21,12 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/comunidad/running-club"
-          : "/community/running-club",
+          ? "/es/experiencias/programas-educativos"
+          : "/experiences/education-programs",
       languages: {
-        en: "/community/running-club",
-        es: "/es/comunidad/running-club",
-        "x-default": "/community/running-club",
+        en: "/experiences/education-programs",
+        es: "/es/experiencias/programas-educativos",
+        "x-default": "/experiences/education-programs",
       },
     },
     openGraph: {
@@ -36,6 +36,6 @@ export async function generateMetadata({
   };
 }
 
-export default function RunningClubPage() {
-  return <RunningClubSection />;
+export default function EducationPage() {
+  return <EducationSection />;
 }
