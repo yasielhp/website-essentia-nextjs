@@ -158,12 +158,12 @@
     "cta": "Discover Essentia",
     "stats": {
       "totalSpace": {
-        "value": "1,200 m²",
-        "label": "Total space"
+        "value": "Baobab Suites",
+        "label": "Location"
       },
       "floors": {
         "value": "3",
-        "label": "Floors of wellness"
+        "label": "Treatment rooms"
       },
       "location": {
         "value": "Tenerife",
