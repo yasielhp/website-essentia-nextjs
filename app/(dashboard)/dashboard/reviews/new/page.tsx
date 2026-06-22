@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
-import { IconArrowLeft } from "@/components/ui/icons";
-
-const fieldCls =
-  "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
 
 function computeInitials(name: string): string {
   const parts = name
@@ -23,28 +20,87 @@ function computeInitials(name: string): string {
   );
 }
 
+// ─── State ────────────────────────────────────────────────────
+
+type FormState = {
+  submitting: boolean;
+  error: string | null;
+  quote: string;
+  name: string;
+  age: string;
+  initials: string;
+};
+
+type FormAction =
+  | {
+      type: "SET_FIELD";
+      field: keyof Omit<FormState, "submitting" | "error">;
+      value: string;
+    }
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "CLEAR_ERROR" };
+
+const initialState: FormState = {
+  submitting: false,
+  error: null,
+  quote: "",
+  name: "",
+  age: "",
+  initials: "",
+};
+
+function reducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SUBMIT_START":
+      return { ...state, submitting: true, error: null };
+    case "SUBMIT_ERROR":
+      return { ...state, submitting: false, error: action.message };
+    case "CLEAR_ERROR":
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
 export default function NewReviewPage() {
   const { push } = useRouter();
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { submitting, error, quote, name, age, initials } = state;
 
-  const [quote, setQuote] = useState("");
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [initials, setInitials] = useState("");
-  const [style, setStyle] = useState<"dark" | "light">("light");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  function setField(
+    field: keyof Omit<FormState, "submitting" | "error">,
+    value: string,
+  ) {
+    dispatch({ type: "SET_FIELD", field, value });
+  }
 
   function handleNameChange(value: string) {
-    setName(value);
-    setInitials(computeInitials(value));
+    dispatch({ type: "SET_FIELD", field: "name", value });
+    dispatch({
+      type: "SET_FIELD",
+      field: "initials",
+      value: computeInitials(value),
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!quote.trim() || !name.trim()) return;
+    dispatch({ type: "CLEAR_ERROR" });
 
-    setSaving(true);
-    setError(null);
+    if (!quote.trim() || !name.trim()) {
+      dispatch({
+        type: "SUBMIT_ERROR",
+        message: "Quote and name are required.",
+      });
+      return;
+    }
+
+    dispatch({ type: "SUBMIT_START" });
 
     const { data: maxRow } = await insforge.database
       .from("reviews")
@@ -61,14 +117,17 @@ export default function NewReviewPage() {
       name: name.trim(),
       age: age.trim(),
       initials: initials.trim() || computeInitials(name.trim()),
-      style,
       display_order: maxOrder,
       status: "draft",
     });
 
     if (dbError) {
-      setError("Error saving the review. Please try again.");
-      setSaving(false);
+      dispatch({
+        type: "SUBMIT_ERROR",
+        message:
+          (dbError as { message?: string })?.message ??
+          "Failed to create review.",
+      });
       return;
     }
 
@@ -77,190 +136,126 @@ export default function NewReviewPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="md"
-          href="/dashboard/reviews"
-          className="gap-2"
-        >
-          <IconArrowLeft />
-          Reviews
-        </Button>
-      </div>
-
-      <div className="max-w-lg">
-        <h1 className="font-display text-petroleum-700 mb-6 text-2xl">
-          New Review
-        </h1>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Quote */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">
-              Quote <span className="text-red-400">*</span>
-            </span>
-            <textarea
-              value={quote}
-              onChange={(e) => setQuote(e.target.value)}
-              placeholder="What the client said…"
-              rows={4}
-              required
-              className={`${fieldCls} resize-none`}
-            />
-          </label>
-
-          {/* Name */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">
-              Name <span className="text-red-400">*</span>
-            </span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g. Marcus V."
-              required
-              className={fieldCls}
-            />
-          </label>
-
-          {/* Age + Initials */}
-          <div className="grid grid-cols-2 gap-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-petroleum-400 text-xs font-medium">
-                Age label
-              </span>
-              <input
-                type="text"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="e.g. Age 47"
-                className={fieldCls}
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-petroleum-400 text-xs font-medium">
-                Initials
-              </span>
-              <input
-                type="text"
-                value={initials}
-                onChange={(e) => setInitials(e.target.value.toUpperCase())}
-                placeholder="e.g. MV"
-                maxLength={3}
-                className={fieldCls}
-              />
-            </label>
-          </div>
-
-          {/* Style */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">
-              Card style
-            </span>
-            <div className="flex gap-3">
-              {(["light", "dark"] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStyle(s)}
-                  className={[
-                    "flex flex-1 flex-col items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-colors",
-                    style === s
-                      ? "border-petroleum-700 bg-petroleum-50 text-petroleum-700"
-                      : "border-sand-200 text-petroleum-400 hover:border-petroleum-300",
-                  ].join(" ")}
-                >
-                  <div
-                    className={`h-6 w-6 rounded-full border ${
-                      s === "dark"
-                        ? "border-petroleum-700 bg-petroleum-700"
-                        : "border-sand-300 bg-sand-50"
-                    }`}
-                  />
-                  <span className="capitalize">{s}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
-          {/* Preview */}
-          <div className="border-sand-200 rounded-xl border p-4">
-            <p className="text-petroleum-300 mb-3 text-xs font-medium">
-              Preview
-            </p>
-            <div
-              className={`relative flex flex-col gap-4 rounded-2xl p-5 ${
-                style === "dark" ? "bg-petroleum-700" : "bg-sand-50"
-              }`}
-            >
-              <p
-                className={`text-sm leading-snug ${
-                  style === "dark" ? "text-sand-50" : "text-petroleum-700"
-                }`}
-              >
-                {quote || "Your quote will appear here…"}
-              </p>
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
-                    style === "dark"
-                      ? "bg-petroleum-500 text-sand-50"
-                      : "bg-petroleum-100 text-petroleum-700"
-                  }`}
-                >
-                  {initials || "??"}
-                </div>
-                <div>
-                  <p
-                    className={`text-xs font-medium ${
-                      style === "dark" ? "text-sand-50" : "text-petroleum-700"
-                    }`}
-                  >
-                    {name || "Author name"}
-                  </p>
-                  <p
-                    className={`text-xs ${
-                      style === "dark"
-                        ? "text-sand-50/60"
-                        : "text-petroleum-400"
-                    }`}
-                  >
-                    {age || "Age"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-petroleum-300 -mt-1 text-xs">
-            The review will be saved as a <strong>draft</strong>. Change it to
-            Published manually from the list.
-          </p>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              onClick={() => push("/dashboard/reviews")}
-            >
+      <form onSubmit={(e) => void handleSubmit(e)} noValidate>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="font-display text-petroleum-700 text-3xl">
+            New Review
+          </h1>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="md" href="/dashboard/reviews">
               Cancel
             </Button>
             <Button
               type="submit"
               variant="solid"
               size="md"
-              disabled={saving || !quote.trim() || !name.trim()}
+              disabled={submitting}
             >
-              {saving ? "Saving…" : "Save as Draft"}
+              {submitting ? "Creating…" : "Save as Draft"}
             </Button>
           </div>
-        </form>
-      </div>
+        </div>
+
+        {error && (
+          <p className="mb-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* Quote */}
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              Review
+            </h2>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="quote"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                Quote <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                id="quote"
+                value={quote}
+                onChange={(e) => setField("quote", e.target.value)}
+                placeholder="What the client said…"
+                rows={4}
+                disabled={submitting}
+                className={TEXTAREA_CLASS}
+              />
+            </div>
+          </div>
+
+          {/* Author */}
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              Author
+            </h2>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="name"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Marcus V."
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="age"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    Age
+                  </label>
+                  <input
+                    id="age"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={age}
+                    onChange={(e) => setField("age", e.target.value)}
+                    placeholder="47"
+                    disabled={submitting}
+                    className={INPUT_CLASS}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="initials"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    Initials
+                  </label>
+                  <input
+                    id="initials"
+                    type="text"
+                    value={initials}
+                    onChange={(e) =>
+                      setField("initials", e.target.value.toUpperCase())
+                    }
+                    placeholder="MV"
+                    maxLength={3}
+                    disabled={submitting}
+                    className={INPUT_CLASS}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }
