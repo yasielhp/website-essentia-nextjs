@@ -26,17 +26,17 @@
     "services": {
       "wellness": {
         "title": "Bienestar",
-        "description": "Contraste térmico, terapias manuales, respiración y luz roja — un espectro completo de restauración.",
+        "description": "Un enfoque avanzado de cuidado corporal, basado en protocolos personalizados, para acompañar al cuerpo en procesos de inflamación, recuperación, ligereza y equilibrio.",
         "cta": "Explorar Bienestar"
       },
       "medicine": {
         "title": "Medicina",
-        "description": "Protocolos regenerativos, terapia IV y oxígeno hiperbárico — ciencia clínica y cuidado de precisión al servicio de la longevidad.",
+        "description": "Terapia intravenosa de vitaminas y nutrientes para apoyar la energía, la recuperación, la hidratación y el bienestar, bajo valoración profesional y con enfoque personalizado.",
         "cta": "Explorar Medicina"
       },
       "experiences": {
         "title": "Experiencias",
-        "description": "Club de running, programas educativos y membresías exclusivas — una pertenencia real a algo significativo.",
+        "description": "Un acompañamiento premium antes, durante y después de cada sesión, donde cada detalle está pensado para que entiendas mejor tu cuerpo y potencies los resultados de cada tratamiento.",
         "cta": "Explorar Experiencias"
       }
     }

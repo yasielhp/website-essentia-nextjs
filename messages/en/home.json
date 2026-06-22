@@ -26,17 +26,17 @@
     "services": {
       "wellness": {
         "title": "Wellness",
-        "description": "Thermal contrast, manual therapies, breathwork, and red light — a full spectrum of restoration.",
+        "description": "An advanced approach to body care, based on personalised protocols, to support the body through inflammation, recovery, lightness and balance — for those who choose to care with intention.",
         "cta": "Explore Wellness"
       },
       "medicine": {
         "title": "Medicine",
-        "description": "Regenerative protocols, IV therapy, and hyperbaric oxygen — clinical science and precision care in service of longevity.",
+        "description": "Intravenous therapy with selected vitamins and nutrients to support energy, recovery, hydration and general wellbeing, always under professional assessment and with a personalised approach.",
         "cta": "Explore Medicine"
       },
       "experiences": {
         "title": "Experiences",
-        "description": "Running club, education programs, and exclusive memberships — true belonging to something meaningful.",
+        "description": "Premium accompaniment before, during and after each session, where every detail is designed to help you understand your body better, improve your habits and enhance the results of each treatment.",
         "cta": "Explore Experiences"
       }
     }
