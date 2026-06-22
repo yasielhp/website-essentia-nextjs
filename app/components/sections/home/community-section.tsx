@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import gsap from "gsap";
@@ -89,21 +88,17 @@ export default function CommunitySection() {
               />
               <div className="from-petroleum-900/90 via-petroleum-800/40 absolute inset-0 bg-gradient-to-t to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 text-white">
-                <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs tracking-wider uppercase backdrop-blur-sm">
-                  {tExp("badge")}
-                </span>
                 <h3 className="font-display text-xl text-white">
                   {tExp("headline")}
                 </h3>
-                <p className="mt-1 text-sm text-white/70">
-                  {tExp("description")}
-                </p>
-                <Link
+                <Button
+                  variant="outline-white"
+                  size="sm"
                   href="/experiences"
-                  className="text-sand-300 mt-3 inline-block text-sm transition-colors duration-150 hover:text-white"
+                  className="mt-4 w-full md:w-auto"
                 >
                   {tExp("cta")}
-                </Link>
+                </Button>
               </div>
             </div>
 
@@ -111,10 +106,7 @@ export default function CommunitySection() {
             <div ref={cardsRightRef} className="flex flex-col gap-4">
               {/* ─── Education Programs Card ───────────────── */}
               <div className="bg-petroleum-700 rounded-2xl p-5">
-                <p className="text-sand-600 text-xs tracking-wider uppercase">
-                  {tEdu("badge")}
-                </p>
-                <h3 className="font-display text-sand-50 mt-2 text-xl">
+                <h3 className="font-display text-sand-50 text-xl">
                   {tEdu("headline")}
                 </h3>
                 <p className="text-sand-500 mt-2 text-sm leading-relaxed">
@@ -132,10 +124,7 @@ export default function CommunitySection() {
 
               {/* ─── Running Club Card ─────────────────────── */}
               <div className="bg-sand-50 rounded-2xl p-5">
-                <p className="text-petroleum-400 text-xs tracking-wider uppercase">
-                  {tRun("badge")}
-                </p>
-                <h3 className="font-display text-petroleum-700 mt-2 text-xl">
+                <h3 className="font-display text-petroleum-700 text-xl">
                   {tRun("headline")}
                 </h3>
                 <p className="text-petroleum-400 mt-2 text-sm leading-relaxed">

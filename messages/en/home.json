@@ -178,7 +178,7 @@
       "badge": "Experiences",
       "headline": "Where longevity meets lived experience.",
       "description": "Running club, masterclasses, member events and more — all in one place.",
-      "cta": "Explore experiences →"
+      "cta": "Explore experiences"
     },
     "educationPrograms": {
       "badge": "Programs",
@@ -188,15 +188,15 @@
     },
     "runningClub": {
       "badge": "Running Club",
-      "headline": "Every Saturday morning, 7:30am",
-      "description": "Curated routes through Costa Adeje, all levels welcome.",
-      "cta": "Join the run →"
+      "headline": "Running Club",
+      "description": "Races and routes for all levels. Move together.",
+      "cta": "View races"
     },
     "nextRace": {
       "badge": "Next Race",
       "noRaceTitle": "No races scheduled",
       "noRaceBody": "New races will be announced soon.",
-      "cta": "Learn more →"
+      "cta": "Learn more"
     }
   }
 }
