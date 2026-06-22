@@ -73,17 +73,18 @@ export const maiMenu = [
       imagen: "/images/menu/medicine.webp",
     },
     itemMenu: [
-      {
-        itemName: "Regenerative medicine",
-        href: "/medicine/regenerative-medicine",
-        comingSoon: true,
-        card: {
-          title: "Regenerative Medicine",
-          description:
-            "Treatments that activate the body's own repair mechanisms — promoting deep, long-term healing from within.",
-          imagen: "/images/menu/regenerative-medicine.webp",
-        },
-      },
+      // TODO: re-enable when regenerative medicine goes live
+      // {
+      //   itemName: "Regenerative medicine",
+      //   href: "/medicine/regenerative-medicine",
+      //   comingSoon: true,
+      //   card: {
+      //     title: "Regenerative Medicine",
+      //     description:
+      //       "Treatments that activate the body's own repair mechanisms — promoting deep, long-term healing from within.",
+      //     imagen: "/images/menu/regenerative-medicine.webp",
+      //   },
+      // },
       {
         itemName: "Intravenous therapy",
         href: "/medicine/intravenous-therapy",
@@ -94,17 +95,18 @@ export const maiMenu = [
           imagen: "/images/menu/intravenous-therapy.webp",
         },
       },
-      {
-        itemName: "Hyperbaric chambers",
-        href: "/medicine/hyperbaric-chambers",
-        comingSoon: true,
-        card: {
-          title: "Hyperbaric Chambers",
-          description:
-            "Pressurized oxygen therapy that floods tissues with healing oxygen — speeding recovery and sharpening focus.",
-          imagen: "/images/menu/hyperbaric-chambers.webp",
-        },
-      },
+      // TODO: re-enable when hyperbaric chambers go live
+      // {
+      //   itemName: "Hyperbaric chambers",
+      //   href: "/medicine/hyperbaric-chambers",
+      //   comingSoon: true,
+      //   card: {
+      //     title: "Hyperbaric Chambers",
+      //     description:
+      //       "Pressurized oxygen therapy that floods tissues with healing oxygen — speeding recovery and sharpening focus.",
+      //     imagen: "/images/menu/hyperbaric-chambers.webp",
+      //   },
+      // },
     ],
   },
   {
@@ -137,16 +139,17 @@ export const maiMenu = [
           imagen: "/images/menu/education-programs.webp",
         },
       },
-      {
-        itemName: "Memberships",
-        href: "/experiences/memberships",
-        card: {
-          title: "Memberships",
-          description:
-            "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and experiences.",
-          imagen: "/images/menu/memberships.webp",
-        },
-      },
+      // TODO: re-enable when memberships go live
+      // {
+      //   itemName: "Memberships",
+      //   href: "/experiences/memberships",
+      //   card: {
+      //     title: "Memberships",
+      //     description:
+      //       "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and experiences.",
+      //     imagen: "/images/menu/memberships.webp",
+      //   },
+      // },
     ],
   },
   {
