@@ -4,7 +4,7 @@ import { getOgImage } from "@/constants/metadata";
 import Hero from "@components/sections/home/hero";
 import BrandStatement from "@components/sections/home/brand-statement";
 import ServicesOverview from "@components/sections/home/services-overview";
-import MembershipTeaser from "@components/sections/home/membership-teaser";
+// import MembershipTeaser from "@components/sections/home/membership-teaser";
 import Testimonials from "@components/sections/home/testimonials";
 import TheSpace from "@components/sections/home/the-space";
 import CommunitySection from "@components/sections/home/community-section";
@@ -42,7 +42,7 @@ export default function Home() {
       <Hero />
       <BrandStatement />
       <ServicesOverview />
-      <MembershipTeaser />
+      {/* <MembershipTeaser /> */}
       <Testimonials />
       <TheSpace />
       <CommunitySection />
