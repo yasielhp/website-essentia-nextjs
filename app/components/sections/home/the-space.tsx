@@ -51,6 +51,29 @@ export default function TheSpace() {
         ease: "power3.out",
         scrollTrigger: { trigger: inner, start: "top 75%", once: true },
       });
+
+      // Ken Burns — continuous pan on each image
+      const imgInners = inner.querySelectorAll<HTMLElement>(
+        "[data-space-img] img",
+      );
+      const pans = [
+        { x: "3%", y: "2%" },
+        { x: "-4%", y: "3%" },
+        { x: "4%", y: "-3%" },
+      ];
+      const durations = [14, 11, 13];
+
+      imgInners.forEach((img, i) => {
+        gsap.set(img, { scale: 1.1 });
+        gsap.to(img, {
+          x: pans[i % pans.length]!.x,
+          y: pans[i % pans.length]!.y,
+          duration: durations[i % durations.length],
+          ease: "sine.inOut",
+          repeat: -1,
+          yoyo: true,
+        });
+      });
     }, inner);
 
     return () => ctx.revert();
@@ -130,7 +153,7 @@ export default function TheSpace() {
                   alt="Essentia outdoor area Tenerife"
                   fill
                   sizes="50vw"
-                  className="object-cover"
+                  className="object-cover object-center"
                 />
               </div>
             </div>
