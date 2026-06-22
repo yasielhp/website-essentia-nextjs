@@ -160,6 +160,11 @@ export const maiMenu = [
         card: null,
       },
       {
+        itemName: "Reviews",
+        href: "/reviews",
+        card: null,
+      },
+      {
         itemName: "Blog",
         href: "/blog",
         card: null,

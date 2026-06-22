@@ -42,6 +42,7 @@ const itemKeyByHref: Record<string, string> = {
   "/experiences/education-programs": "educationAndPrograms",
   "/experiences/memberships": "memberships",
   "/about": "about",
+  "/reviews": "reviews",
   "/blog": "blog",
   "/shop": "shop",
   "/contact": "contact",
