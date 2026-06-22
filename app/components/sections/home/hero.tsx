@@ -285,10 +285,16 @@ export default function Hero() {
           ref={textRef}
           className="relative z-10 mx-auto w-full max-w-4xl text-center"
         >
-          <p className="font-display xs:text-6xl text-4xl tracking-wide text-white lg:text-7xl">
+          <p className="font-display xs:text-6xl text-4xl tracking-wide text-white lg:text-6xl">
             {t("headline")}
             <br />
             {t("headline2")}
+            {t("headline3") && (
+              <>
+                <br />
+                {t("headline3")}
+              </>
+            )}
           </p>
           <h1 className="mt-4 text-base text-pretty text-white/80 md:text-lg">
             {t("subheadline")}
