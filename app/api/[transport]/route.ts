@@ -139,7 +139,7 @@ const handler = createMcpHandler(
               content: [
                 {
                   type: "text",
-                  text: `Could not fetch availability for ${service_id} on ${date}. Please call +34 683 240 986 or email info@essentiawellnessclub.com.`,
+                  text: `Could not fetch availability for ${service_id} on ${date}. Please call +34 634 09 12 95 or email info@essentiawellnessclub.com.`,
                 },
               ],
             };
@@ -178,7 +178,7 @@ const handler = createMcpHandler(
             content: [
               {
                 type: "text",
-                text: "Unable to check availability. Please contact us at +34 683 240 986 or info@essentiawellnessclub.com.",
+                text: "Unable to check availability. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
               },
             ],
           };
@@ -290,7 +290,7 @@ const handler = createMcpHandler(
               content: [
                 {
                   type: "text",
-                  text: "Unable to create your booking. Please contact us at +34 683 240 986 or info@essentiawellnessclub.com.",
+                  text: "Unable to create your booking. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
                 },
               ],
             };
@@ -366,7 +366,7 @@ const handler = createMcpHandler(
             `- **Email:** ${email}`,
             `- **Booking reference:** ${id}`,
             ``,
-            `Our team will confirm by email within 24 hours. For immediate assistance: **+34 683 240 986** · **info@essentiawellnessclub.com**`,
+            `Our team will confirm by email within 24 hours. For immediate assistance: **+34 634 09 12 95** · **info@essentiawellnessclub.com**`,
             ``,
             `Book more or manage your visit: ${siteUrl}/booking`,
           ]
@@ -380,7 +380,7 @@ const handler = createMcpHandler(
             content: [
               {
                 type: "text",
-                text: "An error occurred. Please contact us at +34 683 240 986 or info@essentiawellnessclub.com.",
+                text: "An error occurred. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
               },
             ],
           };

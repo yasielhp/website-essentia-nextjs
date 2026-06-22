@@ -87,10 +87,10 @@ function buildSchemaOrg(locale: string) {
         },
         address: {
           "@type": "PostalAddress",
-          streetAddress: "Baobab Suites",
+          streetAddress: "C. Roques del Salmor, 5",
           addressLocality: "Costa Adeje",
-          addressRegion: "Tenerife",
-          postalCode: "38660",
+          addressRegion: "Santa Cruz de Tenerife",
+          postalCode: "38679",
           addressCountry: "ES",
         },
         contactPoint: {
@@ -120,10 +120,10 @@ function buildSchemaOrg(locale: string) {
         email: contact.email,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "Baobab Suites",
+          streetAddress: "C. Roques del Salmor, 5",
           addressLocality: "Costa Adeje",
-          addressRegion: "Tenerife",
-          postalCode: "38660",
+          addressRegion: "Santa Cruz de Tenerife",
+          postalCode: "38679",
           addressCountry: "ES",
         },
         geo: {

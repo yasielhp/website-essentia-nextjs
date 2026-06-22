@@ -54,7 +54,7 @@ export function bookingRescheduledEmail({
         ${calBtn}
 
         <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-          Si esta fecha no te viene bien, llámanos al <strong style="color:#103838;">+34 683 240 986</strong> y estaremos encantados de ayudarte.
+          Si esta fecha no te viene bien, llámanos al <strong style="color:#103838;">+34 634 09 12 95</strong> y estaremos encantados de ayudarte.
         </p>
       `,
     });
@@ -77,7 +77,7 @@ export function bookingRescheduledEmail({
       ${calBtn}
 
       <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-        If this date does not work for you, please call us at <strong style="color:#103838;">+34 683 240 986</strong> and we will be happy to help.
+        If this date does not work for you, please call us at <strong style="color:#103838;">+34 634 09 12 95</strong> and we will be happy to help.
       </p>
     `,
   });

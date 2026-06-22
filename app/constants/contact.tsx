@@ -1,12 +1,7 @@
-import {
-  IconFacebook,
-  IconInstagram,
-  IconYouTube,
-} from "@/components/ui/icons";
+import { IconFacebook, IconInstagram } from "@/components/ui/icons";
 export const contact = {
-  address: "Baobab Suites, Costa Adeje, Tenerife, Islas Canarias, España",
-  phone: "+34 683 240 986",
-  phone2: "+34 633 762 228",
+  address: "C. Roques del Salmor, 5, 38679 Costa Adeje, Tenerife, España",
+  phone: "+34 634 09 12 95",
   email: "info@essentiawellnessclub.com",
   domain: "www.essentiawellnessclub.com",
   socialMedia: [
@@ -19,11 +14,6 @@ export const contact = {
       name: "Facebook",
       url: "https://www.facebook.com/essentia",
       icon: IconFacebook,
-    },
-    {
-      name: "Youtube",
-      url: "https://www.youtube.com/essentia",
-      icon: IconYouTube,
     },
   ],
 };

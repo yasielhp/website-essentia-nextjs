@@ -33,7 +33,7 @@ export function bookingCancelledEmail({
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
         <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
-          Para reprogramar tu sesión o resolver cualquier duda, llámanos al <strong style="color:#103838;">+34 683 240 986</strong> con al menos 24 horas de antelación. Esperamos verte pronto.
+          Para reprogramar tu sesión o resolver cualquier duda, llámanos al <strong style="color:#103838;">+34 634 09 12 95</strong> con al menos 24 horas de antelación. Esperamos verte pronto.
         </p>
       `,
     });
@@ -54,7 +54,7 @@ export function bookingCancelledEmail({
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
       <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
-        To reschedule or for any enquiries, please call us at <strong style="color:#103838;">+34 683 240 986</strong> at least 24 hours in advance. We hope to welcome you soon.
+        To reschedule or for any enquiries, please call us at <strong style="color:#103838;">+34 634 09 12 95</strong> at least 24 hours in advance. We hope to welcome you soon.
       </p>
     `,
   });

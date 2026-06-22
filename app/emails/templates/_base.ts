@@ -96,7 +96,7 @@ export function googleCalendarUrl({
     text: `Essentia – ${service}`,
     dates: `${startStr}/${endStr}`,
     details:
-      "Essentia Wellness Club · essentiawellnessclub.com · +34 683 240 986",
+      "Essentia Wellness Club · essentiawellnessclub.com · +34 634 09 12 95",
     location,
   });
 
