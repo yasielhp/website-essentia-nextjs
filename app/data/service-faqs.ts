@@ -113,26 +113,31 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     },
   ],
 
-  "functional-well-being": [
+  "facial-therapies": [
     {
-      question: "What is functional well-being at Essentia?",
+      question: "What are facial therapies at Essentia?",
       answer:
-        "Functional well-being at Essentia combines strength training, mobility work, cardiovascular conditioning, and balance training into programmes designed specifically for longevity. Unlike conventional gym programmes, we focus on the physical capacities most predictive of long-term health: muscle mass, movement quality, VO2 max, and balance.",
+        "Facial therapies at Essentia are evidence-backed skin protocols that combine expert manual techniques with advanced skincare technology. Each session is personalised to your skin type and condition — targeting hydration, barrier repair, collagen stimulation, or radiance depending on what your skin needs most.",
     },
     {
-      question: "Who are the functional well-being sessions for?",
+      question: "Who are facial therapy sessions for?",
       answer:
-        "Sessions are designed for adults who want to invest in long-term physical health, not just short-term aesthetics. We work with members across all fitness levels — from complete beginners to competitive athletes — adapting intensity and modality to each individual.",
+        "Facial therapies are suitable for adults who want to invest in the long-term health and appearance of their skin. We work with all skin types — from sensitive and reactive to ageing and sun-damaged — adapting each protocol to your specific presentation.",
     },
     {
-      question: "What does a functional well-being session include?",
+      question: "What does a facial therapy session include?",
       answer:
-        "Sessions are 50 minutes and led by a certified coach. They typically include a movement assessment, a structured training block (strength, mobility, or cardiovascular), and a brief cool-down. Your programme evolves based on your progress and goals.",
+        "Sessions are 60 minutes and begin with a thorough skin analysis. The protocol that follows combines deep cleansing, targeted manual work, active serums chosen for your skin condition, and finishing care. Technology-assisted steps may be included based on your skin goals.",
     },
     {
-      question: "How does functional training support longevity?",
+      question: "How often should I have a facial therapy session?",
       answer:
-        "Muscle mass and movement quality are two of the strongest predictors of all-cause mortality. Sarcopenia — age-related muscle loss — begins in the 30s and accelerates with each decade. Resistance training combined with cardiovascular conditioning is the most evidence-backed intervention to preserve both healthspan and lifespan.",
+        "One session every three to four weeks is the recommended maintenance frequency. Members addressing specific skin concerns benefit from an initial course of four to six sessions for visible structural improvement.",
+    },
+    {
+      question: "Are the results immediate?",
+      answer:
+        "Yes — skin emerges visibly brighter, smoother, and more even after the first session. The deeper structural benefits of collagen stimulation and barrier repair are cumulative and become more pronounced with consistent treatment over time.",
     },
   ],
 

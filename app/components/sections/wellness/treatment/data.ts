@@ -272,66 +272,66 @@ export const treatments: Record<string, TreatmentData> = {
       "Manual Therapies are available to all Essentia members. Book your first session or join the community to get started.",
   },
 
-  "functional-well-being": {
-    slug: "functional-well-being",
+  "facial-therapies": {
+    slug: "facial-therapies",
     heroImage: "/images/menu/functional-wellbeing.webp",
-    heroAlt: "Functional movement session at Essentia",
-    title: "Functional Well-being.",
-    tagline: "Movement & Performance",
-    price: "€65",
-    duration: "50 min",
+    heroAlt: "Facial therapy session at Essentia",
+    title: "Facial Therapies.",
+    tagline: "Skin & Radiance",
+    price: "€75",
+    duration: "60 min",
     intro:
-      "Muscle mass and movement quality are two of the strongest predictors of longevity. Our coaches build programmes around the specific physical capacities that matter most for a long, capable life — strength, mobility, cardiovascular efficiency, and balance.",
+      "Healthy skin is the result of precision, not chance. Our facial therapists combine evidence-backed manual techniques with advanced technology to address your skin's real needs — restoring barrier function, stimulating cellular renewal, and delivering visible, lasting results.",
     benefitsHeading: "What it does.",
     benefitsSubtitle:
-      "Training for longevity is different from training for aesthetics. These are the outcomes that matter.",
+      "Every facial protocol is designed around your skin — not a generic routine.",
     benefits: [
       {
-        title: "Preserves and builds muscle mass",
+        title: "Restores skin barrier function",
         description:
-          "Sarcopenia — the age-related loss of muscle — begins in the 30s and accelerates with each decade. Resistance training is the most effective intervention we have to slow and reverse it.",
+          "Targeted protocols repair the stratum corneum, improve hydration retention, and rebuild the skin's natural defence against environmental stressors.",
       },
       {
-        title: "Improves metabolic health",
+        title: "Stimulates cellular renewal",
         description:
-          "Skeletal muscle is the largest glucose sink in the body. More muscle mass means better insulin sensitivity, lower HbA1c, and a reduced risk of metabolic disease.",
+          "Manual drainage and technology-assisted treatments increase fibroblast activity, promoting collagen synthesis and accelerating the turnover of damaged surface cells.",
       },
       {
-        title: "Maintains joint health and mobility",
+        title: "Reduces inflammation and redness",
         description:
-          "Strength training through full ranges of motion loads cartilage, stimulates synovial fluid production, and maintains the joint integrity needed to stay active across decades.",
+          "Calming techniques combined with anti-inflammatory actives address chronic redness, sensitisation, and post-sun damage without disrupting the skin microbiome.",
       },
       {
-        title: "Reduces all-cause mortality",
+        title: "Delivers immediate and lasting radiance",
         description:
-          "VO2 max and grip strength are among the most predictive markers of longevity. Our programmes systematically improve both through targeted aerobic and resistance work.",
+          "Skin emerges visibly brighter, firmer, and more even after the first session. With regular practice, results compound — improving tone, texture, and overall skin health over time.",
       },
     ],
     sessionHeading: "What a session looks like.",
     sessionSubtitle:
-      "Training here is structured, progressive, and built around your specific goals and baseline.",
+      "Every session begins with a skin assessment. Nothing is applied without a reason.",
     sessionDetails: [
       {
         number: "I",
         title: "Duration",
         description:
-          "50 minutes. A brief warm-up, a focused strength or conditioning block, and a mobility cool-down. Sessions are dense — no filler, no wasted time.",
+          "60 minutes. A thorough skin analysis opens the session, followed by a personalised protocol combining cleansing, manual work, active serums, and finishing care.",
       },
       {
         number: "II",
         title: "Format",
         description:
-          "Your first session is a movement and capacity assessment. From that baseline, your coach builds a progressive 12-week plan. Sessions are 1:1 or in small groups of three.",
+          "1:1 with a certified facial therapist. Protocols are adapted to your skin type, current condition, and goals — from deep hydration to firming, brightening, or barrier repair.",
       },
       {
         number: "III",
         title: "Frequency",
         description:
-          "Two to three strength sessions per week is the minimum effective dose for meaningful adaptation. We coordinate scheduling with your other Essentia protocols for optimal recovery.",
+          "One session every three to four weeks maintains optimal skin health. Members addressing specific concerns benefit from an initial course of four to six sessions for visible structural improvement.",
       },
     ],
-    ctaHeading: "Train for the long game.",
+    ctaHeading: "Restore your skin.",
     ctaBody:
-      "Functional Well-being is included in all Essentia memberships. Book your first session or join the community to get started.",
+      "Facial Therapies are available to all Essentia members. Book your first session or join the community to get started.",
   },
 };

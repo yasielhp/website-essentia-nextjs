@@ -30,21 +30,13 @@ export const bookableServices: BookableService[] = [
     image: "/images/menu/manual-therapies.webp",
   },
   {
-    id: "contrast-therapy",
+    id: "facial-therapies",
     category: "wellness",
-    title: "Contrast Therapy",
+    title: "Facial Therapies",
     description:
-      "Alternating heat and cold to activate recovery and reduce inflammation.",
+      "Advanced facial protocols combining manual techniques and technology to restore skin health.",
     durations: ["60 min"],
-    image: "/images/menu/thermal-contrast.webp",
-  },
-  {
-    id: "breathing-sessions",
-    category: "wellness",
-    title: "Breathing Sessions",
-    description: "Guided breathwork to shift from stress to active recovery.",
-    durations: ["45 min"],
-    image: "/images/menu/breathing-sessions.webp",
+    image: "/images/menu/functional-wellbeing.webp",
   },
   {
     id: "red-light-therapy",
@@ -55,24 +47,7 @@ export const bookableServices: BookableService[] = [
     durations: ["20 min"],
     image: "/images/menu/red-light-therapy.webp",
   },
-  {
-    id: "functional-well-being",
-    category: "wellness",
-    title: "Functional Well-being",
-    description: "Movement and strength training designed around longevity.",
-    durations: ["50 min"],
-    image: "/images/menu/functional-wellbeing.webp",
-  },
   // Medicine
-  {
-    id: "hyperbaric-chambers",
-    category: "medicine",
-    title: "Hyperbaric Oxygen",
-    description:
-      "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
-    durations: ["60 min"],
-    image: "/images/menu/hyperbaric-chambers.webp",
-  },
   {
     id: "intravenous-therapy",
     category: "medicine",
@@ -81,14 +56,6 @@ export const bookableServices: BookableService[] = [
       "Direct nutrient delivery for rapid absorption and cellular support.",
     durations: ["45 min"],
     image: "/images/menu/intravenous-therapy.webp",
-  },
-  {
-    id: "regenerative-medicine",
-    category: "medicine",
-    title: "Regenerative Medicine",
-    description: "Protocols that activate your body's own repair mechanisms.",
-    durations: ["30 min", "60 min", "90 min"],
-    image: "/images/menu/regenerative-medicine.webp",
   },
 ];
 

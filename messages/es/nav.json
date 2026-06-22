@@ -14,7 +14,7 @@
       "thermalContrast": "Contraste térmico",
       "breathingSessions": "Sesiones de respiración",
       "redLightTherapy": "Terapia de luz roja",
-      "functionalWellBeing": "Bienestar funcional"
+      "facialTherapies": "Terapias faciales"
     },
     "medicine": {
       "regenerativeMedicine": "Medicina regenerativa",
@@ -56,9 +56,9 @@
       "title": "Terapia de Luz Roja",
       "description": "Luz roja e infrarroja dirigida para acelerar la reparación celular, reducir la inflamación y favorecer la recuperación profunda de los tejidos."
     },
-    "functionalWellBeing": {
-      "title": "Bienestar Funcional",
-      "description": "Protocolos personalizados que alinean el movimiento, la recuperación y el estilo de vida con tus objetivos de salud únicos."
+    "facialTherapies": {
+      "title": "Terapias Faciales",
+      "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel y una radiancia duradera."
     },
     "regenerativeMedicine": {
       "title": "Medicina Regenerativa",
@@ -97,5 +97,6 @@
     "myBookings": "Mis reservas",
     "myRaces": "Mis carreras",
     "mySessions": "Mis sesiones"
-  }
+  },
+  "comingSoon": "Próximamente"
 }

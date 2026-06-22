@@ -14,7 +14,7 @@
       "thermalContrast": "Thermal contrast",
       "breathingSessions": "Breathing sessions",
       "redLightTherapy": "Red light therapy",
-      "functionalWellBeing": "Functional well-being"
+      "facialTherapies": "Facial therapies"
     },
     "medicine": {
       "regenerativeMedicine": "Regenerative medicine",
@@ -56,9 +56,9 @@
       "title": "Red Light Therapy",
       "description": "Targeted red and near-infrared light to accelerate cellular repair, reduce inflammation, and support deep tissue recovery."
     },
-    "functionalWellBeing": {
-      "title": "Functional Well-being",
-      "description": "Personalized protocols aligning movement, recovery, and lifestyle around your unique health goals."
+    "facialTherapies": {
+      "title": "Facial Therapies",
+      "description": "Advanced facial protocols combining manual techniques and technology to restore skin health and lasting radiance."
     },
     "regenerativeMedicine": {
       "title": "Regenerative Medicine",
@@ -97,5 +97,6 @@
     "myBookings": "My Bookings",
     "myRaces": "My Races",
     "mySessions": "My Sessions"
-  }
+  },
+  "comingSoon": "Coming Soon"
 }

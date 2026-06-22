@@ -34,7 +34,7 @@ const itemKeyByHref: Record<string, string> = {
   "/wellness/contrast-therapy": "thermalContrast",
   "/wellness/breathing-sessions": "breathingSessions",
   "/wellness/red-light-therapy": "redLightTherapy",
-  "/wellness/functional-well-being": "functionalWellBeing",
+  "/wellness/facial-therapies": "facialTherapies",
   "/medicine/regenerative-medicine": "regenerativeMedicine",
   "/medicine/intravenous-therapy": "intravenousTherapy",
   "/medicine/hyperbaric-chambers": "hyperbaricChambers",

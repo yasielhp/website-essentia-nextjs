@@ -20,8 +20,19 @@ export const maiMenu = [
         },
       },
       {
+        itemName: "Facial therapies",
+        href: "/wellness/facial-therapies",
+        card: {
+          title: "Facial Therapies",
+          description:
+            "Expert facial protocols combining manual techniques and advanced technology for radiant, lasting skin health.",
+          imagen: "/images/menu/functional-wellbeing.webp",
+        },
+      },
+      {
         itemName: "Thermal contrast",
         href: "/wellness/contrast-therapy",
+        comingSoon: true,
         card: {
           title: "Thermal contrast",
           description:
@@ -32,6 +43,7 @@ export const maiMenu = [
       {
         itemName: "Breathing sessions",
         href: "/wellness/breathing-sessions",
+        comingSoon: true,
         card: {
           title: "Breathing Sessions",
           description:
@@ -49,16 +61,6 @@ export const maiMenu = [
           imagen: "/images/menu/red-light-therapy.webp",
         },
       },
-      {
-        itemName: "Functional well-being",
-        href: "/wellness/functional-well-being",
-        card: {
-          title: "Functional Well-being",
-          description:
-            "Personalized protocols aligning movement, recovery, and lifestyle around your unique health goals.",
-          imagen: "/images/menu/functional-wellbeing.webp",
-        },
-      },
     ],
   },
   {
@@ -74,6 +76,7 @@ export const maiMenu = [
       {
         itemName: "Regenerative medicine",
         href: "/medicine/regenerative-medicine",
+        comingSoon: true,
         card: {
           title: "Regenerative Medicine",
           description:
@@ -94,6 +97,7 @@ export const maiMenu = [
       {
         itemName: "Hyperbaric chambers",
         href: "/medicine/hyperbaric-chambers",
+        comingSoon: true,
         card: {
           title: "Hyperbaric Chambers",
           description:

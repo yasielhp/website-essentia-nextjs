@@ -34,10 +34,10 @@
         "tagline": "Tacto y restauración",
         "description": "Trabajo manual preciso para liberar tensión y restaurar la movilidad."
       },
-      "functional-well-being": {
-        "title": "Bienestar Funcional",
-        "tagline": "Movimiento y rendimiento",
-        "description": "Entrenamiento de movimiento y fuerza diseñado para la longevidad."
+      "facial-therapies": {
+        "title": "Terapias Faciales",
+        "tagline": "Piel y radiancia",
+        "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel."
       }
     }
   },
@@ -519,51 +519,51 @@
       "ctaHeading": "Libera lo que te frena.",
       "ctaBody": "Las Terapias Manuales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
-    "functional-well-being": {
-      "title": "Bienestar Funcional.",
-      "tagline": "Movimiento y rendimiento",
-      "heroAlt": "Sesión de movimiento funcional en Essentia",
-      "price": "€65",
-      "duration": "50 min",
-      "intro": "La masa muscular y la calidad del movimiento son dos de los predictores más sólidos de la longevidad. Nuestros entrenadores construyen programas en torno a las capacidades físicas específicas que más importan para una vida larga y capaz — fuerza, movilidad, eficiencia cardiovascular y equilibrio.",
+    "facial-therapies": {
+      "title": "Terapias Faciales.",
+      "tagline": "Piel y radiancia",
+      "heroAlt": "Sesión de terapia facial en Essentia",
+      "price": "€75",
+      "duration": "60 min",
+      "intro": "La piel sana es el resultado de la precisión, no de la casualidad. Nuestros terapeutas faciales combinan técnicas manuales respaldadas por evidencia con tecnología avanzada para abordar las necesidades reales de tu piel — restaurando la función barrera, estimulando la renovación celular y ofreciendo resultados visibles y duraderos.",
       "benefitsHeading": "Qué hace.",
-      "benefitsSubtitle": "Entrenar para la longevidad es diferente a entrenar para la estética. Estos son los resultados que importan.",
+      "benefitsSubtitle": "Cada protocolo facial está diseñado en torno a tu piel — no a una rutina genérica.",
       "benefits": {
         "0": {
-          "title": "Preserva y desarrolla la masa muscular",
-          "description": "La sarcopenia — la pérdida de músculo relacionada con la edad — comienza en los 30 y se acelera con cada década. El entrenamiento de resistencia es la intervención más efectiva para ralentizarla y revertirla."
+          "title": "Restaura la función barrera de la piel",
+          "description": "Protocolos específicos reparan el estrato córneo, mejoran la retención de hidratación y reconstruyen la defensa natural de la piel frente a los agresores medioambientales."
         },
         "1": {
-          "title": "Mejora la salud metabólica",
-          "description": "El músculo esquelético es el mayor sumidero de glucosa del cuerpo. Más masa muscular significa mejor sensibilidad a la insulina, menor HbA1c y menor riesgo de enfermedad metabólica."
+          "title": "Estimula la renovación celular",
+          "description": "El drenaje manual y los tratamientos asistidos por tecnología aumentan la actividad de los fibroblastos, promoviendo la síntesis de colágeno y acelerando la renovación de las células superficiales dañadas."
         },
         "2": {
-          "title": "Mantiene la salud articular y la movilidad",
-          "description": "El entrenamiento de fuerza a través de rangos completos de movimiento carga el cartílago, estimula la producción de líquido sinovial y mantiene la integridad articular necesaria para mantenerse activo durante décadas."
+          "title": "Reduce la inflamación y el enrojecimiento",
+          "description": "Técnicas calmantes combinadas con activos antiinflamatorios abordan el enrojecimiento crónico, la sensibilización y el daño solar sin alterar el microbioma cutáneo."
         },
         "3": {
-          "title": "Reduce la mortalidad por todas las causas",
-          "description": "El VO2 máximo y la fuerza de agarre son algunos de los marcadores más predictivos de la longevidad. Nuestros programas mejoran sistemáticamente ambos a través del trabajo aeróbico y de resistencia dirigido."
+          "title": "Proporciona radiancia inmediata y duradera",
+          "description": "La piel emerge visiblemente más luminosa, firme y uniforme tras la primera sesión. Con práctica regular, los resultados se acumulan — mejorando el tono, la textura y la salud general de la piel."
         }
       },
       "sessionHeading": "Cómo es una sesión.",
-      "sessionSubtitle": "El entrenamiento aquí es estructurado, progresivo y construido en torno a tus objetivos y punto de partida específicos.",
+      "sessionSubtitle": "Cada sesión comienza con un análisis de la piel. Nada se aplica sin una razón.",
       "sessionDetails": {
         "I": {
           "title": "Duración",
-          "description": "50 minutos. Un breve calentamiento, un bloque de fuerza o acondicionamiento enfocado y un enfriamiento de movilidad. Las sesiones son densas — sin relleno, sin tiempo desperdiciado."
+          "description": "60 minutos. Un análisis exhaustivo de la piel abre la sesión, seguido de un protocolo personalizado que combina limpieza, trabajo manual, sueros activos y cuidados de acabado."
         },
         "II": {
           "title": "Formato",
-          "description": "Tu primera sesión es una evaluación de movimiento y capacidad. A partir de esa línea de base, tu entrenador construye un plan progresivo de 12 semanas. Las sesiones son 1:1 o en grupos pequeños de tres."
+          "description": "1:1 con una terapeuta facial certificada. Los protocolos se adaptan a tu tipo de piel, condición actual y objetivos — desde hidratación profunda hasta reafirmación, luminosidad o reparación de la barrera."
         },
         "III": {
           "title": "Frecuencia",
-          "description": "Dos o tres sesiones de fuerza por semana es la dosis mínima efectiva para una adaptación significativa. Coordinamos la programación con tus otros protocolos de Essentia para una recuperación óptima."
+          "description": "Una sesión cada tres o cuatro semanas mantiene una salud óptima de la piel. Los miembros que abordan preocupaciones específicas se benefician de un ciclo inicial de cuatro a seis sesiones para una mejora estructural visible."
         }
       },
-      "ctaHeading": "Entrena para el largo plazo.",
-      "ctaBody": "El Bienestar Funcional está incluido en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+      "ctaHeading": "Restaura tu piel.",
+      "ctaBody": "Las Terapias Faciales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     }
   },
   "pages": {
@@ -587,10 +587,10 @@
       "metaDescription": "Fotobiomodulación y terapia de luz roja en Essentia Tenerife para regeneración celular, recuperación y salud de la piel.",
       "breadcrumb": "Terapia de Luz Roja"
     },
-    "functional-well-being": {
-      "metaTitle": "Bienestar Funcional | Essentia Wellness",
-      "metaDescription": "Programas de bienestar funcional en Essentia diseñados para optimizar tu rendimiento físico, salud y longevidad.",
-      "breadcrumb": "Bienestar Funcional"
+    "facial-therapies": {
+      "metaTitle": "Terapias Faciales | Essentia Wellness",
+      "metaDescription": "Protocolos avanzados de terapia facial en Essentia Tenerife que combinan técnicas manuales y tecnología para una piel radiante y duradera.",
+      "breadcrumb": "Terapias Faciales"
     },
     "breadcrumbHome": "Inicio",
     "breadcrumbWellness": "Bienestar"

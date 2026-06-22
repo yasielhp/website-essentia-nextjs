@@ -44,7 +44,7 @@ const itemKeyByHref: Record<string, string> = {
   "/wellness/contrast-therapy": "thermalContrast",
   "/wellness/breathing-sessions": "breathingSessions",
   "/wellness/red-light-therapy": "redLightTherapy",
-  "/wellness/functional-well-being": "functionalWellBeing",
+  "/wellness/facial-therapies": "facialTherapies",
   // medicine
   "/medicine/regenerative-medicine": "regenerativeMedicine",
   "/medicine/intravenous-therapy": "intravenousTherapy",
@@ -219,26 +219,36 @@ function DesktopDropdown({
       {displayedMenu && (
         <div className="flex min-h-64 justify-between p-6">
           <div className="flex flex-col">
-            {displayedMenu.itemMenu.map((item) => (
-              <AnimatedLink
-                key={item.href}
-                href={item.href as IntlHref}
-                data-desktop-item
-                className="block py-1.5 transition-opacity duration-150"
-                style={{
-                  opacity:
-                    activeItem && activeItem.href !== item.href ? 0.6 : 1,
-                }}
-                onMouseEnter={() => setActiveItem(item)}
-                onMouseLeave={() => setActiveItem(null)}
-                onClick={() => {
-                  setActiveMenu(null);
-                  setActiveItem(null);
-                }}
-              >
-                {translateItemName(item)}
-              </AnimatedLink>
-            ))}
+            {displayedMenu.itemMenu.map((item) => {
+              const isComingSoon =
+                "comingSoon" in item &&
+                !!(item as { comingSoon?: boolean }).comingSoon;
+              return (
+                <AnimatedLink
+                  key={item.href}
+                  href={item.href as IntlHref}
+                  data-desktop-item
+                  className="flex items-center gap-2 py-1.5 transition-opacity duration-150"
+                  style={{
+                    opacity:
+                      activeItem && activeItem.href !== item.href ? 0.6 : 1,
+                  }}
+                  onMouseEnter={() => setActiveItem(item)}
+                  onMouseLeave={() => setActiveItem(null)}
+                  onClick={() => {
+                    setActiveMenu(null);
+                    setActiveItem(null);
+                  }}
+                >
+                  {translateItemName(item)}
+                  {isComingSoon && (
+                    <span className="bg-sand-200 text-petroleum-600 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase">
+                      {tNav("comingSoon")}
+                    </span>
+                  )}
+                </AnimatedLink>
+              );
+            })}
           </div>
           <div data-desktop-item className="flex items-end justify-end">
             {(() => {
@@ -346,6 +356,9 @@ function MobileMenu({
                           ? tNav(`items.${sectionKey}.${itemKey}`)
                           : tNav(itemKey)
                         : item.itemName;
+                      const isComingSoon =
+                        "comingSoon" in item &&
+                        !!(item as { comingSoon?: boolean }).comingSoon;
                       return (
                         <li
                           key={item.href}
@@ -356,8 +369,13 @@ function MobileMenu({
                             onClick={() => setOpenMobileMenu(false)}
                             className="flex flex-col pb-2"
                           >
-                            <span className="text-sand-700 text-sm font-medium">
+                            <span className="text-sand-700 flex items-center gap-2 text-sm font-medium">
                               {label}
+                              {isComingSoon && (
+                                <span className="bg-sand-200 text-petroleum-600 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase">
+                                  {tNav("comingSoon")}
+                                </span>
+                              )}
                             </span>
                           </Link>
                         </li>

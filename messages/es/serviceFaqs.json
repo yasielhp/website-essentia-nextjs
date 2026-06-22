@@ -88,22 +88,26 @@
       "answer": "Sí. Todos los terapeutas de Essentia están certificados en sus respectivas disciplinas y se someten a un desarrollo profesional continuo. Cada sesión comienza con una breve evaluación para asegurarse de que el plan de tratamiento sea apropiado para tu condición actual."
     }
   },
-  "functional-well-being": {
+  "facial-therapies": {
     "0": {
-      "question": "¿Qué es el bienestar funcional en Essentia?",
-      "answer": "El bienestar funcional en Essentia combina entrenamiento de fuerza, trabajo de movilidad, acondicionamiento cardiovascular y entrenamiento de equilibrio en programas diseñados específicamente para la longevidad. A diferencia de los programas de gimnasio convencionales, nos centramos en las capacidades físicas más predictivas de la salud a largo plazo: masa muscular, calidad del movimiento, VO2 máximo y equilibrio."
+      "question": "¿Qué son las terapias faciales en Essentia?",
+      "answer": "Las terapias faciales en Essentia son protocolos cutáneos respaldados por evidencia que combinan técnicas manuales expertas con tecnología avanzada de cuidado de la piel. Cada sesión está personalizada según tu tipo de piel y condición — dirigida a la hidratación, reparación de la barrera, estimulación del colágeno o radiancia según lo que más necesite tu piel."
     },
     "1": {
-      "question": "¿Para quién son las sesiones de bienestar funcional?",
-      "answer": "Las sesiones están diseñadas para adultos que quieren invertir en su salud física a largo plazo, no solo en la estética a corto plazo. Trabajamos con miembros de todos los niveles de condición física — desde principiantes completos hasta atletas competitivos — adaptando la intensidad y la modalidad a cada individuo."
+      "question": "¿Para quién son las sesiones de terapia facial?",
+      "answer": "Las terapias faciales son adecuadas para adultos que quieren invertir en la salud y apariencia a largo plazo de su piel. Trabajamos con todos los tipos de piel — desde sensible y reactiva hasta envejecida y dañada por el sol — adaptando cada protocolo a tu presentación específica."
     },
     "2": {
-      "question": "¿Qué incluye una sesión de bienestar funcional?",
-      "answer": "Las sesiones son de 50 minutos y están dirigidas por un entrenador certificado. Normalmente incluyen una evaluación del movimiento, un bloque de entrenamiento estructurado (fuerza, movilidad o cardiovascular) y un breve enfriamiento. Tu programa evoluciona según tu progreso y objetivos."
+      "question": "¿Qué incluye una sesión de terapia facial?",
+      "answer": "Las sesiones son de 60 minutos y comienzan con un análisis exhaustivo de la piel. El protocolo que sigue combina limpieza profunda, trabajo manual específico, sueros activos elegidos para tu condición cutánea y cuidados de acabado. Se pueden incluir pasos asistidos por tecnología según tus objetivos de piel."
     },
     "3": {
-      "question": "¿Cómo apoya el entrenamiento funcional la longevidad?",
-      "answer": "La masa muscular y la calidad del movimiento son dos de los predictores más sólidos de la mortalidad por todas las causas. La sarcopenia — pérdida muscular relacionada con la edad — comienza en los 30 y se acelera con cada década. El entrenamiento de resistencia combinado con el acondicionamiento cardiovascular es la intervención más respaldada por la evidencia para preservar tanto la vida sana como la esperanza de vida."
+      "question": "¿Con qué frecuencia debo recibir una sesión de terapia facial?",
+      "answer": "Una sesión cada tres o cuatro semanas es la frecuencia de mantenimiento recomendada. Los miembros que abordan preocupaciones cutáneas específicas — como pigmentación, pérdida de firmeza o daño en la barrera — se benefician de un ciclo inicial de cuatro a seis sesiones para una mejora estructural visible."
+    },
+    "4": {
+      "question": "¿Son inmediatos los resultados?",
+      "answer": "Sí — la piel emerge visiblemente más luminosa, suave y uniforme tras la primera sesión. Los beneficios estructurales más profundos de la estimulación del colágeno y la reparación de la barrera son acumulativos y se hacen más pronunciados con el tratamiento consistente a lo largo del tiempo."
     }
   },
   "hyperbaric-chambers": {

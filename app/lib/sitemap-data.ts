@@ -39,8 +39,8 @@ export const staticRoutes = [
     changeFrequency: "monthly",
   },
   {
-    path: "/wellness/functional-well-being",
-    esPath: "/bienestar/bienestar-funcional",
+    path: "/wellness/facial-therapies",
+    esPath: "/bienestar/terapias-faciales",
     priority: 0.8,
     changeFrequency: "monthly",
   },

@@ -38,6 +38,10 @@
         "title": "Manual Therapies",
         "description": "Precise manual work to release tension and restore mobility."
       },
+      "facial-therapies": {
+        "title": "Facial Therapies",
+        "description": "Advanced facial protocols combining manual techniques and technology for radiant skin health."
+      },
       "contrast-therapy": {
         "title": "Contrast Therapy",
         "description": "Alternating heat and cold to activate recovery and reduce inflammation."
@@ -49,10 +53,6 @@
       "red-light-therapy": {
         "title": "Red Light Therapy",
         "description": "Red and infrared light to stimulate cellular repair and regeneration."
-      },
-      "functional-well-being": {
-        "title": "Functional Well-being",
-        "description": "Movement and strength training designed around longevity."
       },
       "hyperbaric-chambers": {
         "title": "Hyperbaric Oxygen",
