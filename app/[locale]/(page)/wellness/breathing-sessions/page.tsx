@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import TreatmentSection from "@components/sections/wellness/treatment/treatment-section";
-import { treatments } from "@components/sections/wellness/treatment/data";
-import { ServiceFaq } from "@/components/sections/service-faq";
-import { serviceFaqs } from "@/data/service-faqs";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
 
 export async function generateMetadata({
@@ -38,34 +33,31 @@ export async function generateMetadata({
   };
 }
 
-export default async function BreathworkPage() {
-  const t = await getTranslations("wellness.pages");
-  const faqs = serviceFaqs["breathing-sessions"];
+export default async function BreathworkPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isEs = locale === "es";
+
+  const copy = {
+    heading: isEs ? "Próximamente" : "Coming Soon",
+    body: isEs
+      ? "Este servicio no está disponible todavía. Estamos trabajando para ofrecerte las Sesiones de Respiración muy pronto."
+      : "This service is not available yet. We are working to bring Breathing Sessions to you very soon.",
+  };
+
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbWellness"), url: "/wellness" },
-              {
-                name: t("breathing-sessions.breadcrumb"),
-                url: "/wellness/breathing-sessions",
-              },
-            ]),
-          ),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqPageSchema(faqs)),
-        }}
-      />
-      <TreatmentSection data={treatments["breathing-sessions"]} />
-      <ServiceFaq faqs={faqs} serviceSlug="breathing-sessions" />
-    </>
+    <section className="bg-sand-100 flex min-h-dvh items-center justify-center">
+      <div className="mx-auto max-w-lg px-6 py-32 text-center">
+        <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
+          {copy.heading}
+        </h1>
+        <p className="text-petroleum-400 mt-5 text-base leading-relaxed">
+          {copy.body}
+        </p>
+      </div>
+    </section>
   );
 }

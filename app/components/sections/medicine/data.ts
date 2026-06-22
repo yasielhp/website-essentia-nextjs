@@ -1,10 +1,19 @@
-export const treatments = [
+export type MedicineTreatment = {
+  href: string;
+  img: string;
+  title: string;
+  description: string;
+  comingSoon?: true;
+};
+
+export const treatments: MedicineTreatment[] = [
   {
     href: "/medicine/hyperbaric-chambers",
     img: "/images/menu/hyperbaric-chambers.webp",
     title: "Hyperbaric Oxygen",
     description:
       "Pressurised oxygen to accelerate tissue repair and reduce inflammation.",
+    comingSoon: true,
   },
   {
     href: "/medicine/intravenous-therapy",
@@ -18,8 +27,9 @@ export const treatments = [
     img: "/images/menu/regenerative-medicine.webp",
     title: "Regenerative Medicine",
     description: "Protocols that activate your body's own repair mechanisms.",
+    comingSoon: true,
   },
-] as const;
+];
 
 export const principles = [
   {

@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { treatments } from "./data";
+import { treatments, type MedicineTreatment } from "./data";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,26 +17,26 @@ function slugFromHref(href: string): string {
 
 // ─── TreatmentCard ────────────────────────────────────────────
 
-function TreatmentCard({
-  treatment,
-}: {
-  treatment: (typeof treatments)[number];
-}) {
+function TreatmentCard({ treatment }: { treatment: MedicineTreatment }) {
   const t = useTranslations("medicine.treatments.items");
+  const tCommon = useTranslations("common");
   const slug = slugFromHref(treatment.href);
   const title = t(`${slug}.title`);
-  return (
-    <Link
-      href={treatment.href}
-      data-card
-      className="group relative h-72 overflow-hidden rounded-2xl md:h-80"
-    >
+  const className = "group relative h-72 overflow-hidden rounded-2xl md:h-80";
+
+  const inner = (
+    <>
       <Image
         src={treatment.img}
         alt={title}
         fill
         sizes="(max-width: 767px) 100vw, 33vw"
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
+        className={[
+          "object-cover",
+          treatment.comingSoon
+            ? "grayscale-[40%]"
+            : "transition-transform duration-500 group-hover:scale-105",
+        ].join(" ")}
       />
       <div
         className="absolute inset-0"
@@ -45,12 +45,33 @@ function TreatmentCard({
             "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.3), transparent)",
         }}
       />
+      {treatment.comingSoon && (
+        <div className="absolute top-4 left-4">
+          <span className="bg-sand-100/90 text-petroleum-700 rounded-full px-3 py-1 text-xs font-medium tracking-wide uppercase">
+            {tCommon("comingSoon")}
+          </span>
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 p-6">
         <h3 className="font-body text-xl text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
           {t(`${slug}.description`)}
         </p>
       </div>
+    </>
+  );
+
+  if (treatment.comingSoon) {
+    return (
+      <div data-card className={className}>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link href={treatment.href} data-card className={className}>
+      {inner}
     </Link>
   );
 }

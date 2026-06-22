@@ -1,4 +1,14 @@
-export const treatments = [
+export type Treatment = {
+  number: string;
+  href: string;
+  img: string;
+  title: string;
+  tagline: string;
+  description: string;
+  comingSoon?: true;
+};
+
+export const treatments: Treatment[] = [
   {
     number: "01",
     href: "/wellness/contrast-therapy",
@@ -6,6 +16,7 @@ export const treatments = [
     title: "Contrast Therapy",
     tagline: "Heat & Cold",
     description: "Heat and cold to activate recovery and reduce inflammation.",
+    comingSoon: true,
   },
   {
     number: "02",
@@ -14,6 +25,7 @@ export const treatments = [
     title: "Breathing Sessions",
     tagline: "Breathwork",
     description: "Guided breathwork to shift from stress to active recovery.",
+    comingSoon: true,
   },
   {
     number: "03",
@@ -34,13 +46,14 @@ export const treatments = [
   },
   {
     number: "05",
-    href: "/wellness/functional-well-being",
+    href: "/wellness/facial-therapies",
     img: "/images/menu/functional-wellbeing.webp",
-    title: "Functional Well-being",
-    tagline: "Movement & Performance",
-    description: "Movement and strength training designed around longevity.",
+    title: "Facial Therapies",
+    tagline: "Skin & Radiance",
+    description:
+      "Advanced facial protocols combining manual techniques and technology to restore skin health.",
   },
-] as const;
+];
 
 export const principles = [
   {
