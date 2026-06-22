@@ -485,8 +485,8 @@ export const IconImage = ({ className }: { className?: string }) => (
 
 export const IconQuote = ({ className }: { className?: string }) => (
   <svg
-    width="44"
-    height="44"
+    width="18"
+    height="18"
     viewBox="0 0 44 44"
     fill="currentColor"
     className={className}

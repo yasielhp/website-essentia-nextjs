@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS reviews (
   name          text        NOT NULL,
   age           text        NOT NULL DEFAULT '',
   initials      text        NOT NULL DEFAULT '',
-  style         text        NOT NULL DEFAULT 'light' CHECK (style IN ('dark', 'light')),
   display_order integer     NOT NULL DEFAULT 0,
   status        text        NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
   created_at    timestamptz NOT NULL DEFAULT now(),
@@ -21,7 +20,7 @@ CREATE POLICY "public_read_published" ON reviews
 CREATE POLICY "auth_read_all" ON reviews
   FOR SELECT TO authenticated USING (true);
 
--- Authenticated users can create reviews (always saved as draft)
+-- Authenticated users can create reviews (dashboard or server action with service key)
 CREATE POLICY "auth_insert" ON reviews
   FOR INSERT TO authenticated WITH CHECK (true);
 
