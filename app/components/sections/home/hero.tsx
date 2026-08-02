@@ -9,6 +9,8 @@ import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const R2_ORIGIN = "https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev";
+
 type VideoState = { visible: boolean; muted: boolean };
 type VideoAction =
   | { type: "show"; muted?: boolean }
@@ -185,6 +187,14 @@ export default function Hero() {
 
   return (
     <section ref={wrapperRef} className="bg-sand-100 min-screen h-[300vh]">
+      {/* Poster is the LCP element — open the connection to R2 as early as possible */}
+      <link rel="preconnect" href={R2_ORIGIN} crossOrigin="anonymous" />
+      <link
+        rel="preload"
+        as="image"
+        href={`${R2_ORIGIN}/hero.webp`}
+        fetchPriority="high"
+      />
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
@@ -194,12 +204,9 @@ export default function Hero() {
           loop
           playsInline
           preload="none"
-          poster="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/hero.webp"
+          poster={`${R2_ORIGIN}/hero.webp`}
         >
-          <source
-            src="https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev/hero.mp4"
-            type="video/mp4"
-          />
+          <source src={`${R2_ORIGIN}/hero.mp4`} type="video/mp4" />
         </video>
 
         <div
