@@ -5,7 +5,10 @@ import {
   bookableServices,
   manualTherapyTreatments,
 } from "@/data/services-data";
-import { TIME_SLOTS } from "@/constants/booking";
+import {
+  BOOKING_BUFFER_MINUTES,
+  getBookingStartTimes,
+} from "@/utils/calendar-helpers";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -26,13 +29,14 @@ function computeAvailableSlots(
   durationMinutes: number,
   busyIntervals: BusyInterval[],
 ): string[] {
-  return TIME_SLOTS.filter((slot) => {
+  return getBookingStartTimes(durationMinutes).filter((slot) => {
     const slotStart = new Date(`${dateStr}T${slot}:00`);
     const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
     return !busyIntervals.some((b) => {
-      const bStart = new Date(b.start);
-      const bEnd = new Date(b.end);
-      return slotStart < bEnd && slotEnd > bStart;
+      const bStart = new Date(b.start).getTime();
+      // Same buffer between sessions the booking UI applies
+      const bEnd = new Date(b.end).getTime() + BOOKING_BUFFER_MINUTES * 60_000;
+      return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
     });
   });
 }

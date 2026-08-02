@@ -78,9 +78,31 @@ export function getCalendarDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
-const OPENING_MINUTES = 8 * 60; // 08:00
-const CLOSING_MINUTES = 19 * 60; // 19:00
-const BUFFER_MINUTES = 10;
+const OPENING_MINUTES = 8 * 60; // 08:00 — first bookable slot
+const LAST_SLOT_MINUTES = 17 * 60; // 17:00 — last bookable slot
+const CLOSING_MINUTES = 19 * 60; // 19:00 — sessions must end by then
+const SLOT_INTERVAL_MINUTES = 60; // slots land on the hour
+export const BOOKING_BUFFER_MINUTES = 10;
+
+/**
+ * Bookable start times, on the hour from opening to the last slot.
+ * The interval is fixed rather than derived from the duration so the
+ * times stay round (16:00, 17:00) instead of drifting (16:10, 17:20).
+ */
+export function getBookingStartTimes(durationMinutes: number): string[] {
+  const times: string[] = [];
+  for (
+    let startMin = OPENING_MINUTES;
+    startMin <= LAST_SLOT_MINUTES;
+    startMin += SLOT_INTERVAL_MINUTES
+  ) {
+    if (startMin + durationMinutes > CLOSING_MINUTES) break;
+    const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
+    const mm = String(startMin % 60).padStart(2, "0");
+    times.push(`${hh}:${mm}`);
+  }
+  return times;
+}
 
 function computeSlots(
   date: Date,
@@ -88,21 +110,12 @@ function computeSlots(
   durationMinutes: number,
   busyIntervals: { start: string; end: string }[],
 ): { time: string; booked: boolean }[] {
-  const BUFFER_MS = BUFFER_MINUTES * 60 * 1000;
-  const step = durationMinutes + BUFFER_MINUTES;
+  const BUFFER_MS = BOOKING_BUFFER_MINUTES * 60 * 1000;
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
   const slots: { time: string; booked: boolean }[] = [];
 
-  for (
-    let startMin = OPENING_MINUTES;
-    startMin + durationMinutes <= CLOSING_MINUTES;
-    startMin += step
-  ) {
-    const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
-    const mm = String(startMin % 60).padStart(2, "0");
-    const time = `${hh}:${mm}`;
-
+  for (const time of getBookingStartTimes(durationMinutes)) {
     const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
     const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
 
