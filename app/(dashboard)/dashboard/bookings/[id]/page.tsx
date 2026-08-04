@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
 import { Button } from "@/components/ui/button";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
@@ -226,7 +227,7 @@ export default function BookingDetailPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    await deleteBooking(id);
+    await deleteBooking(getAccessToken(), id);
     push("/dashboard/bookings");
   }
 

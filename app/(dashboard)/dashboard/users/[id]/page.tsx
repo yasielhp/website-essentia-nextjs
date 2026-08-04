@@ -9,6 +9,11 @@ import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
+import { getAccessToken } from "@/lib/client-session";
+import {
+  connectStaffCalendar,
+  disconnectStaffCalendar,
+} from "@/services/calendar.client";
 import {
   IconTrash,
   IconCheck,
@@ -203,7 +208,7 @@ export default function EditUserPage() {
 
     dispatch({ type: "SET_SAVING", value: true });
 
-    const { error } = await updateUserProfile({
+    const { error } = await updateUserProfile(getAccessToken(), {
       userId: id,
       email: state.email,
       firstName: state.firstName,
@@ -247,7 +252,7 @@ export default function EditUserPage() {
       return;
     }
     setPwLoading(true);
-    const { error } = await setUserPassword(id, pwNew);
+    const { error } = await setUserPassword(getAccessToken(), id, pwNew);
     if (error) {
       setPwError(error);
       setPwLoading(false);
@@ -261,7 +266,7 @@ export default function EditUserPage() {
 
   async function handleRemove() {
     dispatch({ type: "SET_REMOVING", value: true });
-    const { error } = await removeUserAccess(id);
+    const { error } = await removeUserAccess(getAccessToken(), id);
     if (error) {
       dispatch({ type: "SET_ERROR", msg: error });
       dispatch({ type: "SET_REMOVING", value: false });
@@ -612,10 +617,7 @@ export default function EditUserPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  await fetch(
-                                    `/api/google/calendar/disconnect-user?staff_id=${id}&service_id=${svc.id}`,
-                                    { method: "DELETE" },
-                                  );
+                                  await disconnectStaffCalendar(id, svc.id);
                                   setAssignments((prev) =>
                                     prev.map((a) =>
                                       a.service_id === svc.id
@@ -630,13 +632,20 @@ export default function EditUserPage() {
                               </button>
                             </div>
                           ) : (
-                            <a
-                              href={`/api/google/calendar/connect-user?staff_id=${id}&service_id=${svc.id}&return_to=${encodeURIComponent(`/dashboard/users/${id}`)}`}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void connectStaffCalendar(
+                                  id,
+                                  svc.id,
+                                  `/dashboard/users/${id}`,
+                                )
+                              }
                               className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
                             >
                               <IconCalendarConnect />
                               Conectar Google Calendar
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}

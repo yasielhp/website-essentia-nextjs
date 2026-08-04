@@ -1,28 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { insforge } from "@/lib/insforge";
-import { RedsysProvider } from "@/lib/payments/redsys";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { getRedsysProvider } from "@/lib/payments";
+import { getAppUrl } from "@/lib/env";
 
-function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
+type CheckoutBody = {
+  bookingId: string;
+  tierId: string;
+  email?: string;
+  name?: string;
+  description?: string;
+  date?: string;
+  time?: string;
+  phone?: string;
+};
 
-function buildRedsysProvider(): RedsysProvider | null {
-  const merchantCode = process.env.REDSYS_MERCHANT_CODE;
-  const terminal = process.env.REDSYS_TERMINAL ?? "001";
-  const secretKey = process.env.REDSYS_SECRET_KEY;
-  if (!merchantCode || !secretKey) return null;
-  return new RedsysProvider({
-    merchantCode,
-    terminal,
-    secretKey,
-    environment: (process.env.REDSYS_ENVIRONMENT as "test" | "live") ?? "test",
-  });
-}
-
+/**
+ * Creates a Redsys checkout for a booking.
+ *
+ * The amount is resolved from `service_tiers` on the server and never from the
+ * request body. Trusting a client-supplied `amountEur` allowed paying an
+ * arbitrary amount — one cent — for any service.
+ */
 export async function POST(req: NextRequest) {
-  const provider = buildRedsysProvider();
+  const provider = getRedsysProvider();
   if (!provider) {
     return NextResponse.json(
       { error: "Redsys not configured" },
@@ -30,34 +30,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: {
-    bookingId: string;
-    tierId: string;
-    amountEur?: number | null;
-    email: string;
-    name: string;
-    description: string;
-    date?: string;
-    time?: string;
-    phone?: string;
-  };
+  let body: CheckoutBody;
   try {
-    body = (await req.json()) as typeof body;
+    body = (await req.json()) as CheckoutBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    bookingId,
-    tierId,
-    amountEur: bodyAmountEur,
-    email,
-    name,
-    description,
-    date,
-    time,
-    phone,
-  } = body;
+  const { bookingId, tierId, email, name, description, date, time, phone } =
+    body;
+
   if (!bookingId || !tierId) {
     return NextResponse.json(
       { error: "bookingId and tierId are required" },
@@ -65,21 +47,53 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Use client-provided price if available; fall back to DB lookup
-  let priceEur = bodyAmountEur != null ? Number(bodyAmountEur) : 0;
-  if (priceEur <= 0) {
-    const { data: tier } = await insforge.database
-      .from("service_tiers")
-      .select("price_eur, price_center_eur")
-      .eq("id", tierId)
-      .single();
-    const t = tier as {
-      price_eur: number | null;
-      price_center_eur: number | null;
-    } | null;
-    priceEur = Number(t?.price_eur ?? t?.price_center_eur ?? 0);
+  const db = getAdminClient().database;
+
+  // The tier must actually belong to the booking's service, otherwise a caller
+  // could pair an expensive booking with the cheapest tier in the catalogue.
+  const { data: bookingRow } = await db
+    .from("bookings")
+    .select("id, service_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  const booking = bookingRow as {
+    id: string;
+    service_id: string | null;
+  } | null;
+  if (!booking) {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   }
-  if (priceEur <= 0) {
+
+  const { data: tierRow } = await db
+    .from("service_tiers")
+    .select("service_id, price_eur, price_center_eur")
+    .eq("id", tierId)
+    .maybeSingle();
+
+  const tier = tierRow as {
+    service_id: string | null;
+    price_eur: number | null;
+    price_center_eur: number | null;
+  } | null;
+
+  if (!tier) {
+    return NextResponse.json({ error: "Tier not found" }, { status: 404 });
+  }
+
+  if (
+    booking.service_id &&
+    tier.service_id &&
+    booking.service_id !== tier.service_id
+  ) {
+    return NextResponse.json(
+      { error: "Tier does not belong to this booking's service" },
+      { status: 400 },
+    );
+  }
+
+  const priceEur = Number(tier.price_eur ?? tier.price_center_eur ?? 0);
+  if (!Number.isFinite(priceEur) || priceEur <= 0) {
     return NextResponse.json(
       { error: "Tier has no price configured" },
       { status: 400 },
@@ -103,8 +117,10 @@ export async function POST(req: NextRequest) {
     metadata: { notifyUrl: `${appUrl}/api/webhooks/redsys` },
   });
 
-  // Store Redsys order ID so we can match the notification back to the booking
-  await insforge.database
+  // Store the Redsys order id so the notification can be matched to the booking.
+  // The column is still called `stripe_session_id` for historical reasons;
+  // renaming it needs a migration, so it stays as-is for now.
+  await db
     .from("bookings")
     .update({ stripe_session_id: formData.orderId })
     .eq("id", bookingId);

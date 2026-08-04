@@ -1,43 +1,45 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
+import { publicEnv, serverEnv } from "@/lib/env";
+import type { UpdateUserProfileInput } from "@/types/user";
 
-type UpdateUserProfileInput = {
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  role: "admin" | "staff" | "partner";
-  currentEmail: string;
-};
+export type { UpdateUserProfileInput };
 
+/**
+ * Updates a staff profile, optionally changing the auth email. Admin only.
+ *
+ * This action can grant the `admin` role, so an unauthenticated caller could
+ * previously promote themselves. The role check is the whole point.
+ */
 export async function updateUserProfile(
+  accessToken: string | null,
   input: UpdateUserProfileInput,
 ): Promise<{ error: string | null }> {
-  const serviceKey = process.env.INSFORGE_SERVICE_KEY;
-  if (!serviceKey) {
-    return { error: "INSFORGE_SERVICE_KEY no está configurada." };
+  try {
+    await requireRole(accessToken, ADMIN_ROLES);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
   }
-
-  const admin = createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: serviceKey,
-    isServerMode: true,
-  });
 
   const { userId, email, firstName, lastName, phone, role, currentEmail } =
     input;
+
+  if (!userId) return { error: "Falta el identificador del usuario." };
+
   const trimEmail = email.trim().toLowerCase();
   const fullName = [firstName.trim(), lastName.trim()]
     .filter(Boolean)
     .join(" ");
 
-  // Sync auth.users email via Insforge admin REST API (GoTrue-compatible)
+  // Sync auth.users email via the Insforge admin REST API (GoTrue-compatible)
   const emailChanged =
     trimEmail && trimEmail !== currentEmail.trim().toLowerCase();
   if (emailChanged) {
-    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL!.replace(/\/$/, "");
+    const serviceKey = serverEnv.insforgeServiceKey;
+    const baseUrl = publicEnv.insforgeUrl.replace(/\/$/, "");
     const res = await fetch(`${baseUrl}/auth/v1/admin/users/${userId}`, {
       method: "PATCH",
       headers: {
@@ -55,9 +57,8 @@ export async function updateUserProfile(
     }
   }
 
-  // Update profile record
-  const { error: profileError } = await admin.database
-    .from("profiles")
+  const { error: profileError } = await getAdminClient()
+    .database.from("profiles")
     .update({
       role,
       first_name: firstName.trim(),

@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
 import {
   fetchContacts,
   fetchContactRoleCounts,
@@ -253,7 +254,11 @@ export default function UsersPage() {
   // ── Load contacts ──
   const loadContacts = useCallback(async (page: number) => {
     dispatchContacts({ type: "SET_LOADING" });
-    const { contacts, total } = await fetchContacts(page, PAGE_SIZE);
+    const { contacts, total } = await fetchContacts(
+      getAccessToken(),
+      page,
+      PAGE_SIZE,
+    );
     dispatchContacts({ type: "LOADED", contacts, total });
   }, []);
 
@@ -281,7 +286,7 @@ export default function UsersPage() {
   // ── Load role counts ──
   useEffect(() => {
     void Promise.all([
-      fetchContactRoleCounts(),
+      fetchContactRoleCounts(getAccessToken()),
       insforge.database
         .from("profiles")
         .select("id", { count: "exact", head: true })

@@ -9,6 +9,7 @@ import {
 } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
+import { getAccessToken } from "@/lib/client-session";
 import {
   fetchContactDetail,
   updateContact,
@@ -635,7 +636,7 @@ export default function ContactDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const result = await fetchContactDetail(id);
+      const result = await fetchContactDetail(getAccessToken(), id);
       if (!result.found) {
         dispatch({ type: "NOT_FOUND" });
         return;
@@ -672,14 +673,18 @@ export default function ContactDetailPage() {
 
     dispatchForm({ type: "SAVING_START" });
 
-    const { error: updateErrorMsg } = await updateContact(id, {
-      first_name: trimmedFirst,
-      last_name: lastName.trim() || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      preferred_language: language === "es" ? "es" : "en",
-      newsletter_subscribed: newsletterSubscribed,
-    });
+    const { error: updateErrorMsg } = await updateContact(
+      getAccessToken(),
+      id,
+      {
+        first_name: trimmedFirst,
+        last_name: lastName.trim() || null,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        preferred_language: language === "es" ? "es" : "en",
+        newsletter_subscribed: newsletterSubscribed,
+      },
+    );
 
     dispatchForm({ type: "SAVING_END" });
 
@@ -711,7 +716,7 @@ export default function ContactDetailPage() {
 
   async function handleDelete() {
     dispatchForm({ type: "DELETING_START" });
-    const { error } = await deleteContact(id);
+    const { error } = await deleteContact(getAccessToken(), id);
     if (error) {
       dispatchForm({ type: "SET_ERROR", error });
       dispatchForm({ type: "CLOSE_DELETE" });

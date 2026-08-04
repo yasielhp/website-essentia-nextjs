@@ -15,6 +15,26 @@ export function createPaymentProvider(cfg: PaymentConfig): PaymentProvider {
   return new RedsysProvider(cfg.config as RedsysConfig);
 }
 
+/**
+ * Builds the Redsys provider from environment variables.
+ *
+ * Replaces four identical `buildRedsysProvider()` copies across the checkout
+ * routes, the webhook and the payment-status action. `REDSYS_TERMINAL` defaults
+ * to `"001"`, which is what those copies already assumed.
+ */
+export function getRedsysProvider(): RedsysProvider | null {
+  const merchantCode = process.env.REDSYS_MERCHANT_CODE;
+  const secretKey = process.env.REDSYS_SECRET_KEY;
+  if (!merchantCode || !secretKey) return null;
+
+  return new RedsysProvider({
+    merchantCode,
+    terminal: process.env.REDSYS_TERMINAL ?? "001",
+    secretKey,
+    environment: (process.env.REDSYS_ENVIRONMENT as "test" | "live") ?? "test",
+  });
+}
+
 export function createProviderFromEnv(): PaymentProvider | null {
   const merchantCode = process.env.REDSYS_MERCHANT_CODE;
   const terminal = process.env.REDSYS_TERMINAL;

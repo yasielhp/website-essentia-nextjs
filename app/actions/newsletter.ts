@@ -1,9 +1,12 @@
 "use server";
 
 import { Resend } from "resend";
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { AuthError, authenticate } from "@/lib/auth-guard";
 
-const NEWSLETTER_AUDIENCE_ID = "63633279-d212-4a95-a395-38316b58ec47";
+const NEWSLETTER_AUDIENCE_ID =
+  process.env.RESEND_NEWSLETTER_AUDIENCE_ID ??
+  "63633279-d212-4a95-a395-38316b58ec47";
 
 function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
@@ -12,14 +15,6 @@ function getResend(): Resend | null {
     return null;
   }
   return new Resend(apiKey);
-}
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
 }
 
 async function syncContactNewsletter(
@@ -82,11 +77,28 @@ export async function unsubscribeFromNewsletter(
   return { ok: true };
 }
 
+/**
+ * Flips the newsletter preference on a profile.
+ *
+ * Requires the caller to be the profile owner or an administrator; without the
+ * check any visitor could toggle the preference of an arbitrary user id.
+ */
 export async function updateNewsletterForUser(
+  accessToken: string | null,
   userId: string,
   email: string,
   subscribe: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const caller = await authenticate(accessToken);
+    if (caller.userId !== userId && caller.role !== "admin") {
+      return { ok: false, error: "Insufficient permissions" };
+    }
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.message };
+    throw err;
+  }
+
   const resendResult = subscribe
     ? await subscribeToNewsletter(email)
     : await unsubscribeFromNewsletter(email);

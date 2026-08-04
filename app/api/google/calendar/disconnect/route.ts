@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
+import {
+  ADMIN_ROLES,
+  requireApiRole,
+  toAuthErrorResponse,
+} from "@/lib/auth-guard";
+import { deleteServiceConnection } from "@/services/calendar-config.service";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
-
+/**
+ * DELETE /api/google/calendar/disconnect?service_id=UUID
+ *
+ * Removes a service's Google Calendar connection. Admin only — this was open to
+ * anyone, so a single unauthenticated request could break booking availability.
+ */
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const serviceId = searchParams.get("service_id");
+  try {
+    await requireApiRole(request, ADMIN_ROLES);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
+  }
 
+  const serviceId = new URL(request.url).searchParams.get("service_id");
   if (!serviceId) {
     return NextResponse.json(
       { error: "Missing service_id parameter" },
@@ -19,29 +29,13 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  // TODO: Verify admin session before allowing disconnect
-
-  try {
-    const adminClient = getAdminClient();
-    const { error } = await adminClient.database
-      .from("service_configs")
-      .delete()
-      .eq("service_id", serviceId);
-
-    if (error) {
-      console.error("[google/calendar/disconnect] DB error:", error);
-      return NextResponse.json(
-        { error: "Failed to disconnect calendar" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[google/calendar/disconnect] error:", err);
+  const { error } = await deleteServiceConnection(serviceId);
+  if (error) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to disconnect calendar" },
       { status: 500 },
     );
   }
+
+  return NextResponse.json({ ok: true });
 }

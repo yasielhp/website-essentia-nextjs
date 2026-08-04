@@ -1,36 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
+import { requireApiRole, toAuthErrorResponse } from "@/lib/auth-guard";
+import { listServiceConnections } from "@/services/calendar-config.service";
 
 /**
  * GET /api/google/calendar/configs
  *
- * Returns the Google Calendar connection status for all services.
- * Uses the service key server-side so token data is never exposed to the client.
- * The response deliberately omits token fields — only connection metadata is returned.
+ * Google Calendar connection status for every service. Staff only — the
+ * response includes the connected Google account address, which is internal.
+ * Token fields are never selected.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const adminClient = getAdminClient();
-
-    const { data, error } = await adminClient.database
-      .from("service_configs")
-      .select("service_id, google_connected_email, google_calendar_id");
-
-    if (error) {
-      console.error("[google/calendar/configs] DB error:", error);
-      return NextResponse.json({ data: [] });
-    }
-
-    return NextResponse.json({ data: data ?? [] });
+    await requireApiRole(request);
   } catch (err) {
-    console.error("[google/calendar/configs] error:", err);
-    return NextResponse.json({ data: [] });
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
   }
+
+  return NextResponse.json({ data: await listServiceConnections() });
 }

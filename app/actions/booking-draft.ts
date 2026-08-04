@@ -1,15 +1,25 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { AuthError, requireRole } from "@/lib/auth-guard";
+import type { UpdateBookingPayload } from "@/types/booking";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
-}
+export type { UpdateBookingPayload };
 
+/**
+ * Booking mutations.
+ *
+ * Two access models live here, and the distinction matters:
+ *
+ * - **Draft actions** run for anonymous visitors in the public booking flow, so
+ *   they cannot require a role. Instead they are scoped to `status = 'draft'`,
+ *   mirroring the `WHERE ... AND status = 'draft'` guard already present in the
+ *   `update_booking_datetime` / `confirm_booking` SQL functions. Without it,
+ *   knowing any booking id was enough to rewrite a confirmed booking.
+ * - **Dashboard actions** require a staff role via the caller's access token.
+ */
+
+/** Attaches tier, price and notes to a booking that is still a draft. */
 export async function updateDraftBookingMeta(
   bookingId: string,
   tierId: string | null,
@@ -19,7 +29,8 @@ export async function updateDraftBookingMeta(
   notes: string | null,
   therapistGender: "male" | "female" | null = null,
 ): Promise<void> {
-  const adminClient = getAdminClient();
+  if (!bookingId) return;
+
   const therapistNote =
     therapistGender === "male"
       ? "Terapeuta: Masculino"
@@ -28,8 +39,9 @@ export async function updateDraftBookingMeta(
         : null;
   const composedNotes =
     [therapistNote, notes].filter(Boolean).join("\n\n") || null;
-  await adminClient.database
-    .from("bookings")
+
+  await getAdminClient()
+    .database.from("bookings")
     .update({
       tier_id: tierId,
       price_eur: tierPrice,
@@ -38,9 +50,11 @@ export async function updateDraftBookingMeta(
       ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),
       created_by_role: createdByRole,
     })
-    .eq("id", bookingId);
+    .eq("id", bookingId)
+    .eq("status", "draft");
 }
 
+/** Promotes a draft booking to `pending`. */
 export async function confirmDraftBooking(
   bookingId: string,
   tierId: string | null,
@@ -49,9 +63,10 @@ export async function confirmDraftBooking(
   date: string,
   time: string,
 ): Promise<void> {
-  const adminClient = getAdminClient();
-  await adminClient.database
-    .from("bookings")
+  if (!bookingId) return;
+
+  await getAdminClient()
+    .database.from("bookings")
     .update({
       status: "pending",
       tier_id: tierId,
@@ -61,40 +76,51 @@ export async function confirmDraftBooking(
       date,
       time,
     })
+    .eq("id", bookingId)
+    .eq("status", "draft");
+}
+
+/** Deletes a booking outright. Staff only. */
+export async function deleteBooking(
+  accessToken: string | null,
+  bookingId: string,
+): Promise<{ error: string | null }> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
+  }
+
+  if (!bookingId) return { error: "Falta el identificador de la reserva." };
+
+  const { error } = await getAdminClient()
+    .database.from("bookings")
+    .delete()
     .eq("id", bookingId);
+
+  return { error: (error as { message?: string } | null)?.message ?? null };
 }
 
-export async function deleteBooking(bookingId: string): Promise<void> {
-  const adminClient = getAdminClient();
-  await adminClient.database.from("bookings").delete().eq("id", bookingId);
-}
-
-export type UpdateBookingPayload = {
-  service_id: string;
-  service_title: string;
-  tier_id: string | null;
-  price_eur: number | null;
-  duration: string | null;
-  date: string | null;
-  time: string | null;
-  location: string | null;
-  location_address: string | null;
-  notes: string | null;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  status: string;
-};
-
+/** Full booking edit from the dashboard. Staff only. */
 export async function updateBookingByAdmin(
+  accessToken: string | null,
   bookingId: string,
   payload: UpdateBookingPayload,
 ): Promise<{ error: string | null }> {
-  const adminClient = getAdminClient();
-  const { error } = await adminClient.database
-    .from("bookings")
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
+  }
+
+  if (!bookingId) return { error: "Falta el identificador de la reserva." };
+
+  const { error } = await getAdminClient()
+    .database.from("bookings")
     .update(payload)
     .eq("id", bookingId);
+
   return { error: (error as { message?: string } | null)?.message ?? null };
 }

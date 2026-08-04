@@ -1,36 +1,54 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
+import type {
+  ContactBooking,
+  ContactDetail,
+  ContactDetailResult,
+  ContactEduReg,
+  ContactRaceReg,
+  ContactRow,
+  UpdateContactPayload,
+} from "@/types/contact";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
-}
-
-export type ContactRow = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  created_at: string | null;
+export type {
+  ContactBooking,
+  ContactDetail,
+  ContactDetailResult,
+  ContactEduReg,
+  ContactRaceReg,
+  ContactRow,
 };
 
+/**
+ * Contact directory. Every function here reads or writes personal data with the
+ * service key, so all of them require a dashboard role — these actions are
+ * public HTTP endpoints and previously exposed the whole contact database.
+ */
+
 export async function fetchContacts(
+  accessToken: string | null,
   page: number,
   pageSize: number,
 ): Promise<{ contacts: ContactRow[]; total: number }> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { contacts: [], total: 0 };
+    throw err;
+  }
+
+  const safePage = Math.max(0, Math.floor(page));
+  const safeSize = Math.min(Math.max(1, Math.floor(pageSize)), 200);
+
   const { data, count } = await getAdminClient()
     .database.from("contacts")
     .select("id, first_name, last_name, email, phone, status, created_at", {
       count: "exact",
     })
     .order("created_at", { ascending: false })
-    .range(page * pageSize, page * pageSize + pageSize - 1);
+    .range(safePage * safeSize, safePage * safeSize + safeSize - 1);
 
   return {
     contacts: (data as ContactRow[] | null) ?? [],
@@ -38,60 +56,17 @@ export async function fetchContacts(
   };
 }
 
-export type ContactDetail = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  newsletter_subscribed: boolean | null;
-  preferred_language: string | null;
-};
-
-export type ContactBooking = {
-  id: string;
-  service_title: string | null;
-  date: string | null;
-  time: string | null;
-  status: string | null;
-  created_at: string | null;
-};
-
-export type ContactRaceReg = {
-  id: string;
-  created_at: string | null;
-  race_id: string;
-  race: {
-    title: string | null;
-    date: string | null;
-    location: string | null;
-  } | null;
-};
-
-export type ContactEduReg = {
-  id: string;
-  created_at: string | null;
-  session_id: string;
-  session: {
-    title: string | null;
-    date: string | null;
-    location: string | null;
-  } | null;
-};
-
-export type ContactDetailResult =
-  | { found: false }
-  | {
-      found: true;
-      contact: ContactDetail;
-      bookings: ContactBooking[];
-      raceRegs: ContactRaceReg[];
-      eduRegs: ContactEduReg[];
-    };
-
 export async function fetchContactDetail(
+  accessToken: string | null,
   id: string,
 ): Promise<ContactDetailResult> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { found: false };
+    throw err;
+  }
+
   const db = getAdminClient().database;
 
   const [
@@ -157,17 +132,17 @@ export async function fetchContactDetail(
       : Promise.resolve({ data: [] }),
   ]);
 
-  type RaceRow = {
+  type EventRow = {
     id: string;
     title: string | null;
     date: string | null;
     location: string | null;
   };
   const racesMap = new Map(
-    ((racesData as RaceRow[]) ?? []).map((r) => [r.id, r]),
+    ((racesData as EventRow[]) ?? []).map((r) => [r.id, r]),
   );
   const sessionsMap = new Map(
-    ((sessionsData as RaceRow[]) ?? []).map((s) => [s.id, s]),
+    ((sessionsData as EventRow[]) ?? []).map((s) => [s.id, s]),
   );
 
   return {
@@ -186,16 +161,17 @@ export async function fetchContactDetail(
 }
 
 export async function updateContact(
+  accessToken: string | null,
   id: string,
-  payload: {
-    first_name: string;
-    last_name: string | null;
-    email: string | null;
-    phone: string | null;
-    preferred_language: string;
-    newsletter_subscribed: boolean;
-  },
+  payload: UpdateContactPayload,
 ): Promise<{ error: string | null }> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
+  }
+
   const { error } = await getAdminClient()
     .database.from("contacts")
     .update(payload)
@@ -203,17 +179,24 @@ export async function updateContact(
   return { error: (error as { message?: string } | null)?.message ?? null };
 }
 
-export async function fetchContactRoleCounts(): Promise<{
-  leads: number;
-  clients: number;
-}> {
+export async function fetchContactRoleCounts(
+  accessToken: string | null,
+): Promise<{ leads: number; clients: number }> {
+  try {
+    await requireRole(accessToken, ADMIN_ROLES);
+  } catch (err) {
+    if (err instanceof AuthError) return { leads: 0, clients: 0 };
+    throw err;
+  }
+
+  const db = getAdminClient().database;
   const [leadsRes, clientsRes] = await Promise.all([
-    getAdminClient()
-      .database.from("contacts")
+    db
+      .from("contacts")
       .select("id", { count: "exact", head: true })
       .or("status.eq.lead,status.is.null"),
-    getAdminClient()
-      .database.from("contacts")
+    db
+      .from("contacts")
       .select("id", { count: "exact", head: true })
       .eq("status", "client"),
   ]);

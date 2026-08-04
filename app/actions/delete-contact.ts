@@ -1,20 +1,28 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
 
+/**
+ * Deletes a contact and every record that hangs off it. Admin only.
+ *
+ * This cascades into bookings and registrations, so it is the most destructive
+ * action in the app — it is restricted to administrators rather than all staff.
+ */
 export async function deleteContact(
+  accessToken: string | null,
   contactId: string,
 ): Promise<{ error: string | null }> {
-  const serviceKey = process.env.INSFORGE_SERVICE_KEY;
-  if (!serviceKey) {
-    return { error: "INSFORGE_SERVICE_KEY no está configurada." };
+  try {
+    await requireRole(accessToken, ADMIN_ROLES);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
   }
 
-  const admin = createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: serviceKey,
-    isServerMode: true,
-  });
+  if (!contactId) return { error: "Falta el identificador del contacto." };
+
+  const admin = getAdminClient();
 
   await Promise.all([
     admin.database

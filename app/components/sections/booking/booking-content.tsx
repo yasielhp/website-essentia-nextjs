@@ -30,6 +30,7 @@ import { ConfirmStep } from "./steps/confirm-step";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
 import { notifyBooking } from "@/actions/booking-notifications";
 
 const EMPTY_DETAILS: DetailsState = {
@@ -655,7 +656,7 @@ function BookingContentInner() {
 
     // Send "received" notification to client and staff as soon as booking is created
     if (resolvedBookingId && details.email && dateStr) {
-      notifyBooking({
+      notifyBooking(getAccessToken(), {
         bookingId: resolvedBookingId,
         event: "received",
         clientName: `${details.firstName} ${details.lastName}`.trim(),

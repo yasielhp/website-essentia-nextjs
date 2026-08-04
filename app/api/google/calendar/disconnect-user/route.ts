@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
+import { requireApiRole, toAuthErrorResponse } from "@/lib/auth-guard";
+import { deleteServiceConnection } from "@/services/calendar-config.service";
 
 /**
  * DELETE /api/google/calendar/disconnect-user?staff_id=UUID&service_id=UUID
  *
- * Removes the shared Google Calendar connection from service_configs for the given service.
- * staff_id is accepted for backwards compatibility but the connection is service-scoped.
+ * Removes the shared Google Calendar connection for a service. `staff_id` is
+ * kept for backwards compatibility — the connection itself is service-scoped.
+ *
+ * Staff may only disconnect their own; admins may disconnect anyone's.
  */
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
-
 export async function DELETE(request: NextRequest) {
+  let caller;
+  try {
+    caller = await requireApiRole(request);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
+  }
+
   const { searchParams } = new URL(request.url);
   const staffId = searchParams.get("staff_id");
   const serviceId = searchParams.get("service_id");
@@ -27,28 +31,17 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  try {
-    const adminClient = getAdminClient();
+  if (caller.role !== "admin" && caller.userId !== staffId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-    const { error } = await adminClient.database
-      .from("service_configs")
-      .delete()
-      .eq("service_id", serviceId);
-
-    if (error) {
-      console.error("[google/calendar/disconnect-user] db error:", error);
-      return NextResponse.json(
-        { error: "Failed to disconnect" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[google/calendar/disconnect-user] error:", err);
+  const { error } = await deleteServiceConnection(serviceId);
+  if (error) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to disconnect" },
       { status: 500 },
     );
   }
+
+  return NextResponse.json({ ok: true });
 }

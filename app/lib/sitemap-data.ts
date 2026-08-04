@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { createClient } from "@insforge/sdk";
+import { insforge } from "@/lib/insforge";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { contact } from "@/constants/contact";
 
@@ -135,11 +135,7 @@ export type BlogPost = {
 export const fetchBlogPosts = unstable_cache(
   async (): Promise<BlogPost[]> => {
     try {
-      const db = createClient({
-        baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-        anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
-      });
-      const { data } = await db.database
+      const { data } = await insforge.database
         .from("blog_posts")
         .select("slug, slug_es, published_at")
         .eq("status", "published")

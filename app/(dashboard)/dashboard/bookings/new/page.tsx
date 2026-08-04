@@ -15,6 +15,7 @@ import {
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken, authFetch } from "@/lib/client-session";
 import { bookableServices } from "@/data/services-data";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { useRole } from "@/context/role-context";
@@ -1287,7 +1288,7 @@ function NewBookingPageInner() {
     // Send notifications (non-blocking)
     if (email.trim() && dateStr) {
       try {
-        await notifyBooking({
+        await notifyBooking(getAccessToken(), {
           bookingId,
           event: "confirmed",
           clientName,
@@ -1355,7 +1356,7 @@ function NewBookingPageInner() {
         : `${serviceName} — ${clientName}`;
 
       try {
-        const calRes = await fetch("/api/google/calendar/event", {
+        const calRes = await authFetch("/api/google/calendar/event", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

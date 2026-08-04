@@ -1,23 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { RedsysProvider } from "@/lib/payments/redsys";
-import { handleBookingPaid } from "@/actions/payments";
-import { insforge } from "@/lib/insforge";
+import { getRedsysProvider } from "@/lib/payments";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { handleBookingPaid } from "@/services/booking-payments.service";
 
-function buildProvider(): RedsysProvider | null {
-  const merchantCode = process.env.REDSYS_MERCHANT_CODE;
-  const terminal = process.env.REDSYS_TERMINAL ?? "001";
-  const secretKey = process.env.REDSYS_SECRET_KEY;
-  if (!merchantCode || !secretKey) return null;
-  return new RedsysProvider({
-    merchantCode,
-    terminal,
-    secretKey,
-    environment: (process.env.REDSYS_ENVIRONMENT as "test" | "live") ?? "test",
+/** Redsys retries on any non-200 response, so both outcomes reply with 200. */
+function redsysReply(body: "OK" | "KO") {
+  return new NextResponse(body, {
+    status: 200,
+    headers: { "Content-Type": "text/plain" },
   });
 }
 
 export async function POST(req: NextRequest) {
-  const provider = buildProvider();
+  const provider = getRedsysProvider();
   if (!provider) {
     return NextResponse.json(
       { error: "Redsys not configured" },
@@ -34,36 +29,36 @@ export async function POST(req: NextRequest) {
     const payload = event.payload as Record<string, string>;
 
     const orderId = payload.Ds_Order ?? "";
-    if (orderId) {
-      const { data: booking } = await insforge.database
-        .from("bookings")
-        .select("id")
-        .eq("stripe_session_id", orderId)
-        .maybeSingle();
+    if (!orderId) return redsysReply("OK");
 
-      const bookingId = (booking as { id: string } | null)?.id;
-      if (bookingId) {
-        if (event.type === "payment.succeeded") {
-          await handleBookingPaid(bookingId);
-        } else {
-          await insforge.database
-            .from("bookings")
-            .update({ payment_status: "failed" })
-            .eq("id", bookingId);
-        }
-      }
+    const db = getAdminClient().database;
+    const { data: booking } = await db
+      .from("bookings")
+      .select("id")
+      .eq("stripe_session_id", orderId)
+      .maybeSingle();
+
+    const bookingId = (booking as { id: string } | null)?.id;
+    if (!bookingId) {
+      // Unknown order: acknowledge so Redsys stops retrying, but leave a trace.
+      console.error("[webhooks/redsys] no booking for order", orderId);
+      return redsysReply("OK");
     }
-  } catch {
-    // Return 200 — Redsys retries on non-200 responses
-    return new NextResponse("KO", {
-      status: 200,
-      headers: { "Content-Type": "text/plain" },
-    });
+
+    if (event.type === "payment.succeeded") {
+      await handleBookingPaid(bookingId);
+    } else {
+      await db
+        .from("bookings")
+        .update({ payment_status: "failed" })
+        .eq("id", bookingId);
+    }
+  } catch (err) {
+    // A malformed or unsigned notification must never look like a success, and
+    // swallowing it silently used to hide genuine payment failures.
+    console.error("[webhooks/redsys] rejected notification:", err);
+    return redsysReply("KO");
   }
 
-  // Redsys expects "OK" text to confirm receipt
-  return new NextResponse("OK", {
-    status: 200,
-    headers: { "Content-Type": "text/plain" },
-  });
+  return redsysReply("OK");
 }
