@@ -350,6 +350,9 @@ function FilterModal({
               className={fieldCls}
             >
               <option value="">All statuses</option>
+              {/* Ordered by lifecycle: a draft is an unfinished booking, which
+                  is what marks its client as a lead. */}
+              <option value="draft">Draft</option>
               <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="cancelled">Cancelled</option>
