@@ -10,6 +10,12 @@ import {
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
+import {
+  dashboardContactSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { OptionSelect } from "@/components/ui/option-select";
 import {
   GENDER_OPTIONS,
@@ -77,6 +83,8 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 
 // ─── Form reducer ─────────────────────────────────────────────
 
+type ContactErrors = FormErrors<typeof dashboardContactSchema>;
+
 type FormState = {
   firstName: string;
   lastName: string;
@@ -85,6 +93,7 @@ type FormState = {
   language: string;
   gender: GenderValue;
   newsletterSubscribed: boolean;
+  fieldErrors: ContactErrors;
   error: string | null;
   saving: boolean;
   deleting: boolean;
@@ -110,6 +119,7 @@ type FormAction =
   | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
   | { type: "SAVING_START" }
   | { type: "SAVING_END" }
   | { type: "DELETING_START" }
@@ -124,6 +134,7 @@ const initialFormState: FormState = {
   language: "en",
   gender: "",
   newsletterSubscribed: false,
+  fieldErrors: {},
   error: null,
   saving: false,
   deleting: false,
@@ -148,7 +159,13 @@ function formReducer(state: FormState, action: FormAction): FormState {
     case "TOGGLE_NEWSLETTER":
       return { ...state, newsletterSubscribed: !state.newsletterSubscribed };
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, saving: false };
     case "SET_ERROR":
       return { ...state, error: action.error };
     case "SAVING_START":
@@ -255,6 +272,7 @@ function ContactDetailsCard({
   language,
   gender,
   newsletterSubscribed,
+  fieldErrors,
   loading,
   saving,
   dispatchForm,
@@ -266,6 +284,7 @@ function ContactDetailsCard({
   language: string;
   gender: GenderValue;
   newsletterSubscribed: boolean;
+  fieldErrors: ContactErrors;
   loading: boolean;
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
@@ -302,6 +321,9 @@ function ContactDetailsCard({
                 className={INPUT_CLASS}
               />
             )}
+            {fieldErrors.firstName && (
+              <p className="text-xs text-red-500">{fieldErrors.firstName}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label
@@ -322,6 +344,9 @@ function ContactDetailsCard({
                 disabled={saving}
                 className={INPUT_CLASS}
               />
+            )}
+            {fieldErrors.lastName && (
+              <p className="text-xs text-red-500">{fieldErrors.lastName}</p>
             )}
           </div>
         </div>
@@ -346,6 +371,9 @@ function ContactDetailsCard({
               className={INPUT_CLASS}
             />
           )}
+          {fieldErrors.email && (
+            <p className="text-xs text-red-500">{fieldErrors.email}</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -367,6 +395,9 @@ function ContactDetailsCard({
               disabled={saving}
               className={INPUT_CLASS}
             />
+          )}
+          {fieldErrors.phone && (
+            <p className="text-xs text-red-500">{fieldErrors.phone}</p>
           )}
         </div>
 
@@ -656,6 +687,7 @@ export default function ContactDetailPage() {
     language,
     gender,
     newsletterSubscribed,
+    fieldErrors,
     error,
     saving,
     deleting,
@@ -696,11 +728,19 @@ export default function ContactDetailPage() {
     e.preventDefault();
     dispatchForm({ type: "SET_ERROR", error: null });
 
-    const trimmedFirst = firstName.trim();
-    if (!trimmedFirst) {
-      dispatchForm({ type: "SET_ERROR", error: "First name is required." });
+    const errors = parseErrors(dashboardContactSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatchForm({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
+
+    const trimmedFirst = firstName.trim();
 
     dispatchForm({ type: "SAVING_START" });
 
@@ -710,8 +750,8 @@ export default function ContactDetailPage() {
       {
         first_name: trimmedFirst,
         last_name: lastName.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
+        email: normalizeEmail(email),
+        phone: normalizePhone(phone),
         preferred_language: language === "es" ? "es" : "en",
         gender: toStoredGender(gender),
         newsletter_subscribed: newsletterSubscribed,
@@ -820,6 +860,7 @@ export default function ContactDetailPage() {
           language={language}
           gender={gender}
           newsletterSubscribed={newsletterSubscribed}
+          fieldErrors={fieldErrors}
           loading={loading}
           saving={saving}
           dispatchForm={dispatchForm}

@@ -3,6 +3,12 @@
 import { useEffect, useReducer, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  dashboardUserSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
@@ -44,8 +50,11 @@ type Profile = {
 
 // ─── State ────────────────────────────────────────────────────
 
+type UserErrors = FormErrors<typeof dashboardUserSchema>;
+
 type State = {
   loading: boolean;
+  fieldErrors: UserErrors;
   notFound: boolean;
   saving: boolean;
   confirmRemove: boolean;
@@ -74,10 +83,12 @@ type Action =
       value: string;
     }
   | { type: "SET_GENDER"; gender: GenderValue }
-  | { type: "SET_ROLE"; role: SystemRole };
+  | { type: "SET_ROLE"; role: SystemRole }
+  | { type: "SET_FIELD_ERRORS"; errors: UserErrors };
 
 const initial: State = {
   loading: true,
+  fieldErrors: {},
   notFound: false,
   saving: false,
   confirmRemove: false,
@@ -125,7 +136,13 @@ function reducer(state: State, action: Action): State {
     case "SET_ERROR":
       return { ...state, error: action.msg };
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, saving: false };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
     case "SET_ROLE":
@@ -220,6 +237,19 @@ export default function EditUserPage() {
     e.preventDefault();
     dispatch({ type: "SET_ERROR", msg: null });
 
+    const errors = parseErrors(dashboardUserSchema, {
+      firstName: state.firstName,
+      lastName: state.lastName,
+      email: normalizeEmail(state.email) ?? "",
+      phone: state.phone,
+      gender: state.gender,
+      role: state.role,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
+      return;
+    }
+
     const trimFirst = state.firstName.trim();
     if (!trimFirst) {
       dispatch({ type: "SET_ERROR", msg: "El nombre es obligatorio." });
@@ -230,10 +260,10 @@ export default function EditUserPage() {
 
     const { error } = await updateUserProfile(getAccessToken(), {
       userId: id,
-      email: state.email,
+      email: normalizeEmail(state.email) ?? "",
       firstName: state.firstName,
       lastName: state.lastName,
-      phone: state.phone,
+      phone: normalizePhone(state.phone) ?? "",
       gender: toStoredGender(state.gender),
       role: state.role,
       currentEmail: state.originalEmail,
@@ -404,6 +434,11 @@ export default function EditUserPage() {
                       className={INPUT_CLASS}
                     />
                   )}
+                  {state.fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -429,6 +464,11 @@ export default function EditUserPage() {
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
+                  )}
+                  {state.fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -458,6 +498,11 @@ export default function EditUserPage() {
                     className={INPUT_CLASS}
                   />
                 )}
+                {state.fieldErrors.email && (
+                  <p className="text-xs text-red-500">
+                    {state.fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -484,6 +529,11 @@ export default function EditUserPage() {
                     disabled={saving}
                     className={INPUT_CLASS}
                   />
+                )}
+                {state.fieldErrors.phone && (
+                  <p className="text-xs text-red-500">
+                    {state.fieldErrors.phone}
+                  </p>
                 )}
               </div>
 

@@ -3,6 +3,12 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  newDashboardPersonSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
@@ -33,9 +39,12 @@ function isSystemRole(kind: NewUserKind): kind is SystemRole {
 
 // ─── Form state ───────────────────────────────────────────────
 
+type PersonErrors = FormErrors<typeof newDashboardPersonSchema>;
+
 type FormState = {
   submitting: boolean;
   error: string | null;
+  fieldErrors: PersonErrors;
   firstName: string;
   lastName: string;
   email: string;
@@ -54,11 +63,13 @@ type FormAction =
   | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
   | { type: "CLEAR_ERROR" };
 
 const initialState: FormState = {
   submitting: false,
   error: null,
+  fieldErrors: {},
   firstName: "",
   lastName: "",
   email: "",
@@ -70,7 +81,13 @@ const initialState: FormState = {
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, submitting: false };
     case "SET_ROLE":
       return { ...state, role: action.role };
     case "SET_GENDER":
@@ -103,42 +120,62 @@ const ROLES: SelectOption<NewUserKind>[] = [
 export default function NewUserPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialState);
-  const { submitting, error, firstName, lastName, email, phone, gender, role } =
-    state;
+  const {
+    submitting,
+    error,
+    fieldErrors,
+    firstName,
+    lastName,
+    email,
+    phone,
+    gender,
+    role,
+  } = state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "CLEAR_ERROR" });
 
-    const trimFirst = firstName.trim();
-    const trimEmail = email.trim();
-
-    if (!trimFirst || !trimEmail) {
-      dispatch({
-        type: "SUBMIT_ERROR",
-        message: "First name and email are required.",
-      });
+    const errors = parseErrors(newDashboardPersonSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+      role,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
 
     dispatch({ type: "SUBMIT_START" });
 
+    const trimFirst = firstName.trim();
+    const trimEmail = normalizeEmail(email) ?? "";
+    const trimPhone = normalizePhone(phone);
     const fullName = [trimFirst, lastName.trim()].filter(Boolean).join(" ");
 
     // Clients and members are contact records, not auth accounts.
+    //
+    // Upsert rather than insert: a lead is someone who started the booking form
+    // and never finished, and they already occupy this email. Creating them as
+    // a client from here promotes that existing row instead of colliding with
+    // the unique email constraint.
     if (!isSystemRole(role)) {
       const { error: contactError } = await insforge.database
         .from("contacts")
-        .insert([
+        .upsert(
           {
             first_name: trimFirst,
             last_name: lastName.trim() || null,
             email: trimEmail,
-            phone: phone.trim() || null,
+            phone: trimPhone,
             gender: toStoredGender(gender),
             status: "client",
           },
-        ]);
+          { onConflict: "email" },
+        );
 
       if (contactError) {
         dispatch({
@@ -198,7 +235,7 @@ export default function NewUserPage() {
         last_name: lastName.trim() || null,
         full_name: fullName,
         email: trimEmail,
-        phone: phone.trim() || null,
+        phone: trimPhone,
         gender: toStoredGender(gender),
       },
     ]);
@@ -283,6 +320,11 @@ export default function NewUserPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -306,6 +348,11 @@ export default function NewUserPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -331,6 +378,9 @@ export default function NewUserPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -355,6 +405,9 @@ export default function NewUserPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">

@@ -3,6 +3,12 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  dashboardContactSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import type { ContactStatus } from "@/types/contact";
 import { OptionSelect } from "@/components/ui/option-select";
@@ -19,9 +25,12 @@ const INPUT_CLASS =
 // Reducer
 // ---------------------------------------------------------------------------
 
+type ContactErrors = FormErrors<typeof dashboardContactSchema>;
+
 type FormState = {
   submitting: boolean;
   error: string | null;
+  fieldErrors: ContactErrors;
   firstName: string;
   lastName: string;
   email: string;
@@ -41,11 +50,13 @@ type FormAction =
   | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
   | { type: "CLEAR_ERROR" };
 
 const initialFormState: FormState = {
   submitting: false,
   error: null,
+  fieldErrors: {},
   firstName: "",
   lastName: "",
   email: "",
@@ -58,7 +69,13 @@ const initialFormState: FormState = {
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, submitting: false };
     case "SET_STATUS":
       return { ...state, status: action.status };
     case "SET_GENDER":
@@ -82,6 +99,7 @@ export default function NewContactPage() {
   const {
     submitting,
     error,
+    fieldErrors,
     firstName,
     lastName,
     email,
@@ -95,32 +113,39 @@ export default function NewContactPage() {
     e.preventDefault();
     dispatch({ type: "CLEAR_ERROR" });
 
-    const trimmedFirst = firstName.trim();
-    const trimmedEmail = email.trim();
-
-    if (!trimmedFirst || !trimmedEmail) {
-      dispatch({
-        type: "SUBMIT_ERROR",
-        message: "First name and email are required.",
-      });
+    const errors = parseErrors(dashboardContactSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
 
     dispatch({ type: "SUBMIT_START" });
 
+    const trimmedFirst = firstName.trim();
+    const trimmedEmail = normalizeEmail(email);
+
+    // Upsert: the email may already belong to a lead who abandoned the booking
+    // form, in which case this updates that row rather than failing.
     const { error: insertError } = await insforge.database
       .from("contacts")
-      .insert([
+      .upsert(
         {
           first_name: trimmedFirst,
           last_name: lastName.trim() || null,
           email: trimmedEmail,
-          phone: phone.trim() || null,
+          phone: normalizePhone(phone),
           preferred_language: language === "es" ? "es" : "en",
           gender: toStoredGender(gender),
           status,
         },
-      ]);
+        { onConflict: "email" },
+      );
 
     if (insertError) {
       dispatch({
@@ -195,6 +220,11 @@ export default function NewContactPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -218,6 +248,11 @@ export default function NewContactPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -243,6 +278,9 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -267,6 +305,9 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
