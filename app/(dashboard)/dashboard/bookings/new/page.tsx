@@ -1231,6 +1231,25 @@ function NewBookingPageInner() {
     // clause — RETURNING would require a SELECT policy covering the new row.
     const bookingId = crypto.randomUUID();
 
+    // Link the client's contact record. Bookings created here never set
+    // `contact_id`, which is why 81 of 100 rows had none and a client's history
+    // looked empty on their own page. `upsert_contact` creates the contact or
+    // returns the existing one, exactly as the public booking flow does.
+    let contactId: string | null = null;
+    const bookingEmail = email.trim();
+    if (bookingEmail) {
+      const { data: contactUuid } = await insforge.database.rpc(
+        "upsert_contact",
+        {
+          p_email: bookingEmail,
+          p_first_name: firstName.trim(),
+          p_last_name: lastName.trim(),
+          p_phone: phone.trim() || null,
+        },
+      );
+      contactId = (contactUuid as string | null) ?? null;
+    }
+
     const { error: insertError } = await insforge.database
       .from("bookings")
       .insert([
@@ -1259,8 +1278,9 @@ function NewBookingPageInner() {
           })(),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          email: email.trim(),
+          email: bookingEmail,
           phone: phone.trim() || null,
+          ...(contactId ? { contact_id: contactId } : {}),
           status: "confirmed",
           ...(role === "partner" ? { partner_id: authUserId } : {}),
           created_by_user_id: authUserId,

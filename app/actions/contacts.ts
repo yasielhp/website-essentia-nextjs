@@ -89,24 +89,50 @@ export async function fetchContactDetail(
 
   const db = getAdminClient().database;
 
+  // The contact is fetched first because its email is needed to find bookings:
+  // 81 of 100 rows carry no `contact_id`, since dashboard-created bookings
+  // never set one. Matching on the address as well surfaces that history.
+  const { data: contacts, error: contactError } = await db
+    .from("contacts")
+    .select(
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language",
+    )
+    .eq("id", id)
+    .limit(1);
+
+  if (contactError) {
+    console.error(
+      "[fetchContactDetail] query error:",
+      (contactError as { message?: string })?.message,
+    );
+  }
+  const contact = (contacts as ContactDetail[] | null)?.[0];
+  if (!contact) return { found: false };
+
+  const bookingFields =
+    "id, service_title, date, time, status, payment_status, price_eur, created_at";
+
   const [
-    { data: contacts, error: contactError },
-    { data: bookingData },
+    { data: linkedBookings },
+    { data: emailBookings },
     { data: raceRegData },
     { data: eduRegData },
   ] = await Promise.all([
     db
-      .from("contacts")
-      .select(
-        "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language",
-      )
-      .eq("id", id)
-      .limit(1),
-    db
       .from("bookings")
-      .select("id, service_title, date, time, status, created_at")
+      .select(bookingFields)
       .eq("contact_id", id)
       .order("created_at", { ascending: false }),
+    // Two queries merged by id rather than one `or(...)`: an address embedded
+    // in PostgREST filter syntax would need escaping, and getting that wrong
+    // silently changes which rows match.
+    contact.email
+      ? db
+          .from("bookings")
+          .select(bookingFields)
+          .ilike("email", contact.email)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
     db
       .from("race_registrations")
       .select("id, created_at, race_id")
@@ -119,14 +145,16 @@ export async function fetchContactDetail(
       .order("created_at", { ascending: false }),
   ]);
 
-  if (contactError) {
-    console.error(
-      "[fetchContactDetail] query error:",
-      (contactError as { message?: string })?.message,
-    );
+  const bookingsById = new Map<string, ContactBooking>();
+  for (const row of [
+    ...((linkedBookings as ContactBooking[] | null) ?? []),
+    ...((emailBookings as ContactBooking[] | null) ?? []),
+  ]) {
+    bookingsById.set(row.id, row);
   }
-  const contact = (contacts as ContactDetail[] | null)?.[0];
-  if (!contact) return { found: false };
+  const bookingData = [...bookingsById.values()].sort((a, b) =>
+    (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+  );
 
   const raceRows =
     (raceRegData as
@@ -168,7 +196,7 @@ export async function fetchContactDetail(
   return {
     found: true,
     contact,
-    bookings: (bookingData as ContactBooking[] | null) ?? [],
+    bookings: bookingData,
     raceRegs: raceRows.map((r) => ({
       ...r,
       race: racesMap.get(r.race_id) ?? null,

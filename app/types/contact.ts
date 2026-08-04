@@ -32,6 +32,8 @@ export type ContactBooking = {
   date: string | null;
   time: string | null;
   status: string | null;
+  payment_status: string | null;
+  price_eur: number | null;
   created_at: string | null;
 };
 

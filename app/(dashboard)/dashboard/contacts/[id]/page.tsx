@@ -22,7 +22,7 @@ import {
   toStoredGender,
   type GenderValue,
 } from "@/constants/gender";
-import { formatMediumDate } from "@/utils/format";
+import { formatMediumDate, formatPrice } from "@/utils/format";
 import { fetchContactDetail, updateContact } from "@/actions/contacts";
 import type {
   ContactBooking,
@@ -490,6 +490,99 @@ function ContactDetailsCard({
   );
 }
 
+/**
+ * The money side of a contact's history.
+ *
+ * There is no `transactions` table — the dashboard's transactions screen
+ * derives its rows from bookings, memberships and registrations. This is the
+ * same idea scoped to one person: the bookings that carry a price, with what
+ * was charged and whether it was paid.
+ */
+function TransactionsSection({
+  loading,
+  bookings,
+}: {
+  loading: boolean;
+  bookings: Booking[];
+}) {
+  const priced = bookings.filter((b) => b.price_eur != null);
+  const paidTotal = priced
+    .filter((b) => b.payment_status === "paid")
+    .reduce((sum, b) => sum + (b.price_eur ?? 0), 0);
+
+  return (
+    <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-petroleum-500 text-sm font-semibold">
+          Transactions
+        </h2>
+        {!loading && paidTotal > 0 && (
+          <span className="text-petroleum-400 text-xs">
+            Paid to date{" "}
+            <span className="text-petroleum-700 font-medium">
+              {formatPrice(paidTotal, "en")}
+            </span>
+          </span>
+        )}
+      </div>
+      {loading ? (
+        <RowSkeleton cols={4} />
+      ) : priced.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">No transactions yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-sand-100 border-b text-left">
+                {["Concept", "Date", "Amount", "Payment"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-petroleum-400 pr-4 pb-2.5 font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {priced.map((b) => (
+                <tr
+                  key={b.id}
+                  className="border-sand-50 border-b last:border-0"
+                >
+                  <td className="text-petroleum-700 py-3 pr-4 font-medium">
+                    {b.service_title ?? "—"}
+                  </td>
+                  <td className="text-petroleum-500 py-3 pr-4">
+                    {formatMediumDate(b.date)}
+                  </td>
+                  <td className="text-petroleum-700 py-3 pr-4">
+                    {formatPrice(b.price_eur, "en")}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                        b.payment_status === "paid"
+                          ? "bg-green-50 text-green-700"
+                          : b.payment_status === "failed" ||
+                              b.payment_status === "refunded"
+                            ? "bg-red-50 text-red-700"
+                            : "bg-sand-100 text-petroleum-500"
+                      }`}
+                    >
+                      {b.payment_status ?? "pending"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BookingsSection({
   loading,
   bookings,
@@ -868,6 +961,7 @@ export default function ContactDetailPage() {
       </form>
 
       <div className="space-y-5">
+        <TransactionsSection loading={loading} bookings={bookings} />
         <BookingsSection loading={loading} bookings={bookings} />
         <RaceRegsSection loading={loading} raceRegs={raceRegs} />
         <EduRegsSection loading={loading} eduRegs={eduRegs} />
