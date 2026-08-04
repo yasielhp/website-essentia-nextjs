@@ -26,6 +26,7 @@ import { formatMediumDate, formatPrice } from "@/utils/format";
 import { fetchContactDetail, updateContact } from "@/actions/contacts";
 import type {
   ContactBooking,
+  ContactMembership,
   ContactRaceReg,
   ContactEduReg,
 } from "@/types/contact";
@@ -34,6 +35,7 @@ const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
 type Booking = ContactBooking;
+type Membership = ContactMembership;
 type RaceReg = ContactRaceReg;
 type EduReg = ContactEduReg;
 
@@ -43,6 +45,7 @@ type LoadState = {
   loading: boolean;
   notFound: boolean;
   bookings: Booking[];
+  memberships: Membership[];
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
 };
@@ -51,6 +54,7 @@ type LoadAction =
   | {
       type: "LOADED";
       bookings: Booking[];
+      memberships: Membership[];
       raceRegs: RaceReg[];
       eduRegs: EduReg[];
     }
@@ -60,6 +64,7 @@ const initialLoadState: LoadState = {
   loading: true,
   notFound: false,
   bookings: [],
+  memberships: [],
   raceRegs: [],
   eduRegs: [],
 };
@@ -71,6 +76,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         loading: false,
         notFound: false,
         bookings: action.bookings,
+        memberships: action.memberships,
         raceRegs: action.raceRegs,
         eduRegs: action.eduRegs,
       };
@@ -491,22 +497,98 @@ function ContactDetailsCard({
 }
 
 /**
- * The money side of a contact's history.
+ * Everything this contact has transacted, in one list.
  *
  * There is no `transactions` table — the dashboard's transactions screen
- * derives its rows from bookings, memberships and registrations. This is the
- * same idea scoped to one person: the bookings that carry a price, with what
- * was charged and whether it was paid.
+ * derives its rows from bookings, memberships and registrations, and this
+ * mirrors it for a single person, including the way it decides a status: a paid
+ * booking, or a confirmed one that was not refused, counts as completed.
+ *
+ * Rows without an amount are still transactions. Filtering them out hid drafts,
+ * memberships and registrations, which is most of what some contacts have.
  */
+type TransactionRow = {
+  id: string;
+  kind: string;
+  title: string;
+  date: string | null;
+  amount: number | null;
+  status: string;
+  created_at: string | null;
+};
+
+function bookingStatus(b: Booking): string {
+  const paidOrConfirmed =
+    b.payment_status === "paid" ||
+    (b.status === "confirmed" &&
+      b.payment_status !== "failed" &&
+      b.payment_status !== "refunded");
+  return paidOrConfirmed ? "completed" : (b.payment_status ?? b.status ?? "—");
+}
+
+const TX_STATUS_STYLES: Record<string, string> = {
+  completed: "bg-green-50 text-green-700",
+  paid: "bg-green-50 text-green-700",
+  active: "bg-green-50 text-green-700",
+  confirmed: "bg-green-50 text-green-700",
+  failed: "bg-red-50 text-red-700",
+  refunded: "bg-red-50 text-red-700",
+  cancelled: "bg-red-50 text-red-700",
+};
+
 function TransactionsSection({
   loading,
   bookings,
+  memberships,
+  raceRegs,
+  eduRegs,
 }: {
   loading: boolean;
   bookings: Booking[];
+  memberships: Membership[];
+  raceRegs: RaceReg[];
+  eduRegs: EduReg[];
 }) {
-  const priced = bookings.filter((b) => b.price_eur != null);
-  const paidTotal = priced
+  const rows: TransactionRow[] = [
+    ...bookings.map((b) => ({
+      id: b.id,
+      kind: "Booking",
+      title: b.service_title ?? "—",
+      date: b.date,
+      amount: b.price_eur,
+      status: bookingStatus(b),
+      created_at: b.created_at,
+    })),
+    ...memberships.map((m) => ({
+      id: m.id,
+      kind: "Membership",
+      title: m.plan ?? "Membership",
+      date: m.start_date,
+      amount: null,
+      status: m.status ?? "—",
+      created_at: m.created_at,
+    })),
+    ...raceRegs.map((r) => ({
+      id: r.id,
+      kind: "Race",
+      title: r.race?.title ?? "—",
+      date: r.race?.date ?? r.created_at,
+      amount: null,
+      status: "confirmed",
+      created_at: r.created_at,
+    })),
+    ...eduRegs.map((r) => ({
+      id: r.id,
+      kind: "Education",
+      title: r.session?.title ?? "—",
+      date: r.session?.date ?? r.created_at,
+      amount: null,
+      status: "confirmed",
+      created_at: r.created_at,
+    })),
+  ].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+
+  const paidTotal = bookings
     .filter((b) => b.payment_status === "paid")
     .reduce((sum, b) => sum + (b.price_eur ?? 0), 0);
 
@@ -526,15 +608,15 @@ function TransactionsSection({
         )}
       </div>
       {loading ? (
-        <RowSkeleton cols={4} />
-      ) : priced.length === 0 ? (
+        <RowSkeleton cols={5} />
+      ) : rows.length === 0 ? (
         <p className="text-petroleum-300 text-sm">No transactions yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Concept", "Date", "Amount", "Payment"].map((h) => (
+                {["Type", "Concept", "Date", "Amount", "Status"].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
@@ -545,32 +627,31 @@ function TransactionsSection({
               </tr>
             </thead>
             <tbody>
-              {priced.map((b) => (
+              {rows.map((r) => (
                 <tr
-                  key={b.id}
+                  key={`${r.kind}-${r.id}`}
                   className="border-sand-50 border-b last:border-0"
                 >
+                  <td className="text-petroleum-400 py-3 pr-4 text-xs">
+                    {r.kind}
+                  </td>
                   <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                    {b.service_title ?? "—"}
+                    {r.title}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {formatMediumDate(b.date)}
+                    {formatMediumDate(r.date)}
                   </td>
                   <td className="text-petroleum-700 py-3 pr-4">
-                    {formatPrice(b.price_eur, "en")}
+                    {r.amount == null ? "—" : formatPrice(r.amount, "en")}
                   </td>
                   <td className="py-3 pr-4">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-                        b.payment_status === "paid"
-                          ? "bg-green-50 text-green-700"
-                          : b.payment_status === "failed" ||
-                              b.payment_status === "refunded"
-                            ? "bg-red-50 text-red-700"
-                            : "bg-sand-100 text-petroleum-500"
+                        TX_STATUS_STYLES[r.status] ??
+                        "bg-sand-100 text-petroleum-500"
                       }`}
                     >
-                      {b.payment_status ?? "pending"}
+                      {r.status}
                     </span>
                   </td>
                 </tr>
@@ -769,7 +850,8 @@ export default function ContactDetailPage() {
   const { push, back } = useRouter();
 
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
-  const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
+  const { loading, notFound, bookings, memberships, raceRegs, eduRegs } =
+    loadState;
 
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
   const {
@@ -797,7 +879,7 @@ export default function ContactDetailPage() {
         return;
       }
 
-      const { contact, bookings, raceRegs, eduRegs } = result;
+      const { contact, bookings, memberships, raceRegs, eduRegs } = result;
       const initialNewsletter = contact.newsletter_subscribed ?? false;
       originalNewsletter.current = initialNewsletter;
       dispatchForm({
@@ -811,7 +893,7 @@ export default function ContactDetailPage() {
         newsletterSubscribed: initialNewsletter,
       });
 
-      dispatch({ type: "LOADED", bookings, raceRegs, eduRegs });
+      dispatch({ type: "LOADED", bookings, memberships, raceRegs, eduRegs });
     }
 
     void load();
@@ -961,7 +1043,13 @@ export default function ContactDetailPage() {
       </form>
 
       <div className="space-y-5">
-        <TransactionsSection loading={loading} bookings={bookings} />
+        <TransactionsSection
+          loading={loading}
+          bookings={bookings}
+          memberships={memberships}
+          raceRegs={raceRegs}
+          eduRegs={eduRegs}
+        />
         <BookingsSection loading={loading} bookings={bookings} />
         <RaceRegsSection loading={loading} raceRegs={raceRegs} />
         <EduRegsSection loading={loading} eduRegs={eduRegs} />

@@ -7,6 +7,7 @@ import type {
   ContactStatus,
   ContactDetail,
   ContactDetailResult,
+  ContactMembership,
   ContactRow,
   UpdateContactPayload,
 } from "@/types/contact";
@@ -115,6 +116,7 @@ export async function fetchContactDetail(
   const [
     { data: linkedBookings },
     { data: emailBookings },
+    { data: membershipData },
     { data: raceRegData },
     { data: eduRegData },
   ] = await Promise.all([
@@ -133,6 +135,11 @@ export async function fetchContactDetail(
           .ilike("email", contact.email)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
+    db
+      .from("memberships")
+      .select("id, plan, status, start_date, created_at")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false }),
     db
       .from("race_registrations")
       .select("id, created_at, race_id")
@@ -197,6 +204,7 @@ export async function fetchContactDetail(
     found: true,
     contact,
     bookings: bookingData,
+    memberships: (membershipData as ContactMembership[] | null) ?? [],
     raceRegs: raceRows.map((r) => ({
       ...r,
       race: racesMap.get(r.race_id) ?? null,

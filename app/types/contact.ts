@@ -37,6 +37,14 @@ export type ContactBooking = {
   created_at: string | null;
 };
 
+export type ContactMembership = {
+  id: string;
+  plan: string | null;
+  status: string | null;
+  start_date: string | null;
+  created_at: string | null;
+};
+
 export type ContactRaceReg = {
   id: string;
   created_at: string | null;
@@ -65,6 +73,7 @@ export type ContactDetailResult =
       found: true;
       contact: ContactDetail;
       bookings: ContactBooking[];
+      memberships: ContactMembership[];
       raceRegs: ContactRaceReg[];
       eduRegs: ContactEduReg[];
     };
