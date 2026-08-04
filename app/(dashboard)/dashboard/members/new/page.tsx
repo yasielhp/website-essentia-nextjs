@@ -99,7 +99,8 @@ function SubscriberSection({
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">Member</h2>
       <p className="text-petroleum-400 mb-4 text-xs">
-        The contact this subscription belongs to.
+        Only contacts marked as members. Change someone&apos;s role on their own
+        page to make them eligible.
       </p>
       {loading ? (
         <div className="bg-sand-100 h-14 animate-pulse rounded-xl" />
@@ -110,7 +111,7 @@ function SubscriberSection({
           options={options}
           onChange={onChange}
           disabled={submitting}
-          placeholder="Select a contact…"
+          placeholder="Select a member…"
           ariaLabel="Contact"
         />
       )}
@@ -312,6 +313,7 @@ export default function NewMemberPage() {
       const { data } = await insforge.database
         .from("contacts")
         .select("id, first_name, last_name, email, phone")
+        .eq("status", "member")
         .order("first_name");
       setContacts((data as Contact[] | null) ?? []);
     }

@@ -110,7 +110,7 @@ const ROLES: SelectOption<NewUserKind>[] = [
   {
     value: "member",
     label: "Member",
-    desc: "Contact record, then choose a plan",
+    desc: "Entitled to a subscription",
   },
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
@@ -173,7 +173,9 @@ export default function NewUserPage() {
             email: normalizedEmail,
             phone: trimPhone,
             gender: toStoredGender(gender),
-            status: "client",
+            // Member is its own status: the subscription form only offers
+            // contacts marked this way.
+            status: role === "member" ? "member" : "client",
           },
           { onConflict: "email" },
         );

@@ -350,6 +350,9 @@ export default function NewContactPage() {
                 >
                   <option value="lead">Lead — no booking yet</option>
                   <option value="client">Client — has booked</option>
+                  <option value="member">
+                    Member — can hold a subscription
+                  </option>
                 </select>
               </div>
 

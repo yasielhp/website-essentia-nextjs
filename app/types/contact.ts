@@ -2,7 +2,15 @@ import type { Gender } from "@/types/person";
 
 /** Contact directory types shared by the dashboard and the contacts actions. */
 
-export type ContactStatus = "lead" | "client";
+/**
+ * The lifecycle the dashboard shows in its Role column.
+ *
+ * `member` marks someone entitled to a subscription; the subscription itself
+ * is a row in `memberships`. The two are separate on purpose — you are marked a
+ * member before a plan is attached, and the plan can lapse without the mark
+ * changing.
+ */
+export type ContactStatus = "lead" | "client" | "member";
 
 export type ContactRow = {
   id: string;

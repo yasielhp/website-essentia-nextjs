@@ -48,6 +48,7 @@ const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
   partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
   lead: { label: "Lead", cls: "bg-sand-100 text-petroleum-500" },
   client: { label: "Client", cls: "bg-green-50 text-green-700" },
+  member: { label: "Member", cls: "bg-petroleum-50 text-petroleum-600" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -189,6 +190,7 @@ function FilterModal({
               <option value="">All</option>
               <option value="lead">Lead</option>
               <option value="client">Client</option>
+              <option value="member">Member</option>
               <option value="staff">Staff</option>
               <option value="partner">Partner</option>
               <option value="admin">Admin</option>
@@ -268,7 +270,9 @@ export default function UsersPage() {
   // Contact statuses are filtered by the database; the three account roles live
   // in `profiles` and are filtered from the fully-loaded system list below.
   const contactStatusFilter: ContactStatus | undefined =
-    appliedFilter.role === "lead" || appliedFilter.role === "client"
+    appliedFilter.role === "lead" ||
+    appliedFilter.role === "client" ||
+    appliedFilter.role === "member"
       ? appliedFilter.role
       : undefined;
   const accountRoleFilter = ["admin", "staff", "partner"].includes(
@@ -326,17 +330,14 @@ export default function UsersPage() {
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("role", "partner"),
-      // Members are active `memberships` rows, not a profile role — this
-      // mirrors the count shown on the Members screen.
-      insforge.database
-        .from("memberships")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "active"),
-    ]).then(([contactCounts, staff, partner, members]) => {
+    ]).then(([contactCounts, staff, partner]) => {
       setRoleCounts({
         leads: contactCounts.leads,
         clients: contactCounts.clients,
-        members: (members as { count: number | null }).count ?? 0,
+        // Contacts marked as members, not active subscriptions: every card on
+        // this page counts people, and the subscription figure lives on the
+        // Members screen.
+        members: contactCounts.members,
         staff: (staff as { count: number | null }).count ?? 0,
         partner: (partner as { count: number | null }).count ?? 0,
       });

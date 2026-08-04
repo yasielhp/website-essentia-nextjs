@@ -237,18 +237,20 @@ export async function updateContact(
   return { error: (error as { message?: string } | null)?.message ?? null };
 }
 
+/** How many contacts sit at each point of the lifecycle. */
 export async function fetchContactRoleCounts(
   accessToken: string | null,
-): Promise<{ leads: number; clients: number }> {
+): Promise<{ leads: number; clients: number; members: number }> {
+  const empty = { leads: 0, clients: 0, members: 0 };
   try {
     await requireRole(accessToken, ADMIN_ROLES);
   } catch (err) {
-    if (err instanceof AuthError) return { leads: 0, clients: 0 };
+    if (err instanceof AuthError) return empty;
     throw err;
   }
 
   const db = getAdminClient().database;
-  const [leadsRes, clientsRes] = await Promise.all([
+  const [leadsRes, clientsRes, membersRes] = await Promise.all([
     db
       .from("contacts")
       .select("id", { count: "exact", head: true })
@@ -257,10 +259,15 @@ export async function fetchContactRoleCounts(
       .from("contacts")
       .select("id", { count: "exact", head: true })
       .eq("status", "client"),
+    db
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "member"),
   ]);
 
   return {
     leads: (leadsRes as { count: number | null }).count ?? 0,
     clients: (clientsRes as { count: number | null }).count ?? 0,
+    members: (membersRes as { count: number | null }).count ?? 0,
   };
 }
