@@ -4,6 +4,8 @@ import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { formatMediumDate } from "@/utils/format";
+import { displayEmail, displayPhone } from "@/utils/contact";
+import { genderLabel } from "@/constants/gender";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchContacts, fetchContactRoleCounts } from "@/actions/contacts";
 import type { ContactRow } from "@/types/contact";
@@ -21,6 +23,7 @@ type SystemUserRow = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: string | null;
   role: SystemRole;
 };
 
@@ -29,6 +32,7 @@ type DisplayRow = {
   name: string;
   email: string | null;
   phone: string | null;
+  gender: string | null;
   role: string;
   created_at: string | null;
   href: string;
@@ -267,7 +271,7 @@ export default function UsersPage() {
     dispatchSystem({ type: "SET_LOADING" });
     void insforge.database
       .from("profiles")
-      .select("id, full_name, email, phone, role")
+      .select("id, full_name, email, phone, gender, role")
       .in("role", ["admin", "staff", "partner"])
       .order("role")
       .order("full_name")
@@ -318,6 +322,7 @@ export default function UsersPage() {
     name: u.full_name ?? "—",
     email: u.email,
     phone: u.phone,
+    gender: u.gender,
     role: u.role,
     created_at: null,
     href: `/dashboard/users/${u.id}`,
@@ -328,6 +333,7 @@ export default function UsersPage() {
     name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
     email: c.email,
     phone: c.phone,
+    gender: c.gender,
     role: c.status ?? "lead",
     created_at: c.created_at,
     href: `/dashboard/contacts/${c.id}`,
@@ -441,7 +447,7 @@ export default function UsersPage() {
                     </div>
                     {row.email && (
                       <p className="text-petroleum-400 mt-0.5 truncate text-sm">
-                        {row.email}
+                        {displayEmail(row.email)}
                       </p>
                     )}
                   </div>
@@ -464,10 +470,10 @@ export default function UsersPage() {
                     Name
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Email
+                    Phone
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Phone
+                    Gender
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
                     Role
@@ -489,13 +495,13 @@ export default function UsersPage() {
                       <td className="px-5 py-3">
                         <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
                       </td>
-                      {/* Email */}
-                      <td className="px-5 py-3">
-                        <div className="bg-sand-100 h-4 w-44 animate-pulse rounded" />
-                      </td>
                       {/* Phone */}
                       <td className="px-5 py-3">
                         <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                      </td>
+                      {/* Gender */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
                       </td>
                       {/* Role badge */}
                       <td className="px-5 py-3">
@@ -530,14 +536,19 @@ export default function UsersPage() {
                             <AvatarFallback />
                           </div>
                         </td>
-                        <td className="text-petroleum-700 px-5 py-3 font-medium">
-                          {row.name}
+                        <td className="px-5 py-3">
+                          <p className="text-petroleum-700 font-medium">
+                            {row.name}
+                          </p>
+                          <p className="text-petroleum-400 mt-0.5 text-xs">
+                            {displayEmail(row.email)}
+                          </p>
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {row.email ?? "—"}
+                          {displayPhone(row.phone)}
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {row.phone ?? "—"}
+                          {genderLabel(row.gender)}
                         </td>
                         <td className="px-5 py-3">
                           <span

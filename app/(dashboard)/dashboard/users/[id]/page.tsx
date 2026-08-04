@@ -10,7 +10,7 @@ import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
 import { getAccessToken } from "@/lib/client-session";
-import { OptionSelect } from "@/components/ui/option-select";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import {
   GENDER_OPTIONS,
   toStoredGender,
@@ -135,10 +135,15 @@ function reducer(state: State, action: Action): State {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const ROLES: { value: SystemRole; label: string; desc: string }[] = [
-  { value: "admin", label: "Admin", desc: "Full access" },
+/**
+ * Only system roles: this screen edits an existing `profiles` row, and a
+ * profile cannot be turned into a contact. Same labels and order as the
+ * creation form.
+ */
+const ROLES: SelectOption<SystemRole>[] = [
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────
@@ -354,35 +359,16 @@ export default function EditUserPage() {
             {loading ? (
               <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
             ) : (
-              <div className="grid grid-cols-3 gap-3">
-                {ROLES.map((r) => {
-                  const selected = state.role === r.value;
-                  return (
-                    <button
-                      key={r.value}
-                      type="button"
-                      onClick={() =>
-                        dispatch({ type: "SET_ROLE", role: r.value })
-                      }
-                      disabled={saving}
-                      className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-colors ${
-                        selected
-                          ? "border-petroleum-400 bg-petroleum-50"
-                          : "border-sand-200 hover:border-sand-300 hover:bg-sand-50"
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-semibold ${selected ? "text-petroleum-700" : "text-petroleum-500"}`}
-                      >
-                        {r.label}
-                      </span>
-                      <span className="text-petroleum-400 mt-0.5 text-xs">
-                        {r.desc}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <OptionSelect
+                id="role"
+                value={state.role}
+                options={ROLES}
+                onChange={(nextRole) =>
+                  dispatch({ type: "SET_ROLE", role: nextRole })
+                }
+                disabled={saving}
+                ariaLabel="Role"
+              />
             )}
           </div>
 

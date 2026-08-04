@@ -10,6 +10,7 @@ export type ContactRow = {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: Gender | null;
   status: string | null;
   created_at: string | null;
 };

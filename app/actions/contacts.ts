@@ -33,9 +33,12 @@ export async function fetchContacts(
 
   const { data, count } = await getAdminClient()
     .database.from("contacts")
-    .select("id, first_name, last_name, email, phone, status, created_at", {
-      count: "exact",
-    })
+    .select(
+      "id, first_name, last_name, email, phone, gender, status, created_at",
+      {
+        count: "exact",
+      },
+    )
     .order("created_at", { ascending: false })
     .range(safePage * safeSize, safePage * safeSize + safeSize - 1);
 
