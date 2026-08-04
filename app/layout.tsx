@@ -42,6 +42,30 @@ const dmSans = localFont({
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
+/**
+ * Why every page in this app is server-rendered on demand.
+ *
+ * The two `headers()` calls below read `x-pathname` to work out the locale,
+ * which `<html lang>`, the schema.org block and the OG locale all need. A
+ * dynamic API in the root layout marks the entire application dynamic, so the
+ * 38 public pages are rebuilt on every request even though their content only
+ * changes on deploy.
+ *
+ * There is no way to remove them in place: a root layout receives no `params`,
+ * and only it may render `<html>`. The locale is available exactly one level
+ * down, in `[locale]`.
+ *
+ * The fix is to make that level the root — `app/(site)/[locale]/layout.tsx` —
+ * with `(dashboard)` and `(account)` taking root layouts of their own, which
+ * Next.js allows once every top-level segment is a route group. Measured cost:
+ * 48 files move (only one relative import breaks), two shells to write, the
+ * root `not-found`/`error`/`global-error` to rehome, and 13 pages that inherit
+ * `alternates.canonical` from here would need their own — dropping it silently
+ * would be an SEO regression.
+ *
+ * The other half of the blockage is already fixed; see `[locale]/(page)/layout`.
+ */
+
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "/";

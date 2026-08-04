@@ -7,6 +7,9 @@ import { Header } from "@components/header";
 import { Footer } from "@components/footer";
 import { ScrollReset } from "@components/scroll-reset";
 
+/** The centre is in Tenerife; everything it schedules happens there. */
+const TIME_ZONE = "Atlantic/Canary";
+
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
@@ -22,10 +25,27 @@ export default async function PageLayout({ children, params }: Props) {
   if (!hasLocale(routing.locales, locale)) notFound();
 
   setRequestLocale(locale);
-  const messages = await getMessages();
+  const messages = await getMessages({ locale });
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    // On the server this provider fills in whatever it is not given by reading
+    // the request, and each of those reads opts the whole subtree into dynamic
+    // rendering. It defaults five things — messages, locale, timeZone, now and
+    // `formats` — and the documentation only lists the first four. `formats`
+    // alone was enough to keep all 38 public pages off the static path.
+    //
+    // `now` stays absent on purpose: nothing here shows a relative time, and a
+    // build-time value would freeze at the moment of deploy.
+    //
+    // This is necessary but not sufficient. The root layout still derives the
+    // locale from `headers()`, which is dynamic for the entire app; see the
+    // note there.
+    <NextIntlClientProvider
+      messages={messages}
+      locale={locale}
+      timeZone={TIME_ZONE}
+      formats={{}}
+    >
       <ScrollReset />
       <Header />
       <main>{children}</main>
