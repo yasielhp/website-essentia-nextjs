@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   updateDraftBookingMeta,
+  updateDraftBookingDetails,
   confirmDraftBooking,
 } from "@/actions/booking-draft";
 import { Button } from "@components/ui/button";
@@ -540,25 +541,47 @@ function BookingContentInner() {
       }
     }
 
-    const { data: newBookingId } = await insforge.database.rpc(
-      "create_draft_booking",
-      {
-        p_contact_id: resolvedContactId ?? null,
-        p_user_id: user?.id ?? null,
-        p_service_id: selectedService?.id ?? "",
-        p_service_title: selectedService?.title ?? "",
-        p_duration: selectedDuration ?? "",
-        p_first_name: details.firstName,
-        p_last_name: details.lastName,
-        p_email: details.email,
-        p_phone: details.phone,
-      },
-    );
+    // This step can run more than once — back and forward through the flow, or
+    // a corrected typo — and each run used to create another draft. Reuse the
+    // one this visit already started.
+    let draftId = bookingId;
 
-    if (newBookingId) {
-      setBookingId(newBookingId as string);
+    if (draftId) {
+      await updateDraftBookingDetails(draftId, {
+        contactId: resolvedContactId ?? null,
+        userId: user?.id ?? null,
+        serviceId: selectedService?.id ?? "",
+        serviceTitle: selectedService?.title ?? "",
+        duration: selectedDuration ?? "",
+        firstName: details.firstName,
+        lastName: details.lastName,
+        email: details.email,
+        phone: details.phone,
+      });
+    } else {
+      const { data: newBookingId } = await insforge.database.rpc(
+        "create_draft_booking",
+        {
+          p_contact_id: resolvedContactId ?? null,
+          p_user_id: user?.id ?? null,
+          p_service_id: selectedService?.id ?? "",
+          p_service_title: selectedService?.title ?? "",
+          p_duration: selectedDuration ?? "",
+          p_first_name: details.firstName,
+          p_last_name: details.lastName,
+          p_email: details.email,
+          p_phone: details.phone,
+        },
+      );
+      if (newBookingId) {
+        draftId = newBookingId as string;
+        setBookingId(draftId);
+      }
+    }
+
+    if (draftId) {
       await updateDraftBookingMeta(
-        newBookingId as string,
+        draftId,
         selectedTierId,
         selectedTierPrice,
         user?.id ?? null,

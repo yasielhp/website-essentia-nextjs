@@ -52,6 +52,53 @@ export async function updateDraftBookingMeta(
     .eq("status", "draft");
 }
 
+/**
+ * Rewrites the details of a draft the visitor already started.
+ *
+ * The booking flow used to call `create_draft_booking` every time the details
+ * step was submitted, so going back a step and forward again — or correcting a
+ * typo in an email — left the previous draft behind. One visitor produced eight
+ * rows for what was plainly one attempt.
+ *
+ * Everything the earlier steps can still change is included, because the
+ * visitor may have gone back past the details step and chosen another service
+ * before returning.
+ */
+export async function updateDraftBookingDetails(
+  bookingId: string,
+  details: {
+    contactId: string | null;
+    userId: string | null;
+    serviceId: string;
+    serviceTitle: string;
+    duration: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  },
+): Promise<void> {
+  if (!bookingId) return;
+
+  await getAdminClient()
+    .database.from("bookings")
+    .update({
+      // Only overwrite the links when we have one, so a failed upsert_contact
+      // does not detach a draft that was already attached.
+      ...(details.contactId ? { contact_id: details.contactId } : {}),
+      ...(details.userId ? { user_id: details.userId } : {}),
+      service_id: details.serviceId,
+      service_title: details.serviceTitle,
+      duration: details.duration,
+      first_name: details.firstName,
+      last_name: details.lastName,
+      email: details.email,
+      phone: details.phone,
+    })
+    .eq("id", bookingId)
+    .eq("status", "draft");
+}
+
 /** Promotes a draft booking to `pending`. */
 export async function confirmDraftBooking(
   bookingId: string,
