@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken, authFetch } from "@/lib/client-session";
-import { bookableServices } from "@/data/services-data";
+import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { deleteBooking, updateBookingByAdmin } from "@/actions/booking-draft";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
@@ -1872,25 +1872,13 @@ export default function EditBookingPage() {
     return a.title.localeCompare(b.title);
   });
 
-  // Load services with enrichment from bookableServices
+  // The same list the public booking flow offers.
   useEffect(() => {
     async function load() {
-      const { data } = await insforge.database
-        .from("service_settings")
-        .select("id, title")
-        .eq("active", true)
-        .order("title");
-      const raw = (data as { id: string; title: string }[] | null) ?? [];
-      const enriched: Service[] = raw.map((s) => {
-        const static_ = bookableServices.find((b) => b.id === s.id);
-        return {
-          ...s,
-          image: static_?.image,
-          description: static_?.description,
-          category: static_?.category,
-        };
+      dispatchAsync({
+        type: "SERVICES_LOADED",
+        payload: await fetchBookableServices(),
       });
-      dispatchAsync({ type: "SERVICES_LOADED", payload: enriched });
     }
     void load();
   }, []);
