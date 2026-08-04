@@ -103,7 +103,7 @@ Each bookable service has its own OAuth tokens stored in `service_configs`. `get
 
 ### MCP Server
 
-`app/api/[transport]/route.ts` exposes three tools to AI agents: `list_services`, `get_availability`, `create_booking`. Uses `mcp-handler` (not `@vercel/mcp-adapter`). Config: `basePath: "/api"`, `maxDuration: 60`. Accessible at `/api/mcp`.
+`app/api/[transport]/route.ts` exposes three tools to AI agents: `list_services`, `get_availability`, `create_booking`. Uses `mcp-handler` 2 (not `@vercel/mcp-adapter`). `basePath` and `maxDuration` were dropped in 2.x — the handler serves wherever it is mounted, so the route still answers at `/api/mcp` via the `[transport]` segment.
 
 ### OG Images
 

@@ -45,7 +45,6 @@ const handler = createMcpHandler(
         title: "List Services",
         description:
           "List all available services and treatments at Essentia Wellness Club, including prices, durations, and descriptions.",
-        inputSchema: {},
       },
       async () => {
         type ServiceEntry = {
@@ -94,7 +93,7 @@ const handler = createMcpHandler(
           })
           .join("\n\n---\n\n");
 
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       },
     );
 
@@ -135,7 +134,7 @@ const handler = createMcpHandler(
             return {
               content: [
                 {
-                  type: "text",
+                  type: "text" as const,
                   text: `Could not fetch availability for ${service_id} on ${date}. Please call +34 634 09 12 95 or email info@essentiawellnessclub.com.`,
                 },
               ],
@@ -155,7 +154,7 @@ const handler = createMcpHandler(
             return {
               content: [
                 {
-                  type: "text",
+                  type: "text" as const,
                   text: `No available slots for ${service_id} on ${date}. Please try a different date or contact us.`,
                 },
               ],
@@ -165,7 +164,7 @@ const handler = createMcpHandler(
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: `Available slots for ${service_id} on ${date} (${duration} min):\n\n${available.join(", ")}`,
               },
             ],
@@ -174,7 +173,7 @@ const handler = createMcpHandler(
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: "Unable to check availability. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
               },
             ],
@@ -286,7 +285,7 @@ const handler = createMcpHandler(
             return {
               content: [
                 {
-                  type: "text",
+                  type: "text" as const,
                   text: "Unable to create your booking. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
                 },
               ],
@@ -370,13 +369,13 @@ const handler = createMcpHandler(
             .filter((l) => l !== null)
             .join("\n");
 
-          return { content: [{ type: "text", text }] };
+          return { content: [{ type: "text" as const, text }] };
         } catch (err) {
           console.error("[MCP create_booking]", err);
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: "An error occurred. Please contact us at +34 634 09 12 95 or info@essentiawellnessclub.com.",
               },
             ],
@@ -385,10 +384,12 @@ const handler = createMcpHandler(
       },
     );
   },
-  {},
   {
-    basePath: "/api",
-    maxDuration: 60,
+    // `basePath` and `maxDuration` were dropped in mcp-handler 2: the handler
+    // is served wherever it is mounted, and each request is its own
+    // invocation. The route is unchanged — `/api/mcp` — because the
+    // `[transport]` segment still supplies the `mcp` part.
+    verboseLogs: false,
   },
 );
 
