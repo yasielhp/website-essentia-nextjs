@@ -5,8 +5,26 @@ import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+
+/**
+ * What this form can create.
+ *
+ * `admin`/`staff`/`partner` are `profiles.role` values and come with an auth
+ * account. `client` is not a role at all — it is a `contacts` row with
+ * `status = 'client'` and no login. `member` is a `memberships` record that
+ * needs a plan and dates, so this form only creates the underlying contact and
+ * hands over to the membership screen.
+ */
+type NewUserKind = "admin" | "staff" | "partner" | "client" | "member";
 
 type SystemRole = "admin" | "staff" | "partner";
+
+const SYSTEM_ROLES: SystemRole[] = ["admin", "staff", "partner"];
+
+function isSystemRole(kind: NewUserKind): kind is SystemRole {
+  return (SYSTEM_ROLES as NewUserKind[]).includes(kind);
+}
 
 // ─── Form state ───────────────────────────────────────────────
 
@@ -17,7 +35,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
-  role: SystemRole;
+  role: NewUserKind;
 };
 
 type FormAction =
@@ -26,7 +44,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
-  | { type: "SET_ROLE"; role: SystemRole }
+  | { type: "SET_ROLE"; role: NewUserKind }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -60,10 +78,16 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-const ROLES: { value: SystemRole; label: string; desc: string }[] = [
-  { value: "admin", label: "Admin", desc: "Full access" },
+const ROLES: SelectOption<NewUserKind>[] = [
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "client", label: "Client", desc: "Contact record, no login" },
+  {
+    value: "member",
+    label: "Member",
+    desc: "Contact record, then choose a plan",
+  },
 ];
 
 export default function NewUserPage() {
@@ -89,6 +113,37 @@ export default function NewUserPage() {
     dispatch({ type: "SUBMIT_START" });
 
     const fullName = [trimFirst, lastName.trim()].filter(Boolean).join(" ");
+
+    // Clients and members are contact records, not auth accounts.
+    if (!isSystemRole(role)) {
+      const { error: contactError } = await insforge.database
+        .from("contacts")
+        .insert([
+          {
+            first_name: trimFirst,
+            last_name: lastName.trim() || null,
+            email: trimEmail,
+            phone: phone.trim() || null,
+            status: "client",
+          },
+        ]);
+
+      if (contactError) {
+        dispatch({
+          type: "SUBMIT_ERROR",
+          message:
+            (contactError as { message?: string })?.message ??
+            "Failed to create contact.",
+        });
+        return;
+      }
+
+      // A membership needs a plan, dates and a price, which live on their own
+      // screen — send the user there to finish what they started.
+      push(role === "member" ? "/dashboard/members/new" : "/dashboard/users");
+      return;
+    }
+
     const tempPassword =
       "Essentia" + Math.random().toString(36).slice(2, 10).toUpperCase() + "!";
 
@@ -174,35 +229,16 @@ export default function NewUserPage() {
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Role
             </h2>
-            <div className="grid grid-cols-3 gap-3">
-              {ROLES.map((r) => {
-                const selected = role === r.value;
-                return (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() =>
-                      dispatch({ type: "SET_ROLE", role: r.value })
-                    }
-                    disabled={submitting}
-                    className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-colors ${
-                      selected
-                        ? "border-petroleum-400 bg-petroleum-50"
-                        : "border-sand-200 hover:border-sand-300 hover:bg-sand-50"
-                    }`}
-                  >
-                    <span
-                      className={`text-sm font-semibold ${selected ? "text-petroleum-700" : "text-petroleum-500"}`}
-                    >
-                      {r.label}
-                    </span>
-                    <span className="text-petroleum-400 mt-0.5 text-xs">
-                      {r.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <OptionSelect
+              id="role"
+              value={role}
+              options={ROLES}
+              onChange={(nextRole) =>
+                dispatch({ type: "SET_ROLE", role: nextRole })
+              }
+              disabled={submitting}
+              ariaLabel="Role"
+            />
           </div>
 
           {/* Details */}

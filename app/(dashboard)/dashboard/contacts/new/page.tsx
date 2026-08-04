@@ -4,6 +4,7 @@ import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import type { ContactStatus } from "@/types/contact";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -20,6 +21,7 @@ type FormState = {
   email: string;
   phone: string;
   language: string;
+  status: ContactStatus;
 };
 
 type FormAction =
@@ -28,6 +30,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
+  | { type: "SET_STATUS"; status: ContactStatus }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -40,12 +43,15 @@ const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  status: "lead",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
       return { ...state, [action.field]: action.value };
+    case "SET_STATUS":
+      return { ...state, status: action.status };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -62,8 +68,16 @@ function formReducer(state: FormState, action: FormAction): FormState {
 export default function NewContactPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialFormState);
-  const { submitting, error, firstName, lastName, email, phone, language } =
-    state;
+  const {
+    submitting,
+    error,
+    firstName,
+    lastName,
+    email,
+    phone,
+    language,
+    status,
+  } = state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,6 +105,7 @@ export default function NewContactPage() {
           email: trimmedEmail,
           phone: phone.trim() || null,
           preferred_language: language === "es" ? "es" : "en",
+          status,
         },
       ]);
 
@@ -104,7 +119,7 @@ export default function NewContactPage() {
       return;
     }
 
-    push("/dashboard/contacts");
+    push("/dashboard/users");
   }
 
   return (
@@ -118,7 +133,7 @@ export default function NewContactPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="md" href="/dashboard/contacts">
+            <Button variant="outline" size="md" href="/dashboard/users">
               Cancel
             </Button>
             <Button
@@ -239,6 +254,30 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="status"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Type
+                </label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_STATUS",
+                      status: e.target.value as ContactStatus,
+                    })
+                  }
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                >
+                  <option value="lead">Lead — no booking yet</option>
+                  <option value="client">Client — has booked</option>
+                </select>
               </div>
 
               <div className="flex flex-col gap-1.5">
