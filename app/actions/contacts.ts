@@ -67,7 +67,7 @@ export async function fetchContactDetail(
     db
       .from("contacts")
       .select(
-        "id, first_name, last_name, email, phone, newsletter_subscribed, preferred_language",
+        "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language",
       )
       .eq("id", id)
       .limit(1),

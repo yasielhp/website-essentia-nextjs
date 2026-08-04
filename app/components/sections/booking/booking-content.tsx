@@ -534,6 +534,7 @@ function BookingContentInner() {
           p_last_name: details.lastName,
           p_phone: details.phone,
           p_language: locale,
+          p_gender: details.gender || null,
         },
       );
 

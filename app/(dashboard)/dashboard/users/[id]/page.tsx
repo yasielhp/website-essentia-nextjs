@@ -10,6 +10,12 @@ import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
 import { getAccessToken } from "@/lib/client-session";
+import { OptionSelect } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
 import {
   connectStaffCalendar,
   disconnectStaffCalendar,
@@ -32,6 +38,7 @@ type Profile = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: GenderValue | null;
   role: SystemRole;
 };
 
@@ -49,6 +56,7 @@ type State = {
   email: string;
   originalEmail: string;
   phone: string;
+  gender: GenderValue;
   role: SystemRole;
 };
 
@@ -65,6 +73,7 @@ type Action =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SET_ROLE"; role: SystemRole };
 
 const initial: State = {
@@ -79,6 +88,7 @@ const initial: State = {
   email: "",
   originalEmail: "",
   phone: "",
+  gender: "",
   role: "staff",
 };
 
@@ -99,6 +109,7 @@ function reducer(state: State, action: Action): State {
         email: action.profile.email ?? "",
         originalEmail: action.profile.email ?? "",
         phone: action.profile.phone ?? "",
+        gender: action.profile.gender ?? "",
         role: action.profile.role,
       };
     case "NOT_FOUND":
@@ -115,6 +126,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, error: action.msg };
     case "SET_FIELD":
       return { ...state, [action.field]: action.value };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SET_ROLE":
       return { ...state, role: action.role };
   }
@@ -149,7 +162,9 @@ export default function EditUserPage() {
     async function load() {
       const { data } = await insforge.database
         .from("profiles")
-        .select("id, first_name, last_name, full_name, email, phone, role")
+        .select(
+          "id, first_name, last_name, full_name, email, phone, gender, role",
+        )
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
         .limit(1);
@@ -214,6 +229,7 @@ export default function EditUserPage() {
       firstName: state.firstName,
       lastName: state.lastName,
       phone: state.phone,
+      gender: toStoredGender(state.gender),
       role: state.role,
       currentEmail: state.originalEmail,
     });
@@ -481,6 +497,29 @@ export default function EditUserPage() {
                     }
                     disabled={saving}
                     className={INPUT_CLASS}
+                  />
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                {loading ? (
+                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                ) : (
+                  <OptionSelect
+                    id="gender"
+                    value={state.gender}
+                    options={GENDER_OPTIONS}
+                    onChange={(next) =>
+                      dispatch({ type: "SET_GENDER", gender: next })
+                    }
+                    disabled={saving}
+                    ariaLabel="Gender"
                   />
                 )}
               </div>

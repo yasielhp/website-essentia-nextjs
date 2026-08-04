@@ -1,3 +1,5 @@
+import type { Gender } from "@/types/person";
+
 /** Contact directory types shared by the dashboard and the contacts actions. */
 
 export type ContactStatus = "lead" | "client";
@@ -18,6 +20,7 @@ export type ContactDetail = {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: Gender | null;
   newsletter_subscribed: boolean | null;
   preferred_language: string | null;
 };
@@ -68,6 +71,7 @@ export type UpdateContactPayload = {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: Gender | null;
   preferred_language: string;
   newsletter_subscribed: boolean;
 };

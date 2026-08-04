@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import type { ContactStatus } from "@/types/contact";
+import { OptionSelect } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -21,6 +27,7 @@ type FormState = {
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
   status: ContactStatus;
 };
 
@@ -31,6 +38,7 @@ type FormAction =
       value: string;
     }
   | { type: "SET_STATUS"; status: ContactStatus }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -43,6 +51,7 @@ const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  gender: "",
   status: "lead",
 };
 
@@ -52,6 +61,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "SET_STATUS":
       return { ...state, status: action.status };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -76,6 +87,7 @@ export default function NewContactPage() {
     email,
     phone,
     language,
+    gender,
     status,
   } = state;
 
@@ -105,6 +117,7 @@ export default function NewContactPage() {
           email: trimmedEmail,
           phone: phone.trim() || null,
           preferred_language: language === "es" ? "es" : "en",
+          gender: toStoredGender(gender),
           status,
         },
       ]);
@@ -253,6 +266,25 @@ export default function NewContactPage() {
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                <OptionSelect
+                  id="gender"
+                  value={gender}
+                  options={GENDER_OPTIONS}
+                  onChange={(next) =>
+                    dispatch({ type: "SET_GENDER", gender: next })
+                  }
+                  disabled={submitting}
+                  ariaLabel="Gender"
                 />
               </div>
 

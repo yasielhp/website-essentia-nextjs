@@ -10,6 +10,12 @@ import {
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
+import { OptionSelect } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
 import { formatMediumDate } from "@/utils/format";
 import { fetchContactDetail, updateContact } from "@/actions/contacts";
 import type {
@@ -77,6 +83,7 @@ type FormState = {
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
   newsletterSubscribed: boolean;
   error: string | null;
   saving: boolean;
@@ -92,6 +99,7 @@ type FormAction =
       email: string;
       phone: string;
       language: string;
+      gender: GenderValue;
       newsletterSubscribed: boolean;
     }
   | {
@@ -99,6 +107,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SAVING_START" }
@@ -113,6 +122,7 @@ const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  gender: "",
   newsletterSubscribed: false,
   error: null,
   saving: false,
@@ -130,8 +140,11 @@ function formReducer(state: FormState, action: FormAction): FormState {
         email: action.email,
         phone: action.phone,
         language: action.language,
+        gender: action.gender,
         newsletterSubscribed: action.newsletterSubscribed,
       };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "TOGGLE_NEWSLETTER":
       return { ...state, newsletterSubscribed: !state.newsletterSubscribed };
     case "SET_FIELD":
@@ -240,6 +253,7 @@ function ContactDetailsCard({
   email,
   phone,
   language,
+  gender,
   newsletterSubscribed,
   loading,
   saving,
@@ -250,6 +264,7 @@ function ContactDetailsCard({
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
   newsletterSubscribed: boolean;
   loading: boolean;
   saving: boolean;
@@ -351,6 +366,29 @@ function ContactDetailsCard({
               placeholder="+34 600 000 000"
               disabled={saving}
               className={INPUT_CLASS}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="gender"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Gender
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <OptionSelect
+              id="gender"
+              value={gender}
+              options={GENDER_OPTIONS}
+              onChange={(next) =>
+                dispatchForm({ type: "SET_GENDER", gender: next })
+              }
+              disabled={saving}
+              ariaLabel="Gender"
             />
           )}
         </div>
@@ -616,6 +654,7 @@ export default function ContactDetailPage() {
     email,
     phone,
     language,
+    gender,
     newsletterSubscribed,
     error,
     saving,
@@ -643,6 +682,7 @@ export default function ContactDetailPage() {
         email: contact.email ?? "",
         phone: contact.phone ?? "",
         language: contact.preferred_language ?? "en",
+        gender: contact.gender ?? "",
         newsletterSubscribed: initialNewsletter,
       });
 
@@ -673,6 +713,7 @@ export default function ContactDetailPage() {
         email: email.trim() || null,
         phone: phone.trim() || null,
         preferred_language: language === "es" ? "es" : "en",
+        gender: toStoredGender(gender),
         newsletter_subscribed: newsletterSubscribed,
       },
     );
@@ -777,6 +818,7 @@ export default function ContactDetailPage() {
           email={email}
           phone={phone}
           language={language}
+          gender={gender}
           newsletterSubscribed={newsletterSubscribed}
           loading={loading}
           saving={saving}

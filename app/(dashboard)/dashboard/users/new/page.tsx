@@ -6,6 +6,11 @@ import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
 
 /**
  * What this form can create.
@@ -35,6 +40,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
+  gender: GenderValue;
   role: NewUserKind;
 };
 
@@ -45,6 +51,7 @@ type FormAction =
       value: string;
     }
   | { type: "SET_ROLE"; role: NewUserKind }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -56,6 +63,7 @@ const initialState: FormState = {
   lastName: "",
   email: "",
   phone: "",
+  gender: "",
   role: "staff",
 };
 
@@ -65,6 +73,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "SET_ROLE":
       return { ...state, role: action.role };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -93,7 +103,8 @@ const ROLES: SelectOption<NewUserKind>[] = [
 export default function NewUserPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialState);
-  const { submitting, error, firstName, lastName, email, phone, role } = state;
+  const { submitting, error, firstName, lastName, email, phone, gender, role } =
+    state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -124,6 +135,7 @@ export default function NewUserPage() {
             last_name: lastName.trim() || null,
             email: trimEmail,
             phone: phone.trim() || null,
+            gender: toStoredGender(gender),
             status: "client",
           },
         ]);
@@ -187,6 +199,7 @@ export default function NewUserPage() {
         full_name: fullName,
         email: trimEmail,
         phone: phone.trim() || null,
+        gender: toStoredGender(gender),
       },
     ]);
 
@@ -341,6 +354,25 @@ export default function NewUserPage() {
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                <OptionSelect
+                  id="gender"
+                  value={gender}
+                  options={GENDER_OPTIONS}
+                  onChange={(next) =>
+                    dispatch({ type: "SET_GENDER", gender: next })
+                  }
+                  disabled={submitting}
+                  ariaLabel="Gender"
                 />
               </div>
             </div>

@@ -6,6 +6,7 @@ import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import type { DetailsState } from "@/types";
+import type { Gender } from "@/types/person";
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
@@ -115,6 +116,24 @@ export function DetailsStep({
           onChange={set("phone")}
           className={`${inputClass} ${errors.phone ? inputErr : inputOk}`}
         />
+      </Field>
+      <Field label={t("gender")} id="gender">
+        <select
+          id="gender"
+          value={details.gender ?? ""}
+          onChange={(e) => {
+            onChange({
+              ...details,
+              gender: e.target.value as Gender | "",
+            });
+          }}
+          className={`${inputClass} ${inputOk}`}
+        >
+          <option value="">{t("genderNotSpecified")}</option>
+          <option value="female">{t("genderFemale")}</option>
+          <option value="male">{t("genderMale")}</option>
+          <option value="other">{t("genderOther")}</option>
+        </select>
       </Field>
       <Field label={t("notes")} id="notes">
         <textarea

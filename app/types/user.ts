@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types";
+import type { Gender } from "@/types/person";
 
 /** Roles that can be assigned to a dashboard user from the admin UI. */
 export type AssignableRole = Extract<UserRole, "admin" | "staff" | "partner">;
@@ -10,6 +11,7 @@ export type UpdateUserProfileInput = {
   firstName: string;
   lastName: string;
   phone: string;
+  gender: Gender | null;
   role: AssignableRole;
   currentEmail: string;
 };
@@ -22,6 +24,7 @@ export type Profile = {
   last_name: string | null;
   full_name: string | null;
   phone: string | null;
+  gender: Gender | null;
   role: UserRole | null;
   newsletter_subscribed: boolean | null;
   created_at: string | null;

@@ -22,8 +22,16 @@ export async function updateUserProfile(
     throw err;
   }
 
-  const { userId, email, firstName, lastName, phone, role, currentEmail } =
-    input;
+  const {
+    userId,
+    email,
+    firstName,
+    lastName,
+    phone,
+    gender,
+    role,
+    currentEmail,
+  } = input;
 
   if (!userId) return { error: "Falta el identificador del usuario." };
 
@@ -64,6 +72,7 @@ export async function updateUserProfile(
       full_name: fullName,
       email: trimEmail || null,
       phone: phone.trim() || null,
+      gender,
     })
     .eq("id", userId);
 
