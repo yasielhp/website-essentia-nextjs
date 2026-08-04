@@ -19,6 +19,7 @@ import {
 import type { ColorSettings } from "@/utils/color-settings";
 import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
+import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 
 // ─── Google Calendar types ────────────────────────────────────────────────────
 
@@ -228,8 +229,9 @@ function ServicesContent({
 
             {tiers.length > 0 ? (
               <div className="border-sand-100 border-t">
-                <div className="grid grid-cols-[1fr_48px_88px_80px_80px_72px] items-center gap-3 px-5 py-2">
+                <div className="grid grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 px-5 py-2">
                   {[
+                    "",
                     "Name",
                     "Color",
                     "Duration",
@@ -238,8 +240,8 @@ function ServicesContent({
                     "Status",
                   ].map((h, i) => (
                     <span
-                      key={h}
-                      className={`text-petroleum-400 text-xs font-medium ${i >= 3 && i <= 4 ? "text-right" : i === 5 ? "text-center" : ""}`}
+                      key={h || "image"}
+                      className={`text-petroleum-400 text-xs font-medium ${i >= 4 && i <= 5 ? "text-right" : i === 6 ? "text-center" : ""}`}
                     >
                       {h}
                     </span>
@@ -250,8 +252,15 @@ function ServicesContent({
                     key={t.id}
                     type="button"
                     onClick={() => onEditTier(id, t)}
-                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[1fr_48px_88px_80px_80px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
+                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
                   >
+                    <TierThumbnail
+                      imageUrl={t.image_url}
+                      color={t.color}
+                      label={t.label}
+                      className="size-10"
+                      sizes="40px"
+                    />
                     <span className="text-petroleum-700 min-w-0 truncate text-sm">
                       {t.label ?? "—"}
                     </span>
@@ -344,7 +353,7 @@ export default function BookingsSettingsPage() {
     const { data: rows } = await insforge.database
       .from("service_tiers")
       .select(
-        "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
+        "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
@@ -366,7 +375,7 @@ export default function BookingsSettingsPage() {
         insforge.database
           .from("service_tiers")
           .select(
-            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
+            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
           )
           .order("sort_order"),
         fetchServiceConnections(),

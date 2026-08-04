@@ -8,6 +8,7 @@ export type TierRow = {
   price_center_eur: number | null;
   price_suite_eur: number | null;
   color: string | null;
+  image_url: string | null;
   active: boolean;
   sort_order: number;
 };
