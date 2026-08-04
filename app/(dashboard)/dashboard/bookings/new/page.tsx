@@ -17,7 +17,6 @@ import {
 import { insforge } from "@/lib/insforge";
 import { bookableServices } from "@/data/services-data";
 import { notifyBooking } from "@/actions/booking-notifications";
-import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -1010,7 +1009,6 @@ function CompletedRow({
 function NewBookingPageInner() {
   const { push } = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const { role } = useRole();
   const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
   const [form, dispatchForm] = useReducer(formReducer, formInitial);
@@ -1212,10 +1210,31 @@ function NewBookingPageInner() {
     submittingRef.current = true;
     dispatchAsync({ type: "SUBMIT_START" });
 
-    const { data: inserted, error: insertError } = await insforge.database
+    // An expired token makes the SDK fall back to the anon key, which then fails
+    // the partner RLS policies. Check the session before writing anything.
+    const { data: sessionData, error: sessionError } =
+      await insforge.auth.getCurrentUser();
+    if (sessionError || !sessionData?.user) {
+      submittingRef.current = false;
+      dispatchAsync({ type: "SUBMIT_END" });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload:
+          "Your session expired. Please sign in again and try once more.",
+      });
+      return;
+    }
+    const authUserId = sessionData.user.id;
+
+    // The id is generated client-side so the insert does not need a RETURNING
+    // clause — RETURNING would require a SELECT policy covering the new row.
+    const bookingId = crypto.randomUUID();
+
+    const { error: insertError } = await insforge.database
       .from("bookings")
       .insert([
         {
+          id: bookingId,
           service_id: serviceId,
           service_title: selectedService?.title ?? serviceId,
           tier_id: tierId || null,
@@ -1242,13 +1261,11 @@ function NewBookingPageInner() {
           email: email.trim(),
           phone: phone.trim() || null,
           status: "confirmed",
-          ...(role === "partner" && user?.id ? { partner_id: user.id } : {}),
-          ...(user?.id ? { created_by_user_id: user.id } : {}),
+          ...(role === "partner" ? { partner_id: authUserId } : {}),
+          created_by_user_id: authUserId,
           ...(role ? { created_by_role: role as string } : {}),
         },
-      ])
-      .select("id")
-      .single();
+      ]);
 
     dispatchAsync({ type: "SUBMIT_END" });
 
@@ -1263,7 +1280,6 @@ function NewBookingPageInner() {
       return;
     }
 
-    const bookingId = (inserted as { id: string } | null)?.id ?? "";
     const clientName = [firstName.trim(), lastName.trim()]
       .filter(Boolean)
       .join(" ");
