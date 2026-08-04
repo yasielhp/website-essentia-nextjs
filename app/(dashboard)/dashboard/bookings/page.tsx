@@ -462,6 +462,11 @@ export default function BookingsPage() {
     cancelled: number | null;
   }>({ draft: null, pending: null, confirmed: null, cancelled: null });
 
+  // The cards are a breakdown by status of whatever the filters currently
+  // select, so they apply every filter except the status one — applying that
+  // would zero three of the four. Only "Total Bookings" used to follow the
+  // list query, which applies all of them, so with a location or reserved-by
+  // filter on, the four stopped adding up to the total beside them.
   useEffect(() => {
     // Wait until we know the staff's service list
     if (isStaff && staffServiceIds === null) return;
@@ -477,6 +482,8 @@ export default function BookingsPage() {
         q = q.in("service_id", staffServiceIds);
       if (isStaff && staffServiceIds?.length === 0)
         return Promise.resolve({ count: 0 });
+      if (fLocation) q = q.eq("location", fLocation);
+      if (fReservedBy) q = q.eq("created_by_role", fReservedBy);
       if (fDateFrom) q = q.gte("date", fDateFrom);
       if (fDateTo) q = q.lte("date", fDateTo);
       return q;
@@ -495,7 +502,29 @@ export default function BookingsPage() {
         cancelled: (x as { count: number | null }).count ?? 0,
       }),
     );
-  }, [isPartner, isStaff, userId, staffServiceIds, fDateFrom, fDateTo]);
+  }, [
+    isPartner,
+    isStaff,
+    userId,
+    staffServiceIds,
+    fLocation,
+    fReservedBy,
+    fDateFrom,
+    fDateTo,
+  ]);
+
+  // Every card in the row is drawn from the same four figures, so the total is
+  // their sum rather than a fifth query that could disagree with them.
+  const countsTotal =
+    statusCounts.draft === null ||
+    statusCounts.pending === null ||
+    statusCounts.confirmed === null ||
+    statusCounts.cancelled === null
+      ? null
+      : statusCounts.draft +
+        statusCounts.pending +
+        statusCounts.confirmed +
+        statusCounts.cancelled;
 
   const fetchBookings = useCallback(async () => {
     // Wait until staff service IDs are loaded
@@ -638,26 +667,31 @@ export default function BookingsPage() {
           label="Draft"
           value={statusCounts.draft ?? 0}
           loading={statusCounts.draft === null}
+          active={fStatus === "draft"}
         />
         <StatCard
           label="Pending"
           value={statusCounts.pending ?? 0}
           loading={statusCounts.pending === null}
+          active={fStatus === "pending"}
         />
         <StatCard
           label="Confirmed"
           value={statusCounts.confirmed ?? 0}
           loading={statusCounts.confirmed === null}
+          active={fStatus === "confirmed"}
         />
         <StatCard
           label="Cancelled"
           value={statusCounts.cancelled ?? 0}
           loading={statusCounts.cancelled === null}
+          active={fStatus === "cancelled"}
         />
         <StatCard
           label="Total Bookings"
-          value={total}
-          loading={loading && total === 0}
+          value={countsTotal ?? 0}
+          loading={countsTotal === null}
+          active={!fStatus}
         />
       </div>
 
