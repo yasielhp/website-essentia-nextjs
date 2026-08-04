@@ -1978,30 +1978,25 @@ export default function EditBookingPage() {
           />
 
           {/* ── 4b. Therapist preference (manual-therapies only) ── */}
-          {serviceId === "manual-therapies" && (
+          {serviceId === "manual-therapies" && tierId !== "" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
                 Therapist preference
               </h2>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-petroleum-500 text-xs font-medium">
-                  Therapist preference
-                </label>
-                <select
-                  value={therapistGender}
-                  onChange={(e) =>
-                    dispatchForm({
-                      type: "SET_THERAPIST_GENDER",
-                      value: e.target.value as "male" | "female" | "",
-                    })
-                  }
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Select therapist preference</option>
-                  <option value="male">Male therapist</option>
-                  <option value="female">Female therapist</option>
-                </select>
-              </div>
+              <select
+                value={therapistGender}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_THERAPIST_GENDER",
+                    value: e.target.value as "male" | "female" | "",
+                  })
+                }
+                className={INPUT_CLASS}
+              >
+                <option value="">Select therapist preference</option>
+                <option value="male">Male therapist</option>
+                <option value="female">Female therapist</option>
+              </select>
             </div>
           )}
 

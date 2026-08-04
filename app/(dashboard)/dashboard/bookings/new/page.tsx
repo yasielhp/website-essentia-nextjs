@@ -1356,45 +1356,43 @@ function NewBookingPageInner() {
                       No session types configured for this service.
                     </p>
                   ) : (
-                    <div className="flex flex-col gap-4">
-                      <TierPicker
-                        options={tiers.map((t) => toTierOption(t, location))}
-                        selectedId={tierId}
-                        labels={TIER_PICKER_LABELS}
-                        collapseSingle
-                        onSelect={(o) => {
-                          dispatchForm({ type: "SET_TIER", id: o.id });
-                          setEditingStep(null);
-                        }}
-                      />
-                      {serviceId === "manual-therapies" && (
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-petroleum-500 text-xs font-medium">
-                            Therapist preference
-                          </label>
-                          <select
-                            value={therapistGender}
-                            onChange={(e) =>
-                              dispatchForm({
-                                type: "SET_THERAPIST_GENDER",
-                                value: e.target.value as "male" | "female" | "",
-                              })
-                            }
-                            className={INPUT_CLASS}
-                          >
-                            <option value="">
-                              Select therapist preference
-                            </option>
-                            <option value="male">Male therapist</option>
-                            <option value="female">Female therapist</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
+                    <TierPicker
+                      options={tiers.map((t) => toTierOption(t, location))}
+                      selectedId={tierId}
+                      labels={TIER_PICKER_LABELS}
+                      collapseSingle
+                      onSelect={(o) => {
+                        dispatchForm({ type: "SET_TIER", id: o.id });
+                        setEditingStep(null);
+                      }}
+                    />
                   )}
                 </div>
               )}
             </>
+          )}
+
+          {/* ── Step 3b: Therapist preference (manual-therapies only) ── */}
+          {serviceId === "manual-therapies" && tierId !== "" && (
+            <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                Therapist preference
+              </h2>
+              <select
+                value={therapistGender}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_THERAPIST_GENDER",
+                    value: e.target.value as "male" | "female" | "",
+                  })
+                }
+                className={INPUT_CLASS}
+              >
+                <option value="">Select therapist preference</option>
+                <option value="male">Male therapist</option>
+                <option value="female">Female therapist</option>
+              </select>
+            </div>
           )}
 
           {/* ── Step 4: Date & Time ── */}

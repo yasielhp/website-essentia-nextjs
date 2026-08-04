@@ -331,7 +331,9 @@ export function DurationStep({
           }
         />
       )}
-      {isManualTherapies && (
+      {/* Only once a session type is chosen — the preference is about that
+          session, so asking first put the question before its subject. */}
+      {isManualTherapies && selectedTierId !== null && (
         <div className="flex flex-col gap-2">
           <p className="text-petroleum-400 text-sm">
             {tt("therapistDescription")}
