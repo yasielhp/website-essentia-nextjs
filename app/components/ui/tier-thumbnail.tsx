@@ -31,6 +31,10 @@ export function TierThumbnail({
           alt={label ?? ""}
           fill
           sizes={sizes}
+          // The dropdown mounts on open, so lazy loading starts fetching at the
+          // moment the list is already on screen and the thumbnails fade in
+          // late. At 40px there is nothing to defer.
+          loading="eager"
           className="object-cover"
         />
       </div>
