@@ -75,7 +75,7 @@ function TierItems({
           key={option.id}
           type="button"
           onClick={() => onSelect(option)}
-          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150 active:scale-[0.98]"
+          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-150 active:scale-[0.98]"
         >
           <TierThumbnail
             imageUrl={option.imageUrl}
@@ -111,13 +111,13 @@ export function TierSummaryCard({
   labels: Pick<TierPickerLabels, "fieldLabel" | "standard">;
 }) {
   return (
-    <div className="border-sand-300 bg-sand-50 flex items-center gap-4 rounded-2xl border p-4">
+    <div className="border-sand-300 bg-sand-50 flex items-center gap-3 rounded-2xl border p-3">
       <TierThumbnail
         imageUrl={option.imageUrl}
         color={option.color}
         label={option.label}
       />
-      <div className="flex flex-1 flex-col gap-1">
+      <div className="flex flex-1 flex-col gap-0.5">
         <p className="text-petroleum-400 text-xs">{labels.fieldLabel}</p>
         <p className="text-petroleum-700 font-medium">
           {summarize(option, labels.standard)}
@@ -184,7 +184,7 @@ export function TierPicker({
         type="button"
         onClick={() => setIsOpen((o) => !o)}
         className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          "bg-sand-50 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-200",
           isOpen
             ? "border-petroleum-400 ring-petroleum-100 ring-2"
             : "border-sand-300 hover:border-petroleum-400",
@@ -197,7 +197,7 @@ export function TierPicker({
               color={selected.color}
               label={selected.label}
             />
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex flex-1 flex-col gap-0.5">
               <p className="text-petroleum-400 text-xs">{labels.fieldLabel}</p>
               <p className="text-petroleum-700 font-medium">
                 {summarize(selected, labels.standard)}
@@ -205,9 +205,15 @@ export function TierPicker({
             </div>
           </>
         ) : (
-          <p className="text-petroleum-400 flex-1 text-sm">
-            {labels.placeholder}
-          </p>
+          <>
+            {/* Keeps the closed height identical before and after choosing. */}
+            <div className="bg-sand-200 flex size-10 shrink-0 items-center justify-center rounded-lg">
+              <span className="text-petroleum-100 text-lg">+</span>
+            </div>
+            <p className="text-petroleum-400 flex-1 text-sm">
+              {labels.placeholder}
+            </p>
+          </>
         )}
         <ChevronDown
           className={[

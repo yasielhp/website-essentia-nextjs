@@ -1026,7 +1026,7 @@ function NewBookingPageInner() {
                 Service
               </h2>
               {servicesLoading ? (
-                <div className="border-sand-200 bg-sand-50 h-18.5 animate-pulse rounded-2xl border" />
+                <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
               ) : (
                 <ServicePicker
                   options={sortedServices}

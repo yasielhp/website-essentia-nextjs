@@ -12,8 +12,8 @@ export function TierThumbnail({
   imageUrl,
   color,
   label,
-  className = "size-12",
-  sizes = "48px",
+  className = "size-10",
+  sizes = "40px",
 }: {
   imageUrl?: string | null;
   color?: string | null;

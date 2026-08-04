@@ -757,7 +757,7 @@ function ServiceSection({
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Service</h2>
       {loading ? (
-        <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+        <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
       ) : (
         <ServicePicker
           options={services}
