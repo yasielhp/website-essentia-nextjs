@@ -656,11 +656,20 @@ function BookingContentInner() {
     }
 
     if (contactId) {
-      await insforge.database
-        .from("contacts")
-        .update({ status: "client" })
-        .eq("id", contactId)
-        .neq("status", "client");
+      // Through a function, not a direct update: the open UPDATE policy this
+      // relied on let anyone rewrite any contact. It also only ever promotes a
+      // lead — the previous `.neq("status", "client")` still demoted a member
+      // to client the moment they booked.
+      const { error: promoteError } = await insforge.database.rpc(
+        "promote_contact_to_client",
+        { p_contact_id: contactId },
+      );
+      if (promoteError) {
+        console.error(
+          "[booking] promote_contact_to_client failed; the contact stays a lead:",
+          promoteError,
+        );
+      }
     }
 
     // Send "received" notification to client and staff as soon as booking is created
