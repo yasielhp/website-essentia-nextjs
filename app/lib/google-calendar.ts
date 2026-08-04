@@ -1,13 +1,4 @@
-import { createClient } from "@insforge/sdk";
-
-// ─── Admin client (service key — never exposed to the browser) ───────────────
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
+import { getAdminClient } from "@/lib/insforge-admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

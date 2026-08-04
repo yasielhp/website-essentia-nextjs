@@ -3,11 +3,12 @@
 import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
-import {
-  fetchContacts,
-  fetchContactRoleCounts,
-  type ContactRow,
-} from "@/actions/contacts";
+import { formatMediumDate } from "@/utils/format";
+import { displayEmail, displayPhone } from "@/utils/contact";
+import { genderLabel } from "@/constants/gender";
+import { getAccessToken } from "@/lib/client-session";
+import { fetchContacts, fetchContactRoleCounts } from "@/actions/contacts";
+import type { ContactRow, ContactStatus } from "@/types/contact";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
@@ -22,6 +23,7 @@ type SystemUserRow = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: string | null;
   role: SystemRole;
 };
 
@@ -30,6 +32,7 @@ type DisplayRow = {
   name: string;
   email: string | null;
   phone: string | null;
+  gender: string | null;
   role: string;
   created_at: string | null;
   href: string;
@@ -45,18 +48,10 @@ const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
   partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
   lead: { label: "Lead", cls: "bg-sand-100 text-petroleum-500" },
   client: { label: "Client", cls: "bg-green-50 text-green-700" },
+  member: { label: "Member", cls: "bg-petroleum-50 text-petroleum-600" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function AvatarFallback() {
   return (
@@ -81,8 +76,8 @@ function AvatarFallback() {
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
-type UserFilter = { role: string };
-const emptyUserFilter: UserFilter = { role: "" };
+type UserFilter = { role: string; email: string };
+const emptyUserFilter: UserFilter = { role: "", email: "" };
 
 // ─── Contacts state ───────────────────────────────────────────
 
@@ -174,6 +169,18 @@ function FilterModal({
         </div>
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Email
+            </span>
+            <input
+              type="search"
+              value={pending.email}
+              onChange={(e) => onChange("email", e.target.value)}
+              placeholder="jane@example.com"
+              className={fieldCls}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">Role</span>
             <select
               value={pending.role}
@@ -183,9 +190,10 @@ function FilterModal({
               <option value="">All</option>
               <option value="lead">Lead</option>
               <option value="client">Client</option>
-              <option value="admin">Admin</option>
+              <option value="member">Member</option>
               <option value="staff">Staff</option>
               <option value="partner">Partner</option>
+              <option value="admin">Admin</option>
             </select>
           </label>
         </div>
@@ -225,9 +233,16 @@ export default function UsersPage() {
   const [roleCounts, setRoleCounts] = useState<{
     leads: number | null;
     clients: number | null;
+    members: number | null;
     staff: number | null;
     partner: number | null;
-  }>({ leads: null, clients: null, staff: null, partner: null });
+  }>({
+    leads: null,
+    clients: null,
+    members: null,
+    staff: null,
+    partner: null,
+  });
 
   const [appliedFilter, setAppliedFilter] =
     useState<UserFilter>(emptyUserFilter);
@@ -242,31 +257,56 @@ export default function UsersPage() {
   }
   function applyFilters() {
     setAppliedFilter(pendingFilter);
+    dispatchContacts({ type: "SET_PAGE", page: 0 });
     setFilterOpen(false);
   }
   function clearFilters() {
     setAppliedFilter(emptyUserFilter);
     setPendingFilter(emptyUserFilter);
+    dispatchContacts({ type: "SET_PAGE", page: 0 });
     setFilterOpen(false);
   }
 
+  // Contact statuses are filtered by the database; the three account roles live
+  // in `profiles` and are filtered from the fully-loaded system list below.
+  const contactStatusFilter: ContactStatus | undefined =
+    appliedFilter.role === "lead" ||
+    appliedFilter.role === "client" ||
+    appliedFilter.role === "member"
+      ? appliedFilter.role
+      : undefined;
+  const accountRoleFilter = ["admin", "staff", "partner"].includes(
+    appliedFilter.role,
+  )
+    ? appliedFilter.role
+    : null;
+
   // ── Load contacts ──
-  const loadContacts = useCallback(async (page: number) => {
-    dispatchContacts({ type: "SET_LOADING" });
-    const { contacts, total } = await fetchContacts(page, PAGE_SIZE);
-    dispatchContacts({ type: "LOADED", contacts, total });
-  }, []);
+  const loadContacts = useCallback(
+    async (page: number, status: ContactStatus | undefined, email: string) => {
+      dispatchContacts({ type: "SET_LOADING" });
+      const { contacts, total } = await fetchContacts(
+        getAccessToken(),
+        page,
+        PAGE_SIZE,
+        status,
+        email,
+      );
+      dispatchContacts({ type: "LOADED", contacts, total });
+    },
+    [],
+  );
 
   useEffect(() => {
-    void loadContacts(contacts.page);
-  }, [loadContacts, contacts.page]);
+    void loadContacts(contacts.page, contactStatusFilter, appliedFilter.email);
+  }, [loadContacts, contacts.page, contactStatusFilter, appliedFilter.email]);
 
   // ── Load system users (eager) ──
   useEffect(() => {
     dispatchSystem({ type: "SET_LOADING" });
     void insforge.database
       .from("profiles")
-      .select("id, full_name, email, phone, role")
+      .select("id, full_name, email, phone, gender, role")
       .in("role", ["admin", "staff", "partner"])
       .order("role")
       .order("full_name")
@@ -281,7 +321,7 @@ export default function UsersPage() {
   // ── Load role counts ──
   useEffect(() => {
     void Promise.all([
-      fetchContactRoleCounts(),
+      fetchContactRoleCounts(getAccessToken()),
       insforge.database
         .from("profiles")
         .select("id", { count: "exact", head: true })
@@ -294,6 +334,10 @@ export default function UsersPage() {
       setRoleCounts({
         leads: contactCounts.leads,
         clients: contactCounts.clients,
+        // Contacts marked as members, not active subscriptions: every card on
+        // this page counts people, and the subscription figure lives on the
+        // Members screen.
+        members: contactCounts.members,
         staff: (staff as { count: number | null }).count ?? 0,
         partner: (partner as { count: number | null }).count ?? 0,
       });
@@ -310,6 +354,7 @@ export default function UsersPage() {
     name: u.full_name ?? "—",
     email: u.email,
     phone: u.phone,
+    gender: u.gender,
     role: u.role,
     created_at: null,
     href: `/dashboard/users/${u.id}`,
@@ -320,18 +365,30 @@ export default function UsersPage() {
     name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
     email: c.email,
     phone: c.phone,
+    gender: c.gender,
     role: c.status ?? "lead",
     created_at: c.created_at,
     href: `/dashboard/contacts/${c.id}`,
   }));
 
-  const displayRows: DisplayRow[] = isFirstPage
-    ? [...systemRows, ...contactRows]
-    : contactRows;
+  // Filtering by an account role hides contacts entirely, and vice versa: the
+  // two live in different tables and a page of one cannot contain the other.
+  const emailFilter = appliedFilter.email.trim();
 
-  const filteredRows = appliedFilter.role
-    ? displayRows.filter((r) => r.role === appliedFilter.role)
-    : displayRows;
+  const displayRows: DisplayRow[] = accountRoleFilter
+    ? systemRows.filter(
+        (r) =>
+          r.role === accountRoleFilter &&
+          (!emailFilter ||
+            (r.email ?? "").toLowerCase().includes(emailFilter.toLowerCase())),
+      )
+    : contactStatusFilter || emailFilter
+      ? contactRows
+      : isFirstPage
+        ? [...systemRows, ...contactRows]
+        : contactRows;
+
+  const filteredRows = displayRows;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -358,7 +415,7 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label="Leads"
           value={roleCounts.leads ?? 0}
@@ -368,6 +425,11 @@ export default function UsersPage() {
           label="Clients"
           value={roleCounts.clients ?? 0}
           loading={roleCounts.clients === null}
+        />
+        <StatCard
+          label="Members"
+          value={roleCounts.members ?? 0}
+          loading={roleCounts.members === null}
         />
         <StatCard
           label="Staff"
@@ -428,7 +490,7 @@ export default function UsersPage() {
                     </div>
                     {row.email && (
                       <p className="text-petroleum-400 mt-0.5 truncate text-sm">
-                        {row.email}
+                        {displayEmail(row.email)}
                       </p>
                     )}
                   </div>
@@ -451,10 +513,10 @@ export default function UsersPage() {
                     Name
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Email
+                    Phone
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Phone
+                    Gender
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
                     Role
@@ -476,13 +538,13 @@ export default function UsersPage() {
                       <td className="px-5 py-3">
                         <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
                       </td>
-                      {/* Email */}
-                      <td className="px-5 py-3">
-                        <div className="bg-sand-100 h-4 w-44 animate-pulse rounded" />
-                      </td>
                       {/* Phone */}
                       <td className="px-5 py-3">
                         <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                      </td>
+                      {/* Gender */}
+                      <td className="px-5 py-3">
+                        <div className="bg-sand-100 h-4 w-20 animate-pulse rounded" />
                       </td>
                       {/* Role badge */}
                       <td className="px-5 py-3">
@@ -517,14 +579,19 @@ export default function UsersPage() {
                             <AvatarFallback />
                           </div>
                         </td>
-                        <td className="text-petroleum-700 px-5 py-3 font-medium">
-                          {row.name}
+                        <td className="px-5 py-3">
+                          <p className="text-petroleum-700 font-medium">
+                            {row.name}
+                          </p>
+                          <p className="text-petroleum-400 mt-0.5 text-xs">
+                            {displayEmail(row.email)}
+                          </p>
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {row.email ?? "—"}
+                          {displayPhone(row.phone)}
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {row.phone ?? "—"}
+                          {genderLabel(row.gender)}
                         </td>
                         <td className="px-5 py-3">
                           <span
@@ -534,7 +601,7 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {formatDate(row.created_at)}
+                          {formatMediumDate(row.created_at)}
                         </td>
                       </tr>
                     );
@@ -546,7 +613,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {contacts.total > PAGE_SIZE && (
+      {!accountRoleFilter && contacts.total > PAGE_SIZE && (
         <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
           <Pagination
             page={contacts.page}

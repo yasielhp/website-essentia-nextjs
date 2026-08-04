@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { marked } from "marked";
 import { getTranslations } from "next-intl/server";
-import { createClient } from "@insforge/sdk";
+import { insforge as db } from "@/lib/insforge";
 import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
@@ -11,11 +11,6 @@ import { getOgImage } from "@/constants/metadata";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
-
-const db = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-  anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
-});
 
 const SELECT_FIELDS =
   "id, title, slug, slug_es, excerpt, content, title_es, excerpt_es, content_es, cover_image_url, published_at, seo_title, seo_description, seo_og_image_url, seo_title_es, seo_description_es, category:blog_categories(name, slug, name_es), author:profiles(full_name)";

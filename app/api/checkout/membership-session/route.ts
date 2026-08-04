@@ -1,28 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { insforge } from "@/lib/insforge";
-import { RedsysProvider } from "@/lib/payments/redsys";
-
-function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
-
-function buildRedsysProvider(): RedsysProvider | null {
-  const merchantCode = process.env.REDSYS_MERCHANT_CODE;
-  const terminal = process.env.REDSYS_TERMINAL ?? "001";
-  const secretKey = process.env.REDSYS_SECRET_KEY;
-  if (!merchantCode || !secretKey) return null;
-  return new RedsysProvider({
-    merchantCode,
-    terminal,
-    secretKey,
-    environment: (process.env.REDSYS_ENVIRONMENT as "test" | "live") ?? "test",
-  });
-}
+import { getRedsysProvider } from "@/lib/payments";
+import { getAppUrl } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
-  const provider = buildRedsysProvider();
+  const provider = getRedsysProvider();
   if (!provider) {
     return NextResponse.json(
       { error: "Redsys not configured" },

@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { formatMediumDate } from "@/utils/format";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
@@ -34,15 +35,6 @@ const PLAN_STYLES: Record<string, string> = {
   premium: "bg-blue-50 text-blue-700",
   founder: "bg-purple-50 text-purple-700",
 };
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
@@ -417,10 +409,10 @@ export default function MembersPage() {
                         </span>
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs">
-                        {formatDate(m.start_date)}
+                        {formatMediumDate(m.start_date)}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs">
-                        {formatDate(m.end_date)}
+                        {formatMediumDate(m.end_date)}
                       </td>
                     </tr>
                   ))}

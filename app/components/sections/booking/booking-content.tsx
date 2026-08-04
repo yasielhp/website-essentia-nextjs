@@ -30,6 +30,7 @@ import { ConfirmStep } from "./steps/confirm-step";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
 import { notifyBooking } from "@/actions/booking-notifications";
 
 const EMPTY_DETAILS: DetailsState = {
@@ -525,18 +526,27 @@ function BookingContentInner() {
         return;
       }
 
-      const { data: contactUuid } = await insforge.database.rpc(
-        "upsert_contact",
-        {
+      const { data: contactUuid, error: contactError } =
+        await insforge.database.rpc("upsert_contact", {
           p_email: details.email,
           p_first_name: details.firstName,
           p_last_name: details.lastName,
           p_phone: details.phone,
           p_language: locale,
-        },
-      );
+          p_gender: details.gender || null,
+        });
 
-      if (contactUuid) {
+      // Never swallow this. A failure here used to pass unnoticed and the draft
+      // was written with no contact attached, which is how orphaned drafts —
+      // and missing leads — accumulated. The booking still proceeds, because a
+      // bookkeeping problem must not cost a customer their appointment, but it
+      // is recorded loudly enough to be found.
+      if (contactError || !contactUuid) {
+        console.error(
+          "[booking] upsert_contact failed; the draft will have no contact:",
+          contactError ?? "no id returned",
+        );
+      } else {
         resolvedContactId = contactUuid as string;
         setContactId(contactUuid as string);
       }
@@ -646,16 +656,25 @@ function BookingContentInner() {
     }
 
     if (contactId) {
-      await insforge.database
-        .from("contacts")
-        .update({ status: "client" })
-        .eq("id", contactId)
-        .neq("status", "client");
+      // Through a function, not a direct update: the open UPDATE policy this
+      // relied on let anyone rewrite any contact. It also only ever promotes a
+      // lead — the previous `.neq("status", "client")` still demoted a member
+      // to client the moment they booked.
+      const { error: promoteError } = await insforge.database.rpc(
+        "promote_contact_to_client",
+        { p_contact_id: contactId },
+      );
+      if (promoteError) {
+        console.error(
+          "[booking] promote_contact_to_client failed; the contact stays a lead:",
+          promoteError,
+        );
+      }
     }
 
     // Send "received" notification to client and staff as soon as booking is created
     if (resolvedBookingId && details.email && dateStr) {
-      notifyBooking({
+      notifyBooking(getAccessToken(), {
         bookingId: resolvedBookingId,
         event: "received",
         clientName: `${details.firstName} ${details.lastName}`.trim(),

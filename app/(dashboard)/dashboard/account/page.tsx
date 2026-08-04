@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
+import { getAccessToken } from "@/lib/client-session";
+import {
+  connectStaffCalendar,
+  disconnectStaffCalendar,
+  fetchStaffCalendarConfigs,
+  fetchStaffServices,
+} from "@/services/calendar.client";
 import { accountProfileSchema, parseErrors } from "@/lib/schemas";
 
 const INPUT_CLASS =
@@ -97,10 +104,7 @@ function CalendarServiceRow({
 
   async function handleDisconnect() {
     setDisconnecting(true);
-    await fetch(
-      `/api/google/calendar/disconnect-user?staff_id=${staffId}&service_id=${svc.service_id}`,
-      { method: "DELETE" },
-    );
+    await disconnectStaffCalendar(staffId, svc.service_id);
     setEmail(null);
     setDisconnecting(false);
   }
@@ -134,8 +138,15 @@ function CalendarServiceRow({
           )}
         </div>
       ) : (
-        <a
-          href={`/api/google/calendar/connect-user?staff_id=${staffId}&service_id=${svc.service_id}&return_to=${encodeURIComponent(`/dashboard/account?service_id=${svc.service_id}`)}`}
+        <button
+          type="button"
+          onClick={() =>
+            void connectStaffCalendar(
+              staffId,
+              svc.service_id,
+              `/dashboard/account?service_id=${svc.service_id}`,
+            )
+          }
           className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -148,7 +159,7 @@ function CalendarServiceRow({
             />
           </svg>
           Conectar Google Calendar
-        </a>
+        </button>
       )}
     </div>
   );
@@ -165,31 +176,17 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
 
   useEffect(() => {
     void (async () => {
-      const [configRes, svcRes] = await Promise.all([
-        fetch(`/api/google/calendar/user-config?staff_id=${userId}`).then(
-          (r) =>
-            r.json() as Promise<{
-              configs: {
-                service_id: string;
-                google_calendar_email: string | null;
-              }[];
-            }>,
-        ),
-        fetch(`/api/google/calendar/staff-services?staff_id=${userId}`).then(
-          (r) =>
-            r.json() as Promise<{ services: { id: string; title: string }[] }>,
-        ),
+      const [configs, assignedServices] = await Promise.all([
+        fetchStaffCalendarConfigs(userId),
+        fetchStaffServices(userId),
       ]);
 
       const configMap = new Map(
-        (configRes.configs ?? []).map((c) => [
-          c.service_id,
-          c.google_calendar_email,
-        ]),
+        configs.map((c) => [c.service_id, c.google_calendar_email]),
       );
 
       setServices(
-        (svcRes.services ?? []).map((s) => ({
+        assignedServices.map((s) => ({
           service_id: s.id,
           service_title: s.title,
           google_calendar_email: configMap.get(s.id) ?? null,
@@ -316,7 +313,7 @@ export default function DashboardAccountPage() {
       return;
     }
     setPwLoading(true);
-    const { error } = await setUserPassword(user!.id, pwNew);
+    const { error } = await setUserPassword(getAccessToken(), user!.id, pwNew);
     if (error) {
       setPwError(error);
       setPwLoading(false);

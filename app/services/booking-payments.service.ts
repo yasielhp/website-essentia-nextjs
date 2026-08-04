@@ -1,19 +1,19 @@
-"use server";
-
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
+import { formatLongDate } from "@/utils/format";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
-}
-
-export async function handleBookingPaid(bookingId: string) {
+/**
+ * Marks a booking as paid and notifies the client.
+ *
+ * This deliberately lives in `services/` and NOT in `actions/`: it used to be a
+ * `"use server"` export, which made it a public HTTP endpoint that anyone could
+ * call to mark an arbitrary booking as paid. It is only ever invoked
+ * server-to-server from the Redsys webhook, after signature verification.
+ */
+export async function handleBookingPaid(bookingId: string): Promise<void> {
   const adminClient = getAdminClient();
+
   const { data: booking } = await adminClient.database
     .from("bookings")
     .select("first_name, last_name, email, service_title, date, time, duration")
@@ -42,7 +42,7 @@ export async function handleBookingPaid(bookingId: string) {
       { onConflict: "email" },
     );
   } catch {
-    // fail-open
+    // fail-open: contact sync must not block payment confirmation
   }
 
   const { error } = await sendEmail({
@@ -51,11 +51,7 @@ export async function handleBookingPaid(bookingId: string) {
     html: bookingConfirmationEmail({
       name: booking.first_name as string,
       serviceName: booking.service_title as string,
-      date: new Date(booking.date as string).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
+      date: formatLongDate(booking.date as string, "en"),
       time: booking.time as string,
       duration: booking.duration as string,
       dateIso: booking.date as string,

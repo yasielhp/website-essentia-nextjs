@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
 import { updateNewsletterForUser } from "@/actions/newsletter";
 
 type Booking = {
@@ -302,6 +303,7 @@ export default function AccountPage() {
                   setNewsletterLoading(true);
                   const next = !newsletterSubscribed;
                   const result = await updateNewsletterForUser(
+                    getAccessToken(),
                     user.id,
                     user.email,
                     next,

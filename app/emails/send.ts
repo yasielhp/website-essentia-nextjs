@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
 
 type SendEmailParams = {
   to: string;
@@ -9,12 +9,8 @@ type SendEmailParams = {
 
 async function getAdminEmail(): Promise<string | null> {
   try {
-    const adminClient = createClient({
-      baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-      anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    });
-    const { data } = await adminClient.database
-      .from("profiles")
+    const { data } = await getAdminClient()
+      .database.from("profiles")
       .select("email")
       .eq("role", "admin")
       .limit(1)

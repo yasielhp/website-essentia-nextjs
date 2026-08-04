@@ -3,12 +3,29 @@
 import { useEffect, useReducer, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  dashboardUserSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
+import { getAccessToken } from "@/lib/client-session";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
+import {
+  connectStaffCalendar,
+  disconnectStaffCalendar,
+} from "@/services/calendar.client";
 import {
   IconTrash,
   IconCheck,
@@ -27,13 +44,17 @@ type Profile = {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  gender: GenderValue | null;
   role: SystemRole;
 };
 
 // ─── State ────────────────────────────────────────────────────
 
+type UserErrors = FormErrors<typeof dashboardUserSchema>;
+
 type State = {
   loading: boolean;
+  fieldErrors: UserErrors;
   notFound: boolean;
   saving: boolean;
   confirmRemove: boolean;
@@ -44,6 +65,7 @@ type State = {
   email: string;
   originalEmail: string;
   phone: string;
+  gender: GenderValue;
   role: SystemRole;
 };
 
@@ -60,10 +82,13 @@ type Action =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
-  | { type: "SET_ROLE"; role: SystemRole };
+  | { type: "SET_GENDER"; gender: GenderValue }
+  | { type: "SET_ROLE"; role: SystemRole }
+  | { type: "SET_FIELD_ERRORS"; errors: UserErrors };
 
 const initial: State = {
   loading: true,
+  fieldErrors: {},
   notFound: false,
   saving: false,
   confirmRemove: false,
@@ -74,6 +99,7 @@ const initial: State = {
   email: "",
   originalEmail: "",
   phone: "",
+  gender: "",
   role: "staff",
 };
 
@@ -94,6 +120,7 @@ function reducer(state: State, action: Action): State {
         email: action.profile.email ?? "",
         originalEmail: action.profile.email ?? "",
         phone: action.profile.phone ?? "",
+        gender: action.profile.gender ?? "",
         role: action.profile.role,
       };
     case "NOT_FOUND":
@@ -109,7 +136,15 @@ function reducer(state: State, action: Action): State {
     case "SET_ERROR":
       return { ...state, error: action.msg };
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, saving: false };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SET_ROLE":
       return { ...state, role: action.role };
   }
@@ -117,10 +152,15 @@ function reducer(state: State, action: Action): State {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const ROLES: { value: SystemRole; label: string; desc: string }[] = [
-  { value: "admin", label: "Admin", desc: "Full access" },
+/**
+ * Only system roles: this screen edits an existing `profiles` row, and a
+ * profile cannot be turned into a contact. Same labels and order as the
+ * creation form.
+ */
+const ROLES: SelectOption<SystemRole>[] = [
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────
@@ -144,7 +184,9 @@ export default function EditUserPage() {
     async function load() {
       const { data } = await insforge.database
         .from("profiles")
-        .select("id, first_name, last_name, full_name, email, phone, role")
+        .select(
+          "id, first_name, last_name, full_name, email, phone, gender, role",
+        )
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
         .limit(1);
@@ -195,6 +237,19 @@ export default function EditUserPage() {
     e.preventDefault();
     dispatch({ type: "SET_ERROR", msg: null });
 
+    const errors = parseErrors(dashboardUserSchema, {
+      firstName: state.firstName,
+      lastName: state.lastName,
+      email: normalizeEmail(state.email) ?? "",
+      phone: state.phone,
+      gender: state.gender,
+      role: state.role,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
+      return;
+    }
+
     const trimFirst = state.firstName.trim();
     if (!trimFirst) {
       dispatch({ type: "SET_ERROR", msg: "El nombre es obligatorio." });
@@ -203,12 +258,13 @@ export default function EditUserPage() {
 
     dispatch({ type: "SET_SAVING", value: true });
 
-    const { error } = await updateUserProfile({
+    const { error } = await updateUserProfile(getAccessToken(), {
       userId: id,
-      email: state.email,
+      email: normalizeEmail(state.email) ?? "",
       firstName: state.firstName,
       lastName: state.lastName,
-      phone: state.phone,
+      phone: normalizePhone(state.phone) ?? "",
+      gender: toStoredGender(state.gender),
       role: state.role,
       currentEmail: state.originalEmail,
     });
@@ -247,7 +303,7 @@ export default function EditUserPage() {
       return;
     }
     setPwLoading(true);
-    const { error } = await setUserPassword(id, pwNew);
+    const { error } = await setUserPassword(getAccessToken(), id, pwNew);
     if (error) {
       setPwError(error);
       setPwLoading(false);
@@ -261,7 +317,7 @@ export default function EditUserPage() {
 
   async function handleRemove() {
     dispatch({ type: "SET_REMOVING", value: true });
-    const { error } = await removeUserAccess(id);
+    const { error } = await removeUserAccess(getAccessToken(), id);
     if (error) {
       dispatch({ type: "SET_ERROR", msg: error });
       dispatch({ type: "SET_REMOVING", value: false });
@@ -333,35 +389,16 @@ export default function EditUserPage() {
             {loading ? (
               <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
             ) : (
-              <div className="grid grid-cols-3 gap-3">
-                {ROLES.map((r) => {
-                  const selected = state.role === r.value;
-                  return (
-                    <button
-                      key={r.value}
-                      type="button"
-                      onClick={() =>
-                        dispatch({ type: "SET_ROLE", role: r.value })
-                      }
-                      disabled={saving}
-                      className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-colors ${
-                        selected
-                          ? "border-petroleum-400 bg-petroleum-50"
-                          : "border-sand-200 hover:border-sand-300 hover:bg-sand-50"
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-semibold ${selected ? "text-petroleum-700" : "text-petroleum-500"}`}
-                      >
-                        {r.label}
-                      </span>
-                      <span className="text-petroleum-400 mt-0.5 text-xs">
-                        {r.desc}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <OptionSelect
+                id="role"
+                value={state.role}
+                options={ROLES}
+                onChange={(nextRole) =>
+                  dispatch({ type: "SET_ROLE", role: nextRole })
+                }
+                disabled={saving}
+                ariaLabel="Role"
+              />
             )}
           </div>
 
@@ -397,6 +434,11 @@ export default function EditUserPage() {
                       className={INPUT_CLASS}
                     />
                   )}
+                  {state.fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -422,6 +464,11 @@ export default function EditUserPage() {
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
+                  )}
+                  {state.fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -451,6 +498,11 @@ export default function EditUserPage() {
                     className={INPUT_CLASS}
                   />
                 )}
+                {state.fieldErrors.email && (
+                  <p className="text-xs text-red-500">
+                    {state.fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -476,6 +528,34 @@ export default function EditUserPage() {
                     }
                     disabled={saving}
                     className={INPUT_CLASS}
+                  />
+                )}
+                {state.fieldErrors.phone && (
+                  <p className="text-xs text-red-500">
+                    {state.fieldErrors.phone}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                {loading ? (
+                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                ) : (
+                  <OptionSelect
+                    id="gender"
+                    value={state.gender}
+                    options={GENDER_OPTIONS}
+                    onChange={(next) =>
+                      dispatch({ type: "SET_GENDER", gender: next })
+                    }
+                    disabled={saving}
+                    ariaLabel="Gender"
                   />
                 )}
               </div>
@@ -612,10 +692,7 @@ export default function EditUserPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  await fetch(
-                                    `/api/google/calendar/disconnect-user?staff_id=${id}&service_id=${svc.id}`,
-                                    { method: "DELETE" },
-                                  );
+                                  await disconnectStaffCalendar(id, svc.id);
                                   setAssignments((prev) =>
                                     prev.map((a) =>
                                       a.service_id === svc.id
@@ -630,13 +707,20 @@ export default function EditUserPage() {
                               </button>
                             </div>
                           ) : (
-                            <a
-                              href={`/api/google/calendar/connect-user?staff_id=${id}&service_id=${svc.id}&return_to=${encodeURIComponent(`/dashboard/users/${id}`)}`}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void connectStaffCalendar(
+                                  id,
+                                  svc.id,
+                                  `/dashboard/users/${id}`,
+                                )
+                              }
                               className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
                             >
                               <IconCalendarConnect />
                               Conectar Google Calendar
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}

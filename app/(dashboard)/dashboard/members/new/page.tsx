@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import {
   INPUT_CLASS,
   SELECT_CLASS,
@@ -28,90 +29,7 @@ type Contact = {
 
 // ─── Contact Search Reducer ───────────────────────────────────
 
-type ContactSearchState = {
-  query: string;
-  results: Contact[];
-  showDropdown: boolean;
-  searching: boolean;
-};
-
-type ContactSearchAction =
-  | { type: "SET_QUERY"; payload: string }
-  | { type: "SEARCH_START" }
-  | { type: "SEARCH_DONE"; payload: Contact[] }
-  | { type: "CLEAR" }
-  | { type: "CLOSE_DROPDOWN" }
-  | { type: "OPEN_DROPDOWN" };
-
-function contactSearchReducer(
-  state: ContactSearchState,
-  action: ContactSearchAction,
-): ContactSearchState {
-  switch (action.type) {
-    case "SET_QUERY":
-      return { ...state, query: action.payload };
-    case "SEARCH_START":
-      return { ...state, searching: true };
-    case "SEARCH_DONE":
-      return {
-        ...state,
-        results: action.payload,
-        searching: false,
-        showDropdown: true,
-      };
-    case "CLEAR":
-      return { ...state, results: [], showDropdown: false };
-    case "CLOSE_DROPDOWN":
-      return { ...state, showDropdown: false };
-    case "OPEN_DROPDOWN":
-      return { ...state, showDropdown: true };
-    default:
-      return state;
-  }
-}
-
-// ─── Form Reducer ─────────────────────────────────────────────
-
-type FormState = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  plan: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  notes: string;
-};
-
-type FormAction =
-  | { type: "SET_FIELD"; field: keyof FormState; value: string }
-  | { type: "SET_PLAN"; value: string }
-  | {
-      type: "FILL_CONTACT";
-      payload: Pick<FormState, "firstName" | "lastName" | "email" | "phone">;
-    };
-
-function formReducer(state: FormState, action: FormAction): FormState {
-  switch (action.type) {
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "SET_PLAN":
-      return { ...state, plan: action.value };
-    case "FILL_CONTACT":
-      return { ...state, ...action.payload };
-    default:
-      return state;
-  }
-}
-
-// ─── Sub-components ───────────────────────────────────────────
-
-type PageHeaderProps = {
-  submitting: boolean;
-};
-
-function PageHeader({ submitting }: PageHeaderProps) {
+function PageHeader({ submitting }: { submitting: boolean }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <h1 className="font-display text-petroleum-700 text-3xl">New Member</h1>
@@ -127,212 +45,76 @@ function PageHeader({ submitting }: PageHeaderProps) {
   );
 }
 
-type ContactSearchSectionProps = {
-  search: ContactSearchState;
-  dispatchSearch: React.Dispatch<ContactSearchAction>;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
-  submitting: boolean;
-  onSelectContact: (c: Contact) => void;
+type FormState = {
+  plan: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  notes: string;
 };
 
-function ContactSearchSection({
-  search,
-  dispatchSearch,
-  dropdownRef,
-  submitting,
-  onSelectContact,
-}: ContactSearchSectionProps) {
-  return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        Import from Contacts
-      </h2>
-      <p className="text-petroleum-400 mb-4 text-xs">
-        Search an existing contact to pre-fill the form.
-      </p>
-      <div ref={dropdownRef} className="relative">
-        <div className="relative">
-          <input
-            type="text"
-            value={search.query}
-            onChange={(e) =>
-              dispatchSearch({
-                type: "SET_QUERY",
-                payload: e.target.value,
-              })
-            }
-            onFocus={() => {
-              if (search.results.length > 0)
-                dispatchSearch({ type: "OPEN_DROPDOWN" });
-            }}
-            placeholder="Search by name or email…"
-            className={INPUT_CLASS}
-            disabled={submitting}
-          />
-          {search.searching && (
-            <div className="absolute top-1/2 right-3 -translate-y-1/2">
-              <div className="border-petroleum-400 size-4 animate-spin rounded-full border-2 border-t-transparent" />
-            </div>
-          )}
-        </div>
+type FormAction =
+  | { type: "SET_FIELD"; field: keyof FormState; value: string }
+  | { type: "SET_PLAN"; value: string };
 
-        {search.showDropdown && search.results.length > 0 && (
-          <div className="border-sand-200 absolute z-20 mt-1 w-full overflow-hidden rounded-xl border bg-white shadow-lg">
-            {search.results.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onSelectContact(c)}
-                className="hover:bg-sand-50 flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
-              >
-                <div className="bg-sand-100 flex size-8 shrink-0 items-center justify-center rounded-lg">
-                  <span className="text-petroleum-400 text-xs font-medium">
-                    {(c.first_name?.[0] ?? "?").toUpperCase()}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-petroleum-700 truncate text-sm font-medium">
-                    {c.first_name} {c.last_name}
-                  </p>
-                  {c.email && (
-                    <p className="text-petroleum-400 truncate text-xs">
-                      {c.email}
-                    </p>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {search.showDropdown &&
-          !search.searching &&
-          search.results.length === 0 &&
-          search.query.trim().length >= 2 && (
-            <div className="border-sand-200 absolute z-20 mt-1 w-full rounded-xl border bg-white px-4 py-3 text-sm shadow-lg">
-              <span className="text-petroleum-400">No contacts found.</span>
-            </div>
-          )}
-      </div>
-    </div>
-  );
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_PLAN":
+      return { ...state, plan: action.value };
+    default:
+      return state;
+  }
 }
 
-type PersonalInfoSectionProps = {
-  form: FormState;
-  dispatchForm: React.Dispatch<FormAction>;
-  submitting: boolean;
-};
-
-function PersonalInfoSection({
-  form,
-  dispatchForm,
+/**
+ * Picking who the subscription is for.
+ *
+ * This replaced a search box plus a full set of name and email inputs. Those
+ * inputs invited typing a person who already exists as a contact, producing a
+ * membership that pointed at nobody — the insert never stored `contact_id`, it
+ * only copied the text. Choosing an existing contact is the whole step.
+ */
+function SubscriberSection({
+  contacts,
+  contactId,
+  onChange,
+  loading,
   submitting,
-}: PersonalInfoSectionProps) {
+}: {
+  contacts: Contact[];
+  contactId: string;
+  onChange: (id: string) => void;
+  loading: boolean;
+  submitting: boolean;
+}) {
+  const options: SelectOption<string>[] = contacts.map((c) => ({
+    value: c.id,
+    label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+    desc: c.email ?? undefined,
+  }));
+
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Personal Information
-      </h2>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="firstName"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              First name <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="firstName"
-              type="text"
-              value={form.firstName}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_FIELD",
-                  field: "firstName",
-                  value: e.target.value,
-                })
-              }
-              placeholder="Jane"
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="lastName"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              Last name <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="lastName"
-              type="text"
-              value={form.lastName}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_FIELD",
-                  field: "lastName",
-                  value: e.target.value,
-                })
-              }
-              placeholder="Doe"
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="email"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_FIELD",
-                  field: "email",
-                  value: e.target.value,
-                })
-              }
-              placeholder="jane@example.com"
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="phone"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              Phone
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              value={form.phone}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_FIELD",
-                  field: "phone",
-                  value: e.target.value,
-                })
-              }
-              placeholder="+34 600 000 000"
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-        </div>
-      </div>
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">Member</h2>
+      <p className="text-petroleum-400 mb-4 text-xs">
+        Only contacts marked as members. Change someone&apos;s role on their own
+        page to make them eligible.
+      </p>
+      {loading ? (
+        <div className="bg-sand-100 h-14 animate-pulse rounded-xl" />
+      ) : (
+        <OptionSelect
+          id="contact"
+          value={contactId}
+          options={options}
+          onChange={onChange}
+          disabled={submitting}
+          placeholder="Select a member…"
+          ariaLabel="Contact"
+        />
+      )}
     </div>
   );
 }
@@ -353,7 +135,7 @@ function MembershipDetailsSection({
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Membership
+        Subscription
       </h2>
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -496,20 +278,10 @@ export default function NewMemberPage() {
   const [error, setError] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const [search, dispatchSearch] = useReducer(contactSearchReducer, {
-    query: "",
-    results: [],
-    showDropdown: false,
-    searching: false,
-  });
+  const [contactId, setContactId] = useState("");
+  const [contacts, setContacts] = useState<Contact[] | null>(null);
 
   const [form, dispatchForm] = useReducer(formReducer, {
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
     plan: "",
     status: "active",
     startDate: new Date().toISOString().slice(0, 10),
@@ -533,74 +305,28 @@ export default function NewMemberPage() {
     void load();
   }, []);
 
-  // Contact search with debounce
+  // Contacts to choose from. Loaded whole rather than searched as you type:
+  // the select filters in the browser, and the list is small enough that one
+  // query beats a request per keystroke.
   useEffect(() => {
-    const q = search.query.trim();
-
-    if (q.length < 2) {
-      dispatchSearch({ type: "CLEAR" });
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      dispatchSearch({ type: "SEARCH_START" });
+    async function load() {
       const { data } = await insforge.database
         .from("contacts")
         .select("id, first_name, last_name, email, phone")
-        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`)
-        .limit(8);
-      dispatchSearch({
-        type: "SEARCH_DONE",
-        payload: (data as Contact[] | null) ?? [],
-      });
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search.query]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        dispatchSearch({ type: "CLOSE_DROPDOWN" });
-      }
+        .eq("status", "member")
+        .order("first_name");
+      setContacts((data as Contact[] | null) ?? []);
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    void load();
   }, []);
-
-  function selectContact(c: Contact) {
-    dispatchForm({
-      type: "FILL_CONTACT",
-      payload: {
-        firstName: c.first_name ?? "",
-        lastName: c.last_name ?? "",
-        email: c.email ?? "",
-        phone: c.phone ?? "",
-      },
-    });
-    dispatchSearch({
-      type: "SET_QUERY",
-      payload:
-        `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || (c.email ?? ""),
-    });
-    dispatchSearch({ type: "CLOSE_DROPDOWN" });
-    dispatchSearch({ type: "CLEAR" });
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!form.firstName.trim()) {
-      setError("First name is required.");
-      return;
-    }
-    if (!form.lastName.trim()) {
-      setError("Last name is required.");
+    const contact = (contacts ?? []).find((c) => c.id === contactId);
+    if (!contact) {
+      setError("Select the contact this subscription belongs to.");
       return;
     }
 
@@ -610,10 +336,13 @@ export default function NewMemberPage() {
       .from("memberships")
       .insert([
         {
-          first_name: form.firstName.trim(),
-          last_name: form.lastName.trim(),
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
+          // Both the link and the copy: `contact_id` is the relationship, the
+          // rest is what the members list reads directly off this row.
+          contact_id: contact.id,
+          first_name: contact.first_name ?? "",
+          last_name: contact.last_name ?? "",
+          email: contact.email ?? null,
+          phone: contact.phone ?? null,
           plan: form.plan,
           status: form.status,
           start_date: form.startDate || null,
@@ -647,16 +376,11 @@ export default function NewMemberPage() {
         )}
 
         <div className="space-y-6">
-          <ContactSearchSection
-            search={search}
-            dispatchSearch={dispatchSearch}
-            dropdownRef={dropdownRef}
-            submitting={submitting}
-            onSelectContact={selectContact}
-          />
-          <PersonalInfoSection
-            form={form}
-            dispatchForm={dispatchForm}
+          <SubscriberSection
+            contacts={contacts ?? []}
+            contactId={contactId}
+            onChange={setContactId}
+            loading={contacts === null}
             submitting={submitting}
           />
           <MembershipDetailsSection

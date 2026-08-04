@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
 import {
   getValidAccessToken,
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/lib/google-calendar";
+import { requireApiRole, toAuthErrorResponse } from "@/lib/auth-guard";
+import { getServiceCalendarId } from "@/services/calendar-config.service";
+import { addMinutesToTime } from "@/utils/format";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
+/**
+ * Google Calendar event CRUD for the dashboard. Staff only — these handlers
+ * write to the centre's real calendar, and were previously unauthenticated.
+ *
+ * Calendar failures are swallowed on purpose: a booking must never fail because
+ * the calendar is unreachable. Authorisation failures are *not* swallowed.
+ */
+
+const DEFAULT_TIMEZONE = "Atlantic/Canary";
 
 type EventRequestBody = {
   service_id: string;
@@ -26,28 +31,63 @@ type EventRequestBody = {
   timezone?: string;
 };
 
-export async function POST(request: NextRequest) {
-  let body: EventRequestBody;
+type UpdateRequestBody = EventRequestBody & { event_id: string };
+type DeleteRequestBody = { service_id: string; event_id: string };
 
+/** Builds the Google `start`/`end` pair from a date, time and duration. */
+function buildEventWindow(body: EventRequestBody) {
+  const timezone = body.timezone ?? DEFAULT_TIMEZONE;
+  return {
+    start: { dateTime: `${body.date}T${body.time}:00`, timeZone: timezone },
+    end: {
+      dateTime: `${body.date}T${addMinutesToTime(body.time, body.duration_minutes)}:00`,
+      timeZone: timezone,
+    },
+  };
+}
+
+function buildEventPayload(body: EventRequestBody) {
+  return {
+    summary: body.summary,
+    description: body.description,
+    ...(body.location ? { location: body.location } : {}),
+    ...(body.colorId ? { colorId: body.colorId } : {}),
+    ...buildEventWindow(body),
+  };
+}
+
+async function readJson<T>(request: NextRequest): Promise<T | null> {
   try {
-    body = (await request.json()) as EventRequestBody;
+    return (await request.json()) as T;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return null;
+  }
+}
+
+function hasEventFields(body: EventRequestBody): boolean {
+  return Boolean(
+    body.service_id &&
+    body.summary &&
+    body.date &&
+    body.time &&
+    body.duration_minutes,
+  );
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    await requireApiRole(request);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
   }
 
-  const {
-    service_id,
-    summary,
-    description,
-    location,
-    colorId,
-    date,
-    time,
-    duration_minutes,
-    timezone = "Atlantic/Canary",
-  } = body;
-
-  if (!service_id || !summary || !date || !time || !duration_minutes) {
+  const body = await readJson<EventRequestBody>(request);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!hasEventFields(body)) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 },
@@ -55,82 +95,37 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getValidAccessToken(service_id);
+    const accessToken = await getValidAccessToken(body.service_id);
+    if (!accessToken) return NextResponse.json({ ok: true });
 
-    // No calendar connected — succeed silently
-    if (!accessToken) {
-      return NextResponse.json({ ok: true });
-    }
-
-    const adminClient = getAdminClient();
-    const { data: config } = await adminClient.database
-      .from("service_configs")
-      .select("google_calendar_id")
-      .eq("service_id", service_id)
-      .single<{ google_calendar_id: string | null }>();
-
-    const calendarId = config?.google_calendar_id ?? "primary";
-
-    // Build ISO 8601 datetimes for the event
-    // e.g. date="2026-05-20", time="10:00" → "2026-05-20T10:00:00"
-    const startDateTime = `${date}T${time}:00`;
-    const [startHour, startMinute] = time.split(":").map(Number);
-    const totalStartMinutes = startHour * 60 + startMinute + duration_minutes;
-    const endHour = Math.floor(totalStartMinutes / 60)
-      .toString()
-      .padStart(2, "0");
-    const endMinute = (totalStartMinutes % 60).toString().padStart(2, "0");
-    const endDateTime = `${date}T${endHour}:${endMinute}:00`;
-
-    const eventId = await createCalendarEvent(accessToken, calendarId, {
-      summary,
-      description,
-      ...(location ? { location } : {}),
-      ...(colorId ? { colorId } : {}),
-      start: { dateTime: startDateTime, timeZone: timezone },
-      end: { dateTime: endDateTime, timeZone: timezone },
-    });
+    const calendarId = await getServiceCalendarId(body.service_id);
+    const eventId = await createCalendarEvent(
+      accessToken,
+      calendarId,
+      buildEventPayload(body),
+    );
 
     return NextResponse.json({ ok: true, eventId });
   } catch (err) {
-    // Fail-open: calendar sync failure must not break the booking
-    console.error("[google/calendar/event] error:", err);
+    console.error("[google/calendar/event POST] error:", err);
     return NextResponse.json({ ok: true });
   }
 }
 
-type UpdateRequestBody = EventRequestBody & { event_id: string };
-
 export async function PATCH(request: NextRequest) {
-  let body: UpdateRequestBody;
-
   try {
-    body = (await request.json()) as UpdateRequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    await requireApiRole(request);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
   }
 
-  const {
-    service_id,
-    event_id,
-    summary,
-    description,
-    location,
-    colorId,
-    date,
-    time,
-    duration_minutes,
-    timezone = "Atlantic/Canary",
-  } = body;
-
-  if (
-    !service_id ||
-    !event_id ||
-    !summary ||
-    !date ||
-    !time ||
-    !duration_minutes
-  ) {
+  const body = await readJson<UpdateRequestBody>(request);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!hasEventFields(body) || !body.event_id) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 },
@@ -138,63 +133,38 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getValidAccessToken(service_id);
+    const accessToken = await getValidAccessToken(body.service_id);
+    if (!accessToken) return NextResponse.json({ ok: true });
 
-    if (!accessToken) {
-      return NextResponse.json({ ok: true });
-    }
+    const calendarId = await getServiceCalendarId(body.service_id);
+    await updateCalendarEvent(
+      accessToken,
+      calendarId,
+      body.event_id,
+      buildEventPayload(body),
+    );
 
-    const adminClient = getAdminClient();
-    const { data: config } = await adminClient.database
-      .from("service_configs")
-      .select("google_calendar_id")
-      .eq("service_id", service_id)
-      .single<{ google_calendar_id: string | null }>();
-
-    const calendarId = config?.google_calendar_id ?? "primary";
-
-    const startDateTime = `${date}T${time}:00`;
-    const [startHour, startMinute] = time.split(":").map(Number);
-    const totalStartMinutes = startHour * 60 + startMinute + duration_minutes;
-    const endHour = Math.floor(totalStartMinutes / 60)
-      .toString()
-      .padStart(2, "0");
-    const endMinute = (totalStartMinutes % 60).toString().padStart(2, "0");
-    const endDateTime = `${date}T${endHour}:${endMinute}:00`;
-
-    await updateCalendarEvent(accessToken, calendarId, event_id, {
-      summary,
-      description,
-      ...(location ? { location } : {}),
-      ...(colorId ? { colorId } : {}),
-      start: { dateTime: startDateTime, timeZone: timezone },
-      end: { dateTime: endDateTime, timeZone: timezone },
-    });
-
-    return NextResponse.json({ ok: true, eventId: event_id });
+    return NextResponse.json({ ok: true, eventId: body.event_id });
   } catch (err) {
     console.error("[google/calendar/event PATCH] error:", err);
     return NextResponse.json({ ok: true });
   }
 }
 
-type DeleteRequestBody = {
-  service_id: string;
-  event_id: string;
-};
-
 export async function DELETE(request: NextRequest) {
-  let body: DeleteRequestBody;
-
   try {
-    body = (await request.json()) as DeleteRequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    await requireApiRole(request);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
   }
 
-  const { service_id, event_id } = body;
-
-  if (!service_id || !event_id) {
+  const body = await readJson<DeleteRequestBody>(request);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!body.service_id || !body.event_id) {
     return NextResponse.json(
       { error: "Missing service_id or event_id" },
       { status: 400 },
@@ -202,22 +172,11 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getValidAccessToken(service_id);
+    const accessToken = await getValidAccessToken(body.service_id);
+    if (!accessToken) return NextResponse.json({ ok: true });
 
-    if (!accessToken) {
-      return NextResponse.json({ ok: true });
-    }
-
-    const adminClient = getAdminClient();
-    const { data: config } = await adminClient.database
-      .from("service_configs")
-      .select("google_calendar_id")
-      .eq("service_id", service_id)
-      .single<{ google_calendar_id: string | null }>();
-
-    const calendarId = config?.google_calendar_id ?? "primary";
-
-    await deleteCalendarEvent(accessToken, calendarId, event_id);
+    const calendarId = await getServiceCalendarId(body.service_id);
+    await deleteCalendarEvent(accessToken, calendarId, body.event_id);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

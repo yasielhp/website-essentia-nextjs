@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
 import {
   getValidAccessToken,
   createCalendarEvent,
 } from "@/lib/google-calendar";
+import {
+  ADMIN_ROLES,
+  requireApiRole,
+  toAuthErrorResponse,
+} from "@/lib/auth-guard";
+import { getServiceCalendarId } from "@/services/calendar-config.service";
+import { addMinutesToTime, parseDurationMinutes } from "@/utils/format";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
+const TIMEZONE = "Atlantic/Canary";
 
 type Booking = {
   id: string;
@@ -23,28 +25,35 @@ type Booking = {
 };
 
 /**
- * POST /api/google/calendar/sync
- * Body: { service_id: string }
+ * POST /api/google/calendar/sync  { service_id }
  *
- * Creates calendar events for all future confirmed/paid bookings of a service
- * that haven't been synced yet (google_event_id IS NULL).
- * Updates bookings.google_event_id after each successful creation.
+ * Back-fills calendar events for every future confirmed or paid booking of a
+ * service that has not been synced yet. Admin only: it reads client data in
+ * bulk and writes to the real calendar.
  */
 export async function POST(request: NextRequest) {
-  let body: { service_id: string };
   try {
-    body = (await request.json()) as { service_id: string };
+    await requireApiRole(request, ADMIN_ROLES);
+  } catch (err) {
+    const response = toAuthErrorResponse(err);
+    if (response) return response;
+    throw err;
+  }
+
+  let body: { service_id?: string };
+  try {
+    body = (await request.json()) as { service_id?: string };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { service_id } = body;
-  if (!service_id) {
+  const serviceId = body.service_id;
+  if (!serviceId) {
     return NextResponse.json({ error: "Missing service_id" }, { status: 400 });
   }
 
   try {
-    const accessToken = await getValidAccessToken(service_id);
+    const accessToken = await getValidAccessToken(serviceId);
     if (!accessToken) {
       return NextResponse.json(
         { error: "No calendar connected for this service" },
@@ -52,21 +61,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminClient = getAdminClient();
-
-    const { data: config } = await adminClient.database
-      .from("service_configs")
-      .select("google_calendar_id")
-      .eq("service_id", service_id)
-      .single<{ google_calendar_id: string | null }>();
-
-    const calendarId = config?.google_calendar_id ?? "primary";
+    const calendarId = await getServiceCalendarId(serviceId);
     const today = new Date().toISOString().split("T")[0]!;
+    const db = getAdminClient().database;
 
-    const { data: bookings, error: bookingsErr } = await adminClient.database
+    const { data: bookings, error: bookingsErr } = await db
       .from("bookings")
       .select("id, service_title, first_name, last_name, date, time, duration")
-      .eq("service_id", service_id)
+      .eq("service_id", serviceId)
       .in("status", ["confirmed", "paid"])
       .gte("date", today)
       .is("google_event_id", null);
@@ -89,40 +91,27 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Parse duration minutes from strings like "45 min" or "45"
-      const durationMinutes = booking.duration
-        ? parseInt(booking.duration.replace(/\D/g, ""), 10) || 60
-        : 60;
-
+      const durationMinutes = parseDurationMinutes(booking.duration);
       const clientName =
         [booking.first_name, booking.last_name].filter(Boolean).join(" ") ||
         "Client";
-
-      const summary = `${booking.service_title ?? service_id} — ${clientName}`;
-
-      const [startHour, startMinute] = booking.time.split(":").map(Number);
-      const totalEnd =
-        (startHour ?? 0) * 60 + (startMinute ?? 0) + durationMinutes;
-      const endHour = Math.floor(totalEnd / 60)
-        .toString()
-        .padStart(2, "0");
-      const endMinute = (totalEnd % 60).toString().padStart(2, "0");
+      const summary = `${booking.service_title ?? serviceId} — ${clientName}`;
 
       try {
         const eventId = await createCalendarEvent(accessToken, calendarId, {
           summary,
           start: {
             dateTime: `${booking.date}T${booking.time}:00`,
-            timeZone: "Atlantic/Canary",
+            timeZone: TIMEZONE,
           },
           end: {
-            dateTime: `${booking.date}T${endHour}:${endMinute}:00`,
-            timeZone: "Atlantic/Canary",
+            dateTime: `${booking.date}T${addMinutesToTime(booking.time, durationMinutes)}:00`,
+            timeZone: TIMEZONE,
           },
         });
 
         if (eventId) {
-          await adminClient.database
+          await db
             .from("bookings")
             .update({ google_event_id: eventId })
             .eq("id", booking.id);

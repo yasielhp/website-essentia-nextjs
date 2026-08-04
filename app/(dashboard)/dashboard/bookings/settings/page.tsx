@@ -3,6 +3,12 @@
 import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  connectServiceCalendar,
+  disconnectServiceCalendar,
+  fetchServiceConnections,
+  syncServiceCalendar,
+} from "@/services/calendar.client";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/context/role-context";
 import {
@@ -39,9 +45,7 @@ function GoogleCalendarWidget({
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      await fetch(`/api/google/calendar/disconnect?service_id=${serviceId}`, {
-        method: "DELETE",
-      });
+      await disconnectServiceCalendar(serviceId);
       onDisconnected(serviceId);
     } catch {
       // ignore
@@ -53,11 +57,7 @@ function GoogleCalendarWidget({
   const handleSync = async () => {
     setSyncing(true);
     try {
-      await fetch("/api/google/calendar/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service_id: serviceId }),
-      });
+      await syncServiceCalendar(serviceId);
     } catch {
       // ignore
     } finally {
@@ -112,9 +112,7 @@ function GoogleCalendarWidget({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              window.location.href = `/api/google/calendar/connect?service_id=${serviceId}`;
-            }}
+            onClick={() => void connectServiceCalendar(serviceId)}
           >
             Connect Google Calendar
           </Button>
@@ -371,10 +369,7 @@ export default function BookingsSettingsPage() {
             "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, active, sort_order",
           )
           .order("sort_order"),
-        fetch("/api/google/calendar/configs").then(async (r) => {
-          if (!r.ok) return { data: [] };
-          return r.json() as Promise<{ data: ServiceCalendarConfig[] }>;
-        }),
+        fetchServiceConnections(),
       ]);
 
       const serviceTiers: Record<string, TierRow[]> = {};
@@ -385,7 +380,7 @@ export default function BookingsSettingsPage() {
         }
       }
 
-      const calendarConfigs = (calRes.data ?? []) as ServiceCalendarConfig[];
+      const calendarConfigs = calRes as ServiceCalendarConfig[];
 
       dispatch({ type: "INIT_DONE", colors, serviceTiers, calendarConfigs });
     }

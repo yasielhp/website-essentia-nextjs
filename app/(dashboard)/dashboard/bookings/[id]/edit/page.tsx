@@ -15,6 +15,7 @@ import {
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken, authFetch } from "@/lib/client-session";
 import { bookableServices } from "@/data/services-data";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { deleteBooking, updateBookingByAdmin } from "@/actions/booking-draft";
@@ -2110,23 +2111,27 @@ export default function EditBookingPage() {
       .filter(Boolean)
       .join("\n\n");
 
-    const { error: updateErrorMsg } = await updateBookingByAdmin(id, {
-      service_id: serviceId,
-      service_title: selectedService?.title ?? serviceId,
-      tier_id: tierId || null,
-      price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
-      duration: durationText,
-      date: dateStr,
-      time: selectedTime || null,
-      location: location || null,
-      location_address: locationAddress,
-      notes: composedNotes || null,
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      email: email.trim(),
-      phone: phone.trim() || null,
-      status,
-    });
+    const { error: updateErrorMsg } = await updateBookingByAdmin(
+      getAccessToken(),
+      id,
+      {
+        service_id: serviceId,
+        service_title: selectedService?.title ?? serviceId,
+        tier_id: tierId || null,
+        price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
+        duration: durationText,
+        date: dateStr,
+        time: selectedTime || null,
+        location: location || null,
+        location_address: locationAddress,
+        notes: composedNotes || null,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+        phone: phone.trim() || null,
+        status,
+      },
+    );
 
     dispatchAsync({ type: "SUBMIT_END" });
 
@@ -2158,7 +2163,7 @@ export default function EditBookingPage() {
 
       try {
         if (statusChanged && status === "confirmed") {
-          await notifyBooking({
+          await notifyBooking(getAccessToken(), {
             bookingId: id,
             event: "confirmed",
             clientName,
@@ -2171,7 +2176,7 @@ export default function EditBookingPage() {
             duration: dur,
           });
         } else if (statusChanged && status === "cancelled") {
-          await notifyBooking({
+          await notifyBooking(getAccessToken(), {
             bookingId: id,
             event: "cancelled",
             clientName,
@@ -2184,7 +2189,7 @@ export default function EditBookingPage() {
             duration: dur,
           });
         } else if (!statusChanged && dateTimeChanged) {
-          await notifyBooking({
+          await notifyBooking(getAccessToken(), {
             bookingId: id,
             event: "rescheduled",
             clientName,
@@ -2204,7 +2209,7 @@ export default function EditBookingPage() {
       // Delete Google Calendar event when booking is cancelled
       if (statusChanged && status === "cancelled" && orig.googleEventId) {
         try {
-          await fetch("/api/google/calendar/event", {
+          await authFetch("/api/google/calendar/event", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2282,7 +2287,7 @@ export default function EditBookingPage() {
       try {
         if (existingEventId) {
           // Update existing calendar event instead of creating a duplicate
-          await fetch("/api/google/calendar/event", {
+          await authFetch("/api/google/calendar/event", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2299,7 +2304,7 @@ export default function EditBookingPage() {
           });
         } else {
           // No existing event — create one
-          const calRes = await fetch("/api/google/calendar/event", {
+          const calRes = await authFetch("/api/google/calendar/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2333,7 +2338,7 @@ export default function EditBookingPage() {
 
   async function handleDelete() {
     setDeleteState((prev) => ({ ...prev, pending: true }));
-    await deleteBooking(id);
+    await deleteBooking(getAccessToken(), id);
     push("/dashboard/bookings");
   }
 

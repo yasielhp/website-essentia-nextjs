@@ -3,21 +3,54 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  newDashboardPersonSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
+
+/**
+ * What this form can create.
+ *
+ * `admin`/`staff`/`partner` are `profiles.role` values and come with an auth
+ * account. `client` is not a role at all — it is a `contacts` row with
+ * `status = 'client'` and no login. `member` is a `memberships` record that
+ * needs a plan and dates, so this form only creates the underlying contact and
+ * hands over to the membership screen.
+ */
+type NewUserKind = "admin" | "staff" | "partner" | "client" | "member";
 
 type SystemRole = "admin" | "staff" | "partner";
 
+const SYSTEM_ROLES: SystemRole[] = ["admin", "staff", "partner"];
+
+function isSystemRole(kind: NewUserKind): kind is SystemRole {
+  return (SYSTEM_ROLES as NewUserKind[]).includes(kind);
+}
+
 // ─── Form state ───────────────────────────────────────────────
+
+type PersonErrors = FormErrors<typeof newDashboardPersonSchema>;
 
 type FormState = {
   submitting: boolean;
   error: string | null;
+  fieldErrors: PersonErrors;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  role: SystemRole;
+  gender: GenderValue;
+  role: NewUserKind;
 };
 
 type FormAction =
@@ -26,27 +59,39 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
-  | { type: "SET_ROLE"; role: SystemRole }
+  | { type: "SET_ROLE"; role: NewUserKind }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
   | { type: "CLEAR_ERROR" };
 
 const initialState: FormState = {
   submitting: false,
   error: null,
+  fieldErrors: {},
   firstName: "",
   lastName: "",
   email: "",
   phone: "",
+  gender: "",
   role: "staff",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, submitting: false };
     case "SET_ROLE":
       return { ...state, role: action.role };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -60,35 +105,97 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-const ROLES: { value: SystemRole; label: string; desc: string }[] = [
-  { value: "admin", label: "Admin", desc: "Full access" },
+const ROLES: SelectOption<NewUserKind>[] = [
+  { value: "client", label: "Client", desc: "Contact record, no login" },
+  {
+    value: "member",
+    label: "Member",
+    desc: "Entitled to a subscription",
+  },
   { value: "staff", label: "Staff", desc: "Dashboard access" },
   { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
 ];
 
 export default function NewUserPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialState);
-  const { submitting, error, firstName, lastName, email, phone, role } = state;
+  const {
+    submitting,
+    error,
+    fieldErrors,
+    firstName,
+    lastName,
+    email,
+    phone,
+    gender,
+    role,
+  } = state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "CLEAR_ERROR" });
 
-    const trimFirst = firstName.trim();
-    const trimEmail = email.trim();
-
-    if (!trimFirst || !trimEmail) {
-      dispatch({
-        type: "SUBMIT_ERROR",
-        message: "First name and email are required.",
-      });
+    const errors = parseErrors(newDashboardPersonSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+      role,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
 
     dispatch({ type: "SUBMIT_START" });
 
+    const trimFirst = firstName.trim();
+    const normalizedEmail = normalizeEmail(email);
+    const trimEmail = normalizedEmail ?? "";
+    const trimPhone = normalizePhone(phone);
     const fullName = [trimFirst, lastName.trim()].filter(Boolean).join(" ");
+
+    // Clients and members are contact records, not auth accounts.
+    //
+    // Upsert rather than insert: a lead is someone who started the booking form
+    // and never finished, and they already occupy this email. Creating them as
+    // a client from here promotes that existing row instead of colliding with
+    // the unique email constraint.
+    if (!isSystemRole(role)) {
+      const { error: contactError } = await insforge.database
+        .from("contacts")
+        .upsert(
+          {
+            first_name: trimFirst,
+            last_name: lastName.trim() || null,
+            email: normalizedEmail,
+            phone: trimPhone,
+            gender: toStoredGender(gender),
+            // Member is its own status: the subscription form only offers
+            // contacts marked this way.
+            status: role === "member" ? "member" : "client",
+          },
+          { onConflict: "email" },
+        );
+
+      if (contactError) {
+        dispatch({
+          type: "SUBMIT_ERROR",
+          message:
+            (contactError as { message?: string })?.message ??
+            "Failed to create contact.",
+        });
+        return;
+      }
+
+      // A membership needs a plan, dates and a price, which live on their own
+      // screen — send the user there to finish what they started.
+      push(role === "member" ? "/dashboard/members/new" : "/dashboard/users");
+      return;
+    }
+
     const tempPassword =
       "Essentia" + Math.random().toString(36).slice(2, 10).toUpperCase() + "!";
 
@@ -131,7 +238,8 @@ export default function NewUserPage() {
         last_name: lastName.trim() || null,
         full_name: fullName,
         email: trimEmail,
-        phone: phone.trim() || null,
+        phone: trimPhone,
+        gender: toStoredGender(gender),
       },
     ]);
 
@@ -174,35 +282,16 @@ export default function NewUserPage() {
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
               Role
             </h2>
-            <div className="grid grid-cols-3 gap-3">
-              {ROLES.map((r) => {
-                const selected = role === r.value;
-                return (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() =>
-                      dispatch({ type: "SET_ROLE", role: r.value })
-                    }
-                    disabled={submitting}
-                    className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-colors ${
-                      selected
-                        ? "border-petroleum-400 bg-petroleum-50"
-                        : "border-sand-200 hover:border-sand-300 hover:bg-sand-50"
-                    }`}
-                  >
-                    <span
-                      className={`text-sm font-semibold ${selected ? "text-petroleum-700" : "text-petroleum-500"}`}
-                    >
-                      {r.label}
-                    </span>
-                    <span className="text-petroleum-400 mt-0.5 text-xs">
-                      {r.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <OptionSelect
+              id="role"
+              value={role}
+              options={ROLES}
+              onChange={(nextRole) =>
+                dispatch({ type: "SET_ROLE", role: nextRole })
+              }
+              disabled={submitting}
+              ariaLabel="Role"
+            />
           </div>
 
           {/* Details */}
@@ -234,6 +323,11 @@ export default function NewUserPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -257,6 +351,11 @@ export default function NewUserPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -282,6 +381,9 @@ export default function NewUserPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -305,6 +407,28 @@ export default function NewUserPage() {
                   placeholder="+34 600 000 000"
                   disabled={submitting}
                   className={INPUT_CLASS}
+                />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                <OptionSelect
+                  id="gender"
+                  value={gender}
+                  options={GENDER_OPTIONS}
+                  onChange={(next) =>
+                    dispatch({ type: "SET_GENDER", gender: next })
+                  }
+                  disabled={submitting}
+                  ariaLabel="Gender"
                 />
               </div>
             </div>

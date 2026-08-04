@@ -1,25 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
 import { exchangeCodeForTokens } from "@/lib/google-calendar";
+import { verifyState } from "@/lib/oauth-state";
+import { getAppUrl } from "@/lib/env";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
+/**
+ * Google OAuth callback. Public by necessity — Google calls it — but it only
+ * acts on a `state` this server signed, so it cannot be used to rebind a
+ * service's calendar to an attacker's Google account.
+ */
+
+function redirectTo(path: string, params: Record<string, string> = {}) {
+  const url = new URL(path, getAppUrl());
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return NextResponse.redirect(url);
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const stateParam = searchParams.get("state");
+  const signedState = searchParams.get("state");
   const errorParam = searchParams.get("error");
 
-  // ── Determine flow ────────────────────────────────────────────────────────────
-  const isStaffSvcFlow = stateParam?.startsWith("staffsvc__") ?? false;
-  // Keep legacy user__ check in case old links are still in flight
-  const isUserFlow =
-    !isStaffSvcFlow && (stateParam?.startsWith("user__") ?? false);
+  const state = verifyState(signedState);
+
+  const isStaffSvcFlow = state?.startsWith("staffsvc__") ?? false;
+  // Legacy `user__` links may still be in flight.
+  const isUserFlow = !isStaffSvcFlow && (state?.startsWith("user__") ?? false);
 
   const errorRedirectBase =
     isStaffSvcFlow || isUserFlow
@@ -27,34 +36,25 @@ export async function GET(request: NextRequest) {
       : "/dashboard/bookings/settings";
 
   if (errorParam) {
-    return NextResponse.redirect(
-      new URL(
-        `${errorRedirectBase}&error=${encodeURIComponent(errorParam)}`,
-        process.env.NEXT_PUBLIC_APP_URL,
-      ),
-    );
+    return redirectTo(errorRedirectBase, { error: errorParam });
   }
 
-  if (!code || !stateParam) {
-    return NextResponse.redirect(
-      new URL(
-        `${errorRedirectBase}&error=missing_params`,
-        process.env.NEXT_PUBLIC_APP_URL,
-      ),
-    );
+  if (!code || !signedState) {
+    return redirectTo(errorRedirectBase, { error: "missing_params" });
+  }
+
+  if (!state) {
+    // Unsigned, tampered or expired state — never exchange the code.
+    return redirectTo(errorRedirectBase, { error: "invalid_state" });
   }
 
   try {
     const tokens = await exchangeCodeForTokens(code);
 
-    // Fetch the connected Google account's email
     const userinfoRes = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
-      {
-        headers: { Authorization: `Bearer ${tokens.access_token}` },
-      },
+      { headers: { Authorization: `Bearer ${tokens.access_token}` } },
     );
-
     const userinfo = (await userinfoRes.json()) as { email?: string };
     const connectedEmail = userinfo.email ?? null;
 
@@ -62,61 +62,48 @@ export async function GET(request: NextRequest) {
       Date.now() + tokens.expires_in * 1000,
     ).toISOString();
 
-    const adminClient = getAdminClient();
+    const db = getAdminClient().database;
+
+    const calendarTokens = {
+      google_access_token: tokens.access_token,
+      google_refresh_token: tokens.refresh_token,
+      google_token_expires_at: expiresAt,
+      google_connected_email: connectedEmail,
+      google_calendar_id: "primary",
+      updated_at: new Date().toISOString(),
+    };
 
     if (isStaffSvcFlow) {
-      // ── Staff+service flow: store tokens in service_configs (shared calendar) ──
-      // state format: `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`
-      const parts = stateParam.split("__");
+      // state: `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`
+      const parts = state.split("__");
       const serviceId = parts[2];
-      const encodedReturnPath = parts.slice(3).join("__");
-      const returnPath = decodeURIComponent(encodedReturnPath);
+      const returnPath = decodeURIComponent(parts.slice(3).join("__"));
 
-      if (!serviceId) {
-        return NextResponse.redirect(
-          new URL(
-            `${errorRedirectBase}?error=invalid_state`,
-            process.env.NEXT_PUBLIC_APP_URL,
-          ),
-        );
+      if (!serviceId || !returnPath.startsWith("/dashboard")) {
+        return redirectTo(errorRedirectBase, { error: "invalid_state" });
       }
 
-      await adminClient.database.from("service_configs").upsert(
-        {
-          service_id: serviceId,
-          google_access_token: tokens.access_token,
-          google_refresh_token: tokens.refresh_token,
-          google_token_expires_at: expiresAt,
-          google_connected_email: connectedEmail,
-          google_calendar_id: "primary",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "service_id" },
-      );
+      await db
+        .from("service_configs")
+        .upsert(
+          { service_id: serviceId, ...calendarTokens },
+          { onConflict: "service_id" },
+        );
 
-      return NextResponse.redirect(
-        new URL(
-          `${returnPath}?calendar_connected=1`,
-          process.env.NEXT_PUBLIC_APP_URL,
-        ),
-      );
-    } else if (isUserFlow) {
-      // ── Legacy user-level flow (profiles table) ───────────────────────────────
-      const parts = stateParam.split("__");
+      return redirectTo(returnPath, { calendar_connected: "1" });
+    }
+
+    if (isUserFlow) {
+      // Legacy user-level flow (profiles table)
+      const parts = state.split("__");
       const userId = parts[1];
-      const encodedReturnPath = parts.slice(2).join("__");
-      const returnPath = decodeURIComponent(encodedReturnPath);
+      const returnPath = decodeURIComponent(parts.slice(2).join("__"));
 
-      if (!userId) {
-        return NextResponse.redirect(
-          new URL(
-            `${errorRedirectBase}?error=invalid_state`,
-            process.env.NEXT_PUBLIC_APP_URL,
-          ),
-        );
+      if (!userId || !returnPath.startsWith("/dashboard")) {
+        return redirectTo(errorRedirectBase, { error: "invalid_state" });
       }
 
-      await adminClient.database
+      await db
         .from("profiles")
         .update({
           google_access_token: tokens.access_token,
@@ -126,43 +113,20 @@ export async function GET(request: NextRequest) {
         })
         .eq("id", userId);
 
-      return NextResponse.redirect(
-        new URL(
-          `${returnPath}?calendar_connected=1`,
-          process.env.NEXT_PUBLIC_APP_URL,
-        ),
-      );
-    } else {
-      // ── Service-level flow: store tokens in service_configs (unchanged) ───────
-      const serviceId = stateParam;
+      return redirectTo(returnPath, { calendar_connected: "1" });
+    }
 
-      await adminClient.database.from("service_configs").upsert(
-        {
-          service_id: serviceId,
-          google_access_token: tokens.access_token,
-          google_refresh_token: tokens.refresh_token,
-          google_token_expires_at: expiresAt,
-          google_connected_email: connectedEmail,
-          google_calendar_id: "primary",
-          updated_at: new Date().toISOString(),
-        },
+    // Service-level flow: `state` is the service id itself.
+    await db
+      .from("service_configs")
+      .upsert(
+        { service_id: state, ...calendarTokens },
         { onConflict: "service_id" },
       );
 
-      return NextResponse.redirect(
-        new URL(
-          "/dashboard/bookings/settings?connected=1",
-          process.env.NEXT_PUBLIC_APP_URL,
-        ),
-      );
-    }
+    return redirectTo("/dashboard/bookings/settings", { connected: "1" });
   } catch (err) {
     console.error("[google/calendar/callback] error:", err);
-    return NextResponse.redirect(
-      new URL(
-        `${errorRedirectBase}&error=token_exchange_failed`,
-        process.env.NEXT_PUBLIC_APP_URL,
-      ),
-    );
+    return redirectTo(errorRedirectBase, { error: "token_exchange_failed" });
   }
 }

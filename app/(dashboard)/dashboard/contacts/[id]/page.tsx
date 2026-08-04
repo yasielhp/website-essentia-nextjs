@@ -9,18 +9,42 @@ import {
 } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
+import { getAccessToken } from "@/lib/client-session";
 import {
-  fetchContactDetail,
-  updateContact,
-  type ContactBooking,
-  type ContactRaceReg,
-  type ContactEduReg,
-} from "@/actions/contacts";
+  dashboardContactSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
+import { OptionSelect } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
+import { formatMediumDate, formatPrice } from "@/utils/format";
+import {
+  LocationBadge,
+  SourceBadge,
+  StatusBadge,
+  formatBookingDate,
+  formatCreatedDate,
+  formatCreatedTime,
+  locationDetail,
+} from "@/components/dashboard/booking-cells";
+import { fetchContactDetail, updateContact } from "@/actions/contacts";
+import type {
+  ContactBooking,
+  ContactMembership,
+  ContactRaceReg,
+  ContactEduReg,
+} from "@/types/contact";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
 type Booking = ContactBooking;
+type Membership = ContactMembership;
 type RaceReg = ContactRaceReg;
 type EduReg = ContactEduReg;
 
@@ -30,6 +54,7 @@ type LoadState = {
   loading: boolean;
   notFound: boolean;
   bookings: Booking[];
+  memberships: Membership[];
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
 };
@@ -38,6 +63,7 @@ type LoadAction =
   | {
       type: "LOADED";
       bookings: Booking[];
+      memberships: Membership[];
       raceRegs: RaceReg[];
       eduRegs: EduReg[];
     }
@@ -47,6 +73,7 @@ const initialLoadState: LoadState = {
   loading: true,
   notFound: false,
   bookings: [],
+  memberships: [],
   raceRegs: [],
   eduRegs: [],
 };
@@ -58,6 +85,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         loading: false,
         notFound: false,
         bookings: action.bookings,
+        memberships: action.memberships,
         raceRegs: action.raceRegs,
         eduRegs: action.eduRegs,
       };
@@ -70,13 +98,17 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 
 // ─── Form reducer ─────────────────────────────────────────────
 
+type ContactErrors = FormErrors<typeof dashboardContactSchema>;
+
 type FormState = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
   newsletterSubscribed: boolean;
+  fieldErrors: ContactErrors;
   error: string | null;
   saving: boolean;
   deleting: boolean;
@@ -91,6 +123,7 @@ type FormAction =
       email: string;
       phone: string;
       language: string;
+      gender: GenderValue;
       newsletterSubscribed: boolean;
     }
   | {
@@ -98,8 +131,10 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
   | { type: "SAVING_START" }
   | { type: "SAVING_END" }
   | { type: "DELETING_START" }
@@ -112,7 +147,9 @@ const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  gender: "",
   newsletterSubscribed: false,
+  fieldErrors: {},
   error: null,
   saving: false,
   deleting: false,
@@ -129,12 +166,21 @@ function formReducer(state: FormState, action: FormAction): FormState {
         email: action.email,
         phone: action.phone,
         language: action.language,
+        gender: action.gender,
         newsletterSubscribed: action.newsletterSubscribed,
       };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "TOGGLE_NEWSLETTER":
       return { ...state, newsletterSubscribed: !state.newsletterSubscribed };
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, saving: false };
     case "SET_ERROR":
       return { ...state, error: action.error };
     case "SAVING_START":
@@ -153,32 +199,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 // ─── Shared helpers ───────────────────────────────────────────
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-50 text-yellow-700",
-  confirmed: "bg-green-50 text-green-700",
-  cancelled: "bg-red-50 text-red-600",
-};
-
-function StatusBadge({ status }: { status: string | null }) {
-  const s = status ?? "unknown";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[s] ?? "bg-sand-100 text-petroleum-500"}`}
-    >
-      {s}
-    </span>
-  );
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function RowSkeleton({ cols }: { cols: number }) {
   return (
@@ -248,7 +268,9 @@ function ContactDetailsCard({
   email,
   phone,
   language,
+  gender,
   newsletterSubscribed,
+  fieldErrors,
   loading,
   saving,
   dispatchForm,
@@ -258,7 +280,9 @@ function ContactDetailsCard({
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
   newsletterSubscribed: boolean;
+  fieldErrors: ContactErrors;
   loading: boolean;
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
@@ -295,6 +319,9 @@ function ContactDetailsCard({
                 className={INPUT_CLASS}
               />
             )}
+            {fieldErrors.firstName && (
+              <p className="text-xs text-red-500">{fieldErrors.firstName}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label
@@ -315,6 +342,9 @@ function ContactDetailsCard({
                 disabled={saving}
                 className={INPUT_CLASS}
               />
+            )}
+            {fieldErrors.lastName && (
+              <p className="text-xs text-red-500">{fieldErrors.lastName}</p>
             )}
           </div>
         </div>
@@ -339,6 +369,9 @@ function ContactDetailsCard({
               className={INPUT_CLASS}
             />
           )}
+          {fieldErrors.email && (
+            <p className="text-xs text-red-500">{fieldErrors.email}</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -359,6 +392,32 @@ function ContactDetailsCard({
               placeholder="+34 600 000 000"
               disabled={saving}
               className={INPUT_CLASS}
+            />
+          )}
+          {fieldErrors.phone && (
+            <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="gender"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            Gender
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <OptionSelect
+              id="gender"
+              value={gender}
+              options={GENDER_OPTIONS}
+              onChange={(next) =>
+                dispatchForm({ type: "SET_GENDER", gender: next })
+              }
+              disabled={saving}
+              ariaLabel="Gender"
             />
           )}
         </div>
@@ -429,28 +488,127 @@ function ContactDetailsCard({
   );
 }
 
-function BookingsSection({
+/**
+ * Everything this contact has transacted, in one list.
+ *
+ * There is no `transactions` table — the dashboard's transactions screen
+ * derives its rows from bookings, memberships and registrations, and this
+ * mirrors it for a single person, including the way it decides a status: a paid
+ * booking, or a confirmed one that was not refused, counts as completed.
+ *
+ * Rows without an amount are still transactions. Filtering them out hid drafts,
+ * memberships and registrations, which is most of what some contacts have.
+ */
+type TransactionRow = {
+  id: string;
+  kind: string;
+  title: string;
+  date: string | null;
+  amount: number | null;
+  status: string;
+  created_at: string | null;
+};
+
+function bookingStatus(b: Booking): string {
+  const paidOrConfirmed =
+    b.payment_status === "paid" ||
+    (b.status === "confirmed" &&
+      b.payment_status !== "failed" &&
+      b.payment_status !== "refunded");
+  return paidOrConfirmed ? "completed" : (b.payment_status ?? b.status ?? "—");
+}
+
+const TX_STATUS_STYLES: Record<string, string> = {
+  completed: "bg-green-50 text-green-700",
+  paid: "bg-green-50 text-green-700",
+  active: "bg-green-50 text-green-700",
+  confirmed: "bg-green-50 text-green-700",
+  failed: "bg-red-50 text-red-700",
+  refunded: "bg-red-50 text-red-700",
+  cancelled: "bg-red-50 text-red-700",
+};
+
+function TransactionsSection({
   loading,
   bookings,
+  memberships,
+  raceRegs,
+  eduRegs,
 }: {
   loading: boolean;
   bookings: Booking[];
+  memberships: Membership[];
+  raceRegs: RaceReg[];
+  eduRegs: EduReg[];
 }) {
+  const rows: TransactionRow[] = [
+    ...bookings.map((b) => ({
+      id: b.id,
+      kind: "Booking",
+      title: b.service_title ?? "—",
+      date: b.date,
+      amount: b.price_eur,
+      status: bookingStatus(b),
+      created_at: b.created_at,
+    })),
+    ...memberships.map((m) => ({
+      id: m.id,
+      kind: "Membership",
+      title: m.plan ?? "Membership",
+      date: m.start_date,
+      amount: null,
+      status: m.status ?? "—",
+      created_at: m.created_at,
+    })),
+    ...raceRegs.map((r) => ({
+      id: r.id,
+      kind: "Race",
+      title: r.race?.title ?? "—",
+      date: r.race?.date ?? r.created_at,
+      amount: null,
+      status: "confirmed",
+      created_at: r.created_at,
+    })),
+    ...eduRegs.map((r) => ({
+      id: r.id,
+      kind: "Education",
+      title: r.session?.title ?? "—",
+      date: r.session?.date ?? r.created_at,
+      amount: null,
+      status: "confirmed",
+      created_at: r.created_at,
+    })),
+  ].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+
+  const paidTotal = bookings
+    .filter((b) => b.payment_status === "paid")
+    .reduce((sum, b) => sum + (b.price_eur ?? 0), 0);
+
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Bookings
-      </h2>
+    <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-petroleum-500 text-sm font-semibold">
+          Transactions
+        </h2>
+        {!loading && paidTotal > 0 && (
+          <span className="text-petroleum-400 text-xs">
+            Paid to date{" "}
+            <span className="text-petroleum-700 font-medium">
+              {formatPrice(paidTotal, "en")}
+            </span>
+          </span>
+        )}
+      </div>
       {loading ? (
-        <RowSkeleton cols={4} />
-      ) : bookings.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">No bookings yet.</p>
+        <RowSkeleton cols={5} />
+      ) : rows.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">No transactions yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Service", "Date", "Time", "Status"].map((h) => (
+                {["Type", "Concept", "Date", "Amount", "Status"].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
@@ -461,25 +619,139 @@ function BookingsSection({
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b) => (
+              {rows.map((r) => (
                 <tr
-                  key={b.id}
+                  key={`${r.kind}-${r.id}`}
                   className="border-sand-50 border-b last:border-0"
                 >
+                  <td className="text-petroleum-400 py-3 pr-4 text-xs">
+                    {r.kind}
+                  </td>
                   <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                    {b.service_title ?? "—"}
+                    {r.title}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {formatDate(b.date)}
+                    {formatMediumDate(r.date)}
                   </td>
-                  <td className="text-petroleum-500 py-3 pr-4">
-                    {b.time ?? "—"}
+                  <td className="text-petroleum-700 py-3 pr-4">
+                    {r.amount == null ? "—" : formatPrice(r.amount, "en")}
                   </td>
-                  <td className="py-3">
-                    <StatusBadge status={b.status} />
+                  <td className="py-3 pr-4">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                        TX_STATUS_STYLES[r.status] ??
+                        "bg-sand-100 text-petroleum-500"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The same table as the bookings list, minus the client column — the page is
+ * already about one person. Rows link through to the booking, as they do there.
+ */
+function BookingsSection({
+  loading,
+  bookings,
+}: {
+  loading: boolean;
+  bookings: Booking[];
+}) {
+  const { push } = useRouter();
+
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        Bookings
+      </h2>
+      {loading ? (
+        <RowSkeleton cols={5} />
+      ) : bookings.length === 0 ? (
+        <p className="text-petroleum-300 text-sm">No bookings yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-sand-100 border-b text-left">
+                {[
+                  "Created",
+                  "Status",
+                  "Service",
+                  "Location",
+                  "Datetime",
+                  "Reserved by",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-petroleum-400 pr-4 pb-2.5 font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((b) => {
+                const detail = locationDetail(b.location, b.location_address);
+                return (
+                  <tr
+                    key={b.id}
+                    onClick={() => push(`/dashboard/bookings/${b.id}`)}
+                    className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
+                  >
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-500">
+                        {formatCreatedDate(b.created_at)}
+                      </p>
+                      <p className="text-petroleum-400 text-xs">
+                        {formatCreatedTime(b.created_at)}
+                      </p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <StatusBadge status={b.status} />
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-700 font-medium">
+                        {b.service_title ?? "—"}
+                      </p>
+                      {b.duration && (
+                        <p className="text-petroleum-400 text-xs">
+                          {b.duration}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <LocationBadge location={b.location} />
+                      {detail && (
+                        <p className="text-petroleum-400 mt-1 text-xs">
+                          {detail}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-500">
+                        {formatBookingDate(b.date)}
+                      </p>
+                      {b.time && (
+                        <p className="text-petroleum-400 text-xs">{b.time}</p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <SourceBadge role={b.created_by_role} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -529,13 +801,13 @@ function RaceRegsSection({
                     {r.race?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.race?.date ? formatDate(r.race.date) : "—"}
+                    {r.race?.date ? formatMediumDate(r.race.date) : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.race?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatDate(r.created_at)}
+                    {formatMediumDate(r.created_at)}
                   </td>
                 </tr>
               ))}
@@ -590,13 +862,13 @@ function EduRegsSection({
                     {r.session?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.session?.date ? formatDate(r.session.date) : "—"}
+                    {r.session?.date ? formatMediumDate(r.session.date) : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.session?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatDate(r.created_at)}
+                    {formatMediumDate(r.created_at)}
                   </td>
                 </tr>
               ))}
@@ -615,7 +887,8 @@ export default function ContactDetailPage() {
   const { push, back } = useRouter();
 
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
-  const { loading, notFound, bookings, raceRegs, eduRegs } = loadState;
+  const { loading, notFound, bookings, memberships, raceRegs, eduRegs } =
+    loadState;
 
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
   const {
@@ -624,7 +897,9 @@ export default function ContactDetailPage() {
     email,
     phone,
     language,
+    gender,
     newsletterSubscribed,
+    fieldErrors,
     error,
     saving,
     deleting,
@@ -635,13 +910,13 @@ export default function ContactDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const result = await fetchContactDetail(id);
+      const result = await fetchContactDetail(getAccessToken(), id);
       if (!result.found) {
         dispatch({ type: "NOT_FOUND" });
         return;
       }
 
-      const { contact, bookings, raceRegs, eduRegs } = result;
+      const { contact, bookings, memberships, raceRegs, eduRegs } = result;
       const initialNewsletter = contact.newsletter_subscribed ?? false;
       originalNewsletter.current = initialNewsletter;
       dispatchForm({
@@ -651,10 +926,11 @@ export default function ContactDetailPage() {
         email: contact.email ?? "",
         phone: contact.phone ?? "",
         language: contact.preferred_language ?? "en",
+        gender: contact.gender ?? "",
         newsletterSubscribed: initialNewsletter,
       });
 
-      dispatch({ type: "LOADED", bookings, raceRegs, eduRegs });
+      dispatch({ type: "LOADED", bookings, memberships, raceRegs, eduRegs });
     }
 
     void load();
@@ -664,22 +940,35 @@ export default function ContactDetailPage() {
     e.preventDefault();
     dispatchForm({ type: "SET_ERROR", error: null });
 
-    const trimmedFirst = firstName.trim();
-    if (!trimmedFirst) {
-      dispatchForm({ type: "SET_ERROR", error: "First name is required." });
+    const errors = parseErrors(dashboardContactSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatchForm({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
 
+    const trimmedFirst = firstName.trim();
+
     dispatchForm({ type: "SAVING_START" });
 
-    const { error: updateErrorMsg } = await updateContact(id, {
-      first_name: trimmedFirst,
-      last_name: lastName.trim() || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      preferred_language: language === "es" ? "es" : "en",
-      newsletter_subscribed: newsletterSubscribed,
-    });
+    const { error: updateErrorMsg } = await updateContact(
+      getAccessToken(),
+      id,
+      {
+        first_name: trimmedFirst,
+        last_name: lastName.trim() || null,
+        email: normalizeEmail(email),
+        phone: normalizePhone(phone),
+        preferred_language: language === "es" ? "es" : "en",
+        gender: toStoredGender(gender),
+        newsletter_subscribed: newsletterSubscribed,
+      },
+    );
 
     dispatchForm({ type: "SAVING_END" });
 
@@ -711,7 +1000,7 @@ export default function ContactDetailPage() {
 
   async function handleDelete() {
     dispatchForm({ type: "DELETING_START" });
-    const { error } = await deleteContact(id);
+    const { error } = await deleteContact(getAccessToken(), id);
     if (error) {
       dispatchForm({ type: "SET_ERROR", error });
       dispatchForm({ type: "CLOSE_DELETE" });
@@ -781,7 +1070,9 @@ export default function ContactDetailPage() {
           email={email}
           phone={phone}
           language={language}
+          gender={gender}
           newsletterSubscribed={newsletterSubscribed}
+          fieldErrors={fieldErrors}
           loading={loading}
           saving={saving}
           dispatchForm={dispatchForm}
@@ -789,6 +1080,13 @@ export default function ContactDetailPage() {
       </form>
 
       <div className="space-y-5">
+        <TransactionsSection
+          loading={loading}
+          bookings={bookings}
+          memberships={memberships}
+          raceRegs={raceRegs}
+          eduRegs={eduRegs}
+        />
         <BookingsSection loading={loading} bookings={bookings} />
         <RaceRegsSection loading={loading} raceRegs={raceRegs} />
         <EduRegsSection loading={loading} eduRegs={eduRegs} />

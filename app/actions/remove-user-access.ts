@@ -1,23 +1,28 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
 
+/** Demotes a user to `contact`, revoking dashboard access. Admin only. */
 export async function removeUserAccess(
+  accessToken: string | null,
   userId: string,
 ): Promise<{ error: string | null }> {
-  const serviceKey = process.env.INSFORGE_SERVICE_KEY;
-  if (!serviceKey) {
-    return { error: "INSFORGE_SERVICE_KEY no está configurada." };
+  let caller;
+  try {
+    caller = await requireRole(accessToken, ADMIN_ROLES);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: err.message };
+    throw err;
   }
 
-  const admin = createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: serviceKey,
-    isServerMode: true,
-  });
+  if (!userId) return { error: "Falta el identificador del usuario." };
+  if (userId === caller.userId) {
+    return { error: "No puedes revocar tu propio acceso." };
+  }
 
-  const { error } = await admin.database
-    .from("profiles")
+  const { error } = await getAdminClient()
+    .database.from("profiles")
     .update({ role: "contact" })
     .eq("id", userId);
 

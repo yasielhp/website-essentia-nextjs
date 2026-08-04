@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getRedsysStatus } from "@/actions/payment-status";
+import { getAccessToken } from "@/lib/client-session";
 
 export function PaymentGatewayTab() {
   const [status, setStatus] = useState<{
@@ -10,7 +11,7 @@ export function PaymentGatewayTab() {
   } | null>(null);
 
   useEffect(() => {
-    void getRedsysStatus().then((s) =>
+    void getRedsysStatus(getAccessToken()).then((s) =>
       setStatus({ connected: s.connected, environment: s.environment }),
     );
   }, []);

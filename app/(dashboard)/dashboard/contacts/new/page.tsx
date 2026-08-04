@@ -3,7 +3,20 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import {
+  dashboardContactSchema,
+  parseErrors,
+  type FormErrors,
+} from "@/lib/schemas";
+import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
+import type { ContactStatus } from "@/types/contact";
+import { OptionSelect } from "@/components/ui/option-select";
+import {
+  GENDER_OPTIONS,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -12,14 +25,19 @@ const INPUT_CLASS =
 // Reducer
 // ---------------------------------------------------------------------------
 
+type ContactErrors = FormErrors<typeof dashboardContactSchema>;
+
 type FormState = {
   submitting: boolean;
   error: string | null;
+  fieldErrors: ContactErrors;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   language: string;
+  gender: GenderValue;
+  status: ContactStatus;
 };
 
 type FormAction =
@@ -28,24 +46,40 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "language";
       value: string;
     }
+  | { type: "SET_STATUS"; status: ContactStatus }
+  | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
   | { type: "CLEAR_ERROR" };
 
 const initialFormState: FormState = {
   submitting: false,
   error: null,
+  fieldErrors: {},
   firstName: "",
   lastName: "",
   email: "",
   phone: "",
   language: "en",
+  gender: "",
+  status: "lead",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
+      return {
+        ...state,
+        [action.field]: action.value,
+        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
+      };
+    case "SET_FIELD_ERRORS":
+      return { ...state, fieldErrors: action.errors, submitting: false };
+    case "SET_STATUS":
+      return { ...state, status: action.status };
+    case "SET_GENDER":
+      return { ...state, gender: action.gender };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -62,37 +96,56 @@ function formReducer(state: FormState, action: FormAction): FormState {
 export default function NewContactPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialFormState);
-  const { submitting, error, firstName, lastName, email, phone, language } =
-    state;
+  const {
+    submitting,
+    error,
+    fieldErrors,
+    firstName,
+    lastName,
+    email,
+    phone,
+    language,
+    gender,
+    status,
+  } = state;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "CLEAR_ERROR" });
 
-    const trimmedFirst = firstName.trim();
-    const trimmedEmail = email.trim();
-
-    if (!trimmedFirst || !trimmedEmail) {
-      dispatch({
-        type: "SUBMIT_ERROR",
-        message: "First name and email are required.",
-      });
+    const errors = parseErrors(dashboardContactSchema, {
+      firstName,
+      lastName,
+      email,
+      phone,
+      gender,
+    });
+    if (Object.keys(errors).length > 0) {
+      dispatch({ type: "SET_FIELD_ERRORS", errors });
       return;
     }
 
     dispatch({ type: "SUBMIT_START" });
 
+    const trimmedFirst = firstName.trim();
+    const trimmedEmail = normalizeEmail(email);
+
+    // Upsert: the email may already belong to a lead who abandoned the booking
+    // form, in which case this updates that row rather than failing.
     const { error: insertError } = await insforge.database
       .from("contacts")
-      .insert([
+      .upsert(
         {
           first_name: trimmedFirst,
           last_name: lastName.trim() || null,
           email: trimmedEmail,
-          phone: phone.trim() || null,
+          phone: normalizePhone(phone),
           preferred_language: language === "es" ? "es" : "en",
+          gender: toStoredGender(gender),
+          status,
         },
-      ]);
+        { onConflict: "email" },
+      );
 
     if (insertError) {
       dispatch({
@@ -104,7 +157,7 @@ export default function NewContactPage() {
       return;
     }
 
-    push("/dashboard/contacts");
+    push("/dashboard/users");
   }
 
   return (
@@ -118,7 +171,7 @@ export default function NewContactPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="md" href="/dashboard/contacts">
+            <Button variant="outline" size="md" href="/dashboard/users">
               Cancel
             </Button>
             <Button
@@ -167,6 +220,11 @@ export default function NewContactPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
@@ -190,6 +248,11 @@ export default function NewContactPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-xs text-red-500">
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -215,6 +278,9 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -239,6 +305,55 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="gender"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Gender
+                </label>
+                <OptionSelect
+                  id="gender"
+                  value={gender}
+                  options={GENDER_OPTIONS}
+                  onChange={(next) =>
+                    dispatch({ type: "SET_GENDER", gender: next })
+                  }
+                  disabled={submitting}
+                  ariaLabel="Gender"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="status"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  Type
+                </label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_STATUS",
+                      status: e.target.value as ContactStatus,
+                    })
+                  }
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                >
+                  <option value="lead">Lead — no booking yet</option>
+                  <option value="client">Client — has booked</option>
+                  <option value="member">
+                    Member — can hold a subscription
+                  </option>
+                </select>
               </div>
 
               <div className="flex flex-col gap-1.5">

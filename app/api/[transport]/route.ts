@@ -1,6 +1,6 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
 import {
   bookableServices,
   manualTherapyTreatments,
@@ -14,13 +14,6 @@ import {
 
 const siteUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://www.essentiawellnessclub.com";
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
 
 type BusyInterval = { start: string; end: string };
 

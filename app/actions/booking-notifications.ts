@@ -1,6 +1,8 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
+import { getAdminClient } from "@/lib/insforge-admin";
+import { AuthError, requireRole } from "@/lib/auth-guard";
+import { getAppUrl } from "@/lib/env";
 import { sendEmail } from "@/emails/send";
 import { bookingReceivedEmail } from "@/emails/templates/booking-received";
 import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
@@ -37,12 +39,28 @@ function formatDate(dateStr: string, locale: "en" | "es" = "en"): string {
   );
 }
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
+/**
+ * Resolves the recipient from the booking row rather than trusting the caller.
+ *
+ * The public booking flow calls `notifyBooking` anonymously, so the payload is
+ * attacker-controlled. Sending to a caller-supplied address would turn this
+ * action into an open relay for mail signed by the Essentia domain.
+ */
+async function getBookingRecipient(
+  bookingId: string,
+): Promise<{ email: string; serviceId: string | null } | null> {
+  if (!bookingId) return null;
+  const { data } = await getAdminClient()
+    .database.from("bookings")
+    .select("email, service_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+  const row = data as {
+    email: string | null;
+    service_id: string | null;
+  } | null;
+  if (!row?.email) return null;
+  return { email: row.email, serviceId: row.service_id };
 }
 
 async function upsertContact(
@@ -86,27 +104,47 @@ async function getStaffEmail(serviceId: string): Promise<string | null> {
   );
 }
 
+/**
+ * Sends the client (and optionally staff) email for a booking event.
+ *
+ * `received` is reachable from the public booking flow, so it is allowed
+ * anonymously but the recipient is read from the booking row. Every other event
+ * is a staff operation and requires a dashboard role.
+ */
 export async function notifyBooking(
+  accessToken: string | null,
   payload: BookingNotificationPayload,
 ): Promise<void> {
   const {
     bookingId,
     event,
     clientName,
-    clientEmail,
     clientPhone,
     service,
-    serviceId,
     sessionType,
     duration,
     locale = "en",
   } = payload;
 
+  if (event !== "received") {
+    try {
+      await requireRole(accessToken);
+    } catch (err) {
+      if (err instanceof AuthError) return;
+      throw err;
+    }
+  }
+
+  const recipient = await getBookingRecipient(bookingId);
+  if (!recipient) return;
+
+  const clientEmail = recipient.email;
+  const serviceId = recipient.serviceId ?? payload.serviceId;
+
   const date = formatDate(payload.date, locale);
   const time = payload.time;
 
-  const dashboardUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://essentia.com";
+  const dashboardUrl = getAppUrl();
 
   // ── Client emails ──────────────────────────────────────────────
   const clientTemplates: Record<BookingNotificationEvent, () => string> = {

@@ -1,10 +1,18 @@
-export type Role = "admin" | "staff" | "partner" | "member" | "contact" | null;
+import type { Gender } from "@/types/person";
+
+/** A resolved role. Use this wherever the absence of a role is not meaningful. */
+export type UserRole = "admin" | "staff" | "partner" | "member" | "contact";
+
+/** A role that may still be loading or absent. */
+export type Role = UserRole | null;
 
 export type DetailsState = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  /** Empty string means the visitor left it unanswered. */
+  gender?: Gender | "";
   consent: boolean;
   notes?: string;
 };

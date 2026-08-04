@@ -1,14 +1,6 @@
 "use server";
 
-import { createClient } from "@insforge/sdk";
-
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-    isServerMode: true,
-  });
-}
+import { getAdminClient } from "@/lib/insforge-admin";
 
 function computeInitials(name: string): string {
   const parts = name
@@ -33,6 +25,11 @@ export async function submitReview(
 
   if (!name || !quote || !age) {
     return { error: "Name, age and review are required." };
+  }
+
+  // Public endpoint: cap field lengths so it cannot be used to bloat the table.
+  if (name.length > 120 || age.length > 20 || quote.length > 2000) {
+    return { error: "Some of the submitted values are too long." };
   }
 
   const db = getAdminClient();

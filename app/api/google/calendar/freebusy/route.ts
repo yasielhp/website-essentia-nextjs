@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@insforge/sdk";
 import {
   getValidAccessToken,
   getStaffServiceAccessToken,
   getFreeBusy,
 } from "@/lib/google-calendar";
+import {
+  listOtherConnectedServices,
+  listStaffWithCalendar,
+} from "@/services/calendar-config.service";
 
-function getAdminClient() {
-  return createClient({
-    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    anonKey: process.env.INSFORGE_SERVICE_KEY!,
-  });
-}
+/**
+ * GET /api/google/calendar/freebusy?service_id=…&date=YYYY-MM-DD
+ * GET /api/google/calendar/freebusy?service_id=…&start=…&end=…
+ *
+ * Busy intervals for a service. Intentionally public: the booking flow calls it
+ * for anonymous visitors. It returns only opaque start/end pairs — no titles,
+ * attendees or account addresses — and the date inputs are format-checked so
+ * the range cannot be widened arbitrarily.
+ */
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const serviceId = searchParams.get("service_id");
-  const date = searchParams.get("date"); // single day "YYYY-MM-DD"
-  const start = searchParams.get("start"); // range start "YYYY-MM-DD"
-  const end = searchParams.get("end"); // range end   "YYYY-MM-DD"
+  const date = searchParams.get("date");
+  const start = searchParams.get("start");
+  const end = searchParams.get("end");
 
   if (!serviceId || (!date && (!start || !end))) {
     return NextResponse.json(
@@ -27,84 +35,62 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const queryDate = date ?? start!;
-  const timeMax = date ? `${date}T23:59:59Z` : `${end}T23:59:59Z`;
+  const from = date ?? start!;
+  const to = date ?? end!;
+  if (!ISO_DATE.test(from) || !ISO_DATE.test(to)) {
+    return NextResponse.json(
+      { error: "Dates must be in YYYY-MM-DD format" },
+      { status: 400 },
+    );
+  }
+
+  const timeMax = `${to}T23:59:59Z`;
 
   try {
-    const adminClient = getAdminClient();
-    const allBusy: { start: string; end: string }[] = [];
+    const busyGroups: { start: string; end: string }[][] = [];
     let hasCalendar = false;
 
-    // 1. Service-level calendar (configured in Settings — primary source of events)
+    // 1. Service-level calendar — the primary source of events.
     const serviceToken = await getValidAccessToken(serviceId);
     if (serviceToken) {
       hasCalendar = true;
-      const busy = await getFreeBusy(
-        serviceToken,
-        "primary",
-        queryDate,
-        timeMax,
+      busyGroups.push(
+        await getFreeBusy(serviceToken, "primary", from, timeMax),
       );
-      allBusy.push(...busy);
     }
 
-    // 2. Staff-level calendars (staff assigned to this service)
-    const { data: staffRows } = await adminClient.database
-      .from("staff_services")
-      .select("staff_id, google_access_token")
-      .eq("service_id", serviceId)
-      .not("google_access_token", "is", null);
-
-    const assignedStaff = (
-      (staffRows ?? []) as {
-        staff_id: string;
-        google_access_token: string | null;
-      }[]
-    ).filter((r) => !!r.google_access_token);
-
-    if (assignedStaff.length > 0) {
+    // 2. Calendars of staff assigned to this service.
+    const staffIds = await listStaffWithCalendar(serviceId);
+    if (staffIds.length > 0) {
       hasCalendar = true;
-      await Promise.all(
-        assignedStaff.map(async ({ staff_id }) => {
-          const token = await getStaffServiceAccessToken(staff_id, serviceId);
-          if (!token) return;
-          const busy = await getFreeBusy(token, "primary", queryDate, timeMax);
-          allBusy.push(...busy);
+      const results = await Promise.all(
+        staffIds.map(async (staffId) => {
+          const token = await getStaffServiceAccessToken(staffId, serviceId);
+          if (!token) return [];
+          return getFreeBusy(token, "primary", from, timeMax);
         }),
       );
+      busyGroups.push(...results);
     }
 
-    // 3. Fallback: if this service has no calendar of its own, use any service
-    //    that has one — in a single-practitioner centre all slots are shared.
+    // 3. Fallback: in a single-practitioner centre every slot is shared, so a
+    //    service with no calendar of its own borrows another's availability.
     if (!hasCalendar) {
-      const { data: allConfigs } = await adminClient.database
-        .from("service_configs")
-        .select("service_id")
-        .not("google_access_token", "is", null)
-        .neq("service_id", serviceId)
-        .limit(5);
-
-      await Promise.all(
-        ((allConfigs ?? []) as { service_id: string }[]).map(
-          async ({ service_id }) => {
-            const token = await getValidAccessToken(service_id);
-            if (!token) return;
-            const busy = await getFreeBusy(
-              token,
-              "primary",
-              queryDate,
-              timeMax,
-            );
-            allBusy.push(...busy);
-          },
-        ),
+      const otherServiceIds = await listOtherConnectedServices(serviceId);
+      const results = await Promise.all(
+        otherServiceIds.map(async (id) => {
+          const token = await getValidAccessToken(id);
+          if (!token) return [];
+          return getFreeBusy(token, "primary", from, timeMax);
+        }),
       );
+      busyGroups.push(...results);
     }
 
-    return NextResponse.json({ busy: allBusy });
+    return NextResponse.json({ busy: busyGroups.flat() });
   } catch (err) {
     console.error("[google/calendar/freebusy] error:", err);
-    // Fail-open: return empty so the booking flow is not blocked
+    // Fail-open: an unavailable calendar must not block the booking flow.
     return NextResponse.json({ busy: [] });
   }
 }
