@@ -529,10 +529,11 @@ export default function BookingsPage() {
   } = appliedFilters;
 
   const [statusCounts, setStatusCounts] = useState<{
+    draft: number | null;
     pending: number | null;
     confirmed: number | null;
     cancelled: number | null;
-  }>({ pending: null, confirmed: null, cancelled: null });
+  }>({ draft: null, pending: null, confirmed: null, cancelled: null });
 
   useEffect(() => {
     // Wait until we know the staff's service list
@@ -555,11 +556,13 @@ export default function BookingsPage() {
     };
 
     void Promise.all([
+      makeQuery("draft"),
       makeQuery("pending"),
       makeQuery("confirmed"),
       makeQuery("cancelled"),
-    ]).then(([p, c, x]) =>
+    ]).then(([d, p, c, x]) =>
       setStatusCounts({
+        draft: (d as { count: number | null }).count ?? 0,
         pending: (p as { count: number | null }).count ?? 0,
         confirmed: (c as { count: number | null }).count ?? 0,
         cancelled: (x as { count: number | null }).count ?? 0,
@@ -702,7 +705,13 @@ export default function BookingsPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Ordered by lifecycle, matching the status filter. */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard
+          label="Draft"
+          value={statusCounts.draft ?? 0}
+          loading={statusCounts.draft === null}
+        />
         <StatCard
           label="Pending"
           value={statusCounts.pending ?? 0}
