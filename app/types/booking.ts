@@ -1,12 +1,7 @@
 /** Booking domain types shared by the dashboard, the public flow and actions. */
 
 export type BookingStatus =
-  | "draft"
-  | "pending"
-  | "confirmed"
-  | "cancelled"
-  | "completed"
-  | "paid";
+  "draft" | "pending" | "confirmed" | "cancelled" | "completed" | "paid";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 

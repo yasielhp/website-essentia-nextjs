@@ -4,6 +4,10 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Next 16.3 appends a generated block to CLAUDE.md on every `dev` run.
+  // This file is maintained by hand, so the generation is off and the tree
+  // stays clean; flip to `true` to opt back in.
+  agentRules: false,
   images: {
     remotePatterns: [
       {

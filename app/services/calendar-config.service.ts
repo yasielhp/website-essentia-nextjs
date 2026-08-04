@@ -89,8 +89,8 @@ export async function getConnectedEmails(
 
   const map: Record<string, string | null> = {};
   for (const row of (data as
-    | { service_id: string; google_connected_email: string | null }[]
-    | null) ?? []) {
+    { service_id: string; google_connected_email: string | null }[] | null) ??
+    []) {
     map[row.service_id] = row.google_connected_email;
   }
   return map;
@@ -127,8 +127,7 @@ export async function listStaffWithCalendar(
 
   return (
     (data as
-      | { staff_id: string; google_access_token: string | null }[]
-      | null) ?? []
+      { staff_id: string; google_access_token: string | null }[] | null) ?? []
   )
     .filter((r) => !!r.google_access_token)
     .map((r) => r.staff_id);

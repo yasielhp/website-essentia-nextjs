@@ -138,8 +138,7 @@ export default function AccountRacesPage() {
 
     const raceList =
       (racesRes.data as
-        | Omit<Race, "registrations_count" | "is_registered">[]
-        | null) ?? [];
+        Omit<Race, "registrations_count" | "is_registered">[] | null) ?? [];
     const myRaceIds = new Set(
       ((myRegsRes.data as { race_id: string }[] | null) ?? []).map(
         (r) => r.race_id,

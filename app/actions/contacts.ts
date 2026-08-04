@@ -167,12 +167,12 @@ export async function fetchContactDetail(
 
   const raceRows =
     (raceRegData as
-      | { id: string; created_at: string | null; race_id: string }[]
-      | null) ?? [];
+      { id: string; created_at: string | null; race_id: string }[] | null) ??
+    [];
   const eduRows =
     (eduRegData as
-      | { id: string; created_at: string | null; session_id: string }[]
-      | null) ?? [];
+      { id: string; created_at: string | null; session_id: string }[] | null) ??
+    [];
 
   const raceIds = raceRows.map((r) => r.race_id);
   const sessionIds = eduRows.map((r) => r.session_id);

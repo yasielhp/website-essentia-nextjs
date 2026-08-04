@@ -570,8 +570,7 @@ export default function TransactionsPage() {
       }
 
       for (const r of (educationRes.data as
-        | EducationRegistrationRow[]
-        | null) ?? []) {
+        EducationRegistrationRow[] | null) ?? []) {
         unified.push({
           id: r.id,
           type: "education",
