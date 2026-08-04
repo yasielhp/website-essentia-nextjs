@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import "../globals.css";
@@ -16,6 +17,13 @@ import { ScrollReset } from "@components/scroll-reset";
  * rather than from `params`. That keeps them dynamic, which is correct: every
  * page here is specific to the signed-in user and could never be prerendered.
  */
+
+export const metadata: Metadata = {
+  // Without a root layout above it any more, this area had no title at all and
+  // browsers fell back to showing the URL.
+  title: { default: "My account | Essentia", template: "%s | Essentia" },
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountLayout({
   children,
