@@ -366,7 +366,7 @@ function ServiceSelect({
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-9999 overflow-y-auto rounded-2xl border shadow-lg"
           >
             <ServiceItems
               services={services}
@@ -560,7 +560,7 @@ function TierSelect({
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-9999 overflow-y-auto rounded-2xl border shadow-lg"
           >
             <TierItems
               tiers={tiers}
@@ -687,7 +687,7 @@ function LocationSelect({
           <div
             ref={dropdownRef}
             style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
+            className="border-sand-300 bg-sand-50 animate-fade-in-down z-9999 overflow-hidden rounded-2xl border shadow-lg"
           >
             <div className="p-3">
               {locations.map(({ id, label, description, Icon }) => (
@@ -1482,7 +1482,7 @@ function NewBookingPageInner() {
                 Service
               </h2>
               {servicesLoading ? (
-                <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+                <div className="border-sand-200 bg-sand-50 h-18.5 animate-pulse rounded-2xl border" />
               ) : (
                 <ServiceSelect
                   services={sortedServices}
@@ -1805,7 +1805,7 @@ function NewBookingPageInner() {
                     Session type
                   </h2>
                   {tiersLoading ? (
-                    <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+                    <div className="border-sand-200 bg-sand-50 h-18.5 animate-pulse rounded-2xl border" />
                   ) : tiers.length === 0 ? (
                     <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
                       No session types configured for this service.
