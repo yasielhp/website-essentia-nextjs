@@ -110,8 +110,10 @@ export async function fetchContactDetail(
   const contact = (contacts as ContactDetail[] | null)?.[0];
   if (!contact) return { found: false };
 
+  // Mirrors the columns the bookings list shows, so a contact's table can be
+  // the same table minus the client column.
   const bookingFields =
-    "id, service_title, date, time, status, payment_status, price_eur, created_at";
+    "id, service_title, duration, date, time, location, location_address, status, payment_status, price_eur, created_by_role, created_at";
 
   const [
     { data: linkedBookings },

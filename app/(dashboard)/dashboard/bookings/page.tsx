@@ -8,6 +8,14 @@ import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
+import {
+  LocationBadge,
+  SOURCE_BADGE,
+  StatusBadge,
+  formatBookingDate,
+  formatCreatedDate,
+  formatCreatedTime,
+} from "@/components/dashboard/booking-cells";
 import { IconPlus, IconFilter, IconSettings } from "@/components/ui/icons";
 
 type Booking = {
@@ -51,80 +59,7 @@ const PAGE_SIZE = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-function formatBookingDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  const parts = dateStr.split("-").map(Number);
-  if (parts.length < 3) return dateStr;
-  const [y, m, d] = parts as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCreatedDate(isoStr: string | null): string {
-  if (!isoStr) return "—";
-  return new Date(isoStr).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCreatedTime(isoStr: string | null): string {
-  if (!isoStr) return "";
-  return new Date(isoStr).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 // ─── Badges ───────────────────────────────────────────────────
-
-const statusBadgeClasses: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-600",
-};
-
-function StatusBadge({ status }: { status: string | null }) {
-  const s = status ?? "unknown";
-  const cls = statusBadgeClasses[s] ?? "bg-sand-100 text-petroleum-500";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}
-    >
-      {s}
-    </span>
-  );
-}
-
-const locationLabels: Record<string, string> = {
-  centro: "At the center",
-  habitacion: "Room",
-  domicilio: "Home visit",
-};
-
-const locationBadgeClasses: Record<string, string> = {
-  centro: "bg-blue-50 text-blue-700",
-  habitacion: "bg-purple-50 text-purple-700",
-  domicilio: "bg-teal-50 text-teal-700",
-};
-
-function LocationBadge({ location }: { location: string | null }) {
-  if (!location) return <span className="text-petroleum-300">—</span>;
-  const label = locationLabels[location] ?? location;
-  const cls =
-    locationBadgeClasses[location] ?? "bg-sand-100 text-petroleum-500";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
@@ -454,14 +389,6 @@ function reducer(state: PageState, action: PageAction): PageState {
 // ─── Page ─────────────────────────────────────────────────────
 
 const COL_COUNT = 7;
-
-const SOURCE_BADGE: Record<string, { label: string; cls: string }> = {
-  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
-  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
-  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
-  client: { label: "Client", cls: "bg-green-50 text-green-700" },
-  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
-};
 
 export default function BookingsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);

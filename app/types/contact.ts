@@ -29,11 +29,15 @@ export type ContactDetail = {
 export type ContactBooking = {
   id: string;
   service_title: string | null;
+  duration: string | null;
   date: string | null;
   time: string | null;
+  location: string | null;
+  location_address: string | null;
   status: string | null;
   payment_status: string | null;
   price_eur: number | null;
+  created_by_role: string | null;
   created_at: string | null;
 };
 

@@ -23,6 +23,15 @@ import {
   type GenderValue,
 } from "@/constants/gender";
 import { formatMediumDate, formatPrice } from "@/utils/format";
+import {
+  LocationBadge,
+  SourceBadge,
+  StatusBadge,
+  formatBookingDate,
+  formatCreatedDate,
+  formatCreatedTime,
+  locationDetail,
+} from "@/components/dashboard/booking-cells";
 import { fetchContactDetail, updateContact } from "@/actions/contacts";
 import type {
   ContactBooking,
@@ -190,23 +199,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 // ─── Shared helpers ───────────────────────────────────────────
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-50 text-yellow-700",
-  confirmed: "bg-green-50 text-green-700",
-  cancelled: "bg-red-50 text-red-600",
-};
-
-function StatusBadge({ status }: { status: string | null }) {
-  const s = status ?? "unknown";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[s] ?? "bg-sand-100 text-petroleum-500"}`}
-    >
-      {s}
-    </span>
-  );
-}
 
 function RowSkeleton({ cols }: { cols: number }) {
   return (
@@ -664,6 +656,10 @@ function TransactionsSection({
   );
 }
 
+/**
+ * The same table as the bookings list, minus the client column — the page is
+ * already about one person. Rows link through to the booking, as they do there.
+ */
 function BookingsSection({
   loading,
   bookings,
@@ -671,21 +667,30 @@ function BookingsSection({
   loading: boolean;
   bookings: Booking[];
 }) {
+  const { push } = useRouter();
+
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
         Bookings
       </h2>
       {loading ? (
-        <RowSkeleton cols={4} />
+        <RowSkeleton cols={5} />
       ) : bookings.length === 0 ? (
         <p className="text-petroleum-300 text-sm">No bookings yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Service", "Date", "Time", "Status"].map((h) => (
+                {[
+                  "Created",
+                  "Status",
+                  "Service",
+                  "Location",
+                  "Datetime",
+                  "Reserved by",
+                ].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
@@ -696,25 +701,57 @@ function BookingsSection({
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b) => (
-                <tr
-                  key={b.id}
-                  className="border-sand-50 border-b last:border-0"
-                >
-                  <td className="text-petroleum-700 py-3 pr-4 font-medium">
-                    {b.service_title ?? "—"}
-                  </td>
-                  <td className="text-petroleum-500 py-3 pr-4">
-                    {formatMediumDate(b.date)}
-                  </td>
-                  <td className="text-petroleum-500 py-3 pr-4">
-                    {b.time ?? "—"}
-                  </td>
-                  <td className="py-3">
-                    <StatusBadge status={b.status} />
-                  </td>
-                </tr>
-              ))}
+              {bookings.map((b) => {
+                const detail = locationDetail(b.location, b.location_address);
+                return (
+                  <tr
+                    key={b.id}
+                    onClick={() => push(`/dashboard/bookings/${b.id}`)}
+                    className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
+                  >
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-500">
+                        {formatCreatedDate(b.created_at)}
+                      </p>
+                      <p className="text-petroleum-400 text-xs">
+                        {formatCreatedTime(b.created_at)}
+                      </p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <StatusBadge status={b.status} />
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-700 font-medium">
+                        {b.service_title ?? "—"}
+                      </p>
+                      {b.duration && (
+                        <p className="text-petroleum-400 text-xs">
+                          {b.duration}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <LocationBadge location={b.location} />
+                      {detail && (
+                        <p className="text-petroleum-400 mt-1 text-xs">
+                          {detail}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-petroleum-500">
+                        {formatBookingDate(b.date)}
+                      </p>
+                      {b.time && (
+                        <p className="text-petroleum-400 text-xs">{b.time}</p>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <SourceBadge role={b.created_by_role} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
