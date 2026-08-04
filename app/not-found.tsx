@@ -1,14 +1,26 @@
-import { getLocale } from "next-intl/server";
+"use client";
+
+import { useSyncExternalStore } from "react";
 import { Button } from "@components/ui/button";
 
-export default async function NotFound() {
-  let locale = "en";
-  try {
-    locale = await getLocale();
-  } catch {
-    // fuera del contexto next-intl → inglés por defecto
-  }
-  const isEs = locale === "es";
+/**
+ * The global 404.
+ *
+ * Next.js includes this file in the tree of every route, so reading the locale
+ * from the request here made all 38 public pages dynamic — a page that renders
+ * only on a miss was deciding how the whole site is served.
+ *
+ * The locale comes from the cookie on the client instead, the same way
+ * `error.tsx` already does it. The first paint is English and it corrects
+ * itself on hydration, which is the right trade for a page nobody should
+ * reach.
+ */
+export default function NotFound() {
+  const isEs = useSyncExternalStore(
+    () => () => {},
+    () => /(?:^|;\s*)NEXT_LOCALE=es(?:;|$)/.test(document.cookie),
+    () => false,
+  );
 
   return (
     <section className="bg-petroleum-700 relative flex min-h-[calc(100svh-140px)] flex-col items-center justify-center overflow-hidden px-5 py-20">

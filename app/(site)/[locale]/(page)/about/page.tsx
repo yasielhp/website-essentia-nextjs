@@ -1,0 +1,40 @@
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getOgImage } from "@/constants/metadata";
+import AboutSection from "@components/sections/about/about-section";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "about.meta" });
+  return {
+    title: { absolute: t("title") },
+    description: t("description"),
+    alternates: {
+      canonical: locale === "es" ? "/es/nosotros" : "/about",
+      languages: {
+        en: "/about",
+        es: "/es/nosotros",
+        "x-default": "/about",
+      },
+    },
+    openGraph: {
+      locale: locale === "es" ? "es_ES" : "en_US",
+      images: getOgImage(locale),
+    },
+  };
+}
+
+export default async function AboutPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  return <AboutSection />;
+}
