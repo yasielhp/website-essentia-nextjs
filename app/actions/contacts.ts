@@ -12,15 +12,6 @@ import type {
   UpdateContactPayload,
 } from "@/types/contact";
 
-export type {
-  ContactBooking,
-  ContactDetail,
-  ContactDetailResult,
-  ContactEduReg,
-  ContactRaceReg,
-  ContactRow,
-};
-
 /**
  * Contact directory. Every function here reads or writes personal data with the
  * service key, so all of them require a dashboard role — these actions are

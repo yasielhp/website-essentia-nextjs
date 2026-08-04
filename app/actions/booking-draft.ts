@@ -4,8 +4,6 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import type { UpdateBookingPayload } from "@/types/booking";
 
-export type { UpdateBookingPayload };
-
 /**
  * Booking mutations.
  *

@@ -5,8 +5,6 @@ import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
 import { publicEnv, serverEnv } from "@/lib/env";
 import type { UpdateUserProfileInput } from "@/types/user";
 
-export type { UpdateUserProfileInput };
-
 /**
  * Updates a staff profile, optionally changing the auth email. Admin only.
  *

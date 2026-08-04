@@ -11,13 +11,12 @@ import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
 import { formatMediumDate } from "@/utils/format";
-import {
-  fetchContactDetail,
-  updateContact,
-  type ContactBooking,
-  type ContactRaceReg,
-  type ContactEduReg,
-} from "@/actions/contacts";
+import { fetchContactDetail, updateContact } from "@/actions/contacts";
+import type {
+  ContactBooking,
+  ContactRaceReg,
+  ContactEduReg,
+} from "@/types/contact";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";

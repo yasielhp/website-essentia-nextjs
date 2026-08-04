@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { formatMediumDate } from "@/utils/format";
 import { getAccessToken } from "@/lib/client-session";
-import {
-  fetchContacts,
-  fetchContactRoleCounts,
-  type ContactRow,
-} from "@/actions/contacts";
+import { fetchContacts, fetchContactRoleCounts } from "@/actions/contacts";
+import type { ContactRow } from "@/types/contact";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
