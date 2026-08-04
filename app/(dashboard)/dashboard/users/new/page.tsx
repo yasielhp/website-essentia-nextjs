@@ -152,7 +152,8 @@ export default function NewUserPage() {
     dispatch({ type: "SUBMIT_START" });
 
     const trimFirst = firstName.trim();
-    const trimEmail = normalizeEmail(email) ?? "";
+    const normalizedEmail = normalizeEmail(email);
+    const trimEmail = normalizedEmail ?? "";
     const trimPhone = normalizePhone(phone);
     const fullName = [trimFirst, lastName.trim()].filter(Boolean).join(" ");
 
@@ -169,7 +170,7 @@ export default function NewUserPage() {
           {
             first_name: trimFirst,
             last_name: lastName.trim() || null,
-            email: trimEmail,
+            email: normalizedEmail,
             phone: trimPhone,
             gender: toStoredGender(gender),
             status: "client",

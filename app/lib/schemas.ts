@@ -61,11 +61,33 @@ export const dashboardContactSchema = z.object({
     }),
 });
 
-/** The "new user" screen, which can also create a contact. */
-export const newDashboardPersonSchema = z.object({
-  ...personFields,
-  role: z.enum(["admin", "staff", "partner", "client", "member"]),
-});
+/**
+ * The "new user" screen, which can also create a contact.
+ *
+ * An account needs an email to sign in with; a contact does not. Walk-in
+ * clients without an address are real — two of them shared a placeholder
+ * address in the database until it was cleared.
+ */
+export const newDashboardPersonSchema = z
+  .object({
+    ...personFields,
+    email: z.string().trim(),
+    role: z.enum(["admin", "staff", "partner", "client", "member"]),
+  })
+  .superRefine((value, ctx) => {
+    const isAccount = ["admin", "staff", "partner"].includes(value.role);
+    if (!isAccount && value.email === "") return;
+
+    if (!z.string().email().safeParse(value.email).success) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["email"],
+        message: isAccount
+          ? "An account needs a valid email address to sign in with"
+          : "Enter a valid email address",
+      });
+    }
+  });
 
 export const locationAddressSchema = z.object({
   street: z.string().min(1, "Street is required"),
