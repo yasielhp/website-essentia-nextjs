@@ -215,9 +215,16 @@ export default function UsersPage() {
   const [roleCounts, setRoleCounts] = useState<{
     leads: number | null;
     clients: number | null;
+    members: number | null;
     staff: number | null;
     partner: number | null;
-  }>({ leads: null, clients: null, staff: null, partner: null });
+  }>({
+    leads: null,
+    clients: null,
+    members: null,
+    staff: null,
+    partner: null,
+  });
 
   const [appliedFilter, setAppliedFilter] =
     useState<UserFilter>(emptyUserFilter);
@@ -284,10 +291,17 @@ export default function UsersPage() {
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("role", "partner"),
-    ]).then(([contactCounts, staff, partner]) => {
+      // Members are active `memberships` rows, not a profile role — this
+      // mirrors the count shown on the Members screen.
+      insforge.database
+        .from("memberships")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active"),
+    ]).then(([contactCounts, staff, partner, members]) => {
       setRoleCounts({
         leads: contactCounts.leads,
         clients: contactCounts.clients,
+        members: (members as { count: number | null }).count ?? 0,
         staff: (staff as { count: number | null }).count ?? 0,
         partner: (partner as { count: number | null }).count ?? 0,
       });
@@ -352,7 +366,7 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label="Leads"
           value={roleCounts.leads ?? 0}
@@ -362,6 +376,11 @@ export default function UsersPage() {
           label="Clients"
           value={roleCounts.clients ?? 0}
           loading={roleCounts.clients === null}
+        />
+        <StatCard
+          label="Members"
+          value={roleCounts.members ?? 0}
+          loading={roleCounts.members === null}
         />
         <StatCard
           label="Staff"
