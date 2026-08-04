@@ -8,7 +8,7 @@ import { displayEmail, displayPhone } from "@/utils/contact";
 import { genderLabel } from "@/constants/gender";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchContacts, fetchContactRoleCounts } from "@/actions/contacts";
-import type { ContactRow } from "@/types/contact";
+import type { ContactRow, ContactStatus } from "@/types/contact";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
@@ -243,28 +243,46 @@ export default function UsersPage() {
   }
   function applyFilters() {
     setAppliedFilter(pendingFilter);
+    dispatchContacts({ type: "SET_PAGE", page: 0 });
     setFilterOpen(false);
   }
   function clearFilters() {
     setAppliedFilter(emptyUserFilter);
     setPendingFilter(emptyUserFilter);
+    dispatchContacts({ type: "SET_PAGE", page: 0 });
     setFilterOpen(false);
   }
 
+  // Contact statuses are filtered by the database; the three account roles live
+  // in `profiles` and are filtered from the fully-loaded system list below.
+  const contactStatusFilter: ContactStatus | undefined =
+    appliedFilter.role === "lead" || appliedFilter.role === "client"
+      ? appliedFilter.role
+      : undefined;
+  const accountRoleFilter = ["admin", "staff", "partner"].includes(
+    appliedFilter.role,
+  )
+    ? appliedFilter.role
+    : null;
+
   // ── Load contacts ──
-  const loadContacts = useCallback(async (page: number) => {
-    dispatchContacts({ type: "SET_LOADING" });
-    const { contacts, total } = await fetchContacts(
-      getAccessToken(),
-      page,
-      PAGE_SIZE,
-    );
-    dispatchContacts({ type: "LOADED", contacts, total });
-  }, []);
+  const loadContacts = useCallback(
+    async (page: number, status: ContactStatus | undefined) => {
+      dispatchContacts({ type: "SET_LOADING" });
+      const { contacts, total } = await fetchContacts(
+        getAccessToken(),
+        page,
+        PAGE_SIZE,
+        status,
+      );
+      dispatchContacts({ type: "LOADED", contacts, total });
+    },
+    [],
+  );
 
   useEffect(() => {
-    void loadContacts(contacts.page);
-  }, [loadContacts, contacts.page]);
+    void loadContacts(contacts.page, contactStatusFilter);
+  }, [loadContacts, contacts.page, contactStatusFilter]);
 
   // ── Load system users (eager) ──
   useEffect(() => {
@@ -339,13 +357,17 @@ export default function UsersPage() {
     href: `/dashboard/contacts/${c.id}`,
   }));
 
-  const displayRows: DisplayRow[] = isFirstPage
-    ? [...systemRows, ...contactRows]
-    : contactRows;
+  // Filtering by an account role hides contacts entirely, and vice versa: the
+  // two live in different tables and a page of one cannot contain the other.
+  const displayRows: DisplayRow[] = accountRoleFilter
+    ? systemRows.filter((r) => r.role === accountRoleFilter)
+    : contactStatusFilter
+      ? contactRows
+      : isFirstPage
+        ? [...systemRows, ...contactRows]
+        : contactRows;
 
-  const filteredRows = appliedFilter.role
-    ? displayRows.filter((r) => r.role === appliedFilter.role)
-    : displayRows;
+  const filteredRows = displayRows;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -570,7 +592,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {contacts.total > PAGE_SIZE && (
+      {!accountRoleFilter && contacts.total > PAGE_SIZE && (
         <div className="border-sand-200 mt-4 rounded-2xl border bg-white">
           <Pagination
             page={contacts.page}

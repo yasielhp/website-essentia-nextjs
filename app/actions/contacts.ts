@@ -4,6 +4,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
 import type {
   ContactBooking,
+  ContactStatus,
   ContactDetail,
   ContactDetailResult,
   ContactRow,
@@ -16,10 +17,19 @@ import type {
  * public HTTP endpoints and previously exposed the whole contact database.
  */
 
+/**
+ * A page of contacts, optionally narrowed to one status.
+ *
+ * The status filter belongs here rather than in the component: the list is
+ * paginated server-side, so filtering the fetched page would only ever search
+ * the 20 rows on screen. A single lead sitting on page 4 looked like no lead
+ * at all.
+ */
 export async function fetchContacts(
   accessToken: string | null,
   page: number,
   pageSize: number,
+  status?: ContactStatus,
 ): Promise<{ contacts: ContactRow[]; total: number }> {
   try {
     await requireRole(accessToken);
@@ -31,14 +41,22 @@ export async function fetchContacts(
   const safePage = Math.max(0, Math.floor(page));
   const safeSize = Math.min(Math.max(1, Math.floor(pageSize)), 200);
 
-  const { data, count } = await getAdminClient()
+  let query = getAdminClient()
     .database.from("contacts")
     .select(
       "id, first_name, last_name, email, phone, gender, status, created_at",
-      {
-        count: "exact",
-      },
-    )
+      { count: "exact" },
+    );
+
+  // Rows created before the column existed carry NULL, which the dashboard
+  // shows as a lead — the count query treats them the same way.
+  if (status === "lead") {
+    query = query.or("status.eq.lead,status.is.null");
+  } else if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, count } = await query
     .order("created_at", { ascending: false })
     .range(safePage * safeSize, safePage * safeSize + safeSize - 1);
 
