@@ -173,9 +173,9 @@ function FilterModal({
               <option value="">All</option>
               <option value="lead">Lead</option>
               <option value="client">Client</option>
-              <option value="admin">Admin</option>
               <option value="staff">Staff</option>
               <option value="partner">Partner</option>
+              <option value="admin">Admin</option>
             </select>
           </label>
         </div>

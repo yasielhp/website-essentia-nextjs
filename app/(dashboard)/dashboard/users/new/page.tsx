@@ -79,15 +79,15 @@ function formReducer(state: FormState, action: FormAction): FormState {
 // ─── Page ─────────────────────────────────────────────────────
 
 const ROLES: SelectOption<NewUserKind>[] = [
-  { value: "admin", label: "Admin", desc: "Full dashboard access" },
-  { value: "staff", label: "Staff", desc: "Dashboard access" },
-  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
   { value: "client", label: "Client", desc: "Contact record, no login" },
   {
     value: "member",
     label: "Member",
     desc: "Contact record, then choose a plan",
   },
+  { value: "staff", label: "Staff", desc: "Dashboard access" },
+  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
 ];
 
 export default function NewUserPage() {
