@@ -5,7 +5,7 @@ import BookingSection from "@components/sections/booking/booking-section";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("booking.meta");
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     description: t("description"),
   };
 }

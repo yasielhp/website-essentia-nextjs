@@ -113,7 +113,7 @@ export async function generateMetadata({
   const image = post.seo_og_image_url ?? post.cover_image_url ?? undefined;
 
   return {
-    title: `${title} | ${t("titleSuffix")}`,
+    title: { absolute: `${title} | ${t("titleSuffix")}` },
     description,
     openGraph: {
       title,

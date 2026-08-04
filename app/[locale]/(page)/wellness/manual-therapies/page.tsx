@@ -4,7 +4,12 @@ import TreatmentSection from "@components/sections/wellness/treatment/treatment-
 import { treatments } from "@components/sections/wellness/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
+import { bookableServices } from "@/data/services-data";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  medicalTherapySchema,
+} from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
 
 export async function generateMetadata({
@@ -41,6 +46,7 @@ export async function generateMetadata({
 export default async function ManualTherapiesPage() {
   const t = await getTranslations("wellness.pages");
   const faqs = serviceFaqs["manual-therapies"];
+  const service = bookableServices.find((s) => s.id === "manual-therapies");
   return (
     <>
       <script
@@ -62,6 +68,19 @@ export default async function ManualTherapiesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(faqPageSchema(faqs)),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            medicalTherapySchema({
+              name: service?.title ?? "manual-therapies",
+              description: service?.description ?? "",
+              url: "/wellness/manual-therapies",
+              category: "wellness",
+            }),
+          ),
         }}
       />
       <TreatmentSection data={treatments["manual-therapies"]} />

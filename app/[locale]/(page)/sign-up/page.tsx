@@ -5,7 +5,7 @@ import SignUpForm from "@components/auth/sign-up-form";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.signUp.meta");
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     robots: { index: false, follow: false },
   };
 }

@@ -5,7 +5,7 @@ import RunRegisterSection from "@components/sections/experiences/run-register-se
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("experiences.runningClub.register.meta");
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     description: t("description"),
   };
 }

@@ -6,7 +6,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const isEs = locale === "es";
 
   return {
-    title: isEs ? "Aviso Legal | Essentia" : "Legal Notice | Essentia",
+    title: {
+      absolute: isEs ? "Aviso Legal | Essentia" : "Legal Notice | Essentia",
+    },
     description: isEs
       ? "Aviso legal e información regulatoria de Essentia Social Wellness Club, ubicado en Costa Adeje, Tenerife."
       : "Legal notice and regulatory information for Essentia Social Wellness Club, located in Costa Adeje, Tenerife.",

@@ -16,7 +16,7 @@ export async function generateMetadata({
     namespace: "experiences.runningClub.meta",
   });
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     description: t("description"),
     alternates: {
       canonical:

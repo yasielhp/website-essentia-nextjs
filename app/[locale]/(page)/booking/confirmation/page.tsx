@@ -6,7 +6,7 @@ import { ConfirmationContent } from "./confirmation-content";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("booking.confirmation");
   return {
-    title: t("heading"),
+    title: { absolute: t("heading") },
     description: t("body"),
     robots: { index: false, follow: false },
   };

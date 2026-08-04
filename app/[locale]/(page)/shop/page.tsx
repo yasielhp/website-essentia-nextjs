@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
 import { getLocale } from "next-intl/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -6,7 +7,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const isEs = locale === "es";
 
   return {
-    title: isEs ? "Tienda | Essentia Wellness" : "Shop | Essentia Wellness",
+    robots: UNLAUNCHED_ROBOTS,
+    title: {
+      absolute: isEs
+        ? "Tienda | Essentia Wellness"
+        : "Shop | Essentia Wellness",
+    },
     description: isEs
       ? "Productos de bienestar y longevidad seleccionados por el equipo experto de Essentia para potenciar tu salud."
       : "Shop premium wellness and longevity products curated by Essentia's expert team to enhance your health routine.",

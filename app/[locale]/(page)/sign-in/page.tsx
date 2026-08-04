@@ -5,7 +5,7 @@ import SignInForm from "@components/auth/sign-in-form";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.signIn.meta");
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     robots: { index: false, follow: false },
   };
 }
