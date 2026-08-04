@@ -493,11 +493,15 @@ function ContactDetailsCard({
  *
  * There is no `transactions` table — the dashboard's transactions screen
  * derives its rows from bookings, memberships and registrations, and this
- * mirrors it for a single person, including the way it decides a status: a paid
- * booking, or a confirmed one that was not refused, counts as completed.
+ * mirrors it for a single person.
  *
  * Rows without an amount are still transactions. Filtering them out hid drafts,
  * memberships and registrations, which is most of what some contacts have.
+ *
+ * The status is the payment's, not the appointment's. Counting a confirmed
+ * booking as "completed" marked all 77 of them settled while every
+ * `payment_status` in the database is still `pending` — a column of money
+ * saying it had been collected when none of it had.
  */
 type TransactionRow = {
   id: string;
@@ -510,12 +514,11 @@ type TransactionRow = {
 };
 
 function bookingStatus(b: Booking): string {
-  const paidOrConfirmed =
-    b.payment_status === "paid" ||
-    (b.status === "confirmed" &&
-      b.payment_status !== "failed" &&
-      b.payment_status !== "refunded");
-  return paidOrConfirmed ? "completed" : (b.payment_status ?? b.status ?? "—");
+  if (b.payment_status === "paid") return "completed";
+  // A cancelled appointment is not a pending charge, whatever the payment row
+  // still says.
+  if (b.status === "cancelled") return "cancelled";
+  return b.payment_status ?? "—";
 }
 
 const TX_STATUS_STYLES: Record<string, string> = {
