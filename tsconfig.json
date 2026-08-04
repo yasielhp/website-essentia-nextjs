@@ -18,13 +18,12 @@
         "name": "next"
       }
     ],
-    "baseUrl": "./app",
     "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["components/*"],
-      "@data/*": ["data/*"],
-      "@lib/*": ["lib/*"],
-      "@sections/*": ["components/sections/*"]
+      "@/*": ["./app/*"],
+      "@components/*": ["./app/components/*"],
+      "@data/*": ["./app/data/*"],
+      "@lib/*": ["./app/lib/*"],
+      "@sections/*": ["./app/components/sections/*"]
     }
   },
   "include": [
