@@ -18,7 +18,7 @@ import type {
  */
 
 /**
- * A page of contacts, optionally narrowed to one status.
+ * A page of contacts, optionally narrowed by status and email.
  *
  * The status filter belongs here rather than in the component: the list is
  * paginated server-side, so filtering the fetched page would only ever search
@@ -30,6 +30,7 @@ export async function fetchContacts(
   page: number,
   pageSize: number,
   status?: ContactStatus,
+  email?: string,
 ): Promise<{ contacts: ContactRow[]; total: number }> {
   try {
     await requireRole(accessToken);
@@ -54,6 +55,15 @@ export async function fetchContacts(
     query = query.or("status.eq.lead,status.is.null");
   } else if (status) {
     query = query.eq("status", status);
+  }
+
+  // Matching here rather than over the fetched page, for the same reason the
+  // status filter lives here: an address on page 4 is invisible to a filter
+  // that only sees page 1. `*` would widen the pattern beyond what was typed,
+  // so it is stripped.
+  const term = email?.trim().replace(/\*/g, "");
+  if (term) {
+    query = query.ilike("email", `*${term}*`);
   }
 
   const { data, count } = await query

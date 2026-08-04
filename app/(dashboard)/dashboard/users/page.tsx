@@ -75,8 +75,8 @@ function AvatarFallback() {
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
-type UserFilter = { role: string };
-const emptyUserFilter: UserFilter = { role: "" };
+type UserFilter = { role: string; email: string };
+const emptyUserFilter: UserFilter = { role: "", email: "" };
 
 // ─── Contacts state ───────────────────────────────────────────
 
@@ -167,6 +167,18 @@ function FilterModal({
           </button>
         </div>
         <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-petroleum-400 text-xs font-medium">
+              Email
+            </span>
+            <input
+              type="search"
+              value={pending.email}
+              onChange={(e) => onChange("email", e.target.value)}
+              placeholder="jane@example.com"
+              className={fieldCls}
+            />
+          </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">Role</span>
             <select
@@ -267,13 +279,14 @@ export default function UsersPage() {
 
   // ── Load contacts ──
   const loadContacts = useCallback(
-    async (page: number, status: ContactStatus | undefined) => {
+    async (page: number, status: ContactStatus | undefined, email: string) => {
       dispatchContacts({ type: "SET_LOADING" });
       const { contacts, total } = await fetchContacts(
         getAccessToken(),
         page,
         PAGE_SIZE,
         status,
+        email,
       );
       dispatchContacts({ type: "LOADED", contacts, total });
     },
@@ -281,8 +294,8 @@ export default function UsersPage() {
   );
 
   useEffect(() => {
-    void loadContacts(contacts.page, contactStatusFilter);
-  }, [loadContacts, contacts.page, contactStatusFilter]);
+    void loadContacts(contacts.page, contactStatusFilter, appliedFilter.email);
+  }, [loadContacts, contacts.page, contactStatusFilter, appliedFilter.email]);
 
   // ── Load system users (eager) ──
   useEffect(() => {
@@ -359,9 +372,16 @@ export default function UsersPage() {
 
   // Filtering by an account role hides contacts entirely, and vice versa: the
   // two live in different tables and a page of one cannot contain the other.
+  const emailFilter = appliedFilter.email.trim();
+
   const displayRows: DisplayRow[] = accountRoleFilter
-    ? systemRows.filter((r) => r.role === accountRoleFilter)
-    : contactStatusFilter
+    ? systemRows.filter(
+        (r) =>
+          r.role === accountRoleFilter &&
+          (!emailFilter ||
+            (r.email ?? "").toLowerCase().includes(emailFilter.toLowerCase())),
+      )
+    : contactStatusFilter || emailFilter
       ? contactRows
       : isFirstPage
         ? [...systemRows, ...contactRows]
