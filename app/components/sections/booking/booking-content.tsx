@@ -526,19 +526,27 @@ function BookingContentInner() {
         return;
       }
 
-      const { data: contactUuid } = await insforge.database.rpc(
-        "upsert_contact",
-        {
+      const { data: contactUuid, error: contactError } =
+        await insforge.database.rpc("upsert_contact", {
           p_email: details.email,
           p_first_name: details.firstName,
           p_last_name: details.lastName,
           p_phone: details.phone,
           p_language: locale,
           p_gender: details.gender || null,
-        },
-      );
+        });
 
-      if (contactUuid) {
+      // Never swallow this. A failure here used to pass unnoticed and the draft
+      // was written with no contact attached, which is how orphaned drafts —
+      // and missing leads — accumulated. The booking still proceeds, because a
+      // bookkeeping problem must not cost a customer their appointment, but it
+      // is recorded loudly enough to be found.
+      if (contactError || !contactUuid) {
+        console.error(
+          "[booking] upsert_contact failed; the draft will have no contact:",
+          contactError ?? "no id returned",
+        );
+      } else {
         resolvedContactId = contactUuid as string;
         setContactId(contactUuid as string);
       }
