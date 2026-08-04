@@ -66,6 +66,21 @@ type FormAction =
   | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
   | { type: "CLEAR_ERROR" };
 
+const ROLES: SelectOption<NewUserKind>[] = [
+  { value: "client", label: "Client", desc: "Contact record, no login" },
+  {
+    value: "member",
+    label: "Member",
+    desc: "Entitled to a subscription",
+  },
+  { value: "staff", label: "Staff", desc: "Dashboard access" },
+  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
+  { value: "admin", label: "Admin", desc: "Full dashboard access" },
+];
+
+/** Keeps the default in step with whatever ROLES lists first. */
+const ROLES_DEFAULT: NewUserKind = ROLES[0]!.value;
+
 const initialState: FormState = {
   submitting: false,
   error: null,
@@ -75,7 +90,9 @@ const initialState: FormState = {
   email: "",
   phone: "",
   gender: "",
-  role: "staff",
+  // The first option in ROLES, so the form opens on what the list shows first
+  // rather than on a different choice further down.
+  role: ROLES_DEFAULT,
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -104,18 +121,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 // ─── Page ─────────────────────────────────────────────────────
-
-const ROLES: SelectOption<NewUserKind>[] = [
-  { value: "client", label: "Client", desc: "Contact record, no login" },
-  {
-    value: "member",
-    label: "Member",
-    desc: "Entitled to a subscription",
-  },
-  { value: "staff", label: "Staff", desc: "Dashboard access" },
-  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
-  { value: "admin", label: "Admin", desc: "Full dashboard access" },
-];
 
 export default function NewUserPage() {
   const { push } = useRouter();
