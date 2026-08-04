@@ -5,6 +5,7 @@ import { insforge } from "@/lib/insforge";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { ModalState } from "@/types/settings";
 import { IconX } from "@/components/ui/icons";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 // ─── Form state reducer ───────────────────────────────────────
 
@@ -14,6 +15,7 @@ type FormState = {
   priceCenter: string;
   priceSuite: string;
   color: string;
+  imageUrl: string;
   active: boolean;
 };
 
@@ -23,6 +25,7 @@ type FormAction =
   | { type: "SET_PRICE_CENTER"; price: string }
   | { type: "SET_PRICE_SUITE"; price: string }
   | { type: "SET_COLOR"; color: string }
+  | { type: "SET_IMAGE"; url: string }
   | { type: "TOGGLE_ACTIVE" };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -37,6 +40,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, priceSuite: action.price };
     case "SET_COLOR":
       return { ...state, color: action.color };
+    case "SET_IMAGE":
+      return { ...state, imageUrl: action.url };
     case "TOGGLE_ACTIVE":
       return { ...state, active: !state.active };
     default:
@@ -72,6 +77,7 @@ export function TierModal({
         ? String(modal.tier.price_suite_eur)
         : "",
     color: modal.tier?.color ?? "#6b7280",
+    imageUrl: modal.tier?.image_url ?? "",
     active: modal.tier?.active ?? true,
   });
 
@@ -103,6 +109,7 @@ export function TierModal({
       price_suite_eur:
         form.priceSuite !== "" ? parseFloat(form.priceSuite) : null,
       color: form.color || null,
+      image_url: form.imageUrl || null,
       active: form.active,
     };
 
@@ -276,6 +283,21 @@ export function TierModal({
                 className={INPUT_CLASS}
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-petroleum-500 text-xs font-medium">
+              Image
+            </span>
+            <p className="text-petroleum-300 text-xs">
+              Shown in the session-type picker, on the website and here. Without
+              one, the picker falls back to the colour below.
+            </p>
+            <ImageUpload
+              folder="tiers"
+              value={form.imageUrl}
+              onChange={(url) => dispatchForm({ type: "SET_IMAGE", url })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">

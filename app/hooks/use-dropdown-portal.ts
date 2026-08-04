@@ -9,8 +9,10 @@ import { useEffect, useRef, useState } from "react";
  * a scrolling card, but it also means the panel no longer follows the trigger —
  * hence the fixed coordinates, recomputed on scroll.
  *
- * It flips upward when there is not enough room below and caps the height to
- * the space available, so the last option never ends up under the fold.
+ * It flips upward when there is not enough room below, and caps the height at
+ * whichever is smaller: the space available, so the last option never ends up
+ * under the fold, or DROPDOWN_MAX_H, so a long list scrolls inside the panel
+ * instead of running the full height of the window.
  */
 
 const DROPDOWN_MAX_H = 320;
@@ -37,7 +39,10 @@ export function useDropdownPortal(isOpen: boolean) {
           : { top: rect.bottom + 8 }),
         left: rect.left,
         width: rect.width,
-        maxHeight: openUpward ? rect.top - 16 : spaceBelow,
+        maxHeight: Math.min(
+          DROPDOWN_MAX_H,
+          openUpward ? rect.top - 16 : spaceBelow,
+        ),
       });
     };
 

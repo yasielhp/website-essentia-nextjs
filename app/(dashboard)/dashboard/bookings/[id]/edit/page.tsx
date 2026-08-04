@@ -8,17 +8,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  X,
   Building2,
   Home,
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 import { ServicePicker } from "@/components/ui/service-picker";
-import {
-  isMobileViewport,
-  useDropdownPortal,
-} from "@/hooks/use-dropdown-portal";
+import { TierPicker, type TierPickerOption } from "@/components/ui/tier-picker";
+import { useDropdownPortal } from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
@@ -55,6 +52,8 @@ type Tier = {
   price_eur: number | null;
   price_center_eur: number | null;
   price_suite_eur: number | null;
+  image_url: string | null;
+  color: string | null;
 };
 
 function resolvePrice(
@@ -65,6 +64,21 @@ function resolvePrice(
     return tier.price_suite_eur ?? tier.price_center_eur ?? tier.price_eur;
   }
   return tier.price_center_eur ?? tier.price_eur;
+}
+
+/** The picker shows one price, so the location decides which rate that is. */
+function toTierOption(
+  tier: Tier,
+  location: DashboardLocation | "",
+): TierPickerOption {
+  return {
+    id: tier.id,
+    label: tier.label,
+    durationMinutes: tier.duration_minutes,
+    price: resolvePrice(tier, location),
+    imageUrl: tier.image_url,
+    color: tier.color,
+  };
 }
 
 type DashboardLocation = "centro" | "habitacion" | "domicilio";
@@ -169,15 +183,6 @@ function canPartnerEdit(date: string | null, time: string | null): boolean {
   return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
 }
 
-function tierLabel(t: Tier, location: DashboardLocation | "" = ""): string {
-  const parts: string[] = [];
-  if (t.label) parts.push(t.label);
-  if (t.duration_minutes != null) parts.push(`${t.duration_minutes} min`);
-  const price = resolvePrice(t, location);
-  if (price != null) parts.push(`€${price}`);
-  return parts.join(" · ") || "Standard";
-}
-
 function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -191,197 +196,13 @@ const SERVICE_PICKER_LABELS = {
   medicine: "Medicine",
 };
 
-function TierItems({
-  tiers,
-  selectedId,
-  onSelect,
-  location = "",
-}: {
-  tiers: Tier[];
-  selectedId: string;
-  onSelect: (t: Tier) => void;
-  location?: DashboardLocation | "";
-}) {
-  return (
-    <div className="p-3">
-      {tiers.map((t) => {
-        const price = resolvePrice(t, location);
-        return (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onSelect(t)}
-            className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-          >
-            <div className="flex flex-col gap-0.5">
-              <span className="text-petroleum-700 font-medium">
-                {t.label ?? "Standard"}
-              </span>
-              {(t.duration_minutes != null || price != null) && (
-                <span className="text-petroleum-400 text-xs">
-                  {[
-                    t.duration_minutes != null
-                      ? `${t.duration_minutes} min`
-                      : null,
-                    price != null ? `€${price}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              )}
-            </div>
-            {selectedId === t.id && (
-              <Check className="text-petroleum-700 shrink-0" size={14} />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function TierSelect({
-  tiers,
-  selectedId,
-  onSelect,
-  location = "",
-}: {
-  tiers: Tier[];
-  selectedId: string;
-  onSelect: (t: Tier) => void;
-  location?: DashboardLocation | "";
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
-  const selected = tiers.find((t) => t.id === selectedId) ?? null;
-
-  useEffect(() => {
-    if (!isOpen || isMobileViewport()) return;
-    const handleClose = (e: MouseEvent) => {
-      if (
-        triggerRef.current?.contains(e.target as Node) ||
-        dropdownRef.current?.contains(e.target as Node)
-      )
-        return;
-      setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClose);
-    return () => document.removeEventListener("mousedown", handleClose);
-  }, [isOpen, triggerRef, dropdownRef]);
-
-  useEffect(() => {
-    if (!isOpen || !isMobileViewport()) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  const handleSelect = (t: Tier) => {
-    onSelect(t);
-    setIsOpen(false);
-  };
-
-  if (tiers.length === 1) {
-    return (
-      <div className="border-sand-300 bg-sand-50 flex items-center gap-4 rounded-2xl border p-4">
-        <div className="flex flex-1 flex-col gap-1">
-          <p className="text-petroleum-400 text-xs">Duration & Price</p>
-          <p className="text-petroleum-700 font-medium">
-            {tierLabel(tiers[0]!, location)}
-          </p>
-        </div>
-        <Check className="text-petroleum-100 shrink-0" size={16} />
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen((o) => !o)}
-        className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
-          isOpen
-            ? "border-petroleum-400 ring-petroleum-100 ring-2"
-            : "border-sand-300 hover:border-petroleum-400",
-        ].join(" ")}
-      >
-        {selected ? (
-          <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">Duration & Price</p>
-            <p className="text-petroleum-700 font-medium">
-              {tierLabel(selected, location)}
-            </p>
-          </div>
-        ) : (
-          <p className="text-petroleum-400 flex-1 text-sm">
-            Select a duration & price
-          </p>
-        )}
-        <ChevronDown
-          className={[
-            "shrink-0 transition-transform duration-200",
-            selected ? "text-petroleum-400" : "text-petroleum-100",
-            isOpen ? "rotate-180" : "",
-          ].join(" ")}
-          size={16}
-        />
-      </button>
-
-      {/* Desktop: dropdown portal */}
-      {isOpen &&
-        !isMobileViewport() &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
-          >
-            <TierItems
-              tiers={tiers}
-              selectedId={selectedId}
-              onSelect={handleSelect}
-              location={location}
-            />
-          </div>,
-          document.body,
-        )}
-
-      {/* Mobile: full-screen modal */}
-      {isOpen &&
-        isMobileViewport() &&
-        createPortal(
-          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
-            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-petroleum-700 font-medium">
-                Select a session type
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label="Close"
-              >
-                <X size={20} className="text-petroleum-400" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <TierItems
-                tiers={tiers}
-                selectedId={selectedId}
-                onSelect={handleSelect}
-                location={location}
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
-    </div>
-  );
-}
+const TIER_PICKER_LABELS = {
+  fieldLabel: "Duration & Price",
+  placeholder: "Select a duration & price",
+  modalTitle: "Select a session type",
+  close: "Close",
+  standard: "Standard",
+};
 
 // ─── Status Select ────────────────────────────────────────────
 
@@ -936,7 +757,7 @@ function ServiceSection({
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Service</h2>
       {loading ? (
-        <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
+        <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
       ) : (
         <ServicePicker
           options={services}
@@ -1138,7 +959,7 @@ type TierSectionProps = {
   tiers: Tier[];
   tierId: string;
   location: DashboardLocation | "";
-  onSelect: (tier: Tier) => void;
+  onSelect: (tierId: string) => void;
 };
 
 function TierSection({
@@ -1162,11 +983,12 @@ function TierSection({
           No session types configured for this service.
         </p>
       ) : (
-        <TierSelect
-          tiers={tiers}
+        <TierPicker
+          options={tiers.map((t) => toTierOption(t, location))}
           selectedId={tierId}
-          location={location}
-          onSelect={onSelect}
+          labels={TIER_PICKER_LABELS}
+          collapseSingle
+          onSelect={(o) => onSelect(o.id)}
         />
       )}
     </div>
@@ -1755,7 +1577,7 @@ export default function EditBookingPage() {
       const { data } = await insforge.database
         .from("service_tiers")
         .select(
-          "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur",
+          "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, image_url, color",
         )
         .eq("service_id", serviceId)
         .eq("active", true)
@@ -2152,34 +1974,29 @@ export default function EditBookingPage() {
             tiers={tiers}
             tierId={tierId}
             location={location}
-            onSelect={(t) => dispatchForm({ type: "SET_TIER", id: t.id })}
+            onSelect={(id) => dispatchForm({ type: "SET_TIER", id })}
           />
 
           {/* ── 4b. Therapist preference (manual-therapies only) ── */}
-          {serviceId === "manual-therapies" && (
+          {serviceId === "manual-therapies" && tierId !== "" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
                 Therapist preference
               </h2>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-petroleum-500 text-xs font-medium">
-                  Therapist preference
-                </label>
-                <select
-                  value={therapistGender}
-                  onChange={(e) =>
-                    dispatchForm({
-                      type: "SET_THERAPIST_GENDER",
-                      value: e.target.value as "male" | "female" | "",
-                    })
-                  }
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Select therapist preference</option>
-                  <option value="male">Male therapist</option>
-                  <option value="female">Female therapist</option>
-                </select>
-              </div>
+              <select
+                value={therapistGender}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_THERAPIST_GENDER",
+                    value: e.target.value as "male" | "female" | "",
+                  })
+                }
+                className={INPUT_CLASS}
+              >
+                <option value="">Select therapist preference</option>
+                <option value="male">Male therapist</option>
+                <option value="female">Female therapist</option>
+              </select>
             </div>
           )}
 
