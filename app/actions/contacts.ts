@@ -6,8 +6,6 @@ import type {
   ContactBooking,
   ContactDetail,
   ContactDetailResult,
-  ContactEduReg,
-  ContactRaceReg,
   ContactRow,
   UpdateContactPayload,
 } from "@/types/contact";
