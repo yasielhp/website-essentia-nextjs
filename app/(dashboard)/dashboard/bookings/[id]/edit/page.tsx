@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   ChevronDown,
   ChevronLeft,
@@ -15,8 +14,13 @@ import {
   BedDouble,
 } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { ServicePicker } from "@/components/ui/service-picker";
+import {
+  isMobileViewport,
+  useDropdownPortal,
+} from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
-import { bookableServices } from "@/data/services-data";
+import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { deleteBooking, updateBookingByAdmin } from "@/actions/booking-draft";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
@@ -178,283 +182,14 @@ function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const DROPDOWN_MAX_H = 320;
-
-const isMobile = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(max-width: 767px)").matches;
-
-function useDropdownPortal(isOpen: boolean) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
-
-  const updatePosition = () => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom - 8;
-    const openUpward = spaceBelow < DROPDOWN_MAX_H && rect.top > DROPDOWN_MAX_H;
-    setDropdownStyle({
-      position: "fixed",
-      ...(openUpward
-        ? { bottom: window.innerHeight - rect.top + 8 }
-        : { top: rect.bottom + 8 }),
-      left: rect.left,
-      width: rect.width,
-      maxHeight: openUpward ? rect.top - 16 : spaceBelow,
-    });
-  };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    updatePosition();
-    const handleScroll = () => updatePosition();
-    window.addEventListener("scroll", handleScroll, true);
-    return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [isOpen]);
-
-  return { triggerRef, dropdownRef, dropdownStyle };
-}
-
-// ─── Service Select ───────────────────────────────────────────
-
-function ServiceItems({
-  services,
-  selectedId,
-  onSelect,
-  imageClass = "size-12",
-  imageSizes = "48px",
-}: {
-  services: Service[];
-  selectedId: string | null;
-  onSelect: (s: Service) => void;
-  imageClass?: string;
-  imageSizes?: string;
-}) {
-  const wellness = services.filter(
-    (s) => s.category === "wellness" || !s.category,
-  );
-  const medicine = services.filter((s) => s.category === "medicine");
-
-  const row = (s: Service) => (
-    <button
-      key={s.id}
-      type="button"
-      onClick={() => onSelect(s)}
-      className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
-    >
-      {s.image ? (
-        <div
-          className={`relative ${imageClass} shrink-0 overflow-hidden rounded-lg`}
-        >
-          <Image
-            src={s.image}
-            alt={s.title}
-            fill
-            sizes={imageSizes}
-            className="object-cover"
-          />
-        </div>
-      ) : (
-        <div
-          className={`bg-petroleum-100 flex ${imageClass} shrink-0 items-center justify-center rounded-lg`}
-        >
-          <span className="text-petroleum-700 text-sm font-bold">
-            {s.title[0]?.toUpperCase()}
-          </span>
-        </div>
-      )}
-      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        <p className="text-petroleum-700 text-sm font-medium">{s.title}</p>
-        {s.description && (
-          <p className="text-petroleum-400 line-clamp-1 text-xs">
-            {s.description}
-          </p>
-        )}
-        {s.category && (
-          <p className="text-petroleum-500 text-xs capitalize">{s.category}</p>
-        )}
-      </div>
-      {selectedId === s.id && (
-        <Check className="text-petroleum-700 shrink-0" size={14} />
-      )}
-    </button>
-  );
-
-  return (
-    <div className="p-3">
-      {wellness.length > 0 && (
-        <>
-          <p className="text-petroleum-500 p-2 text-xs tracking-widest uppercase">
-            Wellness
-          </p>
-          {wellness.map(row)}
-        </>
-      )}
-      {medicine.length > 0 && (
-        <>
-          <p className="text-petroleum-500 mt-2 p-2 text-xs tracking-widest uppercase">
-            Medicine
-          </p>
-          {medicine.map(row)}
-        </>
-      )}
-    </div>
-  );
-}
-
-function ServiceSelect({
-  services,
-  selected,
-  onSelect,
-}: {
-  services: Service[];
-  selected: Service | null;
-  onSelect: (s: Service) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
-
-  useEffect(() => {
-    if (!isOpen || isMobile()) return;
-    const handleClose = (e: MouseEvent) => {
-      if (
-        triggerRef.current?.contains(e.target as Node) ||
-        dropdownRef.current?.contains(e.target as Node)
-      )
-        return;
-      setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClose);
-    return () => document.removeEventListener("mousedown", handleClose);
-  }, [isOpen, triggerRef, dropdownRef]);
-
-  useEffect(() => {
-    if (!isOpen || !isMobile()) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  const handleSelect = (s: Service) => {
-    onSelect(s);
-    setIsOpen(false);
-  };
-
-  return (
-    <div>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen((o) => !o)}
-        className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
-          isOpen
-            ? "border-petroleum-400 ring-petroleum-100 ring-2"
-            : "border-sand-300 hover:border-petroleum-400",
-        ].join(" ")}
-      >
-        {selected ? (
-          <>
-            {selected.image ? (
-              <div className="animate-fade-in-up relative size-16 shrink-0 overflow-hidden rounded-xl">
-                <Image
-                  src={selected.image}
-                  alt={selected.title}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="animate-fade-in-up bg-petroleum-100 flex size-16 shrink-0 items-center justify-center rounded-xl">
-                <span className="text-petroleum-700 text-xl font-bold">
-                  {selected.title[0]?.toUpperCase()}
-                </span>
-              </div>
-            )}
-            <div className="flex flex-1 flex-col gap-1 overflow-hidden">
-              <p className="text-petroleum-700 font-medium">{selected.title}</p>
-              {selected.description && (
-                <p className="text-petroleum-400 line-clamp-1 text-sm">
-                  {selected.description}
-                </p>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="bg-sand-200 flex size-16 shrink-0 items-center justify-center rounded-xl">
-              <span className="text-petroleum-100 text-lg">+</span>
-            </div>
-            <p className="text-petroleum-400 flex-1 text-sm">
-              Select a service
-            </p>
-          </>
-        )}
-        <ChevronDown
-          className={[
-            "text-petroleum-400 shrink-0 transition-transform duration-200",
-            isOpen ? "rotate-180" : "",
-          ].join(" ")}
-          size={16}
-        />
-      </button>
-
-      {/* Desktop: dropdown portal */}
-      {isOpen &&
-        !isMobile() &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-y-auto rounded-2xl border shadow-lg"
-          >
-            <ServiceItems
-              services={services}
-              selectedId={selected?.id ?? null}
-              onSelect={handleSelect}
-            />
-          </div>,
-          document.body,
-        )}
-
-      {/* Mobile: full-screen modal */}
-      {isOpen &&
-        isMobile() &&
-        createPortal(
-          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
-            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-petroleum-700 font-medium">
-                Select a service
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label="Close"
-              >
-                <X size={20} className="text-petroleum-400" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <ServiceItems
-                services={services}
-                selectedId={selected?.id ?? null}
-                onSelect={handleSelect}
-                imageClass="size-16"
-                imageSizes="64px"
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
-    </div>
-  );
-}
-
-// ─── Tier Select ──────────────────────────────────────────────
+/** The dashboard is English-only; the public flow translates its own copy. */
+const SERVICE_PICKER_LABELS = {
+  placeholder: "Select a service",
+  modalTitle: "Choose a service",
+  close: "Close",
+  wellness: "Wellness",
+  medicine: "Medicine",
+};
 
 function TierItems({
   tiers,
@@ -521,7 +256,7 @@ function TierSelect({
   const selected = tiers.find((t) => t.id === selectedId) ?? null;
 
   useEffect(() => {
-    if (!isOpen || isMobile()) return;
+    if (!isOpen || isMobileViewport()) return;
     const handleClose = (e: MouseEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
@@ -535,7 +270,7 @@ function TierSelect({
   }, [isOpen, triggerRef, dropdownRef]);
 
   useEffect(() => {
-    if (!isOpen || !isMobile()) return;
+    if (!isOpen || !isMobileViewport()) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -598,7 +333,7 @@ function TierSelect({
 
       {/* Desktop: dropdown portal */}
       {isOpen &&
-        !isMobile() &&
+        !isMobileViewport() &&
         createPortal(
           <div
             ref={dropdownRef}
@@ -617,7 +352,7 @@ function TierSelect({
 
       {/* Mobile: full-screen modal */}
       {isOpen &&
-        isMobile() &&
+        isMobileViewport() &&
         createPortal(
           <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
             <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
@@ -1203,10 +938,11 @@ function ServiceSection({
       {loading ? (
         <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
       ) : (
-        <ServiceSelect
-          services={services}
+        <ServicePicker
+          options={services}
           selected={selectedService}
           onSelect={onSelect}
+          labels={SERVICE_PICKER_LABELS}
         />
       )}
     </div>
@@ -1872,25 +1608,13 @@ export default function EditBookingPage() {
     return a.title.localeCompare(b.title);
   });
 
-  // Load services with enrichment from bookableServices
+  // The same list the public booking flow offers.
   useEffect(() => {
     async function load() {
-      const { data } = await insforge.database
-        .from("service_settings")
-        .select("id, title")
-        .eq("active", true)
-        .order("title");
-      const raw = (data as { id: string; title: string }[] | null) ?? [];
-      const enriched: Service[] = raw.map((s) => {
-        const static_ = bookableServices.find((b) => b.id === s.id);
-        return {
-          ...s,
-          image: static_?.image,
-          description: static_?.description,
-          category: static_?.category,
-        };
+      dispatchAsync({
+        type: "SERVICES_LOADED",
+        payload: await fetchBookableServices(),
       });
-      dispatchAsync({ type: "SERVICES_LOADED", payload: enriched });
     }
     void load();
   }, []);

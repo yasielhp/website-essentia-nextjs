@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getLogoSvgUrl } from "@/lib/og-logo";
 
-export const runtime = "edge";
 export const alt =
   "Essentia Wellness Club — Longevity Center & Social Wellness Club in Tenerife";
 export const size = { width: 1200, height: 630 };
