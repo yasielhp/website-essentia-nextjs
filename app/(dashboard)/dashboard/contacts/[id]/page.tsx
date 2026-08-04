@@ -10,6 +10,7 @@ import {
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
+import { formatMediumDate } from "@/utils/format";
 import {
   fetchContactDetail,
   updateContact,
@@ -170,15 +171,6 @@ function StatusBadge({ status }: { status: string | null }) {
       {s}
     </span>
   );
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function RowSkeleton({ cols }: { cols: number }) {
@@ -471,7 +463,7 @@ function BookingsSection({
                     {b.service_title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {formatDate(b.date)}
+                    {formatMediumDate(b.date)}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {b.time ?? "—"}
@@ -530,13 +522,13 @@ function RaceRegsSection({
                     {r.race?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.race?.date ? formatDate(r.race.date) : "—"}
+                    {r.race?.date ? formatMediumDate(r.race.date) : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.race?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatDate(r.created_at)}
+                    {formatMediumDate(r.created_at)}
                   </td>
                 </tr>
               ))}
@@ -591,13 +583,13 @@ function EduRegsSection({
                     {r.session?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.session?.date ? formatDate(r.session.date) : "—"}
+                    {r.session?.date ? formatMediumDate(r.session.date) : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.session?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatDate(r.created_at)}
+                    {formatMediumDate(r.created_at)}
                   </td>
                 </tr>
               ))}

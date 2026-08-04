@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAsyncData } from "@/hooks/use-async-data";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -131,8 +132,17 @@ function FilterModal({
 
 export default function BlogDashboardPage() {
   const { push } = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const fetchPosts = useCallback(async (): Promise<Post[]> => {
+    const { data } = await insforge.database
+      .from("blog_posts")
+      .select(
+        "id, title, slug, status, published_at, created_at, category:blog_categories(name)",
+      )
+      .order("created_at", { ascending: false });
+    return (data as Post[] | null) ?? [];
+  }, []);
+
+  const { data: posts, loading } = useAsyncData<Post[]>(fetchPosts, []);
 
   const [appliedFilter, setAppliedFilter] =
     useState<BlogFilter>(emptyBlogFilter);
@@ -154,19 +164,6 @@ export default function BlogDashboardPage() {
     setPendingFilter(emptyBlogFilter);
     setFilterOpen(false);
   }
-
-  useEffect(() => {
-    insforge.database
-      .from("blog_posts")
-      .select(
-        "id, title, slug, status, published_at, created_at, category:blog_categories(name)",
-      )
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setPosts((data as Post[] | null) ?? []);
-        setLoading(false);
-      });
-  }, []);
 
   const filteredPosts = posts.filter((p) => {
     if (appliedFilter.status && p.status !== appliedFilter.status) return false;

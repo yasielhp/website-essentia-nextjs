@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { formatMediumDate } from "@/utils/format";
 import { getAccessToken } from "@/lib/client-session";
 import {
   fetchContacts,
@@ -49,15 +50,6 @@ const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function AvatarFallback() {
   return (
@@ -539,7 +531,7 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {formatDate(row.created_at)}
+                          {formatMediumDate(row.created_at)}
                         </td>
                       </tr>
                     );

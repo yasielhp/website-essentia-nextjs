@@ -66,6 +66,22 @@ export function formatShortDate(
   });
 }
 
+/**
+ * `May 20, 2026` — the listing format shared by the users, members and contact
+ * detail screens, which each carried a byte-identical copy of this function.
+ * Takes a timestamp, not a plain date.
+ */
+export function formatMediumDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** Formats a timestamp (not a plain date) for dashboard listings. */
 export function formatDateTime(
   timestamp: string | null | undefined,
