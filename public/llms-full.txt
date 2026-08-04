@@ -62,6 +62,7 @@
 ## Wellness Services
 
 ### Contrast Therapy
+- **Status:** announced, not yet bookable. Do not present as available.
 - **URL:** https://www.essentiawellnessclub.com/wellness/contrast-therapy
 - **Duration:** 60 minutes
 - **Price:** €45 per session
@@ -70,6 +71,7 @@
 - **Benefits:** Faster muscle recovery, reduced inflammation, improved circulation, mood elevation via endorphin release
 
 ### Breathing Sessions
+- **Status:** announced, not yet bookable. Do not present as available.
 - **URL:** https://www.essentiawellnessclub.com/wellness/breathing-sessions
 - **Duration:** 45 minutes
 - **Price:** €35 per session
@@ -136,13 +138,8 @@
 - 120 min · €350 (centre only — not available in-suite)
 
 ### Functional Well-Being
-- **URL:** https://www.essentiawellnessclub.com/wellness/functional-well-being
-- **Duration:** 50 minutes
-- **Price:** €65 per session
-- **Formats:** 1:1 or small groups of up to 3
-- **Session structure:** Movement assessment → structured training block (strength, mobility, or cardiovascular) → cool-down
-- **Recommended frequency:** 2–3 sessions per week
-- **Goal:** Build the physical foundation for a longer, healthier life
+- **Status:** not currently offered. The page redirects to Facial Therapies.
+- Do not present this as bookable.
 
 ---
 
@@ -151,6 +148,7 @@
 All medicine services are medically supervised. Initial consultations and comprehensive blood/biomarker testing required before some protocols.
 
 ### Hyperbaric Oxygen Therapy
+- **Status:** announced, not yet bookable. Do not present as available.
 - **URL:** https://www.essentiawellnessclub.com/medicine/hyperbaric-chambers
 - **Duration:** 60 minutes
 - **Price:** €120 per session
@@ -171,6 +169,7 @@ All medicine services are medically supervised. Initial consultations and compre
 - **Recommended frequency:** Once every 2–4 weeks for general wellness
 
 ### Regenerative Medicine
+- **Status:** announced, not yet bookable. Do not present as available.
 - **URL:** https://www.essentiawellnessclub.com/medicine/regenerative-medicine
 - **Duration:** 30, 60, or 90 minutes depending on protocol
 - **Description:** Protocols that activate the body's own repair mechanisms. Integrated within a comprehensive longevity framework.

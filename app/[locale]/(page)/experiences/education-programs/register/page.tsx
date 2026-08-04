@@ -5,7 +5,7 @@ import EducationRegisterSection from "@components/sections/experiences/education
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("experiences.education.register.meta");
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     description: t("description"),
   };
 }

@@ -16,7 +16,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const service = manualTherapyTreatments.find((s) => s.id === slug);
   if (!service) return {};
   return {
-    title: `${service.title} | Manual Therapies · Essentia Wellness`,
+    title: {
+      absolute: `${service.title} | Manual Therapies · Essentia Wellness`,
+    },
     description: service.description,
   };
 }

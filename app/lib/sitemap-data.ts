@@ -2,11 +2,12 @@ import { unstable_cache } from "next/cache";
 import { insforge } from "@/lib/insforge";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { contact } from "@/constants/contact";
+import { isUnlaunched } from "@/constants/unlaunched";
 
 export const siteBase =
   process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
-export const staticRoutes = [
+const allStaticRoutes = [
   { path: "/", esPath: "/", priority: 1.0, changeFrequency: "weekly" },
   {
     path: "/wellness",
@@ -118,6 +119,17 @@ export const staticRoutes = [
     changeFrequency: "weekly",
   },
 ] as const;
+
+/**
+ * What the sitemap actually offers.
+ *
+ * A sitemap is a list of pages worth indexing, so the "Coming Soon" routes are
+ * filtered out rather than deleted — a service launching only has to leave
+ * `UNLAUNCHED_ROUTES` and it reappears here with its priority intact.
+ */
+export const staticRoutes = allStaticRoutes.filter(
+  (r) => !isUnlaunched(r.path),
+);
 
 export function getTreatmentPaths(): { path: string; esPath: string }[] {
   return manualTherapyTreatments.map((t) => ({

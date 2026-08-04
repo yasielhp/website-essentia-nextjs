@@ -4,7 +4,12 @@ import TreatmentSection from "@components/sections/medicine/treatment/treatment-
 import { treatments } from "@components/sections/medicine/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
+import { bookableServices } from "@/data/services-data";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  medicalTherapySchema,
+} from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
 
 export async function generateMetadata({
@@ -41,6 +46,7 @@ export async function generateMetadata({
 export default async function IvTherapyPage() {
   const t = await getTranslations("medicine.pages");
   const faqs = serviceFaqs["intravenous-therapy"];
+  const service = bookableServices.find((s) => s.id === "intravenous-therapy");
   return (
     <>
       <script
@@ -62,6 +68,19 @@ export default async function IvTherapyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(faqPageSchema(faqs)),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            medicalTherapySchema({
+              name: service?.title ?? "intravenous-therapy",
+              description: service?.description ?? "",
+              url: "/medicine/intravenous-therapy",
+              category: "medicine",
+            }),
+          ),
         }}
       />
       <TreatmentSection data={treatments["intravenous-therapy"]} />

@@ -8,6 +8,23 @@ const nextConfig: NextConfig = {
   // This file is maintained by hand, so the generation is off and the tree
   // stays clean; flip to `true` to opt back in.
   agentRules: false,
+  // A retired URL, moved permanently so it drops out of the index and passes
+  // its equity on. As a page it answered 307 — temporary — which keeps the old
+  // URL alive in search results indefinitely.
+  async redirects() {
+    return [
+      {
+        source: "/wellness/functional-well-being",
+        destination: "/wellness/facial-therapies",
+        permanent: true,
+      },
+      {
+        source: "/es/bienestar/functional-well-being",
+        destination: "/es/bienestar/terapias-faciales",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -16,7 +16,7 @@ export async function generateMetadata({
     namespace: "experiences.education.meta",
   });
   return {
-    title: t("title"),
+    title: { absolute: t("title") },
     description: t("description"),
     alternates: {
       canonical:

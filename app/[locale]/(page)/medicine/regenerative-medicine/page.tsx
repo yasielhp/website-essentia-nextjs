@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
+import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
 
 export async function generateMetadata({
   params,
@@ -13,6 +14,7 @@ export async function generateMetadata({
     namespace: "medicine.pages.regenerative-medicine",
   });
   return {
+    robots: UNLAUNCHED_ROBOTS,
     title: { absolute: t("metaTitle") },
     description: t("metaDescription"),
     alternates: {

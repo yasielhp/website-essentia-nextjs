@@ -6,7 +6,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const isEs = locale === "es";
 
   return {
-    title: isEs ? "Política de Cookies | Essentia" : "Cookie Policy | Essentia",
+    title: {
+      absolute: isEs
+        ? "Política de Cookies | Essentia"
+        : "Cookie Policy | Essentia",
+    },
     description: isEs
       ? "Descubre cómo Essentia utiliza cookies y tecnologías similares en nuestro sitio web, y cómo gestionar tus preferencias."
       : "Learn how Essentia uses cookies and similar technologies on our website, and how to manage your preferences.",

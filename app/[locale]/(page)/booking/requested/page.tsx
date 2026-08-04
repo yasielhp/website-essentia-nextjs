@@ -6,7 +6,7 @@ import { RequestedContent } from "./requested-content";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("booking.requested");
   return {
-    title: t("heading"),
+    title: { absolute: t("heading") },
     description: t("body"),
     robots: { index: false, follow: false },
   };

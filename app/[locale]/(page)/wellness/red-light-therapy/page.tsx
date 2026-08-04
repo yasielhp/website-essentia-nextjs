@@ -4,7 +4,12 @@ import TreatmentSection from "@components/sections/wellness/treatment/treatment-
 import { treatments } from "@components/sections/wellness/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
-import { breadcrumbSchema, faqPageSchema } from "@/lib/seo";
+import { bookableServices } from "@/data/services-data";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  medicalTherapySchema,
+} from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
 
 export async function generateMetadata({
@@ -41,6 +46,7 @@ export async function generateMetadata({
 export default async function RedLightTherapyPage() {
   const t = await getTranslations("wellness.pages");
   const faqs = serviceFaqs["red-light-therapy"];
+  const service = bookableServices.find((s) => s.id === "red-light-therapy");
   return (
     <>
       <script
@@ -62,6 +68,19 @@ export default async function RedLightTherapyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(faqPageSchema(faqs)),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            medicalTherapySchema({
+              name: service?.title ?? "red-light-therapy",
+              description: service?.description ?? "",
+              url: "/wellness/red-light-therapy",
+              category: "wellness",
+            }),
+          ),
         }}
       />
       <TreatmentSection data={treatments["red-light-therapy"]} />

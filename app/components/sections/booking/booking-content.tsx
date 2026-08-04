@@ -250,18 +250,6 @@ function BookingNavigation({
   );
 }
 
-function BookingHeader() {
-  const t = useTranslations("booking");
-  return (
-    <div className="flex flex-col gap-2">
-      <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-        {t("heading")}
-      </h1>
-      <p className="text-petroleum-400">{t("subheading")}</p>
-    </div>
-  );
-}
-
 type BookingStepRendererProps = {
   currentStepId: string;
   selectedService: BookableService | null;
@@ -724,8 +712,6 @@ function BookingContentInner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <BookingHeader />
-
       <StepIndicator current={step} steps={activeSteps} />
 
       <BookingStepRenderer
