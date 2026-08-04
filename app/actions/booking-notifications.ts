@@ -11,10 +11,7 @@ import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled"
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
 
 export type BookingNotificationEvent =
-  | "received"
-  | "confirmed"
-  | "cancelled"
-  | "rescheduled";
+  "received" | "confirmed" | "cancelled" | "rescheduled";
 
 export type BookingNotificationPayload = {
   bookingId: string;

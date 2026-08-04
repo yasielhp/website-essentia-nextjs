@@ -116,8 +116,7 @@ function contactsReducer(
 
 type SystemState = { users: SystemUserRow[]; loading: boolean };
 type SystemAction =
-  | { type: "SET_LOADING" }
-  | { type: "LOADED"; users: SystemUserRow[] };
+  { type: "SET_LOADING" } | { type: "LOADED"; users: SystemUserRow[] };
 
 function systemReducer(state: SystemState, action: SystemAction): SystemState {
   switch (action.type) {
