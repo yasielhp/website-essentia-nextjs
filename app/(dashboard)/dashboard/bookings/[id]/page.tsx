@@ -7,6 +7,7 @@ import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
 import { Button } from "@/components/ui/button";
+import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 
@@ -17,6 +18,12 @@ type BookingDetail = {
   service_title: string | null;
   duration: string | null;
   price_eur: number | null;
+  tier_id: string | null;
+  service_tiers: {
+    label: string | null;
+    image_url: string | null;
+    color: string | null;
+  } | null;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
@@ -195,7 +202,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
+          "id, service_title, duration, price_eur, tier_id, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
         )
         .eq("id", id)
         .limit(1);
@@ -274,6 +281,7 @@ export default function BookingDetailPage() {
   }
 
   const { booking, creator } = state;
+  const tier = booking.service_tiers;
   const addrParsed = parseLocationAddress(booking.location_address);
   const therapistLabel = (() => {
     const n = booking.notes ?? "";
@@ -360,20 +368,36 @@ export default function BookingDetailPage() {
             Service
           </h2>
           <div className="flex items-center gap-4">
-            <div className="bg-petroleum-100 hidden size-14 shrink-0 items-center justify-center rounded-xl sm:flex">
-              <span className="text-petroleum-700 text-xl font-bold">
-                {booking.service_title?.[0]?.toUpperCase() ?? "?"}
-              </span>
+            {/* The session type carries the picture; a booking with no tier
+                still gets the service initial rather than an empty square. */}
+            <div className="hidden sm:block">
+              {tier?.image_url || tier?.color ? (
+                <TierThumbnail
+                  imageUrl={tier.image_url}
+                  color={tier.color}
+                  label={tier.label}
+                  className="size-14"
+                  sizes="56px"
+                />
+              ) : (
+                <div className="bg-petroleum-100 flex size-14 shrink-0 items-center justify-center rounded-xl">
+                  <span className="text-petroleum-700 text-xl font-bold">
+                    {booking.service_title?.[0]?.toUpperCase() ?? "?"}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-petroleum-700 font-medium">
                 {booking.service_title ?? "—"}
               </p>
-              {(booking.duration ||
+              {(tier?.label ||
+                booking.duration ||
                 booking.price_eur != null ||
                 therapistLabel) && (
                 <p className="text-petroleum-400 text-sm">
                   {[
+                    tier?.label,
                     booking.duration,
                     booking.price_eur != null ? `€${booking.price_eur}` : null,
                     therapistLabel,
