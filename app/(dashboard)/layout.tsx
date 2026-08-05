@@ -29,7 +29,7 @@ export default function DashboardLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" className={fontVariables}>
       <body className="antialiased">
-        <AuthProvider>
+        <AuthProvider requireSession>
           <DashboardShell>{children}</DashboardShell>
         </AuthProvider>
       </body>
