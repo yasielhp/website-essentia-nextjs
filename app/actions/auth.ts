@@ -37,7 +37,31 @@ export async function signInWithPassword(email: string, password: string) {
   const auth = await authActions();
   const { data, error } = await auth.signInWithPassword({ email, password });
 
-  return { user: data?.user ?? null, error: toPlainError(error) };
+  if (error || !data?.user) {
+    return { user: null, role: null, error: toPlainError(error) };
+  }
+
+  /**
+   * The role comes back with the sign-in, because the caller needs it
+   * immediately to decide where to land — staff and partners go to the
+   * dashboard, everyone else to their account.
+   *
+   * It has to be read here rather than in the browser: the cookies were only
+   * just written, and the browser client has no session of its own until the
+   * next page load. Asking it sent every partner to `/account`.
+   */
+  const client = await createInsForgeServerClient();
+  const { data: profile } = await client.database
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  return {
+    user: data.user,
+    role: (profile as { role?: string } | null)?.role ?? null,
+    error: null,
+  };
 }
 
 export async function signUp(email: string, password: string, name: string) {
@@ -58,6 +82,41 @@ export async function verifyEmail(email: string, otp: string) {
   const { data, error } = await auth.verifyEmail({ email, otp });
 
   return { user: data?.user ?? null, error: toPlainError(error) };
+}
+
+/**
+ * Who is signed in, resolved on the server.
+ *
+ * The browser cannot answer this. `createBrowserClient()` keeps the access
+ * token from the cookie but never a user object, so `getCurrentUser()` finds
+ * no session in memory after a page load and falls back to the old
+ * `*.insforge.app` refresh — the third-party path this whole change exists to
+ * escape. It returns null without asking anyone, which read as "signed out"
+ * and bounced people straight back to the login.
+ *
+ * Here the cookie is already at hand, the SDK is in server mode, and the role
+ * rides along so the caller does not need a second round-trip for it.
+ */
+export async function getSessionUser() {
+  const client = await createInsForgeServerClient();
+
+  const { data, error } = await client.auth.getCurrentUser();
+  if (error || !data?.user) return { user: null, role: null };
+
+  const { data: profile } = await client.database
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  return {
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: (data.user.profile as { name?: string } | null)?.name,
+    },
+    role: (profile as { role?: string } | null)?.role ?? null,
+  };
 }
 
 export async function signOut() {

@@ -10,7 +10,6 @@ import {
   signUp as signUpAction,
   verifyEmail,
 } from "@/actions/auth";
-import { markSession } from "@/lib/auth-session-flag";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 
@@ -111,7 +110,6 @@ export default function SignUpForm() {
     } else if (user) {
       // The tokens stay on the server now, so a live account is the absence of
       // a verification step rather than an access token in the response.
-      markSession();
       await createProfile(user.id, name, email);
       push("/booking");
       refresh();
@@ -143,7 +141,6 @@ export default function SignUpForm() {
     }
 
     if (user) {
-      markSession();
       await createProfile(user.id, name, email);
       push("/booking");
       refresh();

@@ -1,9 +1,8 @@
 "use client";
 
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
-import { insforge } from "@/lib/insforge";
-import { signOut as signOutAction } from "@/actions/auth";
-import { clearSession, hasSession, markSession } from "@/lib/auth-session-flag";
+import { getSessionUser, signOut as signOutAction } from "@/actions/auth";
+import { getAccessToken } from "@/lib/client-session";
 
 type User = {
   id: string;
@@ -44,33 +43,31 @@ export function AuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // `force` skips the local flag: after a sign-in the cookie is fresh and the
-  // flag may not be written yet, so the caller knows better than the hint.
+  /**
+   * The session is resolved on the server, which is the only side that can
+   * read the httpOnly refresh cookie — and, since `createBrowserClient()`
+   * holds a token but never a user, the only side that can say who this is.
+   *
+   * `force` skips the access-token check: right after a sign-in the cookie is
+   * there but this component may not have re-read it yet.
+   */
   const hydrateAuth = async ({ force = false }: { force?: boolean } = {}) => {
-    if (!force && !hasSession()) {
+    // Nobody signed in means nobody to look up: a visitor who never logged in
+    // costs no request at all.
+    if (!force && !getAccessToken()) {
       setUser(null);
       setLoading(false);
       return;
     }
 
-    const { data, error } = await insforge.auth.getCurrentUser();
-    if (error || !data?.user) {
-      clearSession();
+    const { user: sessionUser, role } = await getSessionUser();
+    if (!sessionUser) {
       setUser(null);
       setLoading(false);
       return;
     }
-    markSession();
-    const authUser = data.user;
-    const { data: profileData } = await insforge.database
-      .from("profiles")
-      .select("role")
-      .eq("id", authUser.id)
-      .single();
-    setUser({
-      ...authUser,
-      role: (profileData as { role?: string } | null)?.role ?? undefined,
-    });
+
+    setUser({ ...sessionUser, role: role ?? undefined });
     setLoading(false);
   };
 
@@ -83,7 +80,6 @@ export function AuthProvider({
     // Clearing the session means clearing httpOnly cookies, which only the
     // server can do.
     await signOutAction();
-    clearSession();
     setUser(null);
   };
 

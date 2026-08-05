@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { insforge } from "@/lib/insforge";
 import { signInWithPassword } from "@/actions/auth";
 import { signInSchema, parseErrors } from "@/lib/schemas";
 import { Button } from "@components/ui/button";
@@ -36,9 +35,10 @@ export default function SignInForm() {
     setFieldErrors({});
     setLoading(true);
 
-    // The session cookies are written by the server; the browser only learns
-    // who signed in.
-    const { user, error } = await signInWithPassword(email, password);
+    // The session cookies are written by the server, which also reports the
+    // role: the browser has no session of its own until the next page load, so
+    // asking it here sent every partner to the wrong place.
+    const { user, role, error } = await signInWithPassword(email, password);
 
     setLoading(false);
 
@@ -52,22 +52,11 @@ export default function SignInForm() {
     }
 
     if (user) {
-      const { data: profileData } = await insforge.database
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      const role = (profileData as { role: string } | null)?.role;
       await refreshUser();
 
-      if (role === "admin" || role === "staff") {
-        push("/dashboard");
-      } else if (role === "partner") {
-        push("/dashboard");
-      } else {
-        push("/account");
-      }
+      const toDashboard =
+        role === "admin" || role === "staff" || role === "partner";
+      push(toDashboard ? "/dashboard" : "/account");
     }
   };
 
