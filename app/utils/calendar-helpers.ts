@@ -104,6 +104,30 @@ export function getBookingStartTimes(durationMinutes: number): string[] {
   return times;
 }
 
+/**
+ * The free start times for a date, given the calendar's busy intervals.
+ * Takes the date as `YYYY-MM-DD` for the callers that never build a `Date` —
+ * the MCP server and the WebMCP tools both receive the day as a string.
+ */
+export function getAvailableStartTimes(
+  dateStr: string,
+  durationMinutes: number,
+  busyIntervals: { start: string; end: string }[],
+): string[] {
+  const bufferMs = BOOKING_BUFFER_MINUTES * 60 * 1000;
+
+  return getBookingStartTimes(durationMinutes).filter((time) => {
+    const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
+    const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
+
+    return !busyIntervals.some(({ start, end }) => {
+      const busyStartMs = new Date(start).getTime();
+      const busyEndMs = new Date(end).getTime() + bufferMs;
+      return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
+    });
+  });
+}
+
 function computeSlots(
   date: Date,
   _category: string | undefined | null,
