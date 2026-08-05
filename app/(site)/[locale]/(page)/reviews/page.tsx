@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
-import { insforge } from "@/lib/insforge";
+import { insforgePublic as insforge } from "@/lib/insforge-public";
 import { Button } from "@/components/ui/button";
 import ReviewsMarquee from "@/components/sections/reviews/reviews-marquee";
 import type { TestimonialItem } from "@/components/sections/home/testimonials-carousel";

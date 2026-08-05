@@ -2,6 +2,7 @@
 
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
 import { insforge } from "@/lib/insforge";
+import { signOut as signOutAction } from "@/actions/auth";
 import { clearSession, hasSession, markSession } from "@/lib/auth-session-flag";
 
 type User = {
@@ -79,7 +80,9 @@ export function AuthProvider({
   }, [requireSession]);
 
   const signOut = async () => {
-    await insforge.auth.signOut();
+    // Clearing the session means clearing httpOnly cookies, which only the
+    // server can do.
+    await signOutAction();
     clearSession();
     setUser(null);
   };

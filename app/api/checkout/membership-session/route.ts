@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { insforge } from "@/lib/insforge";
+import { insforgePublic as insforge } from "@/lib/insforge-public";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { signInWithPassword } from "@/actions/auth";
 import { signInSchema, parseErrors } from "@/lib/schemas";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -35,10 +36,9 @@ export default function SignInForm() {
     setFieldErrors({});
     setLoading(true);
 
-    const { data, error } = await insforge.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // The session cookies are written by the server; the browser only learns
+    // who signed in.
+    const { user, error } = await signInWithPassword(email, password);
 
     setLoading(false);
 
@@ -51,11 +51,11 @@ export default function SignInForm() {
       return;
     }
 
-    if (data?.user) {
+    if (user) {
       const { data: profileData } = await insforge.database
         .from("profiles")
         .select("role")
-        .eq("id", data.user.id)
+        .eq("id", user.id)
         .single();
 
       const role = (profileData as { role: string } | null)?.role;

@@ -1,5 +1,5 @@
 import { getTranslations, getLocale } from "next-intl/server";
-import { insforge } from "@/lib/insforge";
+import { insforgePublic as insforge } from "@/lib/insforge-public";
 import TestimonialsCarousel from "./testimonials-carousel";
 
 type DbReview = {

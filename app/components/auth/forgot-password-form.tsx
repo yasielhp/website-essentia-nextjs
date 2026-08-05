@@ -4,7 +4,7 @@ import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { insforge } from "@/lib/insforge";
+import { resetPassword, sendResetPasswordEmail } from "@/actions/auth";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 
@@ -67,10 +67,11 @@ export default function ForgotPasswordForm() {
   const { stage, email, otp, newPassword, error, loading } = state;
 
   const sendCode = async () => {
-    await insforge.auth.sendResetPasswordEmail({
+    const { ok } = await sendResetPasswordEmail(
       email,
-      redirectTo: window.location.origin + "/sign-in",
-    });
+      window.location.origin + "/sign-in",
+    );
+    if (!ok) throw new Error("send failed");
   };
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -97,11 +98,17 @@ export default function ForgotPasswordForm() {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const { data, error: exchangeError } =
-        await insforge.auth.exchangeResetPasswordToken({ email, code: otp });
+      // Both halves run on the server: the code is exchanged for a short-lived
+      // token that sets the new password, and that token never reaches the
+      // page it was minted for.
+      const {
+        ok,
+        stage: failedAt,
+        error,
+      } = await resetPassword(email, otp, newPassword);
 
-      if (exchangeError || !data) {
-        if (exchangeError?.statusCode === 400) {
+      if (!ok) {
+        if (failedAt === "exchange" && error?.statusCode === 400) {
           dispatch({
             type: "SET_ERROR",
             payload: t("reset.errorInvalidCode"),
@@ -109,23 +116,9 @@ export default function ForgotPasswordForm() {
         } else {
           dispatch({
             type: "SET_ERROR",
-            payload: exchangeError?.message ?? t("reset.errorResetFailed"),
+            payload: error?.message ?? t("reset.errorResetFailed"),
           });
         }
-        dispatch({ type: "SET_LOADING", payload: false });
-        return;
-      }
-
-      const { error: resetError } = await insforge.auth.resetPassword({
-        newPassword,
-        otp: data.token,
-      });
-
-      if (resetError) {
-        dispatch({
-          type: "SET_ERROR",
-          payload: resetError.message ?? t("reset.errorResetFailed"),
-        });
         dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
