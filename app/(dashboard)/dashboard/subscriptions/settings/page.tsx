@@ -6,7 +6,7 @@ import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-conte
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 import type { PlanRow } from "@/types/settings";
 
-export default function MembersSettingsPage() {
+export default function SubscriptionsSettingsPage() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [planModal, setPlanModal] = useState<PlanRow | null>(null);
   const [loading, setLoading] = useState(true);

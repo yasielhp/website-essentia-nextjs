@@ -688,10 +688,9 @@ export default function BookingsPage() {
           active={fStatus === "cancelled"}
         />
         <StatCard
-          label="Total Bookings"
+          label="Total"
           value={countsTotal ?? 0}
           loading={countsTotal === null}
-          active={!fStatus}
         />
       </div>
 
