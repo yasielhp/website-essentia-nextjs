@@ -7,6 +7,7 @@ import { fontVariables } from "@lib/fonts";
 import { contact } from "@/constants/contact";
 import { ConsentManager } from "@components/consent-manager";
 import { AuthProvider } from "@components/auth-provider";
+import { WebMcpTools } from "@components/webmcp-tools";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
@@ -167,6 +168,7 @@ export default async function SiteLayout({ children, params }: Props) {
         <AuthProvider>
           <ConsentManager>{children}</ConsentManager>
         </AuthProvider>
+        <WebMcpTools locale={locale} />
       </body>
     </html>
   );

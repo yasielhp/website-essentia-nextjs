@@ -5,10 +5,7 @@ import {
   bookableServices,
   manualTherapyTreatments,
 } from "@/data/services-data";
-import {
-  BOOKING_BUFFER_MINUTES,
-  getBookingStartTimes,
-} from "@/utils/calendar-helpers";
+import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -16,23 +13,6 @@ const siteUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://www.essentiawellnessclub.com";
 
 type BusyInterval = { start: string; end: string };
-
-function computeAvailableSlots(
-  dateStr: string,
-  durationMinutes: number,
-  busyIntervals: BusyInterval[],
-): string[] {
-  return getBookingStartTimes(durationMinutes).filter((slot) => {
-    const slotStart = new Date(`${dateStr}T${slot}:00`);
-    const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
-    return !busyIntervals.some((b) => {
-      const bStart = new Date(b.start).getTime();
-      // Same buffer between sessions the booking UI applies
-      const bEnd = new Date(b.end).getTime() + BOOKING_BUFFER_MINUTES * 60_000;
-      return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
-    });
-  });
-}
 
 // ─── MCP handler ──────────────────────────────────────────────
 
@@ -148,7 +128,7 @@ const handler = createMcpHandler(
             ? parseInt(service.durations[0], 10) || 60
             : 60;
           const duration = duration_minutes ?? fallbackDuration;
-          const available = computeAvailableSlots(date, duration, busy ?? []);
+          const available = getAvailableStartTimes(date, duration, busy ?? []);
 
           if (available.length === 0) {
             return {
