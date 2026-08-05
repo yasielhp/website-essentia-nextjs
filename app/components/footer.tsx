@@ -184,10 +184,20 @@ export const Footer = () => {
           </div>
           {/*Contact Email and Phone*/}
           <div className="border-petroleum-500 flex w-full flex-col items-center text-center md:border-r">
-            <AnimatedLink href={`mailto:${contact.email}`} target="_blank">
+            {/* Two lines of small text stacked with no gap: the padding is
+                what gives each one a tap target a thumb can hit. */}
+            <AnimatedLink
+              href={`mailto:${contact.email}`}
+              target="_blank"
+              className="inline-block px-2 py-1.5"
+            >
               {contact.email}
             </AnimatedLink>
-            <AnimatedLink href={`tel:${contact.phone}`} target="_blank">
+            <AnimatedLink
+              href={`tel:${contact.phone}`}
+              target="_blank"
+              className="inline-block px-2 py-1.5"
+            >
               {contact.phone}
             </AnimatedLink>
           </div>
@@ -198,6 +208,7 @@ export const Footer = () => {
                 key={social.name}
                 href={social.url}
                 target="_blank"
+                aria-label={social.name}
                 className="border-petroleum-500 rounded-full border p-2 text-center"
               >
                 <social.icon />

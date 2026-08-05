@@ -1,5 +1,5 @@
 "use client";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "../../i18n/navigation";
 import { IconWorld } from "@components/ui/icons";
 
@@ -10,6 +10,7 @@ const labels: Record<string, string> = {
 
 export default function LanguageSelector() {
   const locale = useLocale();
+  const t = useTranslations("header");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -21,7 +22,10 @@ export default function LanguageSelector() {
   return (
     <div className="border-petroleum-500 relative flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 text-sm">
       <IconWorld />
+      {/* The globe carries no text, so the control needs a name of its own —
+          without it a screen reader announces only the current language. */}
       <select
+        aria-label={t("languageAriaLabel")}
         value={locale}
         onChange={handleChange}
         className="cursor-pointer appearance-none bg-transparent pr-4 outline-none"

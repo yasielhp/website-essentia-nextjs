@@ -1,5 +1,6 @@
 {
   "logoAriaLabel": "Inicio",
+  "languageAriaLabel": "Cambiar idioma",
   "myAccountAriaLabel": "Mi cuenta",
   "adminBadge": "Admin",
   "toggleVideoPlayback": "Pausar o reproducir vídeo",
