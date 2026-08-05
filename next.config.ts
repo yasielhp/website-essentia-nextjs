@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   // This file is maintained by hand, so the generation is off and the tree
   // stays clean; flip to `true` to opt back in.
   agentRules: false,
+  experimental: {
+    // Serves `app/global-not-found.tsx` for unmatched URLs. Without it those
+    // fall back to `app/not-found.tsx` inside a generated root layout, which
+    // this tree does not have — no stylesheet, no fonts.
+    globalNotFound: true,
+  },
   // A retired URL, moved permanently so it drops out of the index and passes
   // its equity on. As a page it answered 307 — temporary — which keeps the old
   // URL alive in search results indefinitely.
