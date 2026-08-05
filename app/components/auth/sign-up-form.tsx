@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { markSession } from "@/lib/auth-session-flag";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 
@@ -104,6 +105,7 @@ export default function SignUpForm() {
     if (data?.requireEmailVerification) {
       dispatch({ type: "SET_STAGE", payload: "verify" });
     } else if (data?.accessToken && data.user) {
+      markSession();
       await createProfile(data.user.id, name, email);
       push("/booking");
       refresh();
@@ -138,6 +140,7 @@ export default function SignUpForm() {
     }
 
     if (data?.user) {
+      markSession();
       await createProfile(data.user.id, name, email);
       push("/booking");
       refresh();

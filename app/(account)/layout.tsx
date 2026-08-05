@@ -34,7 +34,7 @@ export default async function AccountLayout({
   return (
     <html lang={locale} data-scroll-behavior="smooth" className={fontVariables}>
       <body className="antialiased">
-        <AuthProvider>
+        <AuthProvider requireSession>
           <ConsentManager>
             <NextIntlClientProvider messages={messages} locale={locale}>
               <ScrollReset />
