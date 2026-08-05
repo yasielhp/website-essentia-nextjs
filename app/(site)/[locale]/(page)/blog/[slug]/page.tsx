@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { marked } from "marked";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { insforge as db } from "@/lib/insforge";
+import { insforgePublic as db } from "@/lib/insforge-public";
 import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";

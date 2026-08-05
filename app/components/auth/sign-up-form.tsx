@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import {
+  resendVerificationEmail,
+  signUp as signUpAction,
+  verifyEmail,
+} from "@/actions/auth";
 import { markSession } from "@/lib/auth-session-flag";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -85,12 +90,11 @@ export default function SignUpForm() {
     dispatch({ type: "SET_ERROR", payload: null });
     dispatch({ type: "SET_LOADING", payload: true });
 
-    const { data, error: signUpError } = await insforge.auth.signUp({
-      email,
-      password,
-      name,
-      redirectTo: `${window.location.origin}/sign-in`,
-    });
+    const {
+      user,
+      requireEmailVerification,
+      error: signUpError,
+    } = await signUpAction(email, password, name);
 
     dispatch({ type: "SET_LOADING", payload: false });
 
@@ -102,11 +106,13 @@ export default function SignUpForm() {
       return;
     }
 
-    if (data?.requireEmailVerification) {
+    if (requireEmailVerification) {
       dispatch({ type: "SET_STAGE", payload: "verify" });
-    } else if (data?.accessToken && data.user) {
+    } else if (user) {
+      // The tokens stay on the server now, so a live account is the absence of
+      // a verification step rather than an access token in the response.
       markSession();
-      await createProfile(data.user.id, name, email);
+      await createProfile(user.id, name, email);
       push("/booking");
       refresh();
     }
@@ -117,10 +123,7 @@ export default function SignUpForm() {
     dispatch({ type: "SET_ERROR", payload: null });
     dispatch({ type: "SET_LOADING", payload: true });
 
-    const { data, error: verifyError } = await insforge.auth.verifyEmail({
-      email,
-      otp,
-    });
+    const { user, error: verifyError } = await verifyEmail(email, otp);
 
     dispatch({ type: "SET_LOADING", payload: false });
 
@@ -139,9 +142,9 @@ export default function SignUpForm() {
       return;
     }
 
-    if (data?.user) {
+    if (user) {
       markSession();
-      await createProfile(data.user.id, name, email);
+      await createProfile(user.id, name, email);
       push("/booking");
       refresh();
     }
@@ -149,10 +152,7 @@ export default function SignUpForm() {
 
   const handleResend = async () => {
     dispatch({ type: "SET_ERROR", payload: null });
-    await insforge.auth.resendVerificationEmail({
-      email,
-      redirectTo: `${window.location.origin}/sign-in`,
-    });
+    await resendVerificationEmail(email, `${window.location.origin}/sign-in`);
   };
 
   if (stage === "verify") {

@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { insforge } from "@/lib/insforge";
+import { insforgePublic as insforge } from "@/lib/insforge-public";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { contact } from "@/constants/contact";
 import { isUnlaunched } from "@/constants/unlaunched";

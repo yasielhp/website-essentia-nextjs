@@ -3,6 +3,8 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
+import { createUserAccount } from "@/actions/create-user-account";
 import {
   newDashboardPersonSchema,
   parseErrors,
@@ -206,18 +208,19 @@ export default function NewUserPage() {
     const tempPassword =
       "Essentia" + Math.random().toString(36).slice(2, 10).toUpperCase() + "!";
 
-    const { data: authData, error: signUpError } = await insforge.auth.signUp({
-      email: trimEmail,
-      password: tempPassword,
-      name: fullName,
-      redirectTo: `${window.location.origin}/dashboard`,
-    });
+    // Created through an admin action rather than the browser's own auth: a
+    // sign-up from here would hand this administrator the new user's session.
+    const { userId: createdId, error: signUpError } = await createUserAccount(
+      getAccessToken(),
+      trimEmail,
+      tempPassword,
+      fullName,
+    );
 
-    let userId = (authData as { user?: { id: string } } | null)?.user?.id;
+    let userId = createdId ?? undefined;
 
     if (!userId) {
-      const errMsg =
-        (signUpError as { message?: string } | null)?.message ?? "";
+      const errMsg = signUpError ?? "";
       if (errMsg.toLowerCase().includes("already")) {
         // Account exists in auth — look up the profile by email and update the role
         const { data: existing } = await insforge.database
