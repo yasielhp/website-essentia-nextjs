@@ -1,12 +1,12 @@
 export const programs = [
   {
     key: "runningClub",
-    href: "/community/running-club",
+    href: "/experiences/running-club",
     img: "/images/menu/running-club.webp",
   },
   {
     key: "education",
-    href: "/community/education-programs",
+    href: "/experiences/education-programs",
     img: "/images/menu/education-programs.webp",
   },
 ] as const;
