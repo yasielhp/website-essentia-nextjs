@@ -1,25 +1,29 @@
 "use client";
 
-import { insforge } from "@/lib/insforge";
-
 /**
  * Browser-side access to the current Insforge access token.
  *
- * The SDK keeps the token in memory and exposes it only through the HTTP
- * client's default headers. When no user is signed in, the header falls back to
- * the anon key — harmless, because the server rejects it as a session token.
+ * The token lives in the `insforge_access_token` cookie, set by this app on
+ * its own domain and deliberately readable by scripts — the refresh token is
+ * the httpOnly one. Reading it here rather than from the SDK's memory means it
+ * survives a full page load, which is what happens whenever the browser moves
+ * between the public site, the account and the dashboard: they are separate
+ * root layouts.
  *
  * Privileged Server Actions and Route Handlers require this token; see
- * `app/lib/auth-guard.ts` for why it travels explicitly rather than in a cookie.
+ * `app/lib/auth-guard.ts` for why it travels explicitly.
  */
+const ACCESS_TOKEN_COOKIE = "insforge_access_token";
+
 export function getAccessToken(): string | null {
-  try {
-    const header = insforge.getHttpClient().getHeaders()["Authorization"];
-    if (!header?.startsWith("Bearer ")) return null;
-    return header.slice(7) || null;
-  } catch {
-    return null;
-  }
+  if (typeof document === "undefined") return null;
+
+  const match = document.cookie.match(
+    new RegExp(`(?:^|;\\s*)${ACCESS_TOKEN_COOKIE}=([^;]*)`),
+  );
+  if (!match) return null;
+
+  return decodeURIComponent(match[1]) || null;
 }
 
 /**
