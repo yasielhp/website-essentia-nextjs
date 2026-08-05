@@ -44,6 +44,28 @@ export default function Hero() {
   const [showIcon, setShowIcon] = useState<"play" | "pause" | null>(null);
   const iconTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
+  /**
+   * The Vimeo player only appears once the hero has been scrolled past, but
+   * the iframe used to mount with the page — so every visit paid for the
+   * player's script, its three cookies and its video segments, including the
+   * visits that never scrolled at all.
+   *
+   * The first scroll is the signal: it happens long before the reveal, so the
+   * player is ready by the time it fades in, and a visitor who reads the hero
+   * and leaves never loads Vimeo.
+   */
+  const [vimeoMounted, setVimeoMounted] = useState(false);
+
+  useEffect(() => {
+    // A reload part-way down the page restores the scroll position before the
+    // triggers below exist. The frame check catches that; it runs after the
+    // commit, so it never cascades a render.
+    const frame = requestAnimationFrame(() => {
+      if (window.scrollY > 0) setVimeoMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const vimeoCommand = useCallback((method: string, value?: number) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
@@ -170,6 +192,18 @@ export default function Hero() {
         }
       };
 
+      // A quarter of the way into the scroll the player still has some way to
+      // go before it fades in, which is the head start the iframe needs to
+      // have its first frame ready. Anyone who never gets this far never
+      // loads Vimeo at all.
+      ScrollTrigger.create({
+        trigger: wrapper,
+        start: () => `+=${scrollDistance() * 0.25}`,
+        once: true,
+        invalidateOnRefresh: true,
+        onEnter: () => setVimeoMounted(true),
+      });
+
       ScrollTrigger.create({
         trigger: wrapper,
         start: () => `+=${scrollDistance()}`,
@@ -214,19 +248,21 @@ export default function Hero() {
           className="absolute inset-0 z-20 overflow-hidden opacity-0"
           style={{ pointerEvents: "none" }}
         >
-          <iframe
-            ref={iframeRef}
-            src="https://player.vimeo.com/video/1079094689?h=b7ca743ee7&autoplay=1&muted=1&loop=1&badge=0&autopause=0&title=0&byline=0&portrait=0&controls=0"
-            className="absolute top-1/2 left-1/2"
-            style={{
-              width: "max(100%, 177.78vh)",
-              height: "max(100%, 56.25vw)",
-              transform: "translate(-50%, -50%)",
-            }}
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-            title={t("videoTitle")}
-          />
+          {vimeoMounted && (
+            <iframe
+              ref={iframeRef}
+              src="https://player.vimeo.com/video/1079094689?h=b7ca743ee7&autoplay=1&muted=1&loop=1&badge=0&autopause=0&title=0&byline=0&portrait=0&controls=0"
+              className="absolute top-1/2 left-1/2"
+              style={{
+                width: "max(100%, 177.78vh)",
+                height: "max(100%, 56.25vw)",
+                transform: "translate(-50%, -50%)",
+              }}
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              title={t("videoTitle")}
+            />
+          )}
           {vimeoVisible && (
             <>
               <button
