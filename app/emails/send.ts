@@ -5,9 +5,12 @@ type SendEmailParams = {
   to: string;
   subject: string;
   html: string;
+  /** Set when the reply belongs to someone other than Essentia — a visitor
+   *  writing through the contact form, for instance. */
+  replyTo?: string;
 };
 
-async function getAdminEmail(): Promise<string | null> {
+export async function getAdminEmail(): Promise<string | null> {
   try {
     const { data } = await getAdminClient()
       .database.from("profiles")
@@ -21,7 +24,12 @@ async function getAdminEmail(): Promise<string | null> {
   }
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  replyTo,
+}: SendEmailParams) {
   if (!to.includes("@")) throw new Error("Invalid recipient address");
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -42,6 +50,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
     to,
     subject,
     html,
+    ...(replyTo ? { replyTo } : {}),
     ...(adminBcc && adminBcc !== to ? { bcc: adminBcc } : {}),
   });
 

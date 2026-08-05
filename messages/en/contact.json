@@ -18,6 +18,7 @@
     "messagePlaceholder": "Tell us a bit about what you're looking for...",
     "submit": "Send message",
     "submitting": "Sending…",
+    "error": "Your message could not be sent. Please try again, or write to us directly at info@essentiawellnessclub.com.",
     "interests": {
       "membership": "Membership",
       "wellness": "Wellness programmes",

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { contact } from "@/constants/contact";
 import { AnimatedIconLink } from "@components/ui/animated-text";
+import { sendContactMessage } from "@/actions/contact-message";
 
 // ─── Input ────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export default function ContactSection() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -56,13 +58,38 @@ export default function ContactSection() {
     return () => ctx.revert();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    // A field no person sees and every naive bot fills. Silently accepted, so
+    // whoever submitted it has nothing to learn from the response.
+    if (data.get("company")) {
       setSubmitted(true);
-    }, 1200);
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    const result = await sendContactMessage({
+      firstName: String(data.get("firstName") ?? ""),
+      lastName: String(data.get("lastName") ?? ""),
+      email: String(data.get("email") ?? ""),
+      interest: String(data.get("interest") ?? ""),
+      message: String(data.get("message") ?? ""),
+    });
+
+    setLoading(false);
+
+    if (!result.ok) {
+      setError(t("form.error"));
+      return;
+    }
+
+    form.reset();
+    setSubmitted(true);
   };
 
   return (
@@ -101,6 +128,14 @@ export default function ContactSection() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <input
+                  type="text"
+                  name="company"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden
+                  className="hidden"
+                />
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Field label={t("form.firstName")} id="first-name">
                     <input
@@ -175,6 +210,12 @@ export default function ContactSection() {
                     className={[inputClass, "resize-none"].join(" ")}
                   />
                 </Field>
+
+                {error && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {error}
+                  </p>
+                )}
 
                 <Button
                   variant="solid"

@@ -6,6 +6,25 @@ export const signInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+/**
+ * The contact form. The same shape validates the browser and the server
+ * action, because a form that emails the team is worth checking twice.
+ */
+export const contactMessageSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(80),
+  lastName: z.string().trim().min(1, "Last name is required").max(80),
+  email: z.string().trim().email("Enter a valid email address").max(160),
+  interest: z.enum(
+    ["membership", "wellness", "medicine", "community", "other"],
+    { message: "Choose a topic" },
+  ),
+  message: z
+    .string()
+    .trim()
+    .min(10, "Tell us a little more — at least 10 characters")
+    .max(4000),
+});
+
 export const bookingDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
