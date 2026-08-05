@@ -11,20 +11,15 @@ gsap.registerPlugin(ScrollTrigger);
 
 const R2_ORIGIN = "https://pub-7642190515d84a34b81f6b11e42e6c44.r2.dev";
 
-type VideoState = { visible: boolean; muted: boolean };
-type VideoAction =
-  | { type: "show"; muted?: boolean }
-  | { type: "hide"; muted?: boolean }
-  | { type: "toggle_mute"; muted: boolean };
+type VideoState = { visible: boolean };
+type VideoAction = { type: "show" } | { type: "hide" };
 
 function videoReducer(state: VideoState, action: VideoAction): VideoState {
   switch (action.type) {
     case "show":
-      return { visible: true, muted: action.muted ?? state.muted };
+      return { visible: true };
     case "hide":
-      return { visible: false, muted: action.muted ?? state.muted };
-    case "toggle_mute":
-      return { ...state, muted: action.muted };
+      return { visible: false };
   }
 }
 
@@ -35,14 +30,36 @@ export default function Hero() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const vimeoContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const isUnmutedRef = useRef(false);
   const isPausedByUserRef = useRef(false);
-  const [{ visible: vimeoVisible, muted: isMuted }, dispatch] = useReducer(
-    videoReducer,
-    { visible: false, muted: true },
-  );
+  // The player stays muted: it is scenery behind the page, and the browsers
+  // that matter block sound on an autoplaying video anyway.
+  const [{ visible: vimeoVisible }, dispatch] = useReducer(videoReducer, {
+    visible: false,
+  });
   const [showIcon, setShowIcon] = useState<"play" | "pause" | null>(null);
   const iconTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  /**
+   * The Vimeo player only appears once the hero has been scrolled past, but
+   * the iframe used to mount with the page — so every visit paid for the
+   * player's script, its three cookies and its video segments, including the
+   * visits that never scrolled at all.
+   *
+   * The first scroll is the signal: it happens long before the reveal, so the
+   * player is ready by the time it fades in, and a visitor who reads the hero
+   * and leaves never loads Vimeo.
+   */
+  const [vimeoMounted, setVimeoMounted] = useState(false);
+
+  useEffect(() => {
+    // A reload part-way down the page restores the scroll position before the
+    // triggers below exist. The frame check catches that; it runs after the
+    // commit, so it never cascades a render.
+    const frame = requestAnimationFrame(() => {
+      if (window.scrollY > 0) setVimeoMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const vimeoCommand = useCallback((method: string, value?: number) => {
     const iframe = iframeRef.current;
@@ -66,16 +83,6 @@ export default function Hero() {
 
     iconTimeoutRef.current = setTimeout(() => setShowIcon(null), 800);
   }, [vimeoCommand]);
-
-  const handleToggleMute = useCallback(() => {
-    if (isMuted) {
-      vimeoCommand("setVolume", 1);
-      dispatch({ type: "toggle_mute", muted: false });
-    } else {
-      vimeoCommand("setVolume", 0);
-      dispatch({ type: "toggle_mute", muted: true });
-    }
-  }, [isMuted, vimeoCommand]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -143,14 +150,8 @@ export default function Hero() {
         });
         vimeoContainer.style.pointerEvents = "auto";
 
-        if (!isUnmutedRef.current) {
-          isUnmutedRef.current = true;
-          vimeoCommand("setVolume", 1);
-          dispatch({ type: "show", muted: false });
-          if (!isPausedByUserRef.current) vimeoCommand("play");
-        } else {
-          dispatch({ type: "show" });
-        }
+        if (!isPausedByUserRef.current) vimeoCommand("play");
+        dispatch({ type: "show" });
       };
 
       const hideVimeo = () => {
@@ -161,14 +162,20 @@ export default function Hero() {
         });
         vimeoContainer.style.pointerEvents = "none";
 
-        if (isUnmutedRef.current) {
-          isUnmutedRef.current = false;
-          vimeoCommand("setVolume", 0);
-          dispatch({ type: "hide", muted: true });
-        } else {
-          dispatch({ type: "hide" });
-        }
+        dispatch({ type: "hide" });
       };
+
+      // A quarter of the way into the scroll the player still has some way to
+      // go before it fades in, which is the head start the iframe needs to
+      // have its first frame ready. Anyone who never gets this far never
+      // loads Vimeo at all.
+      ScrollTrigger.create({
+        trigger: wrapper,
+        start: () => `+=${scrollDistance() * 0.25}`,
+        once: true,
+        invalidateOnRefresh: true,
+        onEnter: () => setVimeoMounted(true),
+      });
 
       ScrollTrigger.create({
         trigger: wrapper,
@@ -214,19 +221,21 @@ export default function Hero() {
           className="absolute inset-0 z-20 overflow-hidden opacity-0"
           style={{ pointerEvents: "none" }}
         >
-          <iframe
-            ref={iframeRef}
-            src="https://player.vimeo.com/video/1079094689?h=b7ca743ee7&autoplay=1&muted=1&loop=1&badge=0&autopause=0&title=0&byline=0&portrait=0&controls=0"
-            className="absolute top-1/2 left-1/2"
-            style={{
-              width: "max(100%, 177.78vh)",
-              height: "max(100%, 56.25vw)",
-              transform: "translate(-50%, -50%)",
-            }}
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-            title={t("videoTitle")}
-          />
+          {vimeoMounted && (
+            <iframe
+              ref={iframeRef}
+              src="https://player.vimeo.com/video/1079094689?h=b7ca743ee7&autoplay=1&muted=1&loop=1&badge=0&autopause=0&title=0&byline=0&portrait=0&controls=0"
+              className="absolute top-1/2 left-1/2"
+              style={{
+                width: "max(100%, 177.78vh)",
+                height: "max(100%, 56.25vw)",
+                transform: "translate(-50%, -50%)",
+              }}
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              title={t("videoTitle")}
+            />
+          )}
           {vimeoVisible && (
             <>
               <button
@@ -257,31 +266,6 @@ export default function Hero() {
                     </svg>
                   )}
                 </span>
-              </button>
-              <button
-                onClick={handleToggleMute}
-                className="absolute right-6 bottom-6 z-40 flex cursor-pointer items-center justify-center rounded-full bg-black/40 p-3 backdrop-blur-sm transition-opacity duration-300 hover:bg-black/60"
-                aria-label={isMuted ? t("unmute") : t("mute")}
-              >
-                {isMuted ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="white"
-                    className="size-5"
-                  >
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="white"
-                    className="size-5"
-                  >
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                  </svg>
-                )}
               </button>
             </>
           )}
