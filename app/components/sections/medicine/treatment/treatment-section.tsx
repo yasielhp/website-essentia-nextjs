@@ -365,7 +365,7 @@ function CtaSection({ data }: { data: MedicineTreatmentData }) {
               >
                 Book a session
               </Button>
-              <Button variant="outline" size="md" href="/community/memberships">
+              <Button variant="outline" size="md" href="/experiences/memberships">
                 View memberships
               </Button>
             </div>

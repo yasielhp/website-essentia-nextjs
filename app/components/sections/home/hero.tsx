@@ -316,7 +316,7 @@ export default function Hero() {
               {t("ctaBook")}
             </Button>
             <Button
-              href="/community/memberships"
+              href="/experiences/memberships"
               variant="outline-white"
               size="lg"
               className="w-full md:w-auto"
