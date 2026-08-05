@@ -32,13 +32,15 @@ type Contact = {
 function PageHeader({ submitting }: { submitting: boolean }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="font-display text-petroleum-700 text-3xl">New Member</h1>
+      <h1 className="font-display text-petroleum-700 text-3xl">
+        New Subscription
+      </h1>
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="md" href="/dashboard/members">
+        <Button variant="outline" size="md" href="/dashboard/subscriptions">
           Cancel
         </Button>
         <Button type="submit" variant="solid" size="md" disabled={submitting}>
-          {submitting ? "Creating…" : "Create Member"}
+          {submitting ? "Creating…" : "Create Subscription"}
         </Button>
       </div>
     </div>
@@ -119,19 +121,19 @@ function SubscriberSection({
   );
 }
 
-type MembershipDetailsSectionProps = {
+type SubscriptionDetailsSectionProps = {
   form: FormState;
   dispatchForm: React.Dispatch<FormAction>;
   plans: Plan[];
   submitting: boolean;
 };
 
-function MembershipDetailsSection({
+function SubscriptionDetailsSection({
   form,
   dispatchForm,
   plans,
   submitting,
-}: MembershipDetailsSectionProps) {
+}: SubscriptionDetailsSectionProps) {
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
@@ -271,7 +273,7 @@ function MembershipDetailsSection({
 
 // ─── Page ─────────────────────────────────────────────────────
 
-export default function NewMemberPage() {
+export default function NewSubscriptionPage() {
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
@@ -337,7 +339,7 @@ export default function NewMemberPage() {
       .insert([
         {
           // Both the link and the copy: `contact_id` is the relationship, the
-          // rest is what the members list reads directly off this row.
+          // rest is what the subscriptions list reads directly off this row.
           contact_id: contact.id,
           first_name: contact.first_name ?? "",
           last_name: contact.last_name ?? "",
@@ -356,12 +358,12 @@ export default function NewMemberPage() {
     if (insertError) {
       setError(
         (insertError as { message?: string })?.message ??
-          "Failed to create member.",
+          "Failed to create subscription.",
       );
       return;
     }
 
-    push("/dashboard/members");
+    push("/dashboard/subscriptions");
   }
 
   return (
@@ -383,7 +385,7 @@ export default function NewMemberPage() {
             loading={contacts === null}
             submitting={submitting}
           />
-          <MembershipDetailsSection
+          <SubscriptionDetailsSection
             form={form}
             dispatchForm={dispatchForm}
             plans={plans}

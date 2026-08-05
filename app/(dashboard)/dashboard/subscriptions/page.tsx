@@ -9,7 +9,7 @@ import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 
-type Member = {
+type Subscription = {
   id: string;
   first_name: string;
   last_name: string;
@@ -39,11 +39,11 @@ const PLAN_STYLES: Record<string, string> = {
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
-type MemberFilter = { status: string; plan: string };
-const emptyMemberFilter: MemberFilter = { status: "", plan: "" };
+type SubscriptionFilter = { status: string; plan: string };
+const emptySubscriptionFilter: SubscriptionFilter = { status: "", plan: "" };
 
 type ListState = {
-  members: Member[];
+  subscriptions: Subscription[];
   loading: boolean;
   total: number;
   activeCount: number | null;
@@ -53,7 +53,7 @@ type ListAction =
   | { type: "loading" }
   | {
       type: "loaded";
-      members: Member[];
+      subscriptions: Subscription[];
       total: number;
       activeCount?: number | null;
     };
@@ -62,7 +62,7 @@ function listReducer(state: ListState, action: ListAction): ListState {
   if (action.type === "loading") return { ...state, loading: true };
   return {
     loading: false,
-    members: action.members,
+    subscriptions: action.subscriptions,
     total: action.total,
     activeCount: action.activeCount ?? state.activeCount,
   };
@@ -75,8 +75,8 @@ function FilterModal({
   onClear,
   onClose,
 }: {
-  pending: MemberFilter;
-  onChange: (key: keyof MemberFilter, value: string) => void;
+  pending: SubscriptionFilter;
+  onChange: (key: keyof SubscriptionFilter, value: string) => void;
   onApply: () => void;
   onClear: () => void;
   onClose: () => void;
@@ -151,19 +151,21 @@ function FilterModal({
   );
 }
 
-export default function MembersPage() {
+export default function SubscriptionsPage() {
   const [state, dispatch] = useReducer(listReducer, {
-    members: [],
+    subscriptions: [],
     loading: true,
     total: 0,
     activeCount: null,
   });
-  const { members, loading, total, activeCount } = state;
+  const { subscriptions, loading, total, activeCount } = state;
   const [page, setPage] = useState(0);
-  const [appliedFilter, setAppliedFilter] =
-    useState<MemberFilter>(emptyMemberFilter);
-  const [pendingFilter, setPendingFilter] =
-    useState<MemberFilter>(emptyMemberFilter);
+  const [appliedFilter, setAppliedFilter] = useState<SubscriptionFilter>(
+    emptySubscriptionFilter,
+  );
+  const [pendingFilter, setPendingFilter] = useState<SubscriptionFilter>(
+    emptySubscriptionFilter,
+  );
   const [filterOpen, setFilterOpen] = useState(false);
   const { push } = useRouter();
 
@@ -182,8 +184,8 @@ export default function MembersPage() {
   }
 
   function clearFilters() {
-    setPendingFilter(emptyMemberFilter);
-    setAppliedFilter(emptyMemberFilter);
+    setPendingFilter(emptySubscriptionFilter);
+    setAppliedFilter(emptySubscriptionFilter);
     setPage(0);
     setFilterOpen(false);
   }
@@ -217,7 +219,7 @@ export default function MembersPage() {
 
       dispatch({
         type: "loaded",
-        members: (listRes.data as Member[] | null) ?? [],
+        subscriptions: (listRes.data as Subscription[] | null) ?? [],
         total: listRes.count ?? 0,
         activeCount:
           activeRes && "count" in activeRes
@@ -235,17 +237,17 @@ export default function MembersPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-3">
         <Button
-          onClick={() => push("/dashboard/members/new")}
+          onClick={() => push("/dashboard/subscriptions/new")}
           className="flex items-center gap-2"
         >
           <IconPlus />
-          New Member
+          New Subscription
         </Button>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="md"
-            href="/dashboard/members/settings"
+            href="/dashboard/subscriptions/settings"
             className="gap-2"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -281,12 +283,12 @@ export default function MembersPage() {
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4">
         <StatCard
-          label="Active Members"
+          label="Active"
           value={activeCount ?? 0}
           loading={activeCount === null}
         />
         <StatCard
-          label="Total Members"
+          label="Total"
           value={total}
           loading={loading && total === 0}
         />
@@ -345,9 +347,9 @@ export default function MembersPage() {
               </table>
             </div>
           </>
-        ) : members.length === 0 ? (
+        ) : subscriptions.length === 0 ? (
           <div className="text-petroleum-300 py-20 text-center text-sm">
-            No members yet.
+            No subscriptions yet.
           </div>
         ) : (
           <>
@@ -377,10 +379,10 @@ export default function MembersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((m) => (
+                  {subscriptions.map((m) => (
                     <tr
                       key={m.id}
-                      onClick={() => push(`/dashboard/members/${m.id}`)}
+                      onClick={() => push(`/dashboard/subscriptions/${m.id}`)}
                       className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
                     >
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
@@ -422,10 +424,10 @@ export default function MembersPage() {
 
             {/* Mobile cards */}
             <div className="divide-sand-100 divide-y md:hidden">
-              {members.map((m) => (
+              {subscriptions.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => push(`/dashboard/members/${m.id}`)}
+                  onClick={() => push(`/dashboard/subscriptions/${m.id}`)}
                   className="hover:bg-sand-50 flex w-full items-center justify-between px-5 py-4 text-left transition-colors"
                 >
                   <div className="min-w-0">

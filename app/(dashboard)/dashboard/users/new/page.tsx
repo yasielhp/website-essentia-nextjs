@@ -197,7 +197,9 @@ export default function NewUserPage() {
 
       // A membership needs a plan, dates and a price, which live on their own
       // screen — send the user there to finish what they started.
-      push(role === "member" ? "/dashboard/members/new" : "/dashboard/users");
+      push(
+        role === "member" ? "/dashboard/subscriptions/new" : "/dashboard/users",
+      );
       return;
     }
 

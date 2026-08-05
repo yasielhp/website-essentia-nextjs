@@ -4,7 +4,7 @@ const SECTION_LABELS: Record<string, string> = {
   blog: "Blog",
   bookings: "Bookings",
   contacts: "Users",
-  members: "Members",
+  subscriptions: "Subscriptions",
   staff: "Users",
   users: "Users",
   races: "Races",
