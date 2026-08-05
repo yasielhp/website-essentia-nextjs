@@ -1,5 +1,6 @@
 {
   "logoAriaLabel": "Home",
+  "languageAriaLabel": "Change language",
   "myAccountAriaLabel": "My account",
   "adminBadge": "Admin",
   "toggleVideoPlayback": "Toggle video playback",
