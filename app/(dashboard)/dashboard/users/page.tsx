@@ -235,12 +235,14 @@ export default function UsersPage() {
     members: number | null;
     staff: number | null;
     partner: number | null;
+    admin: number | null;
   }>({
     leads: null,
     clients: null,
     members: null,
     staff: null,
     partner: null,
+    admin: null,
   });
 
   const [appliedFilter, setAppliedFilter] =
@@ -329,19 +331,33 @@ export default function UsersPage() {
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("role", "partner"),
-    ]).then(([contactCounts, staff, partner]) => {
+      // Admins have no card of their own, but they appear in the list below, so
+      // the total would be short by them if it were only the sum of the cards.
+      insforge.database
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin"),
+    ]).then(([contactCounts, staff, partner, admin]) => {
       setRoleCounts({
         leads: contactCounts.leads,
         clients: contactCounts.clients,
         // Contacts marked as members, not active subscriptions: every card on
         // this page counts people, and the subscription figure lives on the
-        // Members screen.
+        // Subscriptions screen.
         members: contactCounts.members,
         staff: (staff as { count: number | null }).count ?? 0,
         partner: (partner as { count: number | null }).count ?? 0,
+        admin: (admin as { count: number | null }).count ?? 0,
       });
     });
   }, []);
+
+  // Every card is drawn from these same figures, so the total is their sum
+  // rather than a separate query that could disagree with them.
+  const countsLoaded = Object.values(roleCounts).every((c) => c !== null);
+  const totalUsers = countsLoaded
+    ? Object.values(roleCounts).reduce((sum, c) => sum! + c!, 0)!
+    : null;
 
   const totalPages = Math.max(1, Math.ceil(contacts.total / PAGE_SIZE));
   const isFirstPage = contacts.page === 0;
@@ -414,7 +430,7 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-6">
         <StatCard
           label="Leads"
           value={roleCounts.leads ?? 0}
@@ -439,6 +455,11 @@ export default function UsersPage() {
           label="Partners"
           value={roleCounts.partner ?? 0}
           loading={roleCounts.partner === null}
+        />
+        <StatCard
+          label="Total"
+          value={totalUsers ?? 0}
+          loading={totalUsers === null}
         />
       </div>
 
