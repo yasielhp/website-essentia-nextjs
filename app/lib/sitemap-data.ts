@@ -1,4 +1,7 @@
 import { unstable_cache } from "next/cache";
+
+/** Cache tag for the published-post list the sitemaps build from. */
+export const BLOG_POSTS_CACHE_TAG = "blog-posts";
 import { insforgePublic as insforge } from "@/lib/insforge-public";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { contact } from "@/constants/contact";
@@ -170,5 +173,7 @@ export const fetchBlogPosts = unstable_cache(
     }
   },
   ["sitemap-blog-posts"],
-  { revalidate: 3600 },
+  // Tagged so publishing a post can drop this cache immediately, rather than
+  // leaving the sitemaps an hour behind the blog itself.
+  { revalidate: 3600, tags: [BLOG_POSTS_CACHE_TAG] },
 );
