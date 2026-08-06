@@ -19,6 +19,7 @@ import {
   fetchStaffServices,
 } from "@/services/calendar.client";
 import { accountProfileSchema, parseErrors } from "@/lib/schemas";
+import { useFieldError } from "@/hooks/use-field-error";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -235,6 +236,8 @@ export default function DashboardAccountPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.account");
   const tUsers = useTranslations("dashboard.users.form");
+  const tValidation = useTranslations("dashboard.validation");
+  const fieldError = useFieldError();
   const { user } = useAuth();
   const { role } = useRole();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -327,7 +330,8 @@ export default function DashboardAccountPage() {
     if (Object.keys(errs).length > 0) {
       dispatch({
         type: "SET_ERROR",
-        error: errs.firstName ?? errs.phone ?? "Please fix the errors.",
+        error:
+          fieldError(errs.firstName ?? errs.phone) || tValidation("fixErrors"),
       });
       return;
     }

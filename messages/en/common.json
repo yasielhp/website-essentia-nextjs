@@ -44,5 +44,13 @@
     "emailValidationRequired": "Enter your email address.",
     "emailValidationInvalid": "Enter a valid email address.",
     "consentValidationRequired": "You must accept the privacy policy to subscribe."
+  },
+  "validation": {
+    "emailInvalid": "Enter a valid email address",
+    "passwordRequired": "Password is required",
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "phoneInvalid": "Enter a valid phone number",
+    "consentRequired": "You must accept the terms and privacy policy"
   }
 }

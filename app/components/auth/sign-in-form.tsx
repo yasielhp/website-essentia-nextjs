@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { signInWithPassword } from "@/actions/auth";
 import { signInSchema, parseErrors } from "@/lib/schemas";
+import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 import { useAuth } from "@/components/auth-provider";
@@ -18,6 +19,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const validationMessage = useValidationMessage();
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
     password?: string;
@@ -90,7 +92,9 @@ export default function SignInForm() {
             className={`text-petroleum-700 placeholder:text-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
           />
           {fieldErrors.email && (
-            <p className="text-xs text-red-500">{fieldErrors.email}</p>
+            <p className="text-xs text-red-500">
+              {validationMessage(fieldErrors.email)}
+            </p>
           )}
         </div>
 
@@ -112,7 +116,9 @@ export default function SignInForm() {
             placeholder={t("passwordPlaceholder")}
           />
           {fieldErrors.password && (
-            <p className="text-xs text-red-500">{fieldErrors.password}</p>
+            <p className="text-xs text-red-500">
+              {validationMessage(fieldErrors.password)}
+            </p>
           )}
         </div>
 

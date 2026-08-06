@@ -44,5 +44,13 @@
     "emailValidationRequired": "Introduce tu dirección de correo.",
     "emailValidationInvalid": "Introduce una dirección de correo válida.",
     "consentValidationRequired": "Debes aceptar la política de privacidad para suscribirte."
+  },
+  "validation": {
+    "emailInvalid": "Introduce una dirección de email válida",
+    "passwordRequired": "La contraseña es obligatoria",
+    "firstNameRequired": "El nombre es obligatorio",
+    "lastNameRequired": "Los apellidos son obligatorios",
+    "phoneInvalid": "Introduce un teléfono válido",
+    "consentRequired": "Debes aceptar los términos y la política de privacidad"
   }
 }
