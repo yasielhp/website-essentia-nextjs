@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ChevronDown,
   ChevronLeft,
@@ -114,31 +115,46 @@ const TENERIFE_MUNICIPALITIES = [
   "Güímar",
 ];
 
-const LOCATIONS: {
+type LocationOption = {
   id: DashboardLocation;
   label: string;
   description: string;
   Icon: React.FC<{ size?: number; className?: string }>;
-}[] = [
-  {
-    id: "centro",
-    label: "At the center",
-    description: contact.address,
-    Icon: Building2,
-  },
-  {
-    id: "habitacion",
-    label: "Room",
-    description: "Baobab Suites room",
-    Icon: BedDouble,
-  },
-  {
-    id: "domicilio",
-    label: "Home visit",
-    description: "We come to your address",
-    Icon: Home,
-  },
-];
+};
+
+const LOCATION_ICONS: Record<
+  DashboardLocation,
+  React.FC<{ size?: number; className?: string }>
+> = {
+  centro: Building2,
+  habitacion: BedDouble,
+  domicilio: Home,
+};
+
+/** Wording from messages; the centre's description is a real address. */
+function useLocationOptions(): LocationOption[] {
+  const t = useTranslations("dashboard.bookings.form.locations");
+  return [
+    {
+      id: "centro",
+      label: t("centro.label"),
+      description: contact.address,
+      Icon: LOCATION_ICONS.centro,
+    },
+    {
+      id: "habitacion",
+      label: t("habitacion.label"),
+      description: t("habitacion.description"),
+      Icon: LOCATION_ICONS.habitacion,
+    },
+    {
+      id: "domicilio",
+      label: t("domicilio.label"),
+      description: t("domicilio.description"),
+      Icon: LOCATION_ICONS.domicilio,
+    },
+  ];
+}
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",
@@ -147,31 +163,30 @@ const EMPTY_ADDRESS: LocationAddress = {
   municipality: "",
 };
 
-const STATUSES: {
+type StatusOption = {
   id: BookingStatus;
   label: string;
   description: string;
   dot: string;
-}[] = [
-  {
-    id: "pending",
-    label: "Pending",
-    description: "Awaiting confirmation",
-    dot: "bg-yellow-400",
-  },
-  {
-    id: "confirmed",
-    label: "Confirmed",
-    description: "Appointment confirmed",
-    dot: "bg-green-500",
-  },
-  {
-    id: "cancelled",
-    label: "Cancelled",
-    description: "Appointment cancelled",
-    dot: "bg-red-400",
-  },
-];
+};
+
+const STATUS_DOTS: Record<BookingStatus, string> = {
+  pending: "bg-yellow-400",
+  confirmed: "bg-green-500",
+  cancelled: "bg-red-400",
+};
+
+const STATUS_IDS: BookingStatus[] = ["pending", "confirmed", "cancelled"];
+
+function useStatusOptions(): StatusOption[] {
+  const t = useTranslations("dashboard.bookings.edit.statuses");
+  return STATUS_IDS.map((id) => ({
+    id,
+    label: t(`${id}.label`),
+    description: t(`${id}.description`),
+    dot: STATUS_DOTS[id],
+  }));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -187,22 +202,27 @@ function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** The dashboard is English-only; the public flow translates its own copy. */
-const SERVICE_PICKER_LABELS = {
-  placeholder: "Select a service",
-  modalTitle: "Choose a service",
-  close: "Close",
-  wellness: "Wellness",
-  medicine: "Medicine",
-};
+function useServicePickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.servicePicker");
+  return {
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    wellness: t("wellness"),
+    medicine: t("medicine"),
+  };
+}
 
-const TIER_PICKER_LABELS = {
-  fieldLabel: "Duration & Price",
-  placeholder: "Select a duration & price",
-  modalTitle: "Select a session type",
-  close: "Close",
-  standard: "Standard",
-};
+function useTierPickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.tierPicker");
+  return {
+    fieldLabel: t("fieldLabel"),
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    standard: t("standard"),
+  };
+}
 
 // ─── Status Select ────────────────────────────────────────────
 
@@ -213,9 +233,10 @@ function StatusSelect({
   selected: BookingStatus;
   onSelect: (s: BookingStatus) => void;
 }) {
+  const statuses = useStatusOptions();
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
-  const active = STATUSES.find((s) => s.id === selected) ?? STATUSES[0]!;
+  const active = statuses.find((s) => s.id === selected) ?? statuses[0]!;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -268,7 +289,7 @@ function StatusSelect({
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
           >
             <div className="p-3">
-              {STATUSES.map(({ id, label, description, dot }) => (
+              {statuses.map(({ id, label, description, dot }) => (
                 <button
                   key={id}
                   type="button"
@@ -305,12 +326,13 @@ function StatusSelect({
 function LocationSelect({
   selected,
   onSelect,
-  locations = LOCATIONS,
+  locations,
 }: {
   selected: DashboardLocation | null;
   onSelect: (l: DashboardLocation) => void;
-  locations?: typeof LOCATIONS;
+  locations: LocationOption[];
 }) {
+  const t = useTranslations("dashboard.bookings.form.locations");
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
   const active = locations.find((l) => l.id === selected);
@@ -753,6 +775,8 @@ function ServiceSection({
   selectedService,
   onSelect,
 }: ServiceSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
+  const servicePickerLabels = useServicePickerLabels();
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Service</h2>
@@ -763,7 +787,7 @@ function ServiceSection({
           options={services}
           selected={selectedService}
           onSelect={onSelect}
-          labels={SERVICE_PICKER_LABELS}
+          labels={servicePickerLabels}
         />
       )}
     </div>
@@ -772,7 +796,7 @@ function ServiceSection({
 
 type LocationSectionProps = {
   location: DashboardLocation | "";
-  allowedLocations: typeof LOCATIONS;
+  allowedLocations: LocationOption[];
   onLocationChange: (l: DashboardLocation) => void;
   roomNumber: string;
   reservationNumber: string;
@@ -970,6 +994,8 @@ function TierSection({
   location,
   onSelect,
 }: TierSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
+  const tierPickerLabels = useTierPickerLabels();
   if (!serviceId) return null;
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -986,7 +1012,7 @@ function TierSection({
         <TierPicker
           options={tiers.map((t) => toTierOption(t, location))}
           selectedId={tierId}
-          labels={TIER_PICKER_LABELS}
+          labels={tierPickerLabels}
           collapseSingle
           onSelect={(o) => onSelect(o.id)}
         />
@@ -1229,6 +1255,10 @@ function ClientSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditBookingPage() {
+  const t = useTranslations("dashboard.bookings.edit");
+  const tForm = useTranslations("dashboard.bookings.form");
+  const tCommon = useTranslations("dashboard.common");
+  const locationOptions = useLocationOptions();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
@@ -1421,8 +1451,8 @@ export default function EditBookingPage() {
 
   const allowedLocations =
     role === "partner"
-      ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
-      : LOCATIONS;
+      ? locationOptions.filter((l) => l.id === "centro" || l.id === "habitacion")
+      : locationOptions;
 
   const sortedServices = services.toSorted((a, b) => {
     if (a.id === "manual-therapies") return -1;

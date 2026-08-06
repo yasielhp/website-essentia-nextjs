@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef, useState, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -165,6 +166,8 @@ function ConfirmDeleteModal({
   onCancel,
   onConfirm,
 }: ConfirmDeleteModalProps) {
+  const t = useTranslations("dashboard.races.edit");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div
       role="button"
@@ -182,12 +185,14 @@ function ConfirmDeleteModal({
         onKeyDown={(e) => e.stopPropagation()}
       >
         <h2 className="font-display text-petroleum-700 text-xl">
-          Delete race?
+          {t("deleteDialog.title")}
         </h2>
         <p className="text-petroleum-400 mt-2 text-sm">
-          This will permanently delete{" "}
-          <span className="text-petroleum-500 font-medium">{title}</span> and
-          all its registrations. This action cannot be undone.
+          {t.rich("deleteDialog.body", {
+            name: () => (
+              <span className="text-petroleum-500 font-medium">{title}</span>
+            ),
+          })}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button
@@ -197,7 +202,7 @@ function ConfirmDeleteModal({
             onClick={onCancel}
             disabled={deleting}
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button
             type="button"
@@ -212,7 +217,7 @@ function ConfirmDeleteModal({
             ) : (
               <IconTrash />
             )}
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
         </div>
       </div>
@@ -235,6 +240,8 @@ function DetailsForm({
   titleEs,
   descriptionEs,
 }: DetailsFormProps) {
+  const t = useTranslations("dashboard.races.form");
+  const tCommon = useTranslations("dashboard.common");
   const {
     loading,
     saving,
@@ -252,7 +259,9 @@ function DetailsForm({
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-petroleum-500 text-sm font-semibold">Details</h2>
+        <h2 className="text-petroleum-500 text-sm font-semibold">
+          {t("sections.details")}
+        </h2>
         <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
           {(["en", "es"] as const).map((l) => (
             <button
@@ -266,7 +275,7 @@ function DetailsForm({
                   : "text-petroleum-400 hover:text-petroleum-600",
               ].join(" ")}
             >
-              {l === "en" ? "English" : "Español"}
+              {l === "en" ? tCommon("english") : tCommon("spanish")}
             </button>
           ))}
         </div>
@@ -279,7 +288,7 @@ function DetailsForm({
                 htmlFor="race-edit-title"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Title <span className="text-red-400">*</span>
+                {t("fields.title")} <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -301,7 +310,8 @@ function DetailsForm({
                 htmlFor="race-edit-description"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Description <span className="text-red-400">*</span>
+                {t("fields.description")}{" "}
+                <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -325,7 +335,7 @@ function DetailsForm({
                 htmlFor="race-edit-title-es"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Title <span className="text-red-400">*</span>
+                {t("fields.title")} <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -347,7 +357,8 @@ function DetailsForm({
                 htmlFor="race-edit-description-es"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Description <span className="text-red-400">*</span>
+                {t("fields.description")}{" "}
+                <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -375,7 +386,7 @@ function DetailsForm({
               htmlFor="race-edit-date"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Date <span className="text-red-400">*</span>
+              {t("fields.date")} <span className="text-red-400">*</span>
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -397,7 +408,7 @@ function DetailsForm({
               htmlFor="race-edit-time"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Time
+              {t("fields.time")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -421,7 +432,7 @@ function DetailsForm({
             htmlFor="race-edit-location"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Location
+            {t("fields.location")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -436,7 +447,7 @@ function DetailsForm({
                   value: e.target.value,
                 })
               }
-              placeholder="Barcelona, Spain"
+              placeholder={t("fields.locationPlaceholder")}
               disabled={saving}
               className={INPUT_CLASS}
             />
@@ -449,7 +460,7 @@ function DetailsForm({
               htmlFor="race-edit-distance"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Distance
+              {t("fields.distance")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -465,7 +476,7 @@ function DetailsForm({
                       value: e.target.value,
                     })
                   }
-                  placeholder="42.2"
+                  placeholder={t("fields.distancePlaceholder")}
                   min="0"
                   step="0.1"
                   disabled={saving}
@@ -482,7 +493,7 @@ function DetailsForm({
               htmlFor="race-edit-max-participants"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Max participants
+              {t("fields.maxParticipants")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -497,7 +508,7 @@ function DetailsForm({
                     value: e.target.value,
                   })
                 }
-                placeholder="500"
+                placeholder={t("fields.maxParticipantsPlaceholder")}
                 min="1"
                 disabled={saving}
                 className={INPUT_CLASS}
@@ -511,7 +522,7 @@ function DetailsForm({
             htmlFor="race-edit-access"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Access
+            {t("fields.access")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -528,8 +539,8 @@ function DetailsForm({
               disabled={saving}
               className={INPUT_CLASS}
             >
-              <option value="members">Members only</option>
-              <option value="open">Open · free for everyone</option>
+              <option value="members">{t("accessOptions.members")}</option>
+              <option value="open">{t("accessOptions.open")}</option>
             </select>
           )}
         </div>
@@ -547,10 +558,11 @@ type SidebarCardProps = {
 };
 
 function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
+  const t = useTranslations("dashboard.races.form");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Cover Image
+        {t("sections.coverImage")}
       </h2>
       {loading ? (
         <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
@@ -569,6 +581,7 @@ function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditRacePage() {
+  const t = useTranslations("dashboard.races.edit");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -671,7 +684,8 @@ export default function EditRacePage() {
       dispatch({
         type: "SET_ERROR",
         error:
-          (updateError as { message?: string })?.message ?? "Failed to save.",
+          (updateError as { message?: string })?.message ??
+          t("errors.saveFailed"),
       });
       return;
     }
@@ -692,7 +706,7 @@ export default function EditRacePage() {
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">Race not found.</p>
+        <p className="text-sm">{t("notFound")}</p>
         <button
           onClick={() => back()}
           onKeyDown={(e) => {
@@ -700,7 +714,7 @@ export default function EditRacePage() {
           }}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Go back
+          {t("goBack")}
         </button>
       </div>
     );
@@ -712,7 +726,7 @@ export default function EditRacePage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              Edit Race
+              {t("title")}
             </h1>
           </div>
 
@@ -724,7 +738,7 @@ export default function EditRacePage() {
               className="gap-2"
             >
               <IconUsers />
-              Registrations
+              {t("registrations")}
             </Button>
 
             <Button
@@ -736,7 +750,7 @@ export default function EditRacePage() {
               disabled={loading}
             >
               <IconTrash />
-              Delete
+              {t("delete")}
             </Button>
 
             <Button
@@ -751,7 +765,7 @@ export default function EditRacePage() {
               ) : (
                 <IconCheckmark />
               )}
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>

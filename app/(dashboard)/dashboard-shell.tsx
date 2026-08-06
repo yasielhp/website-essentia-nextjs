@@ -2,13 +2,14 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { Logo } from "@/components/ui/logo";
 import { FavIcon, IconSidebarLeft } from "@/components/ui/icons";
 import { navLinks, navIcons } from "@/constants/nav";
-import { getBreadcrumbs } from "@/utils/breadcrumbs";
+import { getBreadcrumbs, type Breadcrumb } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
 import { RoleProvider, useRole } from "@/context/role-context";
 import {
@@ -18,6 +19,7 @@ import {
 import type { Role } from "@/types";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("dashboard");
   const { user, loading: authLoading, signOut } = useAuth();
   const { role, loading: roleLoading } = useRole();
   const { replace, push } = useRouter();
@@ -57,7 +59,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const displayName = user?.name ?? user?.email ?? "User";
+  const displayName = user?.name ?? user?.email ?? t("shell.fallbackUser");
+  const crumbLabel = (crumb: Breadcrumb) =>
+    crumb.key ? t(`breadcrumbs.${crumb.key}`) : (crumb.label ?? "");
   const UUID_RE = /^[0-9a-f-]{36}$/i;
   const rawCrumbs = getBreadcrumbs(pathname);
   const segments = pathname
@@ -72,14 +76,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         ? [
             rawCrumbs[0]!,
             { label: dynamicLabel, href: pathname.replace(/\/edit$/, "") },
-            { label: "Edit" },
+            { key: "leaves.edit" },
           ]
         : [rawCrumbs[0]!, { label: dynamicLabel }]
       : rawCrumbs;
 
   const restrictedNavLinks = [
-    { label: "Overview", href: "/dashboard" },
-    { label: "Bookings", href: "/dashboard/bookings" },
+    { key: "overview", href: "/dashboard" },
+    { key: "bookings", href: "/dashboard/bookings" },
   ];
 
   const visibleNavLinks =
@@ -112,8 +116,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <ul className="space-y-0.5">
-            {visibleNavLinks.map(({ label, href }) => {
+            {visibleNavLinks.map(({ key, href }) => {
               const active = isNavActive(href);
+              const label = t(`nav.${key}`);
               return (
                 <li key={href}>
                   <Link
@@ -130,7 +135,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     <span
                       className={active ? "text-white" : "text-petroleum-400"}
                     >
-                      {navIcons[label]}
+                      {navIcons[key]}
                     </span>
                     {!sidebarCollapsed && label}
                   </Link>
@@ -177,7 +182,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               }
             }}
             className="text-petroleum-500 hover:bg-sand-100 hover:text-petroleum-700 flex items-center justify-center rounded-lg p-1.5 transition-colors"
-            aria-label="Toggle sidebar"
+            aria-label={t("shell.toggleSidebar")}
           >
             <IconSidebarLeft />
           </button>
@@ -188,7 +193,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <nav className="flex min-w-0 items-center gap-1.5 text-sm">
             {breadcrumbs.map((crumb, i) => (
-              <Fragment key={crumb.href ?? crumb.label}>
+              <Fragment key={crumb.href ?? crumb.key ?? crumb.label}>
                 {i > 0 && (
                   <span className="text-petroleum-300 shrink-0 text-xs">›</span>
                 )}
@@ -197,11 +202,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     href={crumb.href}
                     className="text-petroleum-400 hover:text-petroleum-700 shrink-0 transition-colors"
                   >
-                    {crumb.label}
+                    {crumbLabel(crumb)}
                   </Link>
                 ) : (
                   <span className="text-petroleum-700 truncate font-medium">
-                    {crumb.label}
+                    {crumbLabel(crumb)}
                   </span>
                 )}
               </Fragment>
@@ -242,7 +247,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <nav className="flex-1 overflow-y-auto px-2 py-3">
             <ul className="space-y-0.5">
-              {visibleNavLinks.map(({ label, href }) => {
+              {visibleNavLinks.map(({ key, href }) => {
                 const active = isNavActive(href);
                 return (
                   <li key={href}>
@@ -257,9 +262,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                       <span
                         className={active ? "text-white" : "text-petroleum-400"}
                       >
-                        {navIcons[label]}
+                        {navIcons[key]}
                       </span>
-                      {label}
+                      {t(`nav.${key}`)}
                     </Link>
                   </li>
                 );

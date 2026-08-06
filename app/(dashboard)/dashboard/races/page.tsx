@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { formatMediumDate } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { CalendarColorModal } from "@/components/dashboard/calendar-color-modal";
@@ -28,24 +31,10 @@ type Race = {
 
 const PAGE_SIZE = 10;
 
-const RACE_ACCESS_LABELS: Record<RaceAccess, string> = {
-  members: "Members only",
-  open: "Open · free",
-};
-
 const RACE_ACCESS_COLORS: Record<RaceAccess, string> = {
   members: "bg-petroleum-50 text-petroleum-500",
   open: "bg-green-50 text-green-700",
 };
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 type RaceFilter = { access: string };
 const emptyRaceFilter: RaceFilter = { access: "" };
@@ -66,6 +55,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -75,9 +65,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -93,16 +86,16 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Access
+              {t("races.filters.access")}
             </span>
             <select
               value={pending.access}
               onChange={(e) => onChange("access", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All</option>
-              <option value="members">Members only</option>
-              <option value="open">Open · free</option>
+              <option value="">{t("races.access.all")}</option>
+              <option value="members">{t("races.access.members")}</option>
+              <option value="open">{t("races.access.open")}</option>
             </select>
           </label>
         </div>
@@ -111,10 +104,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -123,6 +116,8 @@ function FilterModal({
 }
 
 export default function RacesPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
   const [page, setPage] = useState(0);
   const [state, setState] = useState<{
     races: Race[];
@@ -220,7 +215,7 @@ export default function RacesPage() {
           className="gap-2"
         >
           <IconPlus />
-          Create Race
+          {t("races.createRace")}
         </Button>
         <div className="flex items-center gap-2">
           <Button
@@ -245,7 +240,7 @@ export default function RacesPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            Settings
+            {t("races.settings")}
           </Button>
           <Button
             variant={activeFilterCount > 0 ? "soft" : "outline"}
@@ -254,7 +249,9 @@ export default function RacesPage() {
             className="gap-2"
           >
             <IconFilter />
-            Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+            {activeFilterCount > 0
+              ? t("common.filtersWithCount", { count: activeFilterCount })
+              : t("common.filters")}
           </Button>
         </div>
       </div>
@@ -277,7 +274,7 @@ export default function RacesPage() {
           ))
         ) : races.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No races yet.
+            {t("races.empty")}
           </p>
         ) : (
           races.map((race) => (
@@ -339,19 +336,23 @@ export default function RacesPage() {
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${RACE_ACCESS_COLORS[race.access]}`}
                   >
-                    {RACE_ACCESS_LABELS[race.access]}
+                    {t(`races.access.${race.access}`)}
                   </span>
                 </div>
                 <p className="text-petroleum-400 mt-1 text-xs">
-                  {formatDate(race.date)}
+                  {formatMediumDate(race.date, locale)}
                   {race.location ? ` · ${race.location}` : ""}
                 </p>
                 <p className="text-petroleum-400 mt-0.5 text-xs">
                   {race.distance_km != null ? `${race.distance_km} km · ` : ""}
-                  {race.registrations_count}
                   {race.max_participants != null
-                    ? ` / ${race.max_participants} registered`
-                    : " registered"}
+                    ? t("races.registeredOfMax", {
+                        count: race.registrations_count,
+                        max: race.max_participants,
+                      })
+                    : t("races.registered", {
+                        count: race.registrations_count,
+                      })}
                 </p>
               </div>
             </div>
@@ -367,22 +368,22 @@ export default function RacesPage() {
               <tr className="border-sand-200 border-b text-left">
                 <th className="w-14 px-4 py-3.5"></th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Title
+                  {t("races.columns.title")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Access
+                  {t("races.columns.access")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Date
+                  {t("races.columns.date")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Location
+                  {t("races.columns.location")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Distance
+                  {t("races.columns.distance")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Registered / Max
+                  {t("races.columns.registered")}
                 </th>
               </tr>
             </thead>
@@ -426,7 +427,7 @@ export default function RacesPage() {
                     colSpan={7}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No races yet.
+                    {t("races.empty")}
                   </td>
                 </tr>
               ) : (
@@ -495,14 +496,14 @@ export default function RacesPage() {
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${RACE_ACCESS_COLORS[race.access]}`}
                       >
-                        {RACE_ACCESS_LABELS[race.access]}
+                        {t(`races.access.${race.access}`)}
                       </span>
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
-                      {formatDate(race.date)}
+                      {formatMediumDate(race.date, locale)}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {race.location ?? "—"}
+                      {race.location ?? t("common.empty")}
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
                       {race.distance_km != null ? (
@@ -565,7 +566,7 @@ export default function RacesPage() {
 
       {settingsOpen && (
         <CalendarColorModal
-          label="Race"
+          label={t("races.colorLabel")}
           initialColor={loadColorSettings().races}
           onSave={(color) => {
             const current = loadColorSettings();

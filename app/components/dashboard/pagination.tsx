@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 type PaginationProps = {
   page: number;
   totalPages: number;
@@ -15,12 +17,13 @@ export function Pagination({
   loading = false,
   className,
 }: PaginationProps) {
+  const t = useTranslations("dashboard.common");
   return (
     <div
       className={`border-sand-200 flex items-center justify-between border-t px-5 py-3 ${className ?? ""}`}
     >
       <p className="text-petroleum-400 text-sm">
-        Page {page + 1} of {totalPages}
+        {t("pageOf", { page: page + 1, total: totalPages })}
       </p>
       <div className="flex gap-2">
         <button
@@ -28,14 +31,14 @@ export function Pagination({
           disabled={page === 0 || loading}
           className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Previous
+          {t("previous")}
         </button>
         <button
           onClick={() => onPage(Math.min(totalPages - 1, page + 1))}
           disabled={page >= totalPages - 1 || loading}
           className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Next
+          {t("next")}
         </button>
       </div>
     </div>

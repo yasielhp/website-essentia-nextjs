@@ -17,11 +17,8 @@ import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
 import { getAccessToken } from "@/lib/client-session";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
-import {
-  GENDER_OPTIONS,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender, type GenderValue } from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
 import {
   connectStaffCalendar,
   disconnectStaffCalendar,
@@ -166,6 +163,7 @@ const ROLES: SelectOption<SystemRole>[] = [
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditUserPage() {
+  const genderOptions = useGenderOptions();
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
   const [state, dispatch] = useReducer(reducer, initial);
@@ -550,7 +548,7 @@ export default function EditUserPage() {
                   <OptionSelect
                     id="gender"
                     value={state.gender}
-                    options={GENDER_OPTIONS}
+                    options={genderOptions}
                     onChange={(next) =>
                       dispatch({ type: "SET_GENDER", gender: next })
                     }

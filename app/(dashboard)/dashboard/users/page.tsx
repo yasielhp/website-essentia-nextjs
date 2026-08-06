@@ -2,10 +2,11 @@
 
 import { useEffect, useReducer, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { formatMediumDate } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { displayEmail, displayPhone } from "@/utils/contact";
-import { genderLabel } from "@/constants/gender";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchContacts, fetchContactRoleCounts } from "@/actions/contacts";
 import type { ContactRow, ContactStatus } from "@/types/contact";
@@ -42,14 +43,16 @@ type DisplayRow = {
 
 const PAGE_SIZE = 20;
 
-const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
-  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
-  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
-  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
-  lead: { label: "Lead", cls: "bg-sand-100 text-petroleum-500" },
-  client: { label: "Client", cls: "bg-green-50 text-green-700" },
-  member: { label: "Member", cls: "bg-petroleum-50 text-petroleum-600" },
+const ROLE_BADGE: Record<string, { cls: string }> = {
+  admin: { cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { cls: "bg-blue-100 text-blue-700" },
+  partner: { cls: "bg-yellow-100 text-yellow-700" },
+  lead: { cls: "bg-sand-100 text-petroleum-500" },
+  client: { cls: "bg-green-50 text-green-700" },
+  member: { cls: "bg-petroleum-50 text-petroleum-600" },
 };
+
+const ROLE_BADGE_FALLBACK = { cls: "bg-sand-100 text-petroleum-500" };
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -142,6 +145,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -151,9 +155,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -169,30 +176,32 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Email
+              {t("users.filters.email")}
             </span>
             <input
               type="search"
               value={pending.email}
               onChange={(e) => onChange("email", e.target.value)}
-              placeholder="jane@example.com"
+              placeholder={t("users.filters.emailPlaceholder")}
               className={fieldCls}
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">Role</span>
+            <span className="text-petroleum-400 text-xs font-medium">
+              {t("users.filters.role")}
+            </span>
             <select
               value={pending.role}
               onChange={(e) => onChange("role", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All</option>
-              <option value="lead">Lead</option>
-              <option value="client">Client</option>
-              <option value="member">Member</option>
-              <option value="staff">Staff</option>
-              <option value="partner">Partner</option>
-              <option value="admin">Admin</option>
+              <option value="">{t("users.filters.allRoles")}</option>
+              <option value="lead">{t("users.roles.lead")}</option>
+              <option value="client">{t("users.roles.client")}</option>
+              <option value="member">{t("users.roles.member")}</option>
+              <option value="staff">{t("users.roles.staff")}</option>
+              <option value="partner">{t("users.roles.partner")}</option>
+              <option value="admin">{t("users.roles.admin")}</option>
             </select>
           </label>
         </div>
@@ -201,10 +210,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -215,6 +224,15 @@ function FilterModal({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function UsersPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
+  // Roles and genders come from the database, so unmapped values are possible.
+  const roleLabel = (role: string) =>
+    t.has(`users.roles.${role}`) ? t(`users.roles.${role}`) : role;
+  const genderText = (gender: string | null | undefined) =>
+    gender && t.has(`users.gender.${gender}`)
+      ? t(`users.gender.${gender}`)
+      : t("common.empty");
   const { push } = useRouter();
 
   const [contacts, dispatchContacts] = useReducer(contactsReducer, {
@@ -366,7 +384,7 @@ export default function UsersPage() {
   // Merge: system users first (only on page 0), then contacts
   const systemRows: DisplayRow[] = system.users.map((u) => ({
     id: u.id,
-    name: u.full_name ?? "—",
+    name: u.full_name ?? t("common.empty"),
     email: u.email,
     phone: u.phone,
     gender: u.gender,
@@ -416,7 +434,7 @@ export default function UsersPage() {
           className="gap-2"
         >
           <IconPlus />
-          Add user
+          {t("users.addUser")}
         </Button>
         <Button
           variant={activeFilterCount > 0 ? "soft" : "outline"}
@@ -425,39 +443,41 @@ export default function UsersPage() {
           className="gap-2"
         >
           <IconFilter />
-          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+          {activeFilterCount > 0
+            ? t("common.filtersWithCount", { count: activeFilterCount })
+            : t("common.filters")}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-6">
         <StatCard
-          label="Leads"
+          label={t("users.stats.leads")}
           value={roleCounts.leads ?? 0}
           loading={roleCounts.leads === null}
         />
         <StatCard
-          label="Clients"
+          label={t("users.stats.clients")}
           value={roleCounts.clients ?? 0}
           loading={roleCounts.clients === null}
         />
         <StatCard
-          label="Members"
+          label={t("users.stats.members")}
           value={roleCounts.members ?? 0}
           loading={roleCounts.members === null}
         />
         <StatCard
-          label="Staff"
+          label={t("users.stats.staff")}
           value={roleCounts.staff ?? 0}
           loading={roleCounts.staff === null}
         />
         <StatCard
-          label="Partners"
+          label={t("users.stats.partners")}
           value={roleCounts.partner ?? 0}
           loading={roleCounts.partner === null}
         />
         <StatCard
-          label="Total"
+          label={t("users.stats.total")}
           value={totalUsers ?? 0}
           loading={totalUsers === null}
         />
@@ -482,12 +502,12 @@ export default function UsersPage() {
           </div>
         ) : filteredRows.length === 0 ? (
           <p className="text-petroleum-400 py-12 text-center text-sm">
-            No users yet.
+            {t("users.empty")}
           </p>
         ) : (
           <div className="divide-sand-200 border-sand-200 divide-y overflow-hidden rounded-2xl border bg-white">
             {filteredRows.map((row) => {
-              const badge = ROLE_BADGE[row.role] ?? ROLE_BADGE.contact!;
+              const badge = ROLE_BADGE[row.role] ?? ROLE_BADGE_FALLBACK;
               return (
                 <div
                   key={row.id}
@@ -505,7 +525,7 @@ export default function UsersPage() {
                       <span
                         className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.cls}`}
                       >
-                        {badge.label}
+                        {roleLabel(row.role)}
                       </span>
                     </div>
                     {row.email && (
@@ -530,19 +550,19 @@ export default function UsersPage() {
                 <tr className="border-sand-200 border-b text-left">
                   <th className="text-petroleum-400 w-10 px-5 py-3.5 font-medium" />
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Name
+                    {t("users.columns.name")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Phone
+                    {t("users.columns.phone")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Gender
+                    {t("users.columns.gender")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Role
+                    {t("users.columns.role")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Created
+                    {t("users.columns.created")}
                   </th>
                 </tr>
               </thead>
@@ -582,12 +602,12 @@ export default function UsersPage() {
                       colSpan={6}
                       className="text-petroleum-400 px-6 py-12 text-center"
                     >
-                      No users yet.
+                      {t("users.empty")}
                     </td>
                   </tr>
                 ) : (
                   filteredRows.map((row) => {
-                    const badge = ROLE_BADGE[row.role] ?? ROLE_BADGE.contact!;
+                    const badge = ROLE_BADGE[row.role] ?? ROLE_BADGE_FALLBACK;
                     return (
                       <tr
                         key={row.id}
@@ -611,17 +631,17 @@ export default function UsersPage() {
                           {displayPhone(row.phone)}
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {genderLabel(row.gender)}
+                          {genderText(row.gender)}
                         </td>
                         <td className="px-5 py-3">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.cls}`}
                           >
-                            {badge.label}
+                            {roleLabel(row.role)}
                           </span>
                         </td>
                         <td className="text-petroleum-400 px-5 py-3">
-                          {formatMediumDate(row.created_at)}
+                          {formatMediumDate(row.created_at, locale)}
                         </td>
                       </tr>
                     );

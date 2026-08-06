@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   subscribeToNewsletter,
@@ -17,11 +18,8 @@ import {
 } from "@/lib/schemas";
 import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { OptionSelect } from "@/components/ui/option-select";
-import {
-  GENDER_OPTIONS,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender, type GenderValue } from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
 import { formatMediumDate, formatPrice } from "@/utils/format";
 import {
   LocationBadge,
@@ -287,6 +285,7 @@ function ContactDetailsCard({
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
 }) {
+  const genderOptions = useGenderOptions();
   function field(
     f: "firstName" | "lastName" | "email" | "phone" | "language",
     value: string,
@@ -412,7 +411,7 @@ function ContactDetailsCard({
             <OptionSelect
               id="gender"
               value={gender}
-              options={GENDER_OPTIONS}
+              options={genderOptions}
               onChange={(next) =>
                 dispatchForm({ type: "SET_GENDER", gender: next })
               }
@@ -670,6 +669,8 @@ function BookingsSection({
   loading: boolean;
   bookings: Booking[];
 }) {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const { push } = useRouter();
 
   return (
@@ -705,7 +706,11 @@ function BookingsSection({
             </thead>
             <tbody>
               {bookings.map((b) => {
-                const detail = locationDetail(b.location, b.location_address);
+                const detail = locationDetail(
+                  b.location,
+                  b.location_address,
+                  (number) => t("bookings.room", { number }),
+                );
                 return (
                   <tr
                     key={b.id}
@@ -714,10 +719,10 @@ function BookingsSection({
                   >
                     <td className="py-3 pr-4">
                       <p className="text-petroleum-500">
-                        {formatCreatedDate(b.created_at)}
+                        {formatCreatedDate(b.created_at, locale)}
                       </p>
                       <p className="text-petroleum-400 text-xs">
-                        {formatCreatedTime(b.created_at)}
+                        {formatCreatedTime(b.created_at, locale)}
                       </p>
                     </td>
                     <td className="py-3 pr-4">
@@ -743,7 +748,7 @@ function BookingsSection({
                     </td>
                     <td className="py-3 pr-4">
                       <p className="text-petroleum-500">
-                        {formatBookingDate(b.date)}
+                        {formatBookingDate(b.date, locale)}
                       </p>
                       {b.time && (
                         <p className="text-petroleum-400 text-xs">{b.time}</p>

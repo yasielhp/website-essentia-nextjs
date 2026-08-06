@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
@@ -30,17 +31,17 @@ type Contact = {
 // ─── Contact Search Reducer ───────────────────────────────────
 
 function PageHeader({ submitting }: { submitting: boolean }) {
+  const t = useTranslations("dashboard.subscriptions.form");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="font-display text-petroleum-700 text-3xl">
-        New Subscription
-      </h1>
+      <h1 className="font-display text-petroleum-700 text-3xl">{t("title")}</h1>
       <div className="flex items-center gap-3">
         <Button variant="outline" size="md" href="/dashboard/subscriptions">
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" variant="solid" size="md" disabled={submitting}>
-          {submitting ? "Creating…" : "Create Subscription"}
+          {submitting ? t("creating") : t("createSubscription")}
         </Button>
       </div>
     </div>
@@ -91,6 +92,7 @@ function SubscriberSection({
   loading: boolean;
   submitting: boolean;
 }) {
+  const t = useTranslations("dashboard.subscriptions.form");
   const options: SelectOption<string>[] = contacts.map((c) => ({
     value: c.id,
     label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
@@ -99,11 +101,10 @@ function SubscriberSection({
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">Member</h2>
-      <p className="text-petroleum-400 mb-4 text-xs">
-        Only contacts marked as members. Change someone&apos;s role on their own
-        page to make them eligible.
-      </p>
+      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+        {t("sections.member")}
+      </h2>
+      <p className="text-petroleum-400 mb-4 text-xs">{t("memberHint")}</p>
       {loading ? (
         <div className="bg-sand-100 h-14 animate-pulse rounded-xl" />
       ) : (
@@ -113,8 +114,8 @@ function SubscriberSection({
           options={options}
           onChange={onChange}
           disabled={submitting}
-          placeholder="Select a member…"
-          ariaLabel="Contact"
+          placeholder={t("fields.contactPlaceholder")}
+          ariaLabel={t("fields.contact")}
         />
       )}
     </div>
@@ -134,10 +135,12 @@ function SubscriptionDetailsSection({
   plans,
   submitting,
 }: SubscriptionDetailsSectionProps) {
+  const t = useTranslations("dashboard.subscriptions.form");
+  const tStatus = useTranslations("dashboard.subscriptions.status");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Subscription
+        {t("sections.subscription")}
       </h2>
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -146,7 +149,7 @@ function SubscriptionDetailsSection({
               htmlFor="plan"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Plan
+              {t("fields.plan")}
             </label>
             <select
               id="plan"
@@ -174,7 +177,7 @@ function SubscriptionDetailsSection({
               htmlFor="status"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Status
+              {t("fields.status")}
             </label>
             <select
               id="status"
@@ -189,9 +192,9 @@ function SubscriptionDetailsSection({
               disabled={submitting}
               className={SELECT_CLASS}
             >
-              <option value="active">Active</option>
-              <option value="expired">Expired</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="active">{tStatus("active")}</option>
+              <option value="expired">{tStatus("expired")}</option>
+              <option value="cancelled">{tStatus("cancelled")}</option>
             </select>
           </div>
         </div>
@@ -202,7 +205,7 @@ function SubscriptionDetailsSection({
               htmlFor="startDate"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Start date
+              {t("fields.startDate")}
             </label>
             <input
               id="startDate"
@@ -224,7 +227,7 @@ function SubscriptionDetailsSection({
               htmlFor="endDate"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Expiry date
+              {t("fields.endDate")}
             </label>
             <input
               id="endDate"
@@ -248,7 +251,7 @@ function SubscriptionDetailsSection({
             htmlFor="notes"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Notes
+            {t("fields.notes")}
           </label>
           <textarea
             id="notes"
@@ -260,7 +263,7 @@ function SubscriptionDetailsSection({
                 value: e.target.value,
               })
             }
-            placeholder="Additional notes…"
+            placeholder={t("fields.notesPlaceholder")}
             rows={3}
             disabled={submitting}
             className={TEXTAREA_CLASS}
@@ -274,6 +277,7 @@ function SubscriptionDetailsSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewSubscriptionPage() {
+  const t = useTranslations("dashboard.subscriptions.form");
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
@@ -328,7 +332,7 @@ export default function NewSubscriptionPage() {
 
     const contact = (contacts ?? []).find((c) => c.id === contactId);
     if (!contact) {
-      setError("Select the contact this subscription belongs to.");
+      setError(t("errors.contactRequired"));
       return;
     }
 
@@ -358,7 +362,7 @@ export default function NewSubscriptionPage() {
     if (insertError) {
       setError(
         (insertError as { message?: string })?.message ??
-          "Failed to create subscription.",
+          t("errors.createFailed"),
       );
       return;
     }

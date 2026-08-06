@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useReducer, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ChevronDown,
   ChevronLeft,
@@ -109,31 +110,49 @@ const TENERIFE_MUNICIPALITIES = [
   "Güímar",
 ];
 
-const LOCATIONS: {
+type LocationOption = {
   id: DashboardLocation;
   label: string;
   description: string;
   Icon: React.FC<{ size?: number; className?: string }>;
-}[] = [
-  {
-    id: "centro",
-    label: "At the center",
-    description: contact.address,
-    Icon: Building2,
-  },
-  {
-    id: "habitacion",
-    label: "Room",
-    description: "Baobab Suites room",
-    Icon: BedDouble,
-  },
-  {
-    id: "domicilio",
-    label: "Home visit",
-    description: "We come to your address",
-    Icon: Home,
-  },
-];
+};
+
+const LOCATION_ICONS: Record<
+  DashboardLocation,
+  React.FC<{ size?: number; className?: string }>
+> = {
+  centro: Building2,
+  habitacion: BedDouble,
+  domicilio: Home,
+};
+
+/**
+ * The wording comes from `dashboard.bookings.form.locations`; only the centre's
+ * description is a real-world address, so it keeps coming from `contact`.
+ */
+function useLocationOptions(): LocationOption[] {
+  const t = useTranslations("dashboard.bookings.form.locations");
+  return [
+    {
+      id: "centro",
+      label: t("centro.label"),
+      description: contact.address,
+      Icon: LOCATION_ICONS.centro,
+    },
+    {
+      id: "habitacion",
+      label: t("habitacion.label"),
+      description: t("habitacion.description"),
+      Icon: LOCATION_ICONS.habitacion,
+    },
+    {
+      id: "domicilio",
+      label: t("domicilio.label"),
+      description: t("domicilio.description"),
+      Icon: LOCATION_ICONS.domicilio,
+    },
+  ];
+}
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",
@@ -144,34 +163,40 @@ const EMPTY_ADDRESS: LocationAddress = {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-/** The dashboard is English-only; the public flow translates its own copy. */
-const SERVICE_PICKER_LABELS = {
-  placeholder: "Select a service",
-  modalTitle: "Choose a service",
-  close: "Close",
-  wellness: "Wellness",
-  medicine: "Medicine",
-};
+function useServicePickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.servicePicker");
+  return {
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    wellness: t("wellness"),
+    medicine: t("medicine"),
+  };
+}
 
-const TIER_PICKER_LABELS = {
-  fieldLabel: "Duration & Price",
-  placeholder: "Select a duration & price",
-  modalTitle: "Select a session type",
-  close: "Close",
-  standard: "Standard",
-};
+function useTierPickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.tierPicker");
+  return {
+    fieldLabel: t("fieldLabel"),
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    standard: t("standard"),
+  };
+}
 
 // ─── Location Select ──────────────────────────────────────────
 
 function LocationSelect({
   selected,
   onSelect,
-  locations = LOCATIONS,
+  locations,
 }: {
   selected: DashboardLocation | null;
   onSelect: (l: DashboardLocation) => void;
-  locations?: typeof LOCATIONS;
+  locations: LocationOption[];
 }) {
+  const t = useTranslations("dashboard.bookings.form.locations");
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
   const active = locations.find((l) => l.id === selected);
@@ -222,7 +247,7 @@ function LocationSelect({
               <span className="text-petroleum-100 text-lg">+</span>
             </div>
             <p className="text-petroleum-400 flex-1 text-sm">
-              Select a location
+              {t("selectPrompt")}
             </p>
           </>
         )}
@@ -539,6 +564,7 @@ function CompletedRow({
   value: string;
   onEdit: () => void;
 }) {
+  const t = useTranslations("dashboard.bookings.form");
   return (
     <div className="border-sand-200 flex items-center gap-4 rounded-2xl border bg-white px-5 py-4">
       <div className="bg-sand-100 flex size-8 shrink-0 items-center justify-center rounded-lg">
@@ -555,7 +581,7 @@ function CompletedRow({
         onClick={onEdit}
         className="text-petroleum-400 hover:text-petroleum-700 shrink-0 text-xs transition-colors"
       >
-        Change
+        {t("change")}
       </button>
     </div>
   );
@@ -564,6 +590,12 @@ function CompletedRow({
 // ─── Page ─────────────────────────────────────────────────────
 
 function NewBookingPageInner() {
+  const t = useTranslations("dashboard.bookings.form");
+  const tCommon = useTranslations("dashboard.common");
+  const locale = useLocale();
+  const locationOptions = useLocationOptions();
+  const servicePickerLabels = useServicePickerLabels();
+  const tierPickerLabels = useTierPickerLabels();
   const { push } = useRouter();
   const searchParams = useSearchParams();
   const { role } = useRole();
@@ -645,8 +677,10 @@ function NewBookingPageInner() {
 
   const allowedLocations =
     role === "partner"
-      ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
-      : LOCATIONS;
+      ? locationOptions.filter(
+          (l) => l.id === "centro" || l.id === "habitacion",
+        )
+      : locationOptions;
 
   const sortedServices = services.toSorted((a, b) => {
     if (a.id === "manual-therapies") return -1;
@@ -840,7 +874,7 @@ function NewBookingPageInner() {
         type: "SET_ERROR",
         payload:
           (insertError as { message?: string })?.message ??
-          "Failed to create booking.",
+          t("errors.createFailed"),
       });
       return;
     }
@@ -956,8 +990,13 @@ function NewBookingPageInner() {
     if (location === "centro" || location === "habitacion") {
       const parts: string[] = [];
       if (reservationNumber.trim())
-        parts.push(`Reservation: ${reservationNumber.trim()}`);
-      if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
+        parts.push(
+          t("locations.reservationSummary", {
+            number: reservationNumber.trim(),
+          }),
+        );
+      if (roomNumber.trim())
+        parts.push(t("locations.roomSummary", { number: roomNumber.trim() }));
       return parts.length ? parts.join(" · ") : base;
     }
     if (location === "domicilio") {
@@ -975,9 +1014,9 @@ function NewBookingPageInner() {
   })();
   const datetimeLabel =
     selectedDate && selectedTime
-      ? `${selectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · ${selectedTime}`
+      ? `${selectedDate.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })} · ${selectedTime}`
       : selectedDate
-        ? selectedDate.toLocaleDateString("en-GB", {
+        ? selectedDate.toLocaleDateString(locale, {
             weekday: "short",
             day: "numeric",
             month: "short",
@@ -989,11 +1028,11 @@ function NewBookingPageInner() {
       <form onSubmit={(e) => void handleSubmit(e)} noValidate>
         <div className="mb-6 flex items-center justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            New Booking
+            {t("title")}
           </h1>
           <div className="hidden items-center gap-3 sm:flex">
             <Button variant="outline" size="md" href="/dashboard/bookings">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -1001,7 +1040,7 @@ function NewBookingPageInner() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Create Booking"}
+              {submitting ? t("creating") : t("createBooking")}
             </Button>
           </div>
         </div>
@@ -1016,14 +1055,14 @@ function NewBookingPageInner() {
           {/* ── Step 1: Service ── */}
           {serviceId && editingStep !== "service" ? (
             <CompletedRow
-              label="Service"
+              label={t("steps.service")}
               value={selectedService?.title ?? ""}
               onEdit={() => setEditingStep("service")}
             />
           ) : (
             <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Service
+                {t("steps.service")}
               </h2>
               {servicesLoading ? (
                 <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
@@ -1035,7 +1074,7 @@ function NewBookingPageInner() {
                     dispatchForm({ type: "SET_SERVICE", id: s.id });
                     setEditingStep(null);
                   }}
-                  labels={SERVICE_PICKER_LABELS}
+                  labels={servicePickerLabels}
                 />
               )}
             </div>
@@ -1046,14 +1085,14 @@ function NewBookingPageInner() {
             <>
               {location && editingStep !== "location" ? (
                 <CompletedRow
-                  label="Location"
+                  label={t("steps.location")}
                   value={locationLabel}
                   onEdit={() => setEditingStep("location")}
                 />
               ) : (
                 <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
                   <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                    Location
+                    {t("steps.location")}
                   </h2>
                   <div className="flex flex-col gap-4">
                     <LocationSelect
@@ -1073,7 +1112,7 @@ function NewBookingPageInner() {
                               htmlFor="centro-reservationNumber"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Reservation number{" "}
+                              {t("fields.reservationNumber")}{" "}
                               <span className="text-red-400">*</span>
                             </label>
                             <input
@@ -1086,7 +1125,9 @@ function NewBookingPageInner() {
                                   value: e.target.value,
                                 })
                               }
-                              placeholder="83943"
+                              placeholder={t(
+                                "fields.reservationNumberPlaceholder",
+                              )}
                               disabled={submitting}
                               className={INPUT_CLASS}
                             />
@@ -1096,7 +1137,7 @@ function NewBookingPageInner() {
                               htmlFor="centro-roomNumber"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Room number
+                              {t("fields.roomNumber")}
                             </label>
                             <input
                               id="centro-roomNumber"
@@ -1108,7 +1149,7 @@ function NewBookingPageInner() {
                                   value: e.target.value,
                                 })
                               }
-                              placeholder="AK201"
+                              placeholder={t("fields.roomNumberPlaceholder")}
                               disabled={submitting}
                               className={INPUT_CLASS}
                             />
@@ -1122,7 +1163,7 @@ function NewBookingPageInner() {
                           onClick={() => setEditingStep(null)}
                           className="self-start"
                         >
-                          Confirm location
+                          {t("locations.confirm")}
                         </Button>
                       </div>
                     )}
@@ -1135,7 +1176,7 @@ function NewBookingPageInner() {
                               htmlFor="reservationNumber"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Reservation number{" "}
+                              {t("fields.reservationNumber")}{" "}
                               <span className="text-red-400">*</span>
                             </label>
                             <input
@@ -1148,7 +1189,9 @@ function NewBookingPageInner() {
                                   value: e.target.value,
                                 })
                               }
-                              placeholder="83943"
+                              placeholder={t(
+                                "fields.reservationNumberPlaceholder",
+                              )}
                               disabled={submitting}
                               className={INPUT_CLASS}
                             />
@@ -1158,7 +1201,7 @@ function NewBookingPageInner() {
                               htmlFor="roomNumber"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Room number
+                              {t("fields.roomNumber")}
                             </label>
                             <input
                               id="roomNumber"
@@ -1170,7 +1213,7 @@ function NewBookingPageInner() {
                                   value: e.target.value,
                                 })
                               }
-                              placeholder="AK201"
+                              placeholder={t("fields.roomNumberPlaceholder")}
                               disabled={submitting}
                               className={INPUT_CLASS}
                             />
@@ -1184,7 +1227,7 @@ function NewBookingPageInner() {
                           onClick={() => setEditingStep(null)}
                           className="self-start"
                         >
-                          Confirm location
+                          {t("locations.confirm")}
                         </Button>
                       </div>
                     )}
@@ -1196,7 +1239,7 @@ function NewBookingPageInner() {
                             htmlFor="addr-street"
                             className="text-petroleum-500 text-xs font-medium"
                           >
-                            Street & number{" "}
+                            {t("fields.street")}{" "}
                             <span className="text-red-400">*</span>
                           </label>
                           <input
@@ -1209,7 +1252,7 @@ function NewBookingPageInner() {
                                 value: { ...address, street: e.target.value },
                               })
                             }
-                            placeholder="Calle El Peñón, 23"
+                            placeholder={t("fields.streetPlaceholder")}
                             autoComplete="address-line1"
                             disabled={submitting}
                             className={INPUT_CLASS}
@@ -1220,7 +1263,7 @@ function NewBookingPageInner() {
                             htmlFor="addr-building"
                             className="text-petroleum-500 text-xs font-medium"
                           >
-                            Block, floor & door
+                            {t("fields.building")}
                           </label>
                           <input
                             id="addr-building"
@@ -1232,7 +1275,7 @@ function NewBookingPageInner() {
                                 value: { ...address, building: e.target.value },
                               })
                             }
-                            placeholder="Block 3, 2nd floor, apt B"
+                            placeholder={t("fields.buildingPlaceholder")}
                             autoComplete="address-line2"
                             disabled={submitting}
                             className={INPUT_CLASS}
@@ -1244,7 +1287,7 @@ function NewBookingPageInner() {
                               htmlFor="addr-postal"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Postal code{" "}
+                              {t("fields.postalCode")}{" "}
                               <span className="text-red-400">*</span>
                             </label>
                             <input
@@ -1262,7 +1305,7 @@ function NewBookingPageInner() {
                                   },
                                 })
                               }
-                              placeholder="38670"
+                              placeholder={t("fields.postalCodePlaceholder")}
                               autoComplete="postal-code"
                               disabled={submitting}
                               className={INPUT_CLASS}
@@ -1273,7 +1316,7 @@ function NewBookingPageInner() {
                               htmlFor="addr-municipality"
                               className="text-petroleum-500 text-xs font-medium"
                             >
-                              Municipality{" "}
+                              {t("fields.municipality")}{" "}
                               <span className="text-red-400">*</span>
                             </label>
                             <input
@@ -1290,7 +1333,7 @@ function NewBookingPageInner() {
                                   },
                                 })
                               }
-                              placeholder="Adeje"
+                              placeholder={t("fields.municipalityPlaceholder")}
                               autoComplete="address-level2"
                               disabled={submitting}
                               className={INPUT_CLASS}
@@ -1314,7 +1357,7 @@ function NewBookingPageInner() {
                           onClick={() => setEditingStep(null)}
                           className="self-start"
                         >
-                          Confirm location
+                          {t("locations.confirm")}
                         </Button>
                       </div>
                     )}
@@ -1329,7 +1372,7 @@ function NewBookingPageInner() {
             <>
               {tierId && editingStep !== "tier" ? (
                 <CompletedRow
-                  label="Session type"
+                  label={t("steps.sessionType")}
                   value={
                     selectedTier
                       ? [
@@ -1347,19 +1390,19 @@ function NewBookingPageInner() {
               ) : (
                 <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
                   <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                    Session type
+                    {t("steps.sessionType")}
                   </h2>
                   {tiersLoading ? (
                     <div className="border-sand-200 bg-sand-50 h-18.5 animate-pulse rounded-2xl border" />
                   ) : tiers.length === 0 ? (
                     <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                      No session types configured for this service.
+                      {t("noTiers")}
                     </p>
                   ) : (
                     <TierPicker
                       options={tiers.map((t) => toTierOption(t, location))}
                       selectedId={tierId}
-                      labels={TIER_PICKER_LABELS}
+                      labels={tierPickerLabels}
                       collapseSingle
                       onSelect={(o) => {
                         dispatchForm({ type: "SET_TIER", id: o.id });
@@ -1376,7 +1419,7 @@ function NewBookingPageInner() {
           {serviceId === "manual-therapies" && tierId !== "" && (
             <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Therapist preference
+                {t("steps.therapistPreference")}
               </h2>
               <select
                 value={therapistGender}
@@ -1388,9 +1431,9 @@ function NewBookingPageInner() {
                 }
                 className={INPUT_CLASS}
               >
-                <option value="">Select therapist preference</option>
-                <option value="male">Male therapist</option>
-                <option value="female">Female therapist</option>
+                <option value="">{t("therapist.placeholder")}</option>
+                <option value="male">{t("therapist.male")}</option>
+                <option value="female">{t("therapist.female")}</option>
               </select>
             </div>
           )}
@@ -1400,7 +1443,7 @@ function NewBookingPageInner() {
             <>
               {selectedDate && selectedTime && editingStep !== "datetime" ? (
                 <CompletedRow
-                  label="Date & Time"
+                  label={t("steps.datetime")}
                   value={datetimeLabel}
                   onEdit={() => setEditingStep("datetime")}
                 />
@@ -1446,7 +1489,7 @@ function NewBookingPageInner() {
                       </button>
                       <div className="flex flex-col gap-3">
                         <p className="text-petroleum-400 text-sm">
-                          Available times
+                          {t("availableTimes")}
                         </p>
                         {loadingSlots ? (
                           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -1498,7 +1541,7 @@ function NewBookingPageInner() {
           {tierId && (
             <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Client
+                {t("steps.client")}
               </h2>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -1507,7 +1550,8 @@ function NewBookingPageInner() {
                       htmlFor="firstName"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      First name <span className="text-red-400">*</span>
+                      {t("fields.firstName")}{" "}
+                      <span className="text-red-400">*</span>
                     </label>
                     <input
                       id="firstName"
@@ -1520,7 +1564,7 @@ function NewBookingPageInner() {
                           value: e.target.value,
                         })
                       }
-                      placeholder="Jane"
+                      placeholder={t("fields.firstNamePlaceholder")}
                       disabled={submitting}
                       className={INPUT_CLASS}
                     />
@@ -1530,7 +1574,7 @@ function NewBookingPageInner() {
                       htmlFor="lastName"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Last name
+                      {t("fields.lastName")}
                     </label>
                     <input
                       id="lastName"
@@ -1543,7 +1587,7 @@ function NewBookingPageInner() {
                           value: e.target.value,
                         })
                       }
-                      placeholder="Doe"
+                      placeholder={t("fields.lastNamePlaceholder")}
                       disabled={submitting}
                       className={INPUT_CLASS}
                     />
@@ -1554,7 +1598,7 @@ function NewBookingPageInner() {
                     htmlFor="email"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Email <span className="text-red-400">*</span>
+                    {t("fields.email")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="email"
@@ -1567,7 +1611,7 @@ function NewBookingPageInner() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="jane@example.com"
+                    placeholder={t("fields.emailPlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -1577,7 +1621,7 @@ function NewBookingPageInner() {
                     htmlFor="phone"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Phone
+                    {t("fields.phone")}
                   </label>
                   <input
                     id="phone"
@@ -1590,7 +1634,7 @@ function NewBookingPageInner() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="+34 600 000 000"
+                    placeholder={t("fields.phonePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -1600,7 +1644,7 @@ function NewBookingPageInner() {
                     htmlFor="notes"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Notes
+                    {t("fields.notes")}
                   </label>
                   <textarea
                     id="notes"
@@ -1611,7 +1655,7 @@ function NewBookingPageInner() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Any additional notes for this booking…"
+                    placeholder={t("fields.notesPlaceholder")}
                     rows={3}
                     disabled={submitting}
                     className={INPUT_CLASS + " resize-none"}
@@ -1631,7 +1675,7 @@ function NewBookingPageInner() {
               href="/dashboard/bookings"
               className="w-full justify-center"
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -1640,7 +1684,7 @@ function NewBookingPageInner() {
               disabled={submitting}
               className="w-full justify-center"
             >
-              {submitting ? "Creating…" : "Create Booking"}
+              {submitting ? t("creating") : t("createBooking")}
             </Button>
           </div>
         </div>

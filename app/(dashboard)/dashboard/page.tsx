@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
@@ -48,10 +49,15 @@ import { UpcomingRaceCard } from "@/components/dashboard/calendar/upcoming-race-
 import { UpcomingSessionCard } from "@/components/dashboard/calendar/upcoming-session-card";
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard.calendar");
+  const locale = useLocale();
   const { push } = useRouter();
   const { user } = useAuth();
   const { role } = useRole();
   const isPartner = role === "partner";
+  // Resolved outside the effect so the dependency is a plain string rather
+  // than the translator, which is not guaranteed to be referentially stable.
+  const bookingFallback = t("bookingFallback");
 
   // Upcoming
   const [upcoming, setUpcoming] = useState<{
@@ -172,7 +178,7 @@ export default function DashboardPage() {
         const name =
           [b.first_name, b.last_name].filter(Boolean).join(" ") ||
           (b.service_title as string) ||
-          "Booking";
+          bookingFallback;
         events.push({
           id: b.id as string,
           date: (b.date as string).slice(0, 10),
@@ -224,10 +230,10 @@ export default function DashboardPage() {
       setCalendar({ loading: false, events });
     }
     void loadCalendar();
-  }, [view, anchor, isPartner, user]);
+  }, [view, anchor, isPartner, user, bookingFallback]);
 
   const eventsByDay = groupByDate(calendarEvents);
-  const periodLabel = formatPeriod(view, anchor);
+  const periodLabel = formatPeriod(view, anchor, locale);
 
   function handleDayClick(d: Date) {
     push(`/dashboard/bookings/new?date=${toYMD(d)}`);
@@ -257,13 +263,13 @@ export default function DashboardPage() {
                 <button
                   key={v}
                   onClick={() => dispatchCalNav({ type: "set-view", view: v })}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all sm:flex-none ${
+                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                     view === v
                       ? "text-petroleum-700 bg-white shadow-sm"
                       : "text-petroleum-400 hover:text-petroleum-700"
                   }`}
                 >
-                  {v}
+                  {t(`views.${v}`)}
                 </button>
               ))}
             </div>
@@ -272,6 +278,7 @@ export default function DashboardPage() {
             <div className="flex w-full items-center justify-center gap-1 sm:hidden">
               <button
                 onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
+                aria-label={t("previousPeriod")}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ‹
@@ -281,6 +288,7 @@ export default function DashboardPage() {
               </span>
               <button
                 onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
+                aria-label={t("nextPeriod")}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ›
@@ -291,6 +299,7 @@ export default function DashboardPage() {
             <div className="ml-auto hidden items-center gap-1 sm:flex">
               <button
                 onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
+                aria-label={t("previousPeriod")}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ‹
@@ -300,6 +309,7 @@ export default function DashboardPage() {
               </span>
               <button
                 onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
+                aria-label={t("nextPeriod")}
                 className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
               >
                 ›

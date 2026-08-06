@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -88,6 +89,9 @@ function slugify(text: string): string {
 }
 
 export default function NewPostPage() {
+  const t = useTranslations("dashboard.blog.form");
+  const tCommon = useTranslations("dashboard.common");
+  const tStatus = useTranslations("dashboard.blog.status");
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, init);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -163,7 +167,7 @@ export default function NewPostPage() {
     if (err) {
       dispatch({
         type: "ERROR",
-        msg: (err as { message?: string }).message ?? "Failed to save.",
+        msg: (err as { message?: string }).message ?? t("errors.saveFailed"),
       });
       return;
     }
@@ -174,13 +178,15 @@ export default function NewPostPage() {
     <div className="px-6 py-8 lg:px-10">
       <form onSubmit={(e) => void handleSave(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="font-display text-petroleum-700 text-3xl">New post</h1>
+          <h1 className="font-display text-petroleum-700 text-3xl">
+            {t("title")}
+          </h1>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/blog">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" variant="solid" size="md" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>
@@ -197,7 +203,7 @@ export default function NewPostPage() {
             {/* English content */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Content (EN)
+                {t("sections.contentEn")}
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -263,10 +269,10 @@ export default function NewPostPage() {
             {/* Spanish content */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                Content (ES)
+                {t("sections.contentEs")}
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
-                Optional Spanish translation.
+                {t("sections.contentEsHint")}
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -317,7 +323,7 @@ export default function NewPostPage() {
             {/* Status */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Status
+                {t("sections.status")}
               </h2>
               <div className="grid grid-cols-2 gap-2">
                 {(["draft", "published"] as const).map((s) => (
@@ -328,7 +334,7 @@ export default function NewPostPage() {
                     disabled={saving}
                     className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${status === s ? "border-petroleum-400 bg-petroleum-50 text-petroleum-700" : "border-sand-200 text-petroleum-400 hover:border-sand-300 hover:bg-sand-50"}`}
                   >
-                    {s === "draft" ? "Draft" : "Published"}
+                    {tStatus(s)}
                   </button>
                 ))}
               </div>
@@ -337,7 +343,7 @@ export default function NewPostPage() {
             {/* Featured image */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Featured image
+                {t("sections.featuredImage")}
               </h2>
               <ImageUpload
                 apiEndpoint="/api/blog/upload"
@@ -350,7 +356,7 @@ export default function NewPostPage() {
             {/* Category */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Category
+                {t("sections.category")}
               </h2>
               <select
                 value={categoryId}
@@ -358,7 +364,7 @@ export default function NewPostPage() {
                 disabled={saving}
                 className={SELECT_CLASS}
               >
-                <option value="">No category</option>
+                <option value="">{t("noCategory")}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -370,10 +376,10 @@ export default function NewPostPage() {
             {/* SEO EN */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                SEO (EN)
+                {t("sections.seoEn")}
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
-                How it appears in search engines and social media.
+                {t("sections.seoEnHint")}
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -414,10 +420,10 @@ export default function NewPostPage() {
             {/* SEO ES */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                SEO (ES)
+                {t("sections.seoEs")}
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
-                Versión en español para buscadores.
+                {t("sections.seoEsHint")}
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">

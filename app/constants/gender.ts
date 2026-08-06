@@ -1,4 +1,3 @@
-import type { SelectOption } from "@/components/ui/option-select";
 import type { Gender } from "@/types/person";
 
 /** Value used by the selects when nothing has been chosen. */
@@ -8,22 +7,19 @@ export const GENDER_UNSPECIFIED = "";
 export type GenderValue = Gender | typeof GENDER_UNSPECIFIED;
 
 /**
- * Dashboard labels. The staff dashboard is English-only; the public booking
- * flow is bilingual and takes its labels from the `booking` message namespace
- * instead of this list.
+ * The stored values, in the order the selects show them.
+ *
+ * The wording lives in `dashboard.gender.*` and is applied by the
+ * `useGenderOptions` hook — this list stays free of copy so the schema, the
+ * database and the selects agree on the values themselves. The public booking
+ * flow takes its own labels from the `booking` message namespace.
  */
-export const GENDER_OPTIONS: SelectOption<GenderValue>[] = [
-  { value: "", label: "Not specified" },
-  { value: "female", label: "Female" },
-  { value: "male", label: "Male" },
-  { value: "other", label: "Other" },
+export const GENDER_VALUES: GenderValue[] = [
+  GENDER_UNSPECIFIED,
+  "female",
+  "male",
+  "other",
 ];
-
-/** Label for display in tables and detail views. */
-export function genderLabel(gender: string | null | undefined): string {
-  if (!gender) return "—";
-  return GENDER_OPTIONS.find((o) => o.value === gender)?.label ?? "—";
-}
 
 /** Normalises a select value into what the database stores. */
 export function toStoredGender(value: GenderValue): Gender | null {

@@ -2,6 +2,7 @@
 
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import {
   dashboardContactSchema,
@@ -12,11 +13,9 @@ import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import type { ContactStatus } from "@/types/contact";
 import { OptionSelect } from "@/components/ui/option-select";
-import {
-  GENDER_OPTIONS,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender, type GenderValue } from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
+import { useFieldError } from "@/hooks/use-field-error";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -94,6 +93,10 @@ function formReducer(state: FormState, action: FormAction): FormState {
 // ---------------------------------------------------------------------------
 
 export default function NewContactPage() {
+  const t = useTranslations("dashboard.contacts.form");
+  const tCommon = useTranslations("dashboard.common");
+  const fieldError = useFieldError();
+  const genderOptions = useGenderOptions();
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialFormState);
   const {
@@ -166,13 +169,13 @@ export default function NewContactPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              New Contact
+              {t("title")}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/users">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -180,7 +183,7 @@ export default function NewContactPage() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Add Contact"}
+              {submitting ? t("creating") : t("addContact")}
             </Button>
           </div>
         </div>
@@ -194,7 +197,7 @@ export default function NewContactPage() {
         <div className="grid grid-cols-1 gap-6">
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Details
+              {t("sections.details")}
             </h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -203,7 +206,8 @@ export default function NewContactPage() {
                     htmlFor="firstName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    First name <span className="text-red-400">*</span>
+                    {t("fields.firstName")}{" "}
+                    <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="firstName"
@@ -216,13 +220,13 @@ export default function NewContactPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Jane"
+                    placeholder={t("fields.firstNamePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
                   {fieldErrors.firstName && (
                     <p className="text-xs text-red-500">
-                      {fieldErrors.firstName}
+                      {fieldError(fieldErrors.firstName)}
                     </p>
                   )}
                 </div>
@@ -231,7 +235,7 @@ export default function NewContactPage() {
                     htmlFor="lastName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Last name
+                    {t("fields.lastName")}
                   </label>
                   <input
                     id="lastName"
@@ -244,13 +248,13 @@ export default function NewContactPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Doe"
+                    placeholder={t("fields.lastNamePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
                   {fieldErrors.lastName && (
                     <p className="text-xs text-red-500">
-                      {fieldErrors.lastName}
+                      {fieldError(fieldErrors.lastName)}
                     </p>
                   )}
                 </div>
@@ -261,7 +265,7 @@ export default function NewContactPage() {
                   htmlFor="email"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Email <span className="text-red-400">*</span>
+                  {t("fields.email")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="email"
@@ -274,12 +278,14 @@ export default function NewContactPage() {
                       value: e.target.value,
                     })
                   }
-                  placeholder="jane@example.com"
+                  placeholder={t("fields.emailPlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
                 {fieldErrors.email && (
-                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                  <p className="text-xs text-red-500">
+                    {fieldError(fieldErrors.email)}
+                  </p>
                 )}
               </div>
 
@@ -288,7 +294,7 @@ export default function NewContactPage() {
                   htmlFor="phone"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Phone
+                  {t("fields.phone")}
                 </label>
                 <input
                   id="phone"
@@ -301,12 +307,14 @@ export default function NewContactPage() {
                       value: e.target.value,
                     })
                   }
-                  placeholder="+34 600 000 000"
+                  placeholder={t("fields.phonePlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
                 {fieldErrors.phone && (
-                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                  <p className="text-xs text-red-500">
+                    {fieldError(fieldErrors.phone)}
+                  </p>
                 )}
               </div>
 
@@ -315,17 +323,17 @@ export default function NewContactPage() {
                   htmlFor="gender"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Gender
+                  {t("fields.gender")}
                 </label>
                 <OptionSelect
                   id="gender"
                   value={gender}
-                  options={GENDER_OPTIONS}
+                  options={genderOptions}
                   onChange={(next) =>
                     dispatch({ type: "SET_GENDER", gender: next })
                   }
                   disabled={submitting}
-                  ariaLabel="Gender"
+                  ariaLabel={t("fields.gender")}
                 />
               </div>
 
@@ -334,7 +342,7 @@ export default function NewContactPage() {
                   htmlFor="status"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Type
+                  {t("fields.type")}
                 </label>
                 <select
                   id="status"
@@ -348,11 +356,9 @@ export default function NewContactPage() {
                   disabled={submitting}
                   className={INPUT_CLASS}
                 >
-                  <option value="lead">Lead — no booking yet</option>
-                  <option value="client">Client — has booked</option>
-                  <option value="member">
-                    Member — can hold a subscription
-                  </option>
+                  <option value="lead">{t("typeOptions.lead")}</option>
+                  <option value="client">{t("typeOptions.client")}</option>
+                  <option value="member">{t("typeOptions.member")}</option>
                 </select>
               </div>
 
@@ -361,7 +367,7 @@ export default function NewContactPage() {
                   htmlFor="language"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Preferred language
+                  {t("fields.preferredLanguage")}
                 </label>
                 <select
                   id="language"
