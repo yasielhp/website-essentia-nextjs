@@ -11,15 +11,32 @@ export async function generateStaticParams() {
   return manualTherapyTreatments.map((s) => ({ slug: s.id }));
 }
 
+/**
+ * `manualTherapyTreatments` holds one language only, so taking the title and
+ * description straight from it served the English copy on both trees — every
+ * one of these pages was a duplicate of its Spanish twin, and Google saw
+ * sixteen pages competing on the same title and snippet. The card copy in
+ * `wellness.treatments` is already translated; this reads that instead.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params;
   const service = manualTherapyTreatments.find((s) => s.id === slug);
   if (!service) return {};
+
+  const t = await getTranslations({ locale, namespace: "wellness.treatments" });
+  const cardKey = `manualTherapiesCards.${slug}`;
+  const title = t.has(`${cardKey}.title`)
+    ? t(`${cardKey}.title`)
+    : service.title;
+  const description = t.has(`${cardKey}.description`)
+    ? t(`${cardKey}.description`)
+    : service.description;
+
   return {
     title: {
-      absolute: `${service.title} | Manual Therapies · Essentia Wellness`,
+      absolute: `${title} | ${t("manualTherapyMetaSuffix")}`,
     },
-    description: service.description,
+    description,
     alternates: {
       canonical:
         locale === "es"

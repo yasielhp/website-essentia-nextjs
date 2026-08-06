@@ -564,7 +564,8 @@
       },
       "ctaHeading": "Restore your skin.",
       "ctaBody": "Facial Therapies are available to all Essentia members. Book your first session or join the community to get started."
-    }
+    },
+    "manualTherapyMetaSuffix": "Manual Therapies · Essentia"
   },
   "pages": {
     "breathing-sessions": {

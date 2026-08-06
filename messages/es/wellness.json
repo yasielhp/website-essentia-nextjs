@@ -564,7 +564,8 @@
       },
       "ctaHeading": "Restaura tu piel.",
       "ctaBody": "Las Terapias Faciales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
-    }
+    },
+    "manualTherapyMetaSuffix": "Terapias Manuales · Essentia"
   },
   "pages": {
     "breathing-sessions": {

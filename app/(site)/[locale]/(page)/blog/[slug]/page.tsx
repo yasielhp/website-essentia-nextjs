@@ -112,8 +112,20 @@ export async function generateMetadata({
     : (post.seo_description ?? post.excerpt ?? undefined);
   const image = post.seo_og_image_url ?? post.cover_image_url ?? undefined;
 
+  /**
+   * The suffix is there to carry the brand, so it earns its place only when
+   * the title has room for it and does not already say "Essentia" itself —
+   * "Manual Therapies at Essentia | Tenerife Wellness Club | Essentia Blog"
+   * ran to 69 characters and named the brand twice. Editors write these titles
+   * in the dashboard, so the rule lives here rather than in any one row.
+   */
+  const suffix = t("titleSuffix");
+  const withSuffix = `${title} | ${suffix}`;
+  const fullTitle =
+    withSuffix.length <= 65 && !title.includes("Essentia") ? withSuffix : title;
+
   return {
-    title: { absolute: `${title} | ${t("titleSuffix")}` },
+    title: { absolute: fullTitle },
     description,
     openGraph: {
       title,
