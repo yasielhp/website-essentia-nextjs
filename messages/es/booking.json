@@ -196,5 +196,10 @@
     "contactNote": "Por favor, mantente atento a tu correo. Nos pondremos en contacto contigo para confirmar tu cita.",
     "contactNoteWithPhone": "Por favor, mantente atento a tu correo y al teléfono <phone>{phoneValue}</phone>. Nos pondremos en contacto contigo para confirmar tu cita.",
     "cta": "Volver al inicio"
+  },
+  "bookableServices": {
+    "heading": "Qué puedes reservar",
+    "lead": "Todas las sesiones que ves aquí se reservan desde esta página. Cada una enlaza con su protocolo completo, en qué consiste y cuánto dura.",
+    "learnMore": "Ver el protocolo completo"
   }
 }
