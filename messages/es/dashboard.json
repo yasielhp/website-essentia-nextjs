@@ -301,7 +301,8 @@
         "notesPlaceholder": "Notas adicionales para esta reserva…"
       },
       "errors": {
-        "createFailed": "No se pudo crear la reserva."
+        "createFailed": "No se pudo crear la reserva.",
+        "reservationRequired": "El número de reserva es obligatorio."
       }
     },
     "edit": {
@@ -925,7 +926,11 @@
     "phoneInvalid": "Introduce un teléfono válido, incluido el prefijo del país",
     "accountEmailRequired": "Una cuenta necesita un email válido con el que iniciar sesión",
     "phoneFormatInvalid": "Introduce un teléfono válido",
-    "fixErrors": "Corrige los errores."
+    "fixErrors": "Corrige los errores.",
+    "emailRequired": "El email es obligatorio",
+    "serviceRequired": "Selecciona un servicio",
+    "dateRequired": "Selecciona una fecha",
+    "timeRequired": "Selecciona una hora"
   },
   "gender": {
     "unspecified": "Sin especificar",

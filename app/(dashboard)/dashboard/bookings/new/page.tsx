@@ -21,6 +21,7 @@ import { useDropdownPortal } from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { z } from "zod";
 import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
@@ -594,6 +595,7 @@ function CompletedRow({
 function NewBookingPageInner() {
   const t = useTranslations("dashboard.bookings.form");
   const tToasts = useTranslations("dashboard.toasts");
+  const tValidation = useTranslations("dashboard.validation");
   const tCommon = useTranslations("dashboard.common");
   const locale = useLocale();
   const locationOptions = useLocationOptions();
@@ -750,15 +752,36 @@ function NewBookingPageInner() {
     dispatchAsync({ type: "SET_ERROR", payload: null });
 
     if (!serviceId) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Please select a service." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("serviceRequired"),
+      });
       return;
     }
     if (!firstName.trim()) {
-      dispatchAsync({ type: "SET_ERROR", payload: "First name is required." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("firstNameRequired"),
+      });
       return;
     }
     if (!email.trim()) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("emailRequired"),
+      });
+      return;
+    }
+    /**
+     * The address was only checked for being non-empty, so `oliverthomp.co.uk`
+     * — no @ — was accepted, saved, and could never be matched to a contact.
+     * Same rule the public booking form uses.
+     */
+    if (!z.string().email().safeParse(email.trim()).success) {
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("emailInvalid"),
+      });
       return;
     }
     if (
@@ -767,7 +790,7 @@ function NewBookingPageInner() {
     ) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: "Reservation number is required.",
+        payload: t("errors.reservationRequired"),
       });
       return;
     }

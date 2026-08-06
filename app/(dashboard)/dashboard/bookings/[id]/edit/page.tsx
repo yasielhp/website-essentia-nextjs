@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
+import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import {
@@ -1268,6 +1269,7 @@ function ClientSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditBookingPage() {
+  const tValidation = useTranslations("dashboard.validation");
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.bookings.edit");
   const tForm = useTranslations("dashboard.bookings.form");
@@ -1646,15 +1648,32 @@ export default function EditBookingPage() {
     dispatchAsync({ type: "SET_ERROR", payload: null });
 
     if (!serviceId) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Please select a service." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("serviceRequired"),
+      });
       return;
     }
     if (!firstName.trim()) {
-      dispatchAsync({ type: "SET_ERROR", payload: "First name is required." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("firstNameRequired"),
+      });
       return;
     }
     if (!email.trim()) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Email is required." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("emailRequired"),
+      });
+      return;
+    }
+    // Same check the create screen and the public form apply.
+    if (!z.string().email().safeParse(email.trim()).success) {
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("emailInvalid"),
+      });
       return;
     }
     if (
@@ -1668,11 +1687,17 @@ export default function EditBookingPage() {
       return;
     }
     if (!selectedDate) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Please select a date." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("dateRequired"),
+      });
       return;
     }
     if (!selectedTime) {
-      dispatchAsync({ type: "SET_ERROR", payload: "Please select a time." });
+      dispatchAsync({
+        type: "SET_ERROR",
+        payload: tValidation("timeRequired"),
+      });
       return;
     }
 
