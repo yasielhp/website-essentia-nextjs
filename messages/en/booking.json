@@ -196,5 +196,10 @@
     "contactNote": "Please keep an eye on your email. We will reach out to confirm your appointment.",
     "contactNoteWithPhone": "Please keep an eye on your email and phone <phone>{phoneValue}</phone>. We will reach out to confirm your appointment.",
     "cta": "Back to home"
+  },
+  "bookableServices": {
+    "heading": "What you can book",
+    "lead": "Every session below can be booked from this page. Each one links through to its full protocol, what it involves and how long it takes.",
+    "learnMore": "See the full protocol"
   }
 }
