@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { routing } from "../../../i18n/routing";
 import "../../globals.css";
 import { fontVariables } from "@lib/fonts";
-import { contact } from "@/constants/contact";
+import { contact, OPENING_HOURS } from "@/constants/contact";
 import { ConsentManager } from "@components/consent-manager";
 import { AuthProvider } from "@components/auth-provider";
 import { WebMcpTools } from "@components/webmcp-tools";
@@ -115,6 +115,22 @@ function buildSchemaOrg(locale: string) {
           latitude: "28.0863",
           longitude: "-16.7307",
         },
+        openingHoursSpecification: [
+          {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ],
+            opens: OPENING_HOURS.opens,
+            closes: OPENING_HOURS.closes,
+          },
+        ],
         priceRange: "€€€",
         medicalSpecialty: isEs
           ? ["Medicina Preventiva", "Medicina Regenerativa"]
