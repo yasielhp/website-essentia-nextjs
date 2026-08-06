@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
@@ -38,6 +39,7 @@ function RaceCard({
   onUnregister: (id: string) => void;
   busy: boolean;
 }) {
+  const t = useTranslations("account.races");
   const isFull =
     race.max_participants != null &&
     race.registrations_count >= race.max_participants &&
@@ -51,12 +53,12 @@ function RaceCard({
         </h3>
         {isFull && (
           <span className="bg-sand-100 text-petroleum-500 inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
-            Full
+            {t("full")}
           </span>
         )}
         {race.is_registered && (
           <span className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-            Registered
+            {t("registered")}
           </span>
         )}
       </div>
@@ -93,7 +95,7 @@ function RaceCard({
             onClick={() => onUnregister(race.id)}
             disabled={busy}
           >
-            {busy ? "…" : "Unregister"}
+            {busy ? "…" : t("unregister")}
           </Button>
         ) : isFull ? null : (
           <Button
@@ -102,7 +104,7 @@ function RaceCard({
             onClick={() => onRegister(race.id)}
             disabled={busy}
           >
-            {busy ? "…" : "Register"}
+            {busy ? "…" : t("register")}
           </Button>
         )}
       </div>
@@ -111,6 +113,7 @@ function RaceCard({
 }
 
 export default function AccountRacesPage() {
+  const t = useTranslations("account.races");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { push } = router;
@@ -217,17 +220,15 @@ export default function AccountRacesPage() {
       <div className="mx-auto max-w-4xl px-5">
         <div className="mb-10">
           <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-            Races
+            {t("heading")}
           </h1>
-          <p className="text-petroleum-400 mt-2 text-sm">
-            Upcoming races and your registrations
-          </p>
+          <p className="text-petroleum-400 mt-2 text-sm">{t("subheading")}</p>
         </div>
 
         {myRaces.length > 0 && (
           <section className="mb-12">
             <h2 className="font-display text-petroleum-700 mb-5 text-2xl">
-              My Registrations
+              {t("mine")}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {myRaces.map((race) => (
@@ -245,7 +246,7 @@ export default function AccountRacesPage() {
 
         <section>
           <h2 className="font-display text-petroleum-700 mb-5 text-2xl">
-            Upcoming Races
+            {t("upcoming")}
           </h2>
 
           {dataLoading ? (

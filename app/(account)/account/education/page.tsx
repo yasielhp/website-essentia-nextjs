@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
@@ -40,6 +41,7 @@ function SessionCard({
   onUnregister: (id: string) => void;
   busy: boolean;
 }) {
+  const t = useTranslations("account.education");
   const isFull =
     session.max_participants != null &&
     session.registrations_count >= session.max_participants &&
@@ -53,12 +55,12 @@ function SessionCard({
         </h3>
         {isFull && (
           <span className="bg-sand-100 text-petroleum-500 inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
-            Full
+            {t("full")}
           </span>
         )}
         {session.is_registered && (
           <span className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-            Registered
+            {t("registered")}
           </span>
         )}
       </div>
@@ -95,7 +97,7 @@ function SessionCard({
             onClick={() => onUnregister(session.id)}
             disabled={busy}
           >
-            {busy ? "…" : "Unregister"}
+            {busy ? "…" : t("unregister")}
           </Button>
         ) : isFull ? null : (
           <Button
@@ -104,7 +106,7 @@ function SessionCard({
             onClick={() => onRegister(session.id)}
             disabled={busy}
           >
-            {busy ? "…" : "Register"}
+            {busy ? "…" : t("register")}
           </Button>
         )}
       </div>
@@ -113,6 +115,7 @@ function SessionCard({
 }
 
 export default function AccountEducationPage() {
+  const t = useTranslations("account.education");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { push } = router;
@@ -220,17 +223,15 @@ export default function AccountEducationPage() {
       <div className="mx-auto max-w-4xl px-5">
         <div className="mb-10">
           <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-            Education
+            {t("heading")}
           </h1>
-          <p className="text-petroleum-400 mt-2 text-sm">
-            Upcoming sessions and your registrations
-          </p>
+          <p className="text-petroleum-400 mt-2 text-sm">{t("subheading")}</p>
         </div>
 
         {mySessions.length > 0 && (
           <section className="mb-12">
             <h2 className="font-display text-petroleum-700 mb-5 text-2xl">
-              My Sessions
+              {t("mine")}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {mySessions.map((session) => (
@@ -248,7 +249,7 @@ export default function AccountEducationPage() {
 
         <section>
           <h2 className="font-display text-petroleum-700 mb-5 text-2xl">
-            Upcoming Sessions
+            {t("upcoming")}
           </h2>
 
           {dataLoading ? (

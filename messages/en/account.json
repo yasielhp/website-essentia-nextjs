@@ -1,0 +1,60 @@
+{
+  "greeting": "Welcome back, {name}",
+  "greetingAnonymous": "Welcome back",
+  "cards": {
+    "bookings": "My Bookings",
+    "races": "My Races",
+    "sessions": "My Sessions"
+  },
+  "upcoming": {
+    "heading": "Upcoming Appointments",
+    "empty": "No upcoming appointments.",
+    "bookCta": "Book a session →",
+    "viewAll": "View all bookings →"
+  },
+  "columns": {
+    "service": "Service",
+    "date": "Date",
+    "time": "Time",
+    "duration": "Duration",
+    "status": "Status"
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
+  },
+  "newsletter": {
+    "heading": "Newsletter",
+    "subscribed": "You are subscribed to Essentia's newsletter.",
+    "notSubscribed": "Subscribe to receive protocols, insights, and community updates.",
+    "ariaLabel": "Newsletter subscription"
+  },
+  "bookings": {
+    "heading": "My Bookings",
+    "empty": "No bookings yet."
+  },
+  "races": {
+    "heading": "Races",
+    "subheading": "Upcoming races and your registrations",
+    "mine": "My Registrations",
+    "upcoming": "Upcoming Races",
+    "full": "Full",
+    "registered": "Registered",
+    "register": "Register",
+    "unregister": "Unregister",
+    "empty": "No races yet."
+  },
+  "education": {
+    "heading": "Education",
+    "subheading": "Upcoming sessions and your registrations",
+    "mine": "My Sessions",
+    "upcoming": "Upcoming Sessions",
+    "full": "Full",
+    "registered": "Registered",
+    "register": "Register",
+    "unregister": "Unregister",
+    "empty": "No sessions yet."
+  }
+}

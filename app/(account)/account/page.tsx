@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
@@ -29,13 +30,14 @@ const statusBadgeClasses: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string | null }) {
+  const t = useTranslations("account.status");
   const s = status ?? "unknown";
   const cls = statusBadgeClasses[s] ?? "bg-sand-100 text-petroleum-500";
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}
     >
-      {s}
+      {t.has(s) ? t(s) : s}
     </span>
   );
 }
@@ -82,6 +84,7 @@ function SummaryCard({
 }
 
 export default function AccountPage() {
+  const t = useTranslations("account");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { push } = router;
@@ -168,7 +171,9 @@ export default function AccountPage() {
   if (!user) return null;
 
   const firstName = user.name?.split(" ")[0];
-  const greeting = firstName ? `Welcome back, ${firstName}` : "Welcome back";
+  const greeting = firstName
+    ? t("greeting", { name: firstName })
+    : t("greetingAnonymous");
 
   return (
     <div className="bg-sand-50 min-h-dvh pt-30 pb-24 md:pt-50">
@@ -182,19 +187,19 @@ export default function AccountPage() {
 
         <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SummaryCard
-            label="My Bookings"
+            label={t("cards.bookings")}
             count={counts.bookings}
             href="/account/bookings"
             loading={dataLoading}
           />
           <SummaryCard
-            label="My Races"
+            label={t("cards.races")}
             count={counts.races}
             href="/account/races"
             loading={dataLoading}
           />
           <SummaryCard
-            label="My Sessions"
+            label={t("cards.sessions")}
             count={counts.sessions}
             href="/account/education"
             loading={dataLoading}
@@ -203,7 +208,7 @@ export default function AccountPage() {
 
         <div>
           <h2 className="font-display text-petroleum-700 mb-4 text-2xl">
-            Upcoming Appointments
+            {t("upcoming.heading")}
           </h2>
 
           <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
@@ -212,16 +217,16 @@ export default function AccountPage() {
                 <thead>
                   <tr className="border-sand-200 border-b text-left">
                     <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                      Service
+                      {t("columns.service")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                      Date
+                      {t("columns.date")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                      Time
+                      {t("columns.time")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                      Status
+                      {t("columns.status")}
                     </th>
                   </tr>
                 </thead>
@@ -236,12 +241,12 @@ export default function AccountPage() {
                         colSpan={4}
                         className="text-petroleum-400 px-5 py-10 text-center text-sm"
                       >
-                        No upcoming appointments.{" "}
+                        {t("upcoming.empty")}{" "}
                         <Link
                           href="/booking"
                           className="text-petroleum-700 underline underline-offset-2"
                         >
-                          Book a session →
+                          {t("upcoming.bookCta")}
                         </Link>
                       </td>
                     </tr>
@@ -277,7 +282,7 @@ export default function AccountPage() {
                 href="/account/bookings"
                 className="text-petroleum-500 hover:text-petroleum-700 text-sm transition-colors"
               >
-                View all bookings →
+                {t("upcoming.viewAll")}
               </Link>
             </div>
           )}
@@ -289,12 +294,12 @@ export default function AccountPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <h2 className="font-display text-petroleum-700 text-xl">
-                  Newsletter
+                  {t("newsletter.heading")}
                 </h2>
                 <p className="text-petroleum-400 text-sm">
                   {newsletterSubscribed
-                    ? "You are subscribed to Essentia's newsletter."
-                    : "Subscribe to receive protocols, insights, and community updates."}
+                    ? t("newsletter.subscribed")
+                    : t("newsletter.notSubscribed")}
                 </p>
               </div>
               <button
@@ -322,7 +327,7 @@ export default function AccountPage() {
                 }`}
                 role="switch"
                 aria-checked={newsletterSubscribed}
-                aria-label="Newsletter subscription"
+                aria-label={t("newsletter.ariaLabel")}
               >
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition duration-200 ${

@@ -1,0 +1,60 @@
+{
+  "greeting": "Bienvenido de nuevo, {name}",
+  "greetingAnonymous": "Bienvenido de nuevo",
+  "cards": {
+    "bookings": "Mis reservas",
+    "races": "Mis carreras",
+    "sessions": "Mis sesiones"
+  },
+  "upcoming": {
+    "heading": "Próximas citas",
+    "empty": "No tienes citas próximas.",
+    "bookCta": "Reservar una sesión →",
+    "viewAll": "Ver todas las reservas →"
+  },
+  "columns": {
+    "service": "Servicio",
+    "date": "Fecha",
+    "time": "Hora",
+    "duration": "Duración",
+    "status": "Estado"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "confirmed": "Confirmada",
+    "cancelled": "Cancelada",
+    "unknown": "Desconocida"
+  },
+  "newsletter": {
+    "heading": "Newsletter",
+    "subscribed": "Estás suscrito a la newsletter de Essentia.",
+    "notSubscribed": "Suscríbete para recibir protocolos, novedades y noticias de la comunidad.",
+    "ariaLabel": "Suscripción a la newsletter"
+  },
+  "bookings": {
+    "heading": "Mis reservas",
+    "empty": "Todavía no tienes reservas."
+  },
+  "races": {
+    "heading": "Carreras",
+    "subheading": "Próximas carreras y tus inscripciones",
+    "mine": "Mis inscripciones",
+    "upcoming": "Próximas carreras",
+    "full": "Completa",
+    "registered": "Inscrito",
+    "register": "Inscribirme",
+    "unregister": "Anular inscripción",
+    "empty": "Todavía no hay carreras."
+  },
+  "education": {
+    "heading": "Formación",
+    "subheading": "Próximas sesiones y tus inscripciones",
+    "mine": "Mis sesiones",
+    "upcoming": "Próximas sesiones",
+    "full": "Completa",
+    "registered": "Inscrito",
+    "register": "Inscribirme",
+    "unregister": "Anular inscripción",
+    "empty": "Todavía no hay sesiones."
+  }
+}

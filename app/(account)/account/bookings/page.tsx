@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
@@ -22,6 +23,7 @@ const statusBadgeClasses: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string | null }) {
+  const t = useTranslations("account.status");
   const s = status ?? "unknown";
   const cls = statusBadgeClasses[s] ?? "bg-sand-100 text-petroleum-500";
   const strikethrough = s === "cancelled" ? "line-through" : "";
@@ -29,12 +31,13 @@ function StatusBadge({ status }: { status: string | null }) {
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls} ${strikethrough}`}
     >
-      {s}
+      {t.has(s) ? t(s) : s}
     </span>
   );
 }
 
 export default function AccountBookingsPage() {
+  const t = useTranslations("account");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { push } = router;
@@ -73,7 +76,7 @@ export default function AccountBookingsPage() {
       <div className="mx-auto max-w-4xl px-5">
         <div className="mb-10">
           <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-            My Bookings
+            {t("bookings.heading")}
           </h1>
           {!dataLoading && (
             <p className="text-petroleum-400 mt-2 text-sm">
@@ -88,19 +91,19 @@ export default function AccountBookingsPage() {
               <thead>
                 <tr className="border-sand-200 border-b text-left">
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Service
+                    {t("columns.service")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Date
+                    {t("columns.date")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Time
+                    {t("columns.time")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Duration
+                    {t("columns.duration")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Status
+                    {t("columns.status")}
                   </th>
                 </tr>
               </thead>
