@@ -1,5 +1,7 @@
 "use server";
 
+import { applyPreferredLanguage } from "./preferred-language";
+
 import { cookies } from "next/headers";
 import { createAuthActions } from "@insforge/sdk/ssr";
 import { createInsForgeServerClient } from "@/lib/insforge-server";
@@ -53,9 +55,13 @@ export async function signInWithPassword(email: string, password: string) {
   const client = await createInsForgeServerClient();
   const { data: profile } = await client.database
     .from("profiles")
-    .select("role")
+    .select("role, preferred_language")
     .eq("id", data.user.id)
     .maybeSingle();
+
+  await applyPreferredLanguage(
+    (profile as { preferred_language?: string } | null)?.preferred_language,
+  );
 
   return {
     user: data.user,
@@ -105,9 +111,14 @@ export async function getSessionUser() {
 
   const { data: profile } = await client.database
     .from("profiles")
-    .select("role")
+    .select("role, preferred_language")
     .eq("id", data.user.id)
     .maybeSingle();
+
+  const row = profile as {
+    role?: string;
+    preferred_language?: string;
+  } | null;
 
   return {
     user: {
@@ -115,7 +126,8 @@ export async function getSessionUser() {
       email: data.user.email,
       name: (data.user.profile as { name?: string } | null)?.name,
     },
-    role: (profile as { role?: string } | null)?.role ?? null,
+    role: row?.role ?? null,
+    preferredLanguage: row?.preferred_language ?? null,
   };
 }
 

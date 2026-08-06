@@ -36,27 +36,5 @@
     "location": "Ubicación",
     "contact": "Contacto",
     "followUs": "Síguenos"
-  },
-  "beforeYouWrite": {
-    "heading": "Antes de escribirnos",
-    "hours": {
-      "label": "Horario de recepción",
-      "value": "Todos los días, de {opens} a {closes}"
-    },
-    "reply": {
-      "label": "Tiempo de respuesta",
-      "value": "Respondemos los mensajes en el plazo de un día hábil."
-    },
-    "phone": {
-      "label": "¿Prefieres hablar?",
-      "value": "Llámanos en horario de recepción al {phone}."
-    },
-    "routes": {
-      "heading": "Puede que no necesites el formulario",
-      "booking": "Para reservar una sesión, resérvala directamente: eliges servicio, día y hora de una vez.",
-      "bookingLink": "Reservar una sesión",
-      "memberships": "Si buscas qué incluye la membresía y cuánto cuesta, la página de membresías responde casi todo.",
-      "membershipsLink": "Ver membresías"
-    }
   }
 }

@@ -3,14 +3,17 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { setDashboardLocale } from "@/actions/dashboard-locale";
+import { setPreferredLanguage } from "@/actions/preferred-language";
 
 const LOCALES = ["en", "es"] as const;
 
 /**
  * The dashboard has no `[locale]` segment to switch on, so the choice is
- * written to a cookie and the tree re-rendered — `router.refresh()` re-runs the
- * layout, which reads the cookie back and swaps the messages.
+ * recorded and the tree re-rendered — `router.refresh()` re-runs the layout,
+ * which reads it back and swaps the messages.
+ *
+ * The same choice is written to the signed-in profile, so it follows the person
+ * to the public site and to their next browser.
  */
 export function LocaleSwitch() {
   const t = useTranslations("dashboard");
@@ -21,7 +24,7 @@ export function LocaleSwitch() {
   function switchTo(next: string) {
     if (next === locale) return;
     startTransition(async () => {
-      await setDashboardLocale(next);
+      await setPreferredLanguage(next);
       router.refresh();
     });
   }

@@ -9,7 +9,7 @@ export type DashboardLocale = (typeof routing.locales)[number];
  * The dashboard renders outside the `[locale]` segment — `proxy.ts` keeps
  * next-intl's middleware off `/dashboard` entirely — so `requestLocale` is
  * always undefined there and `i18n/request.ts` cannot resolve it. Read the
- * preference straight off the cookie instead.
+ * shared locale cookie instead, the one the signed-in profile seeds.
  */
 export async function getDashboardLocale(): Promise<DashboardLocale> {
   const store = await cookies();

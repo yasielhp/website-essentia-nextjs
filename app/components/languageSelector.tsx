@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { usePathname, useRouter } from "../../i18n/navigation";
 import { IconWorld } from "@components/ui/icons";
+import { setPreferredLanguage } from "@/actions/preferred-language";
 
 const labels: Record<string, string> = {
   en: "English",
@@ -28,6 +29,9 @@ export default function LanguageSelector() {
    * its canonical points at the right URL for the language.
    */
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Remember the choice: on the profile when there is one to write to, in
+    // the cookie either way. Not awaited — the navigation should not wait on it.
+    void setPreferredLanguage(e.target.value);
     router.replace(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { pathname, params } as any,

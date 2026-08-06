@@ -12,6 +12,7 @@ export type UpdateUserProfileInput = {
   lastName: string;
   phone: string;
   gender: Gender | null;
+  preferredLanguage: string;
   role: AssignableRole;
   currentEmail: string;
 };

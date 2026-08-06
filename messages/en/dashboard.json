@@ -484,7 +484,8 @@
         "phone": "Phone",
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Gender",
-        "role": "Role"
+        "role": "Role",
+        "preferredLanguage": "Preferred language"
       },
       "roles": {
         "client": {
@@ -1056,7 +1057,8 @@
       "updated": "Password updated.",
       "mismatch": "The passwords do not match.",
       "tooShort": "The password must be at least 8 characters."
-    }
+    },
+    "preferredLanguage": "Preferred language"
   },
   "settings": {
     "plans": {

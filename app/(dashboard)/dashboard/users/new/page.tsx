@@ -52,6 +52,7 @@ type FormState = {
   email: string;
   phone: string;
   gender: GenderValue;
+  language: string;
   role: NewUserKind;
 };
 
@@ -63,6 +64,7 @@ type FormAction =
     }
   | { type: "SET_ROLE"; role: NewUserKind }
   | { type: "SET_GENDER"; gender: GenderValue }
+  | { type: "SET_LANGUAGE"; language: string }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
@@ -88,6 +90,7 @@ const initialState: FormState = {
   email: "",
   phone: "",
   gender: "",
+  language: "en",
   // The first option in ROLES, so the form opens on what the list shows first
   // rather than on a different choice further down.
   role: ROLES_DEFAULT,
@@ -107,6 +110,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, role: action.role };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
+    case "SET_LANGUAGE":
+      return { ...state, language: action.language };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":
@@ -142,6 +147,7 @@ export default function NewUserPage() {
     email,
     phone,
     gender,
+    language,
     role,
   } = state;
 
@@ -186,6 +192,7 @@ export default function NewUserPage() {
             email: normalizedEmail,
             phone: trimPhone,
             gender: toStoredGender(gender),
+            preferred_language: language,
             // Member is its own status: the subscription form only offers
             // contacts marked this way.
             status: role === "member" ? "member" : "client",
@@ -256,6 +263,7 @@ export default function NewUserPage() {
         email: trimEmail,
         phone: trimPhone,
         gender: toStoredGender(gender),
+        preferred_language: language,
       },
     ]);
 
@@ -440,7 +448,7 @@ export default function NewUserPage() {
                   htmlFor="gender"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Gender
+                  {t("fields.gender")}
                 </label>
                 <OptionSelect
                   id="gender"
@@ -452,6 +460,27 @@ export default function NewUserPage() {
                   disabled={submitting}
                   ariaLabel={t("fields.gender")}
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="language"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  {t("fields.preferredLanguage")}
+                </label>
+                <select
+                  id="language"
+                  value={language}
+                  onChange={(e) =>
+                    dispatch({ type: "SET_LANGUAGE", language: e.target.value })
+                  }
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                >
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
               </div>
             </div>
           </div>

@@ -36,27 +36,5 @@
     "location": "Location",
     "contact": "Contact",
     "followUs": "Follow us"
-  },
-  "beforeYouWrite": {
-    "heading": "Before you write",
-    "hours": {
-      "label": "Reception hours",
-      "value": "Every day, {opens}–{closes}"
-    },
-    "reply": {
-      "label": "Reply time",
-      "value": "We answer messages within one business day."
-    },
-    "phone": {
-      "label": "Prefer to talk?",
-      "value": "Call us during reception hours on {phone}."
-    },
-    "routes": {
-      "heading": "You may not need the form",
-      "booking": "To reserve a session, book it directly — you can pick the service, the day and the time in one go.",
-      "bookingLink": "Book a session",
-      "memberships": "For what membership includes and what it costs, the memberships page answers most of it.",
-      "membershipsLink": "See memberships"
-    }
   }
 }

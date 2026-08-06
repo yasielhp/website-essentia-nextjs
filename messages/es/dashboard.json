@@ -484,7 +484,8 @@
         "phone": "Teléfono",
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Género",
-        "role": "Rol"
+        "role": "Rol",
+        "preferredLanguage": "Idioma preferido"
       },
       "roles": {
         "client": {
@@ -1056,7 +1057,8 @@
       "updated": "Contraseña actualizada.",
       "mismatch": "Las contraseñas no coinciden.",
       "tooShort": "La contraseña debe tener al menos 8 caracteres."
-    }
+    },
+    "preferredLanguage": "Idioma preferido"
   },
   "settings": {
     "plans": {
