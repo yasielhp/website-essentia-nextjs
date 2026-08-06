@@ -823,15 +823,23 @@ function NewBookingPageInner() {
     let contactId: string | null = null;
     const bookingEmail = email.trim();
     if (bookingEmail) {
-      const { data: contactUuid } = await insforge.database.rpc(
-        "upsert_contact",
-        {
+      const { data: contactUuid, error: contactError } =
+        await insforge.database.rpc("upsert_contact", {
           p_email: bookingEmail,
           p_first_name: firstName.trim(),
           p_last_name: lastName.trim(),
           p_phone: phone.trim() || null,
-        },
-      );
+          p_language: locale,
+        });
+      // A booking is worth more than its contact link, so a failure here does
+      // not stop the write — but it is said out loud. Swallowing it is how
+      // every dashboard booking came to be saved with no contact at all.
+      if (contactError) {
+        console.error(
+          "[booking] upsert_contact failed; the booking will have no contact:",
+          contactError,
+        );
+      }
       contactId = (contactUuid as string | null) ?? null;
     }
 
