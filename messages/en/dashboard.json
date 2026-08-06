@@ -145,6 +145,34 @@
         "saveFailed": "Failed to save.",
         "createFailed": "Failed to create."
       }
+    },
+    "detail": {
+      "title": "Edit post",
+      "notFound": "Post not found.",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "content": "Content",
+        "seo": "SEO"
+      },
+      "fields": {
+        "title": "Title",
+        "slug": "Slug",
+        "excerpt": "Excerpt",
+        "content": "Content",
+        "metaTitle": "Meta title",
+        "metaDescription": "Meta description"
+      },
+      "deleteDialog": {
+        "title": "Delete post?",
+        "body": "This action cannot be undone.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "saveFailed": "Failed to save."
+      }
     }
   },
   "bookings": {
@@ -926,6 +954,75 @@
         "lead": "Lead — no booking yet",
         "client": "Client — has booked",
         "member": "Member — can hold a subscription"
+      }
+    },
+    "detail": {
+      "title": "Edit Contact",
+      "notFound": "Contact not found.",
+      "goBack": "Go back",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "newsletter": {
+        "label": "Newsletter",
+        "subscribed": "Subscribed",
+        "notSubscribed": "Not subscribed"
+      },
+      "fields": {
+        "preferredLanguage": "Preferred language"
+      },
+      "transactions": {
+        "heading": "Transactions",
+        "paidToDate": "Paid to date",
+        "empty": "No transactions yet.",
+        "columns": {
+          "type": "Type",
+          "concept": "Concept",
+          "date": "Date",
+          "amount": "Amount",
+          "status": "Status"
+        }
+      },
+      "bookings": {
+        "heading": "Bookings",
+        "empty": "No bookings yet.",
+        "columns": {
+          "created": "Created",
+          "status": "Status",
+          "service": "Service",
+          "location": "Location",
+          "datetime": "Datetime",
+          "reservedBy": "Reserved by"
+        }
+      },
+      "races": {
+        "heading": "Race registrations",
+        "empty": "No race registrations yet.",
+        "columns": {
+          "race": "Race",
+          "date": "Date",
+          "location": "Location",
+          "registered": "Registered"
+        }
+      },
+      "education": {
+        "heading": "Education sessions",
+        "empty": "No education session registrations yet.",
+        "columns": {
+          "session": "Session",
+          "date": "Date",
+          "location": "Location",
+          "registered": "Registered"
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete contact?",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…",
+        "body": "<name></name> and all their associated bookings and registrations will be permanently deleted."
+      },
+      "errors": {
+        "saveFailed": "Failed to save contact."
       }
     }
   }

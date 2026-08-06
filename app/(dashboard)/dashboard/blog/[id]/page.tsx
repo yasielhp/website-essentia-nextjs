@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -111,6 +112,10 @@ function reducer(s: FormState, a: Action): FormState {
 }
 
 export default function EditPostPage() {
+  const t = useTranslations("dashboard.blog.detail");
+  const tForm = useTranslations("dashboard.blog.form");
+  const tStatus = useTranslations("dashboard.blog.status");
+  const tCommon = useTranslations("dashboard.common");
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, init);
@@ -270,7 +275,7 @@ export default function EditPostPage() {
     if (err) {
       dispatch({
         type: "ERROR",
-        msg: (err as { message?: string }).message ?? "Failed to save.",
+        msg: (err as { message?: string }).message ?? t("errors.saveFailed"),
       });
       return;
     }
@@ -286,7 +291,7 @@ export default function EditPostPage() {
   if (notFound)
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24 text-sm">
-        Post not found.
+        {t("notFound")}
       </div>
     );
 
@@ -295,7 +300,7 @@ export default function EditPostPage() {
       <form onSubmit={(e) => void handleSave(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            Edit post
+            {t("title")}
           </h1>
           <div className="flex items-center gap-3">
             <Button
@@ -306,10 +311,10 @@ export default function EditPostPage() {
               disabled={loading}
               className="gap-1.5"
             >
-              <IconTrash /> Delete
+              <IconTrash /> {t("delete")}
             </Button>
             <Button variant="outline" size="md" href="/dashboard/blog">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -317,7 +322,7 @@ export default function EditPostPage() {
               size="md"
               disabled={saving || loading}
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>
@@ -335,7 +340,7 @@ export default function EditPostPage() {
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-petroleum-500 text-sm font-semibold">
-                  Content
+                  {t("sections.content")}
                 </h2>
                 <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
                   {(["en", "es"] as const).map((l) => (
@@ -350,7 +355,7 @@ export default function EditPostPage() {
                           : "text-petroleum-400 hover:text-petroleum-600",
                       ].join(" ")}
                     >
-                      {l === "en" ? "English" : "Español"}
+                      {l === "en" ? tCommon("english") : tCommon("spanish")}
                     </button>
                   ))}
                 </div>
@@ -360,7 +365,8 @@ export default function EditPostPage() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Title <span className="text-red-400">*</span>
+                        {t("fields.title")}{" "}
+                        <span className="text-red-400">*</span>
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -376,7 +382,8 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Slug <span className="text-red-400">*</span>
+                        {t("fields.slug")}{" "}
+                        <span className="text-red-400">*</span>
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -397,7 +404,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Excerpt
+                        {t("fields.excerpt")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
@@ -413,7 +420,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 mb-1 text-xs font-medium">
-                        Content
+                        {t("fields.content")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
@@ -433,7 +440,8 @@ export default function EditPostPage() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Title <span className="text-red-400">*</span>
+                        {t("fields.title")}{" "}
+                        <span className="text-red-400">*</span>
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -449,7 +457,8 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Slug <span className="text-red-400">*</span>
+                        {t("fields.slug")}{" "}
+                        <span className="text-red-400">*</span>
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -470,7 +479,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Excerpt
+                        {t("fields.excerpt")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
@@ -486,7 +495,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 mb-1 text-xs font-medium">
-                        Content
+                        {t("fields.content")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-64 animate-pulse rounded-xl" />
@@ -512,7 +521,7 @@ export default function EditPostPage() {
             {/* Status */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Status
+                {tForm("sections.status")}
               </h2>
               {loading ? (
                 <div className="bg-sand-100 h-12 animate-pulse rounded-xl" />
@@ -526,7 +535,7 @@ export default function EditPostPage() {
                       disabled={saving}
                       className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${status === s ? "border-petroleum-400 bg-petroleum-50 text-petroleum-700" : "border-sand-200 text-petroleum-400 hover:border-sand-300 hover:bg-sand-50"}`}
                     >
-                      {s === "draft" ? "Draft" : "Published"}
+                      {tStatus(s)}
                     </button>
                   ))}
                 </div>
@@ -536,7 +545,7 @@ export default function EditPostPage() {
             {/* Featured image */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Featured image
+                {tForm("sections.featuredImage")}
               </h2>
               {loading ? (
                 <div className="bg-sand-100 h-32 animate-pulse rounded-xl" />
@@ -553,7 +562,7 @@ export default function EditPostPage() {
             {/* Category */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Category
+                {tForm("sections.category")}
               </h2>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -564,7 +573,7 @@ export default function EditPostPage() {
                   disabled={saving}
                   className={SELECT_CLASS}
                 >
-                  <option value="">No category</option>
+                  <option value="">{tForm("noCategory")}</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -578,7 +587,7 @@ export default function EditPostPage() {
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-petroleum-500 text-sm font-semibold">
-                  SEO
+                  {t("sections.seo")}
                 </h2>
                 <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
                   {(["en", "es"] as const).map((l) => (
@@ -593,7 +602,7 @@ export default function EditPostPage() {
                           : "text-petroleum-400 hover:text-petroleum-600",
                       ].join(" ")}
                     >
-                      {l === "en" ? "English" : "Español"}
+                      {l === "en" ? tCommon("english") : tCommon("spanish")}
                     </button>
                   ))}
                 </div>
@@ -603,7 +612,7 @@ export default function EditPostPage() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Meta title
+                        {t("fields.metaTitle")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -625,7 +634,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Meta description
+                        {t("fields.metaDescription")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -651,7 +660,7 @@ export default function EditPostPage() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Meta title
+                        {t("fields.metaTitle")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -673,7 +682,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-petroleum-500 text-xs font-medium">
-                        Meta description
+                        {t("fields.metaDescription")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -708,10 +717,10 @@ export default function EditPostPage() {
           <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex flex-col gap-1">
               <h3 className="font-display text-petroleum-700 text-xl">
-                Delete post?
+                {t("deleteDialog.title")}
               </h3>
               <p className="text-petroleum-400 text-sm">
-                This action cannot be undone.
+                {t("deleteDialog.body")}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -722,7 +731,9 @@ export default function EditPostPage() {
                 disabled={deleting}
                 className="w-full"
               >
-                {deleting ? "Deleting…" : "Yes, delete"}
+                {deleting
+                  ? t("deleteDialog.deleting")
+                  : t("deleteDialog.confirm")}
               </Button>
               <Button
                 variant="outline"
@@ -733,7 +744,7 @@ export default function EditPostPage() {
                 disabled={deleting}
                 className="w-full"
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
             </div>
           </div>

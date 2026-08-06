@@ -145,6 +145,34 @@
         "saveFailed": "No se pudo guardar.",
         "createFailed": "No se pudo crear."
       }
+    },
+    "detail": {
+      "title": "Editar entrada",
+      "notFound": "Entrada no encontrada.",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "content": "Contenido",
+        "seo": "SEO"
+      },
+      "fields": {
+        "title": "Título",
+        "slug": "Slug",
+        "excerpt": "Extracto",
+        "content": "Contenido",
+        "metaTitle": "Meta título",
+        "metaDescription": "Meta descripción"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar la entrada?",
+        "body": "Esta acción no se puede deshacer.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar."
+      }
     }
   },
   "bookings": {
@@ -926,6 +954,75 @@
         "lead": "Lead — aún sin reservas",
         "client": "Cliente — ya ha reservado",
         "member": "Miembro — puede tener suscripción"
+      }
+    },
+    "detail": {
+      "title": "Editar contacto",
+      "notFound": "Contacto no encontrado.",
+      "goBack": "Volver",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "newsletter": {
+        "label": "Newsletter",
+        "subscribed": "Suscrito",
+        "notSubscribed": "No suscrito"
+      },
+      "fields": {
+        "preferredLanguage": "Idioma preferido"
+      },
+      "transactions": {
+        "heading": "Transacciones",
+        "paidToDate": "Pagado hasta la fecha",
+        "empty": "Todavía no hay transacciones.",
+        "columns": {
+          "type": "Tipo",
+          "concept": "Concepto",
+          "date": "Fecha",
+          "amount": "Importe",
+          "status": "Estado"
+        }
+      },
+      "bookings": {
+        "heading": "Reservas",
+        "empty": "Todavía no hay reservas.",
+        "columns": {
+          "created": "Creada",
+          "status": "Estado",
+          "service": "Servicio",
+          "location": "Ubicación",
+          "datetime": "Fecha y hora",
+          "reservedBy": "Reservado por"
+        }
+      },
+      "races": {
+        "heading": "Inscripciones en carreras",
+        "empty": "Todavía no hay inscripciones en carreras.",
+        "columns": {
+          "race": "Carrera",
+          "date": "Fecha",
+          "location": "Ubicación",
+          "registered": "Inscrito el"
+        }
+      },
+      "education": {
+        "heading": "Sesiones formativas",
+        "empty": "Todavía no hay inscripciones en sesiones formativas.",
+        "columns": {
+          "session": "Sesión",
+          "date": "Fecha",
+          "location": "Ubicación",
+          "registered": "Inscrito el"
+        }
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar el contacto?",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…",
+        "body": "<name></name> y todas sus reservas e inscripciones asociadas se eliminarán permanentemente."
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar el contacto."
       }
     }
   }
