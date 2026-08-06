@@ -1,5 +1,6 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { usePathname, useRouter } from "../../i18n/navigation";
 import { IconWorld } from "@components/ui/icons";
 
@@ -12,11 +13,26 @@ export default function LanguageSelector() {
   const locale = useLocale();
   const t = useTranslations("header");
   const pathname = usePathname();
+  const params = useParams();
   const router = useRouter();
 
+  /**
+   * On a dynamic route `usePathname` returns the pattern — `/blog/[slug]` —
+   * because that is how the route is declared in `routing.ts`. Switching
+   * language without handing the params back navigated to that literal string
+   * and answered 404 from inside every blog post and therapy page.
+   *
+   * A post's Spanish slug can differ from its English one, and this control
+   * lives in the footer with no knowledge of either. It carries the current
+   * slug across; the page resolves a post by whichever slug it is given, and
+   * its canonical points at the right URL for the language.
+   */
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace(pathname as any, { locale: e.target.value });
+    router.replace(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { pathname, params } as any,
+      { locale: e.target.value },
+    );
   };
 
   return (
