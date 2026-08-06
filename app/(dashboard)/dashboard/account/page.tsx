@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
@@ -97,6 +98,7 @@ function CalendarServiceRow({
   svc: ServiceCalConfig;
   justConnectedServiceId: string | null;
 }) {
+  const t = useTranslations("dashboard.account.calendar");
   const [email, setEmail] = useState(svc.google_calendar_email);
   const [disconnecting, setDisconnecting] = useState(false);
 
@@ -118,7 +120,7 @@ function CalendarServiceRow({
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
             <span className="size-1.5 rounded-full bg-green-500" />
-            Conectado
+            {t("connected")}
           </span>
           <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
             {email}
@@ -129,11 +131,11 @@ function CalendarServiceRow({
             disabled={disconnecting}
             className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
           >
-            {disconnecting ? "Desconectando…" : "Desconectar"}
+            {disconnecting ? t("disconnecting") : t("disconnect")}
           </button>
           {justConnected && (
             <span className="text-xs font-medium text-green-700">
-              Conectado correctamente.
+              {t("justConnected")}
             </span>
           )}
         </div>
@@ -158,7 +160,7 @@ function CalendarServiceRow({
               strokeLinejoin="round"
             />
           </svg>
-          Conectar Google Calendar
+          {t("connect")}
         </button>
       )}
     </div>
@@ -166,6 +168,7 @@ function CalendarServiceRow({
 }
 
 function GoogleCalendarSection({ userId }: { userId: string }) {
+  const t = useTranslations("dashboard.account");
   const searchParams = useSearchParams();
   const [services, setServices] = useState<ServiceCalConfig[]>([]);
   const [loadingCal, setLoadingCal] = useState(true);
@@ -211,15 +214,11 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        Google Calendar
+        {t("sections.calendar")}
       </h2>
-      <p className="text-petroleum-400 mb-4 text-xs">
-        Conecta tu Google Calendar para cada servicio que gestionas.
-      </p>
+      <p className="text-petroleum-400 mb-4 text-xs">{t("calendar.hint")}</p>
       {services.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">
-          No tienes servicios asignados todavía.
-        </p>
+        <p className="text-petroleum-300 text-sm">{t("calendar.noServices")}</p>
       ) : (
         <div className="space-y-3">
           {services.map((svc) => (
@@ -237,6 +236,8 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
 }
 
 export default function DashboardAccountPage() {
+  const t = useTranslations("dashboard.account");
+  const tUsers = useTranslations("dashboard.users.form");
   const { user } = useAuth();
   const { role } = useRole();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -305,11 +306,11 @@ export default function DashboardAccountPage() {
     setPwError(null);
     setPwOk(false);
     if (pwNew !== pwConfirm) {
-      setPwError("Las contraseñas no coinciden.");
+      setPwError(t("password.mismatch"));
       return;
     }
     if (pwNew.length < 8) {
-      setPwError("La contraseña debe tener al menos 8 caracteres.");
+      setPwError(t("password.tooShort"));
       return;
     }
     setPwLoading(true);
@@ -366,7 +367,7 @@ export default function DashboardAccountPage() {
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
         <h1 className="font-display text-petroleum-700 text-3xl">
-          Edit account
+          {t("title")}
         </h1>
       </div>
 
@@ -375,7 +376,7 @@ export default function DashboardAccountPage() {
           <form onSubmit={(e) => void handleSave(e)} noValidate>
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Profile
+                {t("sections.profile")}
               </h2>
 
               {error && (
@@ -385,7 +386,7 @@ export default function DashboardAccountPage() {
               )}
               {savedOk && (
                 <p className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-                  Changes saved.
+                  {t("saved")}
                 </p>
               )}
 
@@ -396,7 +397,8 @@ export default function DashboardAccountPage() {
                       htmlFor="firstName"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      First name <span className="text-red-400">*</span>
+                      {tUsers("fields.firstName")}{" "}
+                      <span className="text-red-400">*</span>
                     </label>
                     {loading ? (
                       <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -411,7 +413,7 @@ export default function DashboardAccountPage() {
                             value: e.target.value,
                           })
                         }
-                        placeholder="Jane"
+                        placeholder={tUsers("fields.firstNamePlaceholder")}
                         disabled={saving}
                         className={INPUT_CLASS}
                       />
@@ -422,7 +424,7 @@ export default function DashboardAccountPage() {
                       htmlFor="lastName"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Last name
+                      {tUsers("fields.lastName")}
                     </label>
                     {loading ? (
                       <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -437,7 +439,7 @@ export default function DashboardAccountPage() {
                             value: e.target.value,
                           })
                         }
-                        placeholder="Doe"
+                        placeholder={tUsers("fields.lastNamePlaceholder")}
                         disabled={saving}
                         className={INPUT_CLASS}
                       />
@@ -450,7 +452,7 @@ export default function DashboardAccountPage() {
                     htmlFor="email"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Email
+                    {tUsers("fields.email")}
                   </label>
                   <input
                     id="email"
@@ -467,7 +469,7 @@ export default function DashboardAccountPage() {
                     htmlFor="phone"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Phone
+                    {tUsers("fields.phone")}
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -479,7 +481,7 @@ export default function DashboardAccountPage() {
                       onChange={(e) =>
                         dispatch({ type: "SET_PHONE", value: e.target.value })
                       }
-                      placeholder="+34 600 000 000"
+                      placeholder={tUsers("fields.phonePlaceholder")}
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
@@ -495,7 +497,7 @@ export default function DashboardAccountPage() {
                   disabled={saving || loading}
                   className="gap-1.5"
                 >
-                  {saving ? "Saving…" : "Save changes"}
+                  {saving ? t("saving") : t("saveChanges")}
                 </Button>
               </div>
             </div>
@@ -509,7 +511,7 @@ export default function DashboardAccountPage() {
           {/* Security */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Security
+              {t("sections.security")}
             </h2>
             <form
               onSubmit={(e) => void handleChangePw(e)}
@@ -527,13 +529,13 @@ export default function DashboardAccountPage() {
                   htmlFor="pw-new"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  New password
+                  {t("password.new")}
                 </label>
                 <PasswordInput
                   id="pw-new"
                   value={pwNew}
                   onChange={(e) => setPwNew(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t("password.placeholder")}
                   disabled={pwLoading}
                   autoComplete="new-password"
                   inputClassName={INPUT_CLASS}
@@ -545,13 +547,13 @@ export default function DashboardAccountPage() {
                   htmlFor="pw-confirm"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Confirm password
+                  {t("password.confirm")}
                 </label>
                 <PasswordInput
                   id="pw-confirm"
                   value={pwConfirm}
                   onChange={(e) => setPwConfirm(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t("password.placeholder")}
                   disabled={pwLoading}
                   autoComplete="new-password"
                   inputClassName={INPUT_CLASS}
@@ -561,7 +563,7 @@ export default function DashboardAccountPage() {
               <div className="flex items-center justify-end gap-4">
                 {pwOk && (
                   <p className="text-sm font-medium text-green-700">
-                    Password updated.
+                    {t("password.updated")}
                   </p>
                 )}
                 <Button
@@ -570,7 +572,7 @@ export default function DashboardAccountPage() {
                   size="md"
                   disabled={pwLoading || !pwNew || !pwConfirm}
                 >
-                  {pwLoading ? "Saving…" : "Change password"}
+                  {pwLoading ? t("saving") : t("password.change")}
                 </Button>
               </div>
             </form>
@@ -580,7 +582,7 @@ export default function DashboardAccountPage() {
         <div>
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Photo
+              {t("sections.photo")}
             </h2>
             {loading ? (
               <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />

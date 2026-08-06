@@ -1025,5 +1025,107 @@
         "saveFailed": "Failed to save contact."
       }
     }
+  },
+  "account": {
+    "title": "Edit account",
+    "sections": {
+      "profile": "Profile",
+      "security": "Security",
+      "photo": "Photo",
+      "calendar": "Google Calendar"
+    },
+    "saved": "Changes saved.",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "calendar": {
+      "hint": "Connect your Google Calendar for each service you run.",
+      "noServices": "You have no services assigned yet.",
+      "connected": "Connected",
+      "justConnected": "Connected successfully.",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "connect": "Connect Google Calendar"
+    },
+    "password": {
+      "new": "New password",
+      "confirm": "Confirm password",
+      "placeholder": "••••••••",
+      "change": "Change password",
+      "updated": "Password updated.",
+      "mismatch": "The passwords do not match.",
+      "tooShort": "The password must be at least 8 characters."
+    }
+  },
+  "settings": {
+    "plans": {
+      "heading": "Membership Plans",
+      "editPlan": "Edit plan",
+      "name": "Name",
+      "namePlaceholder": "e.g. Essential",
+      "monthlyPrice": "Monthly price (€)",
+      "pricePlaceholder": "199",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "tiers": {
+      "addTier": "Add tier",
+      "editTier": "Edit tier",
+      "active": "Active",
+      "off": "Off",
+      "name": "Name",
+      "namePlaceholder": "e.g. Standard, 60 min, NAD+",
+      "duration": "Duration (min)",
+      "durationPlaceholder": "60",
+      "priceCentre": "Price — Centre (€)",
+      "priceCentrePlaceholder": "90",
+      "priceSuite": "Price — Suite (€)",
+      "priceSuitePlaceholder": "120",
+      "image": "Image",
+      "imageHint": "Shown in the session-type picker, on the website and here. Without one, the picker falls back to the colour below.",
+      "calendarColor": "Calendar color",
+      "delete": "Delete tier",
+      "deleting": "Deleting…",
+      "update": "Update",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "payments": {
+      "subtitle": "Virtual POS · Cards, Bizum",
+      "testEnvironment": "Test environment",
+      "production": "Production",
+      "connected": "Connected",
+      "notConfigured": "Not configured"
+    },
+    "calendar": {
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "resync": "Re-sync",
+      "syncing": "Syncing…",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "connect": "Connect Google Calendar"
+    },
+    "services": {
+      "addTier": "Add tier",
+      "noTiers": "No tiers yet. Add one to enable this service in bookings.",
+      "columns": {
+        "name": "Name",
+        "color": "Color",
+        "duration": "Duration",
+        "centre": "Centre",
+        "suite": "Suite",
+        "status": "Status"
+      }
+    }
+  },
+  "services": {
+    "manual-therapies": "Manual Therapies",
+    "facial-therapies": "Facial Therapies",
+    "contrast-therapy": "Contrast Therapy",
+    "breathing-sessions": "Breathing Sessions",
+    "red-light-therapy": "Red Light Therapy",
+    "hyperbaric-chambers": "Hyperbaric Chambers",
+    "intravenous-therapy": "Intravenous Therapy",
+    "regenerative-medicine": "Regenerative Medicine"
   }
 }

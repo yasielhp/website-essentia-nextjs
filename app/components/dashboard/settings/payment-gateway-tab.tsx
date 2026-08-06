@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getRedsysStatus } from "@/actions/payment-status";
 import { getAccessToken } from "@/lib/client-session";
 
 export function PaymentGatewayTab() {
+  const t = useTranslations("dashboard.settings.payments");
   const [status, setStatus] = useState<{
     connected: boolean;
     environment: "test" | "live";
@@ -39,13 +41,13 @@ export function PaymentGatewayTab() {
           <div>
             <p className="text-petroleum-700 text-sm font-semibold">Redsys</p>
             <p className="text-petroleum-400 text-xs">
-              TPV Virtual · Tarjetas, Bizum
+              {t("subtitle")}
               {status && (
                 <span className="ml-1.5 font-medium">
                   ·{" "}
                   {status.environment === "test"
-                    ? "Entorno de pruebas"
-                    : "Producción"}
+                    ? t("testEnvironment")
+                    : t("production")}
                 </span>
               )}
             </p>
@@ -57,12 +59,12 @@ export function PaymentGatewayTab() {
         ) : status.connected ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
             <span className="size-1.5 rounded-full bg-green-500" />
-            Conectado
+            {t("connected")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
             <span className="size-1.5 rounded-full bg-red-400" />
-            No configurado
+            {t("notConfigured")}
           </span>
         )}
       </div>

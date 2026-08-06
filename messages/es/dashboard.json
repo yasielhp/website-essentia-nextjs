@@ -1025,5 +1025,107 @@
         "saveFailed": "No se pudo guardar el contacto."
       }
     }
+  },
+  "account": {
+    "title": "Editar cuenta",
+    "sections": {
+      "profile": "Perfil",
+      "security": "Seguridad",
+      "photo": "Foto",
+      "calendar": "Google Calendar"
+    },
+    "saved": "Cambios guardados.",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando…",
+    "calendar": {
+      "hint": "Conecta tu Google Calendar para cada servicio que gestionas.",
+      "noServices": "No tienes servicios asignados todavía.",
+      "connected": "Conectado",
+      "justConnected": "Conectado correctamente.",
+      "disconnect": "Desconectar",
+      "disconnecting": "Desconectando…",
+      "connect": "Conectar Google Calendar"
+    },
+    "password": {
+      "new": "Nueva contraseña",
+      "confirm": "Confirmar contraseña",
+      "placeholder": "••••••••",
+      "change": "Cambiar contraseña",
+      "updated": "Contraseña actualizada.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "tooShort": "La contraseña debe tener al menos 8 caracteres."
+    }
+  },
+  "settings": {
+    "plans": {
+      "heading": "Planes de membresía",
+      "editPlan": "Editar plan",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. Essential",
+      "monthlyPrice": "Precio mensual (€)",
+      "pricePlaceholder": "199",
+      "save": "Guardar",
+      "saving": "Guardando…"
+    },
+    "tiers": {
+      "addTier": "Añadir tipo",
+      "editTier": "Editar tipo",
+      "active": "Activo",
+      "off": "Inactivo",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. Estándar, 60 min, NAD+",
+      "duration": "Duración (min)",
+      "durationPlaceholder": "60",
+      "priceCentre": "Precio — Centro (€)",
+      "priceCentrePlaceholder": "90",
+      "priceSuite": "Precio — Suite (€)",
+      "priceSuitePlaceholder": "120",
+      "image": "Imagen",
+      "imageHint": "Se muestra en el selector de tipo de sesión, en la web y aquí. Sin ella, el selector usa el color de abajo.",
+      "calendarColor": "Color en el calendario",
+      "delete": "Eliminar tipo",
+      "deleting": "Eliminando…",
+      "update": "Actualizar",
+      "save": "Guardar",
+      "saving": "Guardando…"
+    },
+    "payments": {
+      "subtitle": "TPV Virtual · Tarjetas, Bizum",
+      "testEnvironment": "Entorno de pruebas",
+      "production": "Producción",
+      "connected": "Conectado",
+      "notConfigured": "No configurado"
+    },
+    "calendar": {
+      "connected": "Conectado",
+      "notConnected": "No conectado",
+      "resync": "Resincronizar",
+      "syncing": "Sincronizando…",
+      "disconnect": "Desconectar",
+      "disconnecting": "Desconectando…",
+      "connect": "Conectar Google Calendar"
+    },
+    "services": {
+      "addTier": "Añadir tipo",
+      "noTiers": "Todavía no hay tipos. Añade uno para activar este servicio en reservas.",
+      "columns": {
+        "name": "Nombre",
+        "color": "Color",
+        "duration": "Duración",
+        "centre": "Centro",
+        "suite": "Suite",
+        "status": "Estado"
+      }
+    }
+  },
+  "services": {
+    "manual-therapies": "Terapias manuales",
+    "facial-therapies": "Terapias faciales",
+    "contrast-therapy": "Terapia de contraste",
+    "breathing-sessions": "Sesiones de respiración",
+    "red-light-therapy": "Terapia de luz roja",
+    "hyperbaric-chambers": "Cámaras hiperbáricas",
+    "intravenous-therapy": "Terapia intravenosa",
+    "regenerative-medicine": "Medicina regenerativa"
   }
 }

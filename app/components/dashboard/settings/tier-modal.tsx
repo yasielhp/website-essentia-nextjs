@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useReducer } from "react";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { ModalState } from "@/types/settings";
@@ -60,6 +61,8 @@ export function TierModal({
   onClose: () => void;
   onSaved: (serviceId: string) => Promise<void>;
 }) {
+  const t = useTranslations("dashboard.settings.tiers");
+  const tCommon = useTranslations("dashboard.common");
   const isEdit = !!modal.tier;
 
   const [form, dispatchForm] = useReducer(formReducer, {
@@ -159,7 +162,7 @@ export function TierModal({
         {/* Header */}
         <div className="border-sand-100 flex items-center justify-between border-b px-6 py-4">
           <h3 className="text-petroleum-700 font-semibold">
-            {isEdit ? "Edit tier" : "Add tier"}
+            {isEdit ? t("editTier") : t("addTier")}
           </h3>
           <button
             onClick={onClose}
@@ -174,7 +177,7 @@ export function TierModal({
           {/* Active — first */}
           <div className="flex items-center justify-between">
             <span className="text-petroleum-700 text-sm font-medium">
-              Active
+              {t("active")}
             </span>
             <button
               type="button"
@@ -198,7 +201,7 @@ export function TierModal({
               htmlFor="tier-label"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Name
+              {t("name")}
             </label>
             <input
               id="tier-label"
@@ -207,7 +210,7 @@ export function TierModal({
               onChange={(e) =>
                 dispatchForm({ type: "SET_LABEL", label: e.target.value })
               }
-              placeholder="e.g. Standard, 60 min, NAD+"
+              placeholder={t("namePlaceholder")}
               className={INPUT_CLASS}
             />
           </div>
@@ -217,7 +220,7 @@ export function TierModal({
               htmlFor="tier-duration"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Duration (min)
+              {t("duration")}
             </label>
             <input
               id="tier-duration"
@@ -231,7 +234,7 @@ export function TierModal({
                   duration: e.target.value,
                 })
               }
-              placeholder="60"
+              placeholder={t("durationPlaceholder")}
               className={INPUT_CLASS}
             />
           </div>
@@ -242,7 +245,7 @@ export function TierModal({
                 htmlFor="tier-price-center"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Price — Centre (€)
+                {t("priceCentre")}
               </label>
               <input
                 id="tier-price-center"
@@ -256,7 +259,7 @@ export function TierModal({
                     price: e.target.value,
                   })
                 }
-                placeholder="90"
+                placeholder={t("priceCentrePlaceholder")}
                 className={INPUT_CLASS}
               />
             </div>
@@ -265,7 +268,7 @@ export function TierModal({
                 htmlFor="tier-price-suite"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Price — Suite (€)
+                {t("priceSuite")}
               </label>
               <input
                 id="tier-price-suite"
@@ -279,7 +282,7 @@ export function TierModal({
                     price: e.target.value,
                   })
                 }
-                placeholder="120"
+                placeholder={t("priceSuitePlaceholder")}
                 className={INPUT_CLASS}
               />
             </div>
@@ -287,12 +290,9 @@ export function TierModal({
 
           <div className="flex flex-col gap-1.5">
             <span className="text-petroleum-500 text-xs font-medium">
-              Image
+              {t("image")}
             </span>
-            <p className="text-petroleum-300 text-xs">
-              Shown in the session-type picker, on the website and here. Without
-              one, the picker falls back to the colour below.
-            </p>
+            <p className="text-petroleum-300 text-xs">{t("imageHint")}</p>
             <ImageUpload
               folder="tiers"
               value={form.imageUrl}
@@ -302,7 +302,7 @@ export function TierModal({
 
           <div className="flex flex-col gap-1.5">
             <span className="text-petroleum-500 text-xs font-medium">
-              Calendar color
+              {t("calendarColor")}
             </span>
             <label className="border-sand-200 flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5">
               <div
@@ -339,7 +339,7 @@ export function TierModal({
                 onClick={() => void handleDelete()}
                 className="text-sm font-medium text-red-400 transition-colors hover:text-red-600 disabled:opacity-40"
               >
-                {deleting ? "Deleting…" : "Delete tier"}
+                {deleting ? t("deleting") : t("delete")}
               </button>
             )}
           </div>
@@ -349,7 +349,7 @@ export function TierModal({
               onClick={onClose}
               className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
             >
-              Cancel
+              {tCommon("cancel")}
             </button>
             <button
               type="button"
@@ -357,7 +357,7 @@ export function TierModal({
               onClick={() => void handleSave()}
               className="bg-petroleum-700 hover:bg-petroleum-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
             >
-              {saving ? "Saving…" : isEdit ? "Update" : "Add tier"}
+              {saving ? t("saving") : isEdit ? t("update") : t("addTier")}
             </button>
           </div>
         </div>

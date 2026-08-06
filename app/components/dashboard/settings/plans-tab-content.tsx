@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlanRow } from "@/types/settings";
+import { useTranslations } from "next-intl";
 
 const intl = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -39,11 +40,12 @@ export function PlansTabContent({
   plans: PlanRow[];
   onEdit: (plan: PlanRow) => void;
 }) {
+  const t = useTranslations("dashboard.settings.plans");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white">
       <div className="border-sand-100 border-b px-6 py-4">
         <h2 className="text-petroleum-700 text-sm font-semibold">
-          Membership Plans
+          {t("heading")}
         </h2>
       </div>
 
