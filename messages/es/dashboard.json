@@ -3,7 +3,8 @@
     "toggleSidebar": "Alternar barra lateral",
     "fallbackUser": "Usuario",
     "language": "Idioma",
-    "sound": "Sonido"
+    "sound": "Sonido",
+    "metaTitle": "Panel | Essentia"
   },
   "nav": {
     "overview": "Resumen",

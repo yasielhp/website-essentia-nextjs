@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NextIntlClientProvider } from "next-intl";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import "../globals.css";
 import { fontVariables } from "@lib/fonts";
 import { AuthProvider } from "@components/auth-provider";
@@ -22,10 +22,25 @@ import { getDashboardLocale, getDashboardMessages } from "./i18n";
  * schema.org.
  */
 
-export const metadata: Metadata = {
-  title: "Dashboard | Essentia",
-  robots: { index: false, follow: false },
-};
+/**
+ * The browser tab is the one piece of dashboard copy `useTranslations` cannot
+ * reach — metadata runs before any provider — so it builds its own translator
+ * from the same cookie and the same messages the layout is about to hand down.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getDashboardLocale();
+  const messages = await getDashboardMessages(locale);
+  const t = createTranslator({
+    locale,
+    messages,
+    namespace: "dashboard.shell",
+  });
+
+  return {
+    title: t("metaTitle"),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function DashboardLayout({
   children,
