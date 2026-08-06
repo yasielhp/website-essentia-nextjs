@@ -301,7 +301,8 @@
         "notesPlaceholder": "Any additional notes for this booking…"
       },
       "errors": {
-        "createFailed": "Failed to create booking."
+        "createFailed": "Failed to create booking.",
+        "reservationRequired": "Reservation number is required."
       }
     },
     "edit": {
@@ -925,7 +926,11 @@
     "phoneInvalid": "Enter a valid phone number, including the country code",
     "accountEmailRequired": "An account needs a valid email address to sign in with",
     "phoneFormatInvalid": "Enter a valid phone number",
-    "fixErrors": "Please fix the errors."
+    "fixErrors": "Please fix the errors.",
+    "emailRequired": "Email is required",
+    "serviceRequired": "Please select a service",
+    "dateRequired": "Please select a date",
+    "timeRequired": "Please select a time"
   },
   "gender": {
     "unspecified": "Not specified",
