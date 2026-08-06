@@ -119,6 +119,32 @@
       "errors": {
         "saveFailed": "No se pudo guardar."
       }
+    },
+    "categories_page": {
+      "title": "Categorías",
+      "newCategory": "Nueva categoría",
+      "editCategory": "Editar categoría",
+      "addCategory": "Añadir categoría",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando…",
+      "edit": "Editar",
+      "empty": "Todavía no hay categorías.",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "Longevity",
+        "namePlaceholderEs": "Longevidad",
+        "slug": "Slug",
+        "slugPlaceholder": "longevity",
+        "slugPlaceholderEs": "longevidad"
+      },
+      "columns": {
+        "name": "Nombre",
+        "slug": "Slug"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar.",
+        "createFailed": "No se pudo crear."
+      }
     }
   },
   "bookings": {
@@ -279,6 +305,49 @@
       "errors": {
         "reservationRequired": "El número de reserva es obligatorio.",
         "saveFailed": "No se pudo guardar la reserva."
+      }
+    },
+    "detail": {
+      "notFound": "Reserva no encontrada.",
+      "backToList": "Volver a reservas",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "meta": {
+        "status": "Estado",
+        "location": "Ubicación",
+        "created": "Creada",
+        "reservedBy": "Reservado por"
+      },
+      "sections": {
+        "service": "Servicio",
+        "location": "Ubicación",
+        "datetime": "Fecha y hora",
+        "client": "Cliente",
+        "notes": "Notas",
+        "reservedBy": "Reservado por"
+      },
+      "fields": {
+        "date": "Fecha",
+        "time": "Hora",
+        "name": "Nombre",
+        "phone": "Teléfono",
+        "email": "Email",
+        "reservationNumber": "Número de reserva",
+        "roomNumber": "Número de habitación"
+      },
+      "therapist": {
+        "male": "Hombre",
+        "female": "Mujer"
+      },
+      "creator": {
+        "anonymous": "Visitante anónimo",
+        "client": "Cliente"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar la reserva?",
+        "body": "Esta reserva se eliminará permanentemente.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
       }
     }
   },
@@ -567,6 +636,21 @@
       "errors": {
         "saveFailed": "No se pudo guardar."
       }
+    },
+    "checkin": {
+      "title": "Verificación de entradas",
+      "goBack": "Volver",
+      "progress": "{checked}/{total} verificados",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "allRegistrations": "Todas las registraciones",
+      "table": "Mesa {number}",
+      "noTable": "Sin mesa",
+      "pending": "Pendiente",
+      "checkedInAt": "Entrada verificada · {time}",
+      "checkIn": "Verificar entrada",
+      "checkingIn": "Verificando…",
+      "tableWord": "Mesa",
+      "noTableAssigned": "Sin mesa asignada"
     }
   },
   "subscriptions": {
@@ -669,6 +753,32 @@
       "errors": {
         "required": "El testimonio y el nombre son obligatorios.",
         "createFailed": "No se pudo crear el testimonio."
+      }
+    },
+    "detail": {
+      "title": "Editar testimonio",
+      "notFound": "Testimonio no encontrado.",
+      "backToList": "Volver a testimonios",
+      "delete": "Eliminar",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando…",
+      "saved": "Cambios guardados correctamente.",
+      "sections": {
+        "review": "Testimonio",
+        "author": "Autor",
+        "settings": "Ajustes"
+      },
+      "fields": {
+        "displayOrder": "Orden de aparición"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar el testimonio?",
+        "body": "Este testimonio se eliminará permanentemente.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "saveFailed": "No se pudieron guardar los cambios."
       }
     }
   },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import {
   IconCheckmark,
@@ -28,18 +29,19 @@ type Registration = {
 type SearchResult = Registration & { matchScore: number };
 
 function TableBadge({ tableNumber }: { tableNumber: number | null }) {
+  const t = useTranslations("dashboard.races.checkin");
   if (tableNumber == null) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center">
         <span className="text-6xl font-bold tabular-nums">—</span>
-        <span className="mt-1 text-sm">No table assigned</span>
+        <span className="mt-1 text-sm">{t("noTableAssigned")}</span>
       </div>
     );
   }
   return (
     <div className="flex flex-col items-center">
       <span className="text-petroleum-300 text-sm font-medium tracking-widest uppercase">
-        Mesa
+        {t("tableWord")}
       </span>
       <span className="font-display text-petroleum-700 text-[88px] leading-none tabular-nums">
         {tableNumber}
@@ -57,6 +59,8 @@ function CheckInCard({
   onCheckIn: (id: string) => void;
   checkingIn: boolean;
 }) {
+  const t = useTranslations("dashboard.races.checkin");
+  const locale = useLocale();
   const isCheckedIn = !!registration.checked_in_at;
 
   return (
@@ -84,10 +88,11 @@ function CheckInCard({
       {isCheckedIn ? (
         <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-5 py-2 text-sm font-medium text-green-700">
           <IconCheckmark />
-          Entrada verificada ·{" "}
-          {new Date(registration.checked_in_at!).toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
+          {t("checkedInAt", {
+            time: new Date(registration.checked_in_at!).toLocaleTimeString(
+              locale,
+              { hour: "2-digit", minute: "2-digit" },
+            ),
           })}
         </div>
       ) : (
@@ -100,12 +105,12 @@ function CheckInCard({
           {checkingIn ? (
             <>
               <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Verificando…
+              {t("checkingIn")}
             </>
           ) : (
             <>
               <IconCheckmark />
-              Verificar entrada
+              {t("checkIn")}
             </>
           )}
         </button>
@@ -115,6 +120,7 @@ function CheckInCard({
 }
 
 export default function CheckInPage() {
+  const t = useTranslations("dashboard.races.checkin");
   const { id } = useParams<{ id: string }>();
   const { back } = useRouter();
 
@@ -283,17 +289,21 @@ export default function CheckInPage() {
         <button
           onClick={() => back()}
           className="text-petroleum-400 hover:text-petroleum-700 transition-colors"
-          aria-label="Go back"
+          aria-label={t("goBack")}
         >
           <IconArrowLeft />
         </button>
         <div>
           <h1 className="font-display text-petroleum-700 text-2xl">
-            Verificación de entradas
+            {t("title")}
           </h1>
           {race && (
             <p className="text-petroleum-400 mt-0.5 text-sm">
-              {race.title} · {checkedInCount}/{registrations.length} verificados
+              {race.title} ·{" "}
+              {t("progress", {
+                checked: checkedInCount,
+                total: registrations.length,
+              })}
             </p>
           )}
         </div>
@@ -313,7 +323,7 @@ export default function CheckInPage() {
               setQuery(e.target.value);
               setSelected(null);
             }}
-            placeholder="Buscar por nombre, email o teléfono…"
+            placeholder={t("searchPlaceholder")}
             className="border-sand-200 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 w-full rounded-2xl border bg-white py-4 pr-4 pl-12 text-base outline-none focus:ring-2"
           />
         </div>
@@ -389,7 +399,7 @@ export default function CheckInPage() {
           <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
             <div className="border-sand-100 border-b px-5 py-3">
               <p className="text-petroleum-500 text-sm font-medium">
-                Todas las registraciones
+                {t("allRegistrations")}
               </p>
             </div>
             <div className="divide-sand-100 divide-y">
@@ -414,7 +424,7 @@ export default function CheckInPage() {
                   <div className="flex shrink-0 items-center gap-2">
                     {r.table_number != null && (
                       <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
-                        Mesa {r.table_number}
+                        {t("table", { number: r.table_number })}
                       </span>
                     )}
                     {r.checked_in_at ? (
@@ -423,7 +433,7 @@ export default function CheckInPage() {
                       </span>
                     ) : (
                       <span className="bg-sand-100 text-petroleum-400 rounded-full px-2.5 py-0.5 text-xs">
-                        Pendiente
+                        {t("pending")}
                       </span>
                     )}
                   </div>

@@ -119,6 +119,32 @@
       "errors": {
         "saveFailed": "Failed to save."
       }
+    },
+    "categories_page": {
+      "title": "Categories",
+      "newCategory": "New category",
+      "editCategory": "Edit category",
+      "addCategory": "Add category",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "edit": "Edit",
+      "empty": "No categories yet.",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Longevity",
+        "namePlaceholderEs": "Longevidad",
+        "slug": "Slug",
+        "slugPlaceholder": "longevity",
+        "slugPlaceholderEs": "longevidad"
+      },
+      "columns": {
+        "name": "Name",
+        "slug": "Slug"
+      },
+      "errors": {
+        "saveFailed": "Failed to save.",
+        "createFailed": "Failed to create."
+      }
     }
   },
   "bookings": {
@@ -279,6 +305,49 @@
       "errors": {
         "reservationRequired": "Reservation number is required.",
         "saveFailed": "Failed to save booking."
+      }
+    },
+    "detail": {
+      "notFound": "Booking not found.",
+      "backToList": "Back to bookings",
+      "delete": "Delete",
+      "edit": "Edit",
+      "meta": {
+        "status": "Status",
+        "location": "Location",
+        "created": "Created",
+        "reservedBy": "Reserved by"
+      },
+      "sections": {
+        "service": "Service",
+        "location": "Location",
+        "datetime": "Date & time",
+        "client": "Client",
+        "notes": "Notes",
+        "reservedBy": "Reserved by"
+      },
+      "fields": {
+        "date": "Date",
+        "time": "Time",
+        "name": "Name",
+        "phone": "Phone",
+        "email": "Email",
+        "reservationNumber": "Reservation number",
+        "roomNumber": "Room number"
+      },
+      "therapist": {
+        "male": "Male",
+        "female": "Female"
+      },
+      "creator": {
+        "anonymous": "Anonymous visitor",
+        "client": "Client"
+      },
+      "deleteDialog": {
+        "title": "Delete booking?",
+        "body": "This booking will be permanently deleted.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
       }
     }
   },
@@ -567,6 +636,21 @@
       "errors": {
         "saveFailed": "Failed to save."
       }
+    },
+    "checkin": {
+      "title": "Ticket check-in",
+      "goBack": "Go back",
+      "progress": "{checked}/{total} checked in",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "allRegistrations": "All registrations",
+      "table": "Table {number}",
+      "noTable": "No table",
+      "pending": "Pending",
+      "checkedInAt": "Checked in · {time}",
+      "checkIn": "Check in",
+      "checkingIn": "Checking in…",
+      "tableWord": "Table",
+      "noTableAssigned": "No table assigned"
     }
   },
   "subscriptions": {
@@ -669,6 +753,32 @@
       "errors": {
         "required": "Quote and name are required.",
         "createFailed": "Failed to create review."
+      }
+    },
+    "detail": {
+      "title": "Edit Review",
+      "notFound": "Review not found.",
+      "backToList": "Back to Reviews",
+      "delete": "Delete",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "saved": "Changes saved successfully.",
+      "sections": {
+        "review": "Review",
+        "author": "Author",
+        "settings": "Settings"
+      },
+      "fields": {
+        "displayOrder": "Display order"
+      },
+      "deleteDialog": {
+        "title": "Delete review?",
+        "body": "This review will be permanently deleted.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "saveFailed": "Failed to save changes."
       }
     }
   },

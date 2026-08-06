@@ -2024,7 +2024,7 @@ export default function EditBookingPage() {
           {serviceId === "manual-therapies" && tierId !== "" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("steps.therapistPreference")}
+                {tForm("steps.therapistPreference")}
               </h2>
               <select
                 value={therapistGender}
