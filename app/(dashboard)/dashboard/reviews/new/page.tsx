@@ -3,6 +3,7 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
@@ -70,6 +71,7 @@ function reducer(state: FormState, action: FormAction): FormState {
 
 export default function NewReviewPage() {
   const t = useTranslations("dashboard.reviews.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -134,6 +136,7 @@ export default function NewReviewPage() {
       return;
     }
 
+    notifySuccess(tToasts("reviewCreated"));
     push("/dashboard/reviews");
   }
 

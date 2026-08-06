@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -581,6 +582,7 @@ function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditRacePage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.races.edit");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
@@ -690,6 +692,7 @@ export default function EditRacePage() {
       return;
     }
 
+    notifySuccess(tToasts("raceSaved"));
     push("/dashboard/races");
   }
 
@@ -700,6 +703,7 @@ export default function EditRacePage() {
       .delete()
       .eq("race_id", id);
     await insforge.database.from("races").delete().eq("id", id);
+    notifySuccess(tToasts("raceDeleted"));
     push("/dashboard/races");
   }
 

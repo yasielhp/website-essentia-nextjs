@@ -3,6 +3,7 @@
 import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
@@ -278,6 +279,7 @@ function SubscriptionDetailsSection({
 
 export default function NewSubscriptionPage() {
   const t = useTranslations("dashboard.subscriptions.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
@@ -367,6 +369,7 @@ export default function NewSubscriptionPage() {
       return;
     }
 
+    notifySuccess(tToasts("subscriptionCreated"));
     push("/dashboard/subscriptions");
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +41,6 @@ function computeInitials(name: string): string {
 type FormState = {
   submitting: boolean;
   deleting: boolean;
-  saved: boolean;
   error: string | null;
   quote: string;
   name: string;
@@ -62,13 +62,11 @@ type FormAction =
   | { type: "SAVE_START" }
   | { type: "SAVE_SUCCESS" }
   | { type: "SAVE_ERROR"; message: string }
-  | { type: "DELETE_START" }
-  | { type: "CLEAR_SAVED" };
+  | { type: "DELETE_START" };
 
 const initialState: FormState = {
   submitting: false,
   deleting: false,
-  saved: false,
   error: null,
   quote: "",
   name: "",
@@ -97,15 +95,13 @@ function reducer(state: FormState, action: FormAction): FormState {
     case "SET_ORDER":
       return { ...state, displayOrder: action.value };
     case "SAVE_START":
-      return { ...state, submitting: true, error: null, saved: false };
+      return { ...state, submitting: true, error: null };
     case "SAVE_SUCCESS":
-      return { ...state, submitting: false, saved: true };
+      return { ...state, submitting: false };
     case "SAVE_ERROR":
       return { ...state, submitting: false, error: action.message };
     case "DELETE_START":
       return { ...state, deleting: true };
-    case "CLEAR_SAVED":
-      return { ...state, saved: false };
     default:
       return state;
   }
@@ -166,6 +162,7 @@ const statusBadgeClasses: Record<string, string> = {
 };
 
 export default function ReviewDetailPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.reviews.detail");
   const tForm = useTranslations("dashboard.reviews.form");
   const tStatus = useTranslations("dashboard.reviews.status");
@@ -180,7 +177,6 @@ export default function ReviewDetailPage() {
   const {
     submitting,
     deleting,
-    saved,
     error,
     quote,
     name,
@@ -205,12 +201,6 @@ export default function ReviewDetailPage() {
         setLoading(false);
       });
   }, [id]);
-
-  useEffect(() => {
-    if (!saved) return;
-    const t = setTimeout(() => dispatch({ type: "CLEAR_SAVED" }), 3000);
-    return () => clearTimeout(t);
-  }, [saved]);
 
   function handleNameChange(value: string) {
     dispatch({ type: "SET_FIELD", field: "name", value });
@@ -247,12 +237,14 @@ export default function ReviewDetailPage() {
       });
     } else {
       dispatch({ type: "SAVE_SUCCESS" });
+      notifySuccess(tToasts("reviewSaved"));
     }
   }
 
   async function handleDelete() {
     dispatch({ type: "DELETE_START" });
     await insforge.database.from("reviews").delete().eq("id", id);
+    notifySuccess(tToasts("reviewDeleted"));
     push("/dashboard/reviews");
   }
 
@@ -330,11 +322,6 @@ export default function ReviewDetailPage() {
         {error && (
           <p className="mb-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
             {error}
-          </p>
-        )}
-        {saved && (
-          <p className="mb-6 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-            {t("saved")}
           </p>
         )}
 

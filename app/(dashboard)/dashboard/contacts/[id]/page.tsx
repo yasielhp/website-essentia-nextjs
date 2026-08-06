@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { Button } from "@/components/ui/button";
 import {
   subscribeToNewsletter,
@@ -910,6 +911,7 @@ function EduRegsSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function ContactDetailPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.contacts.detail");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
@@ -1023,6 +1025,7 @@ export default function ContactDetailPage() {
       }
     }
 
+    notifySuccess(tToasts("contactSaved"));
     push("/dashboard/contacts");
   }
 
@@ -1034,6 +1037,7 @@ export default function ContactDetailPage() {
       dispatchForm({ type: "CLOSE_DELETE" });
       return;
     }
+    notifySuccess(tToasts("contactDeleted"));
     push("/dashboard/contacts");
   }
 

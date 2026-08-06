@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
@@ -25,7 +26,6 @@ const INPUT_CLASS =
 type PageState = {
   loading: boolean;
   saving: boolean;
-  savedOk: boolean;
   error: string | null;
   firstName: string;
   lastName: string;
@@ -44,7 +44,6 @@ type PageAction =
       };
     }
   | { type: "SET_SAVING"; value: boolean }
-  | { type: "SET_SAVED_OK"; value: boolean }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_FIRST_NAME"; value: string }
   | { type: "SET_LAST_NAME"; value: string }
@@ -54,7 +53,6 @@ type PageAction =
 const initialState: PageState = {
   loading: true,
   saving: false,
-  savedOk: false,
   error: null,
   firstName: "",
   lastName: "",
@@ -68,8 +66,6 @@ function reducer(state: PageState, action: PageAction): PageState {
       return { ...state, loading: false, ...action.payload };
     case "SET_SAVING":
       return { ...state, saving: action.value };
-    case "SET_SAVED_OK":
-      return { ...state, savedOk: action.value };
     case "SET_ERROR":
       return { ...state, error: action.error };
     case "SET_FIRST_NAME":
@@ -236,6 +232,7 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
 }
 
 export default function DashboardAccountPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.account");
   const tUsers = useTranslations("dashboard.users.form");
   const { user } = useAuth();
@@ -248,16 +245,8 @@ export default function DashboardAccountPage() {
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
 
-  const {
-    loading,
-    saving,
-    savedOk,
-    error,
-    firstName,
-    lastName,
-    phone,
-    avatarUrl,
-  } = state;
+  const { loading, saving, error, firstName, lastName, phone, avatarUrl } =
+    state;
 
   useEffect(() => {
     if (!user) return;
@@ -329,7 +318,6 @@ export default function DashboardAccountPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "SET_ERROR", error: null });
-    dispatch({ type: "SET_SAVED_OK", value: false });
 
     const errs = parseErrors(accountProfileSchema, {
       firstName: firstName.trim(),
@@ -360,7 +348,7 @@ export default function DashboardAccountPage() {
       .eq("id", user!.id);
 
     dispatch({ type: "SET_SAVING", value: false });
-    dispatch({ type: "SET_SAVED_OK", value: true });
+    notifySuccess(tToasts("accountSaved"));
   }
 
   return (
@@ -382,11 +370,6 @@ export default function DashboardAccountPage() {
               {error && (
                 <p className="mb-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
                   {error}
-                </p>
-              )}
-              {savedOk && (
-                <p className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-                  {t("saved")}
                 </p>
               )}
 
