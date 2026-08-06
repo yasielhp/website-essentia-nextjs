@@ -3,7 +3,8 @@
     "toggleSidebar": "Toggle sidebar",
     "fallbackUser": "User",
     "language": "Language",
-    "sound": "Sound"
+    "sound": "Sound",
+    "metaTitle": "Dashboard | Essentia"
   },
   "nav": {
     "overview": "Overview",

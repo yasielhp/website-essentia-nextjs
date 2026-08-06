@@ -9,7 +9,8 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check:messages": "python3 scripts/check-dashboard-messages.py"
   },
   "dependencies": {
     "@c15t/dev-tools": "^2.2.0",
