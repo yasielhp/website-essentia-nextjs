@@ -20,6 +20,7 @@ import { useDropdownPortal } from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -791,9 +792,13 @@ function NewBookingPageInner() {
 
     // An expired token makes the SDK fall back to the anon key, which then fails
     // the partner RLS policies. Check the session before writing anything.
-    const { data: sessionData, error: sessionError } =
-      await insforge.auth.getCurrentUser();
-    if (sessionError || !sessionData?.user) {
+    //
+    // Asked on the server, which is the side that holds the cookie: the browser
+    // client keeps the access token but never a user object, so its own
+    // `getCurrentUser()` answers "nobody" after every page load — and moving
+    // into the dashboard is always a full page load.
+    const { user: sessionUser } = await getSessionUser();
+    if (!sessionUser) {
       submittingRef.current = false;
       dispatchAsync({ type: "SUBMIT_END" });
       dispatchAsync({
@@ -803,7 +808,7 @@ function NewBookingPageInner() {
       });
       return;
     }
-    const authUserId = sessionData.user.id;
+    const authUserId = sessionUser.id;
 
     // The id is generated client-side so the insert does not need a RETURNING
     // clause — RETURNING would require a SELECT policy covering the new row.
