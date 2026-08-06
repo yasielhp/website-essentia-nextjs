@@ -1,21 +1,25 @@
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
 
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+/**
+ * Month and weekday names come from `Intl` rather than a hardcoded English
+ * list, so adding a locale needs no change here. Callers pass the locale down
+ * — this module has no access to the next-intl runtime.
+ */
+const weekdayCache = new Map<string, string[]>();
 
-export const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** Short weekday names, Monday first. */
+export function getShortWeekdays(locale: string): string[] {
+  const cached = weekdayCache.get(locale);
+  if (cached) return cached;
+
+  const format = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  // 2024-01-01 was a Monday.
+  const days = Array.from({ length: 7 }, (_, i) =>
+    format.format(new Date(Date.UTC(2024, 0, 1 + i))),
+  );
+  weekdayCache.set(locale, days);
+  return days;
+}
 
 export function toYMD(d: Date): string {
   return [
@@ -75,24 +79,35 @@ export function sortByTime(events: CalendarEvent[]): CalendarEvent[] {
   });
 }
 
-export function formatPeriod(view: CalendarView, anchor: Date): string {
-  const y = anchor.getFullYear();
-  const m = anchor.getMonth();
-  if (view === "month") return `${MONTHS[m]} ${y}`;
+export function formatPeriod(
+  view: CalendarView,
+  anchor: Date,
+  locale: string,
+): string {
+  if (view === "month") {
+    return new Intl.DateTimeFormat(locale, {
+      month: "long",
+      year: "numeric",
+    }).format(anchor);
+  }
+
   if (view === "week") {
     const days = getWeekDays(anchor);
-    const s = days[0]!;
-    const e = days[6]!;
-    if (s.getMonth() === e.getMonth())
-      return `${MONTHS[s.getMonth()]} ${s.getDate()}–${e.getDate()}, ${y}`;
-    return `${MONTHS[s.getMonth()]} ${s.getDate()} – ${MONTHS[e.getMonth()]} ${e.getDate()}, ${y}`;
+    // formatRange collapses the shared month/year on its own, in each locale's
+    // own idiom — no need to compare months by hand.
+    return new Intl.DateTimeFormat(locale, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).formatRange(days[0]!, days[6]!);
   }
-  return anchor.toLocaleDateString("en-GB", {
+
+  return new Intl.DateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
-  });
+  }).format(anchor);
 }
 
 export function navigateAnchor(
@@ -112,11 +127,11 @@ export function navigateAnchor(
   return d;
 }
 
-export function formatUpcomingDate(iso: string | null): string {
+export function formatUpcomingDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
-  });
+  }).format(new Date(iso));
 }

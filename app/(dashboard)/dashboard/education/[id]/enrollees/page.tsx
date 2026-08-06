@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,16 +119,16 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function formatDateTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -145,6 +146,7 @@ type PageHeaderProps = {
 };
 
 function PageHeader({ title, loading, onAddOpen }: PageHeaderProps) {
+  const t = useTranslations("dashboard.education.enrollees");
   return (
     <div className="mb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -164,7 +166,7 @@ function PageHeader({ title, loading, onAddOpen }: PageHeaderProps) {
           className="gap-2 self-start sm:self-auto"
         >
           <IconPlus />
-          Add enrollee
+          {t("addEnrollee")}
         </Button>
       </div>
     </div>
@@ -190,6 +192,8 @@ function EnrolleeRow({
   onConfirmClose,
   onRemove,
 }: EnrolleeRowProps) {
+  const t = useTranslations("dashboard.education.enrollees");
+  const locale = useLocale();
   return (
     <tr className="border-sand-50 hover:bg-sand-50 border-b transition-colors">
       <td className="text-petroleum-300 px-5 py-4">{index + 1}</td>
@@ -205,7 +209,7 @@ function EnrolleeRow({
         {enrollee.phone ?? <span className="text-petroleum-300">{"—"}</span>}
       </td>
       <td className="text-petroleum-400 px-5 py-4">
-        {formatDateTime(enrollee.registered_at)}
+        {formatDateTime(enrollee.registered_at, locale)}
       </td>
       <td className="px-5 py-4">
         {removeOpen === enrollee.id ? (
@@ -216,14 +220,14 @@ function EnrolleeRow({
               disabled={removingId === enrollee.id}
               className="inline-flex items-center rounded-xl bg-red-500 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-600 disabled:opacity-50"
             >
-              {removingId === enrollee.id ? "…" : "Yes"}
+              {removingId === enrollee.id ? "…" : t("removeYes")}
             </button>
             <button
               onClick={onConfirmClose}
               disabled={removingId === enrollee.id}
               className="border-sand-200 text-petroleum-400 hover:bg-sand-50 inline-flex items-center rounded-xl border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
             >
-              Keep enrollment
+              {t("keep")}
             </button>
           </div>
         ) : (
@@ -232,7 +236,7 @@ function EnrolleeRow({
             className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50"
           >
             <IconTrash />
-            Remove
+            {t("remove")}
           </button>
         )}
       </td>
@@ -259,6 +263,7 @@ function AddEnrolleeModal({
   onSearch,
   onAdd,
 }: AddEnrolleeModalProps) {
+  const t = useTranslations("dashboard.education.enrollees");
   return (
     <div
       role="presentation"
@@ -272,7 +277,7 @@ function AddEnrolleeModal({
       >
         <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-4">
           <h2 className="font-display text-petroleum-700 text-xl">
-            Add Enrollee
+            {t("addModalTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -291,7 +296,7 @@ function AddEnrolleeModal({
               type="text"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search by name, email or phone…"
+              placeholder={t("searchPlaceholder")}
               className="border-sand-200 bg-sand-50 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none focus:ring-2"
             />
           </div>
@@ -309,9 +314,7 @@ function AddEnrolleeModal({
             </div>
           ) : filteredContacts.length === 0 ? (
             <p className="text-petroleum-400 py-8 text-center text-sm">
-              {search
-                ? "No contacts match your search."
-                : "All contacts are already enrolled."}
+              {search ? t("noMatches") : t("allEnrolled")}
             </p>
           ) : (
             <ul className="space-y-1.5 pt-1">
@@ -325,7 +328,7 @@ function AddEnrolleeModal({
                       <p className="text-petroleum-400 mt-0.5 text-xs">
                         {[contact.email, contact.phone]
                           .filter(Boolean)
-                          .join(" · ") || "No contact info"}
+                          .join(" · ") || t("noContactInfo")}
                       </p>
                     </div>
                     <Button
@@ -340,7 +343,7 @@ function AddEnrolleeModal({
                       ) : (
                         <IconPlus />
                       )}
-                      Add enrollee
+                      {t("addEnrollee")}
                     </Button>
                   </div>
                 </li>
@@ -354,6 +357,8 @@ function AddEnrolleeModal({
 }
 
 export default function EnrolleesPage() {
+  const t = useTranslations("dashboard.education.enrollees");
+  const locale = useLocale();
   const { id } = useParams<{ id: string }>();
   const { back } = useRouter();
 
@@ -559,12 +564,12 @@ export default function EnrolleesPage() {
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">Session not found.</p>
+        <p className="text-sm">{t("notFound")}</p>
         <button
           onClick={() => back()}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Go back
+          {t("goBack")}
         </button>
       </div>
     );
@@ -582,10 +587,10 @@ export default function EnrolleesPage() {
         {!loading && session && (
           <div className="border-sand-100 flex items-center justify-between border-b px-5 py-3">
             <p className="text-petroleum-400 text-sm">
-              {formatDate(session.date)}
+              {formatDate(session.date, locale)}
             </p>
             <p className="text-petroleum-400 text-sm">
-              {enrollees.length} enrollee{enrollees.length !== 1 ? "s" : ""}
+              {t("count", { count: enrollees.length })}
               {session.max_participants != null && (
                 <span
                   className={
@@ -594,8 +599,7 @@ export default function EnrolleesPage() {
                       : ""
                   }
                 >
-                  {" "}
-                  / {session.max_participants} max
+                  {t("ofMax", { max: session.max_participants })}
                 </span>
               )}
             </p>
@@ -609,16 +613,16 @@ export default function EnrolleesPage() {
                   #
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Name
+                  {t("columns.name")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Email
+                  {t("columns.email")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Phone
+                  {t("columns.phone")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Enrolled at
+                  {t("columns.enrolledAt")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium"></th>
               </tr>
@@ -640,7 +644,7 @@ export default function EnrolleesPage() {
                     colSpan={6}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No enrollees yet.
+                    {t("empty")}
                   </td>
                 </tr>
               ) : (

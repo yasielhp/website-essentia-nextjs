@@ -2,8 +2,10 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { formatMediumDate } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
@@ -81,6 +83,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -90,9 +93,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -108,30 +114,42 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Status
+              {t("subscriptions.filters.status")}
             </span>
             <select
               value={pending.status}
               onChange={(e) => onChange("status", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="expired">Expired</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="">{t("subscriptions.filters.allStatuses")}</option>
+              <option value="active">{t("subscriptions.status.active")}</option>
+              <option value="expired">
+                {t("subscriptions.status.expired")}
+              </option>
+              <option value="cancelled">
+                {t("subscriptions.status.cancelled")}
+              </option>
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">Plan</span>
+            <span className="text-petroleum-400 text-xs font-medium">
+              {t("subscriptions.filters.plan")}
+            </span>
             <select
               value={pending.plan}
               onChange={(e) => onChange("plan", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All plans</option>
-              <option value="essential">Essential</option>
-              <option value="premium">Premium</option>
-              <option value="founder">Founder</option>
+              <option value="">{t("subscriptions.filters.allPlans")}</option>
+              <option value="essential">
+                {t("subscriptions.plans.essential")}
+              </option>
+              <option value="premium">
+                {t("subscriptions.plans.premium")}
+              </option>
+              <option value="founder">
+                {t("subscriptions.plans.founder")}
+              </option>
             </select>
           </label>
         </div>
@@ -140,10 +158,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -152,6 +170,8 @@ function FilterModal({
 }
 
 export default function SubscriptionsPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
   const [state, dispatch] = useReducer(listReducer, {
     subscriptions: [],
     loading: true,
@@ -171,6 +191,16 @@ export default function SubscriptionsPage() {
 
   const activeFilterCount =
     (appliedFilter.status ? 1 : 0) + (appliedFilter.plan ? 1 : 0);
+
+  // Plans and statuses come from the database, so an unmapped value is possible.
+  const planLabel = (plan: string) =>
+    t.has(`subscriptions.plans.${plan}`)
+      ? t(`subscriptions.plans.${plan}`)
+      : plan;
+  const statusLabel = (status: string) =>
+    t.has(`subscriptions.status.${status}`)
+      ? t(`subscriptions.status.${status}`)
+      : status;
 
   function openModal() {
     setPendingFilter(appliedFilter);
@@ -241,7 +271,7 @@ export default function SubscriptionsPage() {
           className="flex items-center gap-2"
         >
           <IconPlus />
-          New Subscription
+          {t("subscriptions.newSubscription")}
         </Button>
         <div className="flex items-center gap-2">
           <Button
@@ -266,7 +296,7 @@ export default function SubscriptionsPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            Settings
+            {t("subscriptions.settings")}
           </Button>
           <Button
             variant={activeFilterCount > 0 ? "soft" : "outline"}
@@ -275,7 +305,9 @@ export default function SubscriptionsPage() {
             className="gap-2"
           >
             <IconFilter />
-            Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+            {activeFilterCount > 0
+              ? t("common.filtersWithCount", { count: activeFilterCount })
+              : t("common.filters")}
           </Button>
         </div>
       </div>
@@ -283,12 +315,12 @@ export default function SubscriptionsPage() {
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4">
         <StatCard
-          label="Active"
+          label={t("subscriptions.stats.active")}
           value={activeCount ?? 0}
           loading={activeCount === null}
         />
         <StatCard
-          label="Total"
+          label={t("subscriptions.stats.total")}
           value={total}
           loading={loading && total === 0}
         />
@@ -349,7 +381,7 @@ export default function SubscriptionsPage() {
           </>
         ) : subscriptions.length === 0 ? (
           <div className="text-petroleum-300 py-20 text-center text-sm">
-            No subscriptions yet.
+            {t("subscriptions.empty")}
           </div>
         ) : (
           <>
@@ -359,22 +391,22 @@ export default function SubscriptionsPage() {
                 <thead>
                   <tr className="border-sand-100 border-b">
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Name
+                      {t("subscriptions.columns.name")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Contact
+                      {t("subscriptions.columns.contact")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Plan
+                      {t("subscriptions.columns.plan")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Status
+                      {t("subscriptions.columns.status")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Start
+                      {t("subscriptions.columns.start")}
                     </th>
                     <th className="text-petroleum-400 px-5 py-3 text-left text-xs font-medium">
-                      Expires
+                      {t("subscriptions.columns.expires")}
                     </th>
                   </tr>
                 </thead>
@@ -389,7 +421,7 @@ export default function SubscriptionsPage() {
                         {m.first_name} {m.last_name}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5">
-                        <div>{m.email ?? "—"}</div>
+                        <div>{m.email ?? t("common.empty")}</div>
                         {m.phone && (
                           <div className="text-petroleum-400 text-xs">
                             {m.phone}
@@ -400,21 +432,21 @@ export default function SubscriptionsPage() {
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${PLAN_STYLES[m.plan] ?? "bg-sand-100 text-petroleum-500"}`}
                         >
-                          {m.plan}
+                          {planLabel(m.plan)}
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[m.status] ?? "bg-sand-100 text-petroleum-400"}`}
                         >
-                          {m.status}
+                          {statusLabel(m.status)}
                         </span>
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs">
-                        {formatMediumDate(m.start_date)}
+                        {formatMediumDate(m.start_date, locale)}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs">
-                        {formatMediumDate(m.end_date)}
+                        {formatMediumDate(m.end_date, locale)}
                       </td>
                     </tr>
                   ))}
@@ -435,19 +467,19 @@ export default function SubscriptionsPage() {
                       {m.first_name} {m.last_name}
                     </p>
                     <p className="text-petroleum-400 truncate text-xs">
-                      {m.email ?? m.phone ?? "—"}
+                      {m.email ?? m.phone ?? t("common.empty")}
                     </p>
                   </div>
                   <div className="ml-4 flex shrink-0 flex-col items-end gap-1">
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${STATUS_STYLES[m.status] ?? "bg-sand-100 text-petroleum-400"}`}
                     >
-                      {m.status}
+                      {statusLabel(m.status)}
                     </span>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${PLAN_STYLES[m.plan] ?? "bg-sand-100 text-petroleum-500"}`}
                     >
-                      {m.plan}
+                      {planLabel(m.plan)}
                     </span>
                   </div>
                 </button>

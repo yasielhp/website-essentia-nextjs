@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import {
@@ -40,6 +41,7 @@ function GoogleCalendarWidget({
   config: ServiceCalendarConfig | undefined;
   onDisconnected: (serviceId: string) => void;
 }) {
+  const t = useTranslations("dashboard.settings.calendar");
   const [disconnecting, setDisconnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
@@ -76,7 +78,7 @@ function GoogleCalendarWidget({
         <span
           className={`text-sm font-medium ${isConnected ? "text-green-700" : "text-petroleum-400"}`}
         >
-          {isConnected ? "Connected" : "Not connected"}
+          {isConnected ? t("connected") : t("notConnected")}
         </span>
         <div className="flex items-center gap-1.5">
           <span
@@ -98,7 +100,7 @@ function GoogleCalendarWidget({
               onClick={() => void handleSync()}
               disabled={syncing}
             >
-              {syncing ? "Syncing…" : "Re-sync"}
+              {syncing ? t("syncing") : t("resync")}
             </Button>
             <Button
               variant="outline-danger"
@@ -106,7 +108,7 @@ function GoogleCalendarWidget({
               onClick={() => void handleDisconnect()}
               disabled={disconnecting}
             >
-              {disconnecting ? "Disconnecting…" : "Disconnect"}
+              {disconnecting ? t("disconnecting") : t("disconnect")}
             </Button>
           </>
         ) : (
@@ -115,7 +117,7 @@ function GoogleCalendarWidget({
             size="sm"
             onClick={() => void connectServiceCalendar(serviceId)}
           >
-            Connect Google Calendar
+            {t("connect")}
           </Button>
         )}
       </div>
@@ -196,9 +198,12 @@ function ServicesContent({
   onEditTier: (serviceId: string, tier: TierRow) => void;
   onCalendarDisconnected: (serviceId: string) => void;
 }) {
+  const t = useTranslations("dashboard.settings.services");
+  const tServices = useTranslations("dashboard.services");
+  const tTiers = useTranslations("dashboard.settings.tiers");
   return (
     <div className="flex flex-col gap-4">
-      {SERVICES.map(({ id, label }) => {
+      {SERVICES.map(({ id }) => {
         const tiers = serviceTiers[id] ?? [];
         const calConfig = calendarConfigs.find((c) => c.service_id === id);
         return (
@@ -206,7 +211,7 @@ function ServicesContent({
             <div className="px-5 py-4">
               <div className="flex items-center justify-between">
                 <span className="text-petroleum-700 font-semibold">
-                  {label}
+                  {tServices(id)}
                 </span>
                 <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
@@ -217,7 +222,7 @@ function ServicesContent({
                       strokeLinecap="round"
                     />
                   </svg>
-                  Add tier
+                  {t("addTier")}
                 </Button>
               </div>
               <GoogleCalendarWidget
@@ -232,68 +237,68 @@ function ServicesContent({
                 <div className="grid grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 px-5 py-2">
                   {[
                     "",
-                    "Name",
-                    "Color",
-                    "Duration",
-                    "Centre",
-                    "Suite",
-                    "Status",
+                    "name",
+                    "color",
+                    "duration",
+                    "centre",
+                    "suite",
+                    "status",
                   ].map((h, i) => (
                     <span
                       key={h || "image"}
                       className={`text-petroleum-400 text-xs font-medium ${i >= 4 && i <= 5 ? "text-right" : i === 6 ? "text-center" : ""}`}
                     >
-                      {h}
+                      {h ? t(`columns.${h}`) : ""}
                     </span>
                   ))}
                 </div>
-                {tiers.map((t) => (
+                {tiers.map((tier) => (
                   <button
-                    key={t.id}
+                    key={tier.id}
                     type="button"
-                    onClick={() => onEditTier(id, t)}
+                    onClick={() => onEditTier(id, tier)}
                     className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
                   >
                     <TierThumbnail
-                      imageUrl={t.image_url}
-                      color={t.color}
-                      label={t.label}
+                      imageUrl={tier.image_url}
+                      color={tier.color}
+                      label={tier.label}
                       className="size-10"
                       sizes="40px"
                     />
                     <span className="text-petroleum-700 min-w-0 truncate text-sm">
-                      {t.label ?? "—"}
+                      {tier.label ?? "—"}
                     </span>
                     <div
                       className="size-4 shrink-0 rounded-full ring-1 ring-black/10"
-                      style={{ backgroundColor: t.color ?? "#6b7280" }}
+                      style={{ backgroundColor: tier.color ?? "#6b7280" }}
                     />
                     <span className="text-petroleum-500 text-sm">
-                      {t.duration_minutes != null
-                        ? `${t.duration_minutes} min`
+                      {tier.duration_minutes != null
+                        ? `${tier.duration_minutes} min`
                         : "—"}
                     </span>
                     <span className="text-petroleum-700 text-right text-sm font-medium">
-                      {t.price_center_eur != null
-                        ? `€${t.price_center_eur}`
-                        : t.price_eur != null
-                          ? `€${t.price_eur}`
+                      {tier.price_center_eur != null
+                        ? `€${tier.price_center_eur}`
+                        : tier.price_eur != null
+                          ? `€${tier.price_eur}`
                           : "—"}
                     </span>
                     <span className="text-petroleum-500 text-right text-sm">
-                      {t.price_suite_eur != null
-                        ? `€${t.price_suite_eur}`
+                      {tier.price_suite_eur != null
+                        ? `€${tier.price_suite_eur}`
                         : "—"}
                     </span>
                     <span className="flex justify-center">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          t.active
+                          tier.active
                             ? "bg-green-100 text-green-700"
                             : "bg-sand-100 text-petroleum-400"
                         }`}
                       >
-                        {t.active ? "Active" : "Off"}
+                        {tier.active ? tTiers("active") : tTiers("off")}
                       </span>
                     </span>
                   </button>
@@ -301,9 +306,7 @@ function ServicesContent({
               </div>
             ) : (
               <div className="border-sand-100 border-t px-5 py-4">
-                <p className="text-petroleum-300 text-sm">
-                  No tiers yet. Add one to enable this service in bookings.
-                </p>
+                <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
               </div>
             )}
           </div>

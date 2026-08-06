@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { IconX } from "@/components/ui/icons";
 
@@ -15,6 +16,7 @@ export function CalendarColorModal({
   onSave: (color: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard.common");
   const [color, setColor] = useState(initialColor);
 
   return (
@@ -27,10 +29,11 @@ export function CalendarColorModal({
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Calendar settings
+            {t("calendarSettings")}
           </h3>
           <button
             onClick={onClose}
+            aria-label={t("close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <IconX />
@@ -65,7 +68,7 @@ export function CalendarColorModal({
 
         <div className="flex items-center justify-end gap-3 pt-1">
           <Button variant="ghost" size="md" onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             variant="solid"
@@ -75,7 +78,7 @@ export function CalendarColorModal({
               onClose();
             }}
           >
-            Save
+            {t("save")}
           </Button>
         </div>
       </div>

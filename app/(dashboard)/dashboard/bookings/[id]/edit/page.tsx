@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ChevronDown,
   ChevronLeft,
@@ -114,31 +115,46 @@ const TENERIFE_MUNICIPALITIES = [
   "Güímar",
 ];
 
-const LOCATIONS: {
+type LocationOption = {
   id: DashboardLocation;
   label: string;
   description: string;
   Icon: React.FC<{ size?: number; className?: string }>;
-}[] = [
-  {
-    id: "centro",
-    label: "At the center",
-    description: contact.address,
-    Icon: Building2,
-  },
-  {
-    id: "habitacion",
-    label: "Room",
-    description: "Baobab Suites room",
-    Icon: BedDouble,
-  },
-  {
-    id: "domicilio",
-    label: "Home visit",
-    description: "We come to your address",
-    Icon: Home,
-  },
-];
+};
+
+const LOCATION_ICONS: Record<
+  DashboardLocation,
+  React.FC<{ size?: number; className?: string }>
+> = {
+  centro: Building2,
+  habitacion: BedDouble,
+  domicilio: Home,
+};
+
+/** Wording from messages; the centre's description is a real address. */
+function useLocationOptions(): LocationOption[] {
+  const t = useTranslations("dashboard.bookings.form.locations");
+  return [
+    {
+      id: "centro",
+      label: t("centro.label"),
+      description: contact.address,
+      Icon: LOCATION_ICONS.centro,
+    },
+    {
+      id: "habitacion",
+      label: t("habitacion.label"),
+      description: t("habitacion.description"),
+      Icon: LOCATION_ICONS.habitacion,
+    },
+    {
+      id: "domicilio",
+      label: t("domicilio.label"),
+      description: t("domicilio.description"),
+      Icon: LOCATION_ICONS.domicilio,
+    },
+  ];
+}
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",
@@ -147,31 +163,30 @@ const EMPTY_ADDRESS: LocationAddress = {
   municipality: "",
 };
 
-const STATUSES: {
+type StatusOption = {
   id: BookingStatus;
   label: string;
   description: string;
   dot: string;
-}[] = [
-  {
-    id: "pending",
-    label: "Pending",
-    description: "Awaiting confirmation",
-    dot: "bg-yellow-400",
-  },
-  {
-    id: "confirmed",
-    label: "Confirmed",
-    description: "Appointment confirmed",
-    dot: "bg-green-500",
-  },
-  {
-    id: "cancelled",
-    label: "Cancelled",
-    description: "Appointment cancelled",
-    dot: "bg-red-400",
-  },
-];
+};
+
+const STATUS_DOTS: Record<BookingStatus, string> = {
+  pending: "bg-yellow-400",
+  confirmed: "bg-green-500",
+  cancelled: "bg-red-400",
+};
+
+const STATUS_IDS: BookingStatus[] = ["pending", "confirmed", "cancelled"];
+
+function useStatusOptions(): StatusOption[] {
+  const t = useTranslations("dashboard.bookings.edit.statuses");
+  return STATUS_IDS.map((id) => ({
+    id,
+    label: t(`${id}.label`),
+    description: t(`${id}.description`),
+    dot: STATUS_DOTS[id],
+  }));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -187,22 +202,27 @@ function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** The dashboard is English-only; the public flow translates its own copy. */
-const SERVICE_PICKER_LABELS = {
-  placeholder: "Select a service",
-  modalTitle: "Choose a service",
-  close: "Close",
-  wellness: "Wellness",
-  medicine: "Medicine",
-};
+function useServicePickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.servicePicker");
+  return {
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    wellness: t("wellness"),
+    medicine: t("medicine"),
+  };
+}
 
-const TIER_PICKER_LABELS = {
-  fieldLabel: "Duration & Price",
-  placeholder: "Select a duration & price",
-  modalTitle: "Select a session type",
-  close: "Close",
-  standard: "Standard",
-};
+function useTierPickerLabels() {
+  const t = useTranslations("dashboard.bookings.form.tierPicker");
+  return {
+    fieldLabel: t("fieldLabel"),
+    placeholder: t("placeholder"),
+    modalTitle: t("modalTitle"),
+    close: t("close"),
+    standard: t("standard"),
+  };
+}
 
 // ─── Status Select ────────────────────────────────────────────
 
@@ -213,9 +233,10 @@ function StatusSelect({
   selected: BookingStatus;
   onSelect: (s: BookingStatus) => void;
 }) {
+  const statuses = useStatusOptions();
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
-  const active = STATUSES.find((s) => s.id === selected) ?? STATUSES[0]!;
+  const active = statuses.find((s) => s.id === selected) ?? statuses[0]!;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -268,7 +289,7 @@ function StatusSelect({
             className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] overflow-hidden rounded-2xl border shadow-lg"
           >
             <div className="p-3">
-              {STATUSES.map(({ id, label, description, dot }) => (
+              {statuses.map(({ id, label, description, dot }) => (
                 <button
                   key={id}
                   type="button"
@@ -305,12 +326,13 @@ function StatusSelect({
 function LocationSelect({
   selected,
   onSelect,
-  locations = LOCATIONS,
+  locations,
 }: {
   selected: DashboardLocation | null;
   onSelect: (l: DashboardLocation) => void;
-  locations?: typeof LOCATIONS;
+  locations: LocationOption[];
 }) {
+  const t = useTranslations("dashboard.bookings.form.locations");
   const [isOpen, setIsOpen] = useState(false);
   const { triggerRef, dropdownRef, dropdownStyle } = useDropdownPortal(isOpen);
   const active = locations.find((l) => l.id === selected);
@@ -361,7 +383,7 @@ function LocationSelect({
               <span className="text-petroleum-100 text-lg">+</span>
             </div>
             <p className="text-petroleum-400 flex-1 text-sm">
-              Select a location
+              {t("selectPrompt")}
             </p>
           </>
         )}
@@ -527,16 +549,16 @@ function DeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("dashboard.bookings.edit");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Delete booking?
+            {t("deleteDialog.title")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This booking will be permanently deleted.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("deleteDialog.body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button
@@ -546,7 +568,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
           <Button
             variant="outline"
@@ -555,7 +577,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -729,9 +751,12 @@ type StatusSectionProps = {
 };
 
 function StatusSection({ status, onChange }: StatusSectionProps) {
+  const t = useTranslations("dashboard.bookings.edit");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Status</h2>
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        {t("sections.status")}
+      </h2>
       <StatusSelect
         selected={(status as BookingStatus) || "pending"}
         onSelect={onChange}
@@ -753,9 +778,13 @@ function ServiceSection({
   selectedService,
   onSelect,
 }: ServiceSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
+  const servicePickerLabels = useServicePickerLabels();
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Service</h2>
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        {t("steps.service")}
+      </h2>
       {loading ? (
         <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
       ) : (
@@ -763,7 +792,7 @@ function ServiceSection({
           options={services}
           selected={selectedService}
           onSelect={onSelect}
-          labels={SERVICE_PICKER_LABELS}
+          labels={servicePickerLabels}
         />
       )}
     </div>
@@ -772,7 +801,7 @@ function ServiceSection({
 
 type LocationSectionProps = {
   location: DashboardLocation | "";
-  allowedLocations: typeof LOCATIONS;
+  allowedLocations: LocationOption[];
   onLocationChange: (l: DashboardLocation) => void;
   roomNumber: string;
   reservationNumber: string;
@@ -795,10 +824,11 @@ function LocationSection({
   onReservationNumberChange,
   onAddressChange,
 }: LocationSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Location
+        {t("steps.location")}
       </h2>
       <div className="flex flex-col gap-4">
         <LocationSelect
@@ -815,14 +845,15 @@ function LocationSection({
                   htmlFor="reservationNumber"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Reservation number <span className="text-red-400">*</span>
+                  {t("fields.reservationNumber")}{" "}
+                  <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="reservationNumber"
                   type="text"
                   value={reservationNumber}
                   onChange={(e) => onReservationNumberChange(e.target.value)}
-                  placeholder="83943"
+                  placeholder={t("fields.reservationNumberPlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
@@ -832,14 +863,14 @@ function LocationSection({
                   htmlFor="roomNumber"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Room number
+                  {t("fields.roomNumber")}
                 </label>
                 <input
                   id="roomNumber"
                   type="text"
                   value={roomNumber}
                   onChange={(e) => onRoomNumberChange(e.target.value)}
-                  placeholder="AK201"
+                  placeholder={t("fields.roomNumberPlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
@@ -855,7 +886,7 @@ function LocationSection({
                 htmlFor="addr-street"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Street & number <span className="text-red-400">*</span>
+                {t("fields.street")} <span className="text-red-400">*</span>
               </label>
               <input
                 id="addr-street"
@@ -864,7 +895,7 @@ function LocationSection({
                 onChange={(e) =>
                   onAddressChange({ ...address, street: e.target.value })
                 }
-                placeholder="Calle El Peñón, 23"
+                placeholder={t("fields.streetPlaceholder")}
                 autoComplete="address-line1"
                 disabled={submitting}
                 className={INPUT_CLASS}
@@ -875,7 +906,7 @@ function LocationSection({
                 htmlFor="addr-building"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Block, floor & door
+                {t("fields.building")}
               </label>
               <input
                 id="addr-building"
@@ -884,7 +915,7 @@ function LocationSection({
                 onChange={(e) =>
                   onAddressChange({ ...address, building: e.target.value })
                 }
-                placeholder="Block 3, 2nd floor, apt B"
+                placeholder={t("fields.buildingPlaceholder")}
                 autoComplete="address-line2"
                 disabled={submitting}
                 className={INPUT_CLASS}
@@ -896,7 +927,8 @@ function LocationSection({
                   htmlFor="addr-postal"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Postal code <span className="text-red-400">*</span>
+                  {t("fields.postalCode")}{" "}
+                  <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="addr-postal"
@@ -910,7 +942,7 @@ function LocationSection({
                       postalCode: e.target.value,
                     })
                   }
-                  placeholder="38670"
+                  placeholder={t("fields.postalCodePlaceholder")}
                   autoComplete="postal-code"
                   disabled={submitting}
                   className={INPUT_CLASS}
@@ -921,7 +953,8 @@ function LocationSection({
                   htmlFor="addr-municipality"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Municipality <span className="text-red-400">*</span>
+                  {t("fields.municipality")}{" "}
+                  <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="addr-municipality"
@@ -934,7 +967,7 @@ function LocationSection({
                       municipality: e.target.value,
                     })
                   }
-                  placeholder="Adeje"
+                  placeholder={t("fields.municipalityPlaceholder")}
                   autoComplete="address-level2"
                   disabled={submitting}
                   className={INPUT_CLASS}
@@ -970,23 +1003,25 @@ function TierSection({
   location,
   onSelect,
 }: TierSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
+  const tierPickerLabels = useTierPickerLabels();
   if (!serviceId) return null;
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Session type
+        {t("steps.sessionType")}
       </h2>
       {tiersLoading ? (
         <div className="border-sand-200 bg-sand-50 h-[74px] animate-pulse rounded-2xl border" />
       ) : tiers.length === 0 ? (
         <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-          No session types configured for this service.
+          {t("noTiers")}
         </p>
       ) : (
         <TierPicker
           options={tiers.map((t) => toTierOption(t, location))}
           selectedId={tierId}
-          labels={TIER_PICKER_LABELS}
+          labels={tierPickerLabels}
           collapseSingle
           onSelect={(o) => onSelect(o.id)}
         />
@@ -1130,9 +1165,12 @@ function ClientSection({
   onFieldChange,
   onNotesChange,
 }: ClientSectionProps) {
+  const t = useTranslations("dashboard.bookings.form");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Client</h2>
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        {t("steps.client")}
+      </h2>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
@@ -1140,14 +1178,14 @@ function ClientSection({
               htmlFor="firstName"
               className="text-petroleum-500 text-xs font-medium"
             >
-              First name <span className="text-red-400">*</span>
+              {t("fields.firstName")} <span className="text-red-400">*</span>
             </label>
             <input
               id="firstName"
               type="text"
               value={firstName}
               onChange={(e) => onFieldChange("firstName", e.target.value)}
-              placeholder="Jane"
+              placeholder={t("fields.firstNamePlaceholder")}
               disabled={submitting}
               className={INPUT_CLASS}
             />
@@ -1157,14 +1195,14 @@ function ClientSection({
               htmlFor="lastName"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Last name
+              {t("fields.lastName")}
             </label>
             <input
               id="lastName"
               type="text"
               value={lastName}
               onChange={(e) => onFieldChange("lastName", e.target.value)}
-              placeholder="Doe"
+              placeholder={t("fields.lastNamePlaceholder")}
               disabled={submitting}
               className={INPUT_CLASS}
             />
@@ -1175,14 +1213,14 @@ function ClientSection({
             htmlFor="email"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Email <span className="text-red-400">*</span>
+            {t("fields.email")} <span className="text-red-400">*</span>
           </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => onFieldChange("email", e.target.value)}
-            placeholder="jane@example.com"
+            placeholder={t("fields.emailPlaceholder")}
             disabled={submitting}
             className={INPUT_CLASS}
           />
@@ -1192,14 +1230,14 @@ function ClientSection({
             htmlFor="phone"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Phone
+            {t("fields.phone")}
           </label>
           <input
             id="phone"
             type="tel"
             value={phone}
             onChange={(e) => onFieldChange("phone", e.target.value)}
-            placeholder="+34 600 000 000"
+            placeholder={t("fields.phonePlaceholder")}
             disabled={submitting}
             className={INPUT_CLASS}
           />
@@ -1209,13 +1247,13 @@ function ClientSection({
             htmlFor="notes"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Notes
+            {t("fields.notes")}
           </label>
           <textarea
             id="notes"
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
-            placeholder="Any additional notes for this booking…"
+            placeholder={t("fields.notesPlaceholder")}
             rows={3}
             disabled={submitting}
             className={INPUT_CLASS + " resize-none"}
@@ -1229,6 +1267,9 @@ function ClientSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditBookingPage() {
+  const t = useTranslations("dashboard.bookings.edit");
+  const tForm = useTranslations("dashboard.bookings.form");
+  const locationOptions = useLocationOptions();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
@@ -1421,8 +1462,10 @@ export default function EditBookingPage() {
 
   const allowedLocations =
     role === "partner"
-      ? LOCATIONS.filter((l) => l.id === "centro" || l.id === "habitacion")
-      : LOCATIONS;
+      ? locationOptions.filter(
+          (l) => l.id === "centro" || l.id === "habitacion",
+        )
+      : locationOptions;
 
   const sortedServices = services.toSorted((a, b) => {
     if (a.id === "manual-therapies") return -1;
@@ -1618,7 +1661,7 @@ export default function EditBookingPage() {
     ) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: "Reservation number is required.",
+        payload: t("errors.reservationRequired"),
       });
       return;
     }
@@ -1684,7 +1727,7 @@ export default function EditBookingPage() {
     if (updateErrorMsg) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: updateErrorMsg ?? "Failed to save booking.",
+        payload: updateErrorMsg ?? t("errors.saveFailed"),
       });
       return;
     }
@@ -1895,7 +1938,7 @@ export default function EditBookingPage() {
       <form onSubmit={(e) => void handleSubmit(e)} noValidate>
         <div className="mb-6 flex items-center justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            Edit Booking
+            {t("title")}
           </h1>
           {/* Desktop buttons */}
           <div className="hidden items-center gap-3 sm:flex">
@@ -1908,7 +1951,7 @@ export default function EditBookingPage() {
               }
               disabled={loading}
             >
-              Delete
+              {t("delete")}
             </Button>
             <Button
               type="submit"
@@ -1916,7 +1959,7 @@ export default function EditBookingPage() {
               size="md"
               disabled={submitting || loading}
             >
-              {submitting ? "Saving…" : "Save"}
+              {submitting ? t("saving") : t("save")}
             </Button>
           </div>
         </div>
@@ -1981,7 +2024,7 @@ export default function EditBookingPage() {
           {serviceId === "manual-therapies" && tierId !== "" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Therapist preference
+                {tForm("steps.therapistPreference")}
               </h2>
               <select
                 value={therapistGender}
@@ -1993,9 +2036,9 @@ export default function EditBookingPage() {
                 }
                 className={INPUT_CLASS}
               >
-                <option value="">Select therapist preference</option>
-                <option value="male">Male therapist</option>
-                <option value="female">Female therapist</option>
+                <option value="">{tForm("therapist.placeholder")}</option>
+                <option value="male">{tForm("therapist.male")}</option>
+                <option value="female">{tForm("therapist.female")}</option>
               </select>
             </div>
           )}
@@ -2054,7 +2097,7 @@ export default function EditBookingPage() {
               disabled={submitting || loading}
               className="w-full justify-center"
             >
-              {submitting ? "Saving…" : "Save"}
+              {submitting ? t("saving") : t("save")}
             </Button>
           </div>
         </div>

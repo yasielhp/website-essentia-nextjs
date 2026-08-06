@@ -1,11 +1,12 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getWeekDays,
   sortByTime,
-  DAYS_SHORT,
+  getShortWeekdays,
 } from "@/utils/dashboard-calendar";
 import { EventPill } from "./event-pill";
 
@@ -22,8 +23,10 @@ export function WeekGrid({
   onEventClick: (event: CalendarEvent) => void;
   onDayClick: (d: Date) => void;
 }) {
+  const locale = useLocale();
   const todayYMD = toYMD(new Date());
   const weekDays = getWeekDays(anchor);
+  const weekdays = getShortWeekdays(locale);
 
   return (
     <div>
@@ -36,10 +39,10 @@ export function WeekGrid({
             <div key={ymd} className="py-2 text-center">
               <div className="text-petroleum-400 text-xs">
                 <span className="hidden sm:inline">
-                  {DAYS_SHORT[(day.getDay() + 6) % 7]}
+                  {weekdays[(day.getDay() + 6) % 7]}
                 </span>
                 <span className="sm:hidden">
-                  {DAYS_SHORT[(day.getDay() + 6) % 7]![0]}
+                  {weekdays[(day.getDay() + 6) % 7]![0]}
                 </span>
               </div>
               <button

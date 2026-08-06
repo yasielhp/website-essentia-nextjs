@@ -2,11 +2,14 @@
 
 import { useEffect, useReducer, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
+import { formatMediumDate } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 
 type Review = {
   id: string;
@@ -23,25 +26,18 @@ const PAGE_SIZE = 10;
 
 // ─── Badges ───────────────────────────────────────────────────
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 const statusBadgeClasses: Record<string, string> = {
   published: "bg-green-100 text-green-800",
   draft: "bg-yellow-100 text-yellow-800",
 };
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations("dashboard.reviews");
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClasses[status] ?? "bg-sand-100 text-petroleum-500"}`}
     >
-      {status}
+      {t.has(`status.${status}`) ? t(`status.${status}`) : status}
     </span>
   );
 }
@@ -69,6 +65,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   const fieldCls =
     "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
@@ -81,9 +78,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -98,15 +98,17 @@ function FilterModal({
         </div>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-petroleum-400 text-xs font-medium">Status</span>
+          <span className="text-petroleum-400 text-xs font-medium">
+            {t("reviews.filters.status")}
+          </span>
           <select
             value={pending}
             onChange={(e) => onChange(e.target.value)}
             className={fieldCls}
           >
-            <option value="">All statuses</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
+            <option value="">{t("reviews.filters.allStatuses")}</option>
+            <option value="published">{t("reviews.status.published")}</option>
+            <option value="draft">{t("reviews.status.draft")}</option>
           </select>
         </label>
 
@@ -115,10 +117,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -169,6 +171,8 @@ function reducer(state: PageState, action: PageAction): PageState {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function ReviewsPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { reviews, total, page, loading } = state;
@@ -258,7 +262,7 @@ export default function ReviewsPage() {
           className="gap-2"
         >
           <IconPlus />
-          New Review
+          {t("reviews.newReview")}
         </Button>
         <Button
           variant={activeCount > 0 ? "soft" : "outline"}
@@ -267,24 +271,26 @@ export default function ReviewsPage() {
           className="gap-2"
         >
           <IconFilter />
-          Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
+          {activeCount > 0
+            ? t("common.filtersWithCount", { count: activeCount })
+            : t("common.filters")}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatCard
-          label="Published"
+          label={t("reviews.stats.published")}
           value={statusCounts.published ?? 0}
           loading={statusCounts.published === null}
         />
         <StatCard
-          label="Draft"
+          label={t("reviews.stats.draft")}
           value={statusCounts.draft ?? 0}
           loading={statusCounts.draft === null}
         />
         <StatCard
-          label="Total"
+          label={t("reviews.stats.total")}
           value={(statusCounts.published ?? 0) + (statusCounts.draft ?? 0)}
           loading={statusCounts.published === null}
         />
@@ -307,7 +313,7 @@ export default function ReviewsPage() {
           ))
         ) : reviews.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No reviews found.
+            {t("reviews.empty")}
           </p>
         ) : (
           reviews.map((r) => (
@@ -328,7 +334,7 @@ export default function ReviewsPage() {
                 &ldquo;{r.quote}&rdquo;
               </p>
               <p className="text-petroleum-300 mt-1 text-xs">
-                {formatDate(r.created_at)}
+                {formatMediumDate(r.created_at, locale)}
               </p>
             </div>
           ))
@@ -342,16 +348,16 @@ export default function ReviewsPage() {
             <thead>
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Author
+                  {t("reviews.columns.author")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Quote
+                  {t("reviews.columns.quote")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Status
+                  {t("reviews.columns.status")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Created
+                  {t("reviews.columns.created")}
                 </th>
               </tr>
             </thead>
@@ -385,7 +391,7 @@ export default function ReviewsPage() {
                     colSpan={4}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No reviews found.
+                    {t("reviews.empty")}
                   </td>
                 </tr>
               ) : (
@@ -415,7 +421,7 @@ export default function ReviewsPage() {
                       <StatusBadge status={r.status} />
                     </td>
                     <td className="text-petroleum-400 px-5 py-4 text-sm">
-                      {formatDate(r.created_at)}
+                      {formatMediumDate(r.created_at, locale)}
                     </td>
                   </tr>
                 ))

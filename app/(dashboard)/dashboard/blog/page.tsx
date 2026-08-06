@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAsyncData } from "@/hooks/use-async-data";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
+import { formatMediumDate } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 
 type Post = {
   id: string;
@@ -16,15 +19,6 @@ type Post = {
   created_at: string;
   category: { name: string } | null;
 };
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
@@ -45,6 +39,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -66,9 +61,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -84,28 +82,28 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Status
+              {t("blog.filters.status")}
             </span>
             <select
               value={pending.status}
               onChange={(e) => onChange("status", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
+              <option value="">{t("blog.filters.allStatuses")}</option>
+              <option value="published">{t("blog.status.published")}</option>
+              <option value="draft">{t("blog.status.draft")}</option>
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Category
+              {t("blog.filters.category")}
             </span>
             <select
               value={pending.category}
               onChange={(e) => onChange("category", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All categories</option>
+              <option value="">{t("blog.filters.allCategories")}</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -119,10 +117,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -131,6 +129,8 @@ function FilterModal({
 }
 
 export default function BlogDashboardPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
   const { push } = useRouter();
   const fetchPosts = useCallback(async (): Promise<Post[]> => {
     const { data } = await insforge.database
@@ -183,10 +183,10 @@ export default function BlogDashboardPage() {
             className="gap-2"
           >
             <IconPlus />
-            New post
+            {t("blog.newPost")}
           </Button>
           <Button variant="outline" size="md" href="/dashboard/blog/categories">
-            Categories
+            {t("blog.categories")}
           </Button>
         </div>
         <Button
@@ -196,7 +196,9 @@ export default function BlogDashboardPage() {
           className="gap-2"
         >
           <IconFilter />
-          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+          {activeFilterCount > 0
+            ? t("common.filtersWithCount", { count: activeFilterCount })
+            : t("common.filters")}
         </Button>
       </div>
 
@@ -214,7 +216,7 @@ export default function BlogDashboardPage() {
           ))
         ) : filteredPosts.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No posts yet.
+            {t("blog.empty")}
           </p>
         ) : (
           filteredPosts.map((p) => (
@@ -230,20 +232,25 @@ export default function BlogDashboardPage() {
                 {p.status === "published" ? (
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                     <span className="size-1.5 rounded-full bg-green-500" />
-                    Published
+                    {t("blog.status.published")}
                   </span>
                 ) : (
                   <span className="bg-sand-100 text-petroleum-500 inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
                     <span className="bg-petroleum-300 size-1.5 rounded-full" />
-                    Draft
+                    {t("blog.status.draft")}
                   </span>
                 )}
               </div>
               <p className="text-petroleum-400 mt-1 text-xs">
-                {p.category?.name ?? "No category"}
+                {p.category?.name ?? t("blog.noCategory")}
+                {" · "}
                 {p.published_at
-                  ? ` · Published ${formatDate(p.published_at)}`
-                  : ` · Created ${formatDate(p.created_at)}`}
+                  ? t("blog.publishedOn", {
+                      date: formatMediumDate(p.published_at, locale),
+                    })
+                  : t("blog.createdOn", {
+                      date: formatMediumDate(p.created_at, locale),
+                    })}
               </p>
             </div>
           ))
@@ -257,19 +264,19 @@ export default function BlogDashboardPage() {
             <thead>
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Title
+                  {t("blog.columns.title")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Category
+                  {t("blog.columns.category")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Status
+                  {t("blog.columns.status")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Published
+                  {t("blog.columns.published")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Created
+                  {t("blog.columns.created")}
                 </th>
               </tr>
             </thead>
@@ -305,7 +312,7 @@ export default function BlogDashboardPage() {
                     colSpan={5}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No posts yet.
+                    {t("blog.empty")}
                   </td>
                 </tr>
               ) : (
@@ -319,26 +326,26 @@ export default function BlogDashboardPage() {
                       {p.title}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {p.category?.name ?? "—"}
+                      {p.category?.name ?? t("common.empty")}
                     </td>
                     <td className="px-5 py-4">
                       {p.status === "published" ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                           <span className="size-1.5 rounded-full bg-green-500" />
-                          Published
+                          {t("blog.status.published")}
                         </span>
                       ) : (
                         <span className="bg-sand-100 text-petroleum-500 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
                           <span className="bg-petroleum-300 size-1.5 rounded-full" />
-                          Draft
+                          {t("blog.status.draft")}
                         </span>
                       )}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {formatDate(p.published_at)}
+                      {formatMediumDate(p.published_at, locale)}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {formatDate(p.created_at)}
+                      {formatMediumDate(p.created_at, locale)}
                     </td>
                   </tr>
                 ))

@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef, useState, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -167,16 +168,23 @@ function DeleteModal({
   onCancel,
   onConfirm,
 }: DeleteModalProps) {
+  const t = useTranslations("dashboard.education.edit");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Delete session?
+            {t("deleteDialog.title")}
           </h3>
           <p className="text-petroleum-400 text-sm">
-            <strong className="text-petroleum-500 font-medium">{title}</strong>{" "}
-            will be permanently deleted along with all its enrollments.
+            {t.rich("deleteDialog.body", {
+              name: () => (
+                <strong className="text-petroleum-500 font-medium">
+                  {title}
+                </strong>
+              ),
+            })}
           </p>
         </div>
         <div className="flex flex-col gap-2">
@@ -187,7 +195,7 @@ function DeleteModal({
             disabled={deleting}
             className="w-full"
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
           <Button
             variant="outline"
@@ -196,7 +204,7 @@ function DeleteModal({
             disabled={deleting}
             className="w-full"
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -219,6 +227,8 @@ function DetailsForm({
   titleEs,
   descriptionEs,
 }: DetailsFormProps) {
+  const t = useTranslations("dashboard.education.form");
+  const tCommon = useTranslations("dashboard.common");
   const {
     loading,
     saving,
@@ -236,7 +246,9 @@ function DetailsForm({
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-petroleum-500 text-sm font-semibold">Details</h2>
+        <h2 className="text-petroleum-500 text-sm font-semibold">
+          {t("sections.details")}
+        </h2>
         <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
           {(["en", "es"] as const).map((l) => (
             <button
@@ -250,7 +262,7 @@ function DetailsForm({
                   : "text-petroleum-400 hover:text-petroleum-600",
               ].join(" ")}
             >
-              {l === "en" ? "English" : "Español"}
+              {l === "en" ? tCommon("english") : tCommon("spanish")}
             </button>
           ))}
         </div>
@@ -263,7 +275,7 @@ function DetailsForm({
                 htmlFor="edu-edit-title"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Title <span className="text-red-400">*</span>
+                {t("fields.title")} <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -285,7 +297,8 @@ function DetailsForm({
                 htmlFor="edu-edit-description"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Description <span className="text-red-400">*</span>
+                {t("fields.description")}{" "}
+                <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -309,7 +322,7 @@ function DetailsForm({
                 htmlFor="edu-edit-title-es"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Title <span className="text-red-400">*</span>
+                {t("fields.title")} <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -331,7 +344,8 @@ function DetailsForm({
                 htmlFor="edu-edit-description-es"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Description <span className="text-red-400">*</span>
+                {t("fields.description")}{" "}
+                <span className="text-red-400">*</span>
               </label>
               {loading ? (
                 <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -359,7 +373,7 @@ function DetailsForm({
               htmlFor="edu-edit-date"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Date <span className="text-red-400">*</span>
+              {t("fields.date")} <span className="text-red-400">*</span>
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -381,7 +395,7 @@ function DetailsForm({
               htmlFor="edu-edit-time"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Time <span className="text-red-400">*</span>
+              {t("fields.time")} <span className="text-red-400">*</span>
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -405,7 +419,7 @@ function DetailsForm({
             htmlFor="edu-edit-location"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Location
+            {t("fields.location")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -420,7 +434,7 @@ function DetailsForm({
                   value: e.target.value,
                 })
               }
-              placeholder="Studio A"
+              placeholder={t("fields.locationPlaceholder")}
               disabled={saving}
               className={INPUT_CLASS}
             />
@@ -433,7 +447,7 @@ function DetailsForm({
               htmlFor="edu-edit-duration"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Duration
+              {t("fields.duration")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -449,7 +463,7 @@ function DetailsForm({
                       value: e.target.value,
                     })
                   }
-                  placeholder="60"
+                  placeholder={t("fields.durationPlaceholder")}
                   min="1"
                   disabled={saving}
                   className={INPUT_CLASS + " pr-12"}
@@ -465,7 +479,7 @@ function DetailsForm({
               htmlFor="edu-edit-max-participants"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Max participants
+              {t("fields.maxParticipants")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -480,7 +494,7 @@ function DetailsForm({
                     value: e.target.value,
                   })
                 }
-                placeholder="20"
+                placeholder={t("fields.maxParticipantsPlaceholder")}
                 min="1"
                 disabled={saving}
                 className={INPUT_CLASS}
@@ -494,7 +508,7 @@ function DetailsForm({
             htmlFor="edu-edit-access"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Access
+            {t("fields.access")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -511,10 +525,14 @@ function DetailsForm({
               disabled={saving}
               className={INPUT_CLASS}
             >
-              <option value="members_only">Members only</option>
-              <option value="open">Open · free for everyone</option>
-              <option value="paid">Paid</option>
-              <option value="paid_members_free">Paid · free for members</option>
+              <option value="members_only">
+                {t("accessOptions.members_only")}
+              </option>
+              <option value="open">{t("accessOptions.open")}</option>
+              <option value="paid">{t("accessOptions.paid")}</option>
+              <option value="paid_members_free">
+                {t("accessOptions.paid_members_free")}
+              </option>
             </select>
           )}
         </div>
@@ -532,10 +550,11 @@ type SidebarCardProps = {
 };
 
 function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
+  const t = useTranslations("dashboard.education.form");
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Cover Image
+        {t("sections.coverImage")}
       </h2>
       {loading ? (
         <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
@@ -554,6 +573,7 @@ function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditSessionPage() {
+  const t = useTranslations("dashboard.education.edit");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -666,7 +686,8 @@ export default function EditSessionPage() {
       dispatch({
         type: "SET_ERROR",
         error:
-          (updateError as { message?: string })?.message ?? "Failed to save.",
+          (updateError as { message?: string })?.message ??
+          t("errors.saveFailed"),
       });
       return;
     }
@@ -687,7 +708,7 @@ export default function EditSessionPage() {
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">Session not found.</p>
+        <p className="text-sm">{t("notFound")}</p>
         <button
           onClick={() => back()}
           onKeyDown={(e) => {
@@ -695,7 +716,7 @@ export default function EditSessionPage() {
           }}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Go back
+          {t("goBack")}
         </button>
       </div>
     );
@@ -707,7 +728,7 @@ export default function EditSessionPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              Edit Session
+              {t("title")}
             </h1>
           </div>
 
@@ -720,7 +741,7 @@ export default function EditSessionPage() {
               className="gap-1.5"
             >
               <IconUsers />
-              Enrollees
+              {t("enrollees")}
             </Button>
 
             <Button
@@ -732,7 +753,7 @@ export default function EditSessionPage() {
               className="gap-1.5"
             >
               <IconTrash />
-              Delete
+              {t("delete")}
             </Button>
 
             <Button
@@ -747,7 +768,7 @@ export default function EditSessionPage() {
               ) : (
                 <IconCheckmark />
               )}
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>

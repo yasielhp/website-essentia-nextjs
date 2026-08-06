@@ -2,6 +2,7 @@
 
 import { useState, useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -44,6 +45,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewRacePage() {
+  const t = useTranslations("dashboard.races.form");
+  const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +70,7 @@ export default function NewRacePage() {
 
     const trimmedTitle = form.title.trim();
     if (!trimmedTitle || !form.date) {
-      setError("Title and date are required.");
+      setError(t("errors.required"));
       return;
     }
 
@@ -97,7 +100,7 @@ export default function NewRacePage() {
     if (insertError) {
       setError(
         (insertError as { message?: string })?.message ??
-          "Failed to create race.",
+          t("errors.createFailed"),
       );
       return;
     }
@@ -111,13 +114,13 @@ export default function NewRacePage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              New Race
+              {t("title")}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/races">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -125,7 +128,7 @@ export default function NewRacePage() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Create Race"}
+              {submitting ? t("creating") : t("createRace")}
             </Button>
           </div>
         </div>
@@ -140,7 +143,7 @@ export default function NewRacePage() {
           <div className="space-y-5 lg:col-span-2">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Details
+                {t("sections.details")}
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -148,7 +151,7 @@ export default function NewRacePage() {
                     htmlFor="race-title"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Title <span className="text-red-400">*</span>
+                    {t("fields.title")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="race-title"
@@ -161,7 +164,7 @@ export default function NewRacePage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Essentia Marathon 2025"
+                    placeholder={t("fields.titlePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -172,7 +175,7 @@ export default function NewRacePage() {
                     htmlFor="race-description"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Description
+                    {t("fields.description")}
                   </label>
                   <textarea
                     id="race-description"
@@ -184,7 +187,7 @@ export default function NewRacePage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Brief description of the race…"
+                    placeholder={t("fields.descriptionPlaceholder")}
                     disabled={submitting}
                     className={TEXTAREA_CLASS}
                   />
@@ -196,7 +199,7 @@ export default function NewRacePage() {
                       htmlFor="race-date"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Date <span className="text-red-400">*</span>
+                      {t("fields.date")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       id="race-date"
@@ -218,7 +221,7 @@ export default function NewRacePage() {
                       htmlFor="race-time"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Time
+                      {t("fields.time")}
                     </label>
                     <input
                       id="race-time"
@@ -242,7 +245,7 @@ export default function NewRacePage() {
                     htmlFor="race-location"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Location
+                    {t("fields.location")}
                   </label>
                   <input
                     id="race-location"
@@ -255,7 +258,7 @@ export default function NewRacePage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Barcelona, Spain"
+                    placeholder={t("fields.locationPlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -267,7 +270,7 @@ export default function NewRacePage() {
                       htmlFor="race-distance"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Distance
+                      {t("fields.distance")}
                     </label>
                     <div className="relative">
                       <input
@@ -281,7 +284,7 @@ export default function NewRacePage() {
                             value: e.target.value,
                           })
                         }
-                        placeholder="42.2"
+                        placeholder={t("fields.distancePlaceholder")}
                         min="0"
                         step="0.1"
                         disabled={submitting}
@@ -297,7 +300,7 @@ export default function NewRacePage() {
                       htmlFor="race-max-participants"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Max participants
+                      {t("fields.maxParticipants")}
                     </label>
                     <input
                       id="race-max-participants"
@@ -310,7 +313,7 @@ export default function NewRacePage() {
                           value: e.target.value,
                         })
                       }
-                      placeholder="500"
+                      placeholder={t("fields.maxParticipantsPlaceholder")}
                       min="1"
                       disabled={submitting}
                       className={INPUT_CLASS}
@@ -323,7 +326,7 @@ export default function NewRacePage() {
                     htmlFor="race-access"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Access
+                    {t("fields.access")}
                   </label>
                   <select
                     id="race-access"
@@ -337,8 +340,10 @@ export default function NewRacePage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   >
-                    <option value="members">Members only</option>
-                    <option value="open">Open · free for everyone</option>
+                    <option value="members">
+                      {t("accessOptions.members")}
+                    </option>
+                    <option value="open">{t("accessOptions.open")}</option>
                   </select>
                 </div>
               </div>
@@ -348,7 +353,7 @@ export default function NewRacePage() {
           <div className="space-y-5">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Cover Image
+                {t("sections.coverImage")}
               </h2>
               <ImageUpload
                 bucket="events"

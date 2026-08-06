@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
 import { toYMD, sortByTime } from "@/utils/dashboard-calendar";
 import { TIME_SLOTS } from "@/constants/booking";
@@ -17,6 +18,7 @@ export function DayList({
   onEventClick: (event: CalendarEvent) => void;
   onSlotClick: (time: string) => void;
 }) {
+  const t = useTranslations("dashboard.calendar");
   const ymd = toYMD(anchor);
   const dayEvents = sortByTime(eventsByDay.get(ymd) ?? []);
 
@@ -114,7 +116,7 @@ export function DayList({
                   key={slot}
                   onClick={() => onSlotClick(slot)}
                   className="border-sand-100 hover:bg-sand-50 flex min-h-12 w-full border-b text-left transition-colors last:border-b-0"
-                  aria-label={`New booking at ${slot}`}
+                  aria-label={t("newBookingAt", { time: slot })}
                 >
                   <div className="text-petroleum-400 w-16 shrink-0 py-2 pr-3 text-right font-mono text-xs">
                     {slot}

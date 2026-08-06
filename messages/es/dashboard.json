@@ -1,0 +1,1131 @@
+{
+  "shell": {
+    "toggleSidebar": "Alternar barra lateral",
+    "fallbackUser": "Usuario",
+    "language": "Idioma"
+  },
+  "nav": {
+    "overview": "Resumen",
+    "bookings": "Reservas",
+    "users": "Usuarios",
+    "subscriptions": "Suscripciones",
+    "transactions": "Transacciones",
+    "reviews": "Testimonios",
+    "races": "Carreras",
+    "education": "Formación",
+    "blog": "Blog"
+  },
+  "breadcrumbs": {
+    "sections": {
+      "overview": "Resumen",
+      "blog": "Blog",
+      "bookings": "Reservas",
+      "users": "Usuarios",
+      "subscriptions": "Suscripciones",
+      "races": "Carreras",
+      "education": "Formación",
+      "transactions": "Transacciones",
+      "reviews": "Testimonios",
+      "account": "Editar cuenta",
+      "settings": "Ajustes"
+    },
+    "leaves": {
+      "new": "Nuevo",
+      "partner": "Reserva de partner",
+      "edit": "Editar",
+      "registrations": "Inscripciones",
+      "checkin": "Check-in",
+      "enrollees": "Inscritos",
+      "categories": "Categorías",
+      "staff": "Personal"
+    }
+  },
+  "userMenu": {
+    "editAccount": "Editar cuenta",
+    "signOut": "Cerrar sesión"
+  },
+  "common": {
+    "filters": "Filtros",
+    "filtersWithCount": "Filtros [{count}]",
+    "clearAll": "Limpiar todo",
+    "applyFilters": "Aplicar filtros",
+    "close": "Cerrar",
+    "empty": "—",
+    "pageOf": "Página {page} de {total}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "calendarSettings": "Ajustes del calendario",
+    "dates": {
+      "all": "Todas las fechas",
+      "last7": "Últimos 7 días",
+      "last30": "Últimos 30 días",
+      "last90": "Últimos 3 meses",
+      "thisYear": "Este año",
+      "from": "Desde",
+      "to": "Hasta",
+      "range": "{from} – {to}",
+      "fromOnly": "Desde {date}",
+      "untilOnly": "Hasta {date}",
+      "clear": "Limpiar",
+      "apply": "Aplicar"
+    },
+    "required": "*",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "blog": {
+    "newPost": "Nueva entrada",
+    "categories": "Categorías",
+    "empty": "Todavía no hay entradas.",
+    "noCategory": "Sin categoría",
+    "publishedOn": "Publicada el {date}",
+    "createdOn": "Creada el {date}",
+    "status": {
+      "published": "Publicada",
+      "draft": "Borrador"
+    },
+    "filters": {
+      "status": "Estado",
+      "allStatuses": "Todos los estados",
+      "category": "Categoría",
+      "allCategories": "Todas las categorías"
+    },
+    "columns": {
+      "title": "Título",
+      "category": "Categoría",
+      "status": "Estado",
+      "published": "Publicada",
+      "created": "Creada"
+    },
+    "form": {
+      "title": "Nueva entrada",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "contentEn": "Contenido (EN)",
+        "contentEs": "Contenido (ES)",
+        "contentEsHint": "Traducción al español, opcional.",
+        "status": "Estado",
+        "featuredImage": "Imagen destacada",
+        "category": "Categoría",
+        "seoEn": "SEO (EN)",
+        "seoEnHint": "Cómo aparece en buscadores y redes sociales.",
+        "seoEs": "SEO (ES)",
+        "seoEsHint": "Versión en español para buscadores."
+      },
+      "noCategory": "Sin categoría",
+      "errors": {
+        "saveFailed": "No se pudo guardar."
+      }
+    },
+    "categories_page": {
+      "title": "Categorías",
+      "newCategory": "Nueva categoría",
+      "editCategory": "Editar categoría",
+      "addCategory": "Añadir categoría",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando…",
+      "edit": "Editar",
+      "empty": "Todavía no hay categorías.",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "Longevity",
+        "namePlaceholderEs": "Longevidad",
+        "slug": "Slug",
+        "slugPlaceholder": "longevity",
+        "slugPlaceholderEs": "longevidad"
+      },
+      "columns": {
+        "name": "Nombre",
+        "slug": "Slug"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar.",
+        "createFailed": "No se pudo crear."
+      }
+    },
+    "detail": {
+      "title": "Editar entrada",
+      "notFound": "Entrada no encontrada.",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "content": "Contenido",
+        "seo": "SEO"
+      },
+      "fields": {
+        "title": "Título",
+        "slug": "Slug",
+        "excerpt": "Extracto",
+        "content": "Contenido",
+        "metaTitle": "Meta título",
+        "metaDescription": "Meta descripción"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar la entrada?",
+        "body": "Esta acción no se puede deshacer.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar."
+      }
+    }
+  },
+  "bookings": {
+    "createBooking": "Crear reserva",
+    "settings": "Ajustes",
+    "empty": "No se encontraron reservas.",
+    "room": "Habitación {number}",
+    "stats": {
+      "draft": "Borradores",
+      "pending": "Pendientes",
+      "confirmed": "Confirmadas",
+      "cancelled": "Canceladas",
+      "total": "Total"
+    },
+    "status": {
+      "draft": "Borrador",
+      "pending": "Pendiente",
+      "confirmed": "Confirmada",
+      "cancelled": "Cancelada",
+      "unknown": "Desconocida"
+    },
+    "locations": {
+      "centro": "En el centro",
+      "habitacion": "Habitación",
+      "domicilio": "A domicilio"
+    },
+    "sources": {
+      "admin": "Administrador",
+      "staff": "Personal",
+      "partner": "Partner",
+      "client": "Cliente",
+      "anonymous": "Web"
+    },
+    "filters": {
+      "status": "Estado",
+      "allStatuses": "Todos los estados",
+      "location": "Ubicación",
+      "allLocations": "Todas las ubicaciones",
+      "reservedBy": "Reservado por",
+      "allSources": "Todos"
+    },
+    "columns": {
+      "created": "Creada",
+      "status": "Estado",
+      "client": "Cliente",
+      "service": "Servicio",
+      "location": "Ubicación",
+      "datetime": "Fecha y hora",
+      "reservedBy": "Reservado por"
+    },
+    "form": {
+      "title": "Nueva reserva",
+      "createBooking": "Crear reserva",
+      "creating": "Creando…",
+      "change": "Cambiar",
+      "steps": {
+        "service": "Servicio",
+        "location": "Ubicación",
+        "sessionType": "Tipo de sesión",
+        "therapistPreference": "Preferencia de terapeuta",
+        "datetime": "Fecha y hora",
+        "client": "Cliente"
+      },
+      "locations": {
+        "selectPrompt": "Selecciona una ubicación",
+        "centro": {
+          "label": "En el centro"
+        },
+        "habitacion": {
+          "label": "Habitación",
+          "description": "Habitación de Baobab Suites"
+        },
+        "domicilio": {
+          "label": "A domicilio",
+          "description": "Vamos a tu dirección"
+        },
+        "confirm": "Confirmar ubicación",
+        "reservationSummary": "Reserva: {number}",
+        "roomSummary": "Habitación: {number}"
+      },
+      "servicePicker": {
+        "placeholder": "Selecciona un servicio",
+        "modalTitle": "Elige un servicio",
+        "close": "Cerrar",
+        "wellness": "Bienestar",
+        "medicine": "Medicina"
+      },
+      "tierPicker": {
+        "fieldLabel": "Duración y precio",
+        "placeholder": "Selecciona duración y precio",
+        "modalTitle": "Selecciona un tipo de sesión",
+        "close": "Cerrar",
+        "standard": "Estándar"
+      },
+      "noTiers": "No hay tipos de sesión configurados para este servicio.",
+      "therapist": {
+        "placeholder": "Selecciona preferencia de terapeuta",
+        "male": "Terapeuta hombre",
+        "female": "Terapeuta mujer"
+      },
+      "availableTimes": "Horas disponibles",
+      "fields": {
+        "reservationNumber": "Número de reserva",
+        "reservationNumberPlaceholder": "83943",
+        "roomNumber": "Número de habitación",
+        "roomNumberPlaceholder": "AK201",
+        "street": "Calle y número",
+        "streetPlaceholder": "Calle El Peñón, 23",
+        "building": "Bloque, piso y puerta",
+        "buildingPlaceholder": "Bloque 3, 2.º piso, puerta B",
+        "postalCode": "Código postal",
+        "postalCodePlaceholder": "38670",
+        "municipality": "Municipio",
+        "municipalityPlaceholder": "Adeje",
+        "firstName": "Nombre",
+        "firstNamePlaceholder": "Juana",
+        "lastName": "Apellidos",
+        "lastNamePlaceholder": "Pérez",
+        "email": "Email",
+        "emailPlaceholder": "juana@ejemplo.com",
+        "phone": "Teléfono",
+        "phonePlaceholder": "+34 600 000 000",
+        "notes": "Notas",
+        "notesPlaceholder": "Notas adicionales para esta reserva…"
+      },
+      "errors": {
+        "createFailed": "No se pudo crear la reserva."
+      }
+    },
+    "edit": {
+      "title": "Editar reserva",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "status": "Estado"
+      },
+      "statuses": {
+        "pending": {
+          "label": "Pendiente",
+          "description": "Pendiente de confirmación"
+        },
+        "confirmed": {
+          "label": "Confirmada",
+          "description": "Cita confirmada"
+        },
+        "cancelled": {
+          "label": "Cancelada",
+          "description": "Cita cancelada"
+        }
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar la reserva?",
+        "body": "Esta reserva se eliminará permanentemente.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "reservationRequired": "El número de reserva es obligatorio.",
+        "saveFailed": "No se pudo guardar la reserva."
+      }
+    },
+    "detail": {
+      "notFound": "Reserva no encontrada.",
+      "backToList": "Volver a reservas",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "meta": {
+        "status": "Estado",
+        "location": "Ubicación",
+        "created": "Creada",
+        "reservedBy": "Reservado por"
+      },
+      "sections": {
+        "service": "Servicio",
+        "location": "Ubicación",
+        "datetime": "Fecha y hora",
+        "client": "Cliente",
+        "notes": "Notas",
+        "reservedBy": "Reservado por"
+      },
+      "fields": {
+        "date": "Fecha",
+        "time": "Hora",
+        "name": "Nombre",
+        "phone": "Teléfono",
+        "email": "Email",
+        "reservationNumber": "Número de reserva",
+        "roomNumber": "Número de habitación"
+      },
+      "therapist": {
+        "male": "Hombre",
+        "female": "Mujer"
+      },
+      "creator": {
+        "anonymous": "Visitante anónimo",
+        "client": "Cliente"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar la reserva?",
+        "body": "Esta reserva se eliminará permanentemente.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      }
+    }
+  },
+  "transactions": {
+    "empty": "No se encontraron transacciones.",
+    "stats": {
+      "revenue": "Ingresos",
+      "completed": "Completadas",
+      "pending": "Pendientes",
+      "total": "Total"
+    },
+    "types": {
+      "booking": "Reserva",
+      "membership": "Membresía",
+      "race": "Carrera",
+      "education": "Formación"
+    },
+    "status": {
+      "completed": "Completada",
+      "active": "Activa",
+      "pending": "Pendiente",
+      "cancelled": "Cancelada",
+      "expired": "Caducada",
+      "failed": "Fallida",
+      "refunded": "Reembolsada",
+      "unknown": "Desconocida"
+    },
+    "sources": {
+      "admin": "Administrador",
+      "staff": "Personal",
+      "partner": "Partner",
+      "client": "Cliente",
+      "anonymous": "Web"
+    },
+    "filters": {
+      "type": "Tipo",
+      "allTypes": "Todos los tipos",
+      "status": "Estado",
+      "allStatuses": "Todos los estados",
+      "reservedBy": "Reservado por",
+      "allSources": "Todos"
+    },
+    "columns": {
+      "created": "Creada",
+      "status": "Estado",
+      "service": "Servicio",
+      "client": "Cliente",
+      "reservedBy": "Reservado por",
+      "amount": "Importe"
+    }
+  },
+  "users": {
+    "addUser": "Añadir usuario",
+    "empty": "Todavía no hay usuarios.",
+    "stats": {
+      "leads": "Leads",
+      "clients": "Clientes",
+      "members": "Miembros",
+      "staff": "Personal",
+      "partners": "Partners",
+      "total": "Total"
+    },
+    "roles": {
+      "admin": "Administrador",
+      "staff": "Personal",
+      "partner": "Partner",
+      "lead": "Lead",
+      "client": "Cliente",
+      "member": "Miembro"
+    },
+    "gender": {
+      "female": "Mujer",
+      "male": "Hombre",
+      "other": "Otro"
+    },
+    "filters": {
+      "email": "Email",
+      "emailPlaceholder": "juana@ejemplo.com",
+      "role": "Rol",
+      "allRoles": "Todos"
+    },
+    "columns": {
+      "name": "Nombre",
+      "phone": "Teléfono",
+      "gender": "Género",
+      "role": "Rol",
+      "created": "Creado"
+    },
+    "form": {
+      "title": "Nuevo usuario",
+      "addUser": "Añadir usuario",
+      "creating": "Creando…",
+      "sections": {
+        "role": "Rol",
+        "details": "Detalles"
+      },
+      "fields": {
+        "firstName": "Nombre",
+        "firstNamePlaceholder": "Juana",
+        "lastName": "Apellidos",
+        "lastNamePlaceholder": "Pérez",
+        "email": "Email",
+        "emailPlaceholder": "juana@essentia.com",
+        "phone": "Teléfono",
+        "phonePlaceholder": "+34 600 000 000",
+        "gender": "Género",
+        "role": "Rol"
+      },
+      "roles": {
+        "client": {
+          "label": "Cliente",
+          "desc": "Ficha de contacto, sin acceso"
+        },
+        "member": {
+          "label": "Miembro",
+          "desc": "Puede tener suscripción"
+        },
+        "staff": {
+          "label": "Personal",
+          "desc": "Acceso al dashboard"
+        },
+        "partner": {
+          "label": "Partner",
+          "desc": "Solo reservas de hotel"
+        },
+        "admin": {
+          "label": "Administrador",
+          "desc": "Acceso completo al dashboard"
+        }
+      },
+      "errors": {
+        "contactFailed": "No se pudo crear el contacto.",
+        "accountFailed": "No se pudo crear la cuenta."
+      }
+    },
+    "detail": {
+      "title": "Editar usuario",
+      "notFound": "Usuario no encontrado.",
+      "goBack": "Volver",
+      "removeAccess": "Retirar acceso",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "role": "Rol",
+        "details": "Detalles",
+        "password": "Contraseña",
+        "services": "Servicios"
+      },
+      "servicesHint": "Selecciona los servicios y conecta el Google Calendar de este miembro del personal para cada uno.",
+      "password": {
+        "new": "Nueva contraseña",
+        "confirm": "Confirmar contraseña",
+        "placeholder": "••••••••",
+        "change": "Cambiar contraseña",
+        "updated": "Contraseña actualizada.",
+        "mismatch": "Las contraseñas no coinciden.",
+        "tooShort": "La contraseña debe tener al menos 8 caracteres."
+      },
+      "calendar": {
+        "label": "Google Calendar",
+        "connected": "Conectado",
+        "disconnect": "Desconectar",
+        "connect": "Conectar Google Calendar"
+      },
+      "removeDialog": {
+        "title": "¿Retirar el acceso al sistema?",
+        "body": "Este usuario perderá el acceso al dashboard. Su cuenta seguirá existiendo como contacto.",
+        "confirm": "Sí, retirar acceso",
+        "removing": "Retirando…"
+      }
+    }
+  },
+  "education": {
+    "createSession": "Crear sesión",
+    "settings": "Ajustes",
+    "empty": "Todavía no hay sesiones.",
+    "colorLabel": "Sesión",
+    "enrolled": "{count} inscritos",
+    "enrolledOfMax": "{count} / {max} inscritos",
+    "minutes": "{count} min",
+    "access": {
+      "all": "Todos",
+      "members_only": "Solo miembros",
+      "open": "Abierta · gratuita",
+      "paid": "De pago",
+      "paid_members_free": "De pago · gratis para miembros"
+    },
+    "filters": {
+      "access": "Acceso"
+    },
+    "columns": {
+      "title": "Título",
+      "access": "Acceso",
+      "date": "Fecha",
+      "time": "Hora",
+      "duration": "Duración",
+      "location": "Ubicación",
+      "enrolled": "Inscritos / Máx."
+    },
+    "form": {
+      "title": "Nueva sesión",
+      "createSession": "Crear sesión",
+      "creating": "Creando…",
+      "sections": {
+        "details": "Detalles",
+        "coverImage": "Imagen de portada"
+      },
+      "fields": {
+        "title": "Título",
+        "titlePlaceholder": "Introducción a la respiración consciente",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Breve resumen de la sesión…",
+        "date": "Fecha",
+        "time": "Hora",
+        "location": "Ubicación",
+        "locationPlaceholder": "Sala A",
+        "duration": "Duración",
+        "durationPlaceholder": "60",
+        "maxParticipants": "Participantes máx.",
+        "maxParticipantsPlaceholder": "20",
+        "access": "Acceso"
+      },
+      "accessOptions": {
+        "members_only": "Solo miembros",
+        "open": "Abierta · gratis para todos",
+        "paid": "De pago",
+        "paid_members_free": "De pago · gratis para miembros"
+      },
+      "errors": {
+        "required": "El título, la fecha y la hora son obligatorios.",
+        "createFailed": "No se pudo crear la sesión."
+      }
+    },
+    "edit": {
+      "title": "Editar sesión",
+      "notFound": "Sesión no encontrada.",
+      "goBack": "Volver",
+      "enrollees": "Inscritos",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "deleteDialog": {
+        "title": "¿Eliminar la sesión?",
+        "body": "<name></name> se eliminará permanentemente junto con todas sus inscripciones.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar."
+      }
+    },
+    "enrollees": {
+      "notFound": "Sesión no encontrada.",
+      "goBack": "Volver",
+      "addEnrollee": "Añadir inscrito",
+      "addModalTitle": "Añadir inscrito",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "noMatches": "Ningún contacto coincide con tu búsqueda.",
+      "allEnrolled": "Todos los contactos ya están inscritos.",
+      "noContactInfo": "Sin datos de contacto",
+      "remove": "Eliminar",
+      "removeConfirm": "¿Eliminar?",
+      "removeYes": "Sí",
+      "keep": "Mantener inscripción",
+      "empty": "Todavía no hay inscritos.",
+      "count": "{count, plural, one {# inscrito} other {# inscritos}}",
+      "ofMax": " / {max} máx.",
+      "columns": {
+        "name": "Nombre",
+        "email": "Email",
+        "phone": "Teléfono",
+        "enrolledAt": "Fecha de inscripción"
+      }
+    }
+  },
+  "races": {
+    "createRace": "Crear carrera",
+    "settings": "Ajustes",
+    "empty": "Todavía no hay carreras.",
+    "colorLabel": "Carrera",
+    "registered": "{count} inscritos",
+    "registeredOfMax": "{count} / {max} inscritos",
+    "access": {
+      "all": "Todos",
+      "members": "Solo miembros",
+      "open": "Abierta · gratuita"
+    },
+    "filters": {
+      "access": "Acceso"
+    },
+    "columns": {
+      "title": "Título",
+      "access": "Acceso",
+      "date": "Fecha",
+      "location": "Ubicación",
+      "distance": "Distancia",
+      "registered": "Inscritos / Máx."
+    },
+    "form": {
+      "title": "Nueva carrera",
+      "createRace": "Crear carrera",
+      "creating": "Creando…",
+      "sections": {
+        "details": "Detalles",
+        "coverImage": "Imagen de portada"
+      },
+      "fields": {
+        "title": "Título",
+        "titlePlaceholder": "Maratón Essentia 2025",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Breve descripción de la carrera…",
+        "date": "Fecha",
+        "time": "Hora",
+        "location": "Ubicación",
+        "locationPlaceholder": "Barcelona, España",
+        "distance": "Distancia",
+        "distancePlaceholder": "42,2",
+        "maxParticipants": "Participantes máx.",
+        "maxParticipantsPlaceholder": "500",
+        "access": "Acceso"
+      },
+      "accessOptions": {
+        "members": "Solo miembros",
+        "open": "Abierta · gratis para todos"
+      },
+      "errors": {
+        "required": "El título y la fecha son obligatorios.",
+        "createFailed": "No se pudo crear la carrera."
+      }
+    },
+    "edit": {
+      "title": "Editar carrera",
+      "notFound": "Carrera no encontrada.",
+      "goBack": "Volver",
+      "registrations": "Inscripciones",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "deleteDialog": {
+        "title": "¿Eliminar la carrera?",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…",
+        "body": "Esto eliminará permanentemente <name></name> y todas sus inscripciones. Esta acción no se puede deshacer."
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar."
+      }
+    },
+    "checkin": {
+      "title": "Verificación de entradas",
+      "goBack": "Volver",
+      "progress": "{checked}/{total} verificados",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "allRegistrations": "Todas las registraciones",
+      "table": "Mesa {number}",
+      "noTable": "Sin mesa",
+      "pending": "Pendiente",
+      "checkedInAt": "Entrada verificada · {time}",
+      "checkIn": "Verificar entrada",
+      "checkingIn": "Verificando…",
+      "tableWord": "Mesa",
+      "noTableAssigned": "Sin mesa asignada"
+    },
+    "registrations": {
+      "notFound": "Carrera no encontrada.",
+      "goBack": "Volver",
+      "checkIn": "Check-in",
+      "addToRace": "Añadir a la carrera",
+      "addModalTitle": "Añadir inscripción",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "noMatches": "Ningún contacto coincide con tu búsqueda.",
+      "allRegistered": "Todos los contactos ya están inscritos.",
+      "noContactInfo": "Sin datos de contacto",
+      "table": "Mesa {number}",
+      "remove": "Eliminar",
+      "removeConfirm": "¿Eliminar?",
+      "removeYes": "Sí",
+      "keep": "Mantener inscripción",
+      "empty": "Todavía no hay inscripciones.",
+      "count": "{count, plural, one {# inscripción} other {# inscripciones}}",
+      "ofMax": " / {max} máx.",
+      "columns": {
+        "name": "Nombre",
+        "email": "Email",
+        "phone": "Teléfono",
+        "table": "Mesa",
+        "registeredAt": "Fecha de inscripción"
+      }
+    }
+  },
+  "subscriptions": {
+    "newSubscription": "Nueva suscripción",
+    "settings": "Ajustes",
+    "empty": "Todavía no hay suscripciones.",
+    "stats": {
+      "active": "Activas",
+      "total": "Total"
+    },
+    "status": {
+      "active": "Activa",
+      "expired": "Caducada",
+      "cancelled": "Cancelada"
+    },
+    "plans": {
+      "essential": "Essential",
+      "premium": "Premium",
+      "founder": "Founder"
+    },
+    "filters": {
+      "status": "Estado",
+      "allStatuses": "Todos los estados",
+      "plan": "Plan",
+      "allPlans": "Todos los planes"
+    },
+    "columns": {
+      "name": "Nombre",
+      "contact": "Contacto",
+      "plan": "Plan",
+      "status": "Estado",
+      "start": "Inicio",
+      "expires": "Caduca"
+    },
+    "form": {
+      "title": "Nueva suscripción",
+      "createSubscription": "Crear suscripción",
+      "creating": "Creando…",
+      "sections": {
+        "member": "Miembro",
+        "subscription": "Suscripción"
+      },
+      "memberHint": "Solo los contactos marcados como miembros. Cambia el rol de una persona en su propia ficha para que sea elegible.",
+      "fields": {
+        "contact": "Contacto",
+        "contactPlaceholder": "Selecciona un miembro…",
+        "plan": "Plan",
+        "status": "Estado",
+        "startDate": "Fecha de inicio",
+        "endDate": "Fecha de caducidad",
+        "notes": "Notas",
+        "notesPlaceholder": "Notas adicionales…"
+      },
+      "errors": {
+        "contactRequired": "Selecciona el contacto al que pertenece esta suscripción.",
+        "createFailed": "No se pudo crear la suscripción."
+      }
+    }
+  },
+  "reviews": {
+    "newReview": "Nuevo testimonio",
+    "empty": "No se encontraron testimonios.",
+    "status": {
+      "published": "Publicado",
+      "draft": "Borrador"
+    },
+    "stats": {
+      "published": "Publicados",
+      "draft": "Borradores",
+      "total": "Total"
+    },
+    "filters": {
+      "status": "Estado",
+      "allStatuses": "Todos los estados"
+    },
+    "columns": {
+      "author": "Autor",
+      "quote": "Testimonio",
+      "status": "Estado",
+      "created": "Creado"
+    },
+    "form": {
+      "title": "Nuevo testimonio",
+      "saveDraft": "Guardar como borrador",
+      "creating": "Creando…",
+      "sections": {
+        "review": "Testimonio",
+        "author": "Autor"
+      },
+      "fields": {
+        "quote": "Testimonio",
+        "quotePlaceholder": "Lo que dijo el cliente…",
+        "name": "Nombre",
+        "namePlaceholder": "p. ej. Marcus V.",
+        "age": "Edad",
+        "agePlaceholder": "47",
+        "initials": "Iniciales",
+        "initialsPlaceholder": "MV"
+      },
+      "errors": {
+        "required": "El testimonio y el nombre son obligatorios.",
+        "createFailed": "No se pudo crear el testimonio."
+      }
+    },
+    "detail": {
+      "title": "Editar testimonio",
+      "notFound": "Testimonio no encontrado.",
+      "backToList": "Volver a testimonios",
+      "delete": "Eliminar",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando…",
+      "saved": "Cambios guardados correctamente.",
+      "sections": {
+        "review": "Testimonio",
+        "author": "Autor",
+        "settings": "Ajustes"
+      },
+      "fields": {
+        "displayOrder": "Orden de aparición"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar el testimonio?",
+        "body": "Este testimonio se eliminará permanentemente.",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…"
+      },
+      "errors": {
+        "saveFailed": "No se pudieron guardar los cambios."
+      }
+    }
+  },
+  "calendar": {
+    "views": {
+      "month": "Mes",
+      "week": "Semana",
+      "day": "Día"
+    },
+    "previousPeriod": "Periodo anterior",
+    "nextPeriod": "Periodo siguiente",
+    "bookingFallback": "Reserva",
+    "newBookingAt": "Nueva reserva a las {time}",
+    "nextRace": "Próxima carrera",
+    "noRaces": "No hay carreras próximas.",
+    "nextSession": "Próxima sesión",
+    "noSessions": "No hay sesiones próximas."
+  },
+  "roles": {
+    "admin": "Administrador",
+    "staff": "Personal",
+    "partner": "Partner",
+    "member": "Miembro",
+    "user": "Usuario"
+  },
+  "validation": {
+    "firstNameRequired": "El nombre es obligatorio",
+    "emailInvalid": "Introduce una dirección de email válida",
+    "phoneInvalid": "Introduce un teléfono válido, incluido el prefijo del país",
+    "accountEmailRequired": "Una cuenta necesita un email válido con el que iniciar sesión"
+  },
+  "gender": {
+    "unspecified": "Sin especificar",
+    "female": "Mujer",
+    "male": "Hombre",
+    "other": "Otro"
+  },
+  "contacts": {
+    "form": {
+      "title": "Nuevo contacto",
+      "addContact": "Añadir contacto",
+      "creating": "Creando…",
+      "sections": {
+        "details": "Detalles"
+      },
+      "fields": {
+        "firstName": "Nombre",
+        "firstNamePlaceholder": "Juana",
+        "lastName": "Apellidos",
+        "lastNamePlaceholder": "Pérez",
+        "email": "Email",
+        "phone": "Teléfono",
+        "phonePlaceholder": "+34 600 000 000",
+        "gender": "Género",
+        "emailPlaceholder": "juana@ejemplo.com",
+        "type": "Tipo",
+        "preferredLanguage": "Idioma preferido"
+      },
+      "typeOptions": {
+        "lead": "Lead — aún sin reservas",
+        "client": "Cliente — ya ha reservado",
+        "member": "Miembro — puede tener suscripción"
+      }
+    },
+    "detail": {
+      "title": "Editar contacto",
+      "notFound": "Contacto no encontrado.",
+      "goBack": "Volver",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "newsletter": {
+        "label": "Newsletter",
+        "subscribed": "Suscrito",
+        "notSubscribed": "No suscrito"
+      },
+      "fields": {
+        "preferredLanguage": "Idioma preferido"
+      },
+      "transactions": {
+        "heading": "Transacciones",
+        "paidToDate": "Pagado hasta la fecha",
+        "empty": "Todavía no hay transacciones.",
+        "columns": {
+          "type": "Tipo",
+          "concept": "Concepto",
+          "date": "Fecha",
+          "amount": "Importe",
+          "status": "Estado"
+        }
+      },
+      "bookings": {
+        "heading": "Reservas",
+        "empty": "Todavía no hay reservas.",
+        "columns": {
+          "created": "Creada",
+          "status": "Estado",
+          "service": "Servicio",
+          "location": "Ubicación",
+          "datetime": "Fecha y hora",
+          "reservedBy": "Reservado por"
+        }
+      },
+      "races": {
+        "heading": "Inscripciones en carreras",
+        "empty": "Todavía no hay inscripciones en carreras.",
+        "columns": {
+          "race": "Carrera",
+          "date": "Fecha",
+          "location": "Ubicación",
+          "registered": "Inscrito el"
+        }
+      },
+      "education": {
+        "heading": "Sesiones formativas",
+        "empty": "Todavía no hay inscripciones en sesiones formativas.",
+        "columns": {
+          "session": "Sesión",
+          "date": "Fecha",
+          "location": "Ubicación",
+          "registered": "Inscrito el"
+        }
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar el contacto?",
+        "confirm": "Sí, eliminar",
+        "deleting": "Eliminando…",
+        "body": "<name></name> y todas sus reservas e inscripciones asociadas se eliminarán permanentemente."
+      },
+      "errors": {
+        "saveFailed": "No se pudo guardar el contacto."
+      }
+    }
+  },
+  "account": {
+    "title": "Editar cuenta",
+    "sections": {
+      "profile": "Perfil",
+      "security": "Seguridad",
+      "photo": "Foto",
+      "calendar": "Google Calendar"
+    },
+    "saved": "Cambios guardados.",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando…",
+    "calendar": {
+      "hint": "Conecta tu Google Calendar para cada servicio que gestionas.",
+      "noServices": "No tienes servicios asignados todavía.",
+      "connected": "Conectado",
+      "justConnected": "Conectado correctamente.",
+      "disconnect": "Desconectar",
+      "disconnecting": "Desconectando…",
+      "connect": "Conectar Google Calendar"
+    },
+    "password": {
+      "new": "Nueva contraseña",
+      "confirm": "Confirmar contraseña",
+      "placeholder": "••••••••",
+      "change": "Cambiar contraseña",
+      "updated": "Contraseña actualizada.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "tooShort": "La contraseña debe tener al menos 8 caracteres."
+    }
+  },
+  "settings": {
+    "plans": {
+      "heading": "Planes de membresía",
+      "editPlan": "Editar plan",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. Essential",
+      "monthlyPrice": "Precio mensual (€)",
+      "pricePlaceholder": "199",
+      "save": "Guardar",
+      "saving": "Guardando…"
+    },
+    "tiers": {
+      "addTier": "Añadir tipo",
+      "editTier": "Editar tipo",
+      "active": "Activo",
+      "off": "Inactivo",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. Estándar, 60 min, NAD+",
+      "duration": "Duración (min)",
+      "durationPlaceholder": "60",
+      "priceCentre": "Precio — Centro (€)",
+      "priceCentrePlaceholder": "90",
+      "priceSuite": "Precio — Suite (€)",
+      "priceSuitePlaceholder": "120",
+      "image": "Imagen",
+      "imageHint": "Se muestra en el selector de tipo de sesión, en la web y aquí. Sin ella, el selector usa el color de abajo.",
+      "calendarColor": "Color en el calendario",
+      "delete": "Eliminar tipo",
+      "deleting": "Eliminando…",
+      "update": "Actualizar",
+      "save": "Guardar",
+      "saving": "Guardando…"
+    },
+    "payments": {
+      "subtitle": "TPV Virtual · Tarjetas, Bizum",
+      "testEnvironment": "Entorno de pruebas",
+      "production": "Producción",
+      "connected": "Conectado",
+      "notConfigured": "No configurado"
+    },
+    "calendar": {
+      "connected": "Conectado",
+      "notConnected": "No conectado",
+      "resync": "Resincronizar",
+      "syncing": "Sincronizando…",
+      "disconnect": "Desconectar",
+      "disconnecting": "Desconectando…",
+      "connect": "Conectar Google Calendar"
+    },
+    "services": {
+      "addTier": "Añadir tipo",
+      "noTiers": "Todavía no hay tipos. Añade uno para activar este servicio en reservas.",
+      "columns": {
+        "name": "Nombre",
+        "color": "Color",
+        "duration": "Duración",
+        "centre": "Centro",
+        "suite": "Suite",
+        "status": "Estado"
+      }
+    }
+  },
+  "services": {
+    "manual-therapies": "Terapias manuales",
+    "facial-therapies": "Terapias faciales",
+    "contrast-therapy": "Terapia de contraste",
+    "breathing-sessions": "Sesiones de respiración",
+    "red-light-therapy": "Terapia de luz roja",
+    "hyperbaric-chambers": "Cámaras hiperbáricas",
+    "intravenous-therapy": "Terapia intravenosa",
+    "regenerative-medicine": "Medicina regenerativa"
+  }
+}

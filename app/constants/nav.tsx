@@ -10,26 +10,30 @@ import {
   IconQuote,
 } from "@/components/ui/icons";
 
+/**
+ * `key` indexes both `navIcons` and the `dashboard.nav.*` messages, so the
+ * label can be translated without the icon lookup breaking.
+ */
 export const navLinks = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Bookings", href: "/dashboard/bookings" },
-  { label: "Users", href: "/dashboard/users" },
-  { label: "Subscriptions", href: "/dashboard/subscriptions" },
-  { label: "Transactions", href: "/dashboard/transactions" },
-  { label: "Reviews", href: "/dashboard/reviews" },
-  { label: "Races", href: "/dashboard/races" },
-  { label: "Education", href: "/dashboard/education" },
-  { label: "Blog", href: "/dashboard/blog" },
+  { key: "overview", href: "/dashboard" },
+  { key: "bookings", href: "/dashboard/bookings" },
+  { key: "users", href: "/dashboard/users" },
+  { key: "subscriptions", href: "/dashboard/subscriptions" },
+  { key: "transactions", href: "/dashboard/transactions" },
+  { key: "reviews", href: "/dashboard/reviews" },
+  { key: "races", href: "/dashboard/races" },
+  { key: "education", href: "/dashboard/education" },
+  { key: "blog", href: "/dashboard/blog" },
 ];
 
 export const navIcons: Record<string, React.ReactNode> = {
-  Overview: <IconGrid />,
-  Bookings: <IconCalendar />,
-  Users: <IconUsers />,
-  Subscriptions: <IconMembers />,
-  Races: <IconFlag />,
-  Education: <IconBook />,
-  Blog: <IconBlog />,
-  Transactions: <IconReceipt />,
-  Reviews: <IconQuote />,
+  overview: <IconGrid />,
+  bookings: <IconCalendar />,
+  users: <IconUsers />,
+  subscriptions: <IconMembers />,
+  races: <IconFlag />,
+  education: <IconBook />,
+  blog: <IconBlog />,
+  transactions: <IconReceipt />,
+  reviews: <IconQuote />,
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -42,6 +43,8 @@ const TAB_BTN = (active: boolean) =>
   ].join(" ");
 
 export default function BlogCategoriesPage() {
+  const t = useTranslations("dashboard.blog.categories_page");
+  const tCommon = useTranslations("dashboard.common");
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -125,7 +128,9 @@ export default function BlogCategoriesPage() {
         .eq("id", editing.id);
       setSaving(false);
       if (err) {
-        setError((err as { message?: string }).message ?? "Failed to save.");
+        setError(
+          (err as { message?: string }).message ?? t("errors.saveFailed"),
+        );
         return;
       }
       cancelEdit();
@@ -135,7 +140,9 @@ export default function BlogCategoriesPage() {
         .insert([payload]);
       setSaving(false);
       if (err) {
-        setError((err as { message?: string }).message ?? "Failed to create.");
+        setError(
+          (err as { message?: string }).message ?? t("errors.createFailed"),
+        );
         return;
       }
       setName("");
@@ -158,7 +165,9 @@ export default function BlogCategoriesPage() {
         <Button variant="outline" size="md" href="/dashboard/blog">
           ← Blog
         </Button>
-        <h1 className="font-display text-petroleum-700 text-3xl">Categories</h1>
+        <h1 className="font-display text-petroleum-700 text-3xl">
+          {t("title")}
+        </h1>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -166,7 +175,7 @@ export default function BlogCategoriesPage() {
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-petroleum-500 text-sm font-semibold">
-              {editing ? "Edit category" : "New category"}
+              {editing ? t("editCategory") : t("newCategory")}
             </h2>
             <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
               {(["en", "es"] as const).map((l) => (
@@ -176,7 +185,7 @@ export default function BlogCategoriesPage() {
                   onClick={() => setLang(l)}
                   className={TAB_BTN(lang === l)}
                 >
-                  {l === "en" ? "English" : "Español"}
+                  {l === "en" ? tCommon("english") : tCommon("spanish")}
                 </button>
               ))}
             </div>
@@ -193,26 +202,26 @@ export default function BlogCategoriesPage() {
               <>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Name <span className="text-red-400">*</span>
+                    {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="Longevity"
+                    placeholder={t("fields.namePlaceholder")}
                     disabled={saving}
                     className={INPUT_CLASS}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Slug <span className="text-red-400">*</span>
+                    {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(sanitizeSlug(e.target.value))}
-                    placeholder="longevity"
+                    placeholder={t("fields.slugPlaceholder")}
                     disabled={saving}
                     className={INPUT_CLASS}
                   />
@@ -222,26 +231,26 @@ export default function BlogCategoriesPage() {
               <>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Name <span className="text-red-400">*</span>
+                    {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={nameEs}
                     onChange={(e) => handleNameEsChange(e.target.value)}
-                    placeholder="Longevidad"
+                    placeholder={t("fields.namePlaceholderEs")}
                     disabled={saving}
                     className={INPUT_CLASS}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-petroleum-500 text-xs font-medium">
-                    Slug <span className="text-red-400">*</span>
+                    {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={slugEs}
                     onChange={(e) => setSlugEs(sanitizeSlug(e.target.value))}
-                    placeholder="longevidad"
+                    placeholder={t("fields.slugPlaceholderEs")}
                     disabled={saving}
                     className={INPUT_CLASS}
                   />
@@ -251,7 +260,11 @@ export default function BlogCategoriesPage() {
 
             <div className="flex gap-2">
               <Button type="submit" variant="solid" size="md" disabled={saving}>
-                {saving ? "Saving…" : editing ? "Save changes" : "Add category"}
+                {saving
+                  ? t("saving")
+                  : editing
+                    ? t("saveChanges")
+                    : t("addCategory")}
               </Button>
               {editing && (
                 <Button
@@ -261,7 +274,7 @@ export default function BlogCategoriesPage() {
                   onClick={cancelEdit}
                   disabled={saving}
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
               )}
             </div>
@@ -275,10 +288,10 @@ export default function BlogCategoriesPage() {
               <thead>
                 <tr className="border-sand-200 border-b text-left">
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Name
+                    {t("columns.name")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    Slug
+                    {t("columns.slug")}
                   </th>
                   <th className="text-petroleum-400 w-20 px-5 py-3.5 font-medium" />
                 </tr>
@@ -300,7 +313,7 @@ export default function BlogCategoriesPage() {
                       colSpan={3}
                       className="text-petroleum-400 px-6 py-8 text-center text-sm"
                     >
-                      No categories yet.
+                      {t("empty")}
                     </td>
                   </tr>
                 ) : (
@@ -334,7 +347,7 @@ export default function BlogCategoriesPage() {
                             onClick={() => startEdit(c)}
                             className="text-petroleum-300 hover:text-petroleum-600 text-xs transition-colors"
                           >
-                            Edit
+                            {t("edit")}
                           </button>
                           <button
                             onClick={() => void handleDelete(c.id)}

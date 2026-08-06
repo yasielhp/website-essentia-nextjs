@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { formatMediumDate, formatTimeOfDay } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { CalendarColorModal } from "@/components/dashboard/calendar-color-modal";
@@ -33,34 +36,12 @@ const emptySessionFilter: SessionFilter = { access: "" };
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
 
-const ACCESS_LABELS: Record<AccessType, string> = {
-  members_only: "Members only",
-  open: "Open · free",
-  paid: "Paid",
-  paid_members_free: "Paid · free for members",
-};
-
 const ACCESS_COLORS: Record<AccessType, string> = {
   members_only: "bg-petroleum-50 text-petroleum-500",
   open: "bg-green-50 text-green-700",
   paid: "bg-yellow-50 text-yellow-700",
   paid_members_free: "bg-blue-50 text-blue-700",
 };
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function FilterModal({
   pending,
@@ -75,6 +56,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -84,9 +66,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -102,18 +87,22 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Access
+              {t("education.filters.access")}
             </span>
             <select
               value={pending.access}
               onChange={(e) => onChange("access", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All</option>
-              <option value="members_only">Members only</option>
-              <option value="open">Open · free</option>
-              <option value="paid">Paid</option>
-              <option value="paid_members_free">Paid · free for members</option>
+              <option value="">{t("education.access.all")}</option>
+              <option value="members_only">
+                {t("education.access.members_only")}
+              </option>
+              <option value="open">{t("education.access.open")}</option>
+              <option value="paid">{t("education.access.paid")}</option>
+              <option value="paid_members_free">
+                {t("education.access.paid_members_free")}
+              </option>
             </select>
           </label>
         </div>
@@ -122,10 +111,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -134,6 +123,8 @@ function FilterModal({
 }
 
 export default function EducationPage() {
+  const t = useTranslations("dashboard");
+  const locale = useDashboardLocale();
   const [page, setPage] = useState(0);
   const [state, setState] = useState<{
     sessions: Session[];
@@ -231,7 +222,7 @@ export default function EducationPage() {
           className="gap-2"
         >
           <IconPlus />
-          Create session
+          {t("education.createSession")}
         </Button>
         <div className="flex items-center gap-2">
           <Button
@@ -256,7 +247,7 @@ export default function EducationPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            Settings
+            {t("education.settings")}
           </Button>
           <Button
             variant={activeFilterCount > 0 ? "soft" : "outline"}
@@ -265,7 +256,9 @@ export default function EducationPage() {
             className="gap-2"
           >
             <IconFilter />
-            Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+            {activeFilterCount > 0
+              ? t("common.filtersWithCount", { count: activeFilterCount })
+              : t("common.filters")}
           </Button>
         </div>
       </div>
@@ -288,7 +281,7 @@ export default function EducationPage() {
           ))
         ) : sessions.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No sessions yet.
+            {t("education.empty")}
           </p>
         ) : (
           sessions.map((session) => (
@@ -350,22 +343,27 @@ export default function EducationPage() {
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ACCESS_COLORS[session.access]}`}
                   >
-                    {ACCESS_LABELS[session.access]}
+                    {t(`education.access.${session.access}`)}
                   </span>
                 </div>
                 <p className="text-petroleum-400 mt-1 text-xs">
-                  {formatDate(session.date)} · {formatTime(session.date)}
+                  {formatMediumDate(session.date, locale)} ·{" "}
+                  {formatTimeOfDay(session.date, locale)}
                   {session.duration_minutes != null
-                    ? ` · ${session.duration_minutes} min`
+                    ? ` · ${t("education.minutes", { count: session.duration_minutes })}`
                     : ""}
                 </p>
                 <p className="text-petroleum-400 mt-0.5 text-xs">
                   {session.location ?? ""}
                   {session.location ? " · " : ""}
-                  {session.registrations_count}
                   {session.max_participants != null
-                    ? ` / ${session.max_participants} enrolled`
-                    : " enrolled"}
+                    ? t("education.enrolledOfMax", {
+                        count: session.registrations_count,
+                        max: session.max_participants,
+                      })
+                    : t("education.enrolled", {
+                        count: session.registrations_count,
+                      })}
                 </p>
               </div>
             </div>
@@ -381,25 +379,25 @@ export default function EducationPage() {
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 w-14 px-5 py-3.5 font-medium"></th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Title
+                  {t("education.columns.title")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Access
+                  {t("education.columns.access")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Date
+                  {t("education.columns.date")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Time
+                  {t("education.columns.time")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Duration
+                  {t("education.columns.duration")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Location
+                  {t("education.columns.location")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Enrolled / Max
+                  {t("education.columns.enrolled")}
                 </th>
               </tr>
             </thead>
@@ -447,7 +445,7 @@ export default function EducationPage() {
                     colSpan={8}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No sessions yet.
+                    {t("education.empty")}
                   </td>
                 </tr>
               ) : (
@@ -513,22 +511,24 @@ export default function EducationPage() {
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ACCESS_COLORS[session.access]}`}
                       >
-                        {ACCESS_LABELS[session.access]}
+                        {t(`education.access.${session.access}`)}
                       </span>
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
-                      {formatDate(session.date)}
+                      {formatMediumDate(session.date, locale)}
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
-                      {formatTime(session.date)}
+                      {formatTimeOfDay(session.date, locale)}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
                       {session.duration_minutes != null
-                        ? `${session.duration_minutes} min`
-                        : "—"}
+                        ? t("education.minutes", {
+                            count: session.duration_minutes,
+                          })
+                        : t("common.empty")}
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {session.location ?? "—"}
+                      {session.location ?? t("common.empty")}
                     </td>
                     <td className="text-petroleum-500 px-5 py-4">
                       {session.registrations_count}
@@ -570,7 +570,7 @@ export default function EducationPage() {
 
       {settingsOpen && (
         <CalendarColorModal
-          label="Session"
+          label={t("education.colorLabel")}
           initialColor={loadColorSettings().sessions}
           onSave={(color) => {
             const current = loadColorSettings();

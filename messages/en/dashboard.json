@@ -1,0 +1,1131 @@
+{
+  "shell": {
+    "toggleSidebar": "Toggle sidebar",
+    "fallbackUser": "User",
+    "language": "Language"
+  },
+  "nav": {
+    "overview": "Overview",
+    "bookings": "Bookings",
+    "users": "Users",
+    "subscriptions": "Subscriptions",
+    "transactions": "Transactions",
+    "reviews": "Reviews",
+    "races": "Races",
+    "education": "Education",
+    "blog": "Blog"
+  },
+  "breadcrumbs": {
+    "sections": {
+      "overview": "Overview",
+      "blog": "Blog",
+      "bookings": "Bookings",
+      "users": "Users",
+      "subscriptions": "Subscriptions",
+      "races": "Races",
+      "education": "Education",
+      "transactions": "Transactions",
+      "reviews": "Reviews",
+      "account": "Edit account",
+      "settings": "Settings"
+    },
+    "leaves": {
+      "new": "New",
+      "partner": "Partner Booking",
+      "edit": "Edit",
+      "registrations": "Registrations",
+      "checkin": "Check-in",
+      "enrollees": "Enrollees",
+      "categories": "Categories",
+      "staff": "Staff"
+    }
+  },
+  "userMenu": {
+    "editAccount": "Edit account",
+    "signOut": "Sign out"
+  },
+  "common": {
+    "filters": "Filters",
+    "filtersWithCount": "Filters [{count}]",
+    "clearAll": "Clear all",
+    "applyFilters": "Apply filters",
+    "close": "Close",
+    "empty": "—",
+    "pageOf": "Page {page} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "cancel": "Cancel",
+    "save": "Save",
+    "calendarSettings": "Calendar settings",
+    "dates": {
+      "all": "All dates",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 3 months",
+      "thisYear": "This year",
+      "from": "From",
+      "to": "To",
+      "range": "{from} – {to}",
+      "fromOnly": "From {date}",
+      "untilOnly": "Until {date}",
+      "clear": "Clear",
+      "apply": "Apply"
+    },
+    "required": "*",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "blog": {
+    "newPost": "New post",
+    "categories": "Categories",
+    "empty": "No posts yet.",
+    "noCategory": "No category",
+    "publishedOn": "Published {date}",
+    "createdOn": "Created {date}",
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "category": "Category",
+      "allCategories": "All categories"
+    },
+    "columns": {
+      "title": "Title",
+      "category": "Category",
+      "status": "Status",
+      "published": "Published",
+      "created": "Created"
+    },
+    "form": {
+      "title": "New post",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "contentEn": "Content (EN)",
+        "contentEs": "Content (ES)",
+        "contentEsHint": "Optional Spanish translation.",
+        "status": "Status",
+        "featuredImage": "Featured image",
+        "category": "Category",
+        "seoEn": "SEO (EN)",
+        "seoEnHint": "How it appears in search engines and social media.",
+        "seoEs": "SEO (ES)",
+        "seoEsHint": "Versión en español para buscadores."
+      },
+      "noCategory": "No category",
+      "errors": {
+        "saveFailed": "Failed to save."
+      }
+    },
+    "categories_page": {
+      "title": "Categories",
+      "newCategory": "New category",
+      "editCategory": "Edit category",
+      "addCategory": "Add category",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "edit": "Edit",
+      "empty": "No categories yet.",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Longevity",
+        "namePlaceholderEs": "Longevidad",
+        "slug": "Slug",
+        "slugPlaceholder": "longevity",
+        "slugPlaceholderEs": "longevidad"
+      },
+      "columns": {
+        "name": "Name",
+        "slug": "Slug"
+      },
+      "errors": {
+        "saveFailed": "Failed to save.",
+        "createFailed": "Failed to create."
+      }
+    },
+    "detail": {
+      "title": "Edit post",
+      "notFound": "Post not found.",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "content": "Content",
+        "seo": "SEO"
+      },
+      "fields": {
+        "title": "Title",
+        "slug": "Slug",
+        "excerpt": "Excerpt",
+        "content": "Content",
+        "metaTitle": "Meta title",
+        "metaDescription": "Meta description"
+      },
+      "deleteDialog": {
+        "title": "Delete post?",
+        "body": "This action cannot be undone.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "saveFailed": "Failed to save."
+      }
+    }
+  },
+  "bookings": {
+    "createBooking": "Create Booking",
+    "settings": "Settings",
+    "empty": "No bookings found.",
+    "room": "Room {number}",
+    "stats": {
+      "draft": "Draft",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "total": "Total"
+    },
+    "status": {
+      "draft": "Draft",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "unknown": "Unknown"
+    },
+    "locations": {
+      "centro": "At the center",
+      "habitacion": "Room",
+      "domicilio": "Home visit"
+    },
+    "sources": {
+      "admin": "Admin",
+      "staff": "Staff",
+      "partner": "Partner",
+      "client": "Client",
+      "anonymous": "Web"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "location": "Location",
+      "allLocations": "All locations",
+      "reservedBy": "Reserved by",
+      "allSources": "All"
+    },
+    "columns": {
+      "created": "Created",
+      "status": "Status",
+      "client": "Client",
+      "service": "Service",
+      "location": "Location",
+      "datetime": "Datetime",
+      "reservedBy": "Reserved by"
+    },
+    "form": {
+      "title": "New Booking",
+      "createBooking": "Create Booking",
+      "creating": "Creating…",
+      "change": "Change",
+      "steps": {
+        "service": "Service",
+        "location": "Location",
+        "sessionType": "Session type",
+        "therapistPreference": "Therapist preference",
+        "datetime": "Date & Time",
+        "client": "Client"
+      },
+      "locations": {
+        "selectPrompt": "Select a location",
+        "centro": {
+          "label": "At the center"
+        },
+        "habitacion": {
+          "label": "Room",
+          "description": "Baobab Suites room"
+        },
+        "domicilio": {
+          "label": "Home visit",
+          "description": "We come to your address"
+        },
+        "confirm": "Confirm location",
+        "reservationSummary": "Reservation: {number}",
+        "roomSummary": "Room: {number}"
+      },
+      "servicePicker": {
+        "placeholder": "Select a service",
+        "modalTitle": "Choose a service",
+        "close": "Close",
+        "wellness": "Wellness",
+        "medicine": "Medicine"
+      },
+      "tierPicker": {
+        "fieldLabel": "Duration & Price",
+        "placeholder": "Select a duration & price",
+        "modalTitle": "Select a session type",
+        "close": "Close",
+        "standard": "Standard"
+      },
+      "noTiers": "No session types configured for this service.",
+      "therapist": {
+        "placeholder": "Select therapist preference",
+        "male": "Male therapist",
+        "female": "Female therapist"
+      },
+      "availableTimes": "Available times",
+      "fields": {
+        "reservationNumber": "Reservation number",
+        "reservationNumberPlaceholder": "83943",
+        "roomNumber": "Room number",
+        "roomNumberPlaceholder": "AK201",
+        "street": "Street & number",
+        "streetPlaceholder": "Calle El Peñón, 23",
+        "building": "Block, floor & door",
+        "buildingPlaceholder": "Block 3, 2nd floor, apt B",
+        "postalCode": "Postal code",
+        "postalCodePlaceholder": "38670",
+        "municipality": "Municipality",
+        "municipalityPlaceholder": "Adeje",
+        "firstName": "First name",
+        "firstNamePlaceholder": "Jane",
+        "lastName": "Last name",
+        "lastNamePlaceholder": "Doe",
+        "email": "Email",
+        "emailPlaceholder": "jane@example.com",
+        "phone": "Phone",
+        "phonePlaceholder": "+34 600 000 000",
+        "notes": "Notes",
+        "notesPlaceholder": "Any additional notes for this booking…"
+      },
+      "errors": {
+        "createFailed": "Failed to create booking."
+      }
+    },
+    "edit": {
+      "title": "Edit Booking",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "status": "Status"
+      },
+      "statuses": {
+        "pending": {
+          "label": "Pending",
+          "description": "Awaiting confirmation"
+        },
+        "confirmed": {
+          "label": "Confirmed",
+          "description": "Appointment confirmed"
+        },
+        "cancelled": {
+          "label": "Cancelled",
+          "description": "Appointment cancelled"
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete booking?",
+        "body": "This booking will be permanently deleted.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "reservationRequired": "Reservation number is required.",
+        "saveFailed": "Failed to save booking."
+      }
+    },
+    "detail": {
+      "notFound": "Booking not found.",
+      "backToList": "Back to bookings",
+      "delete": "Delete",
+      "edit": "Edit",
+      "meta": {
+        "status": "Status",
+        "location": "Location",
+        "created": "Created",
+        "reservedBy": "Reserved by"
+      },
+      "sections": {
+        "service": "Service",
+        "location": "Location",
+        "datetime": "Date & time",
+        "client": "Client",
+        "notes": "Notes",
+        "reservedBy": "Reserved by"
+      },
+      "fields": {
+        "date": "Date",
+        "time": "Time",
+        "name": "Name",
+        "phone": "Phone",
+        "email": "Email",
+        "reservationNumber": "Reservation number",
+        "roomNumber": "Room number"
+      },
+      "therapist": {
+        "male": "Male",
+        "female": "Female"
+      },
+      "creator": {
+        "anonymous": "Anonymous visitor",
+        "client": "Client"
+      },
+      "deleteDialog": {
+        "title": "Delete booking?",
+        "body": "This booking will be permanently deleted.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      }
+    }
+  },
+  "transactions": {
+    "empty": "No transactions found.",
+    "stats": {
+      "revenue": "Revenue",
+      "completed": "Completed",
+      "pending": "Pending",
+      "total": "Total"
+    },
+    "types": {
+      "booking": "Booking",
+      "membership": "Membership",
+      "race": "Race",
+      "education": "Education"
+    },
+    "status": {
+      "completed": "Completed",
+      "active": "Active",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "expired": "Expired",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "unknown": "Unknown"
+    },
+    "sources": {
+      "admin": "Admin",
+      "staff": "Staff",
+      "partner": "Partner",
+      "client": "Client",
+      "anonymous": "Web"
+    },
+    "filters": {
+      "type": "Type",
+      "allTypes": "All types",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "reservedBy": "Reserved by",
+      "allSources": "All"
+    },
+    "columns": {
+      "created": "Created",
+      "status": "Status",
+      "service": "Service",
+      "client": "Client",
+      "reservedBy": "Reserved by",
+      "amount": "Amount"
+    }
+  },
+  "users": {
+    "addUser": "Add user",
+    "empty": "No users yet.",
+    "stats": {
+      "leads": "Leads",
+      "clients": "Clients",
+      "members": "Members",
+      "staff": "Staff",
+      "partners": "Partners",
+      "total": "Total"
+    },
+    "roles": {
+      "admin": "Admin",
+      "staff": "Staff",
+      "partner": "Partner",
+      "lead": "Lead",
+      "client": "Client",
+      "member": "Member"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "other": "Other"
+    },
+    "filters": {
+      "email": "Email",
+      "emailPlaceholder": "jane@example.com",
+      "role": "Role",
+      "allRoles": "All"
+    },
+    "columns": {
+      "name": "Name",
+      "phone": "Phone",
+      "gender": "Gender",
+      "role": "Role",
+      "created": "Created"
+    },
+    "form": {
+      "title": "New User",
+      "addUser": "Add User",
+      "creating": "Creating…",
+      "sections": {
+        "role": "Role",
+        "details": "Details"
+      },
+      "fields": {
+        "firstName": "First name",
+        "firstNamePlaceholder": "Jane",
+        "lastName": "Last name",
+        "lastNamePlaceholder": "Doe",
+        "email": "Email",
+        "emailPlaceholder": "jane@essentia.com",
+        "phone": "Phone",
+        "phonePlaceholder": "+34 600 000 000",
+        "gender": "Gender",
+        "role": "Role"
+      },
+      "roles": {
+        "client": {
+          "label": "Client",
+          "desc": "Contact record, no login"
+        },
+        "member": {
+          "label": "Member",
+          "desc": "Entitled to a subscription"
+        },
+        "staff": {
+          "label": "Staff",
+          "desc": "Dashboard access"
+        },
+        "partner": {
+          "label": "Partner",
+          "desc": "Hotel bookings only"
+        },
+        "admin": {
+          "label": "Admin",
+          "desc": "Full dashboard access"
+        }
+      },
+      "errors": {
+        "contactFailed": "Failed to create contact.",
+        "accountFailed": "Failed to create account."
+      }
+    },
+    "detail": {
+      "title": "Edit User",
+      "notFound": "User not found.",
+      "goBack": "Go back",
+      "removeAccess": "Remove access",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "role": "Role",
+        "details": "Details",
+        "password": "Password",
+        "services": "Services"
+      },
+      "servicesHint": "Pick the services and connect this staff member's Google Calendar for each one.",
+      "password": {
+        "new": "New password",
+        "confirm": "Confirm password",
+        "placeholder": "••••••••",
+        "change": "Change password",
+        "updated": "Password updated.",
+        "mismatch": "The passwords do not match.",
+        "tooShort": "The password must be at least 8 characters."
+      },
+      "calendar": {
+        "label": "Google Calendar",
+        "connected": "Connected",
+        "disconnect": "Disconnect",
+        "connect": "Connect Google Calendar"
+      },
+      "removeDialog": {
+        "title": "Remove system access?",
+        "body": "This user will lose dashboard access. Their account will remain as a contact.",
+        "confirm": "Yes, remove access",
+        "removing": "Removing…"
+      }
+    }
+  },
+  "education": {
+    "createSession": "Create session",
+    "settings": "Settings",
+    "empty": "No sessions yet.",
+    "colorLabel": "Session",
+    "enrolled": "{count} enrolled",
+    "enrolledOfMax": "{count} / {max} enrolled",
+    "minutes": "{count} min",
+    "access": {
+      "all": "All",
+      "members_only": "Members only",
+      "open": "Open · free",
+      "paid": "Paid",
+      "paid_members_free": "Paid · free for members"
+    },
+    "filters": {
+      "access": "Access"
+    },
+    "columns": {
+      "title": "Title",
+      "access": "Access",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "location": "Location",
+      "enrolled": "Enrolled / Max"
+    },
+    "form": {
+      "title": "New Session",
+      "createSession": "Create Session",
+      "creating": "Creating…",
+      "sections": {
+        "details": "Details",
+        "coverImage": "Cover Image"
+      },
+      "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Introduction to Breathwork",
+        "description": "Description",
+        "descriptionPlaceholder": "A brief overview of the session…",
+        "date": "Date",
+        "time": "Time",
+        "location": "Location",
+        "locationPlaceholder": "Studio A",
+        "duration": "Duration",
+        "durationPlaceholder": "60",
+        "maxParticipants": "Max participants",
+        "maxParticipantsPlaceholder": "20",
+        "access": "Access"
+      },
+      "accessOptions": {
+        "members_only": "Members only",
+        "open": "Open · free for everyone",
+        "paid": "Paid",
+        "paid_members_free": "Paid · free for members"
+      },
+      "errors": {
+        "required": "Title, date and time are required.",
+        "createFailed": "Failed to create session."
+      }
+    },
+    "edit": {
+      "title": "Edit Session",
+      "notFound": "Session not found.",
+      "goBack": "Go back",
+      "enrollees": "Enrollees",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "deleteDialog": {
+        "title": "Delete session?",
+        "body": "<name></name> will be permanently deleted along with all its enrollments.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "saveFailed": "Failed to save."
+      }
+    },
+    "enrollees": {
+      "notFound": "Session not found.",
+      "goBack": "Go back",
+      "addEnrollee": "Add enrollee",
+      "addModalTitle": "Add Enrollee",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "noMatches": "No contacts match your search.",
+      "allEnrolled": "All contacts are already enrolled.",
+      "noContactInfo": "No contact info",
+      "remove": "Remove",
+      "removeConfirm": "Remove?",
+      "removeYes": "Yes",
+      "keep": "Keep enrollment",
+      "empty": "No enrollees yet.",
+      "count": "{count, plural, one {# enrollee} other {# enrollees}}",
+      "ofMax": " / {max} max",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "enrolledAt": "Enrolled at"
+      }
+    }
+  },
+  "races": {
+    "createRace": "Create Race",
+    "settings": "Settings",
+    "empty": "No races yet.",
+    "colorLabel": "Race",
+    "registered": "{count} registered",
+    "registeredOfMax": "{count} / {max} registered",
+    "access": {
+      "all": "All",
+      "members": "Members only",
+      "open": "Open · free"
+    },
+    "filters": {
+      "access": "Access"
+    },
+    "columns": {
+      "title": "Title",
+      "access": "Access",
+      "date": "Date",
+      "location": "Location",
+      "distance": "Distance",
+      "registered": "Registered / Max"
+    },
+    "form": {
+      "title": "New Race",
+      "createRace": "Create Race",
+      "creating": "Creating…",
+      "sections": {
+        "details": "Details",
+        "coverImage": "Cover Image"
+      },
+      "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Essentia Marathon 2025",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of the race…",
+        "date": "Date",
+        "time": "Time",
+        "location": "Location",
+        "locationPlaceholder": "Barcelona, Spain",
+        "distance": "Distance",
+        "distancePlaceholder": "42.2",
+        "maxParticipants": "Max participants",
+        "maxParticipantsPlaceholder": "500",
+        "access": "Access"
+      },
+      "accessOptions": {
+        "members": "Members only",
+        "open": "Open · free for everyone"
+      },
+      "errors": {
+        "required": "Title and date are required.",
+        "createFailed": "Failed to create race."
+      }
+    },
+    "edit": {
+      "title": "Edit Race",
+      "notFound": "Race not found.",
+      "goBack": "Go back",
+      "registrations": "Registrations",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "deleteDialog": {
+        "title": "Delete race?",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…",
+        "body": "This will permanently delete <name></name> and all its registrations. This action cannot be undone."
+      },
+      "errors": {
+        "saveFailed": "Failed to save."
+      }
+    },
+    "checkin": {
+      "title": "Ticket check-in",
+      "goBack": "Go back",
+      "progress": "{checked}/{total} checked in",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "allRegistrations": "All registrations",
+      "table": "Table {number}",
+      "noTable": "No table",
+      "pending": "Pending",
+      "checkedInAt": "Checked in · {time}",
+      "checkIn": "Check in",
+      "checkingIn": "Checking in…",
+      "tableWord": "Table",
+      "noTableAssigned": "No table assigned"
+    },
+    "registrations": {
+      "notFound": "Race not found.",
+      "goBack": "Go back",
+      "checkIn": "Check-in",
+      "addToRace": "Add to race",
+      "addModalTitle": "Add Registration",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "noMatches": "No contacts match your search.",
+      "allRegistered": "All contacts are already registered.",
+      "noContactInfo": "No contact info",
+      "table": "Table {number}",
+      "remove": "Remove",
+      "removeConfirm": "Remove?",
+      "removeYes": "Yes",
+      "keep": "Keep registration",
+      "empty": "No registrations yet.",
+      "count": "{count, plural, one {# registration} other {# registrations}}",
+      "ofMax": " / {max} max",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "table": "Table",
+        "registeredAt": "Registered at"
+      }
+    }
+  },
+  "subscriptions": {
+    "newSubscription": "New Subscription",
+    "settings": "Settings",
+    "empty": "No subscriptions yet.",
+    "stats": {
+      "active": "Active",
+      "total": "Total"
+    },
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "plans": {
+      "essential": "Essential",
+      "premium": "Premium",
+      "founder": "Founder"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "plan": "Plan",
+      "allPlans": "All plans"
+    },
+    "columns": {
+      "name": "Name",
+      "contact": "Contact",
+      "plan": "Plan",
+      "status": "Status",
+      "start": "Start",
+      "expires": "Expires"
+    },
+    "form": {
+      "title": "New Subscription",
+      "createSubscription": "Create Subscription",
+      "creating": "Creating…",
+      "sections": {
+        "member": "Member",
+        "subscription": "Subscription"
+      },
+      "memberHint": "Only contacts marked as members. Change someone's role on their own page to make them eligible.",
+      "fields": {
+        "contact": "Contact",
+        "contactPlaceholder": "Select a member…",
+        "plan": "Plan",
+        "status": "Status",
+        "startDate": "Start date",
+        "endDate": "Expiry date",
+        "notes": "Notes",
+        "notesPlaceholder": "Additional notes…"
+      },
+      "errors": {
+        "contactRequired": "Select the contact this subscription belongs to.",
+        "createFailed": "Failed to create subscription."
+      }
+    }
+  },
+  "reviews": {
+    "newReview": "New Review",
+    "empty": "No reviews found.",
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "stats": {
+      "published": "Published",
+      "draft": "Draft",
+      "total": "Total"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses"
+    },
+    "columns": {
+      "author": "Author",
+      "quote": "Quote",
+      "status": "Status",
+      "created": "Created"
+    },
+    "form": {
+      "title": "New Review",
+      "saveDraft": "Save as Draft",
+      "creating": "Creating…",
+      "sections": {
+        "review": "Review",
+        "author": "Author"
+      },
+      "fields": {
+        "quote": "Quote",
+        "quotePlaceholder": "What the client said…",
+        "name": "Name",
+        "namePlaceholder": "e.g. Marcus V.",
+        "age": "Age",
+        "agePlaceholder": "47",
+        "initials": "Initials",
+        "initialsPlaceholder": "MV"
+      },
+      "errors": {
+        "required": "Quote and name are required.",
+        "createFailed": "Failed to create review."
+      }
+    },
+    "detail": {
+      "title": "Edit Review",
+      "notFound": "Review not found.",
+      "backToList": "Back to Reviews",
+      "delete": "Delete",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "saved": "Changes saved successfully.",
+      "sections": {
+        "review": "Review",
+        "author": "Author",
+        "settings": "Settings"
+      },
+      "fields": {
+        "displayOrder": "Display order"
+      },
+      "deleteDialog": {
+        "title": "Delete review?",
+        "body": "This review will be permanently deleted.",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…"
+      },
+      "errors": {
+        "saveFailed": "Failed to save changes."
+      }
+    }
+  },
+  "calendar": {
+    "views": {
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "previousPeriod": "Previous period",
+    "nextPeriod": "Next period",
+    "bookingFallback": "Booking",
+    "newBookingAt": "New booking at {time}",
+    "nextRace": "Next Race",
+    "noRaces": "No upcoming races.",
+    "nextSession": "Next Session",
+    "noSessions": "No upcoming sessions."
+  },
+  "roles": {
+    "admin": "Admin",
+    "staff": "Staff",
+    "partner": "Partner",
+    "member": "Member",
+    "user": "User"
+  },
+  "validation": {
+    "firstNameRequired": "First name is required",
+    "emailInvalid": "Enter a valid email address",
+    "phoneInvalid": "Enter a valid phone number, including the country code",
+    "accountEmailRequired": "An account needs a valid email address to sign in with"
+  },
+  "gender": {
+    "unspecified": "Not specified",
+    "female": "Female",
+    "male": "Male",
+    "other": "Other"
+  },
+  "contacts": {
+    "form": {
+      "title": "New Contact",
+      "addContact": "Add Contact",
+      "creating": "Creating…",
+      "sections": {
+        "details": "Details"
+      },
+      "fields": {
+        "firstName": "First name",
+        "firstNamePlaceholder": "Jane",
+        "lastName": "Last name",
+        "lastNamePlaceholder": "Doe",
+        "email": "Email",
+        "phone": "Phone",
+        "phonePlaceholder": "+34 600 000 000",
+        "gender": "Gender",
+        "emailPlaceholder": "jane@example.com",
+        "type": "Type",
+        "preferredLanguage": "Preferred language"
+      },
+      "typeOptions": {
+        "lead": "Lead — no booking yet",
+        "client": "Client — has booked",
+        "member": "Member — can hold a subscription"
+      }
+    },
+    "detail": {
+      "title": "Edit Contact",
+      "notFound": "Contact not found.",
+      "goBack": "Go back",
+      "delete": "Delete",
+      "save": "Save",
+      "saving": "Saving…",
+      "newsletter": {
+        "label": "Newsletter",
+        "subscribed": "Subscribed",
+        "notSubscribed": "Not subscribed"
+      },
+      "fields": {
+        "preferredLanguage": "Preferred language"
+      },
+      "transactions": {
+        "heading": "Transactions",
+        "paidToDate": "Paid to date",
+        "empty": "No transactions yet.",
+        "columns": {
+          "type": "Type",
+          "concept": "Concept",
+          "date": "Date",
+          "amount": "Amount",
+          "status": "Status"
+        }
+      },
+      "bookings": {
+        "heading": "Bookings",
+        "empty": "No bookings yet.",
+        "columns": {
+          "created": "Created",
+          "status": "Status",
+          "service": "Service",
+          "location": "Location",
+          "datetime": "Datetime",
+          "reservedBy": "Reserved by"
+        }
+      },
+      "races": {
+        "heading": "Race registrations",
+        "empty": "No race registrations yet.",
+        "columns": {
+          "race": "Race",
+          "date": "Date",
+          "location": "Location",
+          "registered": "Registered"
+        }
+      },
+      "education": {
+        "heading": "Education sessions",
+        "empty": "No education session registrations yet.",
+        "columns": {
+          "session": "Session",
+          "date": "Date",
+          "location": "Location",
+          "registered": "Registered"
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete contact?",
+        "confirm": "Yes, delete",
+        "deleting": "Deleting…",
+        "body": "<name></name> and all their associated bookings and registrations will be permanently deleted."
+      },
+      "errors": {
+        "saveFailed": "Failed to save contact."
+      }
+    }
+  },
+  "account": {
+    "title": "Edit account",
+    "sections": {
+      "profile": "Profile",
+      "security": "Security",
+      "photo": "Photo",
+      "calendar": "Google Calendar"
+    },
+    "saved": "Changes saved.",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "calendar": {
+      "hint": "Connect your Google Calendar for each service you run.",
+      "noServices": "You have no services assigned yet.",
+      "connected": "Connected",
+      "justConnected": "Connected successfully.",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "connect": "Connect Google Calendar"
+    },
+    "password": {
+      "new": "New password",
+      "confirm": "Confirm password",
+      "placeholder": "••••••••",
+      "change": "Change password",
+      "updated": "Password updated.",
+      "mismatch": "The passwords do not match.",
+      "tooShort": "The password must be at least 8 characters."
+    }
+  },
+  "settings": {
+    "plans": {
+      "heading": "Membership Plans",
+      "editPlan": "Edit plan",
+      "name": "Name",
+      "namePlaceholder": "e.g. Essential",
+      "monthlyPrice": "Monthly price (€)",
+      "pricePlaceholder": "199",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "tiers": {
+      "addTier": "Add tier",
+      "editTier": "Edit tier",
+      "active": "Active",
+      "off": "Off",
+      "name": "Name",
+      "namePlaceholder": "e.g. Standard, 60 min, NAD+",
+      "duration": "Duration (min)",
+      "durationPlaceholder": "60",
+      "priceCentre": "Price — Centre (€)",
+      "priceCentrePlaceholder": "90",
+      "priceSuite": "Price — Suite (€)",
+      "priceSuitePlaceholder": "120",
+      "image": "Image",
+      "imageHint": "Shown in the session-type picker, on the website and here. Without one, the picker falls back to the colour below.",
+      "calendarColor": "Calendar color",
+      "delete": "Delete tier",
+      "deleting": "Deleting…",
+      "update": "Update",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "payments": {
+      "subtitle": "Virtual POS · Cards, Bizum",
+      "testEnvironment": "Test environment",
+      "production": "Production",
+      "connected": "Connected",
+      "notConfigured": "Not configured"
+    },
+    "calendar": {
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "resync": "Re-sync",
+      "syncing": "Syncing…",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "connect": "Connect Google Calendar"
+    },
+    "services": {
+      "addTier": "Add tier",
+      "noTiers": "No tiers yet. Add one to enable this service in bookings.",
+      "columns": {
+        "name": "Name",
+        "color": "Color",
+        "duration": "Duration",
+        "centre": "Centre",
+        "suite": "Suite",
+        "status": "Status"
+      }
+    }
+  },
+  "services": {
+    "manual-therapies": "Manual Therapies",
+    "facial-therapies": "Facial Therapies",
+    "contrast-therapy": "Contrast Therapy",
+    "breathing-sessions": "Breathing Sessions",
+    "red-light-therapy": "Red Light Therapy",
+    "hyperbaric-chambers": "Hyperbaric Chambers",
+    "intravenous-therapy": "Intravenous Therapy",
+    "regenerative-medicine": "Regenerative Medicine"
+  }
+}

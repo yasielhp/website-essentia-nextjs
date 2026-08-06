@@ -47,16 +47,23 @@ export const bookingDetailsSchema = z.object({
 
 const genderField = z.enum(["female", "male", "other"]).or(z.literal(""));
 
+/**
+ * The dashboard people schemas below carry message KEYS rather than English
+ * sentences: the dashboard is bilingual, and these are the only schemas it
+ * validates with. Each screen resolves them against `dashboard.validation.*`
+ * through `useTranslations`. The public-site schemas above keep their literal
+ * messages — nothing there reads them through next-intl yet.
+ */
 const optionalPhoneField = z
   .string()
   .refine((v) => v.trim() === "" || isValidPhone(v), {
-    message: "Enter a valid phone number, including the country code",
+    message: "phoneInvalid",
   });
 
 const personFields = {
-  firstName: z.string().trim().min(1, "First name is required"),
+  firstName: z.string().trim().min(1, "firstNameRequired"),
   lastName: z.string().trim().optional(),
-  email: z.string().trim().email("Enter a valid email address"),
+  email: z.string().trim().email("emailInvalid"),
   phone: optionalPhoneField,
   gender: genderField,
 };
@@ -76,7 +83,7 @@ export const dashboardContactSchema = z.object({
     .string()
     .trim()
     .refine((v) => v === "" || z.string().email().safeParse(v).success, {
-      message: "Enter a valid email address",
+      message: "emailInvalid",
     }),
 });
 
@@ -101,9 +108,7 @@ export const newDashboardPersonSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["email"],
-        message: isAccount
-          ? "An account needs a valid email address to sign in with"
-          : "Enter a valid email address",
+        message: isAccount ? "accountEmailRequired" : "emailInvalid",
       });
     }
   });

@@ -2,6 +2,7 @@
 
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { createUserAccount } from "@/actions/create-user-account";
@@ -14,11 +15,9 @@ import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
-import {
-  GENDER_OPTIONS,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender, type GenderValue } from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
+import { useFieldError } from "@/hooks/use-field-error";
 
 /**
  * What this form can create.
@@ -68,20 +67,16 @@ type FormAction =
   | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
   | { type: "CLEAR_ERROR" };
 
-const ROLES: SelectOption<NewUserKind>[] = [
-  { value: "client", label: "Client", desc: "Contact record, no login" },
-  {
-    value: "member",
-    label: "Member",
-    desc: "Entitled to a subscription",
-  },
-  { value: "staff", label: "Staff", desc: "Dashboard access" },
-  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
-  { value: "admin", label: "Admin", desc: "Full dashboard access" },
+const ROLE_VALUES: NewUserKind[] = [
+  "client",
+  "member",
+  "staff",
+  "partner",
+  "admin",
 ];
 
-/** Keeps the default in step with whatever ROLES lists first. */
-const ROLES_DEFAULT: NewUserKind = ROLES[0]!.value;
+/** Keeps the default in step with whatever ROLE_VALUES lists first. */
+const ROLES_DEFAULT: NewUserKind = ROLE_VALUES[0]!;
 
 const initialState: FormState = {
   submitting: false,
@@ -125,6 +120,15 @@ function formReducer(state: FormState, action: FormAction): FormState {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewUserPage() {
+  const t = useTranslations("dashboard.users.form");
+  const tCommon = useTranslations("dashboard.common");
+  const fieldError = useFieldError();
+  const genderOptions = useGenderOptions();
+  const roles: SelectOption<NewUserKind>[] = ROLE_VALUES.map((value) => ({
+    value,
+    label: t(`roles.${value}.label`),
+    desc: t(`roles.${value}.desc`),
+  }));
   const { push } = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialState);
   const {
@@ -192,7 +196,7 @@ export default function NewUserPage() {
           type: "SUBMIT_ERROR",
           message:
             (contactError as { message?: string })?.message ??
-            "Failed to create contact.",
+            t("errors.contactFailed"),
         });
         return;
       }
@@ -234,7 +238,7 @@ export default function NewUserPage() {
       if (!userId) {
         dispatch({
           type: "SUBMIT_ERROR",
-          message: errMsg || "Failed to create account.",
+          message: errMsg || t("errors.accountFailed"),
         });
         return;
       }
@@ -262,12 +266,12 @@ export default function NewUserPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              New User
+              {t("title")}
             </h1>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/users">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -275,7 +279,7 @@ export default function NewUserPage() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Add User"}
+              {submitting ? t("creating") : t("addUser")}
             </Button>
           </div>
         </div>
@@ -290,24 +294,24 @@ export default function NewUserPage() {
           {/* Role */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Role
+              {t("sections.role")}
             </h2>
             <OptionSelect
               id="role"
               value={role}
-              options={ROLES}
+              options={roles}
               onChange={(nextRole) =>
                 dispatch({ type: "SET_ROLE", role: nextRole })
               }
               disabled={submitting}
-              ariaLabel="Role"
+              ariaLabel={t("fields.role")}
             />
           </div>
 
           {/* Details */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Details
+              {t("sections.details")}
             </h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -316,7 +320,8 @@ export default function NewUserPage() {
                     htmlFor="firstName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    First name <span className="text-red-400">*</span>
+                    {t("fields.firstName")}{" "}
+                    <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="firstName"
@@ -329,13 +334,13 @@ export default function NewUserPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Jane"
+                    placeholder={t("fields.firstNamePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
                   {fieldErrors.firstName && (
                     <p className="text-xs text-red-500">
-                      {fieldErrors.firstName}
+                      {fieldError(fieldErrors.firstName)}
                     </p>
                   )}
                 </div>
@@ -344,7 +349,7 @@ export default function NewUserPage() {
                     htmlFor="lastName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Last name
+                    {t("fields.lastName")}
                   </label>
                   <input
                     id="lastName"
@@ -357,13 +362,13 @@ export default function NewUserPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Doe"
+                    placeholder={t("fields.lastNamePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
                   {fieldErrors.lastName && (
                     <p className="text-xs text-red-500">
-                      {fieldErrors.lastName}
+                      {fieldError(fieldErrors.lastName)}
                     </p>
                   )}
                 </div>
@@ -374,7 +379,7 @@ export default function NewUserPage() {
                   htmlFor="email"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Email <span className="text-red-400">*</span>
+                  {t("fields.email")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="email"
@@ -387,12 +392,14 @@ export default function NewUserPage() {
                       value: e.target.value,
                     })
                   }
-                  placeholder="jane@essentia.com"
+                  placeholder={t("fields.emailPlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
                 {fieldErrors.email && (
-                  <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                  <p className="text-xs text-red-500">
+                    {fieldError(fieldErrors.email)}
+                  </p>
                 )}
               </div>
 
@@ -401,7 +408,7 @@ export default function NewUserPage() {
                   htmlFor="phone"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Phone
+                  {t("fields.phone")}
                 </label>
                 <input
                   id="phone"
@@ -414,12 +421,14 @@ export default function NewUserPage() {
                       value: e.target.value,
                     })
                   }
-                  placeholder="+34 600 000 000"
+                  placeholder={t("fields.phonePlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
                 {fieldErrors.phone && (
-                  <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+                  <p className="text-xs text-red-500">
+                    {fieldError(fieldErrors.phone)}
+                  </p>
                 )}
               </div>
 
@@ -433,12 +442,12 @@ export default function NewUserPage() {
                 <OptionSelect
                   id="gender"
                   value={gender}
-                  options={GENDER_OPTIONS}
+                  options={genderOptions}
                   onChange={(next) =>
                     dispatch({ type: "SET_GENDER", gender: next })
                   }
                   disabled={submitting}
-                  ariaLabel="Gender"
+                  ariaLabel={t("fields.gender")}
                 />
               </div>
             </div>

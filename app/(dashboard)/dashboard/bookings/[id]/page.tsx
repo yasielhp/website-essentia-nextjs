@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
@@ -49,10 +50,10 @@ function canPartnerEdit(date: string | null, time: string | null): boolean {
   return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
 }
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null, locale: string): string {
   if (!dateStr) return "—";
   const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -60,9 +61,9 @@ function formatDate(dateStr: string | null): string {
   });
 }
 
-function formatCreated(iso: string | null): string {
+function formatCreated(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -86,19 +87,18 @@ const statusDotClasses: Record<string, string> = {
   cancelled: "bg-red-400",
 };
 
-const locationLabels: Record<string, string> = {
-  centro: "At the center",
-  habitacion: "Room",
-  domicilio: "Home visit",
+const sourceBadge: Record<string, { cls: string }> = {
+  admin: { cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { cls: "bg-blue-100 text-blue-700" },
+  partner: { cls: "bg-yellow-100 text-yellow-700" },
+  client: { cls: "bg-green-50 text-green-700" },
+  anonymous: { cls: "bg-sand-100 text-petroleum-500" },
 };
 
-const sourceBadge: Record<string, { label: string; cls: string }> = {
-  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
-  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
-  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
-  client: { label: "Client", cls: "bg-green-50 text-green-700" },
-  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
-};
+/** Falls back to the website badge for a role we have no styling for. */
+function sourceKey(role: string | null): string {
+  return role && sourceBadge[role] ? role : "anonymous";
+}
 
 // ─── Detail row ───────────────────────────────────────────────
 
@@ -128,16 +128,16 @@ function DeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("dashboard.bookings.detail");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Delete booking?
+            {t("deleteDialog.title")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This booking will be permanently deleted.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("deleteDialog.body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button
@@ -147,7 +147,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
           <Button
             variant="outline"
@@ -156,7 +156,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -180,6 +180,11 @@ type PageState =
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function BookingDetailPage() {
+  const t = useTranslations("dashboard.bookings.detail");
+  const tStatus = useTranslations("dashboard.bookings.status");
+  const tLocations = useTranslations("dashboard.bookings.locations");
+  const tSources = useTranslations("dashboard.bookings.sources");
+  const locale = useLocale();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
@@ -269,12 +274,12 @@ export default function BookingDetailPage() {
   if (state.kind === "not_found") {
     return (
       <div className="flex flex-col items-center justify-center py-24">
-        <p className="text-petroleum-400 text-sm">Booking not found.</p>
+        <p className="text-petroleum-400 text-sm">{t("notFound")}</p>
         <Link
           href="/dashboard/bookings"
           className="text-petroleum-400 hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Back to bookings
+          {t("backToList")}
         </Link>
       </div>
     );
@@ -285,8 +290,8 @@ export default function BookingDetailPage() {
   const addrParsed = parseLocationAddress(booking.location_address);
   const therapistLabel = (() => {
     const n = booking.notes ?? "";
-    if (n.startsWith("Terapeuta: Masculino")) return "Male";
-    if (n.startsWith("Terapeuta: Femenina")) return "Female";
+    if (n.startsWith("Terapeuta: Masculino")) return t("therapist.male");
+    if (n.startsWith("Terapeuta: Femenina")) return t("therapist.female");
     return null;
   })();
   const fullName =
@@ -304,7 +309,7 @@ export default function BookingDetailPage() {
               size="md"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete
+              {t("delete")}
             </Button>
           )}
           {(!isPartner || canPartnerEdit(booking.date, booking.time)) && (
@@ -313,7 +318,7 @@ export default function BookingDetailPage() {
               size="md"
               href={`/dashboard/bookings/${id}/edit`}
             >
-              Edit
+              {t("edit")}
             </Button>
           )}
         </div>
@@ -322,39 +327,41 @@ export default function BookingDetailPage() {
       {/* Meta strip */}
       <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-4">
         <div className="flex flex-col gap-1.5 px-5 py-4">
-          <p className="text-petroleum-400 text-xs">Status</p>
+          <p className="text-petroleum-400 text-xs">{t("meta.status")}</p>
           <div className="flex items-center gap-1.5">
             <span
               className={`size-2 shrink-0 rounded-full ${statusDotClasses[booking.status ?? ""] ?? "bg-petroleum-400"}`}
             />
             <span className="text-petroleum-700 text-sm font-medium capitalize">
-              {booking.status ?? "—"}
+              {booking.status && tStatus.has(booking.status)
+                ? tStatus(booking.status)
+                : (booking.status ?? "—")}
             </span>
           </div>
         </div>
         <div className="border-sand-200 flex flex-col gap-1.5 border-l px-5 py-4">
-          <p className="text-petroleum-400 text-xs">Location</p>
+          <p className="text-petroleum-400 text-xs">{t("meta.location")}</p>
           <p className="text-petroleum-700 text-sm">
-            {locationLabels[booking.location ?? ""] ?? "—"}
+            {booking.location && tLocations.has(booking.location)
+              ? tLocations(booking.location)
+              : "—"}
           </p>
         </div>
         <div className="border-sand-200 flex flex-col gap-1.5 border-t px-5 py-4 sm:border-t-0 sm:border-l">
-          <p className="text-petroleum-400 text-xs">Created</p>
+          <p className="text-petroleum-400 text-xs">{t("meta.created")}</p>
           <p className="text-petroleum-700 text-sm">
-            {formatCreated(booking.created_at)}
+            {formatCreated(booking.created_at, locale)}
           </p>
         </div>
         <div className="border-sand-200 flex flex-col gap-1.5 border-t border-l px-5 py-4 sm:border-t-0">
-          <p className="text-petroleum-400 text-xs">Reserved by</p>
+          <p className="text-petroleum-400 text-xs">{t("meta.reservedBy")}</p>
           {(() => {
-            const src =
-              sourceBadge[booking.created_by_role ?? ""] ??
-              sourceBadge["anonymous"];
+            const source = sourceKey(booking.created_by_role);
             return (
               <span
-                className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${sourceBadge[source]!.cls}`}
               >
-                {src.label}
+                {tSources(source)}
               </span>
             );
           })()}
@@ -365,7 +372,7 @@ export default function BookingDetailPage() {
         {/* Service */}
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Service
+            {t("sections.service")}
           </h2>
           <div className="flex items-center gap-4">
             {/* The session type carries the picture; a booking with no tier
@@ -414,15 +421,15 @@ export default function BookingDetailPage() {
         {booking.location && (
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Location
+              {t("sections.location")}
             </h2>
             <div className="flex flex-col gap-3">
               {booking.location === "habitacion" && addrParsed && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Reservation number">
+                  <Field label={t("fields.reservationNumber")}>
                     {addrParsed.reservationNumber || "—"}
                   </Field>
-                  <Field label="Room number">
+                  <Field label={t("fields.roomNumber")}>
                     {addrParsed.roomNumber ?? "—"}
                   </Field>
                 </div>
@@ -452,10 +459,10 @@ export default function BookingDetailPage() {
                   {addrParsed &&
                     (addrParsed.reservationNumber || addrParsed.roomNumber) && (
                       <div className="grid grid-cols-2 gap-4">
-                        <Field label="Reservation number">
+                        <Field label={t("fields.reservationNumber")}>
                           {addrParsed.reservationNumber || "—"}
                         </Field>
-                        <Field label="Room number">
+                        <Field label={t("fields.roomNumber")}>
                           {addrParsed.roomNumber || "—"}
                         </Field>
                       </div>
@@ -472,23 +479,25 @@ export default function BookingDetailPage() {
         {/* Date & time */}
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Date & time
+            {t("sections.datetime")}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Date">{formatDate(booking.date)}</Field>
-            <Field label="Time">{booking.time ?? "—"}</Field>
+            <Field label={t("fields.date")}>
+              {formatDate(booking.date, locale)}
+            </Field>
+            <Field label={t("fields.time")}>{booking.time ?? "—"}</Field>
           </div>
         </div>
 
         {/* Client */}
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Client
+            {t("sections.client")}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name">{fullName}</Field>
-            <Field label="Phone">{booking.phone ?? "—"}</Field>
-            <Field label="Email">{booking.email ?? "—"}</Field>
+            <Field label={t("fields.name")}>{fullName}</Field>
+            <Field label={t("fields.phone")}>{booking.phone ?? "—"}</Field>
+            <Field label={t("fields.email")}>{booking.email ?? "—"}</Field>
           </div>
         </div>
 
@@ -502,7 +511,7 @@ export default function BookingDetailPage() {
           return displayNotes ? (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Notes
+                {t("sections.notes")}
               </h2>
               <p className="text-petroleum-700 text-sm leading-relaxed whitespace-pre-line">
                 {displayNotes}
@@ -514,7 +523,7 @@ export default function BookingDetailPage() {
         {/* Reserved by */}
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-            Reserved by
+            {t("sections.reservedBy")}
           </h2>
           <div className="flex items-start gap-4">
             <div className="bg-petroleum-100 hidden size-10 shrink-0 items-center justify-center rounded-full sm:flex">
@@ -528,21 +537,19 @@ export default function BookingDetailPage() {
               <p className="text-petroleum-700 font-medium">
                 {creator?.full_name ??
                   (booking.created_by_role === "anonymous"
-                    ? "Anonymous visitor"
-                    : "Client")}
+                    ? t("creator.anonymous")
+                    : t("creator.client"))}
               </p>
               {creator?.email && (
                 <p className="text-petroleum-400 text-sm">{creator.email}</p>
               )}
               {(() => {
-                const src =
-                  sourceBadge[booking.created_by_role ?? ""] ??
-                  sourceBadge["anonymous"];
+                const source = sourceKey(booking.created_by_role);
                 return (
                   <span
-                    className={`mt-1 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                    className={`mt-1 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${sourceBadge[source]!.cls}`}
                   >
-                    {src.label}
+                    {tSources(source)}
                   </span>
                 );
               })()}

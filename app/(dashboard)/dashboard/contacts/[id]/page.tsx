@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   subscribeToNewsletter,
@@ -17,11 +18,9 @@ import {
 } from "@/lib/schemas";
 import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { OptionSelect } from "@/components/ui/option-select";
-import {
-  GENDER_OPTIONS,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender, type GenderValue } from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { formatMediumDate, formatPrice } from "@/utils/format";
 import {
   LocationBadge,
@@ -222,17 +221,23 @@ function DeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("dashboard.contacts.detail");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Delete contact?
+            {t("deleteDialog.title")}
           </h3>
           <p className="text-petroleum-400 text-sm">
-            <strong className="text-petroleum-500 font-medium">{name}</strong>{" "}
-            and all their associated bookings and registrations will be
-            permanently deleted.
+            {t.rich("deleteDialog.body", {
+              name: () => (
+                <strong className="text-petroleum-500 font-medium">
+                  {name}
+                </strong>
+              ),
+            })}
           </p>
         </div>
         <div className="flex flex-col gap-2">
@@ -243,7 +248,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
           <Button
             variant="outline"
@@ -252,7 +257,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -287,6 +292,9 @@ function ContactDetailsCard({
   saving: boolean;
   dispatchForm: React.Dispatch<FormAction>;
 }) {
+  const t = useTranslations("dashboard.contacts.detail");
+  const tForm = useTranslations("dashboard.contacts.form");
+  const genderOptions = useGenderOptions();
   function field(
     f: "firstName" | "lastName" | "email" | "phone" | "language",
     value: string,
@@ -304,7 +312,8 @@ function ContactDetailsCard({
               htmlFor="firstName"
               className="text-petroleum-500 text-xs font-medium"
             >
-              First name <span className="text-red-400">*</span>
+              {tForm("fields.firstName")}{" "}
+              <span className="text-red-400">*</span>
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -314,7 +323,7 @@ function ContactDetailsCard({
                 type="text"
                 value={firstName}
                 onChange={(e) => field("firstName", e.target.value)}
-                placeholder="Jane"
+                placeholder={tForm("fields.firstNamePlaceholder")}
                 disabled={saving}
                 className={INPUT_CLASS}
               />
@@ -328,7 +337,7 @@ function ContactDetailsCard({
               htmlFor="lastName"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Last name
+              {tForm("fields.lastName")}
             </label>
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -338,7 +347,7 @@ function ContactDetailsCard({
                 type="text"
                 value={lastName}
                 onChange={(e) => field("lastName", e.target.value)}
-                placeholder="Doe"
+                placeholder={tForm("fields.lastNamePlaceholder")}
                 disabled={saving}
                 className={INPUT_CLASS}
               />
@@ -354,7 +363,7 @@ function ContactDetailsCard({
             htmlFor="email"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Email
+            {tForm("fields.email")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -364,7 +373,7 @@ function ContactDetailsCard({
               type="email"
               value={email}
               onChange={(e) => field("email", e.target.value)}
-              placeholder="jane@example.com"
+              placeholder={tForm("fields.emailPlaceholder")}
               disabled={saving}
               className={INPUT_CLASS}
             />
@@ -379,7 +388,7 @@ function ContactDetailsCard({
             htmlFor="phone"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Phone
+            {tForm("fields.phone")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -389,7 +398,7 @@ function ContactDetailsCard({
               type="tel"
               value={phone}
               onChange={(e) => field("phone", e.target.value)}
-              placeholder="+34 600 000 000"
+              placeholder={tForm("fields.phonePlaceholder")}
               disabled={saving}
               className={INPUT_CLASS}
             />
@@ -404,7 +413,7 @@ function ContactDetailsCard({
             htmlFor="gender"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Gender
+            {tForm("fields.gender")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -412,12 +421,12 @@ function ContactDetailsCard({
             <OptionSelect
               id="gender"
               value={gender}
-              options={GENDER_OPTIONS}
+              options={genderOptions}
               onChange={(next) =>
                 dispatchForm({ type: "SET_GENDER", gender: next })
               }
               disabled={saving}
-              ariaLabel="Gender"
+              ariaLabel={tForm("fields.gender")}
             />
           )}
         </div>
@@ -427,7 +436,7 @@ function ContactDetailsCard({
             htmlFor="language"
             className="text-petroleum-500 text-xs font-medium"
           >
-            Preferred language
+            {t("fields.preferredLanguage")}
           </label>
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -462,10 +471,12 @@ function ContactDetailsCard({
           >
             <div className="flex flex-col gap-0.5">
               <p className="text-petroleum-700 text-sm font-medium">
-                Newsletter
+                {t("newsletter.label")}
               </p>
               <p className="text-petroleum-400 text-xs">
-                {newsletterSubscribed ? "Subscribed" : "Not subscribed"}
+                {newsletterSubscribed
+                  ? t("newsletter.subscribed")
+                  : t("newsletter.notSubscribed")}
               </p>
             </div>
             <div
@@ -544,6 +555,8 @@ function TransactionsSection({
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
 }) {
+  const t = useTranslations("dashboard.contacts.detail.transactions");
+  const locale = useDashboardLocale();
   const rows: TransactionRow[] = [
     ...bookings.map((b) => ({
       id: b.id,
@@ -591,13 +604,13 @@ function TransactionsSection({
     <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-petroleum-500 text-sm font-semibold">
-          Transactions
+          {t("heading")}
         </h2>
         {!loading && paidTotal > 0 && (
           <span className="text-petroleum-400 text-xs">
             Paid to date{" "}
             <span className="text-petroleum-700 font-medium">
-              {formatPrice(paidTotal, "en")}
+              {formatPrice(paidTotal, locale)}
             </span>
           </span>
         )}
@@ -605,18 +618,18 @@ function TransactionsSection({
       {loading ? (
         <RowSkeleton cols={5} />
       ) : rows.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">No transactions yet.</p>
+        <p className="text-petroleum-300 text-sm">{t("empty")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Type", "Concept", "Date", "Amount", "Status"].map((h) => (
+                {["type", "concept", "date", "amount", "status"].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
                   >
-                    {h}
+                    {t(`columns.${h}`)}
                   </th>
                 ))}
               </tr>
@@ -634,10 +647,10 @@ function TransactionsSection({
                     {r.title}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {formatMediumDate(r.date)}
+                    {formatMediumDate(r.date, locale)}
                   </td>
                   <td className="text-petroleum-700 py-3 pr-4">
-                    {r.amount == null ? "—" : formatPrice(r.amount, "en")}
+                    {r.amount == null ? "—" : formatPrice(r.amount, locale)}
                   </td>
                   <td className="py-3 pr-4">
                     <span
@@ -670,42 +683,49 @@ function BookingsSection({
   loading: boolean;
   bookings: Booking[];
 }) {
+  const t = useTranslations("dashboard");
+  const tSection = useTranslations("dashboard.contacts.detail.bookings");
+  const locale = useLocale();
   const { push } = useRouter();
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Bookings
+        {tSection("heading")}
       </h2>
       {loading ? (
         <RowSkeleton cols={5} />
       ) : bookings.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">No bookings yet.</p>
+        <p className="text-petroleum-300 text-sm">{tSection("empty")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
                 {[
-                  "Created",
-                  "Status",
-                  "Service",
-                  "Location",
-                  "Datetime",
-                  "Reserved by",
+                  "created",
+                  "status",
+                  "service",
+                  "location",
+                  "datetime",
+                  "reservedBy",
                 ].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
                   >
-                    {h}
+                    {tSection(`columns.${h}`)}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {bookings.map((b) => {
-                const detail = locationDetail(b.location, b.location_address);
+                const detail = locationDetail(
+                  b.location,
+                  b.location_address,
+                  (number) => t("bookings.room", { number }),
+                );
                 return (
                   <tr
                     key={b.id}
@@ -714,10 +734,10 @@ function BookingsSection({
                   >
                     <td className="py-3 pr-4">
                       <p className="text-petroleum-500">
-                        {formatCreatedDate(b.created_at)}
+                        {formatCreatedDate(b.created_at, locale)}
                       </p>
                       <p className="text-petroleum-400 text-xs">
-                        {formatCreatedTime(b.created_at)}
+                        {formatCreatedTime(b.created_at, locale)}
                       </p>
                     </td>
                     <td className="py-3 pr-4">
@@ -743,7 +763,7 @@ function BookingsSection({
                     </td>
                     <td className="py-3 pr-4">
                       <p className="text-petroleum-500">
-                        {formatBookingDate(b.date)}
+                        {formatBookingDate(b.date, locale)}
                       </p>
                       {b.time && (
                         <p className="text-petroleum-400 text-xs">{b.time}</p>
@@ -770,26 +790,28 @@ function RaceRegsSection({
   loading: boolean;
   raceRegs: RaceReg[];
 }) {
+  const t = useTranslations("dashboard.contacts.detail.races");
+  const locale = useDashboardLocale();
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Race registrations
+        {t("heading")}
       </h2>
       {loading ? (
         <RowSkeleton cols={4} />
       ) : raceRegs.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">No race registrations yet.</p>
+        <p className="text-petroleum-300 text-sm">{t("empty")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Race", "Date", "Location", "Registered"].map((h) => (
+                {["race", "date", "location", "registered"].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
                   >
-                    {h}
+                    {t(`columns.${h}`)}
                   </th>
                 ))}
               </tr>
@@ -804,13 +826,13 @@ function RaceRegsSection({
                     {r.race?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.race?.date ? formatMediumDate(r.race.date) : "—"}
+                    {r.race?.date ? formatMediumDate(r.race.date, locale) : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.race?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatMediumDate(r.created_at)}
+                    {formatMediumDate(r.created_at, locale)}
                   </td>
                 </tr>
               ))}
@@ -829,28 +851,28 @@ function EduRegsSection({
   loading: boolean;
   eduRegs: EduReg[];
 }) {
+  const t = useTranslations("dashboard.contacts.detail.education");
+  const locale = useDashboardLocale();
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        Education sessions
+        {t("heading")}
       </h2>
       {loading ? (
         <RowSkeleton cols={4} />
       ) : eduRegs.length === 0 ? (
-        <p className="text-petroleum-300 text-sm">
-          No education session registrations yet.
-        </p>
+        <p className="text-petroleum-300 text-sm">{t("empty")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-sand-100 border-b text-left">
-                {["Session", "Date", "Location", "Registered"].map((h) => (
+                {["session", "date", "location", "registered"].map((h) => (
                   <th
                     key={h}
                     className="text-petroleum-400 pr-4 pb-2.5 font-medium"
                   >
-                    {h}
+                    {t(`columns.${h}`)}
                   </th>
                 ))}
               </tr>
@@ -865,13 +887,15 @@ function EduRegsSection({
                     {r.session?.title ?? "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
-                    {r.session?.date ? formatMediumDate(r.session.date) : "—"}
+                    {r.session?.date
+                      ? formatMediumDate(r.session.date, locale)
+                      : "—"}
                   </td>
                   <td className="text-petroleum-500 py-3 pr-4">
                     {r.session?.location ?? "—"}
                   </td>
                   <td className="text-petroleum-400 py-3">
-                    {formatMediumDate(r.created_at)}
+                    {formatMediumDate(r.created_at, locale)}
                   </td>
                 </tr>
               ))}
@@ -886,6 +910,7 @@ function EduRegsSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function ContactDetailPage() {
+  const t = useTranslations("dashboard.contacts.detail");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
 
@@ -978,7 +1003,7 @@ export default function ContactDetailPage() {
     if (updateErrorMsg) {
       dispatchForm({
         type: "SET_ERROR",
-        error: updateErrorMsg ?? "Failed to save contact.",
+        error: updateErrorMsg ?? t("errors.saveFailed"),
       });
       return;
     }
@@ -1018,12 +1043,12 @@ export default function ContactDetailPage() {
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">Contact not found.</p>
+        <p className="text-sm">{t("notFound")}</p>
         <button
           onClick={() => back()}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Go back
+          {t("goBack")}
         </button>
       </div>
     );
@@ -1034,7 +1059,7 @@ export default function ContactDetailPage() {
       <form onSubmit={(e) => void handleSave(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            Edit Contact
+            {t("title")}
           </h1>
           <div className="flex items-center gap-3">
             <Button
@@ -1046,7 +1071,7 @@ export default function ContactDetailPage() {
               className="gap-1.5"
             >
               <IconTrash />
-              Delete
+              {t("delete")}
             </Button>
             <Button
               type="submit"
@@ -1056,7 +1081,7 @@ export default function ContactDetailPage() {
               className="gap-1.5"
             >
               <IconCheckmark />
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>

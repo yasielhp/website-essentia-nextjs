@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import type { UpcomingSession } from "@/types/calendar";
 import { formatUpcomingDate } from "@/utils/dashboard-calendar";
 import { IconImage } from "@/components/ui/icons";
@@ -12,6 +13,8 @@ export function UpcomingSessionCard({
   session: UpcomingSession | null;
   loading: boolean;
 }) {
+  const t = useTranslations("dashboard.calendar");
+  const locale = useLocale();
   const href = session ? `/dashboard/education/${session.id}/edit` : undefined;
 
   return (
@@ -42,7 +45,7 @@ export function UpcomingSessionCard({
 
       <div className="flex-1 p-5">
         <h3 className="text-petroleum-700 mb-3 text-sm font-semibold">
-          Next Session
+          {t("nextSession")}
         </h3>
 
         {loading ? (
@@ -55,7 +58,7 @@ export function UpcomingSessionCard({
           <>
             <p className="text-petroleum-700 font-medium">{session.title}</p>
             <p className="text-petroleum-400 mt-1 text-sm">
-              {formatUpcomingDate(session.date)}
+              {formatUpcomingDate(session.date, locale)}
               {session.duration_minutes != null &&
                 ` · ${session.duration_minutes} min`}
             </p>
@@ -64,7 +67,7 @@ export function UpcomingSessionCard({
             )}
           </>
         ) : (
-          <p className="text-petroleum-300 text-sm">No upcoming sessions.</p>
+          <p className="text-petroleum-300 text-sm">{t("noSessions")}</p>
         )}
       </div>
     </div>

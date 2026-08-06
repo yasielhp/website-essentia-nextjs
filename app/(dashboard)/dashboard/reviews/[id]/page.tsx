@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -121,16 +122,16 @@ function DeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("dashboard.reviews.detail");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-petroleum-700 text-xl">
-            Delete review?
+            {t("deleteDialog.title")}
           </h3>
-          <p className="text-petroleum-400 text-sm">
-            This review will be permanently deleted.
-          </p>
+          <p className="text-petroleum-400 text-sm">{t("deleteDialog.body")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button
@@ -140,7 +141,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
           <Button
             variant="outline"
@@ -149,7 +150,7 @@ function DeleteDialog({
             disabled={deleting}
             className="w-full"
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         </div>
       </div>
@@ -165,6 +166,10 @@ const statusBadgeClasses: Record<string, string> = {
 };
 
 export default function ReviewDetailPage() {
+  const t = useTranslations("dashboard.reviews.detail");
+  const tForm = useTranslations("dashboard.reviews.form");
+  const tStatus = useTranslations("dashboard.reviews.status");
+  const tReviews = useTranslations("dashboard.reviews");
   const { push } = useRouter();
   const { id } = useParams<{ id: string }>();
 
@@ -238,8 +243,7 @@ export default function ReviewDetailPage() {
       dispatch({
         type: "SAVE_ERROR",
         message:
-          (dbError as { message?: string })?.message ??
-          "Failed to save changes.",
+          (dbError as { message?: string })?.message ?? t("errors.saveFailed"),
       });
     } else {
       dispatch({ type: "SAVE_SUCCESS" });
@@ -275,14 +279,14 @@ export default function ReviewDetailPage() {
   if (notFound) {
     return (
       <div className="px-6 py-8 lg:px-10">
-        <p className="text-petroleum-400 text-sm">Review not found.</p>
+        <p className="text-petroleum-400 text-sm">{t("notFound")}</p>
         <Button
           variant="outline"
           size="md"
           href="/dashboard/reviews"
           className="mt-4"
         >
-          Back to Reviews
+          {t("backToList")}
         </Button>
       </div>
     );
@@ -294,7 +298,7 @@ export default function ReviewDetailPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <h1 className="font-display text-petroleum-700 text-3xl">
-              Edit Review
+              {t("title")}
             </h1>
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClasses[status] ?? ""}`}
@@ -310,7 +314,7 @@ export default function ReviewDetailPage() {
               onClick={() => setDeleteOpen(true)}
               disabled={deleting || submitting}
             >
-              Delete
+              {t("delete")}
             </Button>
             <Button
               type="submit"
@@ -318,7 +322,7 @@ export default function ReviewDetailPage() {
               size="md"
               disabled={submitting || !quote.trim() || !name.trim()}
             >
-              {submitting ? "Saving…" : "Save changes"}
+              {submitting ? t("saving") : t("saveChanges")}
             </Button>
           </div>
         </div>
@@ -330,7 +334,7 @@ export default function ReviewDetailPage() {
         )}
         {saved && (
           <p className="mb-6 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-            Changes saved successfully.
+            {t("saved")}
           </p>
         )}
 
@@ -339,14 +343,15 @@ export default function ReviewDetailPage() {
           <div className="flex flex-col gap-6 lg:col-span-2">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Review
+                {t("sections.review")}
               </h2>
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="quote"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Quote <span className="text-red-400">*</span>
+                  {tForm("fields.quote")}{" "}
+                  <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   id="quote"
@@ -367,7 +372,7 @@ export default function ReviewDetailPage() {
 
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Author
+                {t("sections.author")}
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -375,7 +380,8 @@ export default function ReviewDetailPage() {
                     htmlFor="name"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Name <span className="text-red-400">*</span>
+                    {tForm("fields.name")}{" "}
+                    <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="name"
@@ -392,7 +398,7 @@ export default function ReviewDetailPage() {
                       htmlFor="age"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Age
+                      {tForm("fields.age")}
                     </label>
                     <input
                       id="age"
@@ -407,7 +413,7 @@ export default function ReviewDetailPage() {
                           value: e.target.value,
                         })
                       }
-                      placeholder="47"
+                      placeholder={tForm("fields.agePlaceholder")}
                       disabled={submitting}
                       className={INPUT_CLASS}
                     />
@@ -417,7 +423,7 @@ export default function ReviewDetailPage() {
                       htmlFor="initials"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Initials
+                      {tForm("fields.initials")}
                     </label>
                     <input
                       id="initials"
@@ -444,7 +450,7 @@ export default function ReviewDetailPage() {
           <div className="flex flex-col gap-6">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Settings
+                {t("sections.settings")}
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -452,7 +458,7 @@ export default function ReviewDetailPage() {
                     htmlFor="status"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Status
+                    {tReviews("columns.status")}
                   </label>
                   <select
                     id="status"
@@ -466,8 +472,8 @@ export default function ReviewDetailPage() {
                     disabled={submitting}
                     className={SELECT_CLASS}
                   >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
+                    <option value="draft">{tStatus("draft")}</option>
+                    <option value="published">{tStatus("published")}</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -475,7 +481,7 @@ export default function ReviewDetailPage() {
                     htmlFor="order"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Display order
+                    {t("fields.displayOrder")}
                   </label>
                   <input
                     id="order"

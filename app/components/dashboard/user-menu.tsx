@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   IconChevronsUpDown,
   IconEdit,
   IconLogOut,
 } from "@/components/ui/icons";
 import { avatarInitials } from "@/utils/avatar";
+import { LocaleSwitch } from "./locale-switch";
 
 type UserMenuProps = {
   displayName: string;
@@ -23,6 +25,7 @@ export function UserMenu({
   onSignOut,
   onEditAccount,
 }: UserMenuProps) {
+  const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,6 +40,8 @@ export function UserMenu({
   }, [open]);
 
   const initials = avatarInitials(displayName);
+  // Roles come from the database, so a value we have no message for is possible.
+  const roleLabel = t.has(`roles.${role}`) ? t(`roles.${role}`) : role;
 
   return (
     <div ref={ref} className="relative">
@@ -51,10 +56,11 @@ export function UserMenu({
             <div className="min-w-0">
               <p className="text-petroleum-400 truncate text-xs">{email}</p>
               <p className="text-petroleum-300 mt-0.5 text-xs capitalize">
-                {role}
+                {roleLabel}
               </p>
             </div>
           </div>
+          <LocaleSwitch />
           <button
             onClick={() => {
               setOpen(false);
@@ -63,7 +69,7 @@ export function UserMenu({
             className="text-petroleum-500 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
           >
             <IconEdit />
-            Edit account
+            {t("userMenu.editAccount")}
           </button>
           <button
             onClick={() => {
@@ -73,7 +79,7 @@ export function UserMenu({
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50"
           >
             <IconLogOut />
-            Sign out
+            {t("userMenu.signOut")}
           </button>
         </div>
       )}

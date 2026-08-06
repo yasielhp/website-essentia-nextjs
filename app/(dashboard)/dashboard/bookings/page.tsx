@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
@@ -67,10 +68,10 @@ const fieldCls =
 // ─── Date range picker ────────────────────────────────────────
 
 const DATE_PRESETS = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Last 3 months", days: 90 },
-  { label: "This year", days: -1 },
+  { key: "last7", days: 7 },
+  { key: "last30", days: 30 },
+  { key: "last90", days: 90 },
+  { key: "thisYear", days: -1 },
 ] as const;
 
 function presetDates(days: number): [string, string] {
@@ -85,18 +86,29 @@ function presetDates(days: number): [string, string] {
   return [d.toISOString().split("T")[0]!, today];
 }
 
-function dateRangeLabel(from: string, to: string): string {
-  if (!from && !to) return "All dates";
+type Translator = ReturnType<typeof useTranslations<"dashboard">>;
+
+function dateRangeLabel(
+  from: string,
+  to: string,
+  t: Translator,
+  locale: string,
+): string {
+  if (!from && !to) return t("common.dates.all");
   const today = new Date().toISOString().split("T")[0]!;
-  for (const { label, days } of DATE_PRESETS) {
+  for (const { key, days } of DATE_PRESETS) {
     const [f] = presetDates(days);
-    if (from === f && to === today) return label;
+    if (from === f && to === today) return t(`common.dates.${key}`);
   }
   const fmt = (s: string) =>
-    new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-  if (from && to) return `${fmt(from)} – ${fmt(to)}`;
-  if (from) return `From ${fmt(from)}`;
-  return `Until ${fmt(to)}`;
+    new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "short",
+    }).format(new Date(s));
+  if (from && to)
+    return t("common.dates.range", { from: fmt(from), to: fmt(to) });
+  if (from) return t("common.dates.fromOnly", { date: fmt(from) });
+  return t("common.dates.untilOnly", { date: fmt(to) });
 }
 
 function DateRangeButton({
@@ -108,6 +120,8 @@ function DateRangeButton({
   dateTo: string;
   onChange: (from: string, to: string) => void;
 }) {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [localFrom, setLocalFrom] = useState("");
   const [localTo, setLocalTo] = useState("");
@@ -154,21 +168,21 @@ function DateRangeButton({
           <line x1="8" y1="2" x2="8" y2="6" />
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
-        {dateRangeLabel(dateFrom, dateTo)}
+        {dateRangeLabel(dateFrom, dateTo, t, locale)}
       </Button>
 
       {open && (
         <div className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl">
           <div className="mb-3 flex flex-wrap gap-1.5">
-            {DATE_PRESETS.map(({ label, days }) => {
-              const [f, t] = presetDates(days);
-              const active = dateFrom === f && dateTo === t;
+            {DATE_PRESETS.map(({ key, days }) => {
+              const [f, until] = presetDates(days);
+              const active = dateFrom === f && dateTo === until;
               return (
                 <button
-                  key={label}
+                  key={key}
                   type="button"
                   onClick={() => {
-                    onChange(f, t);
+                    onChange(f, until);
                     setOpen(false);
                   }}
                   className={[
@@ -178,7 +192,7 @@ function DateRangeButton({
                       : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
                   ].join(" ")}
                 >
-                  {label}
+                  {t(`common.dates.${key}`)}
                 </button>
               );
             })}
@@ -186,7 +200,9 @@ function DateRangeButton({
           <div className="border-sand-100 mb-3 border-t" />
           <div className="mb-3 grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-petroleum-300 text-xs">From</span>
+              <span className="text-petroleum-300 text-xs">
+                {t("common.dates.from")}
+              </span>
               <input
                 type="date"
                 value={localFrom}
@@ -195,7 +211,9 @@ function DateRangeButton({
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-petroleum-300 text-xs">To</span>
+              <span className="text-petroleum-300 text-xs">
+                {t("common.dates.to")}
+              </span>
               <input
                 type="date"
                 value={localTo}
@@ -213,7 +231,7 @@ function DateRangeButton({
               }}
               className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
             >
-              Clear
+              {t("common.dates.clear")}
             </button>
             <Button
               variant="solid"
@@ -223,7 +241,7 @@ function DateRangeButton({
                 setOpen(false);
               }}
             >
-              Apply
+              {t("common.dates.apply")}
             </Button>
           </div>
         </div>
@@ -247,6 +265,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -257,9 +276,12 @@ function FilterModal({
       <div className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -277,54 +299,64 @@ function FilterModal({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Status
+              {t("bookings.filters.status")}
             </span>
             <select
               value={pending.status}
               onChange={(e) => onChange("status", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All statuses</option>
+              <option value="">{t("bookings.filters.allStatuses")}</option>
               {/* Ordered by lifecycle: a draft is an unfinished booking, which
                   is what marks its client as a lead. */}
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="draft">{t("bookings.status.draft")}</option>
+              <option value="pending">{t("bookings.status.pending")}</option>
+              <option value="confirmed">
+                {t("bookings.status.confirmed")}
+              </option>
+              <option value="cancelled">
+                {t("bookings.status.cancelled")}
+              </option>
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Location
+              {t("bookings.filters.location")}
             </span>
             <select
               value={pending.location}
               onChange={(e) => onChange("location", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All locations</option>
-              <option value="centro">At the center</option>
-              <option value="habitacion">Room</option>
-              <option value="domicilio">Home visit</option>
+              <option value="">{t("bookings.filters.allLocations")}</option>
+              <option value="centro">{t("bookings.locations.centro")}</option>
+              <option value="habitacion">
+                {t("bookings.locations.habitacion")}
+              </option>
+              <option value="domicilio">
+                {t("bookings.locations.domicilio")}
+              </option>
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Reserved by
+              {t("bookings.filters.reservedBy")}
             </span>
             <select
               value={pending.reservedBy}
               onChange={(e) => onChange("reservedBy", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-              <option value="partner">Partner</option>
-              <option value="client">Client</option>
-              <option value="anonymous">Web</option>
+              <option value="">{t("bookings.filters.allSources")}</option>
+              <option value="admin">{t("bookings.sources.admin")}</option>
+              <option value="staff">{t("bookings.sources.staff")}</option>
+              <option value="partner">{t("bookings.sources.partner")}</option>
+              <option value="client">{t("bookings.sources.client")}</option>
+              <option value="anonymous">
+                {t("bookings.sources.anonymous")}
+              </option>
             </select>
           </label>
         </div>
@@ -335,10 +367,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -390,7 +422,14 @@ function reducer(state: PageState, action: PageAction): PageState {
 
 const COL_COUNT = 7;
 
+/** Falls back to the website-booking badge for a role we have no styling for. */
+function sourceKey(role: string | null): string {
+  return role && SOURCE_BADGE[role] ? role : "anonymous";
+}
+
 export default function BookingsPage() {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { bookings, total, page, loading } = state;
   const { push } = useRouter();
@@ -626,7 +665,7 @@ export default function BookingsPage() {
           className="gap-2"
         >
           <IconPlus />
-          Create Booking
+          {t("bookings.createBooking")}
         </Button>
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -637,7 +676,7 @@ export default function BookingsPage() {
               className="gap-2"
             >
               <IconSettings />
-              Settings
+              {t("bookings.settings")}
             </Button>
           )}
           <DateRangeButton
@@ -655,7 +694,9 @@ export default function BookingsPage() {
             className="gap-2"
           >
             <IconFilter />
-            Filters{activeCount > 0 ? ` [${activeCount}]` : ""}
+            {activeCount > 0
+              ? t("common.filtersWithCount", { count: activeCount })
+              : t("common.filters")}
           </Button>
         </div>
       </div>
@@ -664,31 +705,31 @@ export default function BookingsPage() {
       {/* Ordered by lifecycle, matching the status filter. */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
-          label="Draft"
+          label={t("bookings.stats.draft")}
           value={statusCounts.draft ?? 0}
           loading={statusCounts.draft === null}
           active={fStatus === "draft"}
         />
         <StatCard
-          label="Pending"
+          label={t("bookings.stats.pending")}
           value={statusCounts.pending ?? 0}
           loading={statusCounts.pending === null}
           active={fStatus === "pending"}
         />
         <StatCard
-          label="Confirmed"
+          label={t("bookings.stats.confirmed")}
           value={statusCounts.confirmed ?? 0}
           loading={statusCounts.confirmed === null}
           active={fStatus === "confirmed"}
         />
         <StatCard
-          label="Cancelled"
+          label={t("bookings.stats.cancelled")}
           value={statusCounts.cancelled ?? 0}
           loading={statusCounts.cancelled === null}
           active={fStatus === "cancelled"}
         />
         <StatCard
-          label="Total"
+          label={t("bookings.stats.total")}
           value={countsTotal ?? 0}
           loading={countsTotal === null}
         />
@@ -715,7 +756,7 @@ export default function BookingsPage() {
           ))
         ) : bookings.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
-            No bookings found.
+            {t("bookings.empty")}
           </p>
         ) : (
           bookings.map((b) => {
@@ -755,7 +796,7 @@ export default function BookingsPage() {
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-3">
                   <p className="text-petroleum-400 text-xs">
-                    {formatBookingDate(b.date)}
+                    {formatBookingDate(b.date, locale)}
                     {b.time ? ` · ${b.time}` : ""}
                   </p>
                   <div className="flex flex-col gap-0.5">
@@ -785,14 +826,12 @@ export default function BookingsPage() {
                       })()}
                   </div>
                   {(() => {
-                    const src =
-                      SOURCE_BADGE[b.created_by_role ?? ""] ??
-                      SOURCE_BADGE["anonymous"];
+                    const source = sourceKey(b.created_by_role);
                     return (
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${src.cls}`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
                       >
-                        {src.label}
+                        {t(`bookings.sources.${source}`)}
                         {b.creatorName ? ` · ${b.creatorName}` : ""}
                       </span>
                     );
@@ -811,25 +850,25 @@ export default function BookingsPage() {
             <thead>
               <tr className="border-sand-200 border-b text-left">
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Created
+                  {t("bookings.columns.created")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Status
+                  {t("bookings.columns.status")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Client
+                  {t("bookings.columns.client")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Service
+                  {t("bookings.columns.service")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Location
+                  {t("bookings.columns.location")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Datetime
+                  {t("bookings.columns.datetime")}
                 </th>
                 <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                  Reserved by
+                  {t("bookings.columns.reservedBy")}
                 </th>
               </tr>
             </thead>
@@ -877,7 +916,7 @@ export default function BookingsPage() {
                     colSpan={COL_COUNT}
                     className="text-petroleum-400 px-6 py-12 text-center"
                   >
-                    No bookings found.
+                    {t("bookings.empty")}
                   </td>
                 </tr>
               ) : (
@@ -889,10 +928,10 @@ export default function BookingsPage() {
                   >
                     <td className="px-5 py-4">
                       <p className="text-petroleum-500">
-                        {formatCreatedDate(b.created_at)}
+                        {formatCreatedDate(b.created_at, locale)}
                       </p>
                       <p className="text-petroleum-400 text-xs">
-                        {formatCreatedTime(b.created_at)}
+                        {formatCreatedTime(b.created_at, locale)}
                       </p>
                     </td>
                     <td className="px-5 py-4">
@@ -950,7 +989,7 @@ export default function BookingsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <p className="text-petroleum-500">
-                        {formatBookingDate(b.date)}
+                        {formatBookingDate(b.date, locale)}
                       </p>
                       {b.time && (
                         <p className="text-petroleum-400 text-xs">{b.time}</p>
@@ -958,15 +997,13 @@ export default function BookingsPage() {
                     </td>
                     <td className="px-5 py-4">
                       {(() => {
-                        const src =
-                          SOURCE_BADGE[b.created_by_role ?? ""] ??
-                          SOURCE_BADGE["anonymous"];
+                        const source = sourceKey(b.created_by_role);
                         return (
                           <div className="flex flex-col gap-0.5">
                             <span
-                              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
+                              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
                             >
-                              {src.label}
+                              {t(`bookings.sources.${source}`)}
                             </span>
                             {b.creatorName && (
                               <span className="text-petroleum-400 text-xs">

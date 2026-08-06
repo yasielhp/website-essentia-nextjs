@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { PlanRow } from "@/types/settings";
@@ -35,6 +36,8 @@ export function PlanModal({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const t = useTranslations("dashboard.settings.plans");
+  const tCommon = useTranslations("dashboard.common");
   const [form, dispatch] = useReducer(formReducer, {
     label: plan.label,
     price: plan.price_monthly != null ? String(plan.price_monthly) : "",
@@ -80,7 +83,7 @@ export function PlanModal({
       <div className="border-sand-200 mx-4 w-full max-w-sm rounded-2xl border bg-white shadow-xl">
         {/* Header */}
         <div className="border-sand-100 flex items-center justify-between border-b px-6 py-4">
-          <h3 className="text-petroleum-700 font-semibold">Edit plan</h3>
+          <h3 className="text-petroleum-700 font-semibold">{t("editPlan")}</h3>
           <button
             onClick={onClose}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
@@ -96,7 +99,7 @@ export function PlanModal({
               htmlFor="plan-label"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Name
+              {t("name")}
             </label>
             <input
               id="plan-label"
@@ -105,7 +108,7 @@ export function PlanModal({
               onChange={(e) =>
                 dispatch({ type: "SET_LABEL", label: e.target.value })
               }
-              placeholder="e.g. Essential"
+              placeholder={t("namePlaceholder")}
               className={INPUT_CLASS}
             />
           </div>
@@ -114,7 +117,7 @@ export function PlanModal({
               htmlFor="plan-price"
               className="text-petroleum-500 text-xs font-medium"
             >
-              Monthly price (€)
+              {t("monthlyPrice")}
             </label>
             <input
               id="plan-price"
@@ -125,7 +128,7 @@ export function PlanModal({
               onChange={(e) =>
                 dispatch({ type: "SET_PRICE", price: e.target.value })
               }
-              placeholder="199"
+              placeholder={t("pricePlaceholder")}
               className={INPUT_CLASS}
             />
           </div>
@@ -138,7 +141,7 @@ export function PlanModal({
             onClick={onClose}
             className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
           >
-            Cancel
+            {tCommon("cancel")}
           </button>
           <button
             type="button"
@@ -146,7 +149,7 @@ export function PlanModal({
             onClick={() => void handleSave()}
             className="bg-petroleum-700 hover:bg-petroleum-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
           >
-            {form.saving ? "Saving…" : "Save"}
+            {form.saving ? t("saving") : t("save")}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import type { UpcomingRace } from "@/types/calendar";
 import { formatUpcomingDate } from "@/utils/dashboard-calendar";
 import { IconImage } from "@/components/ui/icons";
@@ -12,6 +13,8 @@ export function UpcomingRaceCard({
   race: UpcomingRace | null;
   loading: boolean;
 }) {
+  const t = useTranslations("dashboard.calendar");
+  const locale = useLocale();
   const href = race ? `/dashboard/races/${race.id}/edit` : undefined;
 
   return (
@@ -42,7 +45,7 @@ export function UpcomingRaceCard({
 
       <div className="flex-1 p-5">
         <h3 className="text-petroleum-700 mb-3 text-sm font-semibold">
-          Next Race
+          {t("nextRace")}
         </h3>
 
         {loading ? (
@@ -55,7 +58,7 @@ export function UpcomingRaceCard({
           <>
             <p className="text-petroleum-700 font-medium">{race.title}</p>
             <p className="text-petroleum-400 mt-1 text-sm">
-              {formatUpcomingDate(race.date)}
+              {formatUpcomingDate(race.date, locale)}
             </p>
             {race.location && (
               <p className="text-petroleum-400 text-sm">{race.location}</p>
@@ -67,7 +70,7 @@ export function UpcomingRaceCard({
             )}
           </>
         ) : (
-          <p className="text-petroleum-300 text-sm">No upcoming races.</p>
+          <p className="text-petroleum-300 text-sm">{t("noRaces")}</p>
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
@@ -68,6 +69,8 @@ function reducer(state: FormState, action: FormAction): FormState {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewReviewPage() {
+  const t = useTranslations("dashboard.reviews.form");
+  const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { submitting, error, quote, name, age, initials } = state;
@@ -95,7 +98,7 @@ export default function NewReviewPage() {
     if (!quote.trim() || !name.trim()) {
       dispatch({
         type: "SUBMIT_ERROR",
-        message: "Quote and name are required.",
+        message: t("errors.required"),
       });
       return;
     }
@@ -126,7 +129,7 @@ export default function NewReviewPage() {
         type: "SUBMIT_ERROR",
         message:
           (dbError as { message?: string })?.message ??
-          "Failed to create review.",
+          t("errors.createFailed"),
       });
       return;
     }
@@ -139,11 +142,11 @@ export default function NewReviewPage() {
       <form onSubmit={(e) => void handleSubmit(e)} noValidate>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            New Review
+            {t("title")}
           </h1>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/reviews">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -151,7 +154,7 @@ export default function NewReviewPage() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Save as Draft"}
+              {submitting ? t("creating") : t("saveDraft")}
             </Button>
           </div>
         </div>
@@ -166,20 +169,20 @@ export default function NewReviewPage() {
           {/* Quote */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Review
+              {t("sections.review")}
             </h2>
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="quote"
                 className="text-petroleum-500 text-xs font-medium"
               >
-                Quote <span className="text-red-400">*</span>
+                {t("fields.quote")} <span className="text-red-400">*</span>
               </label>
               <textarea
                 id="quote"
                 value={quote}
                 onChange={(e) => setField("quote", e.target.value)}
-                placeholder="What the client said…"
+                placeholder={t("fields.quotePlaceholder")}
                 rows={4}
                 disabled={submitting}
                 className={TEXTAREA_CLASS}
@@ -190,7 +193,7 @@ export default function NewReviewPage() {
           {/* Author */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Author
+              {t("sections.author")}
             </h2>
             <div className="space-y-4">
               <div className="flex flex-col gap-1.5">
@@ -198,14 +201,14 @@ export default function NewReviewPage() {
                   htmlFor="name"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Name <span className="text-red-400">*</span>
+                  {t("fields.name")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="name"
                   type="text"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="e.g. Marcus V."
+                  placeholder={t("fields.namePlaceholder")}
                   disabled={submitting}
                   className={INPUT_CLASS}
                 />
@@ -217,7 +220,7 @@ export default function NewReviewPage() {
                     htmlFor="age"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Age
+                    {t("fields.age")}
                   </label>
                   <input
                     id="age"
@@ -226,7 +229,7 @@ export default function NewReviewPage() {
                     max={120}
                     value={age}
                     onChange={(e) => setField("age", e.target.value)}
-                    placeholder="47"
+                    placeholder={t("fields.agePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -236,7 +239,7 @@ export default function NewReviewPage() {
                     htmlFor="initials"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Initials
+                    {t("fields.initials")}
                   </label>
                   <input
                     id="initials"
@@ -245,7 +248,7 @@ export default function NewReviewPage() {
                     onChange={(e) =>
                       setField("initials", e.target.value.toUpperCase())
                     }
-                    placeholder="MV"
+                    placeholder={t("fields.initialsPlaceholder")}
                     maxLength={3}
                     disabled={submitting}
                     className={INPUT_CLASS}

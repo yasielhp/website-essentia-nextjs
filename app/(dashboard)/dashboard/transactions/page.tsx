@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
@@ -72,19 +73,19 @@ type UnifiedRow = {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const TYPE_BADGE: Record<TxType, { label: string; cls: string }> = {
-  booking: { label: "Booking", cls: "bg-blue-100 text-blue-700" },
-  membership: { label: "Membership", cls: "bg-purple-50 text-purple-700" },
-  race: { label: "Race", cls: "bg-green-50 text-green-700" },
-  education: { label: "Education", cls: "bg-yellow-50 text-yellow-700" },
+const TYPE_BADGE: Record<TxType, { cls: string }> = {
+  booking: { cls: "bg-blue-100 text-blue-700" },
+  membership: { cls: "bg-purple-50 text-purple-700" },
+  race: { cls: "bg-green-50 text-green-700" },
+  education: { cls: "bg-yellow-50 text-yellow-700" },
 };
 
-const SOURCE_BADGE: Record<string, { label: string; cls: string }> = {
-  admin: { label: "Admin", cls: "bg-petroleum-100 text-petroleum-700" },
-  staff: { label: "Staff", cls: "bg-blue-100 text-blue-700" },
-  partner: { label: "Partner", cls: "bg-yellow-100 text-yellow-700" },
-  client: { label: "Client", cls: "bg-green-50 text-green-700" },
-  anonymous: { label: "Web", cls: "bg-sand-100 text-petroleum-500" },
+const SOURCE_BADGE: Record<string, { cls: string }> = {
+  admin: { cls: "bg-petroleum-100 text-petroleum-700" },
+  staff: { cls: "bg-blue-100 text-blue-700" },
+  partner: { cls: "bg-yellow-100 text-yellow-700" },
+  client: { cls: "bg-green-50 text-green-700" },
+  anonymous: { cls: "bg-sand-100 text-petroleum-500" },
 };
 
 const STATUS_CLS: Record<string, string> = {
@@ -124,10 +125,10 @@ const emptyTxFilter: TxFilter = {
 // ─── Date range picker ────────────────────────────────────────
 
 const DATE_PRESETS = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Last 3 months", days: 90 },
-  { label: "This year", days: -1 },
+  { key: "last7", days: 7 },
+  { key: "last30", days: 30 },
+  { key: "last90", days: 90 },
+  { key: "thisYear", days: -1 },
 ] as const;
 
 function presetDates(days: number): [string, string] {
@@ -142,18 +143,29 @@ function presetDates(days: number): [string, string] {
   return [d.toISOString().split("T")[0]!, today];
 }
 
-function dateRangeLabel(from: string, to: string): string {
-  if (!from && !to) return "All dates";
+type Translator = ReturnType<typeof useTranslations<"dashboard">>;
+
+function dateRangeLabel(
+  from: string,
+  to: string,
+  t: Translator,
+  locale: string,
+): string {
+  if (!from && !to) return t("common.dates.all");
   const today = new Date().toISOString().split("T")[0]!;
-  for (const { label, days } of DATE_PRESETS) {
+  for (const { key, days } of DATE_PRESETS) {
     const [f] = presetDates(days);
-    if (from === f && to === today) return label;
+    if (from === f && to === today) return t(`common.dates.${key}`);
   }
   const fmt = (s: string) =>
-    new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-  if (from && to) return `${fmt(from)} – ${fmt(to)}`;
-  if (from) return `From ${fmt(from)}`;
-  return `Until ${fmt(to)}`;
+    new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "short",
+    }).format(new Date(s));
+  if (from && to)
+    return t("common.dates.range", { from: fmt(from), to: fmt(to) });
+  if (from) return t("common.dates.fromOnly", { date: fmt(from) });
+  return t("common.dates.untilOnly", { date: fmt(to) });
 }
 
 function DateRangeButton({
@@ -165,6 +177,8 @@ function DateRangeButton({
   dateTo: string;
   onChange: (from: string, to: string) => void;
 }) {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [localFrom, setLocalFrom] = useState("");
   const [localTo, setLocalTo] = useState("");
@@ -211,21 +225,21 @@ function DateRangeButton({
           <line x1="8" y1="2" x2="8" y2="6" />
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
-        {dateRangeLabel(dateFrom, dateTo)}
+        {dateRangeLabel(dateFrom, dateTo, t, locale)}
       </Button>
 
       {open && (
         <div className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl">
           <div className="mb-3 flex flex-wrap gap-1.5">
-            {DATE_PRESETS.map(({ label, days }) => {
-              const [f, t] = presetDates(days);
-              const active = dateFrom === f && dateTo === t;
+            {DATE_PRESETS.map(({ key, days }) => {
+              const [f, until] = presetDates(days);
+              const active = dateFrom === f && dateTo === until;
               return (
                 <button
-                  key={label}
+                  key={key}
                   type="button"
                   onClick={() => {
-                    onChange(f, t);
+                    onChange(f, until);
                     setOpen(false);
                   }}
                   className={[
@@ -235,7 +249,7 @@ function DateRangeButton({
                       : "border-sand-200 text-petroleum-500 hover:border-petroleum-300 border",
                   ].join(" ")}
                 >
-                  {label}
+                  {t(`common.dates.${key}`)}
                 </button>
               );
             })}
@@ -243,7 +257,9 @@ function DateRangeButton({
           <div className="border-sand-100 mb-3 border-t" />
           <div className="mb-3 grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-petroleum-300 text-xs">From</span>
+              <span className="text-petroleum-300 text-xs">
+                {t("common.dates.from")}
+              </span>
               <input
                 type="date"
                 value={localFrom}
@@ -252,7 +268,9 @@ function DateRangeButton({
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-petroleum-300 text-xs">To</span>
+              <span className="text-petroleum-300 text-xs">
+                {t("common.dates.to")}
+              </span>
               <input
                 type="date"
                 value={localTo}
@@ -270,7 +288,7 @@ function DateRangeButton({
               }}
               className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
             >
-              Clear
+              {t("common.dates.clear")}
             </button>
             <Button
               variant="solid"
@@ -280,7 +298,7 @@ function DateRangeButton({
                 setOpen(false);
               }}
             >
-              Apply
+              {t("common.dates.apply")}
             </Button>
           </div>
         </div>
@@ -302,6 +320,7 @@ function FilterModal({
   onClear: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
@@ -311,9 +330,12 @@ function FilterModal({
     >
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-petroleum-700 text-xl">Filters</h3>
+          <h3 className="font-display text-petroleum-700 text-xl">
+            {t("common.filters")}
+          </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -328,53 +350,73 @@ function FilterModal({
         </div>
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            <span className="text-petroleum-400 text-xs font-medium">Type</span>
+            <span className="text-petroleum-400 text-xs font-medium">
+              {t("transactions.filters.type")}
+            </span>
             <select
               value={pending.type}
               onChange={(e) => onChange("type", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All types</option>
-              <option value="booking">Booking</option>
-              <option value="membership">Membership</option>
-              <option value="race">Race</option>
-              <option value="education">Education</option>
+              <option value="">{t("transactions.filters.allTypes")}</option>
+              <option value="booking">{t("transactions.types.booking")}</option>
+              <option value="membership">
+                {t("transactions.types.membership")}
+              </option>
+              <option value="race">{t("transactions.types.race")}</option>
+              <option value="education">
+                {t("transactions.types.education")}
+              </option>
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Status
+              {t("transactions.filters.status")}
             </span>
             <select
               value={pending.status}
               onChange={(e) => onChange("status", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All statuses</option>
-              <option value="completed">Completed</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="expired">Expired</option>
-              <option value="failed">Failed</option>
-              <option value="refunded">Refunded</option>
+              <option value="">{t("transactions.filters.allStatuses")}</option>
+              <option value="completed">
+                {t("transactions.status.completed")}
+              </option>
+              <option value="active">{t("transactions.status.active")}</option>
+              <option value="pending">
+                {t("transactions.status.pending")}
+              </option>
+              <option value="cancelled">
+                {t("transactions.status.cancelled")}
+              </option>
+              <option value="expired">
+                {t("transactions.status.expired")}
+              </option>
+              <option value="failed">{t("transactions.status.failed")}</option>
+              <option value="refunded">
+                {t("transactions.status.refunded")}
+              </option>
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-petroleum-400 text-xs font-medium">
-              Reserved by
+              {t("transactions.filters.reservedBy")}
             </span>
             <select
               value={pending.reservedBy}
               onChange={(e) => onChange("reservedBy", e.target.value)}
               className={fieldCls}
             >
-              <option value="">All</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-              <option value="partner">Partner</option>
-              <option value="client">Client</option>
-              <option value="anonymous">Web</option>
+              <option value="">{t("transactions.filters.allSources")}</option>
+              <option value="admin">{t("transactions.sources.admin")}</option>
+              <option value="staff">{t("transactions.sources.staff")}</option>
+              <option value="partner">
+                {t("transactions.sources.partner")}
+              </option>
+              <option value="client">{t("transactions.sources.client")}</option>
+              <option value="anonymous">
+                {t("transactions.sources.anonymous")}
+              </option>
             </select>
           </label>
         </div>
@@ -383,10 +425,10 @@ function FilterModal({
             onClick={onClear}
             className="text-petroleum-400 hover:text-petroleum-700 text-sm transition-colors"
           >
-            Clear all
+            {t("common.clearAll")}
           </button>
           <Button variant="solid" size="md" onClick={onApply}>
-            Apply filters
+            {t("common.applyFilters")}
           </Button>
         </div>
       </div>
@@ -407,42 +449,44 @@ function fullName(
   return fallback ? `${fallback.slice(0, 8)}…` : "—";
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, locale: string): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("en-GB", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
-  });
+  }).format(d);
 }
 
-function formatTime(value: string | null): string {
+function formatTime(value: string | null, locale: string): string {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
 }
 
-const intlCurrency = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "EUR",
-});
-
-function formatAmount(value: number | null): string {
+function formatAmount(value: number | null, locale: string): string {
   if (value === null || Number.isNaN(value)) return "—";
-  return intlCurrency.format(value);
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
 }
 
 function StatusBadge({ status }: { status: string | null }) {
+  const t = useTranslations("dashboard.transactions");
   const s = status ?? "unknown";
   const cls = STATUS_CLS[s] ?? "bg-sand-100 text-petroleum-500";
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}
     >
-      {s}
+      {t.has(`status.${s}`) ? t(`status.${s}`) : s}
     </span>
   );
 }
@@ -450,6 +494,11 @@ function StatusBadge({ status }: { status: string | null }) {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function TransactionsPage() {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
+  // Resolved outside the effect so the dependency is a plain string rather
+  // than the translator, which is not guaranteed to be referentially stable.
+  const membershipLabel = t("transactions.types.membership");
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -540,7 +589,7 @@ export default function TransactionsPage() {
         unified.push({
           id: r.id,
           type: "membership",
-          title: "Membership",
+          title: membershipLabel,
           subtitle: null,
           client: fullName(r.contacts, r.contact_id),
           clientEmail: null,
@@ -598,7 +647,7 @@ export default function TransactionsPage() {
       setLoading(false);
     }
     void load();
-  }, []);
+  }, [membershipLabel]);
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
@@ -655,19 +704,23 @@ export default function TransactionsPage() {
           className="gap-2"
         >
           <IconFilter />
-          Filters{activeFilterCount > 0 ? ` [${activeFilterCount}]` : ""}
+          {activeFilterCount > 0
+            ? t("common.filtersWithCount", { count: activeFilterCount })
+            : t("common.filters")}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="border-sand-200 rounded-2xl border bg-white p-6">
-          <p className="text-petroleum-400 text-sm">Revenue</p>
+          <p className="text-petroleum-400 text-sm">
+            {t("transactions.stats.revenue")}
+          </p>
           {loading ? (
             <div className="bg-sand-100 mt-2 h-8 w-24 animate-pulse rounded-lg" />
           ) : (
             <p className="font-display text-petroleum-700 mt-1 text-3xl">
-              {new Intl.NumberFormat("es-ES", {
+              {new Intl.NumberFormat(locale, {
                 style: "currency",
                 currency: "EUR",
                 maximumFractionDigits: 0,
@@ -675,9 +728,21 @@ export default function TransactionsPage() {
             </p>
           )}
         </div>
-        <StatCard label="Completed" value={stats.completed} loading={loading} />
-        <StatCard label="Pending" value={stats.pending} loading={loading} />
-        <StatCard label="Total" value={stats.total} loading={loading} />
+        <StatCard
+          label={t("transactions.stats.completed")}
+          value={stats.completed}
+          loading={loading}
+        />
+        <StatCard
+          label={t("transactions.stats.pending")}
+          value={stats.pending}
+          loading={loading}
+        />
+        <StatCard
+          label={t("transactions.stats.total")}
+          value={stats.total}
+          loading={loading}
+        />
       </div>
 
       {/* ── Mobile cards ── */}
@@ -697,7 +762,7 @@ export default function TransactionsPage() {
           </div>
         ) : pageRows.length === 0 ? (
           <p className="text-petroleum-400 py-12 text-center text-sm">
-            No transactions found.
+            {t("transactions.empty")}
           </p>
         ) : (
           <div className="divide-sand-200 border-sand-200 divide-y overflow-hidden rounded-2xl border bg-white">
@@ -709,7 +774,7 @@ export default function TransactionsPage() {
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tb.cls}`}
                     >
-                      {tb.label}
+                      {t(`transactions.types.${row.type}`)}
                     </span>
                     <StatusBadge status={row.status} />
                   </div>
@@ -738,22 +803,22 @@ export default function TransactionsPage() {
                         <span
                           className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${src.cls}`}
                         >
-                          {src.label}
+                          {t(`transactions.sources.${row.reservedBy}`)}
                         </span>
                       );
                     })()}
                   <div className="mt-1.5 flex items-center gap-3">
                     {row.created_at && (
                       <span className="text-petroleum-300 text-xs">
-                        {formatDate(row.created_at)}
-                        {formatTime(row.created_at)
-                          ? ` · ${formatTime(row.created_at)}`
+                        {formatDate(row.created_at, locale)}
+                        {formatTime(row.created_at, locale)
+                          ? ` · ${formatTime(row.created_at, locale)}`
                           : ""}
                       </span>
                     )}
                     {row.amount !== null && (
                       <span className="text-petroleum-700 text-xs font-medium">
-                        {formatAmount(row.amount)}
+                        {formatAmount(row.amount, locale)}
                       </span>
                     )}
                   </div>
@@ -772,22 +837,22 @@ export default function TransactionsPage() {
               <thead>
                 <tr className="border-sand-200 border-b text-left">
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Created
+                    {t("transactions.columns.created")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Status
+                    {t("transactions.columns.status")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Service
+                    {t("transactions.columns.service")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Client
+                    {t("transactions.columns.client")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-xs font-medium">
-                    Reserved by
+                    {t("transactions.columns.reservedBy")}
                   </th>
                   <th className="text-petroleum-400 px-5 py-3.5 text-right text-xs font-medium">
-                    Amount
+                    {t("transactions.columns.amount")}
                   </th>
                 </tr>
               </thead>
@@ -830,7 +895,7 @@ export default function TransactionsPage() {
                       colSpan={6}
                       className="text-petroleum-400 px-6 py-12 text-center"
                     >
-                      No transactions found.
+                      {t("transactions.empty")}
                     </td>
                   </tr>
                 ) : (
@@ -843,10 +908,10 @@ export default function TransactionsPage() {
                       >
                         <td className="px-5 py-4">
                           <p className="text-petroleum-500">
-                            {formatDate(row.created_at)}
+                            {formatDate(row.created_at, locale)}
                           </p>
                           <p className="text-petroleum-400 text-xs">
-                            {formatTime(row.created_at)}
+                            {formatTime(row.created_at, locale)}
                           </p>
                         </td>
                         <td className="px-5 py-4">
@@ -860,7 +925,7 @@ export default function TransactionsPage() {
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tb.cls}`}
                             >
-                              {tb.label}
+                              {t(`transactions.types.${row.type}`)}
                             </span>
                             {row.subtitle && (
                               <span className="text-petroleum-400 text-xs">
@@ -886,7 +951,7 @@ export default function TransactionsPage() {
                               <span
                                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${src.cls}`}
                               >
-                                {src.label}
+                                {t(`transactions.sources.${row.reservedBy}`)}
                               </span>
                             ) : (
                               <span className="text-petroleum-300">—</span>
@@ -894,7 +959,7 @@ export default function TransactionsPage() {
                           })()}
                         </td>
                         <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
-                          {formatAmount(row.amount)}
+                          {formatAmount(row.amount, locale)}
                         </td>
                       </tr>
                     );

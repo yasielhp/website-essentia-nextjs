@@ -1,11 +1,12 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getCalendarGrid,
   sortByTime,
-  DAYS_SHORT,
+  getShortWeekdays,
 } from "@/utils/dashboard-calendar";
 import { EventPill } from "./event-pill";
 
@@ -22,16 +23,18 @@ export function MonthGrid({
   onDayClick: (d: Date) => void;
   onEventClick: (event: CalendarEvent) => void;
 }) {
+  const locale = useLocale();
   const todayYMD = toYMD(new Date());
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
   const grid = getCalendarGrid(year, month);
+  const weekdays = getShortWeekdays(locale);
 
   return (
     <div>
       {/* Day headers */}
       <div className="border-sand-200 grid grid-cols-7 border-b">
-        {DAYS_SHORT.map((d) => (
+        {weekdays.map((d) => (
           <div
             key={d}
             className="text-petroleum-400 py-2 text-center text-xs font-medium"

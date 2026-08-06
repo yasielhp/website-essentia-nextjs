@@ -67,18 +67,35 @@ export function formatShortDate(
 }
 
 /**
- * `May 20, 2026` — the listing format shared by the users, members and contact
- * detail screens, which each carried a byte-identical copy of this function.
- * Takes a timestamp, not a plain date.
+ * `May 20, 2026` / `20 may 2026` — the listing format shared by the users,
+ * members and contact detail screens, which each carried a byte-identical copy
+ * of this function. Takes a timestamp, not a plain date.
  */
-export function formatMediumDate(iso: string | null | undefined): string {
+export function formatMediumDate(
+  iso: string | null | undefined,
+  locale: SupportedLocale = "en",
+): string {
   if (!iso) return "—";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(intlLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
+  });
+}
+
+/** `14:30` — the clock time of a timestamp, without the date. */
+export function formatTimeOfDay(
+  iso: string | null | undefined,
+  locale: SupportedLocale = "en",
+): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleTimeString(intlLocale(locale), {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 

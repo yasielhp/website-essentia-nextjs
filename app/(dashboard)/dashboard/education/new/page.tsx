@@ -2,6 +2,7 @@
 
 import { useState, useReducer } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -46,6 +47,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewSessionPage() {
+  const t = useTranslations("dashboard.education.form");
+  const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +72,7 @@ export default function NewSessionPage() {
 
     const trimmedTitle = form.title.trim();
     if (!trimmedTitle || !form.date || !form.time) {
-      setError("Title, date and time are required.");
+      setError(t("errors.required"));
       return;
     }
 
@@ -97,7 +100,7 @@ export default function NewSessionPage() {
     if (insertError) {
       setError(
         (insertError as { message?: string })?.message ??
-          "Failed to create session.",
+          t("errors.createFailed"),
       );
       return;
     }
@@ -111,13 +114,13 @@ export default function NewSessionPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-petroleum-700 text-3xl">
-              New Session
+              {t("title")}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="md" href="/dashboard/education">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -125,7 +128,7 @@ export default function NewSessionPage() {
               size="md"
               disabled={submitting}
             >
-              {submitting ? "Creating…" : "Create Session"}
+              {submitting ? t("creating") : t("createSession")}
             </Button>
           </div>
         </div>
@@ -140,7 +143,7 @@ export default function NewSessionPage() {
           <div className="space-y-5 lg:col-span-2">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Details
+                {t("sections.details")}
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
@@ -148,7 +151,7 @@ export default function NewSessionPage() {
                     htmlFor="edu-title"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Title <span className="text-red-400">*</span>
+                    {t("fields.title")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="edu-title"
@@ -161,7 +164,7 @@ export default function NewSessionPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Introduction to Breathwork"
+                    placeholder={t("fields.titlePlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -172,7 +175,7 @@ export default function NewSessionPage() {
                     htmlFor="edu-description"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Description
+                    {t("fields.description")}
                   </label>
                   <textarea
                     id="edu-description"
@@ -184,7 +187,7 @@ export default function NewSessionPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="A brief overview of the session…"
+                    placeholder={t("fields.descriptionPlaceholder")}
                     disabled={submitting}
                     className={TEXTAREA_CLASS}
                   />
@@ -196,7 +199,7 @@ export default function NewSessionPage() {
                       htmlFor="edu-date"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Date <span className="text-red-400">*</span>
+                      {t("fields.date")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       id="edu-date"
@@ -218,7 +221,7 @@ export default function NewSessionPage() {
                       htmlFor="edu-time"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Time <span className="text-red-400">*</span>
+                      {t("fields.time")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       id="edu-time"
@@ -242,7 +245,7 @@ export default function NewSessionPage() {
                     htmlFor="edu-location"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Location
+                    {t("fields.location")}
                   </label>
                   <input
                     id="edu-location"
@@ -255,7 +258,7 @@ export default function NewSessionPage() {
                         value: e.target.value,
                       })
                     }
-                    placeholder="Studio A"
+                    placeholder={t("fields.locationPlaceholder")}
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
@@ -267,7 +270,7 @@ export default function NewSessionPage() {
                       htmlFor="edu-duration"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Duration
+                      {t("fields.duration")}
                     </label>
                     <div className="relative">
                       <input
@@ -281,7 +284,7 @@ export default function NewSessionPage() {
                             value: e.target.value,
                           })
                         }
-                        placeholder="60"
+                        placeholder={t("fields.durationPlaceholder")}
                         min="1"
                         disabled={submitting}
                         className={INPUT_CLASS + " pr-12"}
@@ -296,7 +299,7 @@ export default function NewSessionPage() {
                       htmlFor="edu-max-participants"
                       className="text-petroleum-500 text-xs font-medium"
                     >
-                      Max participants
+                      {t("fields.maxParticipants")}
                     </label>
                     <input
                       id="edu-max-participants"
@@ -309,7 +312,7 @@ export default function NewSessionPage() {
                           value: e.target.value,
                         })
                       }
-                      placeholder="20"
+                      placeholder={t("fields.maxParticipantsPlaceholder")}
                       min="1"
                       disabled={submitting}
                       className={INPUT_CLASS}
@@ -322,7 +325,7 @@ export default function NewSessionPage() {
                     htmlFor="edu-access"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Access
+                    {t("fields.access")}
                   </label>
                   <select
                     id="edu-access"
@@ -336,11 +339,13 @@ export default function NewSessionPage() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   >
-                    <option value="members_only">Members only</option>
-                    <option value="open">Open · free for everyone</option>
-                    <option value="paid">Paid</option>
+                    <option value="members_only">
+                      {t("accessOptions.members_only")}
+                    </option>
+                    <option value="open">{t("accessOptions.open")}</option>
+                    <option value="paid">{t("accessOptions.paid")}</option>
                     <option value="paid_members_free">
-                      Paid · free for members
+                      {t("accessOptions.paid_members_free")}
                     </option>
                   </select>
                 </div>
@@ -351,7 +356,7 @@ export default function NewSessionPage() {
           <div className="space-y-5">
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Cover Image
+                {t("sections.coverImage")}
               </h2>
               <ImageUpload
                 bucket="events"

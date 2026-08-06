@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
 import "../globals.css";
 import { fontVariables } from "@lib/fonts";
 import { AuthProvider } from "@components/auth-provider";
 import { DashboardShell } from "./dashboard-shell";
+import { getDashboardLocale, getDashboardMessages } from "./i18n";
 
 /**
  * The dashboard's own root layout.
@@ -12,8 +14,11 @@ import { DashboardShell } from "./dashboard-shell";
  * once every top-level segment is a route group, and each one owns its
  * `<html>` — so the dashboard needs this shell of its own.
  *
- * It is deliberately not internationalised: the dashboard is English-only, and
- * it carries no `NextIntlClientProvider`, no consent banner and no schema.org.
+ * It is internationalised on its own terms: `proxy.ts` keeps next-intl's
+ * middleware off `/dashboard`, so the language comes from a cookie of its own
+ * and the provider gets an explicit `locale`/`messages` pair rather than
+ * inheriting from `i18n/request.ts`. It still carries no consent banner and no
+ * schema.org.
  */
 
 export const metadata: Metadata = {
@@ -21,17 +26,22 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getDashboardLocale();
+  const messages = await getDashboardMessages(locale);
+
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={fontVariables}>
+    <html lang={locale} data-scroll-behavior="smooth" className={fontVariables}>
       <body className="antialiased">
-        <AuthProvider requireSession>
-          <DashboardShell>{children}</DashboardShell>
-        </AuthProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthProvider requireSession>
+            <DashboardShell>{children}</DashboardShell>
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
