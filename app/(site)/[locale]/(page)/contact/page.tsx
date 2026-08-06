@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
 import ContactSection from "@components/sections/contact/contact-section";
-import { BeforeYouWrite } from "@components/sections/contact/before-you-write";
 
 export async function generateMetadata({
   params,
@@ -37,10 +36,5 @@ export default async function ContactPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return (
-    <>
-      <ContactSection />
-      <BeforeYouWrite />
-    </>
-  );
+  return <ContactSection />;
 }

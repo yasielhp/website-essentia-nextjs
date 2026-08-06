@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { isValidPhone } from "@/utils/contact";
 
+/**
+ * Message KEYS, not sentences: this form is on the bilingual public site, and
+ * the screen resolves them against `common.validation` through `useTranslations`.
+ */
 export const signInSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("emailInvalid"),
+  password: z.string().min(1, "passwordRequired"),
 });
 
 /**
@@ -25,17 +29,13 @@ export const contactMessageSchema = z.object({
     .max(4000),
 });
 
+/** Keys against `common.validation`, as above. */
 export const bookingDetailsSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z
-    .string()
-    .min(6, "Enter a valid phone number")
-    .refine(isValidPhone, "Enter a valid phone number"),
-  consent: z.literal(true, {
-    error: "You must accept the terms and privacy policy",
-  }),
+  firstName: z.string().min(1, "firstNameRequired"),
+  lastName: z.string().min(1, "lastNameRequired"),
+  email: z.string().email("emailInvalid"),
+  phone: z.string().min(6, "phoneInvalid").refine(isValidPhone, "phoneInvalid"),
+  consent: z.literal(true, { error: "consentRequired" }),
 });
 
 // ─── Dashboard people forms ───────────────────────────────────
@@ -120,12 +120,13 @@ export const locationAddressSchema = z.object({
   municipality: z.string().min(1, "Municipality is required"),
 });
 
+/** Keys against `dashboard.validation`, like the other dashboard schemas. */
 export const accountProfileSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
+  firstName: z.string().min(1, "firstNameRequired"),
   lastName: z.string().optional(),
   phone: z
     .string()
-    .regex(/^[+\d\s\-().]{6,}$/, "Enter a valid phone number")
+    .regex(/^[+\d\s\-().]{6,}$/, "phoneFormatInvalid")
     .optional()
     .or(z.literal("")),
 });

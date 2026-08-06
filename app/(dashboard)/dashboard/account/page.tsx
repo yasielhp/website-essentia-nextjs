@@ -3,7 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { insforge } from "@/lib/insforge";
@@ -19,6 +19,8 @@ import {
   fetchStaffServices,
 } from "@/services/calendar.client";
 import { accountProfileSchema, parseErrors } from "@/lib/schemas";
+import { useFieldError } from "@/hooks/use-field-error";
+import { setPreferredLanguage } from "@/actions/preferred-language";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -30,6 +32,7 @@ type PageState = {
   firstName: string;
   lastName: string;
   phone: string;
+  language: string;
   avatarUrl: string;
 };
 
@@ -40,6 +43,7 @@ type PageAction =
         firstName: string;
         lastName: string;
         phone: string;
+        language: string;
         avatarUrl: string;
       };
     }
@@ -48,6 +52,7 @@ type PageAction =
   | { type: "SET_FIRST_NAME"; value: string }
   | { type: "SET_LAST_NAME"; value: string }
   | { type: "SET_PHONE"; value: string }
+  | { type: "SET_LANGUAGE"; value: string }
   | { type: "SET_AVATAR_URL"; value: string };
 
 const initialState: PageState = {
@@ -57,6 +62,7 @@ const initialState: PageState = {
   firstName: "",
   lastName: "",
   phone: "",
+  language: "en",
   avatarUrl: "",
 };
 
@@ -74,6 +80,8 @@ function reducer(state: PageState, action: PageAction): PageState {
       return { ...state, lastName: action.value };
     case "SET_PHONE":
       return { ...state, phone: action.value };
+    case "SET_LANGUAGE":
+      return { ...state, language: action.value };
     case "SET_AVATAR_URL":
       return { ...state, avatarUrl: action.value };
   }
@@ -234,7 +242,10 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
 export default function DashboardAccountPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.account");
+  const { refresh } = useRouter();
   const tUsers = useTranslations("dashboard.users.form");
+  const tValidation = useTranslations("dashboard.validation");
+  const fieldError = useFieldError();
   const { user } = useAuth();
   const { role } = useRole();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -245,8 +256,16 @@ export default function DashboardAccountPage() {
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
 
-  const { loading, saving, error, firstName, lastName, phone, avatarUrl } =
-    state;
+  const {
+    loading,
+    saving,
+    error,
+    firstName,
+    lastName,
+    phone,
+    language,
+    avatarUrl,
+  } = state;
 
   useEffect(() => {
     if (!user) return;
@@ -255,7 +274,9 @@ export default function DashboardAccountPage() {
       if (!user) return;
       const { data } = await insforge.database
         .from("profiles")
-        .select("first_name, last_name, full_name, phone, avatar_url")
+        .select(
+          "first_name, last_name, full_name, phone, avatar_url, preferred_language",
+        )
         .eq("id", user.id)
         .single();
 
@@ -264,6 +285,7 @@ export default function DashboardAccountPage() {
         last_name: string | null;
         full_name: string | null;
         phone: string | null;
+        preferred_language: string | null;
         avatar_url: string | null;
       } | null;
 
@@ -282,6 +304,7 @@ export default function DashboardAccountPage() {
           firstName: derivedFirst ?? "",
           lastName: derivedLast ?? "",
           phone: profile?.phone ?? "",
+          language: profile?.preferred_language ?? "en",
           avatarUrl: profile?.avatar_url ?? "",
         },
       });
@@ -327,7 +350,8 @@ export default function DashboardAccountPage() {
     if (Object.keys(errs).length > 0) {
       dispatch({
         type: "SET_ERROR",
-        error: errs.firstName ?? errs.phone ?? "Please fix the errors.",
+        error:
+          fieldError(errs.firstName ?? errs.phone) || tValidation("fixErrors"),
       });
       return;
     }
@@ -343,12 +367,15 @@ export default function DashboardAccountPage() {
         last_name: lastName.trim() || null,
         full_name: fullName,
         phone: phone.trim() || null,
+        preferred_language: language,
         avatar_url: avatarUrl || null,
       })
       .eq("id", user!.id);
 
     dispatch({ type: "SET_SAVING", value: false });
+    await setPreferredLanguage(language);
     notifySuccess(tToasts("accountSaved"));
+    refresh();
   }
 
   return (
@@ -468,6 +495,34 @@ export default function DashboardAccountPage() {
                       disabled={saving}
                       className={INPUT_CLASS}
                     />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="language"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {t("preferredLanguage")}
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <select
+                      id="language"
+                      value={language}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_LANGUAGE",
+                          value: e.target.value,
+                        })
+                      }
+                      disabled={saving}
+                      className={INPUT_CLASS}
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                    </select>
                   )}
                 </div>
               </div>

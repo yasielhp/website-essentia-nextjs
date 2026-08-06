@@ -484,7 +484,8 @@
         "phone": "Teléfono",
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Género",
-        "role": "Rol"
+        "role": "Rol",
+        "preferredLanguage": "Idioma preferido"
       },
       "roles": {
         "client": {
@@ -922,7 +923,9 @@
     "firstNameRequired": "El nombre es obligatorio",
     "emailInvalid": "Introduce una dirección de email válida",
     "phoneInvalid": "Introduce un teléfono válido, incluido el prefijo del país",
-    "accountEmailRequired": "Una cuenta necesita un email válido con el que iniciar sesión"
+    "accountEmailRequired": "Una cuenta necesita un email válido con el que iniciar sesión",
+    "phoneFormatInvalid": "Introduce un teléfono válido",
+    "fixErrors": "Corrige los errores."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1054,7 +1057,8 @@
       "updated": "Contraseña actualizada.",
       "mismatch": "Las contraseñas no coinciden.",
       "tooShort": "La contraseña debe tener al menos 8 caracteres."
-    }
+    },
+    "preferredLanguage": "Idioma preferido"
   },
   "settings": {
     "plans": {

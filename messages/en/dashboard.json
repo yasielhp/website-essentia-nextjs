@@ -484,7 +484,8 @@
         "phone": "Phone",
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Gender",
-        "role": "Role"
+        "role": "Role",
+        "preferredLanguage": "Preferred language"
       },
       "roles": {
         "client": {
@@ -922,7 +923,9 @@
     "firstNameRequired": "First name is required",
     "emailInvalid": "Enter a valid email address",
     "phoneInvalid": "Enter a valid phone number, including the country code",
-    "accountEmailRequired": "An account needs a valid email address to sign in with"
+    "accountEmailRequired": "An account needs a valid email address to sign in with",
+    "phoneFormatInvalid": "Enter a valid phone number",
+    "fixErrors": "Please fix the errors."
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1054,7 +1057,8 @@
       "updated": "Password updated.",
       "mismatch": "The passwords do not match.",
       "tooShort": "The password must be at least 8 characters."
-    }
+    },
+    "preferredLanguage": "Preferred language"
   },
   "settings": {
     "plans": {

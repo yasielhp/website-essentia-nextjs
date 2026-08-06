@@ -124,9 +124,22 @@ export async function generateMetadata({
   const fullTitle =
     withSuffix.length <= 65 && !title.includes("Essentia") ? withSuffix : title;
 
+  /**
+   * A post lives at two URLs with two different slugs, and until now said so
+   * nowhere: no canonical, no hreflang. Search engines had to guess that the
+   * English and Spanish pages were one piece of writing, and which of the two
+   * to rank. `slug_es` falls back to `slug`, matching how `getPost` resolves it.
+   */
+  const enPath = `/blog/${post.slug}`;
+  const esPath = `/es/blog/${post.slug_es ?? post.slug}`;
+
   return {
     title: { absolute: fullTitle },
     description,
+    alternates: {
+      canonical: isEs ? esPath : enPath,
+      languages: { en: enPath, es: esPath, "x-default": enPath },
+    },
     openGraph: {
       title,
       description,

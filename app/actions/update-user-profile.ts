@@ -29,6 +29,7 @@ export async function updateUserProfile(
     lastName,
     phone,
     gender,
+    preferredLanguage,
     role,
     currentEmail,
   } = input;
@@ -73,6 +74,7 @@ export async function updateUserProfile(
       email: trimEmail || null,
       phone: phone.trim() || null,
       gender,
+      preferred_language: preferredLanguage,
     })
     .eq("id", userId);
 

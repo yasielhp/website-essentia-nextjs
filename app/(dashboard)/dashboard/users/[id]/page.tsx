@@ -44,6 +44,7 @@ type Profile = {
   email: string | null;
   phone: string | null;
   gender: GenderValue | null;
+  preferred_language: string | null;
   role: SystemRole;
 };
 
@@ -65,6 +66,7 @@ type State = {
   originalEmail: string;
   phone: string;
   gender: GenderValue;
+  language: string;
   role: SystemRole;
 };
 
@@ -82,6 +84,7 @@ type Action =
       value: string;
     }
   | { type: "SET_GENDER"; gender: GenderValue }
+  | { type: "SET_LANGUAGE"; language: string }
   | { type: "SET_ROLE"; role: SystemRole }
   | { type: "SET_FIELD_ERRORS"; errors: UserErrors };
 
@@ -99,6 +102,7 @@ const initial: State = {
   originalEmail: "",
   phone: "",
   gender: "",
+  language: "en",
   role: "staff",
 };
 
@@ -120,6 +124,7 @@ function reducer(state: State, action: Action): State {
         originalEmail: action.profile.email ?? "",
         phone: action.profile.phone ?? "",
         gender: action.profile.gender ?? "",
+        language: action.profile.preferred_language ?? "en",
         role: action.profile.role,
       };
     case "NOT_FOUND":
@@ -144,6 +149,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, fieldErrors: action.errors, saving: false };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
+    case "SET_LANGUAGE":
+      return { ...state, language: action.language };
     case "SET_ROLE":
       return { ...state, role: action.role };
   }
@@ -190,7 +197,7 @@ export default function EditUserPage() {
       const { data } = await insforge.database
         .from("profiles")
         .select(
-          "id, first_name, last_name, full_name, email, phone, gender, role",
+          "id, first_name, last_name, full_name, email, phone, gender, role, preferred_language",
         )
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
@@ -270,6 +277,7 @@ export default function EditUserPage() {
       lastName: state.lastName,
       phone: normalizePhone(state.phone) ?? "",
       gender: toStoredGender(state.gender),
+      preferredLanguage: state.language,
       role: state.role,
       currentEmail: state.originalEmail,
     });
@@ -566,6 +574,34 @@ export default function EditUserPage() {
                     disabled={saving}
                     ariaLabel={tForm("fields.gender")}
                   />
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="language"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  {tForm("fields.preferredLanguage")}
+                </label>
+                {loading ? (
+                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                ) : (
+                  <select
+                    id="language"
+                    value={state.language}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_LANGUAGE",
+                        language: e.target.value,
+                      })
+                    }
+                    disabled={saving}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
                 )}
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
@@ -29,6 +30,7 @@ function Field({
   error?: string;
   children: React.ReactNode;
 }) {
+  const validationMessage = useValidationMessage();
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-petroleum-500 text-sm font-medium">
@@ -36,7 +38,9 @@ function Field({
         {required && <span className="ml-0.5 text-red-400">*</span>}
       </label>
       {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-500">{validationMessage(error)}</p>
+      )}
     </div>
   );
 }
@@ -52,6 +56,7 @@ export function DetailsStep({
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
 }) {
+  const validationMessage = useValidationMessage();
   const t = useTranslations("booking.detailsStep");
   const set =
     (key: keyof DetailsState) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,7 +184,9 @@ export function DetailsStep({
           }
         />
         {errors.consent && (
-          <p className="text-xs text-red-500">{errors.consent}</p>
+          <p className="text-xs text-red-500">
+            {validationMessage(errors.consent)}
+          </p>
         )}
       </div>
 
