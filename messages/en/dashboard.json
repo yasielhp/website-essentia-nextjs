@@ -482,6 +482,42 @@
         "contactFailed": "Failed to create contact.",
         "accountFailed": "Failed to create account."
       }
+    },
+    "detail": {
+      "title": "Edit User",
+      "notFound": "User not found.",
+      "goBack": "Go back",
+      "removeAccess": "Remove access",
+      "save": "Save",
+      "saving": "Saving…",
+      "sections": {
+        "role": "Role",
+        "details": "Details",
+        "password": "Password",
+        "services": "Services"
+      },
+      "servicesHint": "Pick the services and connect this staff member's Google Calendar for each one.",
+      "password": {
+        "new": "New password",
+        "confirm": "Confirm password",
+        "placeholder": "••••••••",
+        "change": "Change password",
+        "updated": "Password updated.",
+        "mismatch": "The passwords do not match.",
+        "tooShort": "The password must be at least 8 characters."
+      },
+      "calendar": {
+        "label": "Google Calendar",
+        "connected": "Connected",
+        "disconnect": "Disconnect",
+        "connect": "Connect Google Calendar"
+      },
+      "removeDialog": {
+        "title": "Remove system access?",
+        "body": "This user will lose dashboard access. Their account will remain as a contact.",
+        "confirm": "Yes, remove access",
+        "removing": "Removing…"
+      }
     }
   },
   "education": {
@@ -561,6 +597,29 @@
       },
       "errors": {
         "saveFailed": "Failed to save."
+      }
+    },
+    "enrollees": {
+      "notFound": "Session not found.",
+      "goBack": "Go back",
+      "addEnrollee": "Add enrollee",
+      "addModalTitle": "Add Enrollee",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "noMatches": "No contacts match your search.",
+      "allEnrolled": "All contacts are already enrolled.",
+      "noContactInfo": "No contact info",
+      "remove": "Remove",
+      "removeConfirm": "Remove?",
+      "removeYes": "Yes",
+      "keep": "Keep enrollment",
+      "empty": "No enrollees yet.",
+      "count": "{count, plural, one {# enrollee} other {# enrollees}}",
+      "ofMax": " / {max} max",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "enrolledAt": "Enrolled at"
       }
     }
   },
@@ -651,6 +710,32 @@
       "checkingIn": "Checking in…",
       "tableWord": "Table",
       "noTableAssigned": "No table assigned"
+    },
+    "registrations": {
+      "notFound": "Race not found.",
+      "goBack": "Go back",
+      "checkIn": "Check-in",
+      "addToRace": "Add to race",
+      "addModalTitle": "Add Registration",
+      "searchPlaceholder": "Search by name, email or phone…",
+      "noMatches": "No contacts match your search.",
+      "allRegistered": "All contacts are already registered.",
+      "noContactInfo": "No contact info",
+      "table": "Table {number}",
+      "remove": "Remove",
+      "removeConfirm": "Remove?",
+      "removeYes": "Yes",
+      "keep": "Keep registration",
+      "empty": "No registrations yet.",
+      "count": "{count, plural, one {# registration} other {# registrations}}",
+      "ofMax": " / {max} max",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "table": "Table",
+        "registeredAt": "Registered at"
+      }
     }
   },
   "subscriptions": {

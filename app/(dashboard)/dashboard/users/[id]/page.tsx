@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import {
   dashboardUserSchema,
@@ -154,16 +155,20 @@ function reducer(state: State, action: Action): State {
  * profile cannot be turned into a contact. Same labels and order as the
  * creation form.
  */
-const ROLES: SelectOption<SystemRole>[] = [
-  { value: "staff", label: "Staff", desc: "Dashboard access" },
-  { value: "partner", label: "Partner", desc: "Hotel bookings only" },
-  { value: "admin", label: "Admin", desc: "Full dashboard access" },
-];
+const ROLE_VALUES: SystemRole[] = ["staff", "partner", "admin"];
 
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditUserPage() {
+  const t = useTranslations("dashboard.users.detail");
+  const tForm = useTranslations("dashboard.users.form");
+  const tCommon = useTranslations("dashboard.common");
   const genderOptions = useGenderOptions();
+  const roles: SelectOption<SystemRole>[] = ROLE_VALUES.map((value) => ({
+    value,
+    label: tForm(`roles.${value}.label`),
+    desc: tForm(`roles.${value}.desc`),
+  }));
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
   const [state, dispatch] = useReducer(reducer, initial);
@@ -293,11 +298,11 @@ export default function EditUserPage() {
     setPwError(null);
     setPwOk(false);
     if (pwNew !== pwConfirm) {
-      setPwError("Las contraseñas no coinciden.");
+      setPwError(t("password.mismatch"));
       return;
     }
     if (pwNew.length < 8) {
-      setPwError("La contraseña debe tener al menos 8 caracteres.");
+      setPwError(t("password.tooShort"));
       return;
     }
     setPwLoading(true);
@@ -327,12 +332,12 @@ export default function EditUserPage() {
   if (notFound) {
     return (
       <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-        <p className="text-sm">User not found.</p>
+        <p className="text-sm">{t("notFound")}</p>
         <button
           onClick={() => back()}
           className="hover:text-petroleum-700 mt-4 text-xs underline"
         >
-          Go back
+          {t("goBack")}
         </button>
       </div>
     );
@@ -344,7 +349,7 @@ export default function EditUserPage() {
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
-            Edit User
+            {t("title")}
           </h1>
           <div className="flex items-center gap-3">
             <Button
@@ -356,10 +361,10 @@ export default function EditUserPage() {
               className="gap-1.5"
             >
               <IconTrash />
-              Remove access
+              {t("removeAccess")}
             </Button>
             <Button variant="outline" size="md" href="/dashboard/users">
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -367,7 +372,7 @@ export default function EditUserPage() {
               size="md"
               disabled={saving || loading}
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </div>
@@ -382,7 +387,7 @@ export default function EditUserPage() {
           {/* Role */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Role
+              {t("sections.role")}
             </h2>
             {loading ? (
               <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
@@ -390,12 +395,12 @@ export default function EditUserPage() {
               <OptionSelect
                 id="role"
                 value={state.role}
-                options={ROLES}
+                options={roles}
                 onChange={(nextRole) =>
                   dispatch({ type: "SET_ROLE", role: nextRole })
                 }
                 disabled={saving}
-                ariaLabel="Role"
+                ariaLabel={tForm("fields.role")}
               />
             )}
           </div>
@@ -403,7 +408,7 @@ export default function EditUserPage() {
           {/* Details */}
           <div className="border-sand-200 rounded-2xl border bg-white p-6">
             <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              Details
+              {t("sections.details")}
             </h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -412,7 +417,8 @@ export default function EditUserPage() {
                     htmlFor="firstName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    First name <span className="text-red-400">*</span>
+                    {tForm("fields.firstName")}{" "}
+                    <span className="text-red-400">*</span>
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -443,7 +449,7 @@ export default function EditUserPage() {
                     htmlFor="lastName"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Last name
+                    {tForm("fields.lastName")}
                   </label>
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -476,7 +482,7 @@ export default function EditUserPage() {
                   htmlFor="email"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Email
+                  {tForm("fields.email")}
                 </label>
                 {loading ? (
                   <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -508,7 +514,7 @@ export default function EditUserPage() {
                   htmlFor="phone"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Phone
+                  {tForm("fields.phone")}
                 </label>
                 {loading ? (
                   <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -540,7 +546,7 @@ export default function EditUserPage() {
                   htmlFor="gender"
                   className="text-petroleum-500 text-xs font-medium"
                 >
-                  Gender
+                  {tForm("fields.gender")}
                 </label>
                 {loading ? (
                   <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
@@ -553,7 +559,7 @@ export default function EditUserPage() {
                       dispatch({ type: "SET_GENDER", gender: next })
                     }
                     disabled={saving}
-                    ariaLabel="Gender"
+                    ariaLabel={tForm("fields.gender")}
                   />
                 )}
               </div>
@@ -564,7 +570,7 @@ export default function EditUserPage() {
           {!loading && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                Password
+                {t("sections.password")}
               </h2>
               <div className="space-y-4">
                 {pwError && (
@@ -578,13 +584,13 @@ export default function EditUserPage() {
                     htmlFor="pw-new"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    New password
+                    {t("password.new")}
                   </label>
                   <PasswordInput
                     id="pw-new"
                     value={pwNew}
                     onChange={(e) => setPwNew(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t("password.placeholder")}
                     disabled={pwLoading || saving}
                     autoComplete="new-password"
                     inputClassName={INPUT_CLASS}
@@ -596,13 +602,13 @@ export default function EditUserPage() {
                     htmlFor="pw-confirm"
                     className="text-petroleum-500 text-xs font-medium"
                   >
-                    Confirm password
+                    {t("password.confirm")}
                   </label>
                   <PasswordInput
                     id="pw-confirm"
                     value={pwConfirm}
                     onChange={(e) => setPwConfirm(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t("password.placeholder")}
                     disabled={pwLoading || saving}
                     autoComplete="new-password"
                     inputClassName={INPUT_CLASS}
@@ -612,7 +618,7 @@ export default function EditUserPage() {
                 <div className="flex items-center justify-end gap-4">
                   {pwOk && (
                     <p className="text-sm font-medium text-green-700">
-                      Password updated.
+                      {t("password.updated")}
                     </p>
                   )}
                   <Button
@@ -622,7 +628,7 @@ export default function EditUserPage() {
                     onClick={() => void handleChangePw()}
                     disabled={pwLoading || saving || !pwNew || !pwConfirm}
                   >
-                    {pwLoading ? "Saving…" : "Change password"}
+                    {pwLoading ? t("saving") : t("password.change")}
                   </Button>
                 </div>
               </div>
@@ -633,11 +639,10 @@ export default function EditUserPage() {
           {!loading && state.role === "staff" && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                Services
+                {t("sections.services")}
               </h2>
               <p className="text-petroleum-400 mb-4 text-xs">
-                Selecciona los servicios y conecta el Google Calendar de este
-                miembro del staff para cada uno.
+                {t("servicesHint")}
               </p>
               <div className="space-y-2">
                 {availableServices.map((svc) => {
@@ -676,13 +681,13 @@ export default function EditUserPage() {
                       {isOn && (
                         <div className="border-petroleum-100 border-t px-4 pt-3 pb-3">
                           <p className="text-petroleum-400 mb-2 text-xs font-medium">
-                            Google Calendar
+                            {t("calendar.label")}
                           </p>
                           {calEmail ? (
                             <div className="flex items-center gap-3">
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
                                 <span className="size-1.5 rounded-full bg-green-500" />
-                                Conectado
+                                {t("calendar.connected")}
                               </span>
                               <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
                                 {calEmail}
@@ -701,7 +706,7 @@ export default function EditUserPage() {
                                 }}
                                 className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
                               >
-                                Desconectar
+                                {t("calendar.disconnect")}
                               </button>
                             </div>
                           ) : (
@@ -717,7 +722,7 @@ export default function EditUserPage() {
                               className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
                             >
                               <IconCalendarConnect />
-                              Conectar Google Calendar
+                              {t("calendar.connect")}
                             </button>
                           )}
                         </div>
@@ -737,11 +742,10 @@ export default function EditUserPage() {
           <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex flex-col gap-1">
               <h3 className="font-display text-petroleum-700 text-xl">
-                Remove system access?
+                {t("removeDialog.title")}
               </h3>
               <p className="text-petroleum-400 text-sm">
-                This user will lose dashboard access. Their account will remain
-                as a contact.
+                {t("removeDialog.body")}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -752,7 +756,9 @@ export default function EditUserPage() {
                 disabled={removing}
                 className="w-full"
               >
-                {removing ? "Removing…" : "Yes, remove access"}
+                {removing
+                  ? t("removeDialog.removing")
+                  : t("removeDialog.confirm")}
               </Button>
               <Button
                 variant="outline"
@@ -761,7 +767,7 @@ export default function EditUserPage() {
                 disabled={removing}
                 className="w-full"
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
             </div>
           </div>

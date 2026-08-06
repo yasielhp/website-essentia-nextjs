@@ -482,6 +482,42 @@
         "contactFailed": "No se pudo crear el contacto.",
         "accountFailed": "No se pudo crear la cuenta."
       }
+    },
+    "detail": {
+      "title": "Editar usuario",
+      "notFound": "Usuario no encontrado.",
+      "goBack": "Volver",
+      "removeAccess": "Retirar acceso",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "sections": {
+        "role": "Rol",
+        "details": "Detalles",
+        "password": "Contraseña",
+        "services": "Servicios"
+      },
+      "servicesHint": "Selecciona los servicios y conecta el Google Calendar de este miembro del personal para cada uno.",
+      "password": {
+        "new": "Nueva contraseña",
+        "confirm": "Confirmar contraseña",
+        "placeholder": "••••••••",
+        "change": "Cambiar contraseña",
+        "updated": "Contraseña actualizada.",
+        "mismatch": "Las contraseñas no coinciden.",
+        "tooShort": "La contraseña debe tener al menos 8 caracteres."
+      },
+      "calendar": {
+        "label": "Google Calendar",
+        "connected": "Conectado",
+        "disconnect": "Desconectar",
+        "connect": "Conectar Google Calendar"
+      },
+      "removeDialog": {
+        "title": "¿Retirar el acceso al sistema?",
+        "body": "Este usuario perderá el acceso al dashboard. Su cuenta seguirá existiendo como contacto.",
+        "confirm": "Sí, retirar acceso",
+        "removing": "Retirando…"
+      }
     }
   },
   "education": {
@@ -561,6 +597,29 @@
       },
       "errors": {
         "saveFailed": "No se pudo guardar."
+      }
+    },
+    "enrollees": {
+      "notFound": "Sesión no encontrada.",
+      "goBack": "Volver",
+      "addEnrollee": "Añadir inscrito",
+      "addModalTitle": "Añadir inscrito",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "noMatches": "Ningún contacto coincide con tu búsqueda.",
+      "allEnrolled": "Todos los contactos ya están inscritos.",
+      "noContactInfo": "Sin datos de contacto",
+      "remove": "Eliminar",
+      "removeConfirm": "¿Eliminar?",
+      "removeYes": "Sí",
+      "keep": "Mantener inscripción",
+      "empty": "Todavía no hay inscritos.",
+      "count": "{count, plural, one {# inscrito} other {# inscritos}}",
+      "ofMax": " / {max} máx.",
+      "columns": {
+        "name": "Nombre",
+        "email": "Email",
+        "phone": "Teléfono",
+        "enrolledAt": "Fecha de inscripción"
       }
     }
   },
@@ -651,6 +710,32 @@
       "checkingIn": "Verificando…",
       "tableWord": "Mesa",
       "noTableAssigned": "Sin mesa asignada"
+    },
+    "registrations": {
+      "notFound": "Carrera no encontrada.",
+      "goBack": "Volver",
+      "checkIn": "Check-in",
+      "addToRace": "Añadir a la carrera",
+      "addModalTitle": "Añadir inscripción",
+      "searchPlaceholder": "Buscar por nombre, email o teléfono…",
+      "noMatches": "Ningún contacto coincide con tu búsqueda.",
+      "allRegistered": "Todos los contactos ya están inscritos.",
+      "noContactInfo": "Sin datos de contacto",
+      "table": "Mesa {number}",
+      "remove": "Eliminar",
+      "removeConfirm": "¿Eliminar?",
+      "removeYes": "Sí",
+      "keep": "Mantener inscripción",
+      "empty": "Todavía no hay inscripciones.",
+      "count": "{count, plural, one {# inscripción} other {# inscripciones}}",
+      "ofMax": " / {max} máx.",
+      "columns": {
+        "name": "Nombre",
+        "email": "Email",
+        "phone": "Teléfono",
+        "table": "Mesa",
+        "registeredAt": "Fecha de inscripción"
+      }
     }
   },
   "subscriptions": {

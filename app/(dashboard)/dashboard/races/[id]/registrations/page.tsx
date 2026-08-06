@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,17 +125,17 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function formatDateTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -153,6 +154,7 @@ type PageHeaderProps = {
 };
 
 function PageHeader({ raceId, title, loading, onAddOpen }: PageHeaderProps) {
+  const t = useTranslations("dashboard.races.registrations");
   return (
     <div className="mb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -172,7 +174,7 @@ function PageHeader({ raceId, title, loading, onAddOpen }: PageHeaderProps) {
             className="gap-2"
           >
             <IconQr />
-            Check-in
+            {t("checkIn")}
           </Button>
           <Button
             variant="solid"
@@ -182,7 +184,7 @@ function PageHeader({ raceId, title, loading, onAddOpen }: PageHeaderProps) {
             className="gap-2"
           >
             <IconPlus />
-            Add to race
+            {t("addToRace")}
           </Button>
         </div>
       </div>
@@ -209,6 +211,8 @@ function RegistrationRow({
   onConfirmClose,
   onRemove,
 }: RegistrationRowProps) {
+  const t = useTranslations("dashboard.races.registrations");
+  const locale = useLocale();
   return (
     <tr className="border-sand-50 hover:bg-sand-50 border-b transition-colors">
       <td className="text-petroleum-300 px-5 py-4">{index + 1}</td>
@@ -225,7 +229,7 @@ function RegistrationRow({
         {reg.table_number != null ? (
           <span className="inline-flex items-center gap-1">
             <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
-              Mesa {reg.table_number}
+              {t("table", { number: reg.table_number })}
             </span>
             {reg.checked_in_at && (
               <span
@@ -239,25 +243,27 @@ function RegistrationRow({
         )}
       </td>
       <td className="text-petroleum-400 px-5 py-4">
-        {formatDateTime(reg.registered_at)}
+        {formatDateTime(reg.registered_at, locale)}
       </td>
       <td className="px-5 py-4">
         {removeOpen === reg.id ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-petroleum-400 text-xs">Remove?</span>
+            <span className="text-petroleum-400 text-xs">
+              {t("removeConfirm")}
+            </span>
             <button
               onClick={() => onRemove(reg.id)}
               disabled={removingId === reg.id}
               className="inline-flex items-center rounded-xl bg-red-500 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-600 disabled:opacity-50"
             >
-              {removingId === reg.id ? "…" : "Yes"}
+              {removingId === reg.id ? "…" : t("removeYes")}
             </button>
             <button
               onClick={onConfirmClose}
               disabled={removingId === reg.id}
               className="border-sand-200 text-petroleum-400 hover:bg-sand-50 inline-flex items-center rounded-xl border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
             >
-              Keep registration
+              {t("keep")}
             </button>
           </div>
         ) : (
@@ -266,7 +272,7 @@ function RegistrationRow({
             className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50"
           >
             <IconTrash />
-            Remove
+            {t("remove")}
           </button>
         )}
       </td>
@@ -293,6 +299,7 @@ function AddContactModal({
   onSearch,
   onAdd,
 }: AddContactModalProps) {
+  const t = useTranslations("dashboard.races.registrations");
   return (
     <div
       role="presentation"
@@ -306,7 +313,7 @@ function AddContactModal({
       >
         <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-4">
           <h2 className="font-display text-petroleum-700 text-xl">
-            Add Registration
+            {t("addModalTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -325,7 +332,7 @@ function AddContactModal({
               type="text"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search by name, email or phone…"
+              placeholder={t("searchPlaceholder")}
               className="border-sand-200 bg-sand-50 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none focus:ring-2"
             />
           </div>
@@ -343,9 +350,7 @@ function AddContactModal({
             </div>
           ) : filteredContacts.length === 0 ? (
             <p className="text-petroleum-400 py-8 text-center text-sm">
-              {search
-                ? "No contacts match your search."
-                : "All contacts are already registered."}
+              {search ? t("noMatches") : t("allRegistered")}
             </p>
           ) : (
             <ul className="space-y-1.5 pt-1">
@@ -361,7 +366,7 @@ function AddContactModal({
                     <p className="text-petroleum-400 mt-0.5 text-xs">
                       {[contact.email, contact.phone]
                         .filter(Boolean)
-                        .join(" · ") || "No contact info"}
+                        .join(" · ") || t("noContactInfo")}
                     </p>
                   </div>
                   <Button
@@ -377,7 +382,7 @@ function AddContactModal({
                     ) : (
                       <IconPlus />
                     )}
-                    Add to race
+                    {t("addToRace")}
                   </Button>
                 </li>
               ))}
@@ -394,14 +399,15 @@ type NotFoundStateProps = {
 };
 
 function NotFoundState({ onBack }: NotFoundStateProps) {
+  const t = useTranslations("dashboard.races.registrations");
   return (
     <div className="text-petroleum-400 flex flex-col items-center justify-center py-24">
-      <p className="text-sm">Race not found.</p>
+      <p className="text-sm">{t("notFound")}</p>
       <button
         onClick={onBack}
         className="hover:text-petroleum-700 mt-4 text-xs underline"
       >
-        Go back
+        {t("goBack")}
       </button>
     </div>
   );
@@ -418,20 +424,20 @@ function RegistrationsSummary({
   count,
   maxParticipants,
 }: RegistrationsSummaryProps) {
+  const t = useTranslations("dashboard.races.registrations");
+  const locale = useLocale();
   return (
     <div className="border-sand-100 flex items-center justify-between border-b px-5 py-3">
-      <p className="text-petroleum-400 text-sm">{formatDate(date)}</p>
+      <p className="text-petroleum-400 text-sm">{formatDate(date, locale)}</p>
       <p className="text-petroleum-400 text-sm">
-        {count} registration
-        {count !== 1 ? "s" : ""}
+        {t("count", { count })}
         {maxParticipants != null && (
           <span
             className={
               count >= maxParticipants ? "font-medium text-red-500" : ""
             }
           >
-            {" "}
-            / {maxParticipants} max
+            {t("ofMax", { max: maxParticipants })}
           </span>
         )}
       </p>
@@ -458,22 +464,27 @@ function RegistrationsTable({
   onConfirmClose,
   onRemove,
 }: RegistrationsTableProps) {
+  const t = useTranslations("dashboard.races.registrations");
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] text-sm">
         <thead>
           <tr className="border-sand-200 border-b text-left">
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">#</th>
-            <th className="text-petroleum-400 px-5 py-3.5 font-medium">Name</th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-              Email
+              {t("columns.name")}
             </th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-              Phone
+              {t("columns.email")}
             </th>
-            <th className="text-petroleum-400 px-5 py-3.5 font-medium">Mesa</th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-              Registered at
+              {t("columns.phone")}
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              {t("columns.table")}
+            </th>
+            <th className="text-petroleum-400 px-5 py-3.5 font-medium">
+              {t("columns.registeredAt")}
             </th>
             <th className="text-petroleum-400 px-5 py-3.5 font-medium"></th>
           </tr>
@@ -495,7 +506,7 @@ function RegistrationsTable({
                 colSpan={7}
                 className="text-petroleum-400 px-6 py-12 text-center"
               >
-                No registrations yet.
+                {t("empty")}
               </td>
             </tr>
           ) : (
