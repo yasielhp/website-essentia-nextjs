@@ -4,6 +4,7 @@ import "../globals.css";
 import { fontVariables } from "@lib/fonts";
 import { AuthProvider } from "@components/auth-provider";
 import { DashboardShell } from "./dashboard-shell";
+import { DashboardToaster } from "@components/dashboard/dashboard-toaster";
 import { getDashboardLocale, getDashboardMessages } from "./i18n";
 
 /**
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
           <AuthProvider requireSession>
             <DashboardShell>{children}</DashboardShell>
           </AuthProvider>
+          <DashboardToaster />
         </NextIntlClientProvider>
       </body>
     </html>

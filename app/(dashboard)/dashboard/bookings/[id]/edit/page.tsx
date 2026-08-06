@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import {
   ChevronDown,
   ChevronLeft,
@@ -1267,6 +1268,7 @@ function ClientSection({
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditBookingPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.bookings.edit");
   const tForm = useTranslations("dashboard.bookings.form");
   const locationOptions = useLocationOptions();
@@ -1922,12 +1924,14 @@ export default function EditBookingPage() {
       }
     }
 
+    notifySuccess(tToasts("bookingSaved"));
     push(`/dashboard/bookings/${id}`);
   }
 
   async function handleDelete() {
     setDeleteState((prev) => ({ ...prev, pending: true }));
     await deleteBooking(getAccessToken(), id);
+    notifySuccess(tToasts("bookingDeleted"));
     push("/dashboard/bookings");
   }
 

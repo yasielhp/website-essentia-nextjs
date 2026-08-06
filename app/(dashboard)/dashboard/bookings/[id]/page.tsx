@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
@@ -180,6 +181,7 @@ type PageState =
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function BookingDetailPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.bookings.detail");
   const tStatus = useTranslations("dashboard.bookings.status");
   const tLocations = useTranslations("dashboard.bookings.locations");
@@ -240,6 +242,7 @@ export default function BookingDetailPage() {
   async function handleDelete() {
     setDeleting(true);
     await deleteBooking(getAccessToken(), id);
+    notifySuccess(tToasts("bookingDeleted"));
     push("/dashboard/bookings");
   }
 

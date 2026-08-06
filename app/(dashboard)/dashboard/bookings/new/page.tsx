@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useReducer, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import {
   ChevronDown,
   ChevronLeft,
@@ -592,6 +593,7 @@ function CompletedRow({
 
 function NewBookingPageInner() {
   const t = useTranslations("dashboard.bookings.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const locale = useLocale();
   const locationOptions = useLocationOptions();
@@ -987,6 +989,7 @@ function NewBookingPageInner() {
       }
     }
 
+    notifySuccess(tToasts("bookingCreated"));
     push("/dashboard/bookings");
   }
 

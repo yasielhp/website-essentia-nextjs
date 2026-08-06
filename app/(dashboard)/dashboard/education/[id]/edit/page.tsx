@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -573,6 +574,7 @@ function SidebarCard({ loading, imageUrl, dispatch }: SidebarCardProps) {
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditSessionPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.education.edit");
   const { id } = useParams<{ id: string }>();
   const { push, back } = useRouter();
@@ -692,6 +694,7 @@ export default function EditSessionPage() {
       return;
     }
 
+    notifySuccess(tToasts("sessionSaved"));
     push("/dashboard/education");
   }
 
@@ -702,6 +705,7 @@ export default function EditSessionPage() {
       .delete()
       .eq("session_id", id);
     await insforge.database.from("education_sessions").delete().eq("id", id);
+    notifySuccess(tToasts("sessionDeleted"));
     push("/dashboard/education");
   }
 

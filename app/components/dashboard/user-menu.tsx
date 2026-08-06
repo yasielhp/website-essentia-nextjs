@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/icons";
 import { avatarInitials } from "@/utils/avatar";
 import { LocaleSwitch } from "./locale-switch";
+import { SoundSwitch } from "./sound-switch";
 
 type UserMenuProps = {
   displayName: string;
@@ -61,6 +62,7 @@ export function UserMenu({
             </div>
           </div>
           <LocaleSwitch />
+          <SoundSwitch />
           <button
             onClick={() => {
               setOpen(false);

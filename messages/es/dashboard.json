@@ -2,7 +2,8 @@
   "shell": {
     "toggleSidebar": "Alternar barra lateral",
     "fallbackUser": "Usuario",
-    "language": "Idioma"
+    "language": "Idioma",
+    "sound": "Sonido"
   },
   "nav": {
     "overview": "Resumen",
@@ -875,7 +876,6 @@
       "delete": "Eliminar",
       "saveChanges": "Guardar cambios",
       "saving": "Guardando…",
-      "saved": "Cambios guardados correctamente.",
       "sections": {
         "review": "Testimonio",
         "author": "Autor",
@@ -1034,7 +1034,6 @@
       "photo": "Foto",
       "calendar": "Google Calendar"
     },
-    "saved": "Cambios guardados.",
     "saveChanges": "Guardar cambios",
     "saving": "Guardando…",
     "calendar": {
@@ -1127,5 +1126,31 @@
     "hyperbaric-chambers": "Cámaras hiperbáricas",
     "intravenous-therapy": "Terapia intravenosa",
     "regenerative-medicine": "Medicina regenerativa"
+  },
+  "toasts": {
+    "bookingCreated": "Reserva creada",
+    "bookingSaved": "Reserva guardada",
+    "bookingDeleted": "Reserva eliminada",
+    "raceCreated": "Carrera creada",
+    "raceSaved": "Carrera guardada",
+    "raceDeleted": "Carrera eliminada",
+    "sessionCreated": "Sesión creada",
+    "sessionSaved": "Sesión guardada",
+    "sessionDeleted": "Sesión eliminada",
+    "reviewCreated": "Testimonio creado",
+    "reviewSaved": "Testimonio guardado",
+    "reviewDeleted": "Testimonio eliminado",
+    "postSaved": "Entrada guardada",
+    "postDeleted": "Entrada eliminada",
+    "categorySaved": "Categoría guardada",
+    "userCreated": "Usuario creado",
+    "userSaved": "Usuario guardado",
+    "accessRemoved": "Acceso retirado",
+    "contactCreated": "Contacto creado",
+    "contactSaved": "Contacto guardado",
+    "contactDeleted": "Contacto eliminado",
+    "subscriptionCreated": "Suscripción creada",
+    "accountSaved": "Cuenta guardada",
+    "passwordChanged": "Contraseña cambiada"
   }
 }

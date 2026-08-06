@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -43,6 +44,7 @@ const TAB_BTN = (active: boolean) =>
   ].join(" ");
 
 export default function BlogCategoriesPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.blog.categories_page");
   const tCommon = useTranslations("dashboard.common");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -151,6 +153,7 @@ export default function BlogCategoriesPage() {
       setSlugEs("");
     }
 
+    notifySuccess(tToasts("categorySaved"));
     void reload();
   }
 

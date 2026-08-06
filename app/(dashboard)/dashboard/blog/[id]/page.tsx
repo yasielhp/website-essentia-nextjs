@@ -4,6 +4,7 @@ import { useEffect, useReducer, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -112,6 +113,7 @@ function reducer(s: FormState, a: Action): FormState {
 }
 
 export default function EditPostPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.blog.detail");
   const tForm = useTranslations("dashboard.blog.form");
   const tStatus = useTranslations("dashboard.blog.status");
@@ -279,12 +281,14 @@ export default function EditPostPage() {
       });
       return;
     }
+    notifySuccess(tToasts("postSaved"));
     push("/dashboard/blog");
   }
 
   async function handleDelete() {
     dispatch({ type: "DELETING" });
     await insforge.database.from("blog_posts").delete().eq("id", id);
+    notifySuccess(tToasts("postDeleted"));
     push("/dashboard/blog");
   }
 

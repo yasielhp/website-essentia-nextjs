@@ -2,7 +2,8 @@
   "shell": {
     "toggleSidebar": "Toggle sidebar",
     "fallbackUser": "User",
-    "language": "Language"
+    "language": "Language",
+    "sound": "Sound"
   },
   "nav": {
     "overview": "Overview",
@@ -875,7 +876,6 @@
       "delete": "Delete",
       "saveChanges": "Save changes",
       "saving": "Saving…",
-      "saved": "Changes saved successfully.",
       "sections": {
         "review": "Review",
         "author": "Author",
@@ -1034,7 +1034,6 @@
       "photo": "Photo",
       "calendar": "Google Calendar"
     },
-    "saved": "Changes saved.",
     "saveChanges": "Save changes",
     "saving": "Saving…",
     "calendar": {
@@ -1127,5 +1126,31 @@
     "hyperbaric-chambers": "Hyperbaric Chambers",
     "intravenous-therapy": "Intravenous Therapy",
     "regenerative-medicine": "Regenerative Medicine"
+  },
+  "toasts": {
+    "bookingCreated": "Booking created",
+    "bookingSaved": "Booking saved",
+    "bookingDeleted": "Booking deleted",
+    "raceCreated": "Race created",
+    "raceSaved": "Race saved",
+    "raceDeleted": "Race deleted",
+    "sessionCreated": "Session created",
+    "sessionSaved": "Session saved",
+    "sessionDeleted": "Session deleted",
+    "reviewCreated": "Review created",
+    "reviewSaved": "Review saved",
+    "reviewDeleted": "Review deleted",
+    "postSaved": "Post saved",
+    "postDeleted": "Post deleted",
+    "categorySaved": "Category saved",
+    "userCreated": "User created",
+    "userSaved": "User saved",
+    "accessRemoved": "Access removed",
+    "contactCreated": "Contact created",
+    "contactSaved": "Contact saved",
+    "contactDeleted": "Contact deleted",
+    "subscriptionCreated": "Subscription created",
+    "accountSaved": "Account saved",
+    "passwordChanged": "Password changed"
   }
 }

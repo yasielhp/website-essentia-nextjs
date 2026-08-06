@@ -3,6 +3,7 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import {
   dashboardContactSchema,
@@ -94,6 +95,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export default function NewContactPage() {
   const t = useTranslations("dashboard.contacts.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const fieldError = useFieldError();
   const genderOptions = useGenderOptions();
@@ -160,6 +162,7 @@ export default function NewContactPage() {
       return;
     }
 
+    notifySuccess(tToasts("contactCreated"));
     push("/dashboard/users");
   }
 

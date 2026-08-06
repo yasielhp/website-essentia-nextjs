@@ -3,6 +3,7 @@
 import { useState, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -48,6 +49,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export default function NewSessionPage() {
   const t = useTranslations("dashboard.education.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
 
@@ -105,6 +107,7 @@ export default function NewSessionPage() {
       return;
     }
 
+    notifySuccess(tToasts("sessionCreated"));
     push("/dashboard/education");
   }
 

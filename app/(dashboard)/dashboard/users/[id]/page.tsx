@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import {
   dashboardUserSchema,
@@ -160,6 +161,7 @@ const ROLE_VALUES: SystemRole[] = ["staff", "partner", "admin"];
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function EditUserPage() {
+  const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.users.detail");
   const tForm = useTranslations("dashboard.users.form");
   const tCommon = useTranslations("dashboard.common");
@@ -291,6 +293,7 @@ export default function EditUserPage() {
     }
 
     dispatch({ type: "SET_SAVING", value: false });
+    notifySuccess(tToasts("userSaved"));
     push("/dashboard/users");
   }
 
@@ -316,6 +319,7 @@ export default function EditUserPage() {
     setPwConfirm("");
     setPwOk(true);
     setPwLoading(false);
+    notifySuccess(tToasts("passwordChanged"));
   }
 
   async function handleRemove() {
@@ -326,6 +330,7 @@ export default function EditUserPage() {
       dispatch({ type: "SET_REMOVING", value: false });
       return;
     }
+    notifySuccess(tToasts("accessRemoved"));
     push("/dashboard/users");
   }
 

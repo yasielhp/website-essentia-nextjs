@@ -3,6 +3,7 @@
 import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { createUserAccount } from "@/actions/create-user-account";
@@ -121,6 +122,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export default function NewUserPage() {
   const t = useTranslations("dashboard.users.form");
+  const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const fieldError = useFieldError();
   const genderOptions = useGenderOptions();
@@ -257,6 +259,7 @@ export default function NewUserPage() {
       },
     ]);
 
+    notifySuccess(tToasts("userCreated"));
     push("/dashboard/users?tab=system");
   }
 
