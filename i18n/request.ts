@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { routing } from "./routing";
+import { LOCALE_COOKIE } from "../app/constants/i18n";
 
 const namespaces = [
   "common",
@@ -19,13 +21,26 @@ const namespaces = [
   "memberships",
   "serviceFaqs",
   "reviews",
+  "account",
 ] as const;
 
+/**
+ * The account area sits outside `[locale]`, so `requestLocale` is undefined
+ * there and every page fell back to English however the person had set their
+ * language. The locale cookie — seeded from `profiles.preferred_language` on
+ * sign-in — is the answer for those routes.
+ *
+ * Inside `[locale]` the segment still wins, which is what lets anyone read the
+ * English pages by their URL whatever their preference says.
+ */
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
+  const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
   const locale = hasLocale(routing.locales, requested)
     ? requested
-    : routing.defaultLocale;
+    : hasLocale(routing.locales, fromCookie)
+      ? fromCookie
+      : routing.defaultLocale;
 
   const modules = await Promise.all(
     namespaces.map((ns) => import(`../messages/${locale}/${ns}.json`)),
