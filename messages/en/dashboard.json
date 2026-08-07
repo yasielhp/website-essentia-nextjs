@@ -909,6 +909,7 @@
     "bookingFallback": "Booking",
     "busy": "Busy",
     "bookedBy": "Booked by",
+    "booked": "Booked",
     "newBookingAt": "New booking at {time}",
     "nextRace": "Next Race",
     "noRaces": "No upcoming races.",

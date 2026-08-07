@@ -909,6 +909,7 @@
     "bookingFallback": "Reserva",
     "busy": "Ocupado",
     "bookedBy": "Reservado por",
+    "booked": "Reservado",
     "newBookingAt": "Nueva reserva a las {time}",
     "nextRace": "Próxima carrera",
     "noRaces": "No hay carreras próximas.",
