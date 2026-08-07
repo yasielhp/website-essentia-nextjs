@@ -2,15 +2,12 @@
 
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
 import { manualTherapyTreatments } from "@/data/services-data";
-
-gsap.registerPlugin(ScrollTrigger);
 
 // ─── Hero ─────────────────────────────────────────────────────
 
@@ -52,13 +49,19 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
             "linear-gradient(to bottom, rgb(9 33 33 / 0.55), rgb(9 33 33 / 0.78))",
         }}
       />
-      <div ref={heroRef} className="relative mx-auto max-w-3xl">
+      <div ref={heroRef} className="relative mx-auto max-w-5xl">
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           {t("title")}
         </h1>
-        <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
+        <p className="text-sand-500 mx-auto mt-6 max-w-5xl leading-relaxed text-balance">
           {t("intro")}
         </p>
+        {/* Only manual therapies has a second paragraph so far */}
+        {t.has("intro2") && (
+          <p className="text-sand-500 mx-auto mt-4 max-w-5xl leading-relaxed text-balance">
+            {t("intro2")}
+          </p>
+        )}
         {data.slug === "manual-therapies" && (
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
@@ -86,43 +89,11 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
 
 function ManualTherapiesSection() {
   const t = useTranslations("wellness.treatments");
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const cards =
-        sectionRef.current?.querySelectorAll<HTMLElement>("[data-card]");
-      if (!cards) return;
-      cards.forEach((card) => {
-        gsap.fromTo(
-          card,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1,
-            y: 0,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: card,
-              start: "top 90%",
-              end: "top 60%",
-              scrub: false,
-              toggleActions: "play none none none",
-            },
-          },
-        );
-      });
-    }, sectionRef);
-    return () => ctx.revert();
-  }, []);
 
   const manualServices = manualTherapyTreatments;
 
   return (
-    <section
-      id="treatments"
-      ref={sectionRef}
-      className="bg-sand-50 px-5 py-20 md:py-28"
-    >
+    <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
       <div className="mx-auto max-w-4xl">
         <div className="mb-12 text-center">
           <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
@@ -133,12 +104,16 @@ function ManualTherapiesSection() {
           </p>
         </div>
 
+        {/* Said once here rather than on each treatment page */}
+        <p className="border-sand-200 text-petroleum-500 mx-auto mb-12 max-w-2xl border-y py-6 text-center text-sm leading-relaxed">
+          {t("aromaNote")}
+        </p>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {manualServices.map((service) => (
             <Link
               key={service.id}
               href={`/wellness/manual-therapies/${service.id}`}
-              data-card
               className="group relative block h-80 cursor-pointer overflow-hidden rounded-2xl"
             >
               <Image
@@ -178,74 +153,11 @@ function ManualTherapiesSection() {
 
 function BenefitsSection({ data }: { data: TreatmentData }) {
   const t = useTranslations(`wellness.treatments.${data.slug}`);
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children[0], {
-          opacity: 1,
-          y: 0,
-          duration: 0.25,
-          ease: "power3.out",
-        });
-        tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-          "-=0.05",
-        );
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section ref={sectionRef} className="bg-sand-50 md:h-[300vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col gap-12">
+    <section className="bg-sand-50">
+      <div className="overflow-hidden">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
+          <div className="flex flex-col gap-12">
             <div className="md:max-w-lg">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
                 {t("benefitsHeading")}
@@ -280,74 +192,11 @@ function BenefitsSection({ data }: { data: TreatmentData }) {
 
 function SessionSection({ data }: { data: TreatmentData }) {
   const t = useTranslations(`wellness.treatments.${data.slug}`);
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children[0], {
-          opacity: 1,
-          y: 0,
-          duration: 0.25,
-          ease: "power3.out",
-        });
-        tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-          "-=0.05",
-        );
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 md:h-[260vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
+    <section className="bg-petroleum-700">
+      <div className="overflow-hidden">
+        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
+          <div className="flex flex-col gap-12 md:gap-16">
             <div className="md:max-w-lg">
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
                 {t("sessionHeading")}
@@ -383,70 +232,11 @@ function SessionSection({ data }: { data: TreatmentData }) {
 function CtaSection({ data }: { data: TreatmentData }) {
   const t = useTranslations(`wellness.treatments.${data.slug}`);
   const tShared = useTranslations("wellness.treatments");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children, {
-          opacity: 1,
-          y: 0,
-          stagger: 0.15,
-          duration: 0.35,
-          ease: "power3.out",
-        });
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section ref={sectionRef} className="bg-sand-50 md:h-[220vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col items-center gap-6">
+    <section className="bg-sand-50">
+      <div className="overflow-hidden">
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:py-20">
+          <div className="flex flex-col items-center gap-6">
             <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
               {t("ctaHeading")}
             </h2>

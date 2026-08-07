@@ -474,12 +474,13 @@
       "ctaBody": "La Terapia de Luz Roja está incluida en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "manual-therapies": {
-      "title": "Terapias Manuales.",
+      "title": "Terapia manual avanzada para el cuidado integral del cuerpo.",
       "tagline": "Tacto y restauración",
       "heroAlt": "Sesión de terapia manual en Essentia",
       "price": "€80 / €110",
       "duration": "60 o 90 min",
-      "intro": "Nuestros terapeutas manuales trabajan con el cuerpo completo: fascia, músculo, articulación y sistema nervioso. Cada sesión es tanto una evaluación como un tratamiento — identificando lo que está restringido, lo que está compensando y lo que necesita liberarse antes de convertirse en un problema.",
+      "intro": "En Essentia entendemos la terapia manual como una forma profunda de escuchar el cuerpo. Trabajamos fascia, músculo, articulaciones, sistema linfático y sistema nervioso para adaptar cada tratamiento a las necesidades reales de cada persona.",
+      "intro2": "Cada sesión combina valoración, técnica y sensibilidad para trabajar el cuerpo con precisión, favoreciendo una mayor sensación de equilibrio, movilidad y bienestar.",
       "benefitsHeading": "Qué hace.",
       "benefitsSubtitle": "Las manos expertas logran lo que ninguna máquina puede replicar. Estos son los resultados que perseguimos.",
       "benefits": {
@@ -565,7 +566,8 @@
       "ctaHeading": "Restaura tu piel.",
       "ctaBody": "Las Terapias Faciales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
-    "manualTherapyMetaSuffix": "Terapias Manuales · Essentia"
+    "manualTherapyMetaSuffix": "Terapias Manuales · Essentia",
+    "aromaNote": "Todas nuestras terapias se realizan con aceites y esencias premium, e incorporan aromaterapia cuidadosamente seleccionada para elevar la experiencia sensorial y acompañar el trabajo manual. En caso de alergias, sensibilidad o preferencia personal, la aromaterapia puede adaptarse o evitarse."
   },
   "pages": {
     "breathing-sessions": {
