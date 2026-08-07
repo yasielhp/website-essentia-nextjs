@@ -9,7 +9,7 @@
     "headline3": "your body",
     "subheadline": "Longevity Center & Social Wellness Club in Tenerife",
     "ctaBook": "Reserve Your Visit",
-    "ctaMembership": "Explore Membership",
+    "ctaAbout": "Discover Essentia",
     "videoTitle": "Essentia - branded film",
     "togglePlay": "Toggle video playback"
   },
@@ -196,5 +196,12 @@
       "noRaceBody": "New races will be announced soon.",
       "cta": "Learn more"
     }
+  },
+  "about": {
+    "eyebrow": "About us",
+    "headline": "Wellbeing with intention, health with presence.",
+    "body": "Essentia grew out of a vision Yuli and Alex share: a place where body care, prevention and advanced wellness are lived personally, closely and consciously.",
+    "cta": "Discover Essentia",
+    "imageAlt": "Yuli and Alex, founders of Essentia"
   }
 }

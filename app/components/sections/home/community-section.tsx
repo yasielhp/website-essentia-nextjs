@@ -86,7 +86,7 @@ export default function CommunitySection() {
                 sizes="(max-width: 767px) 100vw, 50vw"
                 className="object-cover"
               />
-              <div className="from-petroleum-900/90 via-petroleum-800/40 absolute inset-0 bg-gradient-to-t to-transparent" />
+              <div className="from-petroleum-900/90 via-petroleum-800/40 absolute inset-0 bg-linear-to-t to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 text-white">
                 <h3 className="font-display text-xl text-white">
                   {tExp("headline")}

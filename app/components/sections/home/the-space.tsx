@@ -5,7 +5,6 @@ import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Button } from "@components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -101,16 +100,6 @@ export default function TheSpace() {
             >
               {t("body")}
             </p>
-
-            <Button
-              data-space-header
-              variant="outline-white"
-              size="md"
-              href="/about"
-              className="mt-8 w-full md:w-auto"
-            >
-              {t("cta")}
-            </Button>
           </div>
 
           {/* ─── Image grid ── */}
@@ -121,7 +110,7 @@ export default function TheSpace() {
               className="relative h-48 overflow-hidden rounded-2xl md:h-64"
             >
               <Image
-                src="/images/home/bento-img-3-v3.webp"
+                src="/images/home/location-1.webp"
                 alt="Essentia wellness space in Tenerife"
                 fill
                 sizes="(max-width: 767px) 100vw, 50vw"
@@ -133,10 +122,10 @@ export default function TheSpace() {
             <div className="hidden flex-col gap-4 md:flex">
               <div
                 data-space-img
-                className="relative h-30 overflow-hidden rounded-2xl"
+                className="relative hidden h-30 overflow-hidden rounded-2xl md:block"
               >
                 <Image
-                  src="/images/home/bento-img-1-v3.webp"
+                  src="/images/home/location-2.webp"
                   alt="Essentia treatment room"
                   fill
                   sizes="50vw"
@@ -146,10 +135,10 @@ export default function TheSpace() {
 
               <div
                 data-space-img
-                className="relative h-30 overflow-hidden rounded-2xl"
+                className="relative hidden h-30 overflow-hidden rounded-2xl md:block"
               >
                 <Image
-                  src="/images/home/bento-img-5-v3.webp"
+                  src="/images/home/location-3.webp"
                   alt="Essentia outdoor area Tenerife"
                   fill
                   sizes="50vw"

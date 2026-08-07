@@ -300,12 +300,12 @@ export default function Hero() {
               {t("ctaBook")}
             </Button>
             <Button
-              href="/experiences/memberships"
+              href="/about"
               variant="outline-white"
               size="lg"
               className="w-full md:w-auto"
             >
-              {t("ctaMembership")}
+              {t("ctaAbout")}
             </Button>
           </div>
         </div>

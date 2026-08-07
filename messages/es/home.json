@@ -9,7 +9,7 @@
     "headline3": "tu cuerpo",
     "subheadline": "Centro de Longevidad y Club de Bienestar Social en Tenerife",
     "ctaBook": "Reserva tu visita",
-    "ctaMembership": "Explorar membresías",
+    "ctaAbout": "Descubre Essentia",
     "videoTitle": "Essentia - branded film",
     "togglePlay": "Activar o pausar el vídeo"
   },
@@ -196,5 +196,12 @@
       "noRaceBody": "Próximamente anunciaremos nuevas carreras.",
       "cta": "Más información"
     }
+  },
+  "about": {
+    "eyebrow": "Sobre nosotros",
+    "headline": "Bienestar con intención, salud con presencia.",
+    "body": "Essentia nace de una visión compartida por Yuli y Alex: crear un espacio donde el cuidado corporal, la prevención y el bienestar avanzado se vivan de forma personalizada, cercana y consciente.",
+    "cta": "Descubre Essentia",
+    "imageAlt": "Yuli y Alex, fundadores de Essentia"
   }
 }
