@@ -594,6 +594,11 @@
       "breadcrumb": "Terapias Faciales"
     },
     "breadcrumbHome": "Inicio",
-    "breadcrumbWellness": "Bienestar"
+    "breadcrumbWellness": "Bienestar",
+    "functional-wellbeing": {
+      "metaTitle": "Bienestar Funcional | Essentia Wellness",
+      "metaDescription": "Bienestar funcional en Essentia Tenerife — valoración y entrenamiento para sostener fuerza, movilidad y energía. Próximamente.",
+      "breadcrumb": "Bienestar Funcional"
+    }
   }
 }

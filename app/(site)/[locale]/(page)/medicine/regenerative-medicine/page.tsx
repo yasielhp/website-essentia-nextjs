@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
 import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
+import { ComingSoon } from "@components/coming-soon";
 
 export async function generateMetadata({
   params,
@@ -44,23 +45,15 @@ export default async function RegenerativePage({
   setRequestLocale(locale);
   const isEs = locale === "es";
 
-  const copy = {
-    heading: isEs ? "Próximamente" : "Coming Soon",
-    body: isEs
-      ? "Este servicio no está disponible todavía. Estamos trabajando para ofrecerte la Medicina Regenerativa muy pronto."
-      : "This service is not available yet. We are working to bring Regenerative Medicine to you very soon.",
-  };
-
   return (
-    <section className="bg-sand-100 flex min-h-dvh items-center justify-center">
-      <div className="mx-auto max-w-lg px-6 py-32 text-center">
-        <h1 className="font-display text-petroleum-700 text-4xl md:text-5xl">
-          {copy.heading}
-        </h1>
-        <p className="text-petroleum-400 mt-5 text-base leading-relaxed">
-          {copy.body}
-        </p>
-      </div>
-    </section>
+    <ComingSoon
+      isEs={isEs}
+      title={isEs ? "Medicina Regenerativa" : "Regenerative Medicine"}
+      body={
+        isEs
+          ? "Tratamientos que activan los mecanismos de reparación del propio cuerpo."
+          : "Treatments that activate the body's own repair mechanisms."
+      }
+    />
   );
 }

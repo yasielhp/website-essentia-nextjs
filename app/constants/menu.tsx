@@ -29,36 +29,50 @@ export const maiMenu = [
           imagen: "/images/menu/functional-wellbeing.webp",
         },
       },
-      {
-        itemName: "Thermal contrast",
-        href: "/wellness/contrast-therapy",
-        comingSoon: true,
-        card: {
-          title: "Thermal contrast",
-          description:
-            "Cold immersion and dry saunas to activate the nervous system, boost circulation, and sharpen mental resilience.",
-          imagen: "/images/menu/thermal-contrast.webp",
-        },
-      },
-      {
-        itemName: "Breathing sessions",
-        href: "/wellness/breathing-sessions",
-        comingSoon: true,
-        card: {
-          title: "Breathing Sessions",
-          description:
-            "Structured breathwork to calm the mind, regulate the nervous system, and cultivate lasting inner stillness.",
-          imagen: "/images/menu/breathing-sessions.webp",
-        },
-      },
+      // TODO: re-enable when thermal contrast goes live
+      // {
+      //   itemName: "Thermal contrast",
+      //   href: "/wellness/contrast-therapy",
+      //   comingSoon: true,
+      //   card: {
+      //     title: "Thermal contrast",
+      //     description:
+      //       "Cold immersion and dry saunas to activate the nervous system, boost circulation, and sharpen mental resilience.",
+      //     imagen: "/images/menu/thermal-contrast.webp",
+      //   },
+      // },
+      // TODO: re-enable when breathing sessions go live
+      // {
+      //   itemName: "Breathing sessions",
+      //   href: "/wellness/breathing-sessions",
+      //   comingSoon: true,
+      //   card: {
+      //     title: "Breathing Sessions",
+      //     description:
+      //       "Structured breathwork to calm the mind, regulate the nervous system, and cultivate lasting inner stillness.",
+      //     imagen: "/images/menu/breathing-sessions.webp",
+      //   },
+      // },
       {
         itemName: "Red light therapy",
         href: "/wellness/red-light-therapy",
+        comingSoon: true,
         card: {
           title: "Red Light Therapy",
           description:
             "Targeted red and near-infrared light to accelerate cellular repair, reduce inflammation, and support deep tissue recovery.",
           imagen: "/images/menu/red-light-therapy.webp",
+        },
+      },
+      {
+        itemName: "Functional wellbeing",
+        href: "/wellness/functional-wellbeing",
+        comingSoon: true,
+        card: {
+          title: "Functional Wellbeing",
+          description:
+            "Assessment and training built around how your body actually moves, to sustain strength, mobility and energy over time.",
+          imagen: "/images/menu/functional-wellbeing.webp",
         },
       },
     ],
@@ -88,6 +102,7 @@ export const maiMenu = [
       {
         itemName: "Intravenous therapy",
         href: "/medicine/intravenous-therapy",
+        comingSoon: true,
         card: {
           title: "Intravenous Therapy",
           description:
@@ -120,23 +135,25 @@ export const maiMenu = [
     },
     itemMenu: [
       {
-        itemName: "Running club",
-        href: "/experiences/running-club",
-        card: {
-          title: "Running Club",
-          description:
-            "Group runs along curated routes — structured training with the energy and accountability of a like-minded community.",
-          imagen: "/images/menu/running-club.webp",
-        },
-      },
-      {
         itemName: "Education and programs",
         href: "/experiences/education-programs",
+        comingSoon: true,
         card: {
           title: "Education and Programs",
           description:
             "Talks, workshops, and immersive programs that deepen your health knowledge and empower real, lasting change.",
           imagen: "/images/menu/education-programs.webp",
+        },
+      },
+      {
+        itemName: "Running club",
+        href: "/experiences/running-club",
+        comingSoon: true,
+        card: {
+          title: "Running Club",
+          description:
+            "Group runs along curated routes — structured training with the energy and accountability of a like-minded community.",
+          imagen: "/images/menu/running-club.webp",
         },
       },
       // TODO: re-enable when memberships go live

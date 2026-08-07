@@ -2,13 +2,14 @@
 
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
-import { principles, team } from "@data/about-data";
+import type { Principle, TeamMember } from "@data/about-data";
 
-gsap.registerPlugin(ScrollTrigger);
+// No ScrollTrigger on this page: the story is long-form copy and the
+// scroll-driven reveals (including the pinned sections) got in the way of
+// reading it. Only the hero keeps its entrance animation.
 
 // ─── Hero ─────────────────────────────────────────────────────
 
@@ -59,10 +60,7 @@ function AboutHero() {
           {t("body")}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button variant="white" size="md" href="/experiences/memberships">
-            {t("joinCta")}
-          </Button>
-          <Button variant="outline-white" size="md" href="/contact">
+          <Button variant="white" size="md" href="/contact">
             {t("talkCta")}
           </Button>
         </div>
@@ -75,90 +73,25 @@ function AboutHero() {
 
 function StorySection() {
   const t = useTranslations("about.story");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children[0], {
-          opacity: 1,
-          y: 0,
-          duration: 0.25,
-          ease: "power3.out",
-        });
-        tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-          "-=0.05",
-        );
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
 
   return (
-    <section ref={sectionRef} className="bg-sand-50 md:h-[260vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div
-            ref={bodyRef}
-            className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-20"
-          >
+    <section className="bg-sand-50">
+      <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
+        <div className="flex flex-col gap-6">
+          {/* Opening — text beside the founders' photo */}
+          <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-2 md:gap-20">
             <div className="flex flex-col gap-6">
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
                 {t("heading")}
               </h2>
               <p className="text-petroleum-500 leading-relaxed">{t("p1")}</p>
               <p className="text-petroleum-500 leading-relaxed">{t("p2")}</p>
-              <p className="text-petroleum-500 leading-relaxed">{t("p3")}</p>
             </div>
 
             <div className="flex flex-col gap-6">
               <div className="relative h-64 overflow-hidden rounded-2xl md:h-80">
                 <Image
-                  src="/images/home/bento-img-1-v3.webp"
+                  src="/images/home/about-teaser.webp"
                   alt={t("imageAlt")}
                   fill
                   sizes="(max-width: 767px) 100vw, 50vw"
@@ -167,8 +100,8 @@ function StorySection() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { value: "2021", label: t("stats.founded") },
-                  { value: "4", label: t("stats.disciplines") },
+                  { value: "2025", label: t("stats.founded") },
+                  { value: "2", label: t("stats.founders") },
                   { value: "Tenerife", label: t("stats.location") },
                 ].map((stat) => (
                   <div key={stat.label} className="flex flex-col gap-1">
@@ -181,6 +114,15 @@ function StorySection() {
               </div>
             </div>
           </div>
+
+          {/* The rest of the story, full width under the photo */}
+          <div className="flex flex-col gap-6">
+            {(["p3", "p4", "p5"] as const).map((key) => (
+              <p key={key} className="text-petroleum-500 leading-relaxed">
+                {t(key)}
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -191,95 +133,38 @@ function StorySection() {
 
 function PrinciplesSection() {
   const t = useTranslations("about.principles");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children[0], {
-          opacity: 1,
-          y: 0,
-          duration: 0.25,
-          ease: "power3.out",
-        });
-        tl.to(
-          children[1],
-          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-          "-=0.05",
-        );
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  // The principles used to live in `about-data.ts`, hardcoded in English, so
+  // the Spanish page showed English copy. They are translated content.
+  //
+  // `t.raw` is untyped and returns undefined for a missing key, which used to
+  // take the whole page down with "principles.map is not a function".
+  const raw = t.raw("items");
+  const principles: Principle[] = Array.isArray(raw) ? raw : [];
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 md:h-[260vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col gap-12 md:gap-16">
-            <div className="md:max-w-lg">
-              <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
-                {t("heading")}
-              </h2>
-              <p className="text-sand-500 mt-4 leading-relaxed">{t("body")}</p>
-            </div>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {principles.map((p) => (
-                <div key={p.number}>
-                  <span className="font-display text-petroleum-500 text-5xl">
-                    {p.number}
-                  </span>
-                  <h3 className="text-sand-100 mt-3 text-lg font-medium">
-                    {p.title}
-                  </h3>
-                  <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {p.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+    <section className="bg-petroleum-700">
+      <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
+        <div className="flex flex-col gap-12 md:gap-16">
+          <div className="md:max-w-lg">
+            <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
+              {t("heading")}
+            </h2>
+            <p className="text-sand-500 mt-4 leading-relaxed">{t("body")}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {principles.map((p) => (
+              <div key={p.number}>
+                <span className="font-display text-petroleum-500 text-5xl">
+                  {p.number}
+                </span>
+                <h3 className="text-sand-100 mt-3 text-lg font-medium">
+                  {p.title}
+                </h3>
+                <p className="text-sand-500 mt-2 text-sm leading-relaxed">
+                  {p.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -291,32 +176,8 @@ function PrinciplesSection() {
 
 function TeamSection() {
   const t = useTranslations("about.team");
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (!wrapperRef.current) return;
-      const children = Array.from(wrapperRef.current.children) as HTMLElement[];
-      children.forEach((child) => {
-        gsap.fromTo(
-          child,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1,
-            y: 0,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: child,
-              start: "top 88%",
-              end: "top 55%",
-              scrub: 0.6,
-            },
-          },
-        );
-      });
-    });
-    return () => ctx.revert();
-  }, []);
+  const raw = t.raw("members");
+  const team: TeamMember[] = Array.isArray(raw) ? raw : [];
 
   return (
     <section className="bg-sand-50">
@@ -328,31 +189,21 @@ function TeamSection() {
           <p className="text-petroleum-400 mt-4 leading-relaxed">{t("body")}</p>
         </div>
 
-        <div
-          ref={wrapperRef}
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4"
-        >
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           {team.map((member) => (
             <div
               key={member.name}
-              className="bg-sand-100 flex flex-col gap-4 rounded-2xl p-6"
+              className="bg-sand-100 flex flex-col rounded-2xl p-6"
             >
-              <div className="bg-petroleum-100 flex size-12 items-center justify-center rounded-full">
-                <span className="text-petroleum-700 text-sm font-semibold">
-                  {member.initials}
-                </span>
-              </div>
-              <div>
-                <p className="text-petroleum-700 leading-snug font-medium">
-                  {member.name}
-                </p>
-                <p className="text-petroleum-500 mt-0.5 text-sm font-medium">
-                  {member.role}
-                </p>
-                <p className="text-petroleum-400 mt-1 text-xs leading-snug">
-                  {member.area}
-                </p>
-              </div>
+              <p className="text-petroleum-700 leading-snug font-medium">
+                {member.name}
+              </p>
+              <p className="text-petroleum-500 mt-0.5 text-sm font-medium">
+                {member.role}
+              </p>
+              <p className="text-petroleum-400 mt-2 text-xs leading-snug">
+                {member.area}
+              </p>
             </div>
           ))}
         </div>
@@ -365,84 +216,22 @@ function TeamSection() {
 
 function CtaSection() {
   const t = useTranslations("about.cta");
-  const sectionRef = useRef<HTMLElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      const inner = innerRef.current;
-      const body = bodyRef.current;
-      if (!section || !inner || !body) return;
-
-      const children = Array.from(body.children) as HTMLElement[];
-      const mm = gsap.matchMedia();
-
-      mm.add("(min-width: 768px)", () => {
-        gsap.set(children, { opacity: 0, y: 40 });
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-            pin: inner,
-          },
-        });
-        tl.to(children, {
-          opacity: 1,
-          y: 0,
-          stagger: 0.15,
-          duration: 0.35,
-          ease: "power3.out",
-        });
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        children.forEach((child) => {
-          gsap.fromTo(
-            child,
-            { opacity: 0, y: 40, scale: 0.97 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: child,
-                start: "top 88%",
-                end: "top 35%",
-                scrub: 0.7,
-              },
-            },
-          );
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
 
   return (
-    <section ref={sectionRef} className="bg-petroleum-700 md:h-[220vh]">
-      <div ref={innerRef} className="overflow-hidden md:h-screen">
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:h-full md:justify-center md:py-20">
-          <div ref={bodyRef} className="flex flex-col items-center gap-6">
-            <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
-              {t("heading")}
-            </h2>
-            <p className="text-sand-500 max-w-md leading-relaxed">
-              {t("body")}
-            </p>
-            <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button variant="white" size="md" href="/experiences/memberships">
-                {t("viewMemberships")}
-              </Button>
-              <Button variant="outline-white" size="md" href="/contact">
-                {t("talkFirst")}
-              </Button>
-            </div>
+    <section className="bg-petroleum-700">
+      <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:py-20">
+        <div className="flex flex-col items-center gap-6">
+          <h2 className="font-display text-sand-50 text-3xl text-balance md:text-4xl">
+            {t("heading")}
+          </h2>
+          <div className="flex max-w-md flex-col gap-2">
+            <p className="text-sand-500 leading-relaxed">{t("body")}</p>
+            <p className="text-sand-500 leading-relaxed">{t("body2")}</p>
+          </div>
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <Button variant="white" size="md" href="/contact">
+              {t("talkCta")}
+            </Button>
           </div>
         </div>
       </div>

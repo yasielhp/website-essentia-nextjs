@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 export const revalidate = 3600;
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
-import RunningClubSection from "@components/sections/experiences/running-club-section";
+import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
+import { ComingSoon } from "@components/coming-soon";
 
 export async function generateMetadata({
   params,
@@ -16,6 +17,7 @@ export async function generateMetadata({
     namespace: "experiences.runningClub.meta",
   });
   return {
+    robots: UNLAUNCHED_ROBOTS,
     title: { absolute: t("title") },
     description: t("description"),
     alternates: {
@@ -43,6 +45,17 @@ export default async function RunningClubPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const isEs = locale === "es";
 
-  return <RunningClubSection />;
+  return (
+    <ComingSoon
+      isEs={isEs}
+      title={isEs ? "Club de Running" : "Running Club"}
+      body={
+        isEs
+          ? "Salidas en grupo por rutas seleccionadas, con entrenamiento estructurado."
+          : "Group runs along curated routes, with structured training."
+      }
+    />
+  );
 }

@@ -5,37 +5,71 @@
   },
   "hero": {
     "imageAlt": "Essentia — interior del club en Costa Adeje",
-    "headingLine1": "Hecho para personas",
-    "headingLine2": "que se toman la salud en serio.",
-    "body": "Un club de longevidad en Costa Adeje, Tenerife. Medicina, bienestar y comunidad bajo un mismo techo.",
-    "joinCta": "Únete a la comunidad",
+    "headingLine1": "Bienestar con intención,",
+    "headingLine2": "salud con presencia.",
+    "body": "Essentia nace de una visión compartida por Yuli y Alex: crear un espacio donde el cuidado corporal, la prevención y el bienestar avanzado se vivan de forma personalizada, cercana y consciente.",
     "talkCta": "Habla con nosotros"
   },
   "story": {
     "heading": "Por qué existimos.",
-    "p1": "Essentia se fundó con una sola pregunta: ¿qué se necesita realmente para vivir bien durante más tiempo? No en teoría, sino en la práctica, todos los días.",
-    "p2": "Reunimos lo mejor de la medicina de longevidad, el bienestar basado en evidencia y la conexión humana genuina, y construimos un lugar en las Islas Canarias donde los tres ocurren bajo un mismo techo.",
-    "p3": "La membresía no es un pase de gimnasio. Es acceso a un equipo médico, a una comunidad de personas con los mismos estándares y a los protocolos que lo respaldan.",
+    "p1": "Essentia nace de la unión entre dos caminos: la experiencia terapéutica de Yuli y la visión creativa, estratégica y experiencial de Alex.",
+    "p2": "Yuli aporta el corazón terapéutico de Essentia. Su trayectoria en el mundo del masaje, el bienestar y las terapias manuales nace de años de formación, práctica y contacto directo con el cuerpo. Su experiencia como terapeuta le ha permitido desarrollar una mirada precisa, sensible y profundamente humana, comprendiendo que cada persona requiere una atención distinta y un acompañamiento adaptado a su momento.",
+    "p3": "Su trabajo combina conocimiento, criterio y presencia terapéutica para ofrecer tratamientos personalizados, cuidadosamente realizados y orientados a mejorar el bienestar desde una visión más profunda del cuerpo.",
+    "p4": "Alex aporta la visión de marca, la dirección estratégica y una mirada constante hacia las nuevas tendencias en bienestar, salud preventiva y longevidad. Su experiencia construyendo proyectos, creando contenido y trabajando con marcas premium le permite llevar Essentia más allá de un servicio: hacia una experiencia cuidada, coherente y con proyección de futuro.",
+    "p5": "Juntos crean Essentia como un espacio donde el cuidado se entiende desde la personalización, la prevención y una forma más consciente de vivir el bienestar.",
     "imageAlt": "Sala de tratamiento de Essentia",
     "stats": {
       "founded": "Fundado",
-      "disciplines": "Disciplinas expertas",
+      "founders": "Fundadores",
       "location": "Costa Adeje"
     }
   },
   "principles": {
     "heading": "Cómo pensamos.",
-    "body": "Tres principios que guían cada decisión que tomamos, desde los protocolos que ofrecemos hasta las personas que contratamos."
+    "body": "Tres principios guían cada decisión en Essentia: los tratamientos que ofrecemos, las tecnologías que integramos y la forma en la que acompañamos a cada persona.",
+    "items": [
+      {
+        "number": "I",
+        "title": "Intención",
+        "description": "No incorporamos una técnica, una terapia o una tecnología solo porque esté de moda. La integramos cuando aporta sentido, coherencia y valor real dentro de una experiencia de bienestar personalizada."
+      },
+      {
+        "number": "II",
+        "title": "Profundidad",
+        "description": "Entendemos el cuerpo como un sistema conectado. Por eso nuestros tratamientos no se enfocan únicamente en una zona, sino en comprender el estado general de la persona y adaptar cada sesión a sus necesidades reales."
+      },
+      {
+        "number": "III",
+        "title": "Coherencia",
+        "description": "Creemos en explicar lo que hacemos con claridad: qué puede aportar cada tratamiento, cuándo tiene sentido y cuándo no. Sin promesas vacías, sin protocolos genéricos y sin perder la parte humana del cuidado."
+      }
+    ]
   },
   "team": {
     "heading": "Las personas.",
-    "body": "Un equipo pequeño y experto. Cada persona está aquí porque cree de verdad en el trabajo.",
-    "subheading": "Clínicos, entrenadores y especialistas unidos por un compromiso compartido con la práctica basada en evidencia."
+    "body": "Detrás de Essentia hay un equipo pequeño, cercano y en constante evolución. Hoy, el proyecto nace de la unión entre la experiencia terapéutica de Yuli y la visión estratégica de Alex.",
+    "members": [
+      {
+        "name": "Yuli",
+        "role": "Terapeuta corporal",
+        "area": "Terapias manuales, drenaje linfático avanzado y cuidado personalizado."
+      },
+      {
+        "name": "Alex Xela",
+        "role": "Dirección & visión estratégica",
+        "area": "Marca, experiencia, bienestar preventivo y nuevas tendencias en longevidad."
+      },
+      {
+        "name": "Medicina",
+        "role": "Próximamente",
+        "area": "Nuevas incorporaciones profesionales para ampliar la visión de Essentia hacia la salud, la prevención y el bienestar avanzado."
+      }
+    ]
   },
   "cta": {
     "heading": "El mejor momento para empezar es ahora.",
-    "body": "La membresía te da acceso a medicina, bienestar, comunidad y educación. Elige tu nivel y empieza.",
-    "viewMemberships": "Ver membresías",
-    "talkFirst": "Habla con nosotros primero"
+    "body": "Una forma más consciente de cuidar tu bienestar.",
+    "body2": "Terapias manuales, salud preventiva y experiencias personalizadas para acompañarte con criterio, sensibilidad y visión de futuro.",
+    "talkCta": "Habla con nosotros"
   }
 }

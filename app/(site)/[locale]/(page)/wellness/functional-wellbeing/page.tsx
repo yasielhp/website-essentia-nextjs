@@ -12,7 +12,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({
     locale,
-    namespace: "wellness.pages.red-light-therapy",
+    namespace: "wellness.pages.functional-wellbeing",
   });
   return {
     robots: UNLAUNCHED_ROBOTS,
@@ -21,12 +21,12 @@ export async function generateMetadata({
     alternates: {
       canonical:
         locale === "es"
-          ? "/es/bienestar/terapia-de-luz-roja"
-          : "/wellness/red-light-therapy",
+          ? "/es/bienestar/bienestar-funcional"
+          : "/wellness/functional-wellbeing",
       languages: {
-        en: "/wellness/red-light-therapy",
-        es: "/es/bienestar/terapia-de-luz-roja",
-        "x-default": "/wellness/red-light-therapy",
+        en: "/wellness/functional-wellbeing",
+        es: "/es/bienestar/bienestar-funcional",
+        "x-default": "/wellness/functional-wellbeing",
       },
     },
     openGraph: {
@@ -36,7 +36,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function RedLightTherapyPage({
+export default async function FunctionalWellbeingPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -48,11 +48,11 @@ export default async function RedLightTherapyPage({
   return (
     <ComingSoon
       isEs={isEs}
-      title={isEs ? "Terapia de Luz Roja" : "Red Light Therapy"}
+      title={isEs ? "Bienestar Funcional" : "Functional Wellbeing"}
       body={
         isEs
-          ? "Luz roja e infrarroja para estimular la reparación celular y la regeneración."
-          : "Red and infrared light to stimulate cellular repair and regeneration."
+          ? "Valoración y entrenamiento para sostener fuerza, movilidad y energía en el tiempo."
+          : "Assessment and training to sustain strength, mobility and energy over time."
       }
     />
   );

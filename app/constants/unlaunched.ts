@@ -15,8 +15,13 @@ import type { Metadata } from "next";
 export const UNLAUNCHED_ROUTES = [
   "/wellness/contrast-therapy",
   "/wellness/breathing-sessions",
+  "/wellness/functional-wellbeing",
+  "/wellness/red-light-therapy",
   "/medicine/hyperbaric-chambers",
+  "/medicine/intravenous-therapy",
   "/medicine/regenerative-medicine",
+  "/experiences/education-programs",
+  "/experiences/running-club",
   "/shop",
 ] as const;
 
