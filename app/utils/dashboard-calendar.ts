@@ -29,6 +29,56 @@ export function toYMD(d: Date): string {
   ].join("-");
 }
 
+/**
+ * A Google FreeBusy interval placed on the viewer's clock.
+ *
+ * Google answers in UTC; the calendar grid speaks local time, so the
+ * conversion happens in the browser rather than on a server whose timezone is
+ * whatever the host decided.
+ */
+export function intervalToLocalSlot(interval: { start: string; end: string }): {
+  date: string;
+  time: string;
+  minutes: number;
+} {
+  const start = new Date(interval.start);
+  const end = new Date(interval.end);
+  return {
+    date: toYMD(start),
+    time: [start.getHours(), start.getMinutes()]
+      .map((n) => String(n).padStart(2, "0"))
+      .join(":"),
+    minutes: Math.max(
+      0,
+      Math.round((end.getTime() - start.getTime()) / 60_000),
+    ),
+  };
+}
+
+/**
+ * A day that already went by. The overview calendar turns every empty cell
+ * into "create a booking here", which made it possible to book last month.
+ */
+export function isPastDay(d: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime() < today.getTime();
+}
+
+/** Same idea one level down: an `HH:MM` slot on `day` that already went by. */
+export function isPastSlot(day: Date, time: string): boolean {
+  if (isPastDay(day)) return true;
+  const now = new Date();
+  if (toYMD(day) !== toYMD(now)) return false;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  const slot = new Date(day);
+  slot.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+  return slot.getTime() < now.getTime();
+}
+
 export function getCalendarGrid(year: number, month: number): Date[] {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);

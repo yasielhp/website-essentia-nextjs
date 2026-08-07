@@ -4,10 +4,13 @@ import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
+import { fetchBusySlots, fetchCalendarBusy } from "@/actions/busy-slots";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
 import type {
+  BusySlot,
   CalendarView,
   CalendarEvent,
   UpcomingRace,
@@ -18,8 +21,14 @@ import {
   getWeekDays,
   groupByDate,
   formatPeriod,
+  intervalToLocalSlot,
+  isPastDay,
+  isPastSlot,
   navigateAnchor,
 } from "@/utils/dashboard-calendar";
+/** Neutral grey for slots a partner may see as taken but never open. */
+const BUSY_COLOR = "#94a3b8";
+
 // ─── Calendar navigation reducer ─────────────────────────────
 
 type CalNav = { view: CalendarView; anchor: Date };
@@ -58,6 +67,10 @@ export default function DashboardPage() {
   // Resolved outside the effect so the dependency is a plain string rather
   // than the translator, which is not guaranteed to be referentially stable.
   const bookingFallback = t("bookingFallback");
+  const busyLabel = t("busy");
+  // A prefix rather than an interpolated message: the name is only known
+  // inside the effect, and `t` is not a safe dependency there.
+  const bookedByLabel = t("bookedBy");
 
   // Upcoming
   const [upcoming, setUpcoming] = useState<{
@@ -150,7 +163,18 @@ export default function DashboardPage() {
         bookingsQuery = bookingsQuery.eq("partner_id", user.id);
       }
 
-      const bookingsRes = await bookingsQuery;
+      // Partners cannot read anyone else's bookings, so those slots would show
+      // up empty and bookable. Pull them as anonymous blocks instead, plus
+      // whatever the connected Google calendars report as busy.
+      const [bookingsRes, busySlots, calendarBusy] = await Promise.all([
+        bookingsQuery,
+        isPartner
+          ? fetchBusySlots(getAccessToken(), fromDate, toDate)
+          : Promise.resolve([] as BusySlot[]),
+        isPartner
+          ? fetchCalendarBusy(getAccessToken(), fromDate, toDate)
+          : Promise.resolve([] as { start: string; end: string }[]),
+      ]);
 
       const [racesRes, sessionsRes] = isPartner
         ? [{ data: null }, { data: null }]
@@ -191,6 +215,44 @@ export default function DashboardPage() {
         });
       }
 
+      // Every slot already accounted for, so a booking that also lives on the
+      // Google calendar is not drawn twice.
+      const claimed = new Set(
+        events.map((e) => `${e.date} ${e.time?.slice(0, 5) ?? ""}`),
+      );
+
+      busySlots.forEach((slot, i) => {
+        claimed.add(`${slot.date} ${slot.time?.slice(0, 5) ?? ""}`);
+        events.push({
+          id: `busy-${slot.date}-${slot.time ?? "allday"}-${i}`,
+          date: slot.date,
+          time: slot.time,
+          title: slot.bookedBy
+            ? `${bookedByLabel} ${slot.bookedBy}`
+            : busyLabel,
+          subtitle: slot.duration ?? undefined,
+          color: BUSY_COLOR,
+          href: "",
+          type: "busy",
+        });
+      });
+
+      calendarBusy.forEach((interval, i) => {
+        const { date, time, minutes } = intervalToLocalSlot(interval);
+        if (claimed.has(`${date} ${time}`)) return;
+        claimed.add(`${date} ${time}`);
+        events.push({
+          id: `gcal-${date}-${time}-${i}`,
+          date,
+          time,
+          title: busyLabel,
+          subtitle: minutes > 0 ? `${minutes} min` : undefined,
+          color: BUSY_COLOR,
+          href: "",
+          type: "busy",
+        });
+      });
+
       for (const r of (racesRes?.data ?? []) as Record<string, unknown>[]) {
         events.push({
           id: r.id as string,
@@ -230,20 +292,35 @@ export default function DashboardPage() {
       setCalendar({ loading: false, events });
     }
     void loadCalendar();
-  }, [view, anchor, isPartner, user, bookingFallback]);
+  }, [
+    view,
+    anchor,
+    isPartner,
+    user,
+    bookingFallback,
+    busyLabel,
+    bookedByLabel,
+  ]);
 
   const eventsByDay = groupByDate(calendarEvents);
   const periodLabel = formatPeriod(view, anchor, locale);
 
   function handleDayClick(d: Date) {
+    // The grids already hide the affordance; this keeps a stray click on a past
+    // cell from opening the booking form pre-filled with a date nobody can use.
+    if (isPastDay(d)) return;
     push(`/dashboard/bookings/new?date=${toYMD(d)}`);
   }
 
   function handleEventClick(event: CalendarEvent) {
+    // A busy block has no detail page — it exists so the slot does not read as
+    // free, and the partner has no right to whatever sits behind it.
+    if (event.type === "busy" || !event.href) return;
     push(event.href);
   }
 
   function handleSlotClick(time: string) {
+    if (isPastSlot(anchor, time)) return;
     push(`/dashboard/bookings/new?date=${toYMD(anchor)}&time=${time}`);
   }
 

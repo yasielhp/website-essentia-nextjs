@@ -907,6 +907,8 @@
     "previousPeriod": "Previous period",
     "nextPeriod": "Next period",
     "bookingFallback": "Booking",
+    "busy": "Busy",
+    "bookedBy": "Booked by",
     "newBookingAt": "New booking at {time}",
     "nextRace": "Next Race",
     "noRaces": "No upcoming races.",

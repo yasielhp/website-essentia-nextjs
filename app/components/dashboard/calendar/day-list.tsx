@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
-import { toYMD, sortByTime } from "@/utils/dashboard-calendar";
+import { toYMD, isPastSlot, sortByTime } from "@/utils/dashboard-calendar";
 import { TIME_SLOTS } from "@/constants/booking";
 
 export function DayList({
@@ -89,40 +89,72 @@ export function DayList({
                     {slot}
                   </div>
                   <div className="flex flex-1 items-start gap-1.5 py-1.5 pr-4">
-                    {slotEvents.map((e) => (
-                      <button
-                        key={e.id + e.type}
-                        onClick={() => onEventClick(e)}
-                        className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs transition-opacity hover:opacity-75"
-                        style={{
-                          backgroundColor: e.color + "22",
-                          color: e.color,
-                        }}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{e.title}</div>
-                          {e.subtitle && (
-                            <div className="truncate opacity-70">
-                              {e.subtitle}
+                    {slotEvents.map((e) => {
+                      // Busy blocks hide someone else's client, so there is
+                      // nothing to open — render them as static bars.
+                      const Tag = e.type === "busy" ? "div" : "button";
+                      return (
+                        <Tag
+                          key={e.id + e.type}
+                          onClick={
+                            e.type === "busy"
+                              ? undefined
+                              : () => onEventClick(e)
+                          }
+                          className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs ${
+                            e.type === "busy"
+                              ? ""
+                              : "transition-opacity hover:opacity-75"
+                          }`}
+                          style={{
+                            backgroundColor: e.color + "22",
+                            color: e.color,
+                          }}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">
+                              {e.title}
                             </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                            {e.subtitle && (
+                              <div className="truncate opacity-70">
+                                {e.subtitle}
+                              </div>
+                            )}
+                          </div>
+                        </Tag>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
-                <button
-                  key={slot}
-                  onClick={() => onSlotClick(slot)}
-                  className="border-sand-100 hover:bg-sand-50 flex min-h-12 w-full border-b text-left transition-colors last:border-b-0"
-                  aria-label={t("newBookingAt", { time: slot })}
-                >
-                  <div className="text-petroleum-400 w-16 shrink-0 py-2 pr-3 text-right font-mono text-xs">
-                    {slot}
-                  </div>
-                  <div className="flex-1 pr-4" />
-                </button>
+                // A slot that already went by takes no new booking, so it is a
+                // plain row rather than a "create here" button.
+                (() => {
+                  const past = isPastSlot(anchor, slot);
+                  return past ? (
+                    <div
+                      key={slot}
+                      className="border-sand-100 flex min-h-12 w-full border-b last:border-b-0"
+                    >
+                      <div className="text-petroleum-400/50 w-16 shrink-0 py-2 pr-3 text-right font-mono text-xs">
+                        {slot}
+                      </div>
+                      <div className="flex-1 pr-4" />
+                    </div>
+                  ) : (
+                    <button
+                      key={slot}
+                      onClick={() => onSlotClick(slot)}
+                      className="border-sand-100 hover:bg-sand-50 flex min-h-12 w-full border-b text-left transition-colors last:border-b-0"
+                      aria-label={t("newBookingAt", { time: slot })}
+                    >
+                      <div className="text-petroleum-400 w-16 shrink-0 py-2 pr-3 text-right font-mono text-xs">
+                        {slot}
+                      </div>
+                      <div className="flex-1 pr-4" />
+                    </button>
+                  );
+                })()
               );
             })}
           </div>

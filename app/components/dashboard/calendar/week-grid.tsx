@@ -5,6 +5,7 @@ import type { CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getWeekDays,
+  isPastDay,
   sortByTime,
   getShortWeekdays,
 } from "@/utils/dashboard-calendar";
@@ -35,6 +36,7 @@ export function WeekGrid({
         {weekDays.map((day) => {
           const ymd = toYMD(day);
           const isToday = ymd === todayYMD;
+          const past = isPastDay(day);
           return (
             <div key={ymd} className="py-2 text-center">
               <div className="text-petroleum-400 text-xs">
@@ -47,10 +49,13 @@ export function WeekGrid({
               </div>
               <button
                 onClick={() => onDayClick(day)}
+                disabled={past}
                 className={`mx-auto mt-1 flex size-6 items-center justify-center rounded-full text-xs font-medium transition-colors sm:size-7 sm:text-sm ${
                   isToday
                     ? "bg-petroleum-700 text-white"
-                    : "text-petroleum-700 hover:bg-sand-100"
+                    : past
+                      ? "text-petroleum-400/50 cursor-default"
+                      : "text-petroleum-700 hover:bg-sand-100"
                 }`}
               >
                 {day.getDate()}
@@ -64,12 +69,15 @@ export function WeekGrid({
       <div className="grid min-h-80 grid-cols-7">
         {weekDays.map((day) => {
           const ymd = toYMD(day);
+          const past = isPastDay(day);
           const dayEvents = sortByTime(eventsByDay.get(ymd) ?? []);
           return (
             <div
               key={ymd}
-              onClick={() => onDayClick(day)}
-              className="border-sand-100 hover:bg-sand-50 cursor-pointer border-r p-0.5 transition-colors last:border-r-0 sm:p-1.5"
+              onClick={past ? undefined : () => onDayClick(day)}
+              className={`border-sand-100 border-r p-0.5 transition-colors last:border-r-0 sm:p-1.5 ${
+                past ? "" : "hover:bg-sand-50 cursor-pointer"
+              }`}
             >
               {loading ? (
                 day.getDay() % 2 === 0 ? (
