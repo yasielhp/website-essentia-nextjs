@@ -14,7 +14,8 @@
       "thermalContrast": "Contraste térmico",
       "breathingSessions": "Sesiones de respiración",
       "redLightTherapy": "Terapia de luz roja",
-      "facialTherapies": "Terapias faciales"
+      "facialTherapies": "Terapias faciales",
+      "functionalWellbeing": "Bienestar funcional"
     },
     "medicine": {
       "regenerativeMedicine": "Medicina regenerativa",
@@ -83,6 +84,10 @@
     "memberships": {
       "title": "Membresías",
       "description": "Membresías por niveles para un acceso continuo al ecosistema completo de Essentia: wellness, medicina y comunidad."
+    },
+    "functionalWellbeing": {
+      "title": "Bienestar Funcional",
+      "description": "Valoración y entrenamiento a partir de cómo se mueve realmente tu cuerpo, para sostener fuerza, movilidad y energía en el tiempo."
     }
   },
   "legal": {

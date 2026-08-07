@@ -22,6 +22,7 @@ export const treatments: MedicineTreatment[] = [
     title: "IV Therapy",
     description:
       "Direct nutrient delivery for rapid absorption and cellular support.",
+    comingSoon: true,
   },
   // TODO: re-enable when regenerative medicine goes live
   // {

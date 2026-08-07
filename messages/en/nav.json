@@ -14,7 +14,8 @@
       "thermalContrast": "Thermal contrast",
       "breathingSessions": "Breathing sessions",
       "redLightTherapy": "Red light therapy",
-      "facialTherapies": "Facial therapies"
+      "facialTherapies": "Facial therapies",
+      "functionalWellbeing": "Functional wellbeing"
     },
     "medicine": {
       "regenerativeMedicine": "Regenerative medicine",
@@ -83,6 +84,10 @@
     "memberships": {
       "title": "Memberships",
       "description": "Tiered memberships for consistent access to Essentia's full ecosystem of wellness, medicine, and community."
+    },
+    "functionalWellbeing": {
+      "title": "Functional Wellbeing",
+      "description": "Assessment and training built around how your body actually moves, to sustain strength, mobility and energy over time."
     }
   },
   "legal": {

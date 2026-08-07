@@ -17,8 +17,6 @@ Bookable today at the centre in Costa Adeje.
 
 - [Manual Therapies](https://www.essentiawellnessclub.com/wellness/manual-therapies): 10 precision massage and bodywork treatments, from €90 to €350. 30–120 min.
 - [Facial Therapies](https://www.essentiawellnessclub.com/wellness/facial-therapies): Advanced facial protocols combining manual technique and technology to restore skin health. 60 min.
-- [Red Light Therapy](https://www.essentiawellnessclub.com/wellness/red-light-therapy): Full-body medical-grade panels, red (630–670 nm) + near-infrared (810–850 nm). 20 min · €25.
-- [IV Therapy](https://www.essentiawellnessclub.com/medicine/intravenous-therapy): High-dose Vitamin C, NAD+, Myers Cocktail, Glutathione, custom amino acids. 45–90 min.
 
 ## Coming soon
 
@@ -29,15 +27,15 @@ pages currently say so. Do not present them as available.
 - Breathing Sessions — guided breathwork, group and 1:1.
 - Hyperbaric Oxygen — pure oxygen at raised atmospheric pressure for tissue repair.
 - Regenerative Medicine — PRP, peptide protocols, ozone therapy, longevity assessments.
+- Red Light Therapy — full-body red and near-infrared panels.
+- IV Therapy — vitamin, NAD+ and amino acid infusions.
+- Functional Wellbeing — assessment and training for strength, mobility and energy.
+- Running Club — group runs on coastal routes in Costa Adeje.
+- Education Programs — masterclasses, workshops and talks.
 
 ## Memberships
 
 - [Memberships](https://www.essentiawellnessclub.com/experiences/memberships): Three tiers — Essential (€199/mo), Premium (€349/mo), Founder (€699/mo). Monthly billing, 30-day cancellation notice.
-
-## Experiences
-
-- [Running Club](https://www.essentiawellnessclub.com/experiences/running-club): Every Saturday 7:30 AM. Coastal routes through Costa Adeje. All levels welcome. Breakfast included.
-- [Education Programs](https://www.essentiawellnessclub.com/experiences/education-programs): Monthly masterclasses, workshops, and talks by researchers and longevity practitioners.
 
 ## Pages
 

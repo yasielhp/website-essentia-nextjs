@@ -35,6 +35,8 @@ export const treatments: Treatment[] = [
     tagline: "Photobiomodulation",
     description:
       "Red and infrared light to stimulate cellular repair and regeneration.",
+
+    comingSoon: true,
   },
   {
     number: "04",

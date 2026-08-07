@@ -594,6 +594,11 @@
       "breadcrumb": "Facial Therapies"
     },
     "breadcrumbHome": "Home",
-    "breadcrumbWellness": "Wellness"
+    "breadcrumbWellness": "Wellness",
+    "functional-wellbeing": {
+      "metaTitle": "Functional Wellbeing | Essentia Wellness",
+      "metaDescription": "Functional wellbeing at Essentia Tenerife — assessment and training to sustain strength, mobility and energy. Coming soon.",
+      "breadcrumb": "Functional Wellbeing"
+    }
   }
 }
