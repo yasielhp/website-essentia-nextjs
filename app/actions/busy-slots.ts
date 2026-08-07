@@ -22,10 +22,11 @@ import type { BusySlot } from "@/types/calendar";
  * date, time, duration and who booked it — never the client's name, email,
  * phone, service or id.
  *
- * `bookedBy` names the owner only when that owner is another partner, so a
- * partner can tell a colleague's appointment from an opaque block. Bookings
- * owned by admin or staff stay anonymous — internal staffing is none of a
- * partner's business — and so does anyone with no name on their profile.
+ * `bookedBy` names whoever booked the slot — partner, staff or admin — so the
+ * partner can tell a colleague's appointment from an opaque Google Calendar
+ * block. It is null for a booking taken by a visitor on the public site, or
+ * when the owner has no name on their profile; the UI then says "booked"
+ * without a name, still distinct from "busy".
  *
  * The caller's own bookings are left out: those already arrive through the
  * partner's own query, with full detail.
@@ -43,7 +44,6 @@ type BookingRow = {
 
 type ProfileRow = {
   id: string;
-  role: string | null;
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -99,11 +99,10 @@ export async function fetchBusySlots(
   if (ownerIds.length > 0) {
     const { data: profiles } = await db
       .from("profiles")
-      .select("id, role, full_name, first_name, last_name")
+      .select("id, full_name, first_name, last_name")
       .in("id", ownerIds);
 
     for (const profile of (profiles ?? []) as ProfileRow[]) {
-      if (profile.role !== "partner") continue;
       const name = displayName(profile);
       if (name) names.set(profile.id, name);
     }

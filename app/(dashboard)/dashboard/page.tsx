@@ -71,6 +71,8 @@ export default function DashboardPage() {
   // A prefix rather than an interpolated message: the name is only known
   // inside the effect, and `t` is not a safe dependency there.
   const bookedByLabel = t("bookedBy");
+  // A booking whose owner has no name — still a booking, not a calendar hole.
+  const bookedLabel = t("booked");
 
   // Upcoming
   const [upcoming, setUpcoming] = useState<{
@@ -229,7 +231,7 @@ export default function DashboardPage() {
           time: slot.time,
           title: slot.bookedBy
             ? `${bookedByLabel} ${slot.bookedBy}`
-            : busyLabel,
+            : bookedLabel,
           subtitle: slot.duration ?? undefined,
           color: BUSY_COLOR,
           href: "",
@@ -300,6 +302,7 @@ export default function DashboardPage() {
     bookingFallback,
     busyLabel,
     bookedByLabel,
+    bookedLabel,
   ]);
 
   const eventsByDay = groupByDate(calendarEvents);
