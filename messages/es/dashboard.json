@@ -907,6 +907,8 @@
     "previousPeriod": "Periodo anterior",
     "nextPeriod": "Periodo siguiente",
     "bookingFallback": "Reserva",
+    "busy": "Ocupado",
+    "bookedBy": "Reservado por",
     "newBookingAt": "Nueva reserva a las {time}",
     "nextRace": "Próxima carrera",
     "noRaces": "No hay carreras próximas.",

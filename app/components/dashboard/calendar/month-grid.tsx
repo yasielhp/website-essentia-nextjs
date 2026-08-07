@@ -5,6 +5,7 @@ import type { CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getCalendarGrid,
+  isPastDay,
   sortByTime,
   getShortWeekdays,
 } from "@/utils/dashboard-calendar";
@@ -51,16 +52,17 @@ export function MonthGrid({
           const ymd = toYMD(day);
           const isCurrentMonth = day.getMonth() === month;
           const isToday = todayYMD !== "" && ymd === todayYMD;
+          const past = isPastDay(day);
           const dayEvents = sortByTime(eventsByDay.get(ymd) ?? []);
           const extra = dayEvents.length - 2;
 
           return (
             <div
               key={ymd}
-              onClick={() => onDayClick(day)}
-              className={`border-sand-100 hover:bg-sand-50 min-h-16 cursor-pointer border-r border-b p-0.5 transition-colors sm:min-h-22 sm:p-1.5 [&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0 ${
-                !isCurrentMonth ? "bg-sand-50/60" : ""
-              }`}
+              onClick={past ? undefined : () => onDayClick(day)}
+              className={`border-sand-100 min-h-16 border-r border-b p-0.5 transition-colors sm:min-h-22 sm:p-1.5 [&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0 ${
+                past ? "" : "hover:bg-sand-50 cursor-pointer"
+              } ${!isCurrentMonth ? "bg-sand-50/60" : ""}`}
             >
               <span
                 className={`mb-0.5 flex size-5 items-center justify-center rounded-full text-[10px] font-medium sm:mb-1 sm:size-6 sm:text-xs ${
