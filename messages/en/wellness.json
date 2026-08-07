@@ -474,12 +474,13 @@
       "ctaBody": "Red Light Therapy is included in all Essentia memberships. Book your first session or join the community to get started."
     },
     "manual-therapies": {
-      "title": "Manual Therapies.",
+      "title": "Advanced manual therapy for whole-body care.",
       "tagline": "Touch & Restoration",
       "heroAlt": "Manual therapy session at Essentia",
       "price": "€80 / €110",
       "duration": "60 or 90 min",
-      "intro": "Our manual therapists work with the whole body: fascia, muscle, joint, and nervous system. Every session is an assessment as much as a treatment — finding what is restricted, what is compensating, and what needs to be released before it becomes a problem.",
+      "intro": "At Essentia we treat manual therapy as a deep way of listening to the body. We work on fascia, muscle, joints, the lymphatic system and the nervous system, so each treatment fits what that person actually needs.",
+      "intro2": "Every session combines assessment, technique and sensitivity to work the body with precision, building a greater sense of balance, mobility and wellbeing.",
       "benefitsHeading": "What it does.",
       "benefitsSubtitle": "Skilled hands accomplish what no machine can replicate. These are the outcomes we target.",
       "benefits": {
@@ -565,7 +566,8 @@
       "ctaHeading": "Restore your skin.",
       "ctaBody": "Facial Therapies are available to all Essentia members. Book your first session or join the community to get started."
     },
-    "manualTherapyMetaSuffix": "Manual Therapies · Essentia"
+    "manualTherapyMetaSuffix": "Manual Therapies · Essentia",
+    "aromaNote": "All our therapies use premium oils and essences, with carefully chosen aromatherapy to lift the sensory experience and support the manual work. Where there are allergies, sensitivities or a personal preference, the aromatherapy can be adapted or left out."
   },
   "pages": {
     "breathing-sessions": {
