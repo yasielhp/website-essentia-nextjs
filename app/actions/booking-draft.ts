@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
+import { ONLINE_PAYMENT_DISCOUNT_PERCENT, onlinePrice } from "@/lib/pricing";
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import type { UpdateBookingPayload } from "@/types/booking";
 
@@ -26,6 +27,7 @@ export async function updateDraftBookingMeta(
   createdByRole: string,
   notes: string | null,
   therapistGender: "male" | "female" | null = null,
+  paymentMethod: "online" | "on-site" = "online",
 ): Promise<void> {
   if (!bookingId) return;
 
@@ -35,14 +37,26 @@ export async function updateDraftBookingMeta(
       : therapistGender === "female"
         ? "Terapeuta: Femenina"
         : null;
+  // Staff need to know at a glance whether the money is still to be collected.
+  const paymentNote =
+    paymentMethod === "on-site"
+      ? "Pago: en el centro (precio íntegro)"
+      : `Pago: online (−${ONLINE_PAYMENT_DISCOUNT_PERCENT}%)`;
   const composedNotes =
-    [therapistNote, notes].filter(Boolean).join("\n\n") || null;
+    [therapistNote, paymentNote, notes].filter(Boolean).join("\n\n") || null;
+
+  // `price_eur` is what will actually be charged, so the transactions page
+  // does not report the list price for a booking that paid the online rate.
+  const amountEur =
+    tierPrice != null && paymentMethod === "online"
+      ? onlinePrice(tierPrice)
+      : tierPrice;
 
   await getAdminClient()
     .database.from("bookings")
     .update({
       tier_id: tierId,
-      price_eur: tierPrice,
+      price_eur: amountEur,
       location: "centro",
       ...(composedNotes ? { notes: composedNotes } : {}),
       ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),

@@ -159,7 +159,16 @@
     "paymentNotice": "Serás redirigido a la pasarela de pago seguro de Redsys para completar tu reserva. Una vez confirmado el pago, nuestro equipo coordinará tu cita.",
     "paymentNoticePrefix": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por",
     "paymentNoticeAt": "al",
-    "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión."
+    "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión.",
+    "paymentHeading": "¿Cómo prefieres pagar?",
+    "payOnline": "Pagar ahora",
+    "payOnlineNote": "Paga online y ahorra un {percent} % sobre el precio del tratamiento.",
+    "payOnSite": "Pagar en el centro",
+    "payOnSiteNote": "Reservas ahora y pagas el día de la sesión, al precio íntegro.",
+    "durationLabel": "Duración",
+    "priceLabel": "Precio",
+    "discountLabel": "Descuento",
+    "totalLabel": "Total"
   },
   "paymentOverlay": {
     "redirecting": "Redirigiendo al pago seguro…",
@@ -188,6 +197,7 @@
   "requested": {
     "heading": "Solicitud recibida.",
     "body": "Hemos recibido tu solicitud y nos pondremos en contacto contigo en breve para confirmar tu cita.",
+    "bodyPayOnSite": "Hemos recibido tu reserva. El pago se realizará en el centro el día de tu sesión, al precio íntegro del tratamiento.",
     "detail": {
       "service": "Servicio",
       "date": "Fecha",

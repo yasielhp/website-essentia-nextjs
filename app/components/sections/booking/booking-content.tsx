@@ -28,7 +28,7 @@ import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { DateTimeStep } from "./steps/datetime-step";
-import { ConfirmStep } from "./steps/confirm-step";
+import { ConfirmStep, type PaymentMethod } from "./steps/confirm-step";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
@@ -256,6 +256,7 @@ type BookingStepRendererProps = {
   currentStepId: string;
   selectedService: BookableService | null;
   selectedTierId: string | null;
+  selectedTierLabel: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
   therapistGender: "male" | "female" | null;
@@ -266,12 +267,15 @@ type BookingStepRendererProps = {
   dispatch: React.Dispatch<BookingAction>;
   onClearDetailError: (key: keyof DetailsState) => void;
   preselectedLabel?: string | null;
+  paymentMethod: PaymentMethod;
+  onPaymentMethodChange: (method: PaymentMethod) => void;
 };
 
 function BookingStepRenderer({
   currentStepId,
   selectedService,
   selectedTierId,
+  selectedTierLabel,
   selectedTierPrice,
   selectedDuration,
   therapistGender,
@@ -282,6 +286,8 @@ function BookingStepRenderer({
   dispatch,
   onClearDetailError,
   preselectedLabel,
+  paymentMethod,
+  onPaymentMethodChange,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -337,12 +343,15 @@ function BookingStepRenderer({
       {currentStepId === "confirm" && selectedService && selectedTierId && (
         <ConfirmStep
           service={selectedService}
+          tierLabel={selectedTierLabel}
           duration={selectedDuration ?? ""}
           price={selectedTierPrice}
           date={selectedDate}
           time={selectedTime}
           details={details}
           therapistGender={therapistGender}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={onPaymentMethodChange}
         />
       )}
     </div>
@@ -397,6 +406,8 @@ function BookingContentInner() {
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
+  // Paying online carries the discount; paying at the centre is full price.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [hasCalendar, setHasCalendar] = useState<boolean>(true);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
@@ -445,6 +456,7 @@ function BookingContentInner() {
       step,
       serviceId: selectedService?.id ?? null,
       selectedTierId,
+      selectedTierLabel,
       selectedTierPrice,
       selectedDuration,
       therapistGender,
@@ -456,6 +468,7 @@ function BookingContentInner() {
     step,
     selectedService,
     selectedTierId,
+    selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
     therapistGender,
@@ -592,6 +605,7 @@ function BookingContentInner() {
         user?.id ? "client" : "anonymous",
         details.notes?.trim() || null,
         therapistGender,
+        paymentMethod,
       );
     }
 
@@ -705,6 +719,16 @@ function BookingContentInner() {
       }).catch(() => {});
     }
 
+    // Paying at the centre: the booking stands, the money is taken on the day.
+    if (paymentMethod === "on-site") {
+      dispatch({ type: "CONFIRM_SUCCESS" });
+      clearStorage();
+      push(
+        `/booking/requested?service=${encodeURIComponent(selectedService.title)}&payment=on-site`,
+      );
+      return;
+    }
+
     // Redirect to Redsys payment
     const res = await fetch("/api/checkout/booking-session", {
       method: "POST",
@@ -757,6 +781,9 @@ function BookingContentInner() {
           setDetailErrors((prev) => ({ ...prev, [key]: undefined }))
         }
         preselectedLabel={preselectedLabel}
+        selectedTierLabel={selectedTierLabel}
+        paymentMethod={paymentMethod}
+        onPaymentMethodChange={setPaymentMethod}
       />
 
       <BookingNavigation
