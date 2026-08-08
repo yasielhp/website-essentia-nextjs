@@ -57,7 +57,7 @@ export default function AboutTeaser() {
             className="relative h-56 overflow-hidden rounded-2xl md:h-72"
           >
             <Image
-              src="/images/home/about-teaser.webp"
+              src="/images/home/about-teaser-1600x1120.webp"
               alt={t("imageAlt")}
               fill
               sizes="(max-width: 767px) 100vw, 50vw"

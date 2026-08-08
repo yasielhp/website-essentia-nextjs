@@ -36,7 +36,7 @@ function AboutHero() {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
-        src="/images/home/bento-img-3-v3.webp"
+        src="/images/home/bento-img-3-v3-1920x1080.webp"
         alt={t("imageAlt")}
         fill
         priority
@@ -91,7 +91,7 @@ function StorySection() {
             <div className="flex flex-col gap-6">
               <div className="relative h-64 overflow-hidden rounded-2xl md:h-80">
                 <Image
-                  src="/images/home/about-teaser.webp"
+                  src="/images/home/about-teaser-1600x1120.webp"
                   alt={t("imageAlt")}
                   fill
                   sizes="(max-width: 767px) 100vw, 50vw"

@@ -21,7 +21,7 @@ export type MedicineTreatmentData = {
 export const treatments: Record<string, MedicineTreatmentData> = {
   "hyperbaric-chambers": {
     slug: "hyperbaric-chambers",
-    heroImage: "/images/menu/hyperbaric-chambers.webp",
+    heroImage: "/images/menu/hyperbaric-chambers-900x600.webp",
     heroAlt: "Hyperbaric oxygen chamber at Essentia",
     title: "Hyperbaric Oxygen.",
     price: "€120",
@@ -83,7 +83,7 @@ export const treatments: Record<string, MedicineTreatmentData> = {
 
   "intravenous-therapy": {
     slug: "intravenous-therapy",
-    heroImage: "/images/menu/intravenous-therapy.webp",
+    heroImage: "/images/menu/intravenous-therapy-900x600.webp",
     heroAlt: "IV therapy at Essentia Tenerife",
     title: "IV Therapy.",
     price: "€95",
@@ -145,7 +145,7 @@ export const treatments: Record<string, MedicineTreatmentData> = {
 
   "regenerative-medicine": {
     slug: "regenerative-medicine",
-    heroImage: "/images/menu/regenerative-medicine.webp",
+    heroImage: "/images/menu/regenerative-medicine-900x600.webp",
     heroAlt: "Regenerative medicine consultation at Essentia",
     title: "Regenerative Medicine.",
     price: "From €250",

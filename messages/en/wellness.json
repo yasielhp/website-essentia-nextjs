@@ -481,40 +481,40 @@
       "duration": "60 or 90 min",
       "intro": "At Essentia we treat manual therapy as a deep way of listening to the body. We work on fascia, muscle, joints, the lymphatic system and the nervous system, so each treatment fits what that person actually needs.",
       "intro2": "Every session combines assessment, technique and sensitivity to work the body with precision, building a greater sense of balance, mobility and wellbeing.",
-      "benefitsHeading": "What it does.",
-      "benefitsSubtitle": "Skilled hands accomplish what no machine can replicate. These are the outcomes we target.",
+      "benefitsHeading": "What each treatment is for.",
+      "benefitsSubtitle": "Every therapy has its own purpose, but they share one intention: to listen to the body, ease what weighs on it and give it back its balance.",
       "benefits": {
         "0": {
-          "title": "Releases fascial restrictions",
-          "description": "Fascial adhesions from training, injury, or prolonged sitting limit range of motion and force the body into compensatory patterns. Manual release restores optimal tissue glide."
+          "title": "Releases tension and overload",
+          "description": "We work on stiffness, knots and muscular fatigue to help the body let go of built-up tension and find relief."
         },
         "1": {
-          "title": "Reduces chronic tension and pain",
-          "description": "Targeted pressure on trigger points deactivates pain referral patterns and restores normal muscle tone in ways that foam rolling or self-massage cannot replicate."
+          "title": "Supports the body's recovery",
+          "description": "With manual techniques adapted to you, we support the body through tiredness, physical effort, post-training, pregnancy or too much sun."
         },
         "2": {
-          "title": "Improves joint mobility",
-          "description": "Articular mobilisation techniques restore the accessory movements within joints that are lost after injury or immobilisation, reducing pain and improving function."
+          "title": "Calms the nervous system",
+          "description": "Enveloping movements, breathing, oils and a conscious rhythm to create deep rest, presence and a real disconnection."
         },
         "3": {
-          "title": "Enhances recovery between sessions",
-          "description": "Regular manual work reduces the accumulation of mechanical stress, keeping tissue quality high and reducing the risk of overuse injuries during high-training periods."
+          "title": "Brings back lightness and balance",
+          "description": "Each treatment works to restore a sense of fluidity, mobility and wellbeing, adapting to what the body needs that day."
         }
       },
-      "sessionHeading": "What a session looks like.",
-      "sessionSubtitle": "Every session begins with a brief assessment. Nothing is done without a reason.",
+      "sessionHeading": "What an Essentia session is like.",
+      "sessionSubtitle": "Every session is built around you. We listen to the body, adapt the treatment and stay with the process before, during and after.",
       "sessionDetails": {
         "I": {
-          "title": "Duration",
-          "description": "60 or 90 minutes. We recommend 90-minute sessions for the first appointment to allow time for a full postural and movement assessment before treatment begins."
+          "title": "Listen",
+          "description": "Every body arrives with its own story. We look at tension, inflammation, sensitivity, rest and what you specifically need before we start."
         },
         "II": {
-          "title": "Format",
-          "description": "1:1 with a certified therapist. Modalities include deep tissue massage, myofascial release, joint mobilisation, and dry needling depending on presentation and preference."
+          "title": "Treat",
+          "description": "We apply manual techniques suited to where the body actually is that day, minding the pressure, the rhythm, the breathing and every detail of the experience."
         },
         "III": {
-          "title": "Frequency",
-          "description": "Acute issues typically resolve in three to five sessions. Maintenance for active members is one session every two to four weeks to sustain tissue quality and prevent recurrence."
+          "title": "Follow through",
+          "description": "The treatment does not end on the table. We leave you simple guidance to hold on to the lightness, the rest and the balance after the session."
         }
       },
       "ctaHeading": "Release what is holding you back.",

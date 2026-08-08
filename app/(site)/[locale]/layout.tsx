@@ -67,7 +67,7 @@ function buildSchemaOrg(locale: string) {
         url: siteUrl,
         logo: {
           "@type": "ImageObject",
-          url: `${siteUrl}/images/logo-for-google.png`,
+          url: `${siteUrl}/images/logo-for-google-120x120.png`,
         },
         address: {
           "@type": "PostalAddress",
@@ -98,7 +98,7 @@ function buildSchemaOrg(locale: string) {
         "@type": ["LocalBusiness", "HealthAndBeautyBusiness", "MedicalClinic"],
         "@id": `${siteUrl}/#localbusiness`,
         name: "Essentia Wellness Club",
-        image: `${siteUrl}/images/logo-for-google.png`,
+        image: `${siteUrl}/images/logo-for-google-120x120.png`,
         url: siteUrl,
         telephone: contact.phone,
         email: contact.email,

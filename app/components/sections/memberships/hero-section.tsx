@@ -33,7 +33,7 @@ export default function HeroSection() {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
-        src="/images/memberships/hero.webp"
+        src="/images/memberships/hero-2560x1440.webp"
         alt={t("imageAlt")}
         fill
         priority

@@ -80,7 +80,7 @@ export default function CommunitySection() {
               className="relative h-64 min-h-60 overflow-hidden rounded-2xl md:h-full"
             >
               <Image
-                src="/images/community/hero.webp"
+                src="/images/community/hero-2560x1440.webp"
                 alt="Experiencias Essentia Tenerife"
                 fill
                 sizes="(max-width: 767px) 100vw, 50vw"

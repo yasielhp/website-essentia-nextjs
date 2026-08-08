@@ -158,7 +158,7 @@ function BenefitsSection({ data }: { data: TreatmentData }) {
       <div className="overflow-hidden">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
           <div className="flex flex-col gap-12">
-            <div className="md:max-w-lg">
+            <div>
               <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
                 {t("benefitsHeading")}
               </h2>
@@ -197,7 +197,7 @@ function SessionSection({ data }: { data: TreatmentData }) {
       <div className="overflow-hidden">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
           <div className="flex flex-col gap-12 md:gap-16">
-            <div className="md:max-w-lg">
+            <div>
               <h2 className="font-display text-sand-50 text-3xl md:text-4xl">
                 {t("sessionHeading")}
               </h2>

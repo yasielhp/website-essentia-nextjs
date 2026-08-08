@@ -23,19 +23,19 @@ const services: ReadonlyArray<{
     key: "wellness",
     number: "01",
     href: "/wellness",
-    img: "/images/menu/wellness.webp",
+    img: "/images/menu/wellness-900x600.webp",
   },
   {
     key: "medicine",
     number: "02",
     href: "/medicine",
-    img: "/images/menu/medicine.webp",
+    img: "/images/menu/medicine-900x600.webp",
   },
   {
     key: "experiences",
     number: "03",
     href: "/experiences",
-    img: "/images/menu/community.webp",
+    img: "/images/menu/community-900x600.webp",
   },
 ];
 

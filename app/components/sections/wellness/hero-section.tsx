@@ -2,12 +2,9 @@
 
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
   const t = useTranslations("wellness.hero");
@@ -32,7 +29,7 @@ export default function HeroSection() {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
-        src="/images/wellness/hero.webp"
+        src="/images/wellness/hero-2560x1440.webp"
         alt="Essentia Wellness"
         fill
         priority
@@ -64,7 +61,6 @@ export default function HeroSection() {
               if (el) {
                 const top = el.getBoundingClientRect().top + window.scrollY;
                 window.scrollTo({ top, behavior: "smooth" });
-                window.dispatchEvent(new CustomEvent("reveal-protocols"));
               }
             }}
           >

@@ -195,7 +195,7 @@ function SessionInfoPanel({
 
       <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
         <Image
-          src="/images/menu/education-programs.webp"
+          src="/images/menu/education-programs-900x600.webp"
           alt={t("imageAlt")}
           fill
           sizes="(max-width: 767px) 100vw, 50vw"
