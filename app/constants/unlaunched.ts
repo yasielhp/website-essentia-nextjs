@@ -21,7 +21,9 @@ export const UNLAUNCHED_ROUTES = [
   "/medicine/intravenous-therapy",
   "/medicine/regenerative-medicine",
   "/experiences/education-programs",
+  "/experiences/education-programs/register",
   "/experiences/running-club",
+  "/experiences/running-club/register",
   "/shop",
 ] as const;
 

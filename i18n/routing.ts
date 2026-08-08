@@ -75,9 +75,17 @@ export const routing = defineRouting({
       en: "/experiences/running-club",
       es: "/experiencias/running-club",
     },
+    "/experiences/running-club/register": {
+      en: "/experiences/running-club/register",
+      es: "/experiencias/running-club/inscripcion",
+    },
     "/experiences/education-programs": {
       en: "/experiences/education-programs",
       es: "/experiencias/programas-educativos",
+    },
+    "/experiences/education-programs/register": {
+      en: "/experiences/education-programs/register",
+      es: "/experiencias/programas-educativos/inscripcion",
     },
 
     // Reviews
