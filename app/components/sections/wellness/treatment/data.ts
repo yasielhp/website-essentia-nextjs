@@ -22,7 +22,7 @@ export type TreatmentData = {
 export const treatments: Record<string, TreatmentData> = {
   "contrast-therapy": {
     slug: "contrast-therapy",
-    heroImage: "/images/menu/thermal-contrast.webp",
+    heroImage: "/images/menu/thermal-contrast-900x600.webp",
     heroAlt: "Contrast therapy — sauna and cold plunge at Essentia",
     title: "Contrast Therapy.",
     tagline: "Heat & Cold",
@@ -85,7 +85,7 @@ export const treatments: Record<string, TreatmentData> = {
 
   "breathing-sessions": {
     slug: "breathing-sessions",
-    heroImage: "/images/menu/breathing-sessions.webp",
+    heroImage: "/images/menu/breathing-sessions-900x600.webp",
     heroAlt: "Breathwork session at Essentia Tenerife",
     title: "Breathing Sessions.",
     tagline: "Breathwork",
@@ -148,7 +148,7 @@ export const treatments: Record<string, TreatmentData> = {
 
   "red-light-therapy": {
     slug: "red-light-therapy",
-    heroImage: "/images/menu/red-light-therapy.webp",
+    heroImage: "/images/menu/red-light-therapy-900x600.webp",
     heroAlt: "Red light therapy panel at Essentia",
     title: "Red Light Therapy.",
     tagline: "Photobiomodulation",
@@ -211,7 +211,7 @@ export const treatments: Record<string, TreatmentData> = {
 
   "manual-therapies": {
     slug: "manual-therapies",
-    heroImage: "/images/menu/manual-therapies.webp",
+    heroImage: "/images/wellness/heroes/manual-therapies-1920x1080.webp",
     heroAlt: "Manual therapy session at Essentia",
     title: "Manual Therapies.",
     tagline: "Touch & Restoration",
@@ -219,52 +219,52 @@ export const treatments: Record<string, TreatmentData> = {
     duration: "60 or 90 min",
     intro:
       "Our manual therapists work with the whole body: fascia, muscle, joint, and nervous system. Every session is an assessment as much as a treatment — finding what is restricted, what is compensating, and what needs to be released before it becomes a problem.",
-    benefitsHeading: "What it does.",
+    benefitsHeading: "What each treatment is for.",
     benefitsSubtitle:
-      "Skilled hands accomplish what no machine can replicate. These are the outcomes we target.",
+      "Every therapy has its own purpose, but they share one intention: to listen to the body, ease what weighs on it and give it back its balance.",
     benefits: [
       {
-        title: "Releases fascial restrictions",
+        title: "Releases tension and overload",
         description:
-          "Fascial adhesions from training, injury, or prolonged sitting limit range of motion and force the body into compensatory patterns. Manual release restores optimal tissue glide.",
+          "We work on stiffness, knots and muscular fatigue to help the body let go of built-up tension and find relief.",
       },
       {
-        title: "Reduces chronic tension and pain",
+        title: "Supports the body's recovery",
         description:
-          "Targeted pressure on trigger points deactivates pain referral patterns and restores normal muscle tone in ways that foam rolling or self-massage cannot replicate.",
+          "With manual techniques adapted to you, we support the body through tiredness, physical effort, post-training, pregnancy or too much sun.",
       },
       {
-        title: "Improves joint mobility",
+        title: "Calms the nervous system",
         description:
-          "Articular mobilisation techniques restore the accessory movements within joints that are lost after injury or immobilisation, reducing pain and improving function.",
+          "Enveloping movements, breathing, oils and a conscious rhythm to create deep rest, presence and a real disconnection.",
       },
       {
-        title: "Enhances recovery between sessions",
+        title: "Brings back lightness and balance",
         description:
-          "Regular manual work reduces the accumulation of mechanical stress, keeping tissue quality high and reducing the risk of overuse injuries during high-training periods.",
+          "Each treatment works to restore a sense of fluidity, mobility and wellbeing, adapting to what the body needs that day.",
       },
     ],
-    sessionHeading: "What a session looks like.",
+    sessionHeading: "What an Essentia session is like.",
     sessionSubtitle:
-      "Every session begins with a brief assessment. Nothing is done without a reason.",
+      "Every session is built around you. We listen to the body, adapt the treatment and stay with the process before, during and after.",
     sessionDetails: [
       {
         number: "I",
-        title: "Duration",
+        title: "Listen",
         description:
-          "60 or 90 minutes. We recommend 90-minute sessions for the first appointment to allow time for a full postural and movement assessment before treatment begins.",
+          "Every body arrives with its own story. We look at tension, inflammation, sensitivity, rest and what you specifically need before we start.",
       },
       {
         number: "II",
-        title: "Format",
+        title: "Treat",
         description:
-          "1:1 with a certified therapist. Modalities include deep tissue massage, myofascial release, joint mobilisation, and dry needling depending on presentation and preference.",
+          "We apply manual techniques suited to where the body actually is that day, minding the pressure, the rhythm, the breathing and every detail of the experience.",
       },
       {
         number: "III",
-        title: "Frequency",
+        title: "Follow through",
         description:
-          "Acute issues typically resolve in three to five sessions. Maintenance for active members is one session every two to four weeks to sustain tissue quality and prevent recurrence.",
+          "The treatment does not end on the table. We leave you simple guidance to hold on to the lightness, the rest and the balance after the session.",
       },
     ],
     ctaHeading: "Release what is holding you back.",
@@ -274,7 +274,7 @@ export const treatments: Record<string, TreatmentData> = {
 
   "facial-therapies": {
     slug: "facial-therapies",
-    heroImage: "/images/menu/functional-wellbeing.webp",
+    heroImage: "/images/menu/functional-wellbeing-900x600.webp",
     heroAlt: "Facial therapy session at Essentia",
     title: "Facial Therapies.",
     tagline: "Skin & Radiance",

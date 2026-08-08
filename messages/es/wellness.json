@@ -481,40 +481,40 @@
       "duration": "60 o 90 min",
       "intro": "En Essentia entendemos la terapia manual como una forma profunda de escuchar el cuerpo. Trabajamos fascia, músculo, articulaciones, sistema linfático y sistema nervioso para adaptar cada tratamiento a las necesidades reales de cada persona.",
       "intro2": "Cada sesión combina valoración, técnica y sensibilidad para trabajar el cuerpo con precisión, favoreciendo una mayor sensación de equilibrio, movilidad y bienestar.",
-      "benefitsHeading": "Qué hace.",
-      "benefitsSubtitle": "Las manos expertas logran lo que ninguna máquina puede replicar. Estos son los resultados que perseguimos.",
+      "benefitsHeading": "Qué buscamos en cada tratamiento.",
+      "benefitsSubtitle": "Cada terapia tiene un propósito distinto, pero todas comparten una misma intención: escuchar el cuerpo, aliviar lo que pesa y devolverle equilibrio.",
       "benefits": {
         "0": {
-          "title": "Libera restricciones fasciales",
-          "description": "Las adherencias fasciales derivadas del entrenamiento, lesiones o sedentarismo limitan el rango de movimiento y fuerzan al cuerpo a adoptar patrones compensatorios. La liberación manual restaura el deslizamiento óptimo de los tejidos."
+          "title": "Libera tensión y sobrecarga",
+          "description": "Trabajamos zonas de rigidez, contracturas y fatiga muscular para ayudar al cuerpo a soltar tensión acumulada y recuperar una sensación de alivio."
         },
         "1": {
-          "title": "Reduce la tensión y el dolor crónico",
-          "description": "La presión dirigida sobre los puntos gatillo desactiva los patrones de dolor referido y restaura el tono muscular normal de maneras que el foam roller o el automasaje no pueden replicar."
+          "title": "Acompaña la recuperación corporal",
+          "description": "A través de técnicas manuales adaptadas, ayudamos al cuerpo en procesos de cansancio, esfuerzo físico, post-entrenamiento, embarazo o sobreexposición solar."
         },
         "2": {
-          "title": "Mejora la movilidad articular",
-          "description": "Las técnicas de movilización articular restauran los movimientos accesorios dentro de las articulaciones que se pierden tras una lesión o inmovilización, reduciendo el dolor y mejorando la función."
+          "title": "Calma el sistema nervioso",
+          "description": "Movimientos envolventes, respiración, aceites y ritmo consciente para crear un estado de descanso profundo, presencia y desconexión real."
         },
         "3": {
-          "title": "Potencia la recuperación entre sesiones",
-          "description": "El trabajo manual regular reduce la acumulación de estrés mecánico, manteniendo alta la calidad tisular y reduciendo el riesgo de lesiones por sobreuso durante períodos de entrenamiento intenso."
+          "title": "Devuelve ligereza y equilibrio",
+          "description": "Cada tratamiento busca restaurar la sensación de fluidez, movilidad y bienestar, adaptándose a lo que el cuerpo necesita en ese momento."
         }
       },
-      "sessionHeading": "Cómo es una sesión.",
-      "sessionSubtitle": "Cada sesión comienza con una breve evaluación. Nada se hace sin una razón.",
+      "sessionHeading": "Cómo es una sesión Essentia.",
+      "sessionSubtitle": "Cada sesión es una experiencia personalizada. Escuchamos el cuerpo, adaptamos el tratamiento y acompañamos el proceso antes, durante y después.",
       "sessionDetails": {
         "I": {
-          "title": "Duración",
-          "description": "60 o 90 minutos. Recomendamos sesiones de 90 minutos para la primera cita para tener tiempo de realizar una evaluación postural y de movimiento completa antes del tratamiento."
+          "title": "Escuchar",
+          "description": "Cada cuerpo llega con una historia distinta. Observamos tensión, inflamación, sensibilidad, descanso y necesidades concretas antes de comenzar."
         },
         "II": {
-          "title": "Formato",
-          "description": "1:1 con un terapeuta certificado. Las modalidades incluyen masaje de tejido profundo, liberación miofascial, movilización articular y punción seca según la presentación y las preferencias."
+          "title": "Tratar",
+          "description": "Aplicamos técnicas manuales adaptadas al momento real del cuerpo, cuidando la presión, el ritmo, la respiración y cada detalle de la experiencia."
         },
         "III": {
-          "title": "Frecuencia",
-          "description": "Los problemas agudos suelen resolverse en tres a cinco sesiones. El mantenimiento para miembros activos es una sesión cada dos a cuatro semanas para mantener la calidad tisular y prevenir recurrencias."
+          "title": "Acompañar",
+          "description": "El tratamiento no termina en la camilla. Te guiamos con recomendaciones sencillas para mantener la ligereza, el descanso y el equilibrio después de la sesión."
         }
       },
       "ctaHeading": "Libera lo que te frena.",
