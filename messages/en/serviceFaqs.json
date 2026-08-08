@@ -68,24 +68,36 @@
   },
   "manual-therapies": {
     "0": {
-      "question": "What manual therapy treatments are available at Essentia?",
-      "answer": "We offer ten distinct treatments ranging from 30 to 120 minutes: Espira (express ritual), Pulse (deep tissue), Brazilian Lymphatic Drainage, Essentia Active (sports recovery), Nurtura (prenatal), Serenna (full-body relaxation), Soléa (post-sun), Soma (myofascial release), Lume (craniofacial and reflexology), and Alure Duo (paired ritual)."
+      "question": "What manual treatments does Essentia offer?",
+      "answer": "Our treatments are built around what different bodies need: advanced lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences."
     },
     "1": {
-      "question": "Do I need to book a manual therapy session in advance?",
-      "answer": "Yes. All manual therapy sessions must be booked in advance through our booking system or by contacting reception. We recommend booking at least 24 hours ahead, especially for popular slots."
+      "question": "Do I need to book in advance?",
+      "answer": "Yes. Every session is booked ahead through our website. The appointment is confirmed with online payment, which secures your slot and lets us prepare your treatment for you."
     },
     "2": {
-      "question": "What is the difference between the manual therapy treatments?",
-      "answer": "The treatments vary in technique, depth, and goal. Pulse focuses on deep tissue and myofascial work for structural tension. Serenna is a lighter relaxation-focused full-body massage. Soma targets fascial restrictions. Lume combines craniofacial, reflexology, and aromatherapy for a holistic neurological reset. Our team can help you select the right treatment based on your current needs."
+      "question": "Is every session the same for everyone?",
+      "answer": "No. Each session adapts to the state of the body, its sensitivity, its tension, the breathing and what that person needs. There is no automatic protocol: we assess, we listen and we adjust the treatment."
     },
     "3": {
-      "question": "How often should I have manual therapy?",
-      "answer": "For acute issues, three to five sessions typically produce lasting results. For maintenance and injury prevention, active members benefit from one session every two to four weeks to sustain tissue quality and prevent compensatory patterns from developing."
+      "question": "Do you offer massage packages?",
+      "answer": "Yes. Packages are currently available for Advanced Lymphatic Drainage · Método Essentia only, since it is a treatment that works best over several sessions, following processes of inflammation, fluid retention, heaviness and change in the body. All the detail on packages, sessions and conditions is on the Lymphatic Drainage page."
     },
     "4": {
-      "question": "Are the therapists qualified?",
-      "answer": "Yes. All Essentia therapists are certified in their respective disciplines and undergo ongoing professional development. Each session begins with a brief assessment to ensure the treatment plan is appropriate for your current condition."
+      "question": "How do I know which treatment to choose?",
+      "answer": "If you are unsure, we will guide you before you book. Each treatment has its own purpose: easing tension, reducing heaviness, supporting recovery, calming the nervous system, or a fuller experience of being looked after."
+    },
+    "5": {
+      "question": "How often should I have a manual therapy session?",
+      "answer": "It depends on what you are after. For relaxation or upkeep, a single session can be enough. For built-up tension, recovery, drainage or a specific process, we would rather work out a frequency with you."
+    },
+    "6": {
+      "question": "Where will my treatment take place?",
+      "answer": "For now, sessions happen only at our wellness space in Baobab Suites, Costa Adeje. Home visits will come later; the external diary is closed at the moment so we can look after the experience inside the centre."
+    },
+    "7": {
+      "question": "Are there situations where I should not have a massage?",
+      "answer": "Yes. With fever, an active infection, acute inflammation, certain circulatory conditions, a high-risk pregnancy or a recent medical procedure, check with us first. If you have a specific condition, we will guide you before the session."
     }
   },
   "facial-therapies": {

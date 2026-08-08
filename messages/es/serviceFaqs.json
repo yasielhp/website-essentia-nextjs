@@ -68,24 +68,36 @@
   },
   "manual-therapies": {
     "0": {
-      "question": "¿Qué tratamientos de terapia manual están disponibles en Essentia?",
-      "answer": "Ofrecemos diez tratamientos distintos de 30 a 120 minutos: Espira (ritual exprés), Pulse (tejido profundo), Drenaje Linfático Brasileño, Essentia Active (recuperación deportiva), Nurtura (prenatal), Serenna (relajación de cuerpo completo), Soléa (post-solar), Soma (liberación miofascial), Lume (craneofacial y reflexología) y Alure Duo (ritual en pareja)."
+      "question": "¿Qué tratamientos manuales ofrece Essentia?",
+      "answer": "En Essentia ofrecemos tratamientos diseñados para distintas necesidades del cuerpo: drenaje linfático avanzado, masajes descontracturantes, recuperación deportiva, relajación profunda, masaje prenatal, rituales post-solares, experiencias en pareja y tratamientos premium de bienestar corporal."
     },
     "1": {
-      "question": "¿Necesito reservar una sesión de terapia manual con antelación?",
-      "answer": "Sí. Todas las sesiones de terapia manual deben reservarse con antelación a través de nuestro sistema de reservas o contactando con recepción. Recomendamos reservar con al menos 24 horas de antelación, especialmente para los horarios más solicitados."
+      "question": "¿Necesito reservar con antelación?",
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Para confirmar la cita, el pago se realiza mediante pasarela de pago online, garantizando así tu horario y la preparación personalizada de tu tratamiento."
     },
     "2": {
-      "question": "¿Cuál es la diferencia entre los tratamientos de terapia manual?",
-      "answer": "Los tratamientos varían en técnica, profundidad y objetivo. Pulse se centra en el trabajo de tejido profundo y miofascial para la tensión estructural. Serenna es un masaje de cuerpo completo más ligero orientado a la relajación. Soma aborda las restricciones fasciales. Lume combina craneofacial, reflexología y aromaterapia para un reinicio neurológico holístico. Nuestro equipo puede ayudarte a elegir el tratamiento adecuado según tus necesidades actuales."
+      "question": "¿Cada sesión es igual para todas las personas?",
+      "answer": "No. Cada sesión se adapta al estado del cuerpo, la sensibilidad, la tensión, la respiración y las necesidades de cada persona. No aplicamos un protocolo automático: valoramos, escuchamos y ajustamos el tratamiento."
     },
     "3": {
-      "question": "¿Con qué frecuencia debo recibir terapia manual?",
-      "answer": "Para problemas agudos, tres a cinco sesiones suelen producir resultados duraderos. Para el mantenimiento y la prevención de lesiones, los miembros activos se benefician de una sesión cada dos a cuatro semanas para mantener la calidad tisular y prevenir el desarrollo de patrones compensatorios."
+      "question": "¿Tenéis bonos de masajes?",
+      "answer": "Sí. Actualmente nuestros bonos están disponibles únicamente para el Drenaje Linfático Avanzado · Método Essentia, ya que es un tratamiento que suele trabajarse mejor en varias sesiones para acompañar procesos de inflamación, retención, pesadez y evolución corporal. Toda la información sobre bonos, sesiones y condiciones está disponible en la pestaña de Drenaje Linfático."
     },
     "4": {
-      "question": "¿Los terapeutas están cualificados?",
-      "answer": "Sí. Todos los terapeutas de Essentia están certificados en sus respectivas disciplinas y se someten a un desarrollo profesional continuo. Cada sesión comienza con una breve evaluación para asegurarse de que el plan de tratamiento sea apropiado para tu condición actual."
+      "question": "¿Cómo sé qué tratamiento elegir?",
+      "answer": "Si tienes dudas, te orientamos antes de reservar. Cada tratamiento tiene un propósito distinto: aliviar tensión, reducir pesadez, acompañar la recuperación, calmar el sistema nervioso o vivir una experiencia más completa de cuidado."
+    },
+    "5": {
+      "question": "¿Con qué frecuencia debería recibir una terapia manual?",
+      "answer": "Depende del objetivo. Para relajación o mantenimiento, una sesión puntual puede ser suficiente. Para tensión acumulada, recuperación, drenaje o procesos específicos, recomendamos valorar una frecuencia personalizada."
+    },
+    "6": {
+      "question": "¿Dónde puedo recibir mi tratamiento?",
+      "answer": "Por ahora, las sesiones se realizan exclusivamente en nuestro espacio de bienestar en Baobab Suites, Costa Adeje. El servicio a domicilio estará disponible más adelante, pero actualmente la agenda externa se encuentra cerrada para poder cuidar al máximo la experiencia dentro del centro."
+    },
+    "7": {
+      "question": "¿Hay situaciones en las que no debería recibir un masaje?",
+      "answer": "Sí. En casos de fiebre, infecciones activas, inflamaciones agudas, ciertas condiciones circulatorias, embarazo de riesgo o procesos médicos recientes, es importante consultarlo antes. Si tienes alguna condición específica, te orientaremos antes de la sesión."
     }
   },
   "facial-therapies": {
