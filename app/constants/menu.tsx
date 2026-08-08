@@ -20,13 +20,13 @@ export const maiMenu = [
         },
       },
       {
-        itemName: "Facial therapies",
+        itemName: "Therapeutic Facials",
         href: "/wellness/facial-therapies",
         card: {
-          title: "Facial Therapies",
+          title: "Therapeutic Facials",
           description:
             "Expert facial protocols combining manual techniques and advanced technology for radiant, lasting skin health.",
-          imagen: "/images/menu/functional-wellbeing-900x600.webp",
+          imagen: "/images/menu/facial-therapies-900x600.webp",
         },
       },
       // TODO: re-enable when thermal contrast goes live

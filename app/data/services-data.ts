@@ -35,30 +35,129 @@ export const bookableServices: BookableService[] = [
   {
     id: "facial-therapies",
     category: "wellness",
-    title: "Facial Therapies",
+    title: "Therapeutic Facials",
     description:
       "Advanced facial protocols combining manual techniques and technology to restore skin health.",
     durations: ["60 min"],
-    image: "/images/menu/functional-wellbeing-900x600.webp",
+    image: "/images/menu/facial-therapies-900x600.webp",
   },
-  {
-    id: "red-light-therapy",
-    category: "wellness",
-    title: "Red Light Therapy",
-    description:
-      "Red and infrared light to stimulate cellular repair and regeneration.",
-    durations: ["20 min"],
-    image: "/images/menu/red-light-therapy-900x600.webp",
-  },
+  // TODO: re-enable when red light therapy goes live
+  // {
+  //   id: "red-light-therapy",
+  //   category: "wellness",
+  //   title: "Red Light Therapy",
+  //   description:
+  //     "Red and infrared light to stimulate cellular repair and regeneration.",
+  //   durations: ["20 min"],
+  //   image: "/images/menu/red-light-therapy-900x600.webp",
+  // },
   // Medicine
+  // TODO: re-enable when IV therapy goes live
+  // {
+  //   id: "intravenous-therapy",
+  //   category: "medicine",
+  //   title: "IV Therapy",
+  //   description:
+  //     "Direct nutrient delivery for rapid absorption and cellular support.",
+  //   durations: ["45 min"],
+  //   image: "/images/menu/intravenous-therapy-900x600.webp",
+  // },
+];
+
+/** The three facial rituals. No tiers in the database yet, so there are no
+ *  individual pages and no per-treatment deep link into the booking form. */
+export type FacialTreatment = {
+  id: string;
+  title: string;
+  /** Duration and price, as one line — the formats differ per ritual. */
+  meta: string;
+  description: string;
+  /** Full-screen hero on the ritual's own page. */
+  image: string;
+  /** Landscape crop for the card on the facials page. */
+  thumbnail: string;
+  /** Long copy and highlights are still being written. */
+  highlights?: { title: string; description: string }[];
+};
+
+export const facialTreatments: FacialTreatment[] = [
   {
-    id: "intravenous-therapy",
-    category: "medicine",
-    title: "IV Therapy",
+    id: "aurum",
+    title: "Aurum",
+    meta: "60 min · €180",
     description:
-      "Direct nutrient delivery for rapid absorption and cellular support.",
-    durations: ["45 min"],
-    image: "/images/menu/intravenous-therapy-900x600.webp",
+      "Radiance, firmness and regeneration with gold leaf, premium Aurum cosmetics and Kobido-inspired technique.",
+    image: "/images/wellness/facials/heroes/aurum-1920x1080.webp",
+    thumbnail: "/images/wellness/facials/cards/aurum-1200x675.webp",
+    highlights: [
+      {
+        title: "Natural radiance",
+        description:
+          "Helps bring freshness and light back to the face, leaving the skin looking more rested and revitalised.",
+      },
+      {
+        title: "Nourishment and regeneration",
+        description:
+          "Premium cosmetics, exfoliation and gold leaf together support the skin's visible renewal.",
+      },
+      {
+        title: "Kobido-inspired massage",
+        description:
+          "Precise facial work to stimulate the tissue, soften the expression and deepen the ritual.",
+      },
+    ],
+  },
+  {
+    id: "eleva",
+    title: "Eleva",
+    meta: "60 min · €220",
+    description:
+      "Definition, structure and a lifting effect with facial wood therapy, natural hyaluronic acid and specific manual technique.",
+    image: "/images/wellness/facials/heroes/eleva-1920x1080.webp",
+    thumbnail: "/images/wellness/facials/cards/eleva-1200x675.webp",
+    highlights: [
+      {
+        title: "Facial definition",
+        description:
+          "Works the contour of the face for a more defined, harmonious and rested look.",
+      },
+      {
+        title: "Firmness and structure",
+        description:
+          "Facial wood therapy and manual technique together tone the tissue and support its natural firmness.",
+      },
+      {
+        title: "A natural lifting effect",
+        description:
+          "A non-invasive ritual made to lift the expression of the face and bring out its radiance.",
+      },
+    ],
+  },
+  {
+    id: "kinea-signature",
+    title: "Kinéa Signature",
+    meta: "First assessment + session · €240",
+    description:
+      "Full facial re-education, working posture, breathing, fascia, muscle and skin to recover harmony from the structure out.",
+    image: "/images/wellness/facials/heroes/kinea-signature-1920x1080.webp",
+    thumbnail: "/images/wellness/facials/cards/kinea-signature-1200x675.webp",
+    highlights: [
+      {
+        title: "Full facial re-education",
+        description:
+          "Works the face from its structure, reading posture, breathing, fascia, muscle and skin.",
+      },
+      {
+        title: "Natural harmony",
+        description:
+          "Helps soften tension, redefine the face and recover a more rested, balanced expression.",
+      },
+      {
+        title: "A personalised assessment",
+        description:
+          "The first session includes an assessment, so the treatment fits what that face actually needs.",
+      },
+    ],
   },
 ];
 

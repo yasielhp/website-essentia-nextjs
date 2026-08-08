@@ -49,8 +49,8 @@ export const treatments: Treatment[] = [
   {
     number: "05",
     href: "/wellness/facial-therapies",
-    img: "/images/menu/functional-wellbeing-900x600.webp",
-    title: "Facial Therapies",
+    img: "/images/menu/facial-therapies-900x600.webp",
+    title: "Therapeutic Facials",
     tagline: "Skin & Radiance",
     description:
       "Advanced facial protocols combining manual techniques and technology to restore skin health.",

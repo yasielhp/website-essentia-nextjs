@@ -1,6 +1,6 @@
 export const SERVICES = [
   { id: "manual-therapies", label: "Manual Therapies" },
-  { id: "facial-therapies", label: "Facial Therapies" },
+  { id: "facial-therapies", label: "Therapeutic Facials" },
   { id: "contrast-therapy", label: "Contrast Therapy" },
   { id: "breathing-sessions", label: "Breathing Sessions" },
   { id: "red-light-therapy", label: "Red Light Therapy" },

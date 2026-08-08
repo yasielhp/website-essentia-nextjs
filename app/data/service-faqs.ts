@@ -130,29 +130,39 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
 
   "facial-therapies": [
     {
-      question: "What are facial therapies at Essentia?",
+      question: "What facials does Essentia offer?",
       answer:
-        "Facial therapies at Essentia are evidence-backed skin protocols that combine expert manual techniques with advanced skincare technology. Each session is personalised to your skin type and condition — targeting hydration, barrier repair, collagen stimulation, or radiance depending on what your skin needs most.",
+        "We work with three rituals: Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs.",
     },
     {
-      question: "Who are facial therapy sessions for?",
+      question: "How do I know which one to choose?",
       answer:
-        "Facial therapies are suitable for adults who want to invest in the long-term health and appearance of their skin. We work with all skin types — from sensitive and reactive to ageing and sun-damaged — adapting each protocol to your specific presentation.",
+        "If you are unsure, we will guide you before you book. Aurum works the skin and its radiance, Eleva the structure and the contour, and Kinéa Signature starts from an assessment to build a deeper plan when you are after ongoing support.",
     },
     {
-      question: "What does a facial therapy session include?",
+      question: "Do I need to book in advance?",
       answer:
-        "Sessions are 60 minutes and begin with a thorough skin analysis. The protocol that follows combines deep cleansing, targeted manual work, active serums chosen for your skin condition, and finishing care. Technology-assisted steps may be included based on your skin goals.",
+        "Yes. Every session is booked ahead through our website. The appointment is confirmed with online payment, which secures your slot and lets us prepare your treatment for you.",
     },
     {
-      question: "How often should I have a facial therapy session?",
+      question: "How long is each session?",
       answer:
-        "One session every three to four weeks is the recommended maintenance frequency. Members addressing specific skin concerns benefit from an initial course of four to six sessions for visible structural improvement.",
+        "Aurum and Eleva run for 60 minutes. Kinéa Signature runs for 90, since it includes the first assessment alongside the session.",
     },
     {
-      question: "Are the results immediate?",
+      question: "Is every session the same for everyone?",
       answer:
-        "Yes — skin emerges visibly brighter, smoother, and more even after the first session. The deeper structural benefits of collagen stimulation and barrier repair are cumulative and become more pronounced with consistent treatment over time.",
+        "No. Each session begins by looking at the face: the state of the skin, the expression, the facial tension and the goal of the treatment. We choose the protocol from there and adapt as we go. Nothing is applied before we understand what the skin needs.",
+    },
+    {
+      question: "Where will my treatment take place?",
+      answer:
+        "At our wellness space in Baobab Suites, Costa Adeje, or in your room if you are staying there. Home visits outside the complex are not available for now.",
+    },
+    {
+      question: "Are there situations where I should not have a facial?",
+      answer:
+        "Yes. With active skin infections or lesions, recent sunburn, a known allergy to an active ingredient, or recent aesthetic procedures, check with us first. If you have a specific condition, we will guide you before the session.",
     },
   ],
 
