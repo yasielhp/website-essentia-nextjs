@@ -73,7 +73,7 @@
     },
     "1": {
       "question": "¿Necesito reservar con antelación?",
-      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online, con un 20 % de descuento sobre el precio del tratamiento, o pagar en el centro el día de la sesión al precio íntegro."
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online o pagar en el centro el día de la sesión."
     },
     "2": {
       "question": "¿Cada sesión es igual para todas las personas?",
@@ -115,7 +115,7 @@
     },
     "2": {
       "question": "¿Necesito reservar con antelación?",
-      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online, con un 20 % de descuento sobre el precio del tratamiento, o pagar en el centro el día de la sesión al precio íntegro."
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online o pagar en el centro el día de la sesión."
     },
     "3": {
       "question": "¿Cuánto dura cada sesión?",

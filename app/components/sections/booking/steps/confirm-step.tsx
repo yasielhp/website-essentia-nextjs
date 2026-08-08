@@ -92,7 +92,10 @@ export function ConfirmStep({
       id: "online",
       icon: CreditCard,
       title: t("payOnline"),
-      note: t("payOnlineNote", { percent: ONLINE_PAYMENT_DISCOUNT_PERCENT }),
+      note:
+        ONLINE_PAYMENT_DISCOUNT_PERCENT > 0
+          ? t("payOnlineNote", { percent: ONLINE_PAYMENT_DISCOUNT_PERCENT })
+          : t("payOnlineNoteNoDiscount"),
     },
     {
       id: "on-site",
@@ -185,18 +188,23 @@ export function ConfirmStep({
                 <span className="text-petroleum-400">{t("priceLabel")}</span>
                 <span className="text-petroleum-700">€{price}</span>
               </div>
-              <div className="flex items-baseline justify-between text-sm">
-                <span className="text-petroleum-400">{t("discountLabel")}</span>
-                <span
-                  className={
-                    paymentMethod === "online"
-                      ? "text-red-600"
-                      : "text-petroleum-400"
-                  }
-                >
-                  {paymentMethod === "online" ? `−€${discount}` : "—"}
-                </span>
-              </div>
+              {/* Only when there is a discount to show */}
+              {discount != null && discount > 0 && (
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="text-petroleum-400">
+                    {t("discountLabel")}
+                  </span>
+                  <span
+                    className={
+                      paymentMethod === "online"
+                        ? "text-red-600"
+                        : "text-petroleum-400"
+                    }
+                  >
+                    {paymentMethod === "online" ? `−€${discount}` : "—"}
+                  </span>
+                </div>
+              )}
               <div className="border-sand-100 flex items-baseline justify-between border-t pt-2">
                 <span className="text-petroleum-700 font-medium">
                   {t("totalLabel")}
