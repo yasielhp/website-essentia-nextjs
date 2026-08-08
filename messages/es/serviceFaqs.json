@@ -98,6 +98,10 @@
     "7": {
       "question": "¿Hay situaciones en las que no debería recibir un masaje?",
       "answer": "Sí. En casos de fiebre, infecciones activas, inflamaciones agudas, ciertas condiciones circulatorias, embarazo de riesgo o procesos médicos recientes, es importante consultarlo antes. Si tienes alguna condición específica, te orientaremos antes de la sesión."
+    },
+    "8": {
+      "question": "¿Qué pasa si no puedo asistir?",
+      "answer": "Puedes cancelar o cambiar tu cita hasta 24 horas antes de la sesión sin ningún coste: escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, el importe pagado online no se reembolsa, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
     }
   },
   "facial-therapies": {
@@ -128,6 +132,10 @@
     "6": {
       "question": "¿Hay situaciones en las que no debería recibir un facial?",
       "answer": "Sí. En casos de infecciones o lesiones activas en la piel, quemaduras solares recientes, alergias conocidas a algún activo o procedimientos estéticos recientes, es importante consultarlo antes. Si tienes alguna condición específica, te orientaremos antes de la sesión."
+    },
+    "7": {
+      "question": "¿Qué pasa si no puedo asistir?",
+      "answer": "Puedes cancelar o cambiar tu cita hasta 24 horas antes de la sesión sin ningún coste: escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, el importe pagado online no se reembolsa, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
     }
   },
   "hyperbaric-chambers": {

@@ -22,6 +22,8 @@ export type BookingNotificationPayload = {
   service: string;
   serviceId?: string | null;
   sessionType?: string | null;
+  /** Only for bookings paying at the centre: what is still owed. */
+  amountDueEur?: number | null;
   date: string;
   time: string;
   duration?: string | null;
@@ -120,6 +122,7 @@ export async function notifyBooking(
     service,
     sessionType,
     duration,
+    amountDueEur,
     locale = "en",
   } = payload;
 
@@ -153,6 +156,7 @@ export async function notifyBooking(
         date,
         time,
         duration,
+        amountDueEur,
         locale,
       }),
     confirmed: () =>

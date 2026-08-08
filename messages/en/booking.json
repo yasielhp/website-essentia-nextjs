@@ -17,7 +17,7 @@
     "checking": "Checking…",
     "nextStep": "Next step",
     "nextWithLabel": "Next: {label}",
-    "requestBooking": "Request booking",
+    "requestBooking": "Confirm",
     "submitting": "Submitting…"
   },
   "memberBlocker": {
@@ -168,7 +168,8 @@
     "durationLabel": "Duration",
     "priceLabel": "Price",
     "discountLabel": "Discount",
-    "totalLabel": "Total"
+    "totalLabel": "Total",
+    "cancellationNote": "You can cancel or move your appointment up to 24 hours before at no cost."
   },
   "paymentOverlay": {
     "redirecting": "Redirecting to secure payment…",

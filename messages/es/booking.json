@@ -17,7 +17,7 @@
     "checking": "Comprobando…",
     "nextStep": "Siguiente paso",
     "nextWithLabel": "Siguiente: {label}",
-    "requestBooking": "Solicitar reserva",
+    "requestBooking": "Confirmar",
     "submitting": "Enviando…"
   },
   "memberBlocker": {
@@ -168,7 +168,8 @@
     "durationLabel": "Duración",
     "priceLabel": "Precio",
     "discountLabel": "Descuento",
-    "totalLabel": "Total"
+    "totalLabel": "Total",
+    "cancellationNote": "Puedes cancelar o cambiar tu cita hasta 24 horas antes sin coste."
   },
   "paymentOverlay": {
     "redirecting": "Redirigiendo al pago seguro…",

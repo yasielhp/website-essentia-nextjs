@@ -712,6 +712,7 @@ function BookingContentInner() {
         service: selectedService.title,
         serviceId: selectedService.id,
         sessionType: selectedTierLabel,
+        amountDueEur: paymentMethod === "on-site" ? selectedTierPrice : null,
         date: dateStr,
         time: timeStr ?? "",
         duration: selectedDuration ?? null,

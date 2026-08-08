@@ -7,6 +7,8 @@ export function bookingReceivedEmail({
   date,
   time,
   duration,
+  /** Set when the visitor chose to pay at the centre; omitted for prepaid. */
+  amountDueEur,
   locale = "en",
 }: {
   name: string;
@@ -15,8 +17,21 @@ export function bookingReceivedEmail({
   date: string;
   time: string;
   duration?: string | null;
+  amountDueEur?: number | null;
   locale?: "en" | "es";
 }): string {
+  // Paying on the day is the one case where the client has to be told an
+  // amount: nothing has been charged yet.
+  const paymentLine =
+    amountDueEur != null
+      ? locale === "es"
+        ? `<p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
+             Has elegido pagar en el centro: el día de tu sesión abonarás <strong>${amountDueEur}\u00a0€</strong>, el precio íntegro del tratamiento.
+           </p>`
+        : `<p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
+             You chose to pay at the centre: on the day of your session you will pay <strong>€${amountDueEur}</strong>, the full price of the treatment.
+           </p>`
+      : "";
   if (locale === "es") {
     return emailBase({
       locale,
@@ -31,6 +46,8 @@ export function bookingReceivedEmail({
         </p>
 
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
+
+        ${paymentLine}
 
         <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si necesitas cancelar o modificar tu solicitud, por favor contáctanos con al menos 24 horas de antelación.
@@ -52,6 +69,8 @@ export function bookingReceivedEmail({
       </p>
 
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
+
+      ${paymentLine}
 
       <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
         If you need to cancel or modify your request, please contact us at least 24 hours in advance.
