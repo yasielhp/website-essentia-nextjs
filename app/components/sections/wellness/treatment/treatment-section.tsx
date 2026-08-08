@@ -3,7 +3,6 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
@@ -67,6 +66,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
             <Button
               variant="white"
               size="md"
+              className="w-full md:w-auto"
               onClick={() => {
                 const el = document.getElementById("treatments");
                 if (el) {
@@ -109,39 +109,47 @@ function ManualTherapiesSection() {
           {t("aromaNote")}
         </p>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-4">
           {manualServices.map((service) => (
-            <Link
+            <article
               key={service.id}
-              href={`/wellness/manual-therapies/${service.id}`}
-              className="group relative block h-80 cursor-pointer overflow-hidden rounded-2xl"
+              className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
             >
-              <Image
-                src={service.image}
-                alt={t(`manualTherapiesCards.${service.id}.title`)}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.35), transparent)",
-                }}
-              />
-              <span className="absolute top-4 right-4 text-xs text-white/60">
-                {service.durations.join(" · ")}
-              </span>
-              <div className="absolute right-0 bottom-0 left-0 p-5">
-                <h3 className="font-body text-lg text-white">
-                  {t(`manualTherapiesCards.${service.id}.title`)}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-white/70">
+              {/* Copy left, photo right — on mobile the photo leads */}
+              <div className="order-2 flex flex-col items-start justify-center gap-3 p-6 md:order-1 md:p-8">
+                <div>
+                  <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
+                    {t(`manualTherapiesCards.${service.id}.title`)}
+                  </h3>
+                  <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
+                    {service.durations.join(" · ")}
+                  </span>
+                </div>
+
+                <p className="text-petroleum-500 text-sm leading-relaxed">
                   {t(`manualTherapiesCards.${service.id}.description`)}
                 </p>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  href={`/wellness/manual-therapies/${service.id}`}
+                  className="mt-2 w-full md:w-auto"
+                >
+                  {t("viewTreatment")}
+                </Button>
               </div>
-            </Link>
+
+              <div className="relative order-1 h-56 md:order-2 md:h-full md:min-h-64">
+                <Image
+                  src={service.thumbnail}
+                  alt={t(`manualTherapiesCards.${service.id}.title`)}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 448px"
+                  className="object-cover"
+                />
+              </div>
+            </article>
           ))}
         </div>
       </div>
@@ -154,7 +162,8 @@ function ManualTherapiesSection() {
 function BenefitsSection({ data }: { data: TreatmentData }) {
   const t = useTranslations(`wellness.treatments.${data.slug}`);
   return (
-    <section className="bg-sand-50">
+    // White, so the break from the treatments list above reads as a new section
+    <section className="bg-white">
       <div className="overflow-hidden">
         <div className="mx-auto flex max-w-4xl flex-col px-5 pt-24 pb-16 md:py-20">
           <div className="flex flex-col gap-12">
@@ -249,6 +258,7 @@ function CtaSection({ data }: { data: TreatmentData }) {
                   variant="solid"
                   size="md"
                   href={`/booking?wellness=${data.slug}`}
+                  className="w-full md:w-auto"
                 >
                   {tShared("bookSession")}
                 </Button>
@@ -256,6 +266,7 @@ function CtaSection({ data }: { data: TreatmentData }) {
                   variant="outline"
                   size="md"
                   href="/experiences/memberships"
+                  className="w-full md:w-auto"
                 >
                   {tShared("viewMemberships")}
                 </Button>
