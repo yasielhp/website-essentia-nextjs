@@ -13,6 +13,8 @@ export function RequestedContent() {
   const dateStr = searchParams.get("date");
   const time = searchParams.get("time") ?? "";
   const phone = searchParams.get("phone") ?? "";
+  // Set when the visitor chose to pay at the centre.
+  const payOnSite = searchParams.get("payment") === "on-site";
 
   const dateIso = dateStr?.split("T")[0];
   const date = dateIso ? new Date(`${dateIso}T12:00:00`) : null;
@@ -42,7 +44,7 @@ export function RequestedContent() {
             {t("heading")}
           </h1>
           <p className="text-petroleum-400 mt-3 leading-relaxed text-balance">
-            {t("body")}
+            {payOnSite ? t("bodyPayOnSite") : t("body")}
           </p>
         </div>
 

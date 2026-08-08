@@ -159,7 +159,16 @@
     "paymentNotice": "You will be redirected to the Redsys secure payment gateway to complete your booking. Once payment is confirmed, our team will coordinate your appointment.",
     "paymentNoticePrefix": "Once you submit your request, we will contact you by",
     "paymentNoticeAt": "at",
-    "paymentNoticeSuffix": "to confirm your appointment. Payment will be collected at the center on the day of your session."
+    "paymentNoticeSuffix": "to confirm your appointment. Payment will be collected at the center on the day of your session.",
+    "paymentHeading": "How would you like to pay?",
+    "payOnline": "Pay now",
+    "payOnlineNote": "Pay online and save {percent}% on the price of the treatment.",
+    "payOnSite": "Pay at the centre",
+    "payOnSiteNote": "Book now and pay on the day of your session, at full price.",
+    "durationLabel": "Duration",
+    "priceLabel": "Price",
+    "discountLabel": "Discount",
+    "totalLabel": "Total"
   },
   "paymentOverlay": {
     "redirecting": "Redirecting to secure payment…",
@@ -188,6 +197,7 @@
   "requested": {
     "heading": "Request received.",
     "body": "We've received your request and will be in touch shortly to confirm your appointment.",
+    "bodyPayOnSite": "We have your booking. Payment is taken at the centre on the day of your session, at the full price of the treatment.",
     "detail": {
       "service": "Service",
       "date": "Date",

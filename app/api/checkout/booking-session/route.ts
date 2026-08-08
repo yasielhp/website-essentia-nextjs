@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { onlinePrice } from "@/lib/pricing";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
 
@@ -92,13 +93,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const priceEur = Number(tier.price_eur ?? tier.price_center_eur ?? 0);
-  if (!Number.isFinite(priceEur) || priceEur <= 0) {
+  const listPriceEur = Number(tier.price_eur ?? tier.price_center_eur ?? 0);
+  if (!Number.isFinite(listPriceEur) || listPriceEur <= 0) {
     return NextResponse.json(
       { error: "Tier has no price configured" },
       { status: 400 },
     );
   }
+
+  // Reaching this route means paying online, which carries the discount. It is
+  // applied here and not taken from the request: the client is never trusted
+  // with the amount.
+  const priceEur = onlinePrice(listPriceEur);
 
   const appUrl = getAppUrl();
   const formData = provider.buildFormData({
