@@ -32,6 +32,15 @@ const namespaces = [
  *
  * Inside `[locale]` the segment still wins, which is what lets anyone read the
  * English pages by their URL whatever their preference says.
+ *
+ * On `setRequestLocale`, which next-intl deprecates in favour of Next 16's
+ * `next/root-params`: that API only exposes dynamic segments of *the* root
+ * layout, and this app has three — `(site)/[locale]`, `(dashboard)` and
+ * `(account)` — of which only one carries the segment. A build confirms it:
+ * `.next/types/root-params.d.ts` reads "No root params detected", so
+ * `rootParams.locale()` would always be undefined. Migrating would mean moving
+ * the dashboard and the account area inside `[locale]`, which is the opposite
+ * of what `proxy.ts` deliberately does. The deprecation warning stays.
  */
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
