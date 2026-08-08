@@ -12,7 +12,7 @@ export const treatments: Treatment[] = [
   {
     number: "01",
     href: "/wellness/contrast-therapy",
-    img: "/images/menu/thermal-contrast.webp",
+    img: "/images/menu/thermal-contrast-900x600.webp",
     title: "Contrast Therapy",
     tagline: "Heat & Cold",
     description: "Heat and cold to activate recovery and reduce inflammation.",
@@ -21,7 +21,7 @@ export const treatments: Treatment[] = [
   {
     number: "02",
     href: "/wellness/breathing-sessions",
-    img: "/images/menu/breathing-sessions.webp",
+    img: "/images/menu/breathing-sessions-900x600.webp",
     title: "Breathing Sessions",
     tagline: "Breathwork",
     description: "Guided breathwork to shift from stress to active recovery.",
@@ -30,7 +30,7 @@ export const treatments: Treatment[] = [
   {
     number: "03",
     href: "/wellness/red-light-therapy",
-    img: "/images/menu/red-light-therapy.webp",
+    img: "/images/menu/red-light-therapy-900x600.webp",
     title: "Red Light Therapy",
     tagline: "Photobiomodulation",
     description:
@@ -41,7 +41,7 @@ export const treatments: Treatment[] = [
   {
     number: "04",
     href: "/wellness/manual-therapies",
-    img: "/images/menu/manual-therapies.webp",
+    img: "/images/menu/manual-therapies-900x400.webp",
     title: "Manual Therapies",
     tagline: "Touch & Restoration",
     description: "Precise manual work to release tension and restore mobility.",
@@ -49,7 +49,7 @@ export const treatments: Treatment[] = [
   {
     number: "05",
     href: "/wellness/facial-therapies",
-    img: "/images/menu/functional-wellbeing.webp",
+    img: "/images/menu/functional-wellbeing-900x600.webp",
     title: "Facial Therapies",
     tagline: "Skin & Radiance",
     description:

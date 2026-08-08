@@ -32,7 +32,7 @@ export default function HeroSection() {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
-        src="/images/medicine/hero.webp"
+        src="/images/medicine/hero-2560x1440.webp"
         alt="Essentia Medicine"
         fill
         priority

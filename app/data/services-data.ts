@@ -27,7 +27,7 @@ export const bookableServices: BookableService[] = [
     title: "Manual Therapies",
     description: "Precise manual work to release tension and restore mobility.",
     durations: ["30 min", "120 min"],
-    image: "/images/menu/manual-therapies.webp",
+    image: "/images/menu/manual-therapies-900x400.webp",
   },
   {
     id: "facial-therapies",
@@ -36,7 +36,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Advanced facial protocols combining manual techniques and technology to restore skin health.",
     durations: ["60 min"],
-    image: "/images/menu/functional-wellbeing.webp",
+    image: "/images/menu/functional-wellbeing-900x600.webp",
   },
   {
     id: "red-light-therapy",
@@ -45,7 +45,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Red and infrared light to stimulate cellular repair and regeneration.",
     durations: ["20 min"],
-    image: "/images/menu/red-light-therapy.webp",
+    image: "/images/menu/red-light-therapy-900x600.webp",
   },
   // Medicine
   {
@@ -55,7 +55,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Direct nutrient delivery for rapid absorption and cellular support.",
     durations: ["45 min"],
-    image: "/images/menu/intravenous-therapy.webp",
+    image: "/images/menu/intravenous-therapy-900x600.webp",
   },
 ];
 
@@ -86,7 +86,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["30 min"],
     priceCenter: "90 €",
     priceSuite: "120 €",
-    image: "/images/wellness/treatments/espira.webp",
+    image: "/images/wellness/treatments/espira-1920x1080.webp",
   },
   {
     id: "pulse",
@@ -114,7 +114,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["45 min"],
     priceCenter: "100 €",
     priceSuite: "130 €",
-    image: "/images/wellness/treatments/pulse.webp",
+    image: "/images/wellness/treatments/pulse-1920x1080.webp",
   },
   {
     id: "drenaje-linfatico",
@@ -142,7 +142,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["50 min"],
     priceCenter: "100 €",
     priceSuite: "130 €",
-    image: "/images/wellness/treatments/drenaje-linfatico.webp",
+    image: "/images/wellness/treatments/drenaje-linfatico-1920x1080.webp",
   },
   {
     id: "essentia-active",
@@ -170,7 +170,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["45 min"],
     priceCenter: "110 €",
     priceSuite: "140 €",
-    image: "/images/wellness/treatments/essentia-active.webp",
+    image: "/images/wellness/treatments/essentia-active-1920x1080.webp",
   },
   {
     id: "nurtura",
@@ -198,7 +198,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["50 min"],
     priceCenter: "130 €",
     priceSuite: "160 €",
-    image: "/images/wellness/treatments/nurtura.webp",
+    image: "/images/wellness/treatments/nurtura-1920x1080.webp",
   },
   {
     id: "serenna",
@@ -226,7 +226,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["50 min"],
     priceCenter: "130 €",
     priceSuite: "160 €",
-    image: "/images/wellness/treatments/serenna.webp",
+    image: "/images/wellness/treatments/serenna-1920x1080.webp",
   },
   {
     id: "solea",
@@ -254,7 +254,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["70 min"],
     priceCenter: "150 €",
     priceSuite: "180 €",
-    image: "/images/wellness/treatments/solea.webp",
+    image: "/images/wellness/treatments/solea-1920x1080.webp",
   },
   {
     id: "soma",
@@ -282,7 +282,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["60 min"],
     priceCenter: "160 €",
     priceSuite: "190 €",
-    image: "/images/wellness/treatments/soma.webp",
+    image: "/images/wellness/treatments/soma-1920x1080.webp",
   },
   {
     id: "lume",
@@ -310,7 +310,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["80 min"],
     priceCenter: "220 €",
     priceSuite: "250 €",
-    image: "/images/wellness/treatments/lume.webp",
+    image: "/images/wellness/treatments/lume-1920x1080.webp",
   },
   {
     id: "alure-duo",
@@ -337,7 +337,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     ],
     durations: ["50 min"],
     priceCenter: "270 €",
-    image: "/images/wellness/treatments/alure-duo.webp",
+    image: "/images/wellness/treatments/alure-duo-1920x1080.webp",
   },
   {
     id: "essentia-signature",
@@ -364,6 +364,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     ],
     durations: ["120 min"],
     priceCenter: "350 €",
-    image: "/images/wellness/treatments/essentia-signature.webp",
+    image: "/images/wellness/treatments/essentia-signature-1920x1080.webp",
   },
 ];

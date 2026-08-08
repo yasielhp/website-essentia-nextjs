@@ -166,7 +166,7 @@ function RaceInfoPanel({
 
       <div className="relative h-52 overflow-hidden rounded-2xl md:h-64">
         <Image
-          src="/images/community/running-club-next.webp"
+          src="/images/community/running-club-next-900x600.webp"
           alt={t("imageAlt")}
           fill
           sizes="(max-width: 767px) 100vw, 50vw"

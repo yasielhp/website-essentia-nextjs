@@ -110,7 +110,7 @@ export default function TheSpace() {
               className="relative h-48 overflow-hidden rounded-2xl md:h-64"
             >
               <Image
-                src="/images/home/location-1.webp"
+                src="/images/home/location-1-540x280.webp"
                 alt="Essentia wellness space in Tenerife"
                 fill
                 sizes="(max-width: 767px) 100vw, 50vw"
@@ -125,7 +125,7 @@ export default function TheSpace() {
                 className="relative hidden h-30 overflow-hidden rounded-2xl md:block"
               >
                 <Image
-                  src="/images/home/location-2.webp"
+                  src="/images/home/location-2-540x130.webp"
                   alt="Essentia treatment room"
                   fill
                   sizes="50vw"
@@ -138,7 +138,7 @@ export default function TheSpace() {
                 className="relative hidden h-30 overflow-hidden rounded-2xl md:block"
               >
                 <Image
-                  src="/images/home/location-3.webp"
+                  src="/images/home/location-3-540x130.webp"
                   alt="Essentia outdoor area Tenerife"
                   fill
                   sizes="50vw"

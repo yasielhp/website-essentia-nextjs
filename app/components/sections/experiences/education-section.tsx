@@ -137,7 +137,7 @@ function EducationHero() {
   return (
     <section className="relative flex min-h-dvh flex-col items-center justify-center px-5 text-center">
       <Image
-        src="/images/menu/education-programs.webp"
+        src="/images/menu/education-programs-900x600.webp"
         alt={t("imageAlt")}
         fill
         priority
@@ -341,7 +341,7 @@ function NextSessionSection({
                   <Image
                     src={
                       session.image_url ??
-                      "/images/menu/education-programs.webp"
+                      "/images/menu/education-programs-900x600.webp"
                     }
                     alt={session.title}
                     fill
