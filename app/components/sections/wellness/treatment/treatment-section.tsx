@@ -130,14 +130,24 @@ function ManualTherapiesSection() {
                   {t(`manualTherapiesCards.${service.id}.description`)}
                 </p>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  href={`/wellness/manual-therapies/${service.id}`}
-                  className="mt-2 w-full md:w-auto"
-                >
-                  {t("viewTreatment")}
-                </Button>
+                <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    href={`/booking?service=manual-therapies&treatment=${service.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("bookSession")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/wellness/manual-therapies/${service.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("viewTreatment")}
+                  </Button>
+                </div>
               </div>
 
               <div className="relative order-1 h-56 md:order-2 md:h-full md:min-h-64">
