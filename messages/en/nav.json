@@ -14,7 +14,7 @@
       "thermalContrast": "Thermal contrast",
       "breathingSessions": "Breathing sessions",
       "redLightTherapy": "Red light therapy",
-      "facialTherapies": "Facial therapies",
+      "facialTherapies": "Therapeutic Facials",
       "functionalWellbeing": "Functional wellbeing"
     },
     "medicine": {
@@ -58,7 +58,7 @@
       "description": "Targeted red and near-infrared light to accelerate cellular repair, reduce inflammation, and support deep tissue recovery."
     },
     "facialTherapies": {
-      "title": "Facial Therapies",
+      "title": "Therapeutic Facials",
       "description": "Advanced facial protocols combining manual techniques and technology to restore skin health and lasting radiance."
     },
     "regenerativeMedicine": {

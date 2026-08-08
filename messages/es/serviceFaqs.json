@@ -102,24 +102,32 @@
   },
   "facial-therapies": {
     "0": {
-      "question": "¿Qué son las terapias faciales en Essentia?",
-      "answer": "Las terapias faciales en Essentia son protocolos cutáneos respaldados por evidencia que combinan técnicas manuales expertas con tecnología avanzada de cuidado de la piel. Cada sesión está personalizada según tu tipo de piel y condición — dirigida a la hidratación, reparación de la barrera, estimulación del colágeno o radiancia según lo que más necesite tu piel."
+      "question": "¿Qué faciales ofrece Essentia?",
+      "answer": "Trabajamos con tres rituales: Aurum, centrado en luminosidad, firmeza y regeneración; Eleva, orientado a definición, estructura y efecto lifting; y Kinéa Signature, una reeducación facial integral que incluye una primera valoración. Cada uno tiene un propósito distinto y se adapta a lo que el rostro necesita."
     },
     "1": {
-      "question": "¿Para quién son las sesiones de terapia facial?",
-      "answer": "Las terapias faciales son adecuadas para adultos que quieren invertir en la salud y apariencia a largo plazo de su piel. Trabajamos con todos los tipos de piel — desde sensible y reactiva hasta envejecida y dañada por el sol — adaptando cada protocolo a tu presentación específica."
+      "question": "¿Cómo sé cuál elegir?",
+      "answer": "Si tienes dudas, te orientamos antes de reservar. Aurum trabaja la piel y su luminosidad, Eleva la estructura y el contorno, y Kinéa Signature parte de una valoración para diseñar un plan más profundo cuando buscas un acompañamiento continuado."
     },
     "2": {
-      "question": "¿Qué incluye una sesión de terapia facial?",
-      "answer": "Las sesiones son de 60 minutos y comienzan con un análisis exhaustivo de la piel. El protocolo que sigue combina limpieza profunda, trabajo manual específico, sueros activos elegidos para tu condición cutánea y cuidados de acabado. Se pueden incluir pasos asistidos por tecnología según tus objetivos de piel."
+      "question": "¿Necesito reservar con antelación?",
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Para confirmar la cita, el pago se realiza mediante pasarela de pago online, garantizando así tu horario y la preparación personalizada de tu tratamiento."
     },
     "3": {
-      "question": "¿Con qué frecuencia debo recibir una sesión de terapia facial?",
-      "answer": "Una sesión cada tres o cuatro semanas es la frecuencia de mantenimiento recomendada. Los miembros que abordan preocupaciones cutáneas específicas — como pigmentación, pérdida de firmeza o daño en la barrera — se benefician de un ciclo inicial de cuatro a seis sesiones para una mejora estructural visible."
+      "question": "¿Cuánto dura cada sesión?",
+      "answer": "Aurum y Eleva duran 60 minutos. Kinéa Signature dura 90, porque incluye la primera valoración además de la sesión."
     },
     "4": {
-      "question": "¿Son inmediatos los resultados?",
-      "answer": "Sí — la piel emerge visiblemente más luminosa, suave y uniforme tras la primera sesión. Los beneficios estructurales más profundos de la estimulación del colágeno y la reparación de la barrera son acumulativos y se hacen más pronunciados con el tratamiento consistente a lo largo del tiempo."
+      "question": "¿Cada sesión es igual para todas las personas?",
+      "answer": "No. Cada sesión empieza observando el rostro: el estado de la piel, la expresión, la tensión facial y el objetivo del tratamiento. A partir de ahí elegimos el protocolo y adaptamos las maniobras. No aplicamos nada sin entender primero lo que la piel necesita."
+    },
+    "5": {
+      "question": "¿Dónde puedo recibir mi tratamiento?",
+      "answer": "En nuestro espacio de bienestar en Baobab Suites, Costa Adeje, o en tu habitación si te alojas allí. El servicio a domicilio fuera del complejo no está disponible por ahora."
+    },
+    "6": {
+      "question": "¿Hay situaciones en las que no debería recibir un facial?",
+      "answer": "Sí. En casos de infecciones o lesiones activas en la piel, quemaduras solares recientes, alergias conocidas a algún activo o procedimientos estéticos recientes, es importante consultarlo antes. Si tienes alguna condición específica, te orientaremos antes de la sesión."
     }
   },
   "hyperbaric-chambers": {

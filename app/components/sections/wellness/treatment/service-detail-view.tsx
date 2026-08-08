@@ -5,11 +5,25 @@ import Image from "next/image";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
-import type { ManualTherapyTreatment } from "@/data/services-data";
+import type {
+  FacialTreatment,
+  ManualTherapyTreatment,
+} from "@/data/services-data";
+
+/** Either family of treatment can drive this view. */
+type DetailService = ManualTherapyTreatment | FacialTreatment;
+
+type DetailProps = {
+  service: DetailService;
+  /** Where the booking buttons point — the two families differ. */
+  bookingHref: string;
+  /** Back to the list this treatment belongs to. */
+  backHref: string;
+};
 
 // ─── Hero ─────────────────────────────────────────────────────
 
-function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
+function ServiceHero({ service, bookingHref }: DetailProps) {
   const t = useTranslations("wellness.treatments.serviceDetail");
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -60,11 +74,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
           {t(`${service.id}.description`)}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button
-            variant="white"
-            size="md"
-            href={`/booking?service=manual-therapies&treatment=${service.id}`}
-          >
+          <Button variant="white" size="md" href={bookingHref}>
             {t("bookSession")}
           </Button>
           <Button
@@ -89,7 +99,7 @@ function ServiceHero({ service }: { service: ManualTherapyTreatment }) {
 
 // ─── Details ──────────────────────────────────────────────────
 
-function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
+function ServiceDetails({ service }: DetailProps) {
   const t = useTranslations("wellness.treatments.serviceDetail");
   return (
     <section id="details" className="bg-sand-50">
@@ -103,7 +113,10 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
               </h2>
               {/* Paragraphs are separated by a blank line in the message */}
               <div className="mt-6 flex flex-col gap-4">
-                {t(`${service.id}.body`)
+                {(t.has(`${service.id}.body`)
+                  ? t(`${service.id}.body`)
+                  : t(`${service.id}.description`)
+                )
                   .split(/\n{2,}/)
                   .map((paragraph, i) => (
                     <p key={i} className="text-petroleum-500 leading-relaxed">
@@ -115,7 +128,7 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
 
             {/* Highlights grid */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {service.highlights.map((_, i) => (
+              {(service.highlights ?? []).map((_, i) => (
                 <div key={i} className="bg-sand-100 rounded-2xl p-6">
                   <h3 className="text-petroleum-700 font-medium">
                     {t(`${service.id}.highlights.${i}.title`)}
@@ -135,7 +148,7 @@ function ServiceDetails({ service }: { service: ManualTherapyTreatment }) {
 
 // ─── CTA ──────────────────────────────────────────────────────
 
-function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
+function ServiceCta({ service, bookingHref, backHref }: DetailProps) {
   const t = useTranslations("wellness.treatments.serviceDetail");
   return (
     <section className="bg-petroleum-700">
@@ -149,18 +162,10 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
               {t("ctaBody", { service: t(`${service.id}.title`) })}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button
-                variant="white"
-                size="md"
-                href={`/booking?service=manual-therapies&treatment=${service.id}`}
-              >
+              <Button variant="white" size="md" href={bookingHref}>
                 {t("bookSession")}
               </Button>
-              <Button
-                variant="outline-white"
-                size="md"
-                href="/wellness/manual-therapies#treatments"
-              >
+              <Button variant="outline-white" size="md" href={backHref}>
                 {t("viewAll")}
               </Button>
             </div>
@@ -175,14 +180,26 @@ function ServiceCta({ service }: { service: ManualTherapyTreatment }) {
 
 export function ServiceDetailView({
   service,
-}: {
-  service: ManualTherapyTreatment;
-}) {
+  bookingHref,
+  backHref,
+}: DetailProps) {
   return (
     <>
-      <ServiceHero service={service} />
-      <ServiceDetails service={service} />
-      <ServiceCta service={service} />
+      <ServiceHero
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
+      <ServiceDetails
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
+      <ServiceCta
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
     </>
   );
 }

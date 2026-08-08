@@ -41,6 +41,10 @@ export const routing = defineRouting({
       en: "/wellness/functional-wellbeing",
       es: "/bienestar/bienestar-funcional",
     },
+    "/wellness/facial-therapies/[slug]": {
+      en: "/wellness/facial-therapies/[slug]",
+      es: "/bienestar/terapias-faciales/[slug]",
+    },
     "/wellness/manual-therapies/[slug]": {
       en: "/wellness/manual-therapies/[slug]",
       es: "/bienestar/terapias-manuales/[slug]",

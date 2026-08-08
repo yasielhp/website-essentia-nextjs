@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import BookingSection from "@components/sections/booking/booking-section";
-import { BookableServices } from "@components/sections/booking/bookable-services";
 
 export async function generateMetadata({
   params,
@@ -35,7 +34,6 @@ export default async function BookPage({
   return (
     <>
       <BookingSection />
-      <BookableServices />
     </>
   );
 }

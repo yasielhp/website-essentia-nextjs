@@ -11,7 +11,7 @@
     "ctaContact": "Habla con nosotros"
   },
   "protocols": {
-    "heading": "Los protocolos.",
+    "heading": "Los protocolos",
     "subheading": "Cinco modalidades. Un sistema integrado.",
     "items": {
       "contrast-therapy": {
@@ -35,7 +35,7 @@
         "description": "Trabajo manual preciso para liberar tensión y restaurar la movilidad."
       },
       "facial-therapies": {
-        "title": "Terapias Faciales",
+        "title": "Faciales terapéuticos",
         "tagline": "Piel y radiancia",
         "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel."
       }
@@ -67,7 +67,7 @@
     "ctaContact": "Habla con nosotros primero"
   },
   "treatments": {
-    "manualTherapiesHeading": "Nuestros tratamientos.",
+    "manualTherapiesHeading": "Nuestros tratamientos",
     "manualTherapiesSubtitle": "Cada tratamiento está diseñado con un propósito específico. Elige el que se ajuste a lo que tu cuerpo necesita hoy.",
     "exploreTreatments": "Explorar tratamientos",
     "bookSession": "Reservar una sesión",
@@ -119,7 +119,7 @@
       }
     },
     "serviceDetail": {
-      "aboutHeading": "Sobre este tratamiento.",
+      "aboutHeading": "Sobre este tratamiento",
       "ctaHeading": "¿Listo para comenzar?",
       "ctaBody": "Reserva tu sesión de {service} en Essentia Wellness Club — Baobab Suites, Costa Adeje, Tenerife.",
       "bookSession": "Reservar una sesión",
@@ -334,16 +334,73 @@
             "description": "Masaje corporal completo y un neceser exclusivo para prolongar la experiencia más allá del tratamiento."
           }
         }
+      },
+      "aurum": {
+        "title": "Aurum",
+        "description": "Ritual facial regenerador con láminas de oro, cosmética premium Aurum y técnicas inspiradas en Kobido para nutrir, revitalizar y devolver luminosidad natural al rostro.",
+        "body": "Aurum es un ritual facial diseñado para devolver luminosidad, nutrición y vitalidad a la piel desde una experiencia profundamente sensorial.\n\nCombina exfoliación, láminas de oro, cosmética premium Aurum de Utsukusy y maniobras manuales inspiradas en el masaje Kobido para estimular el tejido, suavizar los signos visibles de cansancio y revelar un rostro más descansado, fresco y luminoso.\n\nEs ideal para pieles apagadas, desvitalizadas o que necesitan recuperar luz, suavidad y una sensación de renovación natural.",
+        "highlights": {
+          "0": {
+            "title": "Luminosidad natural",
+            "description": "Ayuda a devolver frescura y luz al rostro, dejando la piel con un aspecto más descansado y revitalizado."
+          },
+          "1": {
+            "title": "Nutrición y regeneración",
+            "description": "La combinación de cosmética premium, exfoliación y láminas de oro acompaña la renovación visible de la piel."
+          },
+          "2": {
+            "title": "Masaje inspirado en Kobido",
+            "description": "Maniobras faciales precisas para estimular el tejido, relajar la expresión y potenciar la experiencia del ritual."
+          }
+        }
+      },
+      "eleva": {
+        "title": "Eleva",
+        "description": "Ritual facial avanzado para definir, tonificar y devolver estructura al rostro mediante maderoterapia facial, ácido hialurónico natural y técnicas manuales específicas.",
+        "body": "Eleva es un tratamiento facial diseñado para trabajar la definición, la firmeza y la armonía del rostro desde un enfoque natural y no invasivo.\n\nCombina maderoterapia facial, ácido hialurónico natural y maniobras manuales específicas para estimular el tejido, mejorar la sensación de firmeza y acompañar la producción natural de colágeno.\n\nEs ideal para rostros que buscan un efecto más definido, tonificado y luminoso, sin perder naturalidad ni expresión.",
+        "highlights": {
+          "0": {
+            "title": "Definición facial",
+            "description": "Trabaja el contorno del rostro para aportar una apariencia más definida, armónica y descansada."
+          },
+          "1": {
+            "title": "Firmeza y estructura",
+            "description": "Combina maderoterapia facial y técnicas manuales para tonificar el tejido y acompañar la firmeza natural."
+          },
+          "2": {
+            "title": "Efecto lifting natural",
+            "description": "Un ritual no invasivo diseñado para elevar la expresión del rostro y potenciar su luminosidad."
+          }
+        }
+      },
+      "kinea-signature": {
+        "title": "Kinéa Signature",
+        "description": "Método manual avanzado de reeducación facial integral que trabaja estructura, postura, respiración, fascia, musculatura y piel para recuperar armonía desde el rostro.",
+        "body": "Kinéa Signature es un método facial avanzado diseñado para trabajar el rostro desde una mirada más profunda, natural y personalizada.\n\nNo se centra únicamente en la piel, sino en las estructuras que influyen en la expresión y el envejecimiento facial: postura, respiración, fascia, musculatura y tensión acumulada.\n\nA través de técnicas manuales precisas, este tratamiento busca liberar, reorganizar y acompañar el rostro hacia una apariencia más definida, descansada y armónica, respetando siempre su naturalidad.",
+        "highlights": {
+          "0": {
+            "title": "Reeducación facial integral",
+            "description": "Trabaja el rostro desde la estructura, observando postura, respiración, fascia, musculatura y piel."
+          },
+          "1": {
+            "title": "Armonía natural",
+            "description": "Ayuda a suavizar tensiones, redefinir el rostro y recuperar una expresión más descansada y equilibrada."
+          },
+          "2": {
+            "title": "Valoración personalizada",
+            "description": "La primera sesión incluye valoración para adaptar el tratamiento a las necesidades reales de cada rostro."
+          }
+        }
       }
     },
     "contrast-therapy": {
-      "title": "Contraste Térmico.",
+      "title": "Contraste Térmico",
       "tagline": "Calor y frío",
       "heroAlt": "Contraste térmico — sauna y piscina fría en Essentia",
       "price": "€45",
       "duration": "60 min",
       "intro": "Alternar calor y frío es una de las modalidades de recuperación más estudiadas en la ciencia deportiva. En Essentia hemos diseñado un protocolo estructurado que maximiza la respuesta cardiovascular, hormonal y antiinflamatoria de cada transición.",
-      "benefitsHeading": "Qué hace.",
+      "benefitsHeading": "Qué hace",
       "benefitsSubtitle": "La ciencia detrás del contraste térmico está bien establecida. Estos son los mecanismos que más importan.",
       "benefits": {
         "0": {
@@ -363,7 +420,7 @@
           "description": "La caída de la temperatura corporal central tras la exposición al frío indica al cerebro que entre en fases de sueño más profundo, reduciendo el tiempo de inicio y aumentando la duración de las ondas lentas."
         }
       },
-      "sessionHeading": "Cómo es una sesión.",
+      "sessionHeading": "Cómo es una sesión",
       "sessionSubtitle": "Las sesiones son guiadas. Nunca te dejaremos solo.",
       "sessionDetails": {
         "I": {
@@ -379,17 +436,17 @@
           "description": "Dos o tres sesiones por semana es lo óptimo para la mayoría de los miembros. Seguimos tu respuesta y ajustamos el protocolo a medida que mejora tu línea de base."
         }
       },
-      "ctaHeading": "Comienza tu primera sesión.",
+      "ctaHeading": "Comienza tu primera sesión",
       "ctaBody": "El Contraste Térmico está incluido en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "breathing-sessions": {
-      "title": "Sesiones de Respiración.",
+      "title": "Sesiones de Respiración",
       "tagline": "Trabajo de respiración",
       "heroAlt": "Sesión de trabajo de respiración en Essentia Tenerife",
       "price": "€35",
       "duration": "45 min",
       "intro": "La respiración controlada es la palanca más rápida que tenemos sobre el sistema nervioso autónomo. Nuestras sesiones de respiración guiadas se basan en la evidencia: método Wim Hof, respiración de coherencia, respiración cuadrada y entrenamiento de tolerancia al CO2 — aplicados a tu estado actual.",
-      "benefitsHeading": "Qué hace.",
+      "benefitsHeading": "Qué hace",
       "benefitsSubtitle": "La respiración es la única función autónoma que puedes controlar conscientemente. Eso la hace excepcionalmente poderosa.",
       "benefits": {
         "0": {
@@ -409,7 +466,7 @@
           "description": "La hiperventilación cíclica seguida de retención de la respiración activa el sistema simpático de forma controlada, construyendo resiliencia mental y claridad cognitiva bajo estrés."
         }
       },
-      "sessionHeading": "Cómo es una sesión.",
+      "sessionHeading": "Cómo es una sesión",
       "sessionSubtitle": "Cada sesión está guiada por un instructor formado. No se requiere experiencia previa.",
       "sessionDetails": {
         "I": {
@@ -425,17 +482,17 @@
           "description": "Una o dos sesiones por semana produce resultados consistentes. Muchos miembros combinan la respiración con el contraste térmico el mismo día para un protocolo de recuperación más completo."
         }
       },
-      "ctaHeading": "Respira diferente.",
+      "ctaHeading": "Respira diferente",
       "ctaBody": "Las Sesiones de Respiración están incluidas en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "red-light-therapy": {
-      "title": "Terapia de Luz Roja.",
+      "title": "Terapia de Luz Roja",
       "tagline": "Fotobiomodulación",
       "heroAlt": "Panel de terapia de luz roja en Essentia",
       "price": "€25",
       "duration": "20 min",
       "intro": "La fotobiomodulación utiliza longitudes de onda específicas de luz roja e infrarroja cercana para penetrar en la piel y los tejidos, estimulando las mitocondrias a nivel celular. En Essentia utilizamos paneles de cuerpo completo de grado médico calibrados a las longitudes de onda con mayor evidencia clínica.",
-      "benefitsHeading": "Qué hace.",
+      "benefitsHeading": "Qué hace",
       "benefitsSubtitle": "La terapia de luz actúa a nivel celular. Los efectos se acumulan con el uso consistente.",
       "benefits": {
         "0": {
@@ -455,7 +512,7 @@
           "description": "Investigaciones emergentes muestran que la luz infrarroja cercana aplicada en la glándula tiroides puede mejorar la función en el hipotiroidismo subclínico y reducir la dependencia de medicación."
         }
       },
-      "sessionHeading": "Cómo es una sesión.",
+      "sessionHeading": "Cómo es una sesión",
       "sessionSubtitle": "Simple, pasiva y altamente efectiva. No requiere preparación.",
       "sessionDetails": {
         "I": {
@@ -471,18 +528,18 @@
           "description": "Tres a cinco sesiones por semana proporciona el mejor efecto acumulativo. Muchos miembros integran una sesión de luz roja de 15 minutos antes o después del contraste térmico."
         }
       },
-      "ctaHeading": "Carga tus células.",
+      "ctaHeading": "Carga tus células",
       "ctaBody": "La Terapia de Luz Roja está incluida en todas las membresías de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "manual-therapies": {
-      "title": "Terapia manual avanzada para el cuidado integral del cuerpo.",
+      "title": "Terapia manual avanzada para el cuidado integral del cuerpo",
       "tagline": "Tacto y restauración",
       "heroAlt": "Sesión de terapia manual en Essentia",
       "price": "€80 / €110",
       "duration": "60 o 90 min",
       "intro": "En Essentia entendemos la terapia manual como una forma profunda de escuchar el cuerpo. Trabajamos fascia, músculo, articulaciones, sistema linfático y sistema nervioso para adaptar cada tratamiento a las necesidades reales de cada persona.",
       "intro2": "Cada sesión combina valoración, técnica y sensibilidad para trabajar el cuerpo con precisión, favoreciendo una mayor sensación de equilibrio, movilidad y bienestar.",
-      "benefitsHeading": "Qué buscamos en cada tratamiento.",
+      "benefitsHeading": "Qué buscamos en cada tratamiento",
       "benefitsSubtitle": "Cada terapia tiene un propósito distinto, pero todas comparten una misma intención: escuchar el cuerpo, aliviar lo que pesa y devolverle equilibrio.",
       "benefits": {
         "0": {
@@ -502,7 +559,7 @@
           "description": "Cada tratamiento busca restaurar la sensación de fluidez, movilidad y bienestar, adaptándose a lo que el cuerpo necesita en ese momento."
         }
       },
-      "sessionHeading": "Cómo es una sesión Essentia.",
+      "sessionHeading": "Cómo es una sesión Essentia",
       "sessionSubtitle": "Cada sesión es una experiencia personalizada. Escuchamos el cuerpo, adaptamos el tratamiento y acompañamos el proceso antes, durante y después.",
       "sessionDetails": {
         "I": {
@@ -518,58 +575,78 @@
           "description": "El tratamiento no termina en la camilla. Te guiamos con recomendaciones sencillas para mantener la ligereza, el descanso y el equilibrio después de la sesión."
         }
       },
-      "ctaHeading": "Libera lo que te frena.",
+      "ctaHeading": "Libera lo que te frena",
       "ctaBody": "Las Terapias Manuales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "facial-therapies": {
-      "title": "Terapias Faciales.",
+      "title": "Faciales terapéuticos",
       "tagline": "Piel y radiancia",
       "heroAlt": "Sesión de terapia facial en Essentia",
       "price": "€75",
       "duration": "60 min",
-      "intro": "La piel sana es el resultado de la precisión, no de la casualidad. Nuestros terapeutas faciales combinan técnicas manuales respaldadas por evidencia con tecnología avanzada para abordar las necesidades reales de tu piel — restaurando la función barrera, estimulando la renovación celular y ofreciendo resultados visibles y duraderos.",
-      "benefitsHeading": "Qué hace.",
-      "benefitsSubtitle": "Cada protocolo facial está diseñado en torno a tu piel — no a una rutina genérica.",
+      "intro": "Cada rostro tiene una historia. Nuestros faciales combinan técnica manual, cosmética profesional y una mirada personalizada para devolver luminosidad, firmeza y armonía natural.",
+      "benefitsHeading": "Qué hace",
+      "benefitsSubtitle": "Cada ritual facial está diseñado para acompañar la piel y el rostro desde una mirada más profunda: no buscamos añadir belleza, sino revelar la que ya existe.",
       "benefits": {
         "0": {
-          "title": "Restaura la función barrera de la piel",
-          "description": "Protocolos específicos reparan el estrato córneo, mejoran la retención de hidratación y reconstruyen la defensa natural de la piel frente a los agresores medioambientales."
+          "title": "Restaura la luminosidad",
+          "description": "Trabajamos la piel con cosmética profesional, exfoliación y técnicas manuales para devolver frescura, nutrición y un aspecto más descansado."
         },
         "1": {
-          "title": "Estimula la renovación celular",
-          "description": "El drenaje manual y los tratamientos asistidos por tecnología aumentan la actividad de los fibroblastos, promoviendo la síntesis de colágeno y acelerando la renovación de las células superficiales dañadas."
+          "title": "Mejora la firmeza",
+          "description": "A través de maniobras específicas y activos seleccionados, acompañamos la estructura facial y ayudamos a redefinir el contorno."
         },
         "2": {
-          "title": "Reduce la inflamación y el enrojecimiento",
-          "description": "Técnicas calmantes combinadas con activos antiinflamatorios abordan el enrojecimiento crónico, la sensibilización y el daño solar sin alterar el microbioma cutáneo."
+          "title": "Libera tensión facial",
+          "description": "El rostro también acumula carga. Trabajamos musculatura, fascia y expresión para suavizar tensión y devolver armonía."
         },
         "3": {
-          "title": "Proporciona radiancia inmediata y duradera",
-          "description": "La piel emerge visiblemente más luminosa, firme y uniforme tras la primera sesión. Con práctica regular, los resultados se acumulan — mejorando el tono, la textura y la salud general de la piel."
+          "title": "Acompaña el envejecimiento",
+          "description": "Nuestros protocolos buscan cuidar la piel y la estructura facial desde un enfoque natural, progresivo y no invasivo."
         }
       },
-      "sessionHeading": "Cómo es una sesión.",
-      "sessionSubtitle": "Cada sesión comienza con un análisis de la piel. Nada se aplica sin una razón.",
+      "sessionHeading": "Cómo es una sesión",
+      "sessionSubtitle": "Cada sesión comienza observando el rostro. Nada se aplica sin entender primero lo que la piel necesita.",
       "sessionDetails": {
         "I": {
-          "title": "Duración",
-          "description": "60 minutos. Un análisis exhaustivo de la piel abre la sesión, seguido de un protocolo personalizado que combina limpieza, trabajo manual, sueros activos y cuidados de acabado."
+          "title": "Valoración",
+          "description": "Analizamos el estado de la piel, la expresión, la tensión facial y el objetivo del tratamiento para elegir el protocolo más adecuado."
         },
         "II": {
-          "title": "Formato",
-          "description": "1:1 con una terapeuta facial certificada. Los protocolos se adaptan a tu tipo de piel, condición actual y objetivos — desde hidratación profunda hasta reafirmación, luminosidad o reparación de la barrera."
+          "title": "Tratamiento",
+          "description": "Combinamos técnicas manuales, cosmética profesional y maniobras específicas para trabajar luminosidad, firmeza, estructura y descanso facial."
         },
         "III": {
-          "title": "Frecuencia",
-          "description": "Una sesión cada tres o cuatro semanas mantiene una salud óptima de la piel. Los miembros que abordan preocupaciones específicas se benefician de un ciclo inicial de cuatro a seis sesiones para una mejora estructural visible."
+          "title": "Seguimiento",
+          "description": "En tratamientos como Kinesiolifting, definimos un plan personalizado según la evolución del rostro y las necesidades de cada persona."
         }
       },
-      "ctaHeading": "Restaura tu piel.",
-      "ctaBody": "Las Terapias Faciales están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
+      "ctaHeading": "Restaura tu piel",
+      "ctaBody": "Los faciales terapéuticos están disponibles para todos los miembros de Essentia. Reserva tu primera sesión o únete a la comunidad para empezar."
     },
     "manualTherapyMetaSuffix": "Terapias Manuales · Essentia",
     "aromaNote": "Todas nuestras terapias se realizan con aceites y esencias premium, e incorporan aromaterapia cuidadosamente seleccionada para elevar la experiencia sensorial y acompañar el trabajo manual. En caso de alergias, sensibilidad o preferencia personal, la aromaterapia puede adaptarse o evitarse.",
-    "viewTreatment": "Ver tratamiento"
+    "viewTreatment": "Ver tratamiento",
+    "facialsHeading": "Nuestros faciales",
+    "facialsSubtitle": "Tres rituales diseñados para cuidar la piel, mejorar la estructura facial y revelar una belleza más natural, luminosa y equilibrada.",
+    "facialCards": {
+      "aurum": {
+        "title": "Aurum",
+        "meta": "60 min · 180 €",
+        "description": "Luminosidad, firmeza y regeneración con láminas de oro, cosmética premium Aurum y técnicas inspiradas en Kobido."
+      },
+      "eleva": {
+        "title": "Eleva",
+        "meta": "60 min · 220 €",
+        "description": "Definición, estructura y efecto lifting con maderoterapia facial, ácido hialurónico natural y técnicas manuales específicas."
+      },
+      "kinea-signature": {
+        "title": "Kinéa Signature",
+        "meta": "Primera valoración + sesión · 240 €",
+        "description": "Reeducación facial integral que trabaja postura, respiración, fascia, musculatura y piel para recuperar armonía desde la estructura."
+      }
+    },
+    "facialMetaSuffix": "Faciales terapéuticos · Essentia"
   },
   "pages": {
     "breathing-sessions": {
@@ -593,9 +670,9 @@
       "breadcrumb": "Terapia de Luz Roja"
     },
     "facial-therapies": {
-      "metaTitle": "Terapias Faciales | Essentia Wellness",
+      "metaTitle": "Faciales terapéuticos | Essentia Wellness",
       "metaDescription": "Protocolos avanzados de terapia facial en Essentia Tenerife que combinan técnicas manuales y tecnología para una piel radiante y duradera.",
-      "breadcrumb": "Terapias Faciales"
+      "breadcrumb": "Faciales terapéuticos"
     },
     "breadcrumbHome": "Inicio",
     "breadcrumbWellness": "Bienestar",

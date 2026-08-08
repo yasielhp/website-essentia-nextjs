@@ -14,7 +14,7 @@
       "thermalContrast": "Contraste térmico",
       "breathingSessions": "Sesiones de respiración",
       "redLightTherapy": "Terapia de luz roja",
-      "facialTherapies": "Terapias faciales",
+      "facialTherapies": "Faciales terapéuticos",
       "functionalWellbeing": "Bienestar funcional"
     },
     "medicine": {
@@ -58,7 +58,7 @@
       "description": "Luz roja e infrarroja dirigida para acelerar la reparación celular, reducir la inflamación y favorecer la recuperación profunda de los tejidos."
     },
     "facialTherapies": {
-      "title": "Terapias Faciales",
+      "title": "Faciales terapéuticos",
       "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel y una radiancia duradera."
     },
     "regenerativeMedicine": {

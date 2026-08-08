@@ -6,7 +6,10 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
-import { manualTherapyTreatments } from "@/data/services-data";
+import {
+  facialTreatments,
+  manualTherapyTreatments,
+} from "@/data/services-data";
 
 // ─── Hero ─────────────────────────────────────────────────────
 
@@ -167,6 +170,82 @@ function ManualTherapiesSection() {
   );
 }
 
+// ─── Facial therapies — ritual list ──────────────────────────
+
+function FacialTreatmentsSection() {
+  const t = useTranslations("wellness.treatments");
+
+  return (
+    <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 text-center">
+          <h2 className="font-display text-petroleum-700 text-3xl md:text-4xl">
+            {t("facialsHeading")}
+          </h2>
+          <p className="text-petroleum-400 mx-auto mt-3 max-w-lg leading-relaxed">
+            {t("facialsSubtitle")}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {facialTreatments.map((facial) => (
+            <article
+              key={facial.id}
+              className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
+            >
+              <div className="order-2 flex flex-col items-start justify-center gap-3 p-6 md:order-1 md:p-8">
+                <div>
+                  <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
+                    {t(`facialCards.${facial.id}.title`)}
+                  </h3>
+                  <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
+                    {t(`facialCards.${facial.id}.meta`)}
+                  </span>
+                </div>
+
+                <p className="text-petroleum-500 text-sm leading-relaxed">
+                  {t(`facialCards.${facial.id}.description`)}
+                </p>
+
+                {/* No per-ritual booking yet: the facial tiers do not exist in
+                    the database, so the link goes to the service. */}
+                <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    href={`/booking?service=facial-therapies&treatment=${facial.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("bookSession")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/wellness/facial-therapies/${facial.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("viewTreatment")}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative order-1 h-56 md:order-2 md:h-full md:min-h-64">
+                <Image
+                  src={facial.thumbnail}
+                  alt={t(`facialCards.${facial.id}.title`)}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 448px"
+                  className="object-cover"
+                />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Benefits ─────────────────────────────────────────────────
 
 function BenefitsSection({ data }: { data: TreatmentData }) {
@@ -246,49 +325,6 @@ function SessionSection({ data }: { data: TreatmentData }) {
   );
 }
 
-// ─── CTA ──────────────────────────────────────────────────────
-
-function CtaSection({ data }: { data: TreatmentData }) {
-  const t = useTranslations(`wellness.treatments.${data.slug}`);
-  const tShared = useTranslations("wellness.treatments");
-  return (
-    <section className="bg-sand-50">
-      <div className="overflow-hidden">
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-5 pt-24 pb-16 text-center md:py-20">
-          <div className="flex flex-col items-center gap-6">
-            <h2 className="font-display text-petroleum-700 text-3xl text-balance md:text-4xl">
-              {t("ctaHeading")}
-            </h2>
-            <p className="text-petroleum-400 max-w-md leading-relaxed">
-              {t("ctaBody")}
-            </p>
-            {data.slug === "manual-therapies" && (
-              <div className="flex flex-col items-center gap-3 sm:flex-row">
-                <Button
-                  variant="solid"
-                  size="md"
-                  href={`/booking?wellness=${data.slug}`}
-                  className="w-full md:w-auto"
-                >
-                  {tShared("bookSession")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="md"
-                  href="/experiences/memberships"
-                  className="w-full md:w-auto"
-                >
-                  {tShared("viewMemberships")}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function TreatmentSection({ data }: { data: TreatmentData }) {
@@ -296,9 +332,9 @@ export default function TreatmentSection({ data }: { data: TreatmentData }) {
     <>
       <TreatmentHero data={data} />
       {data.slug === "manual-therapies" && <ManualTherapiesSection />}
+      {data.slug === "facial-therapies" && <FacialTreatmentsSection />}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
-      {data.slug !== "manual-therapies" && <CtaSection data={data} />}
     </>
   );
 }
