@@ -94,7 +94,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Do I need to book in advance?",
       answer:
-        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, with 20% off the price of the treatment, or pay at the centre on the day of your session at the full price.",
+        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, or pay at the centre on the day of your session.",
     },
     {
       question: "Is every session the same for everyone?",
@@ -147,7 +147,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Do I need to book in advance?",
       answer:
-        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, with 20% off the price of the treatment, or pay at the centre on the day of your session at the full price.",
+        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, or pay at the centre on the day of your session.",
     },
     {
       question: "How long is each session?",

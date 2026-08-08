@@ -41,7 +41,9 @@ export async function updateDraftBookingMeta(
   const paymentNote =
     paymentMethod === "on-site"
       ? "Pago: en el centro (precio íntegro)"
-      : `Pago: online (−${ONLINE_PAYMENT_DISCOUNT_PERCENT}%)`;
+      : ONLINE_PAYMENT_DISCOUNT_PERCENT > 0
+        ? `Pago: online (−${ONLINE_PAYMENT_DISCOUNT_PERCENT}%)`
+        : "Pago: online";
   const composedNotes =
     [therapistNote, paymentNote, notes].filter(Boolean).join("\n\n") || null;
 

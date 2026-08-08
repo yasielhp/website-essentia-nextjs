@@ -164,12 +164,13 @@
     "payOnline": "Pagar ahora",
     "payOnlineNote": "Paga online y ahorra un {percent} % sobre el precio del tratamiento.",
     "payOnSite": "Pagar en el centro",
-    "payOnSiteNote": "Reservas ahora y pagas el día de la sesión, al precio íntegro.",
+    "payOnSiteNote": "Reservas ahora y pagas el día de la sesión, en el centro.",
     "durationLabel": "Duración",
     "priceLabel": "Precio",
     "discountLabel": "Descuento",
     "totalLabel": "Total",
-    "cancellationNote": "Puedes cancelar o cambiar tu cita hasta 24 horas antes sin coste."
+    "cancellationNote": "Puedes cancelar o cambiar tu cita hasta 24 horas antes sin coste.",
+    "payOnlineNoteNoDiscount": "Paga online al confirmar y tu cita queda reservada al momento."
   },
   "paymentOverlay": {
     "redirecting": "Redirigiendo al pago seguro…",
