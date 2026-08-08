@@ -16,7 +16,10 @@ export type ManualTherapyTreatment = {
   durations: string[];
   priceCenter?: string;
   priceSuite?: string;
+  /** Full-screen hero on the treatment page. */
   image: string;
+  /** Landscape crop for the card on the manual therapies page. */
+  thumbnail: string;
 };
 
 export const bookableServices: BookableService[] = [
@@ -64,7 +67,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     id: "espira",
     title: "Espira",
     description:
-      "Express ritual for neck and shoulders. Oils and precise pressure dissolve tension in 30 minutes.",
+      "Relaxing massage focused on the upper body — neck, shoulders, cervical area and back. It closes with craniofacial work to settle the nervous system and bring back calm, lightness and presence.",
     body: "Espira is an express ritual designed for those who need to disconnect in a short window of time. In 30 minutes, our therapist works with precision on the upper back, neck, and shoulders — the areas where everyday tension accumulates. Deep gliding manoeuvres are combined with targeted pressure over tension knots, using essential oils selected for their relaxing and decontracting properties. It is the ideal starting point if you have never received a therapeutic massage or if you are looking for a moment of pause during the week.",
     highlights: [
       {
@@ -87,12 +90,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "90 €",
     priceSuite: "120 €",
     image: "/images/wellness/treatments/espira-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/espira-1200x675.webp",
   },
   {
     id: "pulse",
     title: "Pulse",
     description:
-      "Deep-tissue massage for chronic contractures. Reaches layers ordinary massage cannot.",
+      "Deep tension-release massage working into the muscle, to ease stiffness, knots and that feeling of being overloaded.",
     body: "Pulse is designed for the body that works hard. Lasting 45 minutes and delivered with above-average pressure, this massage addresses entrenched muscle contractures, postural rigidity, and pain points that do not yield to ordinary rest. In each session, our therapist identifies the areas under greatest load and applies deep friction techniques, ischaemic compression, and passive mobilisation to restore optimal muscle tone. Especially recommended for people in sedentary jobs, athletes in high-load periods, or anyone carrying accumulated chronic tension.",
     highlights: [
       {
@@ -115,13 +119,14 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "100 €",
     priceSuite: "130 €",
     image: "/images/wellness/treatments/pulse-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/pulse-1200x675.webp",
   },
   {
     id: "drenaje-linfatico",
-    title: "Drenaje Linfático Brasileño",
+    title: "Drenaje Linfático Avanzado",
     description:
-      "Rhythmic drainage to reduce fluid retention, sculpt the figure, and smooth the skin.",
-    body: "Brazilian Lymphatic Drainage is a technique of Brazilian origin that combines classic manual lymphatic drainage with specific contouring manoeuvres. Through rhythmic, directional movements, the superficial lymphatic flow is stimulated, helping to eliminate retained fluids and toxins. The result is a more defined figure, smoother skin, and an immediate feeling of lightness. It is especially effective when performed in cycles of regular sessions, as the effects are cumulative. Indicated for people with fluid retention, cellulite, swelling in the legs, or as a complement to a body transformation process.",
+      "The Método Essentia brings together precision, rhythm and a therapist's eye to follow processes of inflammation, fluid retention and heaviness, building a greater sense of lightness and balance.",
+    body: "Advanced Lymphatic Drainage is a technique that combines classic manual lymphatic drainage with specific contouring manoeuvres. Through rhythmic, directional movements, the superficial lymphatic flow is stimulated, helping to eliminate retained fluids and toxins. The result is a more defined figure, smoother skin, and an immediate feeling of lightness. It is especially effective when performed in cycles of regular sessions, as the effects are cumulative. Indicated for people with fluid retention, cellulite, swelling in the legs, or as a complement to a body transformation process.",
     highlights: [
       {
         title: "Reduction of fluid retention",
@@ -131,7 +136,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       {
         title: "Contouring effect",
         description:
-          "Brazilian manoeuvres work on the hypodermal layer to smooth orange-peel skin and refine body contours.",
+          "Specific manoeuvres work on the hypodermal layer to smooth orange-peel skin and refine body contours.",
       },
       {
         title: "Improved circulation",
@@ -143,12 +148,14 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "100 €",
     priceSuite: "130 €",
     image: "/images/wellness/treatments/drenaje-linfatico-1920x1080.webp",
+    thumbnail:
+      "/images/wellness/treatments/cards/drenaje-linfatico-1200x675.webp",
   },
   {
     id: "essentia-active",
     title: "Essentia Active",
     description:
-      "Sports recovery massage. Reduces fatigue, prevents injury, and restores mobility.",
+      "Recovery massage for tired or overloaded legs. Made to ease heaviness, bring back lightness and look after legs under physical strain.",
     body: "Essentia Active is the recovery protocol designed for the body in motion. It combines sports massage techniques, neuromuscular compression, and assisted stretching to accelerate muscle recovery, reduce accumulated fatigue, and maintain tissue function between training sessions. The work focuses especially on the lower-body muscle chains — quadriceps, hamstrings, calves, and glutes — without neglecting the lumbar region and hip flexors. Ideal before and after sporting events, or as weekly maintenance for those who train regularly.",
     highlights: [
       {
@@ -171,12 +178,14 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "110 €",
     priceSuite: "140 €",
     image: "/images/wellness/treatments/essentia-active-1920x1080.webp",
+    thumbnail:
+      "/images/wellness/treatments/cards/essentia-active-1200x675.webp",
   },
   {
     id: "nurtura",
     title: "Nurtura",
     description:
-      "Prenatal massage to ease back pain, reduce swelling, and create deep calm.",
+      "A gentle, safe prenatal massage, designed to ease tension and swelling and support the body through pregnancy.",
     body: "Nurtura is a prenatal massage designed specifically to accompany the body through pregnancy. With appropriate positioning and gentle pressure techniques, it relieves the lower-back and upper-back discomfort common during gestation, reduces swelling in the extremities, and provides a space of profound calm for both mother and baby. Every manoeuvre is adapted to the second and third trimesters, avoiding contraindicated areas and using plant-based oils that are safe for skin made sensitive by pregnancy. An experience that cares through touch.",
     highlights: [
       {
@@ -199,6 +208,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "130 €",
     priceSuite: "160 €",
     image: "/images/wellness/treatments/nurtura-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/nurtura-1200x675.webp",
   },
   {
     id: "serenna",
@@ -227,12 +237,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "130 €",
     priceSuite: "160 €",
     image: "/images/wellness/treatments/serenna-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/serenna-1200x675.webp",
   },
   {
     id: "solea",
     title: "Soléa",
     description:
-      "Post-sun ritual: aloe vera wrap and full-body massage to calm and restore the skin.",
+      "Post-sun ritual with aloe vera and full-body massage to calm, hydrate and restore the skin after sun exposure.",
     body: "Soléa is the essential treatment to restore the skin after sun exposure. The session begins with a wrap of pure aloe vera with anti-inflammatory and soothing action, applied warm across the entire body to calm redness, deeply hydrate, and restore the skin's barrier. After a period of absorption, the therapist performs a full-body massage with soft, gliding movements that enhance the penetration of the active ingredients and work the superficial musculature. The skin emerges hydrated, calmed, and visibly more even.",
     highlights: [
       {
@@ -255,12 +266,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "150 €",
     priceSuite: "180 €",
     image: "/images/wellness/treatments/solea-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/solea-1200x675.webp",
   },
   {
     id: "soma",
     title: "Soma",
     description:
-      "Intensive myofascial release for chronic pain, contractures, and restricted movement.",
+      "Full-body deep tissue massage, aimed at persistent tension, muscular stiffness and overloaded areas, working towards mobility and a sense of release.",
     body: "Soma is the most intensive protocol on our massage menu. Over 60 minutes, the therapist works systematically on the deep muscle layers, the restrictive fascia, and the trigger points that generate referred pain. Deep-tissue techniques, myofascial release, and joint mobilisation are used to restore lost mobility, dissolve tissue adhesions, and calm chronic pain patterns. The work is deliberate and precise: every manoeuvre has a clear purpose. Recommended for people with chronic neck pain, recurrent lower-back pain, trapezius syndrome, or restricted movement following injury.",
     highlights: [
       {
@@ -283,12 +295,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "160 €",
     priceSuite: "190 €",
     image: "/images/wellness/treatments/soma-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/soma-1200x675.webp",
   },
   {
     id: "lume",
     title: "Lume",
     description:
-      "Craniofacial massage, foot reflexology, and personalised aromatherapy in one session.",
+      "A full-body multisensory experience combining massage, craniofacial work and foot reflexology to bring a deep disconnection and carry the body towards calm, rest and balance.",
     body: "Lume is our most complete multisensory experience. Over 80 minutes, three disciplines are woven together in an uninterrupted flow: craniofacial massage to release the tension stored in the head, scalp, jaw, and neck; foot reflexology to stimulate the internal organs through the reflex points on the sole; and personalised aromatherapy with essential oils chosen according to the client's emotional state before the session. The result is a complete disconnect of the nervous system that goes beyond simple muscle relaxation — Lume works on the autonomic nervous system, the mental state, and bodily perception.",
     highlights: [
       {
@@ -311,12 +324,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     priceCenter: "220 €",
     priceSuite: "250 €",
     image: "/images/wellness/treatments/lume-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/lume-1200x675.webp",
   },
   {
     id: "alure-duo",
     title: "Alure Duo",
     description:
-      "A ritual for two: synchronised therapists, breathwork, and guided touch.",
+      "A ritual for two bodies after time, presence and calm. A shared experience of care and connection.",
     body: "Alure Duo is an experience designed for two people who wish to share a space of wellness and reconnection. Two therapists work in synchrony within a private room with a carefully prepared atmosphere — soft lighting, live ambient music, and room aromatherapy. The session combines paired relaxing massage techniques with synchronised breathing exercises and moments of guided conscious touch. It is an experience for couples, friends, or family who want to share quality time outside the routine. No prior wellness experience is required.",
     highlights: [
       {
@@ -338,12 +352,13 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["50 min"],
     priceCenter: "270 €",
     image: "/images/wellness/treatments/alure-duo-1920x1080.webp",
+    thumbnail: "/images/wellness/treatments/cards/alure-duo-1200x675.webp",
   },
   {
     id: "essentia-signature",
     title: "Essentia",
     description:
-      "Our signature: peel, hydrating wrap, rejuvenating facial, and full-body massage.",
+      "Our most complete ritual: exfoliation, hydrating wrap, rejuvenating facial and full-body massage for a premium renewal experience.",
     body: "Essentia is our signature experience: the most complete protocol we offer, designed for a total transformation of body, skin, and mental state in 120 minutes. The session opens with a body peel of mineral salts to remove dead cells and prepare the skin. Next, a wrap of butter and ultra-hydrating oils is applied and absorbed during the following step: a rejuvenating facial massage paired with a craniofacial massage that works on facial expression, skin circulation, and cranial tension. The session concludes with a full-body massage of medium intensity that integrates all the preceding work into one cohesive experience. Exclusive to the centre — not available in-room.",
     highlights: [
       {
@@ -365,5 +380,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
     durations: ["120 min"],
     priceCenter: "350 €",
     image: "/images/wellness/treatments/essentia-signature-1920x1080.webp",
+    thumbnail:
+      "/images/wellness/treatments/cards/essentia-signature-1200x675.webp",
   },
 ];
