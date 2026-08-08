@@ -126,6 +126,11 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
       answer:
         "Yes. With fever, an active infection, acute inflammation, certain circulatory conditions, a high-risk pregnancy or a recent medical procedure, check with us first. If you have a specific condition, we will guide you before the session.",
     },
+    {
+      question: "What if I cannot make it?",
+      answer:
+        "You can cancel or move your appointment up to 24 hours before the session at no cost — write to us and we will find another slot. Within 24 hours, or if you do not turn up, an amount paid online is not refunded, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
+    },
   ],
 
   "facial-therapies": [
@@ -163,6 +168,11 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
       question: "Are there situations where I should not have a facial?",
       answer:
         "Yes. With active skin infections or lesions, recent sunburn, a known allergy to an active ingredient, or recent aesthetic procedures, check with us first. If you have a specific condition, we will guide you before the session.",
+    },
+    {
+      question: "What if I cannot make it?",
+      answer:
+        "You can cancel or move your appointment up to 24 hours before the session at no cost — write to us and we will find another slot. Within 24 hours, or if you do not turn up, an amount paid online is not refunded, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
     },
   ],
 

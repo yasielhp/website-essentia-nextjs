@@ -246,6 +246,10 @@ export function ConfirmStep({
             );
           })}
         </div>
+
+        <p className="text-petroleum-400 text-xs leading-relaxed">
+          {t("cancellationNote")}
+        </p>
       </div>
     </div>
   );
