@@ -455,7 +455,7 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
   },
   {
     id: "essentia-signature",
-    title: "Essentia",
+    title: "Essentia Signature",
     description:
       "Our most complete ritual: exfoliation, hydrating wrap, rejuvenating facial and full-body massage for a premium renewal experience.",
     body: "Essentia is our most exclusive ritual, designed to revitalise the skin, restore balance in the body and turn self-care into a complete sensory experience.\n\nIt opens with a natural-fibre body peeling to renew the skin and prepare it to take in the actives. An ultra-hydrating, toning wrap then brings nourishment, softness and comfort to the body.\n\nThe experience continues with a rejuvenating facial and craniofacial massage, using high-end products such as Aurum Cream, formulated with micro-active gold and aloe vera to bring radiance, hydration and an immediate sense of freshness and renewal.\n\nTo close, a relaxing full-body massage helps release tension, deepen the feeling of rest and finish the ritual in a state of profound wellbeing.\n\nAs a final touch, we include an exclusive wash bag with selected products from the treatment, so the Essentia experience stays with you beyond the session.",

@@ -327,7 +327,7 @@ export const treatments: Record<string, TreatmentData> = {
         number: "III",
         title: "Follow-up",
         description:
-          "For treatments such as Kinesiolifting, we set out a personalised plan based on how the face evolves and what each person needs.",
+          "When the treatment calls for it, as with Kinéa Signature, we set out a personalised plan based on how the face evolves and what each person needs.",
       },
     ],
     ctaHeading: "Restore your skin",
