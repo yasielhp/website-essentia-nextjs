@@ -3,7 +3,10 @@ import { unstable_cache } from "next/cache";
 /** Cache tag for the published-post list the sitemaps build from. */
 export const BLOG_POSTS_CACHE_TAG = "blog-posts";
 import { insforgePublic as insforge } from "@/lib/insforge-public";
-import { manualTherapyTreatments } from "@/data/services-data";
+import {
+  facialTreatments,
+  manualTherapyTreatments,
+} from "@/data/services-data";
 import { contact } from "@/constants/contact";
 import { isUnlaunched } from "@/constants/unlaunched";
 
@@ -135,10 +138,16 @@ export const staticRoutes = allStaticRoutes.filter(
 );
 
 export function getTreatmentPaths(): { path: string; esPath: string }[] {
-  return manualTherapyTreatments.map((t) => ({
-    path: `/wellness/manual-therapies/${t.id}`,
-    esPath: `/bienestar/terapias-manuales/${t.id}`,
-  }));
+  return [
+    ...manualTherapyTreatments.map((t) => ({
+      path: `/wellness/manual-therapies/${t.id}`,
+      esPath: `/bienestar/terapias-manuales/${t.id}`,
+    })),
+    ...facialTreatments.map((t) => ({
+      path: `/wellness/facial-therapies/${t.id}`,
+      esPath: `/bienestar/terapias-faciales/${t.id}`,
+    })),
+  ];
 }
 
 export type BlogPost = {
