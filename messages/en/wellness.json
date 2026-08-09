@@ -914,20 +914,20 @@
           "description": "Protocols with vitamin C, zinc or glutathione can form part of a personalised antioxidant and recovery strategy, always following professional assessment."
         }
       },
-      "sessionHeading": "Your session",
-      "sessionSubtitle": "From the first assessment to the moment you leave, the session is medical in its care and unhurried in its pace.",
+      "sessionHeading": "What a session is like",
+      "sessionSubtitle": "Every experience begins with an assessment. The protocol is decided before any therapy is given.",
       "sessionDetails": {
         "I": {
-          "title": "Assessment",
-          "description": "We go through your history, where you are now and what the session is for. The protocol follows from that — and if anything makes the intravenous route unwise, we say so."
+          "title": "Duration",
+          "description": "45–60 minutes. It can vary with the protocol chosen, its composition and each person's response. VitalDrip's main treatments are designed within this range."
         },
         "II": {
-          "title": "Session",
-          "description": "Forty-five to sixty minutes in the suite, supervised throughout. Read, work or simply rest."
+          "title": "Personalisation",
+          "description": "One protocol per person. Before the session we go through needs, goals and history to choose the most appropriate formula among those available."
         },
         "III": {
-          "title": "Afterwards",
-          "description": "Simple guidance for the hours that follow and, where it makes sense, a suggested frequency. Never a fixed plan from the outset."
+          "title": "Supervision",
+          "description": "Always on medical judgement. IV therapy is prescribed and administered by the responsible medical team, who adapt each session individually."
         }
       },
       "ctaHeading": "Book your IV session",

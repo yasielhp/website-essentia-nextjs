@@ -914,20 +914,20 @@
           "description": "Protocolos con vitamina C, zinc, glutatión u otros componentes pueden formar parte de una estrategia personalizada de apoyo antioxidante y recuperación, siempre según valoración profesional."
         }
       },
-      "sessionHeading": "Tu sesión",
-      "sessionSubtitle": "Desde la valoración inicial hasta que te vas, la sesión es sanitaria en el cuidado y pausada en el ritmo.",
+      "sessionHeading": "Cómo es una sesión",
+      "sessionSubtitle": "Cada experiencia comienza con una valoración. El protocolo se define antes de administrar cualquier terapia.",
       "sessionDetails": {
         "I": {
-          "title": "Valoración",
-          "description": "Repasamos tu historial, tu momento actual y el objetivo de la sesión. De ahí sale el protocolo: si algo desaconseja la vía intravenosa, te lo decimos."
+          "title": "Duración",
+          "description": "45–60 minutos. La duración puede variar según el protocolo seleccionado, la composición y la respuesta de cada persona. Los principales tratamientos de VitalDrip están planteados dentro de este rango."
         },
         "II": {
-          "title": "Sesión",
-          "description": "Entre 45 y 60 minutos en la suite, con supervisión sanitaria en todo momento. Puedes leer, trabajar o simplemente descansar."
+          "title": "Personalización",
+          "description": "Un protocolo para cada persona. Antes de la sesión se revisan necesidades, objetivos y antecedentes para seleccionar la fórmula más adecuada dentro de las opciones disponibles."
         },
         "III": {
-          "title": "Después",
-          "description": "Pautas sencillas para las horas siguientes y, si tiene sentido, una propuesta de frecuencia. Nunca un plan cerrado de entrada."
+          "title": "Supervisión",
+          "description": "Siempre bajo criterio sanitario. La indicación y administración de IV Therapy se realiza por el equipo sanitario responsable, adaptando cada sesión de forma individual."
         }
       },
       "ctaHeading": "Reserva tu sesión IV",
