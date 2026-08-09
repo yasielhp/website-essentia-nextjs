@@ -12,6 +12,7 @@ import {
 } from "@/lib/schemas";
 import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { PasswordInput } from "@/components/ui/input";
 import { setUserPassword } from "@/actions/set-user-password";
@@ -30,6 +31,7 @@ import {
   IconCheck,
   IconCalendarConnect,
 } from "@/components/ui/icons";
+import { EmailInput } from "@/components/ui/email-input";
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -41,6 +43,7 @@ type Profile = {
   first_name: string | null;
   last_name: string | null;
   full_name: string | null;
+  avatar_url: string | null;
   email: string | null;
   phone: string | null;
   gender: GenderValue | null;
@@ -68,6 +71,7 @@ type State = {
   gender: GenderValue;
   language: string;
   role: SystemRole;
+  avatarUrl: string;
 };
 
 type Action =
@@ -85,6 +89,7 @@ type Action =
     }
   | { type: "SET_GENDER"; gender: GenderValue }
   | { type: "SET_LANGUAGE"; language: string }
+  | { type: "SET_AVATAR_URL"; value: string }
   | { type: "SET_ROLE"; role: SystemRole }
   | { type: "SET_FIELD_ERRORS"; errors: UserErrors };
 
@@ -104,6 +109,7 @@ const initial: State = {
   gender: "",
   language: "en",
   role: "staff",
+  avatarUrl: "",
 };
 
 function reducer(state: State, action: Action): State {
@@ -126,6 +132,7 @@ function reducer(state: State, action: Action): State {
         gender: action.profile.gender ?? "",
         language: action.profile.preferred_language ?? "en",
         role: action.profile.role,
+        avatarUrl: action.profile.avatar_url ?? "",
       };
     case "NOT_FOUND":
       return { ...state, loading: false, notFound: true };
@@ -149,6 +156,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, fieldErrors: action.errors, saving: false };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
+    case "SET_AVATAR_URL":
+      return { ...state, avatarUrl: action.value };
     case "SET_LANGUAGE":
       return { ...state, language: action.language };
     case "SET_ROLE":
@@ -182,6 +191,7 @@ export default function EditUserPage() {
   const { push, back } = useRouter();
   const [state, dispatch] = useReducer(reducer, initial);
   const { loading, notFound, saving, removing, confirmRemove, error } = state;
+  const { avatarUrl } = state;
 
   const [availableServices, setAvailableServices] = useState<ServiceRow[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -197,7 +207,7 @@ export default function EditUserPage() {
       const { data } = await insforge.database
         .from("profiles")
         .select(
-          "id, first_name, last_name, full_name, email, phone, gender, role, preferred_language",
+          "id, first_name, last_name, full_name, email, phone, gender, role, preferred_language, avatar_url",
         )
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
@@ -280,6 +290,7 @@ export default function EditUserPage() {
       preferredLanguage: state.language,
       role: state.role,
       currentEmail: state.originalEmail,
+      avatarUrl: state.avatarUrl || null,
     });
 
     if (error) {
@@ -396,384 +407,407 @@ export default function EditUserPage() {
           </p>
         )}
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Role */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              {t("sections.role")}
-            </h2>
-            {loading ? (
-              <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
-            ) : (
-              <OptionSelect
-                id="role"
-                value={state.role}
-                options={roles}
-                onChange={(nextRole) =>
-                  dispatch({ type: "SET_ROLE", role: nextRole })
-                }
-                disabled={saving}
-                ariaLabel={tForm("fields.role")}
-              />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_20rem]">
+          <div className="flex flex-col gap-6">
+            {/* Role */}
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                {t("sections.role")}
+              </h2>
+              {loading ? (
+                <div className="bg-sand-100 h-20 animate-pulse rounded-xl" />
+              ) : (
+                <OptionSelect
+                  id="role"
+                  value={state.role}
+                  options={roles}
+                  onChange={(nextRole) =>
+                    dispatch({ type: "SET_ROLE", role: nextRole })
+                  }
+                  disabled={saving}
+                  ariaLabel={tForm("fields.role")}
+                />
+              )}
+            </div>
+
+            {/* Details */}
+            <div className="border-sand-200 rounded-2xl border bg-white p-6">
+              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                {t("sections.details")}
+              </h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="firstName"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      {tForm("fields.firstName")}{" "}
+                      <span className="text-red-400">*</span>
+                    </label>
+                    {loading ? (
+                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                    ) : (
+                      <input
+                        id="firstName"
+                        type="text"
+                        value={state.firstName}
+                        onChange={(e) =>
+                          dispatch({
+                            type: "SET_FIELD",
+                            field: "firstName",
+                            value: e.target.value,
+                          })
+                        }
+                        disabled={saving}
+                        className={INPUT_CLASS}
+                      />
+                    )}
+                    {state.fieldErrors.firstName && (
+                      <p className="text-xs text-red-500">
+                        {state.fieldErrors.firstName}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="lastName"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      {tForm("fields.lastName")}
+                    </label>
+                    {loading ? (
+                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                    ) : (
+                      <input
+                        id="lastName"
+                        type="text"
+                        value={state.lastName}
+                        onChange={(e) =>
+                          dispatch({
+                            type: "SET_FIELD",
+                            field: "lastName",
+                            value: e.target.value,
+                          })
+                        }
+                        disabled={saving}
+                        className={INPUT_CLASS}
+                      />
+                    )}
+                    {state.fieldErrors.lastName && (
+                      <p className="text-xs text-red-500">
+                        {state.fieldErrors.lastName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="email"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {tForm("fields.email")}
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <EmailInput
+                      id="email"
+                      value={state.email}
+                      onChange={(value) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "email",
+                          value: value,
+                        })
+                      }
+                      disabled={saving}
+                      className={INPUT_CLASS}
+                    />
+                  )}
+                  {state.fieldErrors.email && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="phone"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {tForm("fields.phone")}
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={state.phone}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "phone",
+                          value: e.target.value,
+                        })
+                      }
+                      disabled={saving}
+                      className={INPUT_CLASS}
+                    />
+                  )}
+                  {state.fieldErrors.phone && (
+                    <p className="text-xs text-red-500">
+                      {state.fieldErrors.phone}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="gender"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {tForm("fields.gender")}
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <OptionSelect
+                      id="gender"
+                      value={state.gender}
+                      options={genderOptions}
+                      onChange={(next) =>
+                        dispatch({ type: "SET_GENDER", gender: next })
+                      }
+                      disabled={saving}
+                      ariaLabel={tForm("fields.gender")}
+                    />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="language"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {tForm("fields.preferredLanguage")}
+                  </label>
+                  {loading ? (
+                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                  ) : (
+                    <select
+                      id="language"
+                      value={state.language}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_LANGUAGE",
+                          language: e.target.value,
+                        })
+                      }
+                      disabled={saving}
+                      className={INPUT_CLASS}
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Password */}
+            {!loading && (
+              <div className="border-sand-200 rounded-2xl border bg-white p-6">
+                <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+                  {t("sections.password")}
+                </h2>
+                <div className="space-y-4">
+                  {pwError && (
+                    <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
+                      {pwError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="pw-new"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      {t("password.new")}
+                    </label>
+                    <PasswordInput
+                      id="pw-new"
+                      value={pwNew}
+                      onChange={(e) => setPwNew(e.target.value)}
+                      placeholder={t("password.placeholder")}
+                      disabled={pwLoading || saving}
+                      autoComplete="new-password"
+                      inputClassName={INPUT_CLASS}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="pw-confirm"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      {t("password.confirm")}
+                    </label>
+                    <PasswordInput
+                      id="pw-confirm"
+                      value={pwConfirm}
+                      onChange={(e) => setPwConfirm(e.target.value)}
+                      placeholder={t("password.placeholder")}
+                      disabled={pwLoading || saving}
+                      autoComplete="new-password"
+                      inputClassName={INPUT_CLASS}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-4">
+                    {pwOk && (
+                      <p className="text-sm font-medium text-green-700">
+                        {t("password.updated")}
+                      </p>
+                    )}
+                    <Button
+                      type="button"
+                      variant="solid"
+                      size="md"
+                      onClick={() => void handleChangePw()}
+                      disabled={pwLoading || saving || !pwNew || !pwConfirm}
+                    >
+                      {pwLoading ? t("saving") : t("password.change")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Services — only when role is Staff */}
+            {!loading && state.role === "staff" && (
+              <div className="border-sand-200 rounded-2xl border bg-white p-6">
+                <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+                  {t("sections.services")}
+                </h2>
+                <p className="text-petroleum-400 mb-4 text-xs">
+                  {t("servicesHint")}
+                </p>
+                <div className="space-y-2">
+                  {availableServices.map((svc) => {
+                    const assigned = assignments.find(
+                      (a) => a.service_id === svc.id,
+                    );
+                    const isOn = !!assigned;
+                    const calEmail = assigned?.google_calendar_email ?? null;
+                    return (
+                      <div
+                        key={svc.id}
+                        className={`rounded-xl border transition-colors ${isOn ? "border-petroleum-200 bg-petroleum-50/40" : "border-sand-200"}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleService(svc.id)}
+                          disabled={saving}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                        >
+                          <span
+                            className={`flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                              isOn
+                                ? "border-petroleum-500 bg-petroleum-500 text-white"
+                                : "border-sand-300 bg-white"
+                            }`}
+                          >
+                            {isOn && <IconCheck />}
+                          </span>
+                          <span
+                            className={`text-sm font-medium ${isOn ? "text-petroleum-700" : "text-petroleum-500"}`}
+                          >
+                            {svc.title}
+                          </span>
+                        </button>
+
+                        {isOn && (
+                          <div className="border-petroleum-100 border-t px-4 pt-3 pb-3">
+                            <p className="text-petroleum-400 mb-2 text-xs font-medium">
+                              {t("calendar.label")}
+                            </p>
+                            {calEmail ? (
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                                  <span className="size-1.5 rounded-full bg-green-500" />
+                                  {t("calendar.connected")}
+                                </span>
+                                <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
+                                  {calEmail}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await disconnectStaffCalendar(id, svc.id);
+                                    setAssignments((prev) =>
+                                      prev.map((a) =>
+                                        a.service_id === svc.id
+                                          ? { ...a, google_calendar_email: "" }
+                                          : a,
+                                      ),
+                                    );
+                                  }}
+                                  className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
+                                >
+                                  {t("calendar.disconnect")}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void connectStaffCalendar(
+                                    id,
+                                    svc.id,
+                                    `/dashboard/users/${id}`,
+                                  )
+                                }
+                                className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                              >
+                                <IconCalendarConnect />
+                                {t("calendar.connect")}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Details */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              {t("sections.details")}
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {tForm("fields.firstName")}{" "}
-                    <span className="text-red-400">*</span>
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={state.firstName}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "firstName",
-                          value: e.target.value,
-                        })
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                  {state.fieldErrors.firstName && (
-                    <p className="text-xs text-red-500">
-                      {state.fieldErrors.firstName}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {tForm("fields.lastName")}
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={state.lastName}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "lastName",
-                          value: e.target.value,
-                        })
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                  {state.fieldErrors.lastName && (
-                    <p className="text-xs text-red-500">
-                      {state.fieldErrors.lastName}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="email"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {tForm("fields.email")}
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="email"
-                    type="email"
-                    value={state.email}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "email",
-                        value: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-                {state.fieldErrors.email && (
-                  <p className="text-xs text-red-500">
-                    {state.fieldErrors.email}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="phone"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {tForm("fields.phone")}
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={state.phone}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "phone",
-                        value: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  />
-                )}
-                {state.fieldErrors.phone && (
-                  <p className="text-xs text-red-500">
-                    {state.fieldErrors.phone}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="gender"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {tForm("fields.gender")}
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <OptionSelect
-                    id="gender"
-                    value={state.gender}
-                    options={genderOptions}
-                    onChange={(next) =>
-                      dispatch({ type: "SET_GENDER", gender: next })
-                    }
-                    disabled={saving}
-                    ariaLabel={tForm("fields.gender")}
-                  />
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="language"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {tForm("fields.preferredLanguage")}
-                </label>
-                {loading ? (
-                  <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                ) : (
-                  <select
-                    id="language"
-                    value={state.language}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_LANGUAGE",
-                        language: e.target.value,
-                      })
-                    }
-                    disabled={saving}
-                    className={INPUT_CLASS}
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                  </select>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Password */}
-          {!loading && (
+          {/* Photo, alongside the fields rather than between them */}
+          <div className="lg:sticky lg:top-24">
+            {/* Photo — every role has one, same bucket the account page uses */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("sections.password")}
+                {t("sections.photo")}
               </h2>
-              <div className="space-y-4">
-                {pwError && (
-                  <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                    {pwError}
-                  </p>
-                )}
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="pw-new"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("password.new")}
-                  </label>
-                  <PasswordInput
-                    id="pw-new"
-                    value={pwNew}
-                    onChange={(e) => setPwNew(e.target.value)}
-                    placeholder={t("password.placeholder")}
-                    disabled={pwLoading || saving}
-                    autoComplete="new-password"
-                    inputClassName={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="pw-confirm"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("password.confirm")}
-                  </label>
-                  <PasswordInput
-                    id="pw-confirm"
-                    value={pwConfirm}
-                    onChange={(e) => setPwConfirm(e.target.value)}
-                    placeholder={t("password.placeholder")}
-                    disabled={pwLoading || saving}
-                    autoComplete="new-password"
-                    inputClassName={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-4">
-                  {pwOk && (
-                    <p className="text-sm font-medium text-green-700">
-                      {t("password.updated")}
-                    </p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="solid"
-                    size="md"
-                    onClick={() => void handleChangePw()}
-                    disabled={pwLoading || saving || !pwNew || !pwConfirm}
-                  >
-                    {pwLoading ? t("saving") : t("password.change")}
-                  </Button>
-                </div>
-              </div>
+              {loading ? (
+                <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
+              ) : (
+                <ImageUpload
+                  bucket="events"
+                  folder="staff"
+                  value={avatarUrl}
+                  onChange={(value) =>
+                    dispatch({ type: "SET_AVATAR_URL", value })
+                  }
+                />
+              )}
             </div>
-          )}
-
-          {/* Services — only when role is Staff */}
-          {!loading && state.role === "staff" && (
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                {t("sections.services")}
-              </h2>
-              <p className="text-petroleum-400 mb-4 text-xs">
-                {t("servicesHint")}
-              </p>
-              <div className="space-y-2">
-                {availableServices.map((svc) => {
-                  const assigned = assignments.find(
-                    (a) => a.service_id === svc.id,
-                  );
-                  const isOn = !!assigned;
-                  const calEmail = assigned?.google_calendar_email ?? null;
-                  return (
-                    <div
-                      key={svc.id}
-                      className={`rounded-xl border transition-colors ${isOn ? "border-petroleum-200 bg-petroleum-50/40" : "border-sand-200"}`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleService(svc.id)}
-                        disabled={saving}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                      >
-                        <span
-                          className={`flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                            isOn
-                              ? "border-petroleum-500 bg-petroleum-500 text-white"
-                              : "border-sand-300 bg-white"
-                          }`}
-                        >
-                          {isOn && <IconCheck />}
-                        </span>
-                        <span
-                          className={`text-sm font-medium ${isOn ? "text-petroleum-700" : "text-petroleum-500"}`}
-                        >
-                          {svc.title}
-                        </span>
-                      </button>
-
-                      {isOn && (
-                        <div className="border-petroleum-100 border-t px-4 pt-3 pb-3">
-                          <p className="text-petroleum-400 mb-2 text-xs font-medium">
-                            {t("calendar.label")}
-                          </p>
-                          {calEmail ? (
-                            <div className="flex items-center gap-3">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                                <span className="size-1.5 rounded-full bg-green-500" />
-                                {t("calendar.connected")}
-                              </span>
-                              <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
-                                {calEmail}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  await disconnectStaffCalendar(id, svc.id);
-                                  setAssignments((prev) =>
-                                    prev.map((a) =>
-                                      a.service_id === svc.id
-                                        ? { ...a, google_calendar_email: "" }
-                                        : a,
-                                    ),
-                                  );
-                                }}
-                                className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
-                              >
-                                {t("calendar.disconnect")}
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void connectStaffCalendar(
-                                  id,
-                                  svc.id,
-                                  `/dashboard/users/${id}`,
-                                )
-                              }
-                              className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
-                            >
-                              <IconCalendarConnect />
-                              {t("calendar.connect")}
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </form>
 

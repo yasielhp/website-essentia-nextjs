@@ -15,6 +15,8 @@ export type UpdateUserProfileInput = {
   preferredLanguage: string;
   role: AssignableRole;
   currentEmail: string;
+  /** Public URL of the profile photo, or null to clear it. */
+  avatarUrl: string | null;
 };
 
 /** A profile row as read from the database. */

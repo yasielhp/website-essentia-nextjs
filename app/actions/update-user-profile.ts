@@ -32,6 +32,7 @@ export async function updateUserProfile(
     preferredLanguage,
     role,
     currentEmail,
+    avatarUrl,
   } = input;
 
   if (!userId) return { error: "Falta el identificador del usuario." };
@@ -75,6 +76,7 @@ export async function updateUserProfile(
       phone: phone.trim() || null,
       gender,
       preferred_language: preferredLanguage,
+      avatar_url: avatarUrl || null,
     })
     .eq("id", userId);
 
