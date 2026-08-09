@@ -26,17 +26,11 @@ export async function updateDraftBookingMeta(
   createdByUserId: string | null,
   createdByRole: string,
   notes: string | null,
-  therapistGender: "male" | "female" | null = null,
+  staffId: string | null = null,
   paymentMethod: "online" | "on-site" = "online",
 ): Promise<void> {
   if (!bookingId) return;
 
-  const therapistNote =
-    therapistGender === "male"
-      ? "Terapeuta: Masculino"
-      : therapistGender === "female"
-        ? "Terapeuta: Femenina"
-        : null;
   // Staff need to know at a glance whether the money is still to be collected.
   const paymentNote =
     paymentMethod === "on-site"
@@ -45,7 +39,7 @@ export async function updateDraftBookingMeta(
         ? `Pago: online (−${ONLINE_PAYMENT_DISCOUNT_PERCENT}%)`
         : "Pago: online";
   const composedNotes =
-    [therapistNote, paymentNote, notes].filter(Boolean).join("\n\n") || null;
+    [paymentNote, notes].filter(Boolean).join("\n\n") || null;
 
   // `price_eur` is what will actually be charged, so the transactions page
   // does not report the list price for a booking that paid the online rate.
@@ -58,6 +52,7 @@ export async function updateDraftBookingMeta(
     .database.from("bookings")
     .update({
       tier_id: tierId,
+      ...(staffId ? { staff_id: staffId } : {}),
       price_eur: amountEur,
       location: "centro",
       ...(composedNotes ? { notes: composedNotes } : {}),

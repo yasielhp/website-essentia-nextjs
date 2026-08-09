@@ -8,6 +8,8 @@ export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 /** Payload accepted by the dashboard's full booking edit form. */
 export type UpdateBookingPayload = {
   service_id: string;
+  /** Who performs it, or null when the centre has not allocated anybody yet. */
+  staff_id?: string | null;
   service_title: string;
   tier_id: string | null;
   price_eur: number | null;

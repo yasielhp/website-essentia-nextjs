@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Check, X } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
+import { StaffSelect } from "@/components/ui/staff-select";
 import {
   TierPicker,
   TierSummaryCard,
@@ -40,204 +40,40 @@ export type TierSelection = {
   price: number | null;
 };
 
-type GenderOption = {
-  id: "male" | "female";
-  label: string;
-};
-
-function GenderItems({
-  options,
-  selected,
-  onSelect,
-}: {
-  options: GenderOption[];
-  selected: "male" | "female" | null;
-  onSelect: (g: "male" | "female") => void;
-}) {
-  return (
-    <div className="p-3">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          onClick={() => onSelect(opt.id)}
-          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
-        >
-          <span className="text-petroleum-700 font-medium">{opt.label}</span>
-          {selected === opt.id && (
-            <Check className="text-petroleum-700 shrink-0" size={14} />
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function TherapistGenderSelect({
-  selected,
-  onSelect,
-}: {
-  selected: "male" | "female" | null;
-  onSelect: (g: "male" | "female") => void;
-}) {
-  const tt = useTranslations("booking.durationStep");
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const options: GenderOption[] = [
-    { id: "male", label: tt("therapistMale") },
-    { id: "female", label: tt("therapistFemale") },
-  ];
-
-  const selectedOption = options.find((o) => o.id === selected) ?? null;
-
-  const isMobile = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 767px)").matches;
-
-  const updatePosition = () => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    setDropdownStyle({
-      position: "fixed",
-      top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
-    });
-  };
-
-  useEffect(() => {
-    if (!isOpen || isMobile()) return;
-    updatePosition();
-    const handleClose = (e: MouseEvent) => {
-      if (
-        triggerRef.current?.contains(e.target as Node) ||
-        dropdownRef.current?.contains(e.target as Node)
-      )
-        return;
-      setIsOpen(false);
-    };
-    const handleScroll = () => updatePosition();
-    document.addEventListener("mousedown", handleClose);
-    window.addEventListener("scroll", handleScroll, true);
-    return () => {
-      document.removeEventListener("mousedown", handleClose);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !isMobile()) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  const handleSelect = (g: "male" | "female") => {
-    onSelect(g);
-    setIsOpen(false);
-  };
-
-  return (
-    <div>
-      <button
-        ref={triggerRef}
-        onClick={() => setIsOpen((o) => !o)}
-        className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
-          isOpen
-            ? "border-petroleum-400 ring-petroleum-100 ring-2"
-            : "border-sand-300 hover:border-petroleum-400",
-        ].join(" ")}
-      >
-        {selectedOption ? (
-          <div className="flex flex-1 flex-col gap-1">
-            <p className="text-petroleum-400 text-xs">{tt("therapistLabel")}</p>
-            <p className="text-petroleum-700 font-medium">
-              {selectedOption.label}
-            </p>
-          </div>
-        ) : (
-          <p className="text-petroleum-400 flex-1 text-sm">
-            {tt("selectTherapist")}
-          </p>
-        )}
-        <ChevronDown
-          className={[
-            "shrink-0 transition-transform duration-200",
-            selectedOption ? "text-petroleum-400" : "text-petroleum-100",
-            isOpen ? "rotate-180" : "",
-          ].join(" ")}
-          size={16}
-        />
-      </button>
-
-      {isOpen &&
-        !isMobile() &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={dropdownStyle}
-            className="border-sand-300 bg-sand-50 animate-fade-in-down z-[9999] max-h-96 overflow-y-auto rounded-2xl border shadow-lg"
-          >
-            <GenderItems
-              options={options}
-              selected={selected}
-              onSelect={handleSelect}
-            />
-          </div>,
-          document.body,
-        )}
-
-      {isOpen &&
-        isMobile() &&
-        createPortal(
-          <div className="animate-slide-up-modal fixed inset-0 z-50 flex flex-col bg-white">
-            <div className="border-sand-100 flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-petroleum-700 font-medium">
-                {tt("therapistModalTitle")}
-              </h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
-                aria-label={tt("close")}
-              >
-                <X size={20} className="text-petroleum-400" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <GenderItems
-                options={options}
-                selected={selected}
-                onSelect={handleSelect}
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
-    </div>
-  );
-}
-
 export function DurationStep({
   serviceId,
   selectedTierId,
-  therapistGender,
+  staffId,
   onSelect,
-  onSelectGender,
+  onSelectStaff,
   preselectedLabel,
 }: {
   serviceId: string;
   selectedTierId: string | null;
-  therapistGender: "male" | "female" | null;
+  staffId: string | null;
   onSelect: (sel: TierSelection) => void;
-  onSelectGender: (g: "male" | "female") => void;
+  onSelectStaff: (person: TierStaff) => void;
   preselectedLabel?: string | null;
 }) {
   const tt = useTranslations("booking.durationStep");
   const [tiers, setTiers] = useState<Tier[] | null>(null);
+  const [staff, setStaff] = useState<TierStaff[]>([]);
+
+  // Who can perform the chosen session type. Assignments live in the
+  // dashboard, so the list changes with the tier, not with the service.
+  useEffect(() => {
+    let cancelled = false;
+    void (
+      selectedTierId
+        ? fetchTierStaff(selectedTierId)
+        : Promise.resolve([] as TierStaff[])
+    ).then((people) => {
+      if (!cancelled) setStaff(people);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTierId]);
   const onSelectRef = useRef(onSelect);
 
   useEffect(() => {
@@ -298,8 +134,6 @@ export function DurationStep({
   const isFixed = tiers.length === 1;
   const options = tiers.map(toPickerOption);
 
-  const isManualTherapies = serviceId === "manual-therapies";
-
   const pickerLabels = {
     fieldLabel: tt("sessionType"),
     placeholder: tt("selectSessionType"),
@@ -331,16 +165,21 @@ export function DurationStep({
           }
         />
       )}
-      {/* Only once a session type is chosen — the preference is about that
-          session, so asking first put the question before its subject. */}
-      {isManualTherapies && selectedTierId !== null && (
+      {/* Only once a session type is chosen — the question is about that
+          session, and only the people assigned to it can be picked. */}
+      {selectedTierId !== null && staff.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-petroleum-400 text-sm">
-            {tt("therapistDescription")}
-          </p>
-          <TherapistGenderSelect
-            selected={therapistGender}
-            onSelect={onSelectGender}
+          <p className="text-petroleum-400 text-sm">{tt("staffDescription")}</p>
+          <StaffSelect
+            options={staff}
+            selected={staffId}
+            onSelect={onSelectStaff}
+            labels={{
+              fieldLabel: tt("staffLabel"),
+              placeholder: tt("selectStaff"),
+              modalTitle: tt("staffModalTitle"),
+              close: tt("close"),
+            }}
           />
         </div>
       )}

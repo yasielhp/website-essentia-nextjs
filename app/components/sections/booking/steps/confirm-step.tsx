@@ -38,7 +38,7 @@ export function ConfirmStep({
   date,
   time,
   details,
-  therapistGender,
+  staffName,
   paymentMethod,
   onPaymentMethodChange,
 }: {
@@ -49,7 +49,7 @@ export function ConfirmStep({
   date: Date | null;
   time: string | null;
   details: DetailsState;
-  therapistGender?: "male" | "female" | null;
+  staffName?: string | null;
   paymentMethod: PaymentMethod;
   onPaymentMethodChange: (method: PaymentMethod) => void;
 }) {
@@ -155,16 +155,8 @@ export function ConfirmStep({
             { label: t("email"), value: details.email },
             { label: t("phone"), value: details.phone },
             { label: t("location"), value: t("atTheCenter") },
-            ...(therapistGender
-              ? [
-                  {
-                    label: tt("therapistLabel"),
-                    value:
-                      therapistGender === "male"
-                        ? tt("therapistMale")
-                        : tt("therapistFemale"),
-                  },
-                ]
+            ...(staffName
+              ? [{ label: tt("staffLabel"), value: staffName }]
               : []),
           ].map(({ label, value }) => (
             <div key={label}>

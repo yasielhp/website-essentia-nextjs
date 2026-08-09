@@ -12,7 +12,9 @@ export type BookingStorage = {
   selectedDuration: string | null;
   selectedDate: string | null;
   selectedTime: string | null;
-  therapistGender: "male" | "female" | null;
+  /** The member of staff the visitor picked, if the session type has any. */
+  staffId: string | null;
+  staffName: string | null;
   details: DetailsState;
 };
 

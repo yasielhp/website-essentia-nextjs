@@ -51,7 +51,8 @@ type BookingState = {
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
-  therapistGender: "male" | "female" | null;
+  staffId: string | null;
+  staffName: string | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -68,7 +69,7 @@ type BookingAction =
       duration: string | null;
       price: number | null;
     }
-  | { type: "SELECT_THERAPIST_GENDER"; gender: "male" | "female" }
+  | { type: "SELECT_STAFF"; staffId: string; staffName: string }
   | { type: "SELECT_DATE"; date: Date | null }
   | { type: "SELECT_TIME"; time: string }
   | { type: "SET_STEP"; step: number }
@@ -88,7 +89,8 @@ function bookingReducer(
         selectedTierId: null,
         selectedTierPrice: null,
         selectedDuration: null,
-        therapistGender: null,
+        staffId: null,
+        staffName: null,
       };
     case "SELECT_TIER":
       return {
@@ -97,9 +99,14 @@ function bookingReducer(
         selectedTierLabel: action.label,
         selectedTierPrice: action.price,
         selectedDuration: action.duration,
+        // Assignments are per session type, so a different tier can mean a
+        // different set of people: whoever was picked may not be among them.
+        ...(action.tierId !== state.selectedTierId
+          ? { staffId: null, staffName: null }
+          : {}),
       };
-    case "SELECT_THERAPIST_GENDER":
-      return { ...state, therapistGender: action.gender };
+    case "SELECT_STAFF":
+      return { ...state, staffId: action.staffId, staffName: action.staffName };
     case "SELECT_DATE":
       return { ...state, selectedDate: action.date };
     case "SELECT_TIME":
@@ -128,7 +135,8 @@ function initState({ slug, startStep }: InitArg): BookingState {
       selectedTierLabel: null,
       selectedTierPrice: null,
       selectedDuration: null,
-      therapistGender: null,
+      staffId: null,
+      staffName: null,
       selectedDate: null,
       selectedTime: null,
       details: saved.details ?? EMPTY_DETAILS,
@@ -148,7 +156,8 @@ function initState({ slug, startStep }: InitArg): BookingState {
       null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
     selectedDuration: saved.selectedDuration ?? null,
-    therapistGender: saved.therapistGender ?? null,
+    staffId: saved.staffId ?? null,
+    staffName: saved.staffName ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
     selectedTime: saved.selectedTime ?? null,
     details: saved.details ?? EMPTY_DETAILS,
@@ -259,7 +268,8 @@ type BookingStepRendererProps = {
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
   selectedDuration: string | null;
-  therapistGender: "male" | "female" | null;
+  staffId: string | null;
+  staffName: string | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -278,7 +288,8 @@ function BookingStepRenderer({
   selectedTierLabel,
   selectedTierPrice,
   selectedDuration,
-  therapistGender,
+  staffId,
+  staffName,
   selectedDate,
   selectedTime,
   details,
@@ -301,7 +312,7 @@ function BookingStepRenderer({
         <DurationStep
           serviceId={selectedService.id}
           selectedTierId={selectedTierId}
-          therapistGender={therapistGender}
+          staffId={staffId}
           preselectedLabel={preselectedLabel}
           onSelect={(sel: TierSelection) =>
             dispatch({
@@ -312,8 +323,12 @@ function BookingStepRenderer({
               price: sel.price,
             })
           }
-          onSelectGender={(g) =>
-            dispatch({ type: "SELECT_THERAPIST_GENDER", gender: g })
+          onSelectStaff={(person) =>
+            dispatch({
+              type: "SELECT_STAFF",
+              staffId: person.id,
+              staffName: person.name,
+            })
           }
         />
       )}
@@ -349,7 +364,7 @@ function BookingStepRenderer({
           date={selectedDate}
           time={selectedTime}
           details={details}
-          therapistGender={therapistGender}
+          staffName={staffName}
           paymentMethod={paymentMethod}
           onPaymentMethodChange={onPaymentMethodChange}
         />
@@ -444,7 +459,8 @@ function BookingContentInner() {
     selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
-    therapistGender,
+    staffId,
+    staffName,
     selectedDate,
     selectedTime,
     details,
@@ -459,7 +475,8 @@ function BookingContentInner() {
       selectedTierLabel,
       selectedTierPrice,
       selectedDuration,
-      therapistGender,
+      staffId,
+      staffName,
       selectedDate: selectedDate?.toISOString() ?? null,
       selectedTime,
       details,
@@ -471,7 +488,8 @@ function BookingContentInner() {
     selectedTierLabel,
     selectedTierPrice,
     selectedDuration,
-    therapistGender,
+    staffId,
+    staffName,
     selectedDate,
     selectedTime,
     details,
@@ -499,10 +517,11 @@ function BookingContentInner() {
   const isLastStep = step === activeSteps.length - 1;
   const nextStepLabel = activeSteps[step + 1]?.label;
 
-  const isManualTherapies = selectedService?.id === "manual-therapies";
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    duration: !!selectedTierId && (!isManualTherapies || !!therapistGender),
+    // Picking a person is optional: a session type with nobody assigned yet
+    // must still be bookable, and the centre can allocate one afterwards.
+    duration: !!selectedTierId,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
     confirm: !hasCalendar || !!(selectedDate && selectedTime),
@@ -604,7 +623,7 @@ function BookingContentInner() {
         user?.id ?? null,
         user?.id ? "client" : "anonymous",
         details.notes?.trim() || null,
-        therapistGender,
+        staffId,
         paymentMethod,
       );
     }
@@ -644,16 +663,7 @@ function BookingContentInner() {
         timeStr ?? "",
       );
     } else {
-      const therapistNote =
-        therapistGender === "male"
-          ? "Terapeuta: Masculino"
-          : therapistGender === "female"
-            ? "Terapeuta: Femenina"
-            : null;
-      const composedNotes =
-        [therapistNote, details.notes?.trim() || null]
-          .filter(Boolean)
-          .join("\n\n") || null;
+      const composedNotes = details.notes?.trim() || null;
       const { data } = await insforge.database
         .from("bookings")
         .insert([
@@ -663,6 +673,7 @@ function BookingContentInner() {
             service_id: selectedService.id,
             service_title: selectedService.title,
             tier_id: selectedTierId,
+            ...(staffId ? { staff_id: staffId } : {}),
             price_eur: selectedTierPrice,
             duration: selectedDuration ?? "",
             location: "centro",
@@ -772,7 +783,8 @@ function BookingContentInner() {
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
         selectedDuration={selectedDuration}
-        therapistGender={therapistGender}
+        staffId={staffId}
+        staffName={staffName}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         details={details}

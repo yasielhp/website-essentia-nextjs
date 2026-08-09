@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import Link from "next/link";
+import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
@@ -21,6 +22,8 @@ type BookingDetail = {
   duration: string | null;
   price_eur: number | null;
   tier_id: string | null;
+  staff_id: string | null;
+  payment_status: string | null;
   service_tiers: {
     label: string | null;
     image_url: string | null;
@@ -39,6 +42,13 @@ type BookingDetail = {
   created_at: string | null;
   created_by_role: string | null;
   created_by_user_id: string | null;
+};
+
+const paymentBadgeClasses: Record<string, string> = {
+  paid: "bg-green-100 text-green-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  failed: "bg-red-100 text-red-600",
+  refunded: "bg-sand-100 text-petroleum-500",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -184,6 +194,7 @@ export default function BookingDetailPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.bookings.detail");
   const tStatus = useTranslations("dashboard.bookings.status");
+  const tPayment = useTranslations("dashboard.bookings.paymentStatus");
   const tLocations = useTranslations("dashboard.bookings.locations");
   const tSources = useTranslations("dashboard.bookings.sources");
   const locale = useLocale();
@@ -193,6 +204,11 @@ export default function BookingDetailPage() {
   const isPartner = role === "partner";
 
   const [state, setState] = useState<PageState>({ kind: "loading" });
+  const [staffPerson, setStaffPerson] = useState<{
+    name: string;
+    jobTitle: string | null;
+    avatarUrl: string | null;
+  } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -209,7 +225,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, tier_id, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
+          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
         )
         .eq("id", id)
         .limit(1);
@@ -232,6 +248,31 @@ export default function BookingDetailPage() {
           .eq("id", booking.created_by_user_id)
           .limit(1);
         creator = (pData as CreatorProfile[] | null)?.[0] ?? null;
+      }
+
+      if (booking.staff_id) {
+        const { data: sData } = await insforge.database
+          .from("profiles")
+          .select("full_name, first_name, job_title, avatar_url")
+          .eq("id", booking.staff_id)
+          .limit(1);
+        const person = (
+          sData as
+            | {
+                full_name: string | null;
+                first_name: string | null;
+                job_title: string | null;
+                avatar_url: string | null;
+              }[]
+            | null
+        )?.[0];
+        if (person) {
+          setStaffPerson({
+            name: person.full_name ?? person.first_name ?? "—",
+            jobTitle: person.job_title,
+            avatarUrl: person.avatar_url,
+          });
+        }
       }
 
       setState({ kind: "loaded", booking, creator });
@@ -291,7 +332,12 @@ export default function BookingDetailPage() {
   const { booking, creator } = state;
   const tier = booking.service_tiers;
   const addrParsed = parseLocationAddress(booking.location_address);
+  // Bookings taken before `staff_id` existed still carry the old free-text
+  // prefix in the notes, so both are read.
+  // Only the legacy free-text prefix now: whoever performs the booking has
+  // their own block below.
   const therapistLabel = (() => {
+    if (staffPerson) return null;
     const n = booking.notes ?? "";
     if (n.startsWith("Terapeuta: Masculino")) return t("therapist.male");
     if (n.startsWith("Terapeuta: Femenina")) return t("therapist.female");
@@ -328,7 +374,7 @@ export default function BookingDetailPage() {
       </div>
 
       {/* Meta strip */}
-      <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-4">
+      <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-5">
         <div className="flex flex-col gap-1.5 px-5 py-4">
           <p className="text-petroleum-400 text-xs">{t("meta.status")}</p>
           <div className="flex items-center gap-1.5">
@@ -341,6 +387,20 @@ export default function BookingDetailPage() {
                 : (booking.status ?? "—")}
             </span>
           </div>
+        </div>
+        {/* Whether the money is in, which the status alone does not say. */}
+        <div className="border-sand-200 flex flex-col gap-1.5 border-l px-5 py-4">
+          <p className="text-petroleum-400 text-xs">{t("meta.payment")}</p>
+          <span
+            className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              paymentBadgeClasses[booking.payment_status ?? ""] ??
+              "bg-sand-100 text-petroleum-500"
+            }`}
+          >
+            {booking.payment_status && tPayment.has(booking.payment_status)
+              ? tPayment(booking.payment_status)
+              : (booking.payment_status ?? "—")}
+          </span>
         </div>
         <div className="border-sand-200 flex flex-col gap-1.5 border-l px-5 py-4">
           <p className="text-petroleum-400 text-xs">{t("meta.location")}</p>
@@ -419,6 +479,40 @@ export default function BookingDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Staff — who performs it */}
+        {staffPerson && (
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              {t("sections.staff")}
+            </h2>
+            <div className="flex items-center gap-3">
+              {staffPerson.avatarUrl ? (
+                <Image
+                  src={staffPerson.avatarUrl}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="size-10 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="bg-sand-200 text-petroleum-500 flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+                  {staffPerson.name.trim().charAt(0).toUpperCase()}
+                </span>
+              )}
+              <div className="flex flex-col">
+                <p className="text-petroleum-700 font-medium">
+                  {staffPerson.name}
+                </p>
+                {staffPerson.jobTitle && (
+                  <p className="text-petroleum-400 text-xs">
+                    {staffPerson.jobTitle}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Location */}
         {booking.location && (
