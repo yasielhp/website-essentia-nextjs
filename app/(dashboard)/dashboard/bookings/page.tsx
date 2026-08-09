@@ -17,7 +17,7 @@ import {
   formatCreatedDate,
   formatCreatedTime,
 } from "@/components/dashboard/booking-cells";
-import { IconPlus, IconFilter, IconSettings } from "@/components/ui/icons";
+import { IconPlus, IconFilter } from "@/components/ui/icons";
 
 type Booking = {
   id: string;
@@ -436,7 +436,6 @@ export default function BookingsPage() {
   const { user } = useAuth();
   const { role } = useRole();
 
-  const isAdmin = role === "admin";
   const isPartner = role === "partner";
   const isStaff = role === "staff";
   const userId = user?.id ?? null;
@@ -668,17 +667,6 @@ export default function BookingsPage() {
           {t("bookings.createBooking")}
         </Button>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="md"
-              href="/dashboard/bookings/settings"
-              className="gap-2"
-            >
-              <IconSettings />
-              {t("bookings.settings")}
-            </Button>
-          )}
           <DateRangeButton
             dateFrom={appliedFilters.dateFrom}
             dateTo={appliedFilters.dateTo}

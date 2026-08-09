@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import {
   connectServiceCalendar,
@@ -11,7 +10,6 @@ import {
   syncServiceCalendar,
 } from "@/services/calendar.client";
 import { Button } from "@/components/ui/button";
-import { useRole } from "@/context/role-context";
 import {
   loadColorSettings,
   DEFAULT_COLORS,
@@ -318,16 +316,7 @@ function ServicesContent({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function BookingsSettingsPage() {
-  const { role } = useRole();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (role && role !== "admin") {
-      router.replace("/dashboard/bookings");
-    }
-  }, [role, router]);
-
+export function BookingsSettings() {
   const [initialToast] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const p = new URLSearchParams(window.location.search);
@@ -403,7 +392,7 @@ export default function BookingsSettingsPage() {
 
   if (!data.mounted) {
     return (
-      <div className="px-6 py-8 lg:px-10">
+      <div>
         <div className="mb-8">
           <div className="bg-sand-100 h-8 w-32 animate-pulse rounded-lg" />
         </div>
@@ -439,7 +428,7 @@ export default function BookingsSettingsPage() {
   }
 
   return (
-    <div className="px-6 py-8 lg:px-10">
+    <div>
       <ServicesContent
         serviceTiers={data.serviceTiers}
         calendarConfigs={data.calendarConfigs}

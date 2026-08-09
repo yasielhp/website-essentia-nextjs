@@ -15,7 +15,8 @@
     "reviews": "Reviews",
     "races": "Races",
     "education": "Education",
-    "blog": "Blog"
+    "blog": "Blog",
+    "settings": "Settings"
   },
   "breadcrumbs": {
     "sections": {
@@ -1129,6 +1130,14 @@
         "suite": "Suite",
         "status": "Status"
       }
+    },
+    "title": "Settings",
+    "colorHint": "The colour is stored in this browser, so it does not change what your colleagues see.",
+    "tabs": {
+      "bookings": "Bookings",
+      "subscriptions": "Subscriptions",
+      "races": "Races",
+      "education": "Education"
     }
   },
   "services": {

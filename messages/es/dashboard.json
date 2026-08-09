@@ -15,7 +15,8 @@
     "reviews": "Testimonios",
     "races": "Carreras",
     "education": "Formación",
-    "blog": "Blog"
+    "blog": "Blog",
+    "settings": "Ajustes"
   },
   "breadcrumbs": {
     "sections": {
@@ -1129,6 +1130,14 @@
         "suite": "Suite",
         "status": "Estado"
       }
+    },
+    "title": "Ajustes",
+    "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
+    "tabs": {
+      "bookings": "Reservas",
+      "subscriptions": "Suscripciones",
+      "races": "Carreras",
+      "education": "Formación"
     }
   },
   "services": {
