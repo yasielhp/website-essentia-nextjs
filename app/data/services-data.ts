@@ -39,7 +39,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Advanced facial protocols combining manual techniques and technology to restore skin health.",
     durations: ["60 min"],
-    image: "/images/menu/facial-therapies-900x600.webp",
+    image: "/images/menu/facial-therapies-1200x675.webp",
   },
   // TODO: re-enable when red light therapy goes live
   // {
@@ -49,19 +49,85 @@ export const bookableServices: BookableService[] = [
   //   description:
   //     "Red and infrared light to stimulate cellular repair and regeneration.",
   //   durations: ["20 min"],
-  //   image: "/images/menu/red-light-therapy-900x600.webp",
+  //   image: "/images/menu/red-light-therapy-1200x675.webp",
   // },
   // Medicine
-  // TODO: re-enable when IV therapy goes live
-  // {
-  //   id: "intravenous-therapy",
-  //   category: "medicine",
-  //   title: "IV Therapy",
-  //   description:
-  //     "Direct nutrient delivery for rapid absorption and cellular support.",
-  //   durations: ["45 min"],
-  //   image: "/images/menu/intravenous-therapy-900x600.webp",
-  // },
+  {
+    id: "intravenous-therapy",
+    category: "medicine",
+    title: "IV Therapy",
+    description:
+      "Personalised intravenous protocols with vitamins, minerals and micronutrients, always under medical assessment.",
+    durations: ["60 min"],
+    image: "/images/menu/intravenous-therapy-1200x675.webp",
+  },
+];
+
+/**
+ * The IV protocols, run with VitalDrip.
+ *
+ * Same shape as the facial rituals: the copy is translated and lives in the
+ * messages, so this holds only what code needs — the id that ties a card to
+ * its tier in the database, and the images.
+ */
+export type IvProtocol = {
+  id: string;
+  /** Landscape crop for the card on the IV therapy page. */
+  thumbnail: string;
+};
+
+export const ivProtocols: IvProtocol[] = [
+  {
+    id: "essentia-iv-signature",
+    thumbnail:
+      "/images/medicine/iv-therapy/cards/essentia-iv-signature-1200x675.webp",
+  },
+  {
+    id: "power-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/power-drip-1200x675.webp",
+  },
+  {
+    id: "immunity-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/immunity-drip-1200x675.webp",
+  },
+  {
+    id: "nirvana-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/nirvana-drip-1200x675.webp",
+  },
+  {
+    id: "stress-balance",
+    thumbnail: "/images/medicine/iv-therapy/cards/stress-balance-1200x675.webp",
+  },
+  {
+    id: "beauty-hair-glow",
+    thumbnail:
+      "/images/medicine/iv-therapy/cards/beauty-hair-glow-1200x675.webp",
+  },
+  {
+    id: "vitamin-c",
+    thumbnail: "/images/medicine/iv-therapy/cards/vitamin-c-1200x675.webp",
+  },
+  {
+    id: "nad-plus",
+    thumbnail: "/images/medicine/iv-therapy/cards/nad-plus-1200x675.webp",
+  },
+  {
+    id: "resurrection-drip",
+    thumbnail:
+      "/images/medicine/iv-therapy/cards/resurrection-drip-1200x675.webp",
+  },
+  {
+    id: "body-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/body-drip-1200x675.webp",
+  },
+  {
+    id: "fit-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/fit-drip-1200x675.webp",
+  },
+  {
+    id: "calm-drip",
+    thumbnail: "/images/medicine/iv-therapy/cards/calm-drip-1200x675.webp",
+  },
 ];
 
 /** The three facial rituals. No tiers in the database yet, so there are no

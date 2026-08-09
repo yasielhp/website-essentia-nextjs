@@ -646,7 +646,53 @@
         "description": "Reeducación facial integral que trabaja postura, respiración, fascia, musculatura y piel para recuperar armonía desde la estructura."
       }
     },
-    "facialMetaSuffix": "Faciales terapéuticos · Essentia"
+    "facialMetaSuffix": "Faciales terapéuticos · Essentia",
+    "intravenous-therapy": {
+      "title": "Terapia IV",
+      "tagline": "Con VitalDrip",
+      "heroAlt": "Sesión de terapia intravenosa en Essentia",
+      "price": "Desde 260 €",
+      "duration": "60 min",
+      "intro": "Una nueva forma de acompañar el bienestar desde dentro. Protocolos intravenosos personalizados con vitaminas, minerales y otros micronutrientes, integrados en Essentia de la mano de VitalDrip y siempre bajo valoración y supervisión sanitaria.",
+      "benefitsHeading": "Qué hace",
+      "benefitsSubtitle": "Cada protocolo se selecciona según la persona y el objetivo de la sesión — no a partir de una fórmula genérica.",
+      "benefits": {
+        "0": {
+          "title": "Energía y recuperación",
+          "description": "Protocolos diseñados para acompañar momentos de mayor desgaste, actividad intensa o sensación de fatiga, aportando micronutrientes seleccionados según cada caso."
+        },
+        "1": {
+          "title": "Hidratación y bienestar",
+          "description": "La administración intravenosa permite integrar líquidos y micronutrientes dentro de protocolos orientados a recuperación, hidratación y bienestar general."
+        },
+        "2": {
+          "title": "Descanso y regulación",
+          "description": "Determinadas fórmulas incorporan componentes como magnesio, vitaminas del grupo B y otros micronutrientes para acompañar periodos de estrés, tensión y descanso deficiente. VitalDrip incluye este enfoque en protocolos como Stress Balance y Calm."
+        },
+        "3": {
+          "title": "Apoyo antioxidante y celular",
+          "description": "Protocolos con vitamina C, zinc, glutatión u otros componentes pueden formar parte de una estrategia personalizada de apoyo antioxidante y recuperación, siempre según valoración profesional."
+        }
+      },
+      "sessionHeading": "Tu sesión",
+      "sessionSubtitle": "Desde la valoración inicial hasta que te vas, la sesión es sanitaria en el cuidado y pausada en el ritmo.",
+      "sessionDetails": {
+        "I": {
+          "title": "Valoración",
+          "description": "Repasamos tu historial, tu momento actual y el objetivo de la sesión. De ahí sale el protocolo: si algo desaconseja la vía intravenosa, te lo decimos."
+        },
+        "II": {
+          "title": "Sesión",
+          "description": "Entre 45 y 60 minutos en la suite, con supervisión sanitaria en todo momento. Puedes leer, trabajar o simplemente descansar."
+        },
+        "III": {
+          "title": "Después",
+          "description": "Pautas sencillas para las horas siguientes y, si tiene sentido, una propuesta de frecuencia. Nunca un plan cerrado de entrada."
+        }
+      },
+      "ctaHeading": "Reserva tu sesión IV",
+      "ctaBody": "Cuéntanos qué buscas y te proponemos el protocolo que encaja."
+    }
   },
   "pages": {
     "breathing-sessions": {

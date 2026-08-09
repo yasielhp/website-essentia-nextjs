@@ -646,7 +646,53 @@
         "description": "Full facial re-education, working posture, breathing, fascia, muscle and skin to recover harmony from the structure out."
       }
     },
-    "facialMetaSuffix": "Therapeutic Facials · Essentia"
+    "facialMetaSuffix": "Therapeutic Facials · Essentia",
+    "intravenous-therapy": {
+      "title": "IV Therapy",
+      "tagline": "With VitalDrip",
+      "heroAlt": "Intravenous therapy session at Essentia",
+      "price": "From €260",
+      "duration": "60 min",
+      "intro": "A new way of supporting wellbeing from within. Personalised intravenous protocols with vitamins, minerals and other micronutrients, brought to Essentia together with VitalDrip and always under medical assessment and supervision.",
+      "benefitsHeading": "What it does",
+      "benefitsSubtitle": "Each protocol is chosen for the person and the purpose of the session — never from a generic formula.",
+      "benefits": {
+        "0": {
+          "title": "Energy and recovery",
+          "description": "Protocols designed for demanding periods, intense activity or a sense of fatigue, with micronutrients selected case by case."
+        },
+        "1": {
+          "title": "Hydration and wellbeing",
+          "description": "The intravenous route allows fluids and micronutrients to be combined within protocols aimed at recovery, hydration and general wellbeing."
+        },
+        "2": {
+          "title": "Rest and regulation",
+          "description": "Certain formulas include magnesium, B-group vitamins and other micronutrients to accompany periods of stress, tension and poor sleep. VitalDrip builds this into protocols such as Stress Balance and Calm."
+        },
+        "3": {
+          "title": "Antioxidant and cellular support",
+          "description": "Protocols with vitamin C, zinc or glutathione can form part of a personalised antioxidant and recovery strategy, always following professional assessment."
+        }
+      },
+      "sessionHeading": "Your session",
+      "sessionSubtitle": "From the first assessment to the moment you leave, the session is medical in its care and unhurried in its pace.",
+      "sessionDetails": {
+        "I": {
+          "title": "Assessment",
+          "description": "We go through your history, where you are now and what the session is for. The protocol follows from that — and if anything makes the intravenous route unwise, we say so."
+        },
+        "II": {
+          "title": "Session",
+          "description": "Forty-five to sixty minutes in the suite, supervised throughout. Read, work or simply rest."
+        },
+        "III": {
+          "title": "Afterwards",
+          "description": "Simple guidance for the hours that follow and, where it makes sense, a suggested frequency. Never a fixed plan from the outset."
+        }
+      },
+      "ctaHeading": "Book your IV session",
+      "ctaBody": "Tell us what you are looking for and we will suggest the protocol that fits."
+    }
   },
   "pages": {
     "breathing-sessions": {
