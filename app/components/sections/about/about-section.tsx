@@ -85,7 +85,14 @@ function StorySection() {
                 {t("heading")}
               </h2>
               <p className="text-petroleum-500 leading-relaxed">{t("p1")}</p>
-              <p className="text-petroleum-500 leading-relaxed">{t("p2")}</p>
+              {/* Split on blank lines: this one grew into three paragraphs. */}
+              {t("p2")
+                .split(/\n{2,}/)
+                .map((paragraph, i) => (
+                  <p key={i} className="text-petroleum-500 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
             </div>
 
             <div className="flex flex-col gap-6">

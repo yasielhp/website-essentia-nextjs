@@ -13,7 +13,7 @@
   "story": {
     "heading": "Por qué existimos.",
     "p1": "Essentia nace de la unión entre dos caminos: la experiencia terapéutica de Yuli y la visión creativa, estratégica y experiencial de Alex.",
-    "p2": "Yuli aporta el corazón terapéutico de Essentia. Su trayectoria en el mundo del masaje, el bienestar y las terapias manuales nace de años de formación, práctica y contacto directo con el cuerpo. Su experiencia como terapeuta le ha permitido desarrollar una mirada precisa, sensible y profundamente humana, comprendiendo que cada persona requiere una atención distinta y un acompañamiento adaptado a su momento.",
+    "p2": "Yuli aporta el corazón terapéutico de Essentia. Su trayectoria en el mundo del masaje, el bienestar y las terapias manuales nace de años de formación, práctica y contacto directo con el cuerpo. Una experiencia que le ha permitido desarrollar una mirada precisa, sensible e integral, entendiendo que cada persona requiere una atención diferente.\n\nEspecializada en drenaje linfático avanzado y terapias manuales, Yuli es responsable del desarrollo de los protocolos de tratamiento de Essentia, desde las experiencias de masaje y bienestar hasta el Método Avanzado Essentia.\n\nSu trabajo combina conocimiento, criterio y sensibilidad terapéutica, desde una visión en constante evolución, impulsada por la formación continua y la búsqueda de nuevas formas de comprender y acompañar el cuerpo.",
     "p3": "Su trabajo combina conocimiento, criterio y presencia terapéutica para ofrecer tratamientos personalizados, cuidadosamente realizados y orientados a mejorar el bienestar desde una visión más profunda del cuerpo.",
     "p4": "Alex aporta la visión de marca, la dirección estratégica y una mirada constante hacia las nuevas tendencias en bienestar, salud preventiva y longevidad. Su experiencia construyendo proyectos, creando contenido y trabajando con marcas premium le permite llevar Essentia más allá de un servicio: hacia una experiencia cuidada, coherente y con proyección de futuro.",
     "p5": "Juntos crean Essentia como un espacio donde el cuidado se entiende desde la personalización, la prevención y una forma más consciente de vivir el bienestar.",
@@ -51,8 +51,8 @@
     "members": [
       {
         "name": "Yuli",
-        "role": "Terapeuta corporal",
-        "area": "Terapias manuales, drenaje linfático avanzado y cuidado personalizado."
+        "role": "Dirección terapéutica",
+        "area": "Especializada en drenaje linfático avanzado y terapias manuales. Desarrolla protocolos personalizados desde una visión integral del cuerpo."
       },
       {
         "name": "Alex Xela",
