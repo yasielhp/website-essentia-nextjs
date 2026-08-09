@@ -9,6 +9,7 @@ export type BookingStorage = {
   /** The treatment's name — the confirm step shows it, so it has to survive a reload. */
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
   selectedDate: string | null;
   selectedTime: string | null;

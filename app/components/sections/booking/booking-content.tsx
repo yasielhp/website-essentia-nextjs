@@ -50,6 +50,8 @@ type BookingState = {
   selectedTierId: string | null;
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  /** The same session type's online price, when it differs. */
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
   staffId: string | null;
   staffName: string | null;
@@ -64,6 +66,7 @@ type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
   | {
       type: "SELECT_TIER";
+      priceOnline: number | null;
       tierId: string;
       label: string | null;
       duration: string | null;
@@ -88,6 +91,7 @@ function bookingReducer(
         selectedService: action.service,
         selectedTierId: null,
         selectedTierPrice: null,
+        selectedTierPriceOnline: null,
         selectedDuration: null,
         staffId: null,
         staffName: null,
@@ -98,6 +102,7 @@ function bookingReducer(
         selectedTierId: action.tierId,
         selectedTierLabel: action.label,
         selectedTierPrice: action.price,
+        selectedTierPriceOnline: action.priceOnline,
         selectedDuration: action.duration,
         // Assignments are per session type, so a different tier can mean a
         // different set of people: whoever was picked may not be among them.
@@ -134,6 +139,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
       selectedTierId: null,
       selectedTierLabel: null,
       selectedTierPrice: null,
+      selectedTierPriceOnline: null,
       selectedDuration: null,
       staffId: null,
       staffName: null,
@@ -155,6 +161,7 @@ function initState({ slug, startStep }: InitArg): BookingState {
       (saved as { selectedTierLabel?: string | null }).selectedTierLabel ??
       null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
+    selectedTierPriceOnline: saved.selectedTierPriceOnline ?? null,
     selectedDuration: saved.selectedDuration ?? null,
     staffId: saved.staffId ?? null,
     staffName: saved.staffName ?? null,
@@ -267,6 +274,7 @@ type BookingStepRendererProps = {
   selectedTierId: string | null;
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
   staffId: string | null;
   staffName: string | null;
@@ -287,6 +295,7 @@ function BookingStepRenderer({
   selectedTierId,
   selectedTierLabel,
   selectedTierPrice,
+  selectedTierPriceOnline,
   selectedDuration,
   staffId,
   staffName,
@@ -321,6 +330,7 @@ function BookingStepRenderer({
               label: sel.label,
               duration: sel.duration,
               price: sel.price,
+              priceOnline: sel.priceOnline,
             })
           }
           onSelectStaff={(person) =>
@@ -343,7 +353,8 @@ function BookingStepRenderer({
       {currentStepId === "datetime" && selectedService && (
         <DateTimeStep
           service={selectedService}
-          serviceId={selectedService.id}
+          tierId={selectedTierId}
+          staffId={staffId}
           durationMinutes={
             selectedDuration
               ? parseInt(selectedDuration, 10) || undefined
@@ -358,9 +369,11 @@ function BookingStepRenderer({
       {currentStepId === "confirm" && selectedService && selectedTierId && (
         <ConfirmStep
           service={selectedService}
+          tierId={selectedTierId}
           tierLabel={selectedTierLabel}
           duration={selectedDuration ?? ""}
           price={selectedTierPrice}
+          priceOnline={selectedTierPriceOnline}
           date={selectedDate}
           time={selectedTime}
           details={details}
@@ -423,7 +436,6 @@ function BookingContentInner() {
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
   // Paying online carries the discount; paying at the centre is full price.
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
-  const [hasCalendar, setHasCalendar] = useState<boolean>(true);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
@@ -458,6 +470,7 @@ function BookingContentInner() {
     selectedTierId,
     selectedTierLabel,
     selectedTierPrice,
+    selectedTierPriceOnline,
     selectedDuration,
     staffId,
     staffName,
@@ -474,6 +487,7 @@ function BookingContentInner() {
       selectedTierId,
       selectedTierLabel,
       selectedTierPrice,
+      selectedTierPriceOnline,
       selectedDuration,
       staffId,
       staffName,
@@ -487,6 +501,7 @@ function BookingContentInner() {
     selectedTierId,
     selectedTierLabel,
     selectedTierPrice,
+    selectedTierPriceOnline,
     selectedDuration,
     staffId,
     staffName,
@@ -495,18 +510,7 @@ function BookingContentInner() {
     details,
   ]);
 
-  useEffect(() => {
-    if (!state.selectedService) return;
-    fetch(
-      `/api/google/calendar/has-calendar?service_id=${state.selectedService.id}`,
-    )
-      .then((r) => r.json())
-      .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
-      .catch(() => setHasCalendar(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.selectedService?.id]);
-
-  const rawSteps = buildSteps(hasCalendar);
+  const rawSteps = buildSteps();
   const activeSteps = rawSteps.map((s) => ({
     ...s,
     label: tSteps(
@@ -524,7 +528,7 @@ function BookingContentInner() {
     duration: !!selectedTierId,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
-    confirm: !hasCalendar || !!(selectedDate && selectedTime),
+    confirm: !!(selectedDate && selectedTime),
   };
 
   const handleNextFromDetails = async () => {
@@ -674,7 +678,12 @@ function BookingContentInner() {
             service_title: selectedService.title,
             tier_id: selectedTierId,
             ...(staffId ? { staff_id: staffId } : {}),
-            price_eur: selectedTierPrice,
+            // What this booking will actually be charged, which is the online
+            // price when they pay now and the centre price when they don't.
+            price_eur:
+              paymentMethod === "online"
+                ? (selectedTierPriceOnline ?? selectedTierPrice)
+                : selectedTierPrice,
             duration: selectedDuration ?? "",
             location: "centro",
             ...(composedNotes ? { notes: composedNotes } : {}),
@@ -748,7 +757,6 @@ function BookingContentInner() {
       body: JSON.stringify({
         bookingId: resolvedBookingId ?? "",
         tierId: selectedTierId,
-        amountEur: selectedTierPrice,
         email: details.email,
         name: `${details.firstName} ${details.lastName}`.trim(),
         description: tServiceStep(`services.${selectedService.id}.title`),
@@ -782,6 +790,7 @@ function BookingContentInner() {
         selectedService={selectedService}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
+        selectedTierPriceOnline={selectedTierPriceOnline}
         selectedDuration={selectedDuration}
         staffId={staffId}
         staffName={staffName}

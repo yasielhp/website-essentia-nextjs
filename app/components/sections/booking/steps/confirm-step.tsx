@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { CreditCard, Store } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -9,11 +10,8 @@ import {
   manualTherapyTreatments,
 } from "@/data/services-data";
 import type { DetailsState } from "@/types";
-import {
-  ONLINE_PAYMENT_DISCOUNT_PERCENT,
-  onlineDiscountAmount,
-  onlinePrice,
-} from "@/lib/pricing";
+import { onlineSaving, onlineDiscountPercent } from "@/lib/pricing";
+import { insforge } from "@/lib/insforge";
 
 export type PaymentMethod = "online" | "on-site";
 
@@ -34,7 +32,9 @@ export function ConfirmStep({
   service,
   tierLabel,
   duration,
+  tierId,
   price,
+  priceOnline,
   date,
   time,
   details,
@@ -45,7 +45,11 @@ export function ConfirmStep({
   service: BookableService;
   tierLabel: string | null;
   duration: string;
+  /** Read live so a price edited in the dashboard applies to this booking. */
+  tierId?: string | null;
   price: number | null;
+  /** The online price of the chosen session type, straight from the tier. */
+  priceOnline?: number | null;
   date: Date | null;
   time: string | null;
   details: DetailsState;
@@ -74,12 +78,50 @@ export function ConfirmStep({
       : null;
   const image = treatment?.thumbnail ?? service.image;
 
-  const discount = price != null ? onlineDiscountAmount(price) : null;
+  // Both prices are re-read here rather than carried from the step that chose
+  // the session type: a price edited in the dashboard mid-booking should apply
+  // to the booking being made, and the server charges the current one anyway.
+  const [livePrices, setLivePrices] = useState<{
+    centre: number | null;
+    online: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (
+      tierId
+        ? insforge.database
+            .from("service_tiers")
+            .select("price_eur, price_center_eur")
+            .eq("id", tierId)
+            .limit(1)
+        : Promise.resolve({ data: null })
+    ).then(({ data }) => {
+      const row = (
+        data as
+          { price_eur: number | null; price_center_eur: number | null }[] | null
+      )?.[0];
+      if (cancelled || !row) return;
+      setLivePrices({
+        centre: row.price_center_eur ?? row.price_eur,
+        online: row.price_eur ?? row.price_center_eur,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tierId]);
+
+  const centrePrice = livePrices?.centre ?? price;
+  const onlineFinal = livePrices?.online ?? priceOnline ?? price;
+
+  const discount = onlineSaving(centrePrice, onlineFinal);
+  const discountPercent = onlineDiscountPercent(centrePrice, onlineFinal);
   const finalPrice =
-    price != null
+    centrePrice != null
       ? paymentMethod === "online"
-        ? onlinePrice(price)
-        : price
+        ? (onlineFinal ?? centrePrice)
+        : centrePrice
       : null;
 
   const methods: {
@@ -93,8 +135,8 @@ export function ConfirmStep({
       icon: CreditCard,
       title: t("payOnline"),
       note:
-        ONLINE_PAYMENT_DISCOUNT_PERCENT > 0
-          ? t("payOnlineNote", { percent: ONLINE_PAYMENT_DISCOUNT_PERCENT })
+        discountPercent > 0
+          ? t("payOnlineNote", { percent: discountPercent })
           : t("payOnlineNoteNoDiscount"),
     },
     {
@@ -174,14 +216,14 @@ export function ConfirmStep({
               <span className="text-petroleum-700">{duration}</span>
             </div>
           )}
-          {price != null && (
+          {centrePrice != null && (
             <>
               <div className="flex items-baseline justify-between text-sm">
                 <span className="text-petroleum-400">{t("priceLabel")}</span>
-                <span className="text-petroleum-700">€{price}</span>
+                <span className="text-petroleum-700">€{centrePrice}</span>
               </div>
               {/* Only when there is a discount to show */}
-              {discount != null && discount > 0 && (
+              {discount > 0 && (
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="text-petroleum-400">
                     {t("discountLabel")}
@@ -193,7 +235,9 @@ export function ConfirmStep({
                         : "text-petroleum-400"
                     }
                   >
-                    {paymentMethod === "online" ? `−€${discount}` : "—"}
+                    {paymentMethod === "online"
+                      ? `−€${discount} (−${discountPercent}%)`
+                      : "—"}
                   </span>
                 </div>
               )}

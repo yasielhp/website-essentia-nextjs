@@ -28,6 +28,7 @@ function toPickerOption(t: Tier): TierPickerOption {
     label: t.label,
     durationMinutes: t.duration_minutes,
     price: t.price_center_eur ?? t.price_eur,
+    priceOnline: t.price_eur ?? t.price_center_eur,
     imageUrl: t.image_url,
     color: t.color,
   };
@@ -37,7 +38,10 @@ export type TierSelection = {
   tierId: string;
   label: string | null;
   duration: string | null;
+  /** What it costs at the centre. */
   price: number | null;
+  /** What it costs paying online, which may be lower. */
+  priceOnline: number | null;
 };
 
 export function DurationStep({
@@ -100,6 +104,7 @@ export function DurationStep({
           duration:
             t.duration_minutes != null ? `${t.duration_minutes} min` : null,
           price: t.price_center_eur ?? t.price_eur,
+          priceOnline: t.price_eur ?? t.price_center_eur,
         });
       } else if (preselectedLabel) {
         const match = rows.find(
@@ -114,6 +119,7 @@ export function DurationStep({
                 ? `${match.duration_minutes} min`
                 : null,
             price: match.price_center_eur ?? match.price_eur,
+            priceOnline: match.price_eur ?? match.price_center_eur,
           });
         }
       }
@@ -161,6 +167,7 @@ export function DurationStep({
               duration:
                 o.durationMinutes != null ? `${o.durationMinutes} min` : null,
               price: o.price,
+              priceOnline: o.priceOnline ?? o.price,
             })
           }
         />

@@ -1,7 +1,7 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
-import { ONLINE_PAYMENT_DISCOUNT_PERCENT, onlinePrice } from "@/lib/pricing";
+import { onlineDiscountPercent } from "@/lib/pricing";
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import type { UpdateBookingPayload } from "@/types/booking";
 
@@ -22,7 +22,8 @@ import type { UpdateBookingPayload } from "@/types/booking";
 export async function updateDraftBookingMeta(
   bookingId: string,
   tierId: string | null,
-  tierPrice: number | null,
+  /** Ignored for the amount: prices are read from the tier. Kept for callers. */
+  _tierPrice: number | null,
   createdByUserId: string | null,
   createdByRole: string,
   notes: string | null,
@@ -31,25 +32,41 @@ export async function updateDraftBookingMeta(
 ): Promise<void> {
   if (!bookingId) return;
 
+  const db = getAdminClient().database;
+
+  // The two prices come from the tier, so editing them in the dashboard is
+  // enough — and so a tampered request cannot lower what gets recorded.
+  let centrePrice: number | null = null;
+  let onlinePriceEur: number | null = null;
+  if (tierId) {
+    const { data } = await db
+      .from("service_tiers")
+      .select("price_eur, price_center_eur")
+      .eq("id", tierId)
+      .limit(1);
+    const tier = (
+      data as
+        { price_eur: number | null; price_center_eur: number | null }[] | null
+    )?.[0];
+    centrePrice = tier?.price_center_eur ?? tier?.price_eur ?? null;
+    onlinePriceEur = tier?.price_eur ?? centrePrice;
+  }
+
+  const amountEur = paymentMethod === "online" ? onlinePriceEur : centrePrice;
+
   // Staff need to know at a glance whether the money is still to be collected.
+  const percent = onlineDiscountPercent(centrePrice, onlinePriceEur);
   const paymentNote =
     paymentMethod === "on-site"
       ? "Pago: en el centro (precio íntegro)"
-      : ONLINE_PAYMENT_DISCOUNT_PERCENT > 0
-        ? `Pago: online (−${ONLINE_PAYMENT_DISCOUNT_PERCENT}%)`
+      : percent > 0
+        ? `Pago: online (−${percent}%)`
         : "Pago: online";
   const composedNotes =
     [paymentNote, notes].filter(Boolean).join("\n\n") || null;
 
-  // `price_eur` is what will actually be charged, so the transactions page
-  // does not report the list price for a booking that paid the online rate.
-  const amountEur =
-    tierPrice != null && paymentMethod === "online"
-      ? onlinePrice(tierPrice)
-      : tierPrice;
-
-  await getAdminClient()
-    .database.from("bookings")
+  await db
+    .from("bookings")
     .update({
       tier_id: tierId,
       ...(staffId ? { staff_id: staffId } : {}),
