@@ -525,6 +525,7 @@
       "sections": {
         "role": "Role",
         "details": "Details",
+        "photo": "Photo",
         "password": "Password",
         "services": "Services"
       },
@@ -1165,5 +1166,17 @@
     "subscriptionCreated": "Subscription created",
     "accountSaved": "Account saved",
     "passwordChanged": "Password changed"
+  },
+  "imageUpload": {
+    "prompt": "Click or drag an image here",
+    "drop": "Drop to upload",
+    "uploading": "Uploading…",
+    "invalidType": "Please select an image file.",
+    "failed": "Upload failed.",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "emailField": {
+    "invalid": "Check the address — something is missing or mistyped.",
+    "didYouMean": "Did you mean"
   }
 }

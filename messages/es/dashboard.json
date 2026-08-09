@@ -525,6 +525,7 @@
       "sections": {
         "role": "Rol",
         "details": "Detalles",
+        "photo": "Foto",
         "password": "Contraseña",
         "services": "Servicios"
       },
@@ -1165,5 +1166,17 @@
     "subscriptionCreated": "Suscripción creada",
     "accountSaved": "Cuenta guardada",
     "passwordChanged": "Contraseña cambiada"
+  },
+  "imageUpload": {
+    "prompt": "Haz clic o arrastra una imagen aquí",
+    "drop": "Suelta para subir",
+    "uploading": "Subiendo…",
+    "invalidType": "Selecciona un archivo de imagen.",
+    "failed": "No se ha podido subir la imagen.",
+    "genericError": "Algo ha salido mal. Inténtalo de nuevo."
+  },
+  "emailField": {
+    "invalid": "Revisa el correo: falta algo o hay un carácter de más.",
+    "didYouMean": "¿Quisiste decir"
   }
 }
