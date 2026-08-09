@@ -72,61 +72,192 @@ export const bookableServices: BookableService[] = [
  */
 export type IvProtocol = {
   id: string;
+  /** English fallback for metadata before the translations load. */
+  title: string;
+  /** Duration and price as one line; the formats differ per protocol. */
+  meta: string;
+  description: string;
+  /** Full-screen hero on the protocol's own page. */
+  image: string;
   /** Landscape crop for the card on the IV therapy page. */
   thumbnail: string;
+  /** Three per protocol: the catalogue's own benefits. */
+  highlights?: { title: string; description: string }[];
 };
 
 export const ivProtocols: IvProtocol[] = [
   {
     id: "essentia-iv-signature",
+    title: "Essentia IV Signature",
+    meta: "110 min · €360",
+    description: "",
+    image:
+      "/images/medicine/iv-therapy/heroes/essentia-iv-signature-1920x1080.webp",
     thumbnail:
       "/images/medicine/iv-therapy/cards/essentia-iv-signature-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "power-drip",
+    title: "Power Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/power-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/power-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "immunity-drip",
+    title: "Immunity Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/immunity-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/immunity-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "nirvana-drip",
+    title: "Nirvana Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/nirvana-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/nirvana-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "stress-balance",
+    title: "Stress Balance",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/stress-balance-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/stress-balance-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "beauty-hair-glow",
+    title: "Beauty & Hair Glow",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/beauty-hair-glow-1920x1080.webp",
     thumbnail:
       "/images/medicine/iv-therapy/cards/beauty-hair-glow-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "vitamin-c",
+    title: "Vitamin C",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/vitamin-c-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/vitamin-c-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "nad-plus",
+    title: "NAD+",
+    meta: "45–60 min · €200",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/nad-plus-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/nad-plus-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "resurrection-drip",
+    title: "Resurrection Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image:
+      "/images/medicine/iv-therapy/heroes/resurrection-drip-1920x1080.webp",
     thumbnail:
       "/images/medicine/iv-therapy/cards/resurrection-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "body-drip",
+    title: "Body Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/body-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/body-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "fit-drip",
+    title: "Fit Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/fit-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/fit-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
   {
     id: "calm-drip",
+    title: "Calm Drip",
+    meta: "45–60 min · €260",
+    description: "",
+    image: "/images/medicine/iv-therapy/heroes/calm-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/calm-drip-1200x675.webp",
+    // Three highlights each; the copy is translated and lives in the messages.
+    highlights: [
+      { title: "", description: "" },
+      { title: "", description: "" },
+      { title: "", description: "" },
+    ],
   },
 ];
 

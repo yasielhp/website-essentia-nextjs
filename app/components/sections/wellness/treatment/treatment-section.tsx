@@ -228,14 +228,24 @@ function IvProtocolsSection() {
                   {t(`protocols.${protocol.id}.description`)}
                 </p>
 
-                <Button
-                  variant="solid"
-                  size="sm"
-                  href={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
-                  className="mt-1 w-full sm:w-auto"
-                >
-                  {t("book")}
-                </Button>
+                <div className="mt-1 flex w-full flex-col gap-2 sm:flex-row">
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    href={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
+                    className="w-full sm:w-auto"
+                  >
+                    {t("book")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/medicine/intravenous-therapy/${protocol.id}`}
+                    className="w-full sm:w-auto"
+                  >
+                    {t("view")}
+                  </Button>
+                </div>
               </div>
             </article>
           ))}

@@ -7,11 +7,12 @@ import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type {
   FacialTreatment,
+  IvProtocol,
   ManualTherapyTreatment,
 } from "@/data/services-data";
 
-/** Either family of treatment can drive this view. */
-type DetailService = ManualTherapyTreatment | FacialTreatment;
+/** Any of the three families can drive this view. */
+type DetailService = ManualTherapyTreatment | FacialTreatment | IvProtocol;
 
 type DetailProps = {
   service: DetailService;
