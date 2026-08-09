@@ -87,7 +87,9 @@
     "staffDescription": "Elige con quién quieres tu sesión.",
     "staffLabel": "Personal",
     "selectStaff": "Seleccionar personal",
-    "staffModalTitle": "Seleccionar personal"
+    "staffModalTitle": "Seleccionar personal",
+    "noStaffTitle": "Este tipo de sesión no está disponible ahora mismo",
+    "noStaffBody": "No tenemos personal asignado para este tratamiento en este momento. Escríbenos y buscamos la manera de atenderte."
   },
   "locationStep": {
     "label": "¿Dónde quieres recibir el servicio?",

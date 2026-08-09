@@ -50,6 +50,7 @@ export function DurationStep({
   staffId,
   onSelect,
   onSelectStaff,
+  onStaffLoaded,
   preselectedLabel,
 }: {
   serviceId: string;
@@ -57,11 +58,20 @@ export function DurationStep({
   staffId: string | null;
   onSelect: (sel: TierSelection) => void;
   onSelectStaff: (person: TierStaff) => void;
+  /** Tells the form whether this session type can be performed at all. */
+  onStaffLoaded: (hasStaff: boolean) => void;
   preselectedLabel?: string | null;
 }) {
   const tt = useTranslations("booking.durationStep");
   const [tiers, setTiers] = useState<Tier[] | null>(null);
   const [staff, setStaff] = useState<TierStaff[]>([]);
+
+  // Held in a ref so the parent may pass an inline callback without
+  // re-running the fetch on every render.
+  const onStaffLoadedRef = useRef(onStaffLoaded);
+  useEffect(() => {
+    onStaffLoadedRef.current = onStaffLoaded;
+  });
 
   // Who can perform the chosen session type. Assignments live in the
   // dashboard, so the list changes with the tier, not with the service.
@@ -72,7 +82,9 @@ export function DurationStep({
         ? fetchTierStaff(selectedTierId)
         : Promise.resolve([] as TierStaff[])
     ).then((people) => {
-      if (!cancelled) setStaff(people);
+      if (cancelled) return;
+      setStaff(people);
+      onStaffLoadedRef.current(people.length > 0);
     });
     return () => {
       cancelled = true;
@@ -174,6 +186,18 @@ export function DurationStep({
       )}
       {/* Only once a session type is chosen — the question is about that
           session, and only the people assigned to it can be picked. */}
+      {/* Nobody assigned means nobody can perform it, so the booking cannot
+          go further. Said here rather than at the empty calendar three steps
+          later. */}
+      {selectedTierId !== null && staff.length === 0 && (
+        <div className="border-sand-300 bg-sand-50 flex flex-col gap-2 rounded-2xl border px-4 py-4">
+          <p className="text-petroleum-700 text-sm font-medium">
+            {tt("noStaffTitle")}
+          </p>
+          <p className="text-petroleum-400 text-sm">{tt("noStaffBody")}</p>
+        </div>
+      )}
+
       {selectedTierId !== null && staff.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-petroleum-400 text-sm">{tt("staffDescription")}</p>

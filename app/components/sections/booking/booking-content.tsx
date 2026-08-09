@@ -279,6 +279,7 @@ type BookingStepRendererProps = {
   selectedDuration: string | null;
   staffId: string | null;
   staffName: string | null;
+  onStaffLoaded: (hasStaff: boolean) => void;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -300,6 +301,7 @@ function BookingStepRenderer({
   selectedDuration,
   staffId,
   staffName,
+  onStaffLoaded,
   selectedDate,
   selectedTime,
   details,
@@ -334,6 +336,7 @@ function BookingStepRenderer({
               priceOnline: sel.priceOnline,
             })
           }
+          onStaffLoaded={onStaffLoaded}
           onSelectStaff={(person) =>
             dispatch({
               type: "SELECT_STAFF",
@@ -438,6 +441,10 @@ function BookingContentInner() {
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
   // Paying online carries the discount; paying at the centre is full price.
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  // A session type with nobody assigned cannot be performed, so the form stops
+  // at the session-type step instead of walking the visitor to an empty
+  // calendar and a booking nobody can honour.
+  const [tierHasStaff, setTierHasStaff] = useState(false);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
@@ -525,9 +532,9 @@ function BookingContentInner() {
 
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    // Picking a person is optional: a session type with nobody assigned yet
-    // must still be bookable, and the centre can allocate one afterwards.
-    duration: !!selectedTierId,
+    // Which person is optional — the centre can allocate one — but somebody
+    // has to be able to perform the treatment.
+    duration: !!selectedTierId && tierHasStaff,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
     confirm: !!(selectedDate && selectedTime),
@@ -796,6 +803,7 @@ function BookingContentInner() {
         selectedDuration={selectedDuration}
         staffId={staffId}
         staffName={staffName}
+        onStaffLoaded={setTierHasStaff}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         details={details}

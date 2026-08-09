@@ -87,7 +87,9 @@
     "staffDescription": "Choose who you would like for your session.",
     "staffLabel": "Staff",
     "selectStaff": "Select staff",
-    "staffModalTitle": "Select staff"
+    "staffModalTitle": "Select staff",
+    "noStaffTitle": "This session type is not available right now",
+    "noStaffBody": "No practitioner is assigned to this treatment at the moment. Write to us and we will find a way to see you."
   },
   "locationStep": {
     "label": "Where would you like to receive the service?",
