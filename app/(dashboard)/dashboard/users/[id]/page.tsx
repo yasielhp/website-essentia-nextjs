@@ -210,6 +210,9 @@ export default function EditUserPage() {
     normaliseSchedule(null),
   );
   const [slotInterval, setSlotInterval] = useState(30);
+  // Saving overwrites the schedule, so it must not run before the stored one
+  // has been read: the empty form would be written over the real hours.
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
@@ -234,6 +237,7 @@ export default function EditUserPage() {
       setCalendarEmail(profile.google_connected_email);
       setSchedule(normaliseSchedule(profile.schedule));
       setSlotInterval(profile.slot_interval_minutes ?? 30);
+      setScheduleLoaded(true);
     }
     void load();
   }, [id]);
@@ -275,7 +279,7 @@ export default function EditUserPage() {
       currentEmail: state.originalEmail,
       avatarUrl: state.avatarUrl || null,
       jobTitle: state.role === "staff" ? state.jobTitle.trim() : null,
-      ...(state.role === "staff"
+      ...(state.role === "staff" && scheduleLoaded
         ? { schedule, slotIntervalMinutes: slotInterval }
         : {}),
     });
