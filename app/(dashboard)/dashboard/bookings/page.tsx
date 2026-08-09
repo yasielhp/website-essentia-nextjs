@@ -24,7 +24,7 @@ type Booking = {
   service_title: string | null;
   duration: string | null;
   tier_id: string | null;
-  service_tiers: { label: string | null } | null;
+  service_tiers: { label: string | null; color: string | null } | null;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
@@ -579,7 +579,7 @@ export default function BookingsPage() {
     let query = insforge.database
       .from("bookings")
       .select(
-        "id, service_title, duration, tier_id, service_tiers(label), first_name, last_name, email, phone, date, time, status, location, location_address, created_at, created_by_role, created_by_user_id",
+        "id, service_title, duration, tier_id, service_tiers(label, color), first_name, last_name, email, phone, date, time, status, location, location_address, created_at, created_by_role, created_by_user_id",
         { count: "exact" },
       );
 
@@ -693,108 +693,118 @@ export default function BookingsPage() {
         />
       </div>
 
-      {/* Mobile cards */}
-      <div className="border-sand-200 divide-sand-200 mb-4 divide-y rounded-2xl border bg-white sm:hidden">
+      {/* Mobile cards — separate cards rather than table rows squeezed into
+          a list: on a phone the useful order is when, who, what, and each
+          booking needs its own edge to be scannable at a thumb's distance. */}
+      <div className="mb-4 flex flex-col gap-3 sm:hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-5 py-4">
-              {/* Row 1: name + status badge */}
+            <div
+              key={i}
+              className="border-sand-200 rounded-2xl border bg-white p-4"
+            >
               <div className="flex items-center justify-between gap-2">
-                <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
                 <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
               </div>
-              {/* Row 2: service */}
-              <div className="bg-sand-100 mt-2 h-3 w-40 animate-pulse rounded" />
-              {/* Row 3: date + location badge */}
-              <div className="mt-1.5 flex items-center gap-2">
-                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
-                <div className="bg-sand-100 h-4 w-16 animate-pulse rounded-full" />
+              <div className="bg-sand-100 mt-3 h-4 w-36 animate-pulse rounded" />
+              <div className="bg-sand-100 mt-2 h-3 w-44 animate-pulse rounded" />
+              <div className="mt-3 flex gap-2">
+                <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
               </div>
             </div>
           ))
         ) : bookings.length === 0 ? (
-          <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
+          <p className="border-sand-200 text-petroleum-400 rounded-2xl border bg-white px-6 py-12 text-center text-sm">
             {t("bookings.empty")}
           </p>
         ) : (
           bookings.map((b) => {
             const fullName =
               [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
+            const room = (() => {
+              if (!b.location_address) return null;
+              try {
+                const addr = JSON.parse(b.location_address) as Record<
+                  string,
+                  string
+                >;
+                return (
+                  [
+                    addr.reservationNumber
+                      ? `#${addr.reservationNumber}`
+                      : null,
+                    addr.roomNumber ? `Room ${addr.roomNumber}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || null
+                );
+              } catch {
+                return null;
+              }
+            })();
+
             return (
-              <div
+              <button
                 key={b.id}
+                type="button"
                 onClick={() => push(`/dashboard/bookings/${b.id}`)}
-                className="hover:bg-sand-50 cursor-pointer px-5 py-4 transition-colors"
+                style={{
+                  borderLeftColor: b.service_tiers?.color ?? "#c2baa5",
+                }}
+                className="border-sand-200 active:bg-sand-50 w-full rounded-2xl border border-l-4 bg-white p-4 text-left transition-colors"
               >
+                {/* When it is — the first thing anyone looks for */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-petroleum-700 truncate font-medium">
-                      {fullName}
-                    </p>
-                    {b.email && (
-                      <p className="text-petroleum-400 truncate text-xs">
-                        {b.email}
-                      </p>
+                  <p className="text-petroleum-700 text-sm font-medium">
+                    {formatBookingDate(b.date, locale)}
+                    {b.time && (
+                      <span className="text-petroleum-400">
+                        {" · "}
+                        {b.time.slice(0, 5)}
+                      </span>
                     )}
-                  </div>
+                  </p>
                   <StatusBadge status={b.status} />
                 </div>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <p className="text-petroleum-500 text-sm">
-                    {b.service_title ?? "—"}
+
+                <p className="text-petroleum-700 mt-3 truncate font-medium">
+                  {fullName}
+                </p>
+                {b.email && (
+                  <p className="text-petroleum-400 truncate text-xs">
+                    {b.email}
                   </p>
-                  {(b.service_tiers?.label || b.duration) && (
+                )}
+
+                <p className="text-petroleum-500 mt-2 text-sm">
+                  {b.service_tiers?.label ?? b.service_title ?? "—"}
+                  {b.duration && (
                     <span className="text-petroleum-400 text-xs">
-                      ·{" "}
-                      {[b.service_tiers?.label, b.duration]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {" · "}
+                      {b.duration}
                     </span>
                   )}
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                  <p className="text-petroleum-400 text-xs">
-                    {formatBookingDate(b.date, locale)}
-                    {b.time ? ` · ${b.time}` : ""}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    <LocationBadge location={b.location} />
-                    {(b.location === "centro" || b.location === "habitacion") &&
-                      b.location_address &&
-                      (() => {
-                        try {
-                          const addr = JSON.parse(b.location_address) as Record<
-                            string,
-                            string
-                          >;
-                          const parts = [
-                            addr.reservationNumber
-                              ? `#${addr.reservationNumber}`
-                              : null,
-                            addr.roomNumber ? `Room ${addr.roomNumber}` : null,
-                          ].filter(Boolean);
-                          return parts.length > 0 ? (
-                            <p className="text-petroleum-400 text-xs">
-                              {parts.join(" · ")}
-                            </p>
-                          ) : null;
-                        } catch {
-                          return null;
-                        }
-                      })()}
-                  </div>
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <LocationBadge location={b.location} />
+                  {room && (
+                    <span className="text-petroleum-400 text-xs">{room}</span>
+                  )}
                   {(() => {
                     const source = sourceKey(b.created_by_role);
                     return (
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
+                        className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
                       >
                         {t(`bookings.sources.${source}`)}
                       </span>
                     );
                   })()}
                 </div>
-              </div>
+              </button>
             );
           })
         )}
