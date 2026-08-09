@@ -99,11 +99,6 @@ function OptionRows({
             {s.description}
           </p>
         )}
-        {s.category && (
-          <p className="text-petroleum-500 text-xs">
-            {s.category === "medicine" ? labels.medicine : labels.wellness}
-          </p>
-        )}
       </div>
       {selectedId === s.id && (
         <Check className="text-petroleum-700 shrink-0" size={14} />
@@ -223,13 +218,6 @@ export function ServicePicker({
               {selected.description && (
                 <p className="text-petroleum-400 line-clamp-2 text-sm">
                   {selected.description}
-                </p>
-              )}
-              {selected.category && (
-                <p className="text-petroleum-500 text-sm">
-                  {selected.category === "medicine"
-                    ? labels.medicine
-                    : labels.wellness}
                 </p>
               )}
             </div>

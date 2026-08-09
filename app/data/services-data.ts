@@ -39,7 +39,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Advanced facial protocols combining manual techniques and technology to restore skin health.",
     durations: ["60 min"],
-    image: "/images/menu/facial-therapies-1200x675.webp",
+    image: "/images/menu/facial-therapies-900x600.webp",
   },
   // TODO: re-enable when red light therapy goes live
   // {
@@ -49,7 +49,7 @@ export const bookableServices: BookableService[] = [
   //   description:
   //     "Red and infrared light to stimulate cellular repair and regeneration.",
   //   durations: ["20 min"],
-  //   image: "/images/menu/red-light-therapy-1200x675.webp",
+  //   image: "/images/menu/red-light-therapy-900x600.webp",
   // },
   // Medicine
   {
@@ -59,7 +59,7 @@ export const bookableServices: BookableService[] = [
     description:
       "Personalised intravenous protocols with vitamins, minerals and micronutrients, always under medical assessment.",
     durations: ["60 min"],
-    image: "/images/menu/intravenous-therapy-1200x675.webp",
+    image: "/images/menu/intravenous-therapy-900x600.webp",
   },
 ];
 
