@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import NextImage from "next/image";
 import { insforge } from "@/lib/insforge";
 import { IconImage, IconX } from "@/components/ui/icons";
@@ -56,6 +57,8 @@ export function ImageUpload({
   className = "",
   apiEndpoint,
 }: ImageUploadProps) {
+  // Only ever rendered inside the dashboard, which loads that namespace.
+  const t = useTranslations("dashboard.imageUpload");
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export function ImageUpload({
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file.");
+      setError(t("invalidType"));
       return;
     }
     setError(null);
@@ -78,7 +81,7 @@ export function ImageUpload({
         const res = await fetch(apiEndpoint, { method: "POST", body });
         if (!res.ok) {
           const json = (await res.json()) as { error?: string };
-          setError(json.error ?? "Upload failed.");
+          setError(json.error ?? t("failed"));
           return;
         }
         const { url } = (await res.json()) as { url: string };
@@ -100,7 +103,7 @@ export function ImageUpload({
         const uploadError = (uploadResult as { error?: { message?: string } })
           .error;
         if (uploadError) {
-          setError(uploadError.message ?? "Upload failed.");
+          setError(uploadError.message ?? t("failed"));
           return;
         }
 
@@ -113,7 +116,7 @@ export function ImageUpload({
         onChange(publicUrl);
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("genericError"));
     } finally {
       setUploading(false);
     }
@@ -177,14 +180,7 @@ export function ImageUpload({
           <div className="flex flex-col items-center gap-1 px-4 py-6 text-center">
             <IconImage className="text-petroleum-300" />
             <span className="text-petroleum-400 text-xs">
-              {uploading
-                ? "Compressing & uploading…"
-                : dragging
-                  ? "Drop to upload"
-                  : "Click or drag an image here"}
-            </span>
-            <span className="text-petroleum-300 text-xs">
-              Compressed to WebP automatically
+              {uploading ? t("uploading") : dragging ? t("drop") : t("prompt")}
             </span>
           </div>
         )}

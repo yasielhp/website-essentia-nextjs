@@ -102,7 +102,6 @@ export const maiMenu = [
       {
         itemName: "Intravenous therapy",
         href: "/medicine/intravenous-therapy",
-        comingSoon: true,
         card: {
           title: "Intravenous Therapy",
           description:

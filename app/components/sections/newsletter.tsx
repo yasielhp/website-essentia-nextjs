@@ -9,6 +9,7 @@ import { Button } from "@components/ui/button";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import { subscribeToNewsletter } from "@/actions/newsletter";
+import { EmailInput } from "@/components/ui/email-input";
 
 // ─── Tema ─────────────────────────────────────────────────────
 
@@ -132,14 +133,12 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
           >
             {/* Email */}
             <div>
-              <input
-                type="email"
+              <EmailInput
                 name="email"
-                autoComplete="email"
                 placeholder={t("emailPlaceholder")}
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
+                onChange={(value) => {
+                  setEmail(value);
                   if (errors.email)
                     setErrors((prev) => ({ ...prev, email: undefined }));
                 }}

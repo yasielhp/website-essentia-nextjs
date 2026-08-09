@@ -3,6 +3,7 @@ import {
   bookingDetailsCard,
   googleCalendarUrl,
   calendarButton,
+  cancellationLink,
 } from "./_base";
 
 export function bookingConfirmedEmail({
@@ -13,6 +14,7 @@ export function bookingConfirmedEmail({
   time,
   duration,
   dateIso,
+  cancelUrl,
   locale = "en",
 }: {
   name: string;
@@ -22,6 +24,8 @@ export function bookingConfirmedEmail({
   time: string;
   duration?: string | null;
   dateIso?: string;
+  /** Link that cancels this booking without signing in. */
+  cancelUrl?: string | null;
   locale?: "en" | "es";
 }): string {
   const calBtn = dateIso
@@ -36,6 +40,7 @@ export function bookingConfirmedEmail({
         locale,
       )
     : "";
+  const cancelBlock = cancelUrl ? cancellationLink(cancelUrl, locale) : "";
   if (locale === "es") {
     return emailBase({
       locale,
@@ -63,6 +68,7 @@ export function bookingConfirmedEmail({
         </table>
 
         ${calBtn}
+        ${cancelBlock}
 
         <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.
@@ -97,6 +103,7 @@ export function bookingConfirmedEmail({
       </table>
 
       ${calBtn}
+      ${cancelBlock}
 
       <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
         If you need to cancel or reschedule, please contact us at least 24 hours before your session.

@@ -37,6 +37,9 @@ import {
   getCalendarDays,
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
+import { EmailInput } from "@/components/ui/email-input";
+import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
+import { StaffSelect } from "@/components/ui/staff-select";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -657,7 +660,7 @@ type FormState = {
   email: string;
   phone: string;
   status: string;
-  therapistGender: "male" | "female" | "";
+  staffId: string;
 };
 
 type FormAction =
@@ -677,7 +680,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone" | "status";
       value: string;
     }
-  | { type: "SET_THERAPIST_GENDER"; value: "male" | "female" | "" }
+  | { type: "SET_STAFF"; value: string }
   | { type: "RESET_TIERS" };
 
 const formInitial: FormState = {
@@ -696,7 +699,7 @@ const formInitial: FormState = {
   email: "",
   phone: "",
   status: "pending",
-  therapistGender: "",
+  staffId: "",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -738,8 +741,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
-    case "SET_THERAPIST_GENDER":
-      return { ...state, therapistGender: action.value };
+    case "SET_STAFF":
+      return { ...state, staffId: action.value };
     default:
       return state;
   }
@@ -1217,11 +1220,10 @@ function ClientSection({
           >
             {t("fields.email")} <span className="text-red-400">*</span>
           </label>
-          <input
+          <EmailInput
             id="email"
-            type="email"
             value={email}
-            onChange={(e) => onFieldChange("email", e.target.value)}
+            onChange={(value) => onFieldChange("email", value)}
             placeholder={t("fields.emailPlaceholder")}
             disabled={submitting}
             className={INPUT_CLASS}
@@ -1273,6 +1275,7 @@ export default function EditBookingPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.bookings.edit");
   const tForm = useTranslations("dashboard.bookings.form");
+  const tCommonLabels = useTranslations("dashboard.common");
   const locationOptions = useLocationOptions();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
@@ -1329,7 +1332,7 @@ export default function EditBookingPage() {
     email,
     phone,
     status,
-    therapistGender,
+    staffId,
   } = form;
 
   const fullNameForCrumb =
@@ -1494,7 +1497,7 @@ export default function EditBookingPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "service_id, tier_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status, google_event_id",
+          "service_id, tier_id, staff_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status, google_event_id",
         )
         .eq("id", id)
         .limit(1);
@@ -1503,6 +1506,7 @@ export default function EditBookingPage() {
         data as Array<{
           service_id: string | null;
           tier_id: string | null;
+          staff_id: string | null;
           duration: string | null;
           location: string | null;
           location_address: string | null;
@@ -1573,20 +1577,12 @@ export default function EditBookingPage() {
       setOrigBookingDate(b.date ?? null);
       setOrigBookingTime(b.time ?? "");
 
-      // Parse therapist gender from notes prefix
-      let parsedTherapistGender: "male" | "female" | "" = "";
-      let parsedNotes = b.notes ?? "";
-      if (parsedNotes.startsWith("Terapeuta: Masculino")) {
-        parsedTherapistGender = "male";
-        parsedNotes = parsedNotes
-          .slice("Terapeuta: Masculino".length)
-          .replace(/^\n\n/, "");
-      } else if (parsedNotes.startsWith("Terapeuta: Femenina")) {
-        parsedTherapistGender = "female";
-        parsedNotes = parsedNotes
-          .slice("Terapeuta: Femenina".length)
-          .replace(/^\n\n/, "");
-      }
+      // Bookings taken before the staff column carry the old free-text
+      // prefix; strip it so it does not show up twice.
+      const parsedNotes = (b.notes ?? "").replace(
+        /^Terapeuta: (?:Masculino|Femenina)(?:\n\n)?/,
+        "",
+      );
 
       dispatchForm({
         type: "LOAD_BOOKING",
@@ -1605,13 +1601,28 @@ export default function EditBookingPage() {
           email: b.email ?? "",
           phone: b.phone ?? "",
           status: b.status ?? "pending",
-          therapistGender: parsedTherapistGender,
+          staffId: b.staff_id ?? "",
         },
       });
       dispatchAsync({ type: "BOOKING_LOADED" });
     }
     void load();
   }, [id]);
+
+  // Who can perform the chosen session type.
+  const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (
+      tierId ? fetchTierStaff(tierId) : Promise.resolve([] as TierStaff[])
+    ).then((people) => {
+      if (!cancelled) setTierStaff(people);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tierId]);
 
   // Load tiers when service changes
   useEffect(() => {
@@ -1717,16 +1728,6 @@ export default function EditBookingPage() {
 
     dispatchAsync({ type: "SUBMIT_START" });
 
-    const therapistNote =
-      therapistGender === "male"
-        ? "Terapeuta: Masculino"
-        : therapistGender === "female"
-          ? "Terapeuta: Femenina"
-          : "";
-    const composedNotes = [therapistNote, notes.trim()]
-      .filter(Boolean)
-      .join("\n\n");
-
     const { error: updateErrorMsg } = await updateBookingByAdmin(
       getAccessToken(),
       id,
@@ -1740,7 +1741,8 @@ export default function EditBookingPage() {
         time: selectedTime || null,
         location: location || null,
         location_address: locationAddress,
-        notes: composedNotes || null,
+        staff_id: staffId || null,
+        notes: notes.trim() || null,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
@@ -2049,26 +2051,25 @@ export default function EditBookingPage() {
             onSelect={(id) => dispatchForm({ type: "SET_TIER", id })}
           />
 
-          {/* ── 4b. Therapist preference (manual-therapies only) ── */}
-          {serviceId === "manual-therapies" && tierId !== "" && (
+          {/* ── 4b. Who performs it, among those assigned to the tier ── */}
+          {tierId !== "" && tierStaff.length > 0 && (
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {tForm("steps.therapistPreference")}
+                {tForm("steps.staff")}
               </h2>
-              <select
-                value={therapistGender}
-                onChange={(e) =>
-                  dispatchForm({
-                    type: "SET_THERAPIST_GENDER",
-                    value: e.target.value as "male" | "female" | "",
-                  })
+              <StaffSelect
+                options={tierStaff}
+                selected={staffId || null}
+                onSelect={(person) =>
+                  dispatchForm({ type: "SET_STAFF", value: person.id })
                 }
-                className={INPUT_CLASS}
-              >
-                <option value="">{tForm("therapist.placeholder")}</option>
-                <option value="male">{tForm("therapist.male")}</option>
-                <option value="female">{tForm("therapist.female")}</option>
-              </select>
+                labels={{
+                  fieldLabel: tForm("steps.staff"),
+                  placeholder: tForm("staff.placeholder"),
+                  modalTitle: tForm("steps.staff"),
+                  close: tCommonLabels("cancel"),
+                }}
+              />
             </div>
           )}
 

@@ -8,13 +8,10 @@ import {
   isAvailableDay,
   isSameDay,
   getCalendarDays,
-  getTimeSlots,
-  getTimeSlotsForDashboard,
   getLocalizedMonthName,
   getLocalizedDayNames,
 } from "@/utils/calendar-helpers";
-
-type BusyInterval = { start: string; end: string };
+import { fetchAvailability, type Availability } from "@/actions/availability";
 
 function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -27,7 +24,7 @@ function CalendarView({
   viewMonth,
   onPrevMonth,
   onNextMonth,
-  fullyBlockedDates,
+  openDates,
   loadingMonth,
   locale,
 }: {
@@ -37,7 +34,8 @@ function CalendarView({
   viewMonth: number;
   onPrevMonth: () => void;
   onNextMonth: () => void;
-  fullyBlockedDates: Set<string>;
+  /** Dates with at least one free hour. Everything else is closed. */
+  openDates: Set<string>;
   loadingMonth: boolean;
   locale: string;
 }) {
@@ -86,10 +84,8 @@ function CalendarView({
         {days.map((day, i) => {
           const cellKey = day ? localDateStr(day) : `empty-${i}`;
           if (!day) return <div key={cellKey} />;
-          const baseAvailable = isAvailableDay(day);
-          const isBlocked =
-            baseAvailable && fullyBlockedDates.has(localDateStr(day));
-          const available = baseAvailable && !isBlocked;
+          const available =
+            isAvailableDay(day) && openDates.has(localDateStr(day));
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
@@ -120,7 +116,8 @@ function CalendarView({
 
 export function DateTimeStep({
   service,
-  serviceId,
+  tierId,
+  staffId,
   durationMinutes,
   selectedDate,
   selectedTime,
@@ -128,7 +125,10 @@ export function DateTimeStep({
   onSelectTime,
 }: {
   service: BookableService;
-  serviceId: string;
+  /** The chosen session type: its assigned staff decide the hours. */
+  tierId: string | null;
+  /** Narrows availability to one person once the visitor has picked. */
+  staffId?: string | null;
   durationMinutes?: number;
   selectedDate: Date | null;
   selectedTime: string | null;
@@ -146,88 +146,54 @@ export function DateTimeStep({
     selectedDate ? "time" : "date",
   );
 
-  // Month-level busy intervals (for blocking days in the calendar)
-  const [monthBusy, setMonthBusy] = useState<BusyInterval[]>([]);
-  const [loadingMonth, setLoadingMonth] = useState(false);
+  // What the assigned staff's schedules leave free, by date. Google Calendar
+  // is not consulted: it receives the bookings we confirm, it does not decide
+  // which hours exist.
+  const [availability, setAvailability] = useState<Availability>({});
+  const [loadingMonth, setLoadingMonth] = useState(true);
 
-  // Day-level busy intervals (for slot display after date is selected)
-  const [busyIntervals, setBusyIntervals] = useState<BusyInterval[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const sessionMinutes =
+    durationMinutes ??
+    (service.durations.length > 0
+      ? parseInt(service.durations[0]!, 10) || 60
+      : 60);
 
-  // Pre-fetch busy intervals for the whole visible month
   useEffect(() => {
     let cancelled = false;
-    async function fetchMonth() {
-      setLoadingMonth(true);
-      try {
-        const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
-        const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-        const endDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-        const res = await fetch(
-          `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
-        );
-        if (res.ok && !cancelled) {
-          const json = (await res.json()) as { busy: BusyInterval[] };
-          setMonthBusy(json.busy ?? []);
-        }
-      } catch {
-        // fail-open: no blocking
-      } finally {
-        if (!cancelled) setLoadingMonth(false);
-      }
-    }
-    void fetchMonth();
+    const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const month = String(viewMonth + 1).padStart(2, "0");
+
+    void (
+      tierId
+        ? fetchAvailability({
+            tierId,
+            staffId: staffId ?? null,
+            from: `${viewYear}-${month}-01`,
+            to: `${viewYear}-${month}-${String(lastDay).padStart(2, "0")}`,
+            durationMinutes: sessionMinutes,
+          })
+        : Promise.resolve({} as Availability)
+    ).then((result) => {
+      if (cancelled) return;
+      setAvailability(result);
+      setLoadingMonth(false);
+    });
+
     return () => {
       cancelled = true;
     };
-  }, [serviceId, viewYear, viewMonth]);
+  }, [tierId, staffId, viewYear, viewMonth, sessionMinutes]);
 
-  // Compute which available days in this month are fully booked
-  const fullyBlockedDates = useMemo(() => {
-    const blocked = new Set<string>();
-    if (monthBusy.length === 0) return blocked;
-    const days = getCalendarDays(viewYear, viewMonth);
-    for (const day of days) {
-      if (!day || !isAvailableDay(day)) continue;
-      const slots = durationMinutes
-        ? getTimeSlotsForDashboard(
-            day,
-            service.category,
-            durationMinutes,
-            monthBusy,
-          )
-        : getTimeSlots(day, service, monthBusy);
-      if (slots.length > 0 && slots.every((s) => s.booked)) {
-        blocked.add(localDateStr(day));
-      }
-    }
-    return blocked;
-  }, [monthBusy, viewYear, viewMonth, service, durationMinutes]);
-
-  const fetchBusyIntervals = async (d: Date) => {
-    setLoadingSlots(true);
-    try {
-      const res = await fetch(
-        `/api/google/calendar/freebusy?service_id=${serviceId}&date=${localDateStr(d)}`,
-      );
-      if (res.ok) {
-        const json = (await res.json()) as { busy: BusyInterval[] };
-        setBusyIntervals(json.busy ?? []);
-      } else {
-        setBusyIntervals([]);
-      }
-    } catch {
-      setBusyIntervals([]);
-    } finally {
-      setLoadingSlots(false);
-    }
-  };
+  // A day nobody works, or one whose hours are all taken, is not offered.
+  const openDates = useMemo(
+    () => new Set(Object.keys(availability)),
+    [availability],
+  );
 
   const handleDateSelect = (d: Date) => {
     onSelectDate(d);
     onSelectTime("");
     setView("time");
-    void fetchBusyIntervals(d);
   };
 
   const handleChangeDate = () => {
@@ -249,18 +215,9 @@ export function DateTimeStep({
     } else setViewMonth((m) => m + 1);
   };
 
-  const slots = selectedDate
-    ? durationMinutes
-      ? getTimeSlotsForDashboard(
-          selectedDate,
-          service.category,
-          durationMinutes,
-          busyIntervals,
-        )
-      : getTimeSlots(selectedDate, service, busyIntervals)
-    : [];
-
-  const availableSlots = slots.filter((s) => !s.booked);
+  const availableSlots = (
+    selectedDate ? (availability[localDateStr(selectedDate)] ?? []) : []
+  ).map((time) => ({ time, booked: false }));
 
   return view === "date" ? (
     <div className="mx-auto inline-block w-full rounded-2xl bg-white p-5">
@@ -271,7 +228,7 @@ export function DateTimeStep({
         viewMonth={viewMonth}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
-        fullyBlockedDates={fullyBlockedDates}
+        openDates={openDates}
         loadingMonth={loadingMonth}
         locale={dateLocale}
       />
@@ -298,7 +255,7 @@ export function DateTimeStep({
 
       <div className="flex flex-col gap-3">
         <p className="text-petroleum-400 text-sm">{t("availableTimes")}</p>
-        {loadingSlots ? (
+        {loadingMonth ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div

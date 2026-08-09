@@ -12,6 +12,7 @@ import { Button } from "@components/ui/button";
 import {
   bookableServices,
   facialTreatments,
+  ivProtocols,
   manualTherapyTreatments,
   type BookableService,
 } from "@/data/services-data";
@@ -50,8 +51,11 @@ type BookingState = {
   selectedTierId: string | null;
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  /** The same session type's online price, when it differs. */
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
-  therapistGender: "male" | "female" | null;
+  staffId: string | null;
+  staffName: string | null;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -63,12 +67,13 @@ type BookingAction =
   | { type: "SELECT_SERVICE"; service: BookableService | null }
   | {
       type: "SELECT_TIER";
+      priceOnline: number | null;
       tierId: string;
       label: string | null;
       duration: string | null;
       price: number | null;
     }
-  | { type: "SELECT_THERAPIST_GENDER"; gender: "male" | "female" }
+  | { type: "SELECT_STAFF"; staffId: string; staffName: string }
   | { type: "SELECT_DATE"; date: Date | null }
   | { type: "SELECT_TIME"; time: string }
   | { type: "SET_STEP"; step: number }
@@ -87,8 +92,10 @@ function bookingReducer(
         selectedService: action.service,
         selectedTierId: null,
         selectedTierPrice: null,
+        selectedTierPriceOnline: null,
         selectedDuration: null,
-        therapistGender: null,
+        staffId: null,
+        staffName: null,
       };
     case "SELECT_TIER":
       return {
@@ -96,10 +103,16 @@ function bookingReducer(
         selectedTierId: action.tierId,
         selectedTierLabel: action.label,
         selectedTierPrice: action.price,
+        selectedTierPriceOnline: action.priceOnline,
         selectedDuration: action.duration,
+        // Assignments are per session type, so a different tier can mean a
+        // different set of people: whoever was picked may not be among them.
+        ...(action.tierId !== state.selectedTierId
+          ? { staffId: null, staffName: null }
+          : {}),
       };
-    case "SELECT_THERAPIST_GENDER":
-      return { ...state, therapistGender: action.gender };
+    case "SELECT_STAFF":
+      return { ...state, staffId: action.staffId, staffName: action.staffName };
     case "SELECT_DATE":
       return { ...state, selectedDate: action.date };
     case "SELECT_TIME":
@@ -127,8 +140,10 @@ function initState({ slug, startStep }: InitArg): BookingState {
       selectedTierId: null,
       selectedTierLabel: null,
       selectedTierPrice: null,
+      selectedTierPriceOnline: null,
       selectedDuration: null,
-      therapistGender: null,
+      staffId: null,
+      staffName: null,
       selectedDate: null,
       selectedTime: null,
       details: saved.details ?? EMPTY_DETAILS,
@@ -147,8 +162,10 @@ function initState({ slug, startStep }: InitArg): BookingState {
       (saved as { selectedTierLabel?: string | null }).selectedTierLabel ??
       null,
     selectedTierPrice: saved.selectedTierPrice ?? null,
+    selectedTierPriceOnline: saved.selectedTierPriceOnline ?? null,
     selectedDuration: saved.selectedDuration ?? null,
-    therapistGender: saved.therapistGender ?? null,
+    staffId: saved.staffId ?? null,
+    staffName: saved.staffName ?? null,
     selectedDate: saved.selectedDate ? new Date(saved.selectedDate) : null,
     selectedTime: saved.selectedTime ?? null,
     details: saved.details ?? EMPTY_DETAILS,
@@ -258,8 +275,11 @@ type BookingStepRendererProps = {
   selectedTierId: string | null;
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
-  therapistGender: "male" | "female" | null;
+  staffId: string | null;
+  staffName: string | null;
+  onStaffLoaded: (hasStaff: boolean) => void;
   selectedDate: Date | null;
   selectedTime: string | null;
   details: DetailsState;
@@ -277,8 +297,11 @@ function BookingStepRenderer({
   selectedTierId,
   selectedTierLabel,
   selectedTierPrice,
+  selectedTierPriceOnline,
   selectedDuration,
-  therapistGender,
+  staffId,
+  staffName,
+  onStaffLoaded,
   selectedDate,
   selectedTime,
   details,
@@ -301,7 +324,7 @@ function BookingStepRenderer({
         <DurationStep
           serviceId={selectedService.id}
           selectedTierId={selectedTierId}
-          therapistGender={therapistGender}
+          staffId={staffId}
           preselectedLabel={preselectedLabel}
           onSelect={(sel: TierSelection) =>
             dispatch({
@@ -310,10 +333,16 @@ function BookingStepRenderer({
               label: sel.label,
               duration: sel.duration,
               price: sel.price,
+              priceOnline: sel.priceOnline,
             })
           }
-          onSelectGender={(g) =>
-            dispatch({ type: "SELECT_THERAPIST_GENDER", gender: g })
+          onStaffLoaded={onStaffLoaded}
+          onSelectStaff={(person) =>
+            dispatch({
+              type: "SELECT_STAFF",
+              staffId: person.id,
+              staffName: person.name,
+            })
           }
         />
       )}
@@ -328,7 +357,8 @@ function BookingStepRenderer({
       {currentStepId === "datetime" && selectedService && (
         <DateTimeStep
           service={selectedService}
-          serviceId={selectedService.id}
+          tierId={selectedTierId}
+          staffId={staffId}
           durationMinutes={
             selectedDuration
               ? parseInt(selectedDuration, 10) || undefined
@@ -343,13 +373,15 @@ function BookingStepRenderer({
       {currentStepId === "confirm" && selectedService && selectedTierId && (
         <ConfirmStep
           service={selectedService}
+          tierId={selectedTierId}
           tierLabel={selectedTierLabel}
           duration={selectedDuration ?? ""}
           price={selectedTierPrice}
+          priceOnline={selectedTierPriceOnline}
           date={selectedDate}
           time={selectedTime}
           details={details}
-          therapistGender={therapistGender}
+          staffName={staffName}
           paymentMethod={paymentMethod}
           onPaymentMethodChange={onPaymentMethodChange}
         />
@@ -396,9 +428,10 @@ function BookingContentInner() {
   const get = searchParams.get.bind(searchParams);
   const slug = get("service") ?? get("wellness") ?? get("medicine");
   const treatmentId = get("treatment");
-  // Both families deep-link into the form; the tier is matched by label.
+  // All three families deep-link into the form, and the tier is matched by
+  // label, so these titles have to read exactly as `service_tiers.label` does.
   const preselectedLabel = treatmentId
-    ? ([...manualTherapyTreatments, ...facialTreatments].find(
+    ? ([...manualTherapyTreatments, ...facialTreatments, ...ivProtocols].find(
         (t) => t.id === treatmentId,
       )?.title ?? null)
     : null;
@@ -408,7 +441,10 @@ function BookingContentInner() {
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
   // Paying online carries the discount; paying at the centre is full price.
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
-  const [hasCalendar, setHasCalendar] = useState<boolean>(true);
+  // A session type with nobody assigned cannot be performed, so the form stops
+  // at the session-type step instead of walking the visitor to an empty
+  // calendar and a booking nobody can honour.
+  const [tierHasStaff, setTierHasStaff] = useState(false);
   const { contactId, bookingId, memberBlocker, checking } = local;
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
@@ -443,8 +479,10 @@ function BookingContentInner() {
     selectedTierId,
     selectedTierLabel,
     selectedTierPrice,
+    selectedTierPriceOnline,
     selectedDuration,
-    therapistGender,
+    staffId,
+    staffName,
     selectedDate,
     selectedTime,
     details,
@@ -458,8 +496,10 @@ function BookingContentInner() {
       selectedTierId,
       selectedTierLabel,
       selectedTierPrice,
+      selectedTierPriceOnline,
       selectedDuration,
-      therapistGender,
+      staffId,
+      staffName,
       selectedDate: selectedDate?.toISOString() ?? null,
       selectedTime,
       details,
@@ -470,25 +510,16 @@ function BookingContentInner() {
     selectedTierId,
     selectedTierLabel,
     selectedTierPrice,
+    selectedTierPriceOnline,
     selectedDuration,
-    therapistGender,
+    staffId,
+    staffName,
     selectedDate,
     selectedTime,
     details,
   ]);
 
-  useEffect(() => {
-    if (!state.selectedService) return;
-    fetch(
-      `/api/google/calendar/has-calendar?service_id=${state.selectedService.id}`,
-    )
-      .then((r) => r.json())
-      .then((d: { hasCalendar: boolean }) => setHasCalendar(d.hasCalendar))
-      .catch(() => setHasCalendar(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.selectedService?.id]);
-
-  const rawSteps = buildSteps(hasCalendar);
+  const rawSteps = buildSteps();
   const activeSteps = rawSteps.map((s) => ({
     ...s,
     label: tSteps(
@@ -499,13 +530,14 @@ function BookingContentInner() {
   const isLastStep = step === activeSteps.length - 1;
   const nextStepLabel = activeSteps[step + 1]?.label;
 
-  const isManualTherapies = selectedService?.id === "manual-therapies";
   const canProceed: Record<string, boolean> = {
     service: !!selectedService,
-    duration: !!selectedTierId && (!isManualTherapies || !!therapistGender),
+    // Which person is optional — the centre can allocate one — but somebody
+    // has to be able to perform the treatment.
+    duration: !!selectedTierId && tierHasStaff,
     details: bookingDetailsSchema.safeParse(details).success,
     datetime: !!(selectedDate && selectedTime),
-    confirm: !hasCalendar || !!(selectedDate && selectedTime),
+    confirm: !!(selectedDate && selectedTime),
   };
 
   const handleNextFromDetails = async () => {
@@ -604,7 +636,7 @@ function BookingContentInner() {
         user?.id ?? null,
         user?.id ? "client" : "anonymous",
         details.notes?.trim() || null,
-        therapistGender,
+        staffId,
         paymentMethod,
       );
     }
@@ -644,16 +676,7 @@ function BookingContentInner() {
         timeStr ?? "",
       );
     } else {
-      const therapistNote =
-        therapistGender === "male"
-          ? "Terapeuta: Masculino"
-          : therapistGender === "female"
-            ? "Terapeuta: Femenina"
-            : null;
-      const composedNotes =
-        [therapistNote, details.notes?.trim() || null]
-          .filter(Boolean)
-          .join("\n\n") || null;
+      const composedNotes = details.notes?.trim() || null;
       const { data } = await insforge.database
         .from("bookings")
         .insert([
@@ -663,7 +686,13 @@ function BookingContentInner() {
             service_id: selectedService.id,
             service_title: selectedService.title,
             tier_id: selectedTierId,
-            price_eur: selectedTierPrice,
+            ...(staffId ? { staff_id: staffId } : {}),
+            // What this booking will actually be charged, which is the online
+            // price when they pay now and the centre price when they don't.
+            price_eur:
+              paymentMethod === "online"
+                ? (selectedTierPriceOnline ?? selectedTierPrice)
+                : selectedTierPrice,
             duration: selectedDuration ?? "",
             location: "centro",
             ...(composedNotes ? { notes: composedNotes } : {}),
@@ -737,7 +766,6 @@ function BookingContentInner() {
       body: JSON.stringify({
         bookingId: resolvedBookingId ?? "",
         tierId: selectedTierId,
-        amountEur: selectedTierPrice,
         email: details.email,
         name: `${details.firstName} ${details.lastName}`.trim(),
         description: tServiceStep(`services.${selectedService.id}.title`),
@@ -771,8 +799,11 @@ function BookingContentInner() {
         selectedService={selectedService}
         selectedTierId={selectedTierId}
         selectedTierPrice={selectedTierPrice}
+        selectedTierPriceOnline={selectedTierPriceOnline}
         selectedDuration={selectedDuration}
-        therapistGender={therapistGender}
+        staffId={staffId}
+        staffName={staffName}
+        onStaffLoaded={setTierHasStaff}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         details={details}

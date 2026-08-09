@@ -208,5 +208,76 @@
     },
     "breadcrumbHome": "Inicio",
     "breadcrumbMedicine": "Medicina"
+  },
+  "iv": {
+    "eyebrow": "Nuestros protocolos IV",
+    "heading": "Un protocolo para cada momento",
+    "subtitle": "Cada protocolo está diseñado con un propósito específico. La valoración previa nos ayuda a seleccionar el que mejor se adapta a lo que tu cuerpo necesita hoy.",
+    "book": "Reservar",
+    "disclaimer": "Los protocolos intravenosos se administran siempre bajo valoración y supervisión sanitaria. No sustituyen a un tratamiento médico ni a una dieta equilibrada, y no todos son adecuados para todas las personas.",
+    "protocols": {
+      "essentia-iv-signature": {
+        "title": "Essentia IV Signature",
+        "meta": "DRENAJE + IV THERAPY",
+        "description": "Drenaje Linfático Avanzado · Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina."
+      },
+      "power-drip": {
+        "title": "Power Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo intravenoso orientado a momentos de baja energía, jornadas exigentes o mayor desgaste. Combina vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar vitalidad y recuperación."
+      },
+      "immunity-drip": {
+        "title": "Immunity Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo con vitamina C, zinc, vitaminas del grupo B y glutatión, diseñado como apoyo nutricional en periodos de mayor exigencia y para acompañar el funcionamiento normal del sistema inmunitario."
+      },
+      "nirvana-drip": {
+        "title": "Nirvana Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo centrado en relajación y bienestar durante periodos de estrés o descanso deficiente. Combina magnesio, vitaminas del grupo B y triptófano para acompañar calma y recuperación."
+      },
+      "stress-balance": {
+        "title": "Stress Balance",
+        "meta": "45–60 MIN",
+        "description": "Protocolo pensado para momentos de estrés, tensión mental o descanso insuficiente. Combina magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar relajación y bienestar."
+      },
+      "beauty-hair-glow": {
+        "title": "Beauty & Hair Glow",
+        "meta": "45–60 MIN",
+        "description": "Protocolo enfocado en el cuidado de piel y cabello desde dentro. Combina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados dentro de una experiencia orientada al bienestar estético."
+      },
+      "vitamin-c": {
+        "title": "Vitamina C",
+        "meta": "45–60 MIN",
+        "description": "Protocolo intravenoso de alta concentración en vitamina C, orientado al apoyo antioxidante y al bienestar general. Una opción específica que debe seleccionarse siempre tras valoración sanitaria individual."
+      },
+      "nad-plus": {
+        "title": "NAD+",
+        "meta": "45–60 MIN",
+        "description": "Protocolo centrado en rendimiento celular, claridad mental y recuperación energética. También puede añadirse a cualquier otro protocolo como refuerzo."
+      },
+      "resurrection-drip": {
+        "title": "Resurrection Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo de hidratación y recuperación pensado para momentos de mayor desgaste. Combina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc para acompañar la rehidratación."
+      },
+      "body-drip": {
+        "title": "Body Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo con complejo MIC, vitaminas del grupo B y ácido alfa lipoico, planteado desde una mirada metabólica y corporal para complementar objetivos de bienestar y composición corporal."
+      },
+      "fit-drip": {
+        "title": "Fit Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo pensado para actividad física, recuperación y periodos de mayor exigencia. Combina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar hidratación y recuperación."
+      },
+      "calm-drip": {
+        "title": "Calm Drip",
+        "meta": "45–60 MIN",
+        "description": "Protocolo orientado al descanso y la relajación, especialmente en periodos de mayor estrés. Combina triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar calma y recuperación."
+      }
+    },
+    "metaSuffix": "Essentia Medicine",
+    "view": "Ver protocolo"
   }
 }

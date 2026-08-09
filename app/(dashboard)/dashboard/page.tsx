@@ -9,13 +9,15 @@ import { fetchBusySlots, fetchCalendarBusy } from "@/actions/busy-slots";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
-import type {
-  BusySlot,
-  CalendarView,
-  CalendarEvent,
-  UpcomingRace,
-  UpcomingSession,
-} from "@/types/calendar";
+import { Button } from "@/components/ui/button";
+import { IconPlus, IconFilter } from "@/components/ui/icons";
+import {
+  CalendarFiltersModal,
+  EMPTY_FILTERS,
+  activeFilterCount,
+  type CalendarFilters,
+} from "@/components/dashboard/calendar/calendar-filters-modal";
+import type { BusySlot, CalendarView, CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getWeekDays,
@@ -54,11 +56,12 @@ function calNavReducer(state: CalNav, action: CalNavAction): CalNav {
 import { MonthGrid } from "@/components/dashboard/calendar/month-grid";
 import { WeekGrid } from "@/components/dashboard/calendar/week-grid";
 import { DayList } from "@/components/dashboard/calendar/day-list";
-import { UpcomingRaceCard } from "@/components/dashboard/calendar/upcoming-race-card";
-import { UpcomingSessionCard } from "@/components/dashboard/calendar/upcoming-session-card";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard.calendar");
+  const tTooltip = useTranslations("dashboard.calendar.tooltip");
+  const tFilters = useTranslations("dashboard.calendar.filters");
+  const tBookings = useTranslations("dashboard.bookings");
   const locale = useLocale();
   const { push } = useRouter();
   const { user } = useAuth();
@@ -74,17 +77,56 @@ export default function DashboardPage() {
   // A booking whose owner has no name — still a booking, not a calendar hole.
   const bookedLabel = t("booked");
 
-  // Upcoming
-  const [upcoming, setUpcoming] = useState<{
-    loading: boolean;
-    race: UpcomingRace | null;
-    session: UpcomingSession | null;
-  }>({ loading: true, race: null, session: null });
-  const {
-    loading: upcomingLoading,
-    race: upcomingRace,
-    session: upcomingSession,
-  } = upcoming;
+  // Filters. They narrow the query rather than the drawn events, so a month
+  // with two hundred bookings does not have to be fetched to show three.
+  const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [staffOptions, setStaffOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [tierOptions, setTierOptions] = useState<
+    { id: string; label: string; service_id: string }[]
+  >([]);
+
+  useEffect(() => {
+    async function loadFilterOptions() {
+      const [staffRes, tiersRes] = await Promise.all([
+        insforge.database
+          .from("profiles")
+          .select("id, full_name, first_name")
+          .eq("role", "staff")
+          .order("full_name"),
+        insforge.database
+          .from("service_tiers")
+          .select("id, label, service_id")
+          .eq("active", true)
+          .order("sort_order"),
+      ]);
+      setStaffOptions(
+        (
+          (staffRes.data ?? []) as {
+            id: string;
+            full_name: string | null;
+            first_name: string | null;
+          }[]
+        ).map((r) => ({ id: r.id, name: r.full_name ?? r.first_name ?? "—" })),
+      );
+      setTierOptions(
+        (
+          (tiersRes.data ?? []) as {
+            id: string;
+            label: string | null;
+            service_id: string;
+          }[]
+        ).map((r) => ({
+          id: r.id,
+          label: r.label ?? "—",
+          service_id: r.service_id,
+        })),
+      );
+    }
+    void loadFilterOptions();
+  }, []);
 
   // Calendar navigation — useReducer eliminates separate view/anchor useState
   const [calNav, dispatchCalNav] = useReducer(calNavReducer, {
@@ -98,36 +140,6 @@ export default function DashboardPage() {
     events: CalendarEvent[];
   }>({ loading: true, events: [] });
   const { loading: calendarLoading, events: calendarEvents } = calendar;
-
-  // Load upcoming race + session once
-  useEffect(() => {
-    async function loadUpcoming() {
-      const todayStr = toYMD(new Date());
-      const nowIso = new Date().toISOString();
-      const [raceRes, sessionRes] = await Promise.all([
-        insforge.database
-          .from("races")
-          .select("id, title, date, location, distance_km, image_url")
-          .gte("date", todayStr)
-          .order("date", { ascending: true })
-          .limit(1),
-        insforge.database
-          .from("education_sessions")
-          .select(
-            "id, title, date, location, speaker, duration_minutes, image_url",
-          )
-          .gte("date", nowIso)
-          .order("date", { ascending: true })
-          .limit(1),
-      ]);
-      setUpcoming({
-        loading: false,
-        race: (raceRes.data as UpcomingRace[] | null)?.[0] ?? null,
-        session: (sessionRes.data as UpcomingSession[] | null)?.[0] ?? null,
-      });
-    }
-    void loadUpcoming();
-  }, []);
 
   // Load all calendar events when view/anchor changes
   useEffect(() => {
@@ -155,7 +167,7 @@ export default function DashboardPage() {
       let bookingsQuery = insforge.database
         .from("bookings")
         .select(
-          "id, date, time, service_id, service_title, first_name, last_name",
+          "id, date, time, service_id, service_title, tier_id, staff_id, duration, status, first_name, last_name",
         )
         .gte("date", fromDate)
         .lte("date", toDate)
@@ -164,6 +176,21 @@ export default function DashboardPage() {
       if (isPartner && user?.id) {
         bookingsQuery = bookingsQuery.eq("partner_id", user.id);
       }
+
+      if (filters.staffId)
+        bookingsQuery = bookingsQuery.eq("staff_id", filters.staffId);
+      if (filters.serviceId)
+        bookingsQuery = bookingsQuery.eq("service_id", filters.serviceId);
+      if (filters.tierId)
+        bookingsQuery = bookingsQuery.eq("tier_id", filters.tierId);
+
+      // Races, sessions and calendar holes are not bookings, so no filter can
+      // describe them: with one set, only the matching bookings are drawn.
+      const filtering = !!(
+        filters.staffId ||
+        filters.serviceId ||
+        filters.tierId
+      );
 
       // Partners cannot read anyone else's bookings, so those slots would show
       // up empty and bookable. Pull them as anonymous blocks instead, plus
@@ -178,26 +205,79 @@ export default function DashboardPage() {
           : Promise.resolve([] as { start: string; end: string }[]),
       ]);
 
-      const [racesRes, sessionsRes] = isPartner
-        ? [{ data: null }, { data: null }]
-        : await Promise.all([
-            insforge.database
-              .from("races")
-              .select("id, title, date, location")
-              .gte("date", fromDate)
-              .lte("date", toDateEnd),
-            insforge.database
-              .from("education_sessions")
-              .select("id, title, date, location, speaker")
-              .gte("date", fromDate)
-              .lte("date", toDateEnd),
-          ]);
+      const [racesRes, sessionsRes] =
+        isPartner || filtering
+          ? [{ data: null }, { data: null }]
+          : await Promise.all([
+              insforge.database
+                .from("races")
+                .select("id, title, date, location")
+                .gte("date", fromDate)
+                .lte("date", toDateEnd),
+              insforge.database
+                .from("education_sessions")
+                .select("id, title, date, location, speaker")
+                .gte("date", fromDate)
+                .lte("date", toDateEnd),
+            ]);
+
+      // The calendar is read by colour, and a whole service in one colour says
+      // nothing: every booking of Terapias Manuales looked alike. Colour comes
+      // from the session type, which is unique per treatment, and only falls
+      // back to the service when a booking has no type.
+      const tierColors = new Map<string, string>();
+      const tierLabels = new Map<string, string>();
+      const tierIds = [
+        ...new Set(
+          ((bookingsRes.data ?? []) as Record<string, unknown>[])
+            .map((b) => b.tier_id as string | null)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+      if (tierIds.length > 0) {
+        const { data: tierRows } = await insforge.database
+          .from("service_tiers")
+          .select("id, label, color")
+          .in("id", tierIds);
+        for (const row of (tierRows ?? []) as {
+          id: string;
+          label: string | null;
+          color: string | null;
+        }[]) {
+          if (row.color) tierColors.set(row.id, row.color);
+          if (row.label) tierLabels.set(row.id, row.label);
+        }
+      }
+
+      const staffNames = new Map<string, string>();
+      const staffIdsInView = [
+        ...new Set(
+          ((bookingsRes.data ?? []) as Record<string, unknown>[])
+            .map((b) => b.staff_id as string | null)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+      if (staffIdsInView.length > 0) {
+        const { data: staffRows } = await insforge.database
+          .from("profiles")
+          .select("id, full_name, first_name")
+          .in("id", staffIdsInView);
+        for (const row of (staffRows ?? []) as {
+          id: string;
+          full_name: string | null;
+          first_name: string | null;
+        }[]) {
+          staffNames.set(row.id, row.full_name ?? row.first_name ?? "—");
+        }
+      }
 
       const events: CalendarEvent[] = [];
 
       for (const b of (bookingsRes.data ?? []) as Record<string, unknown>[]) {
         const serviceId = b.service_id as string | null;
+        const tierId = b.tier_id as string | null;
         const color =
+          (tierId && tierColors.get(tierId)) ||
           (serviceId && settings.services[serviceId]) ||
           (serviceId && DEFAULT_COLORS.services[serviceId]) ||
           "#64748b";
@@ -205,12 +285,38 @@ export default function DashboardPage() {
           [b.first_name, b.last_name].filter(Boolean).join(" ") ||
           (b.service_title as string) ||
           bookingFallback;
+        const staffId = b.staff_id as string | null;
+        // A pill only has room for a name; the rest goes in the hover card.
+        const tooltip = [
+          [b.time as string | null, b.duration as string | null]
+            .filter(Boolean)
+            .join(" · "),
+          name,
+          [
+            b.service_title as string | null,
+            tierId ? tierLabels.get(tierId) : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          staffId
+            ? `${tTooltip("staff")}: ${staffNames.get(staffId) ?? "—"}`
+            : tTooltip("noStaff"),
+        ]
+          .filter(Boolean)
+          .join("\n");
+
         events.push({
           id: b.id as string,
           date: (b.date as string).slice(0, 10),
           time: b.time as string | null,
           title: name,
-          subtitle: b.service_title as string | undefined,
+          // The treatment is what tells one booking from another; the service
+          // is the same for a dozen of them.
+          subtitle:
+            (tierId ? tierLabels.get(tierId) : null) ??
+            (b.service_title as string | undefined),
+          tooltip,
+          status: (b.status as string | null) ?? undefined,
           color,
           href: `/dashboard/bookings/${b.id}`,
           type: "booking",
@@ -303,6 +409,8 @@ export default function DashboardPage() {
     busyLabel,
     bookedByLabel,
     bookedLabel,
+    tTooltip,
+    filters,
   ]);
 
   const eventsByDay = groupByDate(calendarEvents);
@@ -330,9 +438,37 @@ export default function DashboardPage() {
   return (
     <div className="py-8">
       {/* Main grid */}
-      <div
-        className={`grid grid-cols-1 gap-6 lg:px-10 ${!isPartner ? "xl:grid-cols-[1fr_300px]" : ""}`}
-      >
+      <div className="grid grid-cols-1 gap-6 lg:px-10">
+        {/* Actions — create on the left, filters on the right */}
+        {!isPartner && (
+          <div className="flex items-center justify-between gap-3 px-5 lg:px-0">
+            <Button
+              variant="solid"
+              size="md"
+              href="/dashboard/bookings/new"
+              className="gap-2"
+            >
+              <IconPlus />
+              {tBookings("createBooking")}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setFiltersOpen(true)}
+              className="gap-2"
+            >
+              <IconFilter />
+              {tFilters("title")}
+              {activeFilterCount(filters) > 0 && (
+                <span className="bg-petroleum-700 flex size-5 items-center justify-center rounded-full text-xs text-white">
+                  {activeFilterCount(filters)}
+                </span>
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* Calendar */}
         <div className="border-sand-200 border-y bg-white lg:overflow-hidden lg:rounded-2xl lg:border">
           {/* Calendar header */}
@@ -426,18 +562,20 @@ export default function DashboardPage() {
             />
           )}
         </div>
-
-        {/* Right sidebar */}
-        {!isPartner && (
-          <div className="space-y-4">
-            <UpcomingRaceCard race={upcomingRace} loading={upcomingLoading} />
-            <UpcomingSessionCard
-              session={upcomingSession}
-              loading={upcomingLoading}
-            />
-          </div>
-        )}
       </div>
+
+      {filtersOpen && (
+        <CalendarFiltersModal
+          filters={filters}
+          staffOptions={staffOptions}
+          tierOptions={tierOptions}
+          onApply={(next) => {
+            setFilters(next);
+            setFiltersOpen(false);
+          }}
+          onClose={() => setFiltersOpen(false)}
+        />
+      )}
     </div>
   );
 }

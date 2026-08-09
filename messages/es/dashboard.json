@@ -15,7 +15,8 @@
     "reviews": "Testimonios",
     "races": "Carreras",
     "education": "Formación",
-    "blog": "Blog"
+    "blog": "Blog",
+    "settings": "Ajustes"
   },
   "breadcrumbs": {
     "sections": {
@@ -223,7 +224,7 @@
       "service": "Servicio",
       "location": "Ubicación",
       "datetime": "Fecha y hora",
-      "reservedBy": "Reservado por"
+      "reservedBy": "Reservado"
     },
     "form": {
       "title": "Nueva reserva",
@@ -234,9 +235,9 @@
         "service": "Servicio",
         "location": "Ubicación",
         "sessionType": "Tipo de sesión",
-        "therapistPreference": "Preferencia de terapeuta",
         "datetime": "Fecha y hora",
-        "client": "Cliente"
+        "client": "Cliente",
+        "staff": "Personal"
       },
       "locations": {
         "selectPrompt": "Selecciona una ubicación",
@@ -270,11 +271,6 @@
         "standard": "Estándar"
       },
       "noTiers": "No hay tipos de sesión configurados para este servicio.",
-      "therapist": {
-        "placeholder": "Selecciona preferencia de terapeuta",
-        "male": "Terapeuta hombre",
-        "female": "Terapeuta mujer"
-      },
       "availableTimes": "Horas disponibles",
       "fields": {
         "reservationNumber": "Número de reserva",
@@ -303,6 +299,9 @@
       "errors": {
         "createFailed": "No se pudo crear la reserva.",
         "reservationRequired": "El número de reserva es obligatorio."
+      },
+      "staff": {
+        "placeholder": "Sin asignar"
       }
     },
     "edit": {
@@ -347,7 +346,8 @@
         "status": "Estado",
         "location": "Ubicación",
         "created": "Creada",
-        "reservedBy": "Reservado por"
+        "reservedBy": "Reservado por",
+        "payment": "Pago"
       },
       "sections": {
         "service": "Servicio",
@@ -355,7 +355,8 @@
         "datetime": "Fecha y hora",
         "client": "Cliente",
         "notes": "Notas",
-        "reservedBy": "Reservado por"
+        "reservedBy": "Reservado por",
+        "staff": "Personal"
       },
       "fields": {
         "date": "Fecha",
@@ -380,6 +381,12 @@
         "confirm": "Sí, eliminar",
         "deleting": "Eliminando…"
       }
+    },
+    "paymentStatus": {
+      "paid": "Pagada",
+      "pending": "Pendiente de pago",
+      "failed": "Pago fallido",
+      "refunded": "Reembolsada"
     }
   },
   "transactions": {
@@ -486,7 +493,11 @@
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Género",
         "role": "Rol",
-        "preferredLanguage": "Idioma preferido"
+        "preferredLanguage": "Idioma preferido",
+        "jobTitle": "Cargo",
+        "jobTitlePlaceholder": "p. ej. Fisioterapeuta",
+        "sortOrder": "Orden en el selector",
+        "sortOrderHint": "Número más bajo, aparece antes. Por defecto 100."
       },
       "roles": {
         "client": {
@@ -525,6 +536,7 @@
       "sections": {
         "role": "Rol",
         "details": "Detalles",
+        "photo": "Foto",
         "password": "Contraseña",
         "services": "Servicios"
       },
@@ -550,6 +562,29 @@
         "confirm": "Sí, retirar acceso",
         "removing": "Retirando…"
       }
+    },
+    "schedule": {
+      "heading": "Horario",
+      "hint": "Los días y horas que trabaja. Fuera de este horario no se ofrecen citas, aunque su calendario esté libre.",
+      "interval": "Intervalo entre citas",
+      "days": {
+        "1": "Lunes",
+        "2": "Martes",
+        "3": "Miércoles",
+        "4": "Jueves",
+        "5": "Viernes",
+        "6": "Sábado",
+        "0": "Domingo"
+      }
+    },
+    "calendarBox": {
+      "hint": "Su calendario se consulta al ofrecer horas: las que tenga ocupadas no se muestran.",
+      "connect": "Conectar Google Calendar",
+      "disconnect": "Desconectar Google Calendar",
+      "resync": "Resincronizar reservas",
+      "resyncing": "Resincronizando…",
+      "resynced": "{synced} reservas sincronizadas, {failed} con error.",
+      "resyncFailed": "No se pudo resincronizar."
     }
   },
   "education": {
@@ -911,10 +946,22 @@
     "bookedBy": "Reservado por",
     "booked": "Reservado",
     "newBookingAt": "Nueva reserva a las {time}",
-    "nextRace": "Próxima carrera",
-    "noRaces": "No hay carreras próximas.",
-    "nextSession": "Próxima sesión",
-    "noSessions": "No hay sesiones próximas."
+    "tooltip": {
+      "staff": "Personal",
+      "noStaff": "Sin personal asignado",
+      "status": "Estado"
+    },
+    "filters": {
+      "staff": "Personal",
+      "service": "Servicio",
+      "tier": "Tipo de sesión",
+      "allStaff": "Todo el personal",
+      "allServices": "Todos los servicios",
+      "allTiers": "Todos los tipos",
+      "clear": "Quitar filtros",
+      "title": "Filtros",
+      "apply": "Aplicar"
+    }
   },
   "roles": {
     "admin": "Administrador",
@@ -1084,22 +1131,24 @@
       "editTier": "Editar tipo",
       "active": "Activo",
       "off": "Inactivo",
-      "name": "Nombre",
-      "namePlaceholder": "p. ej. Estándar, 60 min, NAD+",
-      "duration": "Duración (min)",
+      "duration": "Duración",
       "durationPlaceholder": "60",
-      "priceCentre": "Precio — Centro (€)",
+      "priceWeb": "Precio online",
+      "priceWebPlaceholder": "Ej. 90",
+      "priceCentre": "Precio en centro",
       "priceCentrePlaceholder": "90",
-      "priceSuite": "Precio — Suite (€)",
+      "priceSuite": "Precio en Suite",
       "priceSuitePlaceholder": "120",
-      "image": "Imagen",
-      "imageHint": "Se muestra en el selector de tipo de sesión, en la web y aquí. Sin ella, el selector usa el color de abajo.",
       "calendarColor": "Color en el calendario",
       "delete": "Eliminar tipo",
       "deleting": "Eliminando…",
       "update": "Actualizar",
       "save": "Guardar",
-      "saving": "Guardando…"
+      "saving": "Guardando…",
+      "staffHeading": "Personal",
+      "discount": "Descuento online",
+      "discountSaving": "Reservar por la web ahorra {amount} €: {centre} € en el centro, {web} € online.",
+      "colorTaken": "Ese color ya lo usa {label}. Elige otro para no confundirlos en el calendario."
     },
     "payments": {
       "subtitle": "TPV Virtual · Tarjetas, Bizum",
@@ -1124,10 +1173,32 @@
         "name": "Nombre",
         "color": "Color",
         "duration": "Duración",
+        "web": "Web",
         "centre": "Centro",
         "suite": "Suite",
         "status": "Estado"
+      },
+      "card": {
+        "duration": "Duración",
+        "priceWeb": "Precio online",
+        "priceCentre": "Precio centro",
+        "priceSuite": "Precio suite",
+        "staff": "Personal asignado",
+        "noStaff": "Sin personal asignado"
       }
+    },
+    "title": "Ajustes",
+    "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
+    "tabs": {
+      "bookings": "Reservas",
+      "subscriptions": "Suscripciones"
+    },
+    "staff": {
+      "noStaff": "No hay personal dado de alta todavía.",
+      "noCalendar": "sin calendario",
+      "noneWarning": "Sin personal asignado, este tipo de sesión no se puede reservar.",
+      "placeholder": "Selecciona el personal",
+      "ariaLabel": "Personal asignado"
     }
   },
   "services": {
@@ -1137,7 +1208,7 @@
     "breathing-sessions": "Sesiones de respiración",
     "red-light-therapy": "Terapia de luz roja",
     "hyperbaric-chambers": "Cámaras hiperbáricas",
-    "intravenous-therapy": "Terapia intravenosa",
+    "intravenous-therapy": "Terapia IV",
     "regenerative-medicine": "Medicina regenerativa"
   },
   "toasts": {
@@ -1164,6 +1235,19 @@
     "contactDeleted": "Contacto eliminado",
     "subscriptionCreated": "Suscripción creada",
     "accountSaved": "Cuenta guardada",
-    "passwordChanged": "Contraseña cambiada"
+    "passwordChanged": "Contraseña cambiada",
+    "tierSaved": "Tipo de sesión actualizado"
+  },
+  "imageUpload": {
+    "prompt": "Haz clic o arrastra una imagen aquí",
+    "drop": "Suelta para subir",
+    "uploading": "Subiendo…",
+    "invalidType": "Selecciona un archivo de imagen.",
+    "failed": "No se ha podido subir la imagen.",
+    "genericError": "Algo ha salido mal. Inténtalo de nuevo."
+  },
+  "emailField": {
+    "invalid": "Revisa el correo: falta algo o hay un carácter de más.",
+    "didYouMean": "¿Quisiste decir"
   }
 }

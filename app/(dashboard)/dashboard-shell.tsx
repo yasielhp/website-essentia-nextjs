@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { Logo } from "@/components/ui/logo";
-import { FavIcon, IconSidebarLeft } from "@/components/ui/icons";
+import { FavIcon, IconSettings, IconSidebarLeft } from "@/components/ui/icons";
 import { navLinks, navIcons } from "@/constants/nav";
 import { getBreadcrumbs, type Breadcrumb } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
@@ -144,6 +144,34 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             })}
           </ul>
         </nav>
+
+        {/* Settings sits with the account, not in the list of things to work on */}
+        {role === "admin" && (
+          <div className="shrink-0 px-2 pb-1">
+            <Link
+              href="/dashboard/settings"
+              title={sidebarCollapsed ? t("nav.settings") : undefined}
+              className={`flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                sidebarCollapsed ? "justify-center" : "gap-3"
+              } ${
+                isNavActive("/dashboard/settings")
+                  ? "bg-petroleum-700 text-white"
+                  : "text-petroleum-500 hover:bg-sand-50 hover:text-petroleum-700"
+              }`}
+            >
+              <span
+                className={
+                  isNavActive("/dashboard/settings")
+                    ? "text-white"
+                    : "text-petroleum-400"
+                }
+              >
+                <IconSettings />
+              </span>
+              {!sidebarCollapsed && t("nav.settings")}
+            </Link>
+          </div>
+        )}
 
         <div className="border-sand-200 shrink-0 border-t p-3">
           {sidebarCollapsed ? (

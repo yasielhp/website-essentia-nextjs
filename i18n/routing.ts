@@ -14,6 +14,7 @@ export const routing = defineRouting({
     "/blog/[slug]": "/blog/[slug]",
     "/shop": { en: "/shop", es: "/tienda" },
     "/booking": { en: "/booking", es: "/reserva" },
+    "/booking/cancel": { en: "/booking/cancel", es: "/reserva/cancelar" },
 
     // Wellness
     "/wellness": { en: "/wellness", es: "/bienestar" },
@@ -59,6 +60,10 @@ export const routing = defineRouting({
     "/medicine/intravenous-therapy": {
       en: "/medicine/intravenous-therapy",
       es: "/medicina/terapia-intravenosa",
+    },
+    "/medicine/intravenous-therapy/[slug]": {
+      en: "/medicine/intravenous-therapy/[slug]",
+      es: "/medicina/terapia-intravenosa/[slug]",
     },
     "/medicine/regenerative-medicine": {
       en: "/medicine/regenerative-medicine",

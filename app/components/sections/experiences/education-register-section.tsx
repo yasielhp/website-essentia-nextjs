@@ -13,6 +13,7 @@ import { contact } from "@/constants/contact";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
 import { useLocale, useTranslations } from "next-intl";
+import { EmailInput } from "@/components/ui/email-input";
 
 type Session = {
   id: string;
@@ -323,15 +324,13 @@ function GuestRegistrationForm({
         </div>
 
         <Field label={td("email")} id="email">
-          <input
+          <EmailInput
             id="email"
             name="email"
-            type="email"
             required
-            autoComplete="email"
             placeholder={td("emailPlaceholder")}
             value={form.email}
-            onChange={(e) => onField("email", e.target.value)}
+            onChange={(value) => onField("email", value)}
             disabled={checking}
             className={inputClass}
           />

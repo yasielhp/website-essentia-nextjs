@@ -60,7 +60,7 @@
       },
       "intravenous-therapy": {
         "title": "Terapia IV",
-        "description": "Suministro directo de nutrientes para una absorción rápida y soporte celular."
+        "description": "Protocolos intravenosos personalizados con vitaminas, minerales y micronutrientes, siempre bajo valoración sanitaria."
       },
       "regenerative-medicine": {
         "title": "Medicina Regenerativa",
@@ -83,7 +83,13 @@
     "selectTherapist": "Seleccionar terapeuta",
     "therapistModalTitle": "Seleccionar terapeuta",
     "therapistMale": "Terapeuta masculino",
-    "therapistFemale": "Terapeuta femenina"
+    "therapistFemale": "Terapeuta femenina",
+    "staffDescription": "Elige con quién quieres tu sesión.",
+    "staffLabel": "Personal",
+    "selectStaff": "Seleccionar personal",
+    "staffModalTitle": "Seleccionar personal",
+    "noStaffTitle": "Este tipo de sesión no está disponible ahora mismo",
+    "noStaffBody": "No tenemos personal asignado para este tratamiento en este momento. Escríbenos y buscamos la manera de atenderte."
   },
   "locationStep": {
     "label": "¿Dónde quieres recibir el servicio?",
@@ -169,7 +175,7 @@
     "priceLabel": "Precio",
     "discountLabel": "Descuento",
     "totalLabel": "Total",
-    "cancellationNote": "Puedes cancelar o cambiar tu cita hasta 24 horas antes sin coste.",
+    "cancellationNote": "Cancela o cambia tu cita hasta 24 horas antes sin coste; si ya has pagado online, te devolvemos el importe. Dentro de las 24 horas previas no hay reembolso.",
     "payOnlineNoteNoDiscount": "Paga online al confirmar y tu cita queda reservada al momento."
   },
   "paymentOverlay": {
@@ -208,5 +214,36 @@
     "contactNote": "Por favor, mantente atento a tu correo. Nos pondremos en contacto contigo para confirmar tu cita.",
     "contactNoteWithPhone": "Por favor, mantente atento a tu correo y al teléfono <phone>{phoneValue}</phone>. Nos pondremos en contacto contigo para confirmar tu cita.",
     "cta": "Volver al inicio"
+  },
+  "cancel": {
+    "confirm": {
+      "heading": "¿Cancelar tu cita?",
+      "body": "Puedes cancelarla sin coste. Si ya habías pagado online, te devolvemos el importe.",
+      "action": "Sí, cancelar mi cita",
+      "working": "Cancelando…"
+    },
+    "done": {
+      "heading": "Cita cancelada",
+      "body": "Tu cita queda cancelada y el hueco vuelve a estar libre. Si habías pagado online, recibirás el reembolso en unos días."
+    },
+    "late": {
+      "heading": "Ya no se puede cancelar online",
+      "body": "Faltan menos de 24 horas para tu sesión. Llámanos o escríbenos y vemos qué podemos hacer."
+    },
+    "already": {
+      "heading": "Esta cita ya estaba cancelada",
+      "body": "No hay nada más que hacer. Si quieres otra fecha, puedes reservar de nuevo cuando quieras."
+    },
+    "missing": {
+      "heading": "Enlace no válido",
+      "body": "Este enlace no corresponde a ninguna cita. Comprueba que lo has copiado entero desde tu correo."
+    },
+    "detail": {
+      "service": "Sesión",
+      "date": "Fecha",
+      "time": "Hora"
+    },
+    "keep": "Mantener mi cita",
+    "bookAgain": "Reservar otra sesión"
   }
 }

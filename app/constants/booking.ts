@@ -1,3 +1,6 @@
+/** How long before the session a client can still cancel on their own. */
+export const CANCELLATION_WINDOW_HOURS = 24;
+
 export const TIME_SLOTS = [
   "08:00",
   "08:30",

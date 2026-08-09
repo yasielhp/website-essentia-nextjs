@@ -15,7 +15,8 @@
     "reviews": "Reviews",
     "races": "Races",
     "education": "Education",
-    "blog": "Blog"
+    "blog": "Blog",
+    "settings": "Settings"
   },
   "breadcrumbs": {
     "sections": {
@@ -223,7 +224,7 @@
       "service": "Service",
       "location": "Location",
       "datetime": "Datetime",
-      "reservedBy": "Reserved by"
+      "reservedBy": "Booked"
     },
     "form": {
       "title": "New Booking",
@@ -234,9 +235,9 @@
         "service": "Service",
         "location": "Location",
         "sessionType": "Session type",
-        "therapistPreference": "Therapist preference",
         "datetime": "Date & Time",
-        "client": "Client"
+        "client": "Client",
+        "staff": "Staff"
       },
       "locations": {
         "selectPrompt": "Select a location",
@@ -270,11 +271,6 @@
         "standard": "Standard"
       },
       "noTiers": "No session types configured for this service.",
-      "therapist": {
-        "placeholder": "Select therapist preference",
-        "male": "Male therapist",
-        "female": "Female therapist"
-      },
       "availableTimes": "Available times",
       "fields": {
         "reservationNumber": "Reservation number",
@@ -303,6 +299,9 @@
       "errors": {
         "createFailed": "Failed to create booking.",
         "reservationRequired": "Reservation number is required."
+      },
+      "staff": {
+        "placeholder": "Unassigned"
       }
     },
     "edit": {
@@ -347,7 +346,8 @@
         "status": "Status",
         "location": "Location",
         "created": "Created",
-        "reservedBy": "Reserved by"
+        "reservedBy": "Reserved by",
+        "payment": "Payment"
       },
       "sections": {
         "service": "Service",
@@ -355,7 +355,8 @@
         "datetime": "Date & time",
         "client": "Client",
         "notes": "Notes",
-        "reservedBy": "Reserved by"
+        "reservedBy": "Reserved by",
+        "staff": "Staff"
       },
       "fields": {
         "date": "Date",
@@ -380,6 +381,12 @@
         "confirm": "Yes, delete",
         "deleting": "Deleting…"
       }
+    },
+    "paymentStatus": {
+      "paid": "Paid",
+      "pending": "Payment pending",
+      "failed": "Payment failed",
+      "refunded": "Refunded"
     }
   },
   "transactions": {
@@ -486,7 +493,11 @@
         "phonePlaceholder": "+34 600 000 000",
         "gender": "Gender",
         "role": "Role",
-        "preferredLanguage": "Preferred language"
+        "preferredLanguage": "Preferred language",
+        "jobTitle": "Job title",
+        "jobTitlePlaceholder": "e.g. Physiotherapist",
+        "sortOrder": "Order in pickers",
+        "sortOrderHint": "Lower number appears first. Defaults to 100."
       },
       "roles": {
         "client": {
@@ -525,6 +536,7 @@
       "sections": {
         "role": "Role",
         "details": "Details",
+        "photo": "Photo",
         "password": "Password",
         "services": "Services"
       },
@@ -550,6 +562,29 @@
         "confirm": "Yes, remove access",
         "removing": "Removing…"
       }
+    },
+    "schedule": {
+      "heading": "Schedule",
+      "hint": "The days and hours they work. Outside these hours no appointments are offered, even if their calendar is free.",
+      "interval": "Time between appointments",
+      "days": {
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday",
+        "0": "Sunday"
+      }
+    },
+    "calendarBox": {
+      "hint": "Their calendar is checked when offering slots: busy hours are not shown.",
+      "connect": "Connect Google Calendar",
+      "disconnect": "Disconnect Google Calendar",
+      "resync": "Resync bookings",
+      "resyncing": "Resyncing…",
+      "resynced": "{synced} bookings synced, {failed} failed.",
+      "resyncFailed": "Could not resync."
     }
   },
   "education": {
@@ -911,10 +946,22 @@
     "bookedBy": "Booked by",
     "booked": "Booked",
     "newBookingAt": "New booking at {time}",
-    "nextRace": "Next Race",
-    "noRaces": "No upcoming races.",
-    "nextSession": "Next Session",
-    "noSessions": "No upcoming sessions."
+    "tooltip": {
+      "staff": "Staff",
+      "noStaff": "No staff assigned",
+      "status": "Status"
+    },
+    "filters": {
+      "staff": "Staff",
+      "service": "Service",
+      "tier": "Session type",
+      "allStaff": "All staff",
+      "allServices": "All services",
+      "allTiers": "All session types",
+      "clear": "Clear filters",
+      "title": "Filters",
+      "apply": "Apply"
+    }
   },
   "roles": {
     "admin": "Admin",
@@ -1084,22 +1131,24 @@
       "editTier": "Edit tier",
       "active": "Active",
       "off": "Off",
-      "name": "Name",
-      "namePlaceholder": "e.g. Standard, 60 min, NAD+",
-      "duration": "Duration (min)",
+      "duration": "Duration",
       "durationPlaceholder": "60",
-      "priceCentre": "Price — Centre (€)",
+      "priceWeb": "Online price",
+      "priceWebPlaceholder": "e.g. 90",
+      "priceCentre": "Price at the centre",
       "priceCentrePlaceholder": "90",
-      "priceSuite": "Price — Suite (€)",
+      "priceSuite": "Price in Suite",
       "priceSuitePlaceholder": "120",
-      "image": "Image",
-      "imageHint": "Shown in the session-type picker, on the website and here. Without one, the picker falls back to the colour below.",
       "calendarColor": "Calendar color",
       "delete": "Delete tier",
       "deleting": "Deleting…",
       "update": "Update",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "staffHeading": "Staff",
+      "discount": "Online discount",
+      "discountSaving": "Booking online saves {amount} €: {centre} € at the centre, {web} € online.",
+      "colorTaken": "{label} already uses that colour. Pick another so the calendar stays readable."
     },
     "payments": {
       "subtitle": "Virtual POS · Cards, Bizum",
@@ -1124,10 +1173,32 @@
         "name": "Name",
         "color": "Color",
         "duration": "Duration",
+        "web": "Web",
         "centre": "Centre",
         "suite": "Suite",
         "status": "Status"
+      },
+      "card": {
+        "duration": "Duration",
+        "priceWeb": "Online price",
+        "priceCentre": "Centre price",
+        "priceSuite": "Suite price",
+        "staff": "Assigned staff",
+        "noStaff": "No staff assigned"
       }
+    },
+    "title": "Settings",
+    "colorHint": "The colour is stored in this browser, so it does not change what your colleagues see.",
+    "tabs": {
+      "bookings": "Bookings",
+      "subscriptions": "Subscriptions"
+    },
+    "staff": {
+      "noStaff": "No staff on the system yet.",
+      "noCalendar": "no calendar",
+      "noneWarning": "With nobody assigned, this session type cannot be booked.",
+      "placeholder": "Select staff",
+      "ariaLabel": "Assigned staff"
     }
   },
   "services": {
@@ -1137,7 +1208,7 @@
     "breathing-sessions": "Breathing Sessions",
     "red-light-therapy": "Red Light Therapy",
     "hyperbaric-chambers": "Hyperbaric Chambers",
-    "intravenous-therapy": "Intravenous Therapy",
+    "intravenous-therapy": "IV Therapy",
     "regenerative-medicine": "Regenerative Medicine"
   },
   "toasts": {
@@ -1164,6 +1235,19 @@
     "contactDeleted": "Contact deleted",
     "subscriptionCreated": "Subscription created",
     "accountSaved": "Account saved",
-    "passwordChanged": "Password changed"
+    "passwordChanged": "Password changed",
+    "tierSaved": "Session type updated"
+  },
+  "imageUpload": {
+    "prompt": "Click or drag an image here",
+    "drop": "Drop to upload",
+    "uploading": "Uploading…",
+    "invalidType": "Please select an image file.",
+    "failed": "Upload failed.",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "emailField": {
+    "invalid": "Check the address — something is missing or mistyped.",
+    "didYouMean": "Did you mean"
   }
 }

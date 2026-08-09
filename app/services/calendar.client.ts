@@ -54,6 +54,34 @@ export function connectStaffCalendar(
   });
 }
 
+/** Starts the OAuth flow for a person's own calendar. */
+export function connectAccountCalendar(staffId: string, returnTo: string) {
+  return startOAuth("/api/google/calendar/connect-user", {
+    staff_id: staffId,
+    return_to: returnTo,
+  });
+}
+
+/** Removes a person's own calendar connection. */
+export async function disconnectAccountCalendar(staffId: string) {
+  await authFetch(`/api/google/calendar/disconnect-user?staff_id=${staffId}`, {
+    method: "DELETE",
+  });
+}
+
+/** Pushes a person's unsynced future bookings to their calendar. */
+export async function resyncAccountCalendar(
+  staffId: string,
+): Promise<{ synced: number; failed: number } | null> {
+  const res = await authFetch("/api/google/calendar/sync-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ staff_id: staffId }),
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as { synced: number; failed: number };
+}
+
 /** Removes a service-level calendar connection. Admin only. */
 export async function disconnectServiceCalendar(
   serviceId: string,

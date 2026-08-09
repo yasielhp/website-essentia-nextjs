@@ -3,6 +3,7 @@ import {
   bookingDetailsCard,
   googleCalendarUrl,
   calendarButton,
+  cancellationLink,
 } from "./_base";
 
 export function bookingRescheduledEmail({
@@ -13,6 +14,7 @@ export function bookingRescheduledEmail({
   time,
   duration,
   dateIso,
+  cancelUrl,
   locale = "en",
 }: {
   name: string;
@@ -22,6 +24,8 @@ export function bookingRescheduledEmail({
   time: string;
   duration?: string | null;
   dateIso?: string;
+  /** Link that cancels this booking without signing in. */
+  cancelUrl?: string | null;
   locale?: "en" | "es";
 }): string {
   const calBtn = dateIso
@@ -36,6 +40,7 @@ export function bookingRescheduledEmail({
         locale,
       )
     : "";
+  const cancelBlock = cancelUrl ? cancellationLink(cancelUrl, locale) : "";
   if (locale === "es") {
     return emailBase({
       locale,
@@ -52,6 +57,7 @@ export function bookingRescheduledEmail({
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
         ${calBtn}
+        ${cancelBlock}
 
         <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si esta fecha no te viene bien, llámanos al <strong style="color:#103838;">+34 634 09 12 95</strong> y estaremos encantados de ayudarte.
@@ -75,6 +81,7 @@ export function bookingRescheduledEmail({
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
       ${calBtn}
+      ${cancelBlock}
 
       <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
         If this date does not work for you, please call us at <strong style="color:#103838;">+34 634 09 12 95</strong> and we will be happy to help.

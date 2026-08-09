@@ -12,6 +12,7 @@ import {
 } from "@/actions/auth";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 
 async function createProfile(userId: string, fullName: string, email: string) {
   await insforge.database
@@ -263,15 +264,13 @@ export default function SignUpForm() {
           >
             {t("email")}
           </label>
-          <input
+          <EmailInput
             id="email"
-            type="email"
             value={email}
-            onChange={(e) =>
-              dispatch({ type: "SET_EMAIL", payload: e.target.value })
+            onChange={(value) =>
+              dispatch({ type: "SET_EMAIL", payload: value })
             }
             required
-            autoComplete="email"
             placeholder={t("emailPlaceholder")}
             className={inputClass}
           />

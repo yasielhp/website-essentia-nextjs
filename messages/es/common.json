@@ -52,5 +52,9 @@
     "lastNameRequired": "Los apellidos son obligatorios",
     "phoneInvalid": "Introduce un teléfono válido",
     "consentRequired": "Debes aceptar los términos y la política de privacidad"
+  },
+  "emailField": {
+    "invalid": "Revisa el correo: falta algo o hay un carácter de más.",
+    "didYouMean": "¿Quisiste decir"
   }
 }

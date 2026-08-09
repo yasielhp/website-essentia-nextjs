@@ -32,6 +32,10 @@ export async function updateUserProfile(
     preferredLanguage,
     role,
     currentEmail,
+    avatarUrl,
+    jobTitle,
+    schedule,
+    slotIntervalMinutes,
   } = input;
 
   if (!userId) return { error: "Falta el identificador del usuario." };
@@ -75,6 +79,14 @@ export async function updateUserProfile(
       phone: phone.trim() || null,
       gender,
       preferred_language: preferredLanguage,
+      avatar_url: avatarUrl || null,
+      ...(jobTitle !== undefined ? { job_title: jobTitle || null } : {}),
+      // Only staff hold a schedule; leaving it out keeps the stored value
+      // rather than writing a default over it.
+      ...(schedule ? { schedule } : {}),
+      ...(slotIntervalMinutes != null
+        ? { slot_interval_minutes: slotIntervalMinutes }
+        : {}),
     })
     .eq("id", userId);
 

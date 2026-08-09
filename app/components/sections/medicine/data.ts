@@ -21,8 +21,7 @@ export const treatments: MedicineTreatment[] = [
     img: "/images/menu/intravenous-therapy-900x600.webp",
     title: "IV Therapy",
     description:
-      "Direct nutrient delivery for rapid absorption and cellular support.",
-    comingSoon: true,
+      "Personalised intravenous protocols with vitamins, minerals and micronutrients, always under medical assessment.",
   },
   // TODO: re-enable when regenerative medicine goes live
   // {

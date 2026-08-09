@@ -123,6 +123,40 @@ export function calendarButton(
   </table>`;
 }
 
+/**
+ * The cancellation line.
+ *
+ * Deliberately a text link and not a button: it is the escape hatch, not the
+ * point of the email, and a second dark button next to "Add to calendar" reads
+ * as an equal choice. Says the policy so the click is an informed one.
+ */
+export function cancellationLink(
+  url: string,
+  locale: "en" | "es" = "en",
+): string {
+  const copy =
+    locale === "es"
+      ? {
+          text: "¿No puedes venir? Cancela o cambia tu cita hasta 24 horas antes sin coste.",
+          link: "Cancelar mi cita",
+        }
+      : {
+          text: "Cannot make it? Cancel or change your appointment up to 24 hours before at no cost.",
+          link: "Cancel my appointment",
+        };
+
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+    <tr>
+      <td align="center">
+        <p style="margin:0 0 6px;font-size:13px;color:#4a6767;line-height:1.6;">${copy.text}</p>
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+           style="font-size:13px;color:#335554;text-decoration:underline;">${copy.link}</a>
+      </td>
+    </tr>
+  </table>`;
+}
+
 /** Renders the booking details card (service / session type / date / time / duration). */
 export function bookingDetailsCard({
   service,

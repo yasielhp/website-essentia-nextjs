@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
@@ -39,6 +39,11 @@ import type {
   ContactRaceReg,
   ContactEduReg,
 } from "@/types/contact";
+import { EmailInput } from "@/components/ui/email-input";
+import { TabButton } from "@/components/dashboard/settings/tab-button";
+
+/** The four views of a contact's history. */
+type HistoryTab = "transactions" | "bookings" | "races" | "education";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -369,11 +374,10 @@ function ContactDetailsCard({
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
           ) : (
-            <input
+            <EmailInput
               id="email"
-              type="email"
               value={email}
-              onChange={(e) => field("email", e.target.value)}
+              onChange={(value) => field("email", value)}
               placeholder={tForm("fields.emailPlaceholder")}
               disabled={saving}
               className={INPUT_CLASS}
@@ -602,11 +606,8 @@ function TransactionsSection({
     .reduce((sum, b) => sum + (b.price_eur ?? 0), 0);
 
   return (
-    <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-petroleum-500 text-sm font-semibold">
-          {t("heading")}
-        </h2>
+    <div>
+      <div className="mb-4 flex items-center justify-end">
         {!loading && paidTotal > 0 && (
           <span className="text-petroleum-400 text-xs">
             Paid to date{" "}
@@ -690,10 +691,7 @@ function BookingsSection({
   const { push } = useRouter();
 
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        {tSection("heading")}
-      </h2>
+    <div>
       {loading ? (
         <RowSkeleton cols={5} />
       ) : bookings.length === 0 ? (
@@ -794,10 +792,7 @@ function RaceRegsSection({
   const t = useTranslations("dashboard.contacts.detail.races");
   const locale = useDashboardLocale();
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        {t("heading")}
-      </h2>
+    <div>
       {loading ? (
         <RowSkeleton cols={4} />
       ) : raceRegs.length === 0 ? (
@@ -855,10 +850,7 @@ function EduRegsSection({
   const t = useTranslations("dashboard.contacts.detail.education");
   const locale = useDashboardLocale();
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        {t("heading")}
-      </h2>
+    <div>
       {loading ? (
         <RowSkeleton cols={4} />
       ) : eduRegs.length === 0 ? (
@@ -919,6 +911,27 @@ export default function ContactDetailPage() {
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
   const { loading, notFound, bookings, memberships, raceRegs, eduRegs } =
     loadState;
+
+  const tHistory = useTranslations("dashboard.contacts.detail");
+  const [tab, setTab] = useState<HistoryTab>("transactions");
+  const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
+    {
+      id: "transactions",
+      label: tHistory("transactions.heading"),
+      count: bookings.length + memberships.length,
+    },
+    {
+      id: "bookings",
+      label: tHistory("bookings.heading"),
+      count: bookings.length,
+    },
+    { id: "races", label: tHistory("races.heading"), count: raceRegs.length },
+    {
+      id: "education",
+      label: tHistory("education.heading"),
+      count: eduRegs.length,
+    },
+  ];
 
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
   const {
@@ -1111,17 +1124,46 @@ export default function ContactDetailPage() {
         />
       </form>
 
-      <div className="space-y-5">
-        <TransactionsSection
-          loading={loading}
-          bookings={bookings}
-          memberships={memberships}
-          raceRegs={raceRegs}
-          eduRegs={eduRegs}
-        />
-        <BookingsSection loading={loading} bookings={bookings} />
-        <RaceRegsSection loading={loading} raceRegs={raceRegs} />
-        <EduRegsSection loading={loading} eduRegs={eduRegs} />
+      {/* One card, four views. Stacked, the four lists pushed the form far up
+          the page and most of them are empty for most contacts. */}
+      <div className="border-sand-200 rounded-2xl border bg-white p-6">
+        <div className="border-sand-100 -mx-6 -mt-6 mb-6 flex gap-1 overflow-x-auto border-b px-4 py-3">
+          {historyTabs.map(({ id, label, count }) => (
+            <TabButton key={id} active={tab === id} onClick={() => setTab(id)}>
+              <span className="whitespace-nowrap">
+                {label}
+                {count > 0 && (
+                  <span
+                    className={`ml-1.5 text-xs ${
+                      tab === id ? "text-white/70" : "text-petroleum-300"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </span>
+            </TabButton>
+          ))}
+        </div>
+
+        {tab === "transactions" && (
+          <TransactionsSection
+            loading={loading}
+            bookings={bookings}
+            memberships={memberships}
+            raceRegs={raceRegs}
+            eduRegs={eduRegs}
+          />
+        )}
+        {tab === "bookings" && (
+          <BookingsSection loading={loading} bookings={bookings} />
+        )}
+        {tab === "races" && (
+          <RaceRegsSection loading={loading} raceRegs={raceRegs} />
+        )}
+        {tab === "education" && (
+          <EduRegsSection loading={loading} eduRegs={eduRegs} />
+        )}
       </div>
 
       {deleteOpen && (

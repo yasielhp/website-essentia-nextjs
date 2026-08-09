@@ -6,7 +6,7 @@ import { PlansTabContent } from "@/components/dashboard/settings/plans-tab-conte
 import { PlanModal } from "@/components/dashboard/settings/plan-modal";
 import type { PlanRow } from "@/types/settings";
 
-export default function SubscriptionsSettingsPage() {
+export function SubscriptionsSettings() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [planModal, setPlanModal] = useState<PlanRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function SubscriptionsSettingsPage() {
   }, []);
 
   return (
-    <div className="px-6 py-8 lg:px-10">
+    <div>
       {loading ? (
         <div className="border-sand-200 rounded-2xl border bg-white">
           <div className="border-sand-100 border-b px-6 py-4">

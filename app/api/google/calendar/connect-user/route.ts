@@ -4,13 +4,19 @@ import { requireApiRole, toAuthErrorResponse } from "@/lib/auth-guard";
 import { signState } from "@/lib/oauth-state";
 
 /**
- * POST /api/google/calendar/connect-user  { staff_id, service_id, return_to }
+ * POST /api/google/calendar/connect-user  { staff_id, return_to, service_id? }
  *
- * Returns the Google consent URL for a staff member's service calendar.
- * Staff may only connect their own calendar; admins may act for anyone.
+ * Returns the Google consent URL for a staff member's calendar. Staff may only
+ * connect their own; admins may act for anyone.
  *
- * State format: `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`,
- * wrapped in a signature so the callback rejects states it did not issue.
+ * Without `service_id` the tokens land on the person's `profiles` row, which
+ * is where they belong: a therapist has one calendar, not one per treatment.
+ * With it, the legacy per-service connection is kept for the services that
+ * still hold their own calendar.
+ *
+ * State: `user__${staffId}__${encodedReturnPath}`, or
+ * `staffsvc__${staffId}__${serviceId}__${encodedReturnPath}`, wrapped in a
+ * signature so the callback rejects states it did not issue.
  */
 export async function POST(request: Request) {
   let caller;
@@ -35,9 +41,9 @@ export async function POST(request: Request) {
     return_to: returnTo,
   } = body;
 
-  if (!staffId || !serviceId || !returnTo) {
+  if (!staffId || !returnTo) {
     return NextResponse.json(
-      { error: "staff_id, service_id and return_to are required" },
+      { error: "staff_id and return_to are required" },
       { status: 400 },
     );
   }
@@ -54,7 +60,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid return_to" }, { status: 400 });
   }
 
-  const state = `staffsvc__${staffId}__${serviceId}__${encodeURIComponent(returnTo)}`;
+  const state = serviceId
+    ? `staffsvc__${staffId}__${serviceId}__${encodeURIComponent(returnTo)}`
+    : `user__${staffId}__${encodeURIComponent(returnTo)}`;
 
   return NextResponse.json({ url: getGoogleAuthUrl(signState(state)) });
 }

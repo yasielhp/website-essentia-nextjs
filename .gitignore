@@ -58,3 +58,6 @@ skills-lock.json
 .roo
 .trae
 .windsurf
+
+# Playwright MCP session output
+.playwright-mcp/

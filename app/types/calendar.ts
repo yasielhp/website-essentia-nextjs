@@ -6,6 +6,10 @@ export type CalendarEvent = {
   time: string | null;
   title: string;
   subtitle?: string;
+  /** Everything the pill has no room for, shown on hover. */
+  tooltip?: string;
+  /** Booking status, rendered as its badge in the hover card. */
+  status?: string;
   color: string;
   /** Empty for `busy` events: they are not navigable. */
   href: string;
@@ -22,23 +26,4 @@ export type BusySlot = {
   duration: string | null;
   /** Colleague who owns the slot, or null when only "busy" can be said. */
   bookedBy: string | null;
-};
-
-export type UpcomingRace = {
-  id: string;
-  title: string;
-  date: string | null;
-  location: string | null;
-  distance_km: number | null;
-  image_url: string | null;
-};
-
-export type UpcomingSession = {
-  id: string;
-  title: string;
-  date: string;
-  location: string | null;
-  speaker: string | null;
-  duration_minutes: number | null;
-  image_url: string | null;
 };

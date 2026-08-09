@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types";
+import type { WeeklySchedule } from "@/types/schedule";
 import type { Gender } from "@/types/person";
 
 /** Roles that can be assigned to a dashboard user from the admin UI. */
@@ -15,6 +16,13 @@ export type UpdateUserProfileInput = {
   preferredLanguage: string;
   role: AssignableRole;
   currentEmail: string;
+  /** Public URL of the profile photo, or null to clear it. */
+  avatarUrl: string | null;
+  /** What they do — "Fisioterapeuta", "Doctora". Staff only; null clears it. */
+  jobTitle?: string | null;
+  /** Working days and hours. Only sent for roles that take bookings. */
+  schedule?: WeeklySchedule;
+  slotIntervalMinutes?: number;
 };
 
 /** A profile row as read from the database. */

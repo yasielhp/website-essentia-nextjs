@@ -1,4 +1,11 @@
 import type { BookableService } from "@/data/services-data";
+import type { WeeklySchedule } from "@/types/schedule";
+
+/** One person's working week, as the availability helpers need it. */
+export type StaffSchedule = {
+  schedule: WeeklySchedule;
+  slotIntervalMinutes: number;
+};
 
 export const MONTH_NAMES = [
   "January",
@@ -17,15 +24,22 @@ export const MONTH_NAMES = [
 
 export const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function buildSteps(hasDatetime = true) {
-  const steps = [
+/**
+ * The booking flow's steps.
+ *
+ * Date and time used to be dropped when the service had no Google Calendar
+ * connected, which left the visitor confirming a booking with no hour on it.
+ * Availability comes from the assigned staff's own schedule now; a calendar
+ * only removes the hours they are already busy, so the step always belongs.
+ */
+export function buildSteps() {
+  return [
     { id: "service", label: "Service" },
     { id: "duration", label: "Session type" },
     { id: "details", label: "Your details" },
-    ...(hasDatetime ? [{ id: "datetime", label: "Date & time" }] : []),
+    { id: "datetime", label: "Date & time" },
     { id: "confirm", label: "Confirm" },
   ];
-  return steps;
 }
 
 export function getLocalizedMonthName(
@@ -126,6 +140,47 @@ export function getAvailableStartTimes(
       return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
     });
   });
+}
+
+/**
+ * The start times a set of staff schedules allows on a date.
+ *
+ * The union across the people who can perform the treatment: a slot is offered
+ * when at least one of them works then and the session fits before they
+ * finish. Returns an empty list for a day nobody works, which is what makes
+ * the day unbookable.
+ */
+export function getScheduledStartTimes(
+  date: Date,
+  durationMinutes: number,
+  schedules: StaffSchedule[],
+): string[] {
+  const weekday = String(date.getDay());
+  const times = new Set<string>();
+
+  for (const { schedule, slotIntervalMinutes } of schedules) {
+    const day = schedule[weekday];
+    if (!day?.open) continue;
+
+    const start = toMinutes(day.start);
+    const end = toMinutes(day.end);
+    if (start == null || end == null) continue;
+
+    const step = slotIntervalMinutes > 0 ? slotIntervalMinutes : 30;
+    for (let m = start; m + durationMinutes <= end; m += step) {
+      times.add(
+        `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`,
+      );
+    }
+  }
+
+  return [...times].sort();
+}
+
+function toMinutes(hhmm: string): number | null {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (h == null || m == null || isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
 }
 
 function computeSlots(

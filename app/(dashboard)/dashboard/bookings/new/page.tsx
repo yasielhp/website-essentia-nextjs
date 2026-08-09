@@ -35,6 +35,9 @@ import {
   getCalendarDays,
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
+import { EmailInput } from "@/components/ui/email-input";
+import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
+import { StaffSelect } from "@/components/ui/staff-select";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -467,7 +470,7 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
-  therapistGender: "male" | "female" | "";
+  staffId: string;
 };
 
 type FormAction =
@@ -486,7 +489,7 @@ type FormAction =
       field: "firstName" | "lastName" | "email" | "phone";
       value: string;
     }
-  | { type: "SET_THERAPIST_GENDER"; value: "male" | "female" | "" }
+  | { type: "SET_STAFF"; value: string }
   | { type: "RESET_TIERS" };
 
 const formInitial: FormState = {
@@ -504,7 +507,7 @@ const formInitial: FormState = {
   lastName: "",
   email: "",
   phone: "",
-  therapistGender: "",
+  staffId: "",
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -514,10 +517,12 @@ function formReducer(state: FormState, action: FormAction): FormState {
         ...state,
         serviceId: action.id,
         tierId: "",
-        therapistGender: "",
+        staffId: "",
       };
     case "SET_TIER":
-      return { ...state, tierId: action.id };
+      // Assignments are per session type: whoever was picked may not perform
+      // the new one.
+      return { ...state, tierId: action.id, staffId: "" };
     case "SET_LOCATION":
       return {
         ...state,
@@ -549,8 +554,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
-    case "SET_THERAPIST_GENDER":
-      return { ...state, therapistGender: action.value };
+    case "SET_STAFF":
+      return { ...state, staffId: action.value };
     default:
       return state;
   }
@@ -629,11 +634,26 @@ function NewBookingPageInner() {
     lastName,
     email,
     phone,
-    therapistGender,
+    staffId,
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
+
+  // Who can perform the chosen session type.
+  const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (
+      tierId ? fetchTierStaff(tierId) : Promise.resolve([] as TierStaff[])
+    ).then((people) => {
+      if (!cancelled) setTierStaff(people);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tierId]);
 
   // ── freeBusy for time-slot availability ───────────────────────
   const [busyIntervals, setBusyIntervals] = useState<
@@ -880,18 +900,8 @@ function NewBookingPageInner() {
           time: selectedTime || null,
           location: location || null,
           location_address: locationAddress,
-          ...(() => {
-            const therapistNote =
-              therapistGender === "male"
-                ? "Terapeuta: Masculino"
-                : therapistGender === "female"
-                  ? "Terapeuta: Femenina"
-                  : "";
-            const composedNotes = [therapistNote, notes.trim()]
-              .filter(Boolean)
-              .join("\n\n");
-            return composedNotes ? { notes: composedNotes } : {};
-          })(),
+          ...(staffId ? { staff_id: staffId } : {}),
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           email: bookingEmail,
@@ -1454,26 +1464,25 @@ function NewBookingPageInner() {
             </>
           )}
 
-          {/* ── Step 3b: Therapist preference (manual-therapies only) ── */}
-          {serviceId === "manual-therapies" && tierId !== "" && (
+          {/* ── Step 3b: who performs it, among those assigned to the tier ── */}
+          {tierId !== "" && tierStaff.length > 0 && (
             <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("steps.therapistPreference")}
+                {t("steps.staff")}
               </h2>
-              <select
-                value={therapistGender}
-                onChange={(e) =>
-                  dispatchForm({
-                    type: "SET_THERAPIST_GENDER",
-                    value: e.target.value as "male" | "female" | "",
-                  })
+              <StaffSelect
+                options={tierStaff}
+                selected={staffId || null}
+                onSelect={(person) =>
+                  dispatchForm({ type: "SET_STAFF", value: person.id })
                 }
-                className={INPUT_CLASS}
-              >
-                <option value="">{t("therapist.placeholder")}</option>
-                <option value="male">{t("therapist.male")}</option>
-                <option value="female">{t("therapist.female")}</option>
-              </select>
+                labels={{
+                  fieldLabel: t("steps.staff"),
+                  placeholder: t("staff.placeholder"),
+                  modalTitle: t("steps.staff"),
+                  close: tCommon("cancel"),
+                }}
+              />
             </div>
           )}
 
@@ -1639,15 +1648,14 @@ function NewBookingPageInner() {
                   >
                     {t("fields.email")} <span className="text-red-400">*</span>
                   </label>
-                  <input
+                  <EmailInput
                     id="email"
-                    type="email"
                     value={email}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       dispatchForm({
                         type: "SET_FIELD",
                         field: "email",
-                        value: e.target.value,
+                        value: value,
                       })
                     }
                     placeholder={t("fields.emailPlaceholder")}

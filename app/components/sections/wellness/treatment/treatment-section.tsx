@@ -8,6 +8,7 @@ import { Button } from "@components/ui/button";
 import type { TreatmentData } from "./data";
 import {
   facialTreatments,
+  ivProtocols,
   manualTherapyTreatments,
 } from "@/data/services-data";
 
@@ -172,6 +173,95 @@ function ManualTherapiesSection() {
 
 // ─── Facial therapies — ritual list ──────────────────────────
 
+/**
+ * The IV protocols, as cards.
+ *
+ * A grid rather than the facials' one-per-row layout: there are twelve of
+ * them, and stacked full-width rows would turn the page into a scroll. Each
+ * card deep-links into the booking form with its own tier.
+ */
+function IvProtocolsSection() {
+  const t = useTranslations("medicine.iv");
+
+  return (
+    <section id="protocols" className="bg-sand-50 px-5 py-20 md:py-28">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 text-center">
+          <p className="text-petroleum-400 text-xs tracking-[0.2em] uppercase">
+            {t("eyebrow")}
+          </p>
+          <h2 className="font-display text-petroleum-700 mt-3 text-3xl md:text-4xl">
+            {t("heading")}
+          </h2>
+          <p className="text-petroleum-400 mx-auto mt-3 max-w-lg leading-relaxed">
+            {t("subtitle")}
+          </p>
+        </div>
+
+        {/* Same card as the manual therapies and the facial rituals: copy on
+            one side, photo on the other. Twelve of them make a long page, and
+            that is the trade for a card that can hold a real description. */}
+        <div className="flex flex-col gap-4">
+          {ivProtocols.map((protocol) => (
+            <article
+              key={protocol.id}
+              className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
+            >
+              <div className="order-2 flex flex-col items-start justify-center gap-3 p-6 md:order-1 md:p-8">
+                <div>
+                  <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
+                    {t(`protocols.${protocol.id}.title`)}
+                  </h3>
+                  <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
+                    {t(`protocols.${protocol.id}.meta`)}
+                  </span>
+                </div>
+
+                <p className="text-petroleum-500 text-sm leading-relaxed">
+                  {t(`protocols.${protocol.id}.description`)}
+                </p>
+
+                <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    href={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("book")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/medicine/intravenous-therapy/${protocol.id}`}
+                    className="w-full md:w-auto"
+                  >
+                    {t("view")}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative order-1 h-56 md:order-2 md:h-full md:min-h-64">
+                <Image
+                  src={protocol.thumbnail}
+                  alt={t(`protocols.${protocol.id}.title`)}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p className="text-petroleum-400 mt-10 text-center text-xs leading-relaxed">
+          {t("disclaimer")}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function FacialTreatmentsSection() {
   const t = useTranslations("wellness.treatments");
 
@@ -333,6 +423,7 @@ export default function TreatmentSection({ data }: { data: TreatmentData }) {
       <TreatmentHero data={data} />
       {data.slug === "manual-therapies" && <ManualTherapiesSection />}
       {data.slug === "facial-therapies" && <FacialTreatmentsSection />}
+      {data.slug === "intravenous-therapy" && <IvProtocolsSection />}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
     </>

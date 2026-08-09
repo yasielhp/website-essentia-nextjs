@@ -8,6 +8,8 @@ export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 /** Payload accepted by the dashboard's full booking edit form. */
 export type UpdateBookingPayload = {
   service_id: string;
+  /** Who performs it, or null when the centre has not allocated anybody yet. */
+  staff_id?: string | null;
   service_title: string;
   tier_id: string | null;
   price_eur: number | null;
@@ -22,6 +24,20 @@ export type UpdateBookingPayload = {
   email: string;
   phone: string | null;
   status: string;
+};
+
+/** What the public cancellation page needs, and nothing that identifies anyone else. */
+export type CancellableBooking = {
+  serviceTitle: string | null;
+  sessionType: string | null;
+  date: string | null;
+  time: string | null;
+  duration: string | null;
+  status: string | null;
+  firstName: string | null;
+  /** False once the session is inside the free-cancellation window. */
+  cancellable: boolean;
+  alreadyCancelled: boolean;
 };
 
 /** A booking row as read from the database. */

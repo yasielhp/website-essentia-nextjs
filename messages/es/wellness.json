@@ -12,18 +12,8 @@
   },
   "protocols": {
     "heading": "Los protocolos",
-    "subheading": "Cinco modalidades. Un sistema integrado.",
+    "subheading": "Cuatro modalidades. Un sistema integrado.",
     "items": {
-      "contrast-therapy": {
-        "title": "Contraste Térmico",
-        "tagline": "Calor y frío",
-        "description": "Calor y frío para activar la recuperación y reducir la inflamación."
-      },
-      "breathing-sessions": {
-        "title": "Sesiones de Respiración",
-        "tagline": "Trabajo de respiración",
-        "description": "Respiración guiada para pasar del estrés a la recuperación activa."
-      },
       "red-light-therapy": {
         "title": "Terapia de Luz Roja",
         "tagline": "Fotobiomodulación",
@@ -38,6 +28,11 @@
         "title": "Faciales terapéuticos",
         "tagline": "Piel y radiancia",
         "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel."
+      },
+      "functional-wellbeing": {
+        "title": "Bienestar funcional",
+        "tagline": "Movimiento y función",
+        "description": "Valoración y trabajo funcional para moverte mejor y sostenerlo en el tiempo."
       }
     }
   },
@@ -391,6 +386,234 @@
             "description": "La primera sesión incluye valoración para adaptar el tratamiento a las necesidades reales de cada rostro."
           }
         }
+      },
+      "essentia-iv-signature": {
+        "title": "Essentia IV Signature",
+        "description": "Drenaje Linfático Avanzado · Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina.",
+        "body": "El protocolo propio de la casa: una sesión de Drenaje Linfático Avanzado · Método Essentia seguida de una fórmula intravenosa desarrollada junto a VitalDrip.\n\nPrimero el trabajo manual, que moviliza líquidos y acompaña el sistema linfático. Después la vía intravenosa, con NAD+, magnesio, vitamina C y L-carnitina, para sostener desde dentro lo que el drenaje ha puesto en marcha.\n\nEs la sesión más larga del catálogo y también la más completa. Como el resto, se decide tras la valoración: si no es el momento adecuado, te propondremos otra.",
+        "highlights": {
+          "0": {
+            "title": "Dos técnicas, una sesión",
+            "description": "El drenaje manual y la fórmula intravenosa se refuerzan: uno moviliza, la otra nutre."
+          },
+          "1": {
+            "title": "Fórmula propia",
+            "description": "NAD+, magnesio, vitamina C y L-carnitina, en la proporción acordada con VitalDrip para esta sesión."
+          },
+          "2": {
+            "title": "110 minutos",
+            "description": "El tiempo que pide hacer las dos cosas bien, sin prisa entre una y otra."
+          }
+        }
+      },
+      "power-drip": {
+        "title": "Power Drip",
+        "description": "Protocolo intravenoso orientado a momentos de baja energía, jornadas exigentes o mayor desgaste. Combina vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar vitalidad y recuperación.",
+        "body": "Terapia intravenosa pensada para los tramos de más desgaste: semanas largas, viajes encadenados, entrenamientos exigentes o esa fatiga que no se va durmiendo una noche más.\n\nCombina complejo B, vitamina B12, aminoácidos y magnesio, administrados por vía intravenosa para que estén disponibles sin pasar por el sistema digestivo.\n\nIngredientes: complejo B (B1, B2, B3, B5, B6), vitamina B12, aminoácidos y magnesio, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Energía y vitalidad",
+            "description": "Micronutrientes seleccionados para acompañar los niveles de energía en periodos exigentes."
+          },
+          "1": {
+            "title": "Metabolismo",
+            "description": "El complejo B participa en el metabolismo energético normal del organismo."
+          },
+          "2": {
+            "title": "Fatiga acumulada",
+            "description": "Pensado para el desgaste sostenido, no para un día puntual."
+          }
+        }
+      },
+      "immunity-drip": {
+        "title": "Immunity Drip",
+        "description": "Protocolo con vitamina C, zinc, vitaminas del grupo B y glutatión, diseñado como apoyo nutricional en periodos de mayor exigencia y para acompañar el funcionamiento normal del sistema inmunitario.",
+        "body": "El protocolo más pedido cuando se acerca un periodo exigente: cambios de estación, viajes, semanas de mucho contacto o una recuperación que se está haciendo larga.\n\nCombina vitamina C en dosis alta, zinc, vitaminas del grupo B y glutatión. La vitamina C y el zinc contribuyen al funcionamiento normal del sistema inmunitario.\n\nIngredientes: vitamina C (megadosis), zinc, vitaminas del complejo B y glutatión, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Sistema inmunitario",
+            "description": "Vitamina C y zinc contribuyen al funcionamiento normal de las defensas."
+          },
+          "1": {
+            "title": "Dosis por vía intravenosa",
+            "description": "La vía permite concentraciones que no se alcanzan por vía oral."
+          },
+          "2": {
+            "title": "Periodos exigentes",
+            "description": "Pensado como apoyo nutricional cuando el cuerpo está más solicitado."
+          }
+        }
+      },
+      "nirvana-drip": {
+        "title": "Nirvana Drip",
+        "description": "Protocolo centrado en relajación y bienestar durante periodos de estrés o descanso deficiente. Combina magnesio, vitaminas del grupo B y triptófano para acompañar calma y recuperación.",
+        "body": "Para las temporadas en que la cabeza no baja de revoluciones y el descanso no repara: estrés sostenido, sueño fragmentado, tensión que se instala.\n\nCombina magnesio, vitaminas del grupo B y triptófano, micronutrientes implicados en el funcionamiento normal del sistema nervioso.\n\nIngredientes: magnesio, vitaminas del complejo B y triptófano, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Estrés y tensión",
+            "description": "Formulado para acompañar periodos de tensión mental sostenida."
+          },
+          "1": {
+            "title": "Descanso",
+            "description": "El magnesio contribuye al funcionamiento normal del sistema nervioso."
+          },
+          "2": {
+            "title": "Relajación profunda",
+            "description": "La sesión en sí es parte del protocolo: una hora sin nada que atender."
+          }
+        }
+      },
+      "stress-balance": {
+        "title": "Stress Balance",
+        "description": "Protocolo pensado para momentos de estrés, tensión mental o descanso insuficiente. Combina magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar relajación y bienestar.",
+        "body": "Terapia intravenosa formulada para acompañar al organismo cuando el estrés deja de ser puntual: tensión mantenida, ánimo bajo, sueño que no termina de reparar.\n\nCombina magnesio, complejo de vitaminas B, vitamina C, L-glicina y zinc, con administración directa de micronutrientes esenciales.\n\nIngredientes: magnesio, complejo de vitaminas B (B1, B6, B12), vitamina C, L-glicina y zinc, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Relajación y bienestar",
+            "description": "Sensación de calma tras la sesión, sin sedación."
+          },
+          "1": {
+            "title": "Calidad del sueño",
+            "description": "Micronutrientes implicados en la regulación del descanso."
+          },
+          "2": {
+            "title": "Tensión mental",
+            "description": "Pensado para el estrés sostenido más que para el día puntual."
+          }
+        }
+      },
+      "beauty-hair-glow": {
+        "title": "Beauty & Hair Glow",
+        "description": "Protocolo enfocado en el cuidado de piel y cabello desde dentro. Combina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados dentro de una experiencia orientada al bienestar estético.",
+        "body": "El cuidado estético que empieza por dentro. Un protocolo enfocado en la salud de la piel y la fortaleza del cabello, trabajando a nivel celular en lugar de sobre la superficie.\n\nCombina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados. La biotina y el zinc contribuyen al mantenimiento del cabello y la piel en condiciones normales.\n\nIngredientes: biotina (vitamina B7), zinc, vitamina C, glutatión, aminoácidos (cisteína, glicina, prolina) y silicio orgánico, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Piel",
+            "description": "Biotina y zinc contribuyen al mantenimiento de la piel en condiciones normales."
+          },
+          "1": {
+            "title": "Cabello",
+            "description": "Aminoácidos seleccionados como apoyo a la fibra capilar."
+          },
+          "2": {
+            "title": "Antioxidante",
+            "description": "Vitamina C y glutatión frente al estrés oxidativo."
+          }
+        }
+      },
+      "vitamin-c": {
+        "title": "Vitamina C",
+        "description": "Protocolo intravenoso de alta concentración en vitamina C, orientado al apoyo antioxidante y al bienestar general. Una opción específica que debe seleccionarse siempre tras valoración sanitaria individual.",
+        "body": "Alta concentración de vitamina C por vía intravenosa, orientada al apoyo antioxidante y al bienestar general.\n\nLa vitamina C contribuye a la protección de las células frente al daño oxidativo y al funcionamiento normal del sistema inmunitario. Por vía intravenosa se alcanzan concentraciones que la vía oral no permite.\n\nEs el protocolo más específico del catálogo y el que más depende de la valoración previa: no es adecuado para todo el mundo.",
+        "highlights": {
+          "0": {
+            "title": "Protección antioxidante",
+            "description": "La vitamina C contribuye a proteger las células frente al daño oxidativo."
+          },
+          "1": {
+            "title": "Inmunidad",
+            "description": "Apoyo al funcionamiento normal del sistema inmunitario."
+          },
+          "2": {
+            "title": "Siempre con valoración",
+            "description": "Su indicación se decide caso por caso, nunca por defecto."
+          }
+        }
+      },
+      "nad-plus": {
+        "title": "NAD+",
+        "description": "Protocolo centrado en rendimiento celular, claridad mental y recuperación energética. También puede añadirse a cualquier otro protocolo como refuerzo.",
+        "body": "NAD+ es una coenzima presente en todas las células y central en el metabolismo energético. Con la edad, sus niveles descienden.\n\nEste protocolo la administra por vía intravenosa, orientado al rendimiento celular, la claridad mental y la recuperación energética.\n\nTambién puede añadirse a cualquier otro protocolo como refuerzo, con un suplemento sobre el precio de la sesión principal.",
+        "highlights": {
+          "0": {
+            "title": "Nivel mitocondrial",
+            "description": "Actúa donde se produce la energía celular."
+          },
+          "1": {
+            "title": "Claridad mental",
+            "description": "Enfocado a la cognición y la sensación de foco."
+          },
+          "2": {
+            "title": "Como refuerzo",
+            "description": "Se puede sumar a otro protocolo en la misma sesión."
+          }
+        }
+      },
+      "resurrection-drip": {
+        "title": "Resurrection Drip",
+        "description": "Protocolo de hidratación y recuperación pensado para momentos de mayor desgaste. Combina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc para acompañar la rehidratación.",
+        "body": "El protocolo de rescate. Pensado para los días después de un exceso: deshidratación, dolor de cabeza, malestar general y esa sensación de no arrancar.\n\nCombina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc, con rehidratación directa por vía intravenosa.\n\nIngredientes: solución salina, vitaminas del complejo B, vitamina C, magnesio y zinc, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Rehidratación",
+            "description": "Fluidos y electrolitos directamente en circulación."
+          },
+          "1": {
+            "title": "Recuperación",
+            "description": "Micronutrientes para acompañar el retorno a la normalidad."
+          },
+          "2": {
+            "title": "Rápido",
+            "description": "Entre 45 y 60 minutos, y te vas."
+          }
+        }
+      },
+      "body-drip": {
+        "title": "Body Drip",
+        "description": "Protocolo con complejo MIC, vitaminas del grupo B y ácido alfa lipoico, planteado desde una mirada metabólica y corporal para complementar objetivos de bienestar y composición corporal.",
+        "body": "Planteado desde una mirada metabólica, como complemento —nunca sustituto— de una alimentación y una actividad física adecuadas.\n\nCombina complejo MIC (metionina, inositol, colina), vitaminas del grupo B y ácido alfa lipoico, componentes implicados en el metabolismo de las grasas y la función hepática.\n\nIngredientes: MIC (metionina, inositol, colina), complejo B y ácido alfa lipoico, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Metabolismo",
+            "description": "Componentes implicados en el metabolismo normal de los macronutrientes."
+          },
+          "1": {
+            "title": "Función hepática",
+            "description": "La colina contribuye al mantenimiento de una función hepática normal."
+          },
+          "2": {
+            "title": "Como complemento",
+            "description": "Acompaña un plan; no lo sustituye."
+          }
+        }
+      },
+      "fit-drip": {
+        "title": "Fit Drip",
+        "description": "Protocolo pensado para actividad física, recuperación y periodos de mayor exigencia. Combina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar hidratación y recuperación.",
+        "body": "Para quien entrena en serio: preparación de una prueba, bloques de carga alta o la recuperación de los días siguientes.\n\nCombina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio, con hidratación profunda por vía intravenosa.\n\nIngredientes: aminoácidos esenciales, vitaminas del complejo B, magnesio y calcio, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Recuperación",
+            "description": "Aminoácidos e hidratación tras el esfuerzo."
+          },
+          "1": {
+            "title": "Función muscular",
+            "description": "Magnesio y calcio contribuyen a la función muscular normal."
+          },
+          "2": {
+            "title": "Antes o después",
+            "description": "Encaja tanto en la preparación como en la recuperación."
+          }
+        }
+      },
+      "calm-drip": {
+        "title": "Calm Drip",
+        "description": "Protocolo orientado al descanso y la relajación, especialmente en periodos de mayor estrés. Combina triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar calma y recuperación.",
+        "body": "Orientado al descanso: reducir la sensación de estrés, mejorar la calidad del sueño y favorecer un estado de serenidad que se sostenga los días siguientes.\n\nCombina triptófano, magnesio, glutatión y aminoácidos esenciales.\n\nIngredientes: triptófano, magnesio, glutatión y aminoácidos esenciales, entre otros.",
+        "highlights": {
+          "0": {
+            "title": "Estrés",
+            "description": "Formulado para bajar el tono de los periodos tensos."
+          },
+          "1": {
+            "title": "Sueño",
+            "description": "Micronutrientes implicados en la regulación del descanso."
+          },
+          "2": {
+            "title": "Serenidad",
+            "description": "El efecto que se busca dura más que la sesión."
+          }
+        }
       }
     },
     "contrast-therapy": {
@@ -646,7 +869,53 @@
         "description": "Reeducación facial integral que trabaja postura, respiración, fascia, musculatura y piel para recuperar armonía desde la estructura."
       }
     },
-    "facialMetaSuffix": "Faciales terapéuticos · Essentia"
+    "facialMetaSuffix": "Faciales terapéuticos · Essentia",
+    "intravenous-therapy": {
+      "title": "Terapia IV",
+      "tagline": "Con VitalDrip",
+      "heroAlt": "Sesión de terapia intravenosa en Essentia",
+      "price": "Desde 260 €",
+      "duration": "60 min",
+      "intro": "Una nueva forma de acompañar el bienestar desde dentro. Protocolos intravenosos personalizados con vitaminas, minerales y otros micronutrientes, integrados en Essentia de la mano de VitalDrip y siempre bajo valoración y supervisión sanitaria.",
+      "benefitsHeading": "Qué hace",
+      "benefitsSubtitle": "Cada protocolo se selecciona según la persona y el objetivo de la sesión — no a partir de una fórmula genérica.",
+      "benefits": {
+        "0": {
+          "title": "Energía y recuperación",
+          "description": "Protocolos diseñados para acompañar momentos de mayor desgaste, actividad intensa o sensación de fatiga, aportando micronutrientes seleccionados según cada caso."
+        },
+        "1": {
+          "title": "Hidratación y bienestar",
+          "description": "La administración intravenosa permite integrar líquidos y micronutrientes dentro de protocolos orientados a recuperación, hidratación y bienestar general."
+        },
+        "2": {
+          "title": "Descanso y regulación",
+          "description": "Determinadas fórmulas incorporan componentes como magnesio, vitaminas del grupo B y otros micronutrientes para acompañar periodos de estrés, tensión y descanso deficiente. VitalDrip incluye este enfoque en protocolos como Stress Balance y Calm."
+        },
+        "3": {
+          "title": "Apoyo antioxidante y celular",
+          "description": "Protocolos con vitamina C, zinc, glutatión u otros componentes pueden formar parte de una estrategia personalizada de apoyo antioxidante y recuperación, siempre según valoración profesional."
+        }
+      },
+      "sessionHeading": "Cómo es una sesión",
+      "sessionSubtitle": "Cada experiencia comienza con una valoración. El protocolo se define antes de administrar cualquier terapia.",
+      "sessionDetails": {
+        "I": {
+          "title": "Duración",
+          "description": "45–60 minutos. La duración puede variar según el protocolo seleccionado, la composición y la respuesta de cada persona. Los principales tratamientos de VitalDrip están planteados dentro de este rango."
+        },
+        "II": {
+          "title": "Personalización",
+          "description": "Un protocolo para cada persona. Antes de la sesión se revisan necesidades, objetivos y antecedentes para seleccionar la fórmula más adecuada dentro de las opciones disponibles."
+        },
+        "III": {
+          "title": "Supervisión",
+          "description": "Siempre bajo criterio sanitario. La indicación y administración de IV Therapy se realiza por el equipo sanitario responsable, adaptando cada sesión de forma individual."
+        }
+      },
+      "ctaHeading": "Reserva tu sesión IV",
+      "ctaBody": "Cuéntanos qué buscas y te proponemos el protocolo que encaja."
+    }
   },
   "pages": {
     "breathing-sessions": {

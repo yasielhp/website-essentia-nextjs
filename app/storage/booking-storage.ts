@@ -9,10 +9,13 @@ export type BookingStorage = {
   /** The treatment's name — the confirm step shows it, so it has to survive a reload. */
   selectedTierLabel: string | null;
   selectedTierPrice: number | null;
+  selectedTierPriceOnline: number | null;
   selectedDuration: string | null;
   selectedDate: string | null;
   selectedTime: string | null;
-  therapistGender: "male" | "female" | null;
+  /** The member of staff the visitor picked, if the session type has any. */
+  staffId: string | null;
+  staffName: string | null;
   details: DetailsState;
 };
 

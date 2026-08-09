@@ -25,6 +25,8 @@ export type TierPickerOption = {
   label: string | null;
   durationMinutes: number | null;
   price: number | null;
+  /** The online price, when it differs from the one shown. */
+  priceOnline?: number | null;
   imageUrl?: string | null;
   color?: string | null;
 };

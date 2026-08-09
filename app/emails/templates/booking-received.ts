@@ -1,4 +1,4 @@
-import { emailBase, bookingDetailsCard } from "./_base";
+import { emailBase, bookingDetailsCard, cancellationLink } from "./_base";
 
 export function bookingReceivedEmail({
   name,
@@ -9,6 +9,7 @@ export function bookingReceivedEmail({
   duration,
   /** Set when the visitor chose to pay at the centre; omitted for prepaid. */
   amountDueEur,
+  cancelUrl,
   locale = "en",
 }: {
   name: string;
@@ -18,6 +19,8 @@ export function bookingReceivedEmail({
   time: string;
   duration?: string | null;
   amountDueEur?: number | null;
+  /** Link that cancels this booking without signing in. */
+  cancelUrl?: string | null;
   locale?: "en" | "es";
 }): string {
   // Paying on the day is the one case where the client has to be told an
@@ -32,6 +35,8 @@ export function bookingReceivedEmail({
              You chose to pay at the centre: on the day of your session you will pay <strong>€${amountDueEur}</strong>, the full price of the treatment.
            </p>`
       : "";
+  const cancelBlock = cancelUrl ? cancellationLink(cancelUrl, locale) : "";
+
   if (locale === "es") {
     return emailBase({
       locale,
@@ -52,6 +57,8 @@ export function bookingReceivedEmail({
         <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
           Si necesitas cancelar o modificar tu solicitud, por favor contáctanos con al menos 24 horas de antelación.
         </p>
+
+        ${cancelBlock}
       `,
     });
   }
@@ -75,6 +82,8 @@ export function bookingReceivedEmail({
       <p style="margin:0;font-size:14px;color:#4a6767;line-height:1.6;">
         If you need to cancel or modify your request, please contact us at least 24 hours in advance.
       </p>
+
+      ${cancelBlock}
     `,
   });
 }
