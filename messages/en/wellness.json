@@ -12,18 +12,8 @@
   },
   "protocols": {
     "heading": "The protocols",
-    "subheading": "Five modalities. One integrated system.",
+    "subheading": "Four modalities. One integrated system.",
     "items": {
-      "contrast-therapy": {
-        "title": "Contrast Therapy",
-        "tagline": "Heat & Cold",
-        "description": "Heat and cold to activate recovery and reduce inflammation."
-      },
-      "breathing-sessions": {
-        "title": "Breathing Sessions",
-        "tagline": "Breathwork",
-        "description": "Guided breathwork to shift from stress to active recovery."
-      },
       "red-light-therapy": {
         "title": "Red Light Therapy",
         "tagline": "Photobiomodulation",
@@ -38,6 +28,11 @@
         "title": "Therapeutic Facials",
         "tagline": "Skin & Radiance",
         "description": "Advanced facial protocols combining manual techniques and technology to restore skin health."
+      },
+      "functional-wellbeing": {
+        "title": "Functional Wellbeing",
+        "tagline": "Movement & Function",
+        "description": "Assessment and functional work to move better and hold the gains."
       }
     }
   },

@@ -12,18 +12,8 @@
   },
   "protocols": {
     "heading": "Los protocolos",
-    "subheading": "Cinco modalidades. Un sistema integrado.",
+    "subheading": "Cuatro modalidades. Un sistema integrado.",
     "items": {
-      "contrast-therapy": {
-        "title": "Contraste Térmico",
-        "tagline": "Calor y frío",
-        "description": "Calor y frío para activar la recuperación y reducir la inflamación."
-      },
-      "breathing-sessions": {
-        "title": "Sesiones de Respiración",
-        "tagline": "Trabajo de respiración",
-        "description": "Respiración guiada para pasar del estrés a la recuperación activa."
-      },
       "red-light-therapy": {
         "title": "Terapia de Luz Roja",
         "tagline": "Fotobiomodulación",
@@ -38,6 +28,11 @@
         "title": "Faciales terapéuticos",
         "tagline": "Piel y radiancia",
         "description": "Protocolos faciales avanzados que combinan técnicas manuales y tecnología para restaurar la salud de la piel."
+      },
+      "functional-wellbeing": {
+        "title": "Bienestar funcional",
+        "tagline": "Movimiento y función",
+        "description": "Valoración y trabajo funcional para moverte mejor y sostenerlo en el tiempo."
       }
     }
   },
