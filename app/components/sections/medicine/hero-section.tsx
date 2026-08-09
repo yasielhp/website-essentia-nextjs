@@ -64,7 +64,6 @@ export default function HeroSection() {
               if (el) {
                 const top = el.getBoundingClientRect().top + window.scrollY;
                 window.scrollTo({ top, behavior: "smooth" });
-                window.dispatchEvent(new CustomEvent("reveal-treatments"));
               }
             }}
           >
