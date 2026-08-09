@@ -224,7 +224,7 @@
       "service": "Service",
       "location": "Location",
       "datetime": "Datetime",
-      "reservedBy": "Reserved by"
+      "reservedBy": "Booked"
     },
     "form": {
       "title": "New Booking",

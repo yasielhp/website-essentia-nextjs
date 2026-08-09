@@ -224,7 +224,7 @@
       "service": "Servicio",
       "location": "Ubicación",
       "datetime": "Fecha y hora",
-      "reservedBy": "Reservado por"
+      "reservedBy": "Reservado"
     },
     "form": {
       "title": "Nueva reserva",

@@ -37,7 +37,6 @@ type Booking = {
   created_at: string | null;
   created_by_role: string | null;
   created_by_user_id: string | null;
-  creatorName?: string | null;
 };
 
 type Filters = {
@@ -600,38 +599,9 @@ export default function BookingsPage() {
 
     const rows: Booking[] = (data as Booking[] | null) ?? [];
 
-    const creatorIds = [
-      ...new Set(
-        rows
-          .map((b) => b.created_by_user_id)
-          .filter((id): id is string => !!id),
-      ),
-    ];
-
-    const nameMap: Record<string, string> = {};
-    if (creatorIds.length > 0) {
-      const { data: profiles } = await insforge.database
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", creatorIds);
-      for (const p of (profiles ?? []) as {
-        id: string;
-        full_name: string | null;
-      }[]) {
-        if (p.full_name) nameMap[p.id] = p.full_name;
-      }
-    }
-
-    const enriched = rows.map((b) => ({
-      ...b,
-      creatorName: b.created_by_user_id
-        ? (nameMap[b.created_by_user_id] ?? null)
-        : null,
-    }));
-
     dispatch({
       type: "LOAD_SUCCESS",
-      bookings: enriched,
+      bookings: rows,
       total: count ?? 0,
     });
   }, [
@@ -820,7 +790,6 @@ export default function BookingsPage() {
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
                       >
                         {t(`bookings.sources.${source}`)}
-                        {b.creatorName ? ` · ${b.creatorName}` : ""}
                       </span>
                     );
                   })()}
@@ -987,18 +956,11 @@ export default function BookingsPage() {
                       {(() => {
                         const source = sourceKey(b.created_by_role);
                         return (
-                          <div className="flex flex-col gap-0.5">
-                            <span
-                              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
-                            >
-                              {t(`bookings.sources.${source}`)}
-                            </span>
-                            {b.creatorName && (
-                              <span className="text-petroleum-400 text-xs">
-                                {b.creatorName}
-                              </span>
-                            )}
-                          </div>
+                          <span
+                            className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_BADGE[source]!.cls}`}
+                          >
+                            {t(`bookings.sources.${source}`)}
+                          </span>
                         );
                       })()}
                     </td>
