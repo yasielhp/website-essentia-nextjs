@@ -1,6 +1,7 @@
 "use client";
 
 import type { CalendarEvent } from "@/types/calendar";
+import { EventHoverCard, useHoverAnchor } from "./event-hover-card";
 
 export function EventPill({
   event,
@@ -11,6 +12,10 @@ export function EventPill({
   compact?: boolean;
   onClick: () => void;
 }) {
+  // Month cells are one line tall; the rest of the booking lives in a hover
+  // card, which only pointer devices can reach.
+  const { anchor, props: hoverProps } = useHoverAnchor(!!event.tooltip);
+
   const bg = event.color + "22";
   const fg = event.color;
   // Busy blocks stand in for bookings the viewer may not open, so they render
@@ -29,18 +34,28 @@ export function EventPill({
       </>
     );
 
-    return busy ? (
-      <div style={{ backgroundColor: bg, color: fg }} className={className}>
-        {body}
-      </div>
-    ) : (
-      <button
-        onClick={onClick}
-        style={{ backgroundColor: bg, color: fg }}
-        className={`${className} transition-opacity hover:opacity-75`}
-      >
-        {body}
-      </button>
+    return (
+      <>
+        {busy ? (
+          <div
+            {...hoverProps}
+            style={{ backgroundColor: bg, color: fg }}
+            className={className}
+          >
+            {body}
+          </div>
+        ) : (
+          <button
+            onClick={onClick}
+            {...hoverProps}
+            style={{ backgroundColor: bg, color: fg }}
+            className={`${className} transition-opacity hover:opacity-75`}
+          >
+            {body}
+          </button>
+        )}
+        {anchor && <EventHoverCard event={event} anchor={anchor} />}
+      </>
     );
   }
 
@@ -57,17 +72,27 @@ export function EventPill({
     </>
   );
 
-  return busy ? (
-    <div style={{ backgroundColor: bg, color: fg }} className={className}>
-      {body}
-    </div>
-  ) : (
-    <button
-      onClick={onClick}
-      style={{ backgroundColor: bg, color: fg }}
-      className={`${className} transition-opacity hover:opacity-75`}
-    >
-      {body}
-    </button>
+  return (
+    <>
+      {busy ? (
+        <div
+          {...hoverProps}
+          style={{ backgroundColor: bg, color: fg }}
+          className={className}
+        >
+          {body}
+        </div>
+      ) : (
+        <button
+          onClick={onClick}
+          {...hoverProps}
+          style={{ backgroundColor: bg, color: fg }}
+          className={`${className} transition-opacity hover:opacity-75`}
+        >
+          {body}
+        </button>
+      )}
+      {anchor && <EventHoverCard event={event} anchor={anchor} />}
+    </>
   );
 }

@@ -83,7 +83,11 @@
     "selectTherapist": "Seleccionar terapeuta",
     "therapistModalTitle": "Seleccionar terapeuta",
     "therapistMale": "Terapeuta masculino",
-    "therapistFemale": "Terapeuta femenina"
+    "therapistFemale": "Terapeuta femenina",
+    "staffDescription": "Elige con quién quieres tu sesión.",
+    "staffLabel": "Personal",
+    "selectStaff": "Seleccionar personal",
+    "staffModalTitle": "Seleccionar personal"
   },
   "locationStep": {
     "label": "¿Dónde quieres recibir el servicio?",

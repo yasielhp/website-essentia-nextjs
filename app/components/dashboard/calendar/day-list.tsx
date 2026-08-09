@@ -2,8 +2,55 @@
 
 import { useTranslations } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
+import {
+  EventHoverCard,
+  useHoverAnchor,
+} from "@/components/dashboard/calendar/event-hover-card";
 import { toYMD, isPastSlot, sortByTime } from "@/utils/dashboard-calendar";
 import { TIME_SLOTS } from "@/constants/booking";
+
+/**
+ * One booking inside a time slot.
+ *
+ * Its own component so it can hold the hover state: the bar shows a name and
+ * a treatment, and the rest of the booking appears in the card.
+ */
+function SlotEvent({
+  event,
+  onClick,
+}: {
+  event: CalendarEvent;
+  onClick: () => void;
+}) {
+  const { anchor, props: hoverProps } = useHoverAnchor(!!event.tooltip);
+  // Busy blocks hide someone else's client, so there is nothing to open —
+  // render them as static bars.
+  const Tag = event.type === "busy" ? "div" : "button";
+
+  return (
+    <>
+      <Tag
+        onClick={event.type === "busy" ? undefined : onClick}
+        {...hoverProps}
+        className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs ${
+          event.type === "busy" ? "" : "transition-opacity hover:opacity-75"
+        }`}
+        style={{
+          backgroundColor: event.color + "22",
+          color: event.color,
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{event.title}</div>
+          {event.subtitle && (
+            <div className="truncate opacity-70">{event.subtitle}</div>
+          )}
+        </div>
+      </Tag>
+      {anchor && <EventHoverCard event={event} anchor={anchor} />}
+    </>
+  );
+}
 
 export function DayList({
   anchor,
@@ -89,41 +136,13 @@ export function DayList({
                     {slot}
                   </div>
                   <div className="flex flex-1 items-start gap-1.5 py-1.5 pr-4">
-                    {slotEvents.map((e) => {
-                      // Busy blocks hide someone else's client, so there is
-                      // nothing to open — render them as static bars.
-                      const Tag = e.type === "busy" ? "div" : "button";
-                      return (
-                        <Tag
-                          key={e.id + e.type}
-                          onClick={
-                            e.type === "busy"
-                              ? undefined
-                              : () => onEventClick(e)
-                          }
-                          className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs ${
-                            e.type === "busy"
-                              ? ""
-                              : "transition-opacity hover:opacity-75"
-                          }`}
-                          style={{
-                            backgroundColor: e.color + "22",
-                            color: e.color,
-                          }}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate font-medium">
-                              {e.title}
-                            </div>
-                            {e.subtitle && (
-                              <div className="truncate opacity-70">
-                                {e.subtitle}
-                              </div>
-                            )}
-                          </div>
-                        </Tag>
-                      );
-                    })}
+                    {slotEvents.map((e) => (
+                      <SlotEvent
+                        key={e.id + e.type}
+                        event={e}
+                        onClick={() => onEventClick(e)}
+                      />
+                    ))}
                   </div>
                 </div>
               ) : (

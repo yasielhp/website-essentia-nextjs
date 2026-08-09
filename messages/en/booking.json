@@ -83,7 +83,11 @@
     "selectTherapist": "Select therapist",
     "therapistModalTitle": "Select therapist",
     "therapistMale": "Male therapist",
-    "therapistFemale": "Female therapist"
+    "therapistFemale": "Female therapist",
+    "staffDescription": "Choose who you would like for your session.",
+    "staffLabel": "Staff",
+    "selectStaff": "Select staff",
+    "staffModalTitle": "Select staff"
   },
   "locationStep": {
     "label": "Where would you like to receive the service?",
