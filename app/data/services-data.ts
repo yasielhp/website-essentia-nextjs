@@ -175,7 +175,8 @@ export const ivProtocols: IvProtocol[] = [
   },
   {
     id: "vitamin-c",
-    title: "Vitamin C",
+    // Matches `service_tiers.label`, which the deep link looks up by title.
+    title: "Vitamina C",
     meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/vitamin-c-1920x1080.webp",

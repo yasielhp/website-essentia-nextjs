@@ -12,6 +12,7 @@ import { Button } from "@components/ui/button";
 import {
   bookableServices,
   facialTreatments,
+  ivProtocols,
   manualTherapyTreatments,
   type BookableService,
 } from "@/data/services-data";
@@ -424,9 +425,10 @@ function BookingContentInner() {
   const get = searchParams.get.bind(searchParams);
   const slug = get("service") ?? get("wellness") ?? get("medicine");
   const treatmentId = get("treatment");
-  // Both families deep-link into the form; the tier is matched by label.
+  // All three families deep-link into the form, and the tier is matched by
+  // label, so these titles have to read exactly as `service_tiers.label` does.
   const preselectedLabel = treatmentId
-    ? ([...manualTherapyTreatments, ...facialTreatments].find(
+    ? ([...manualTherapyTreatments, ...facialTreatments, ...ivProtocols].find(
         (t) => t.id === treatmentId,
       )?.title ?? null)
     : null;
