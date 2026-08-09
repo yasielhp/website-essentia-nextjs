@@ -198,25 +198,18 @@ function IvProtocolsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Same card as the manual therapies and the facial rituals: copy on
+            one side, photo on the other. Twelve of them make a long page, and
+            that is the trade for a card that can hold a real description. */}
+        <div className="flex flex-col gap-4">
           {ivProtocols.map((protocol) => (
             <article
               key={protocol.id}
-              className="bg-sand-100 flex flex-col overflow-hidden rounded-2xl"
+              className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
             >
-              <div className="relative h-44">
-                <Image
-                  src={protocol.thumbnail}
-                  alt={t(`protocols.${protocol.id}.title`)}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              </div>
-
-              <div className="flex flex-1 flex-col items-start gap-3 p-6">
+              <div className="order-2 flex flex-col items-start justify-center gap-3 p-6 md:order-1 md:p-8">
                 <div>
-                  <h3 className="font-display text-petroleum-700 text-xl">
+                  <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
                     {t(`protocols.${protocol.id}.title`)}
                   </h3>
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
@@ -224,16 +217,16 @@ function IvProtocolsSection() {
                   </span>
                 </div>
 
-                <p className="text-petroleum-500 flex-1 text-sm leading-relaxed">
+                <p className="text-petroleum-500 text-sm leading-relaxed">
                   {t(`protocols.${protocol.id}.description`)}
                 </p>
 
-                <div className="mt-1 flex w-full flex-col gap-2 sm:flex-row">
+                <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                   <Button
                     variant="solid"
                     size="sm"
                     href={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
-                    className="w-full sm:w-auto"
+                    className="w-full md:w-auto"
                   >
                     {t("book")}
                   </Button>
@@ -241,11 +234,21 @@ function IvProtocolsSection() {
                     variant="outline"
                     size="sm"
                     href={`/medicine/intravenous-therapy/${protocol.id}`}
-                    className="w-full sm:w-auto"
+                    className="w-full md:w-auto"
                   >
                     {t("view")}
                   </Button>
                 </div>
+              </div>
+
+              <div className="relative order-1 h-56 md:order-2 md:h-full md:min-h-64">
+                <Image
+                  src={protocol.thumbnail}
+                  alt={t(`protocols.${protocol.id}.title`)}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 50vw"
+                  className="object-cover"
+                />
               </div>
             </article>
           ))}
