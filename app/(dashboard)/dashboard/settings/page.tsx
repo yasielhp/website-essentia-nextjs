@@ -7,19 +7,19 @@ import { useRole } from "@/context/role-context";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { BookingsSettings } from "@/components/dashboard/settings/bookings-settings";
 import { SubscriptionsSettings } from "@/components/dashboard/settings/subscriptions-settings";
-import { CalendarColorSettings } from "@/components/dashboard/settings/calendar-color-settings";
 
-type SettingsTab = "bookings" | "subscriptions" | "races" | "education";
+type SettingsTab = "bookings" | "subscriptions";
 
-const TABS: SettingsTab[] = ["bookings", "subscriptions", "races", "education"];
+const TABS: SettingsTab[] = ["bookings", "subscriptions"];
 
 /**
  * Every setting in the dashboard, in one place.
  *
- * They used to be scattered: services and tiers on a page under Bookings,
- * plans on one under Subscriptions, and the calendar colours behind an
- * "Ajustes" button on the races and education lists. Four settings screens
- * reached four different ways, none of them called Settings.
+ * They used to be scattered: services and tiers on a page under Bookings and
+ * plans on one under Subscriptions, neither of them called Settings.
+ *
+ * Races and education kept only a calendar colour here, which nobody changed
+ * and which the overview now takes from the session type anyway.
  *
  * Admin only, which the bookings panel already required on its own.
  */
@@ -50,8 +50,6 @@ export default function SettingsPage() {
 
         {tab === "bookings" && <BookingsSettings />}
         {tab === "subscriptions" && <SubscriptionsSettings />}
-        {tab === "races" && <CalendarColorSettings field="races" />}
-        {tab === "education" && <CalendarColorSettings field="sessions" />}
       </div>
     </div>
   );

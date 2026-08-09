@@ -20,6 +20,38 @@ export type TreatmentData = {
 };
 
 export const treatments: Record<string, TreatmentData> = {
+  "intravenous-therapy": {
+    slug: "intravenous-therapy",
+    heroImage: "/images/medicine/iv-therapy/heroes/iv-therapy-1920x1080.webp",
+    heroAlt: "IV therapy at Essentia, with VitalDrip",
+    title: "IV Therapy",
+    tagline: "With VitalDrip",
+    price: "From €260",
+    duration: "60 min",
+    intro:
+      "A new way of supporting wellbeing from within. Personalised intravenous protocols with vitamins, minerals and other micronutrients, brought to Essentia together with VitalDrip and always under medical assessment and supervision.",
+    benefitsHeading: "What it does",
+    benefitsSubtitle:
+      "Each protocol is chosen for the person and the purpose of the session — never from a generic formula.",
+    // Copy lives in the messages, keyed by index; these only fix the order.
+    benefits: [
+      { title: "energy", description: "" },
+      { title: "hydration", description: "" },
+      { title: "rest", description: "" },
+      { title: "antioxidant", description: "" },
+    ],
+    sessionHeading: "Your session",
+    sessionSubtitle:
+      "From the first assessment to the moment you leave, the session is medical in its care and unhurried in its pace.",
+    sessionDetails: [
+      { number: "I", title: "", description: "" },
+      { number: "II", title: "", description: "" },
+      { number: "III", title: "", description: "" },
+    ],
+    ctaHeading: "Book your IV session",
+    ctaBody:
+      "Tell us what you are looking for and we will suggest the protocol that fits.",
+  },
   "contrast-therapy": {
     slug: "contrast-therapy",
     heroImage: "/images/menu/thermal-contrast-900x600.webp",

@@ -224,7 +224,7 @@
       "service": "Servicio",
       "location": "Ubicación",
       "datetime": "Fecha y hora",
-      "reservedBy": "Reservado por"
+      "reservedBy": "Reservado"
     },
     "form": {
       "title": "Nueva reserva",
@@ -1191,9 +1191,7 @@
     "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
     "tabs": {
       "bookings": "Reservas",
-      "subscriptions": "Suscripciones",
-      "races": "Carreras",
-      "education": "Formación"
+      "subscriptions": "Suscripciones"
     },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
@@ -1210,7 +1208,7 @@
     "breathing-sessions": "Sesiones de respiración",
     "red-light-therapy": "Terapia de luz roja",
     "hyperbaric-chambers": "Cámaras hiperbáricas",
-    "intravenous-therapy": "Terapia intravenosa",
+    "intravenous-therapy": "Terapia IV",
     "regenerative-medicine": "Medicina regenerativa"
   },
   "toasts": {

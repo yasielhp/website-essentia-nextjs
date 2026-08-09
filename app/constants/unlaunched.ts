@@ -18,7 +18,6 @@ export const UNLAUNCHED_ROUTES = [
   "/wellness/functional-wellbeing",
   "/wellness/red-light-therapy",
   "/medicine/hyperbaric-chambers",
-  "/medicine/intravenous-therapy",
   "/medicine/regenerative-medicine",
   "/experiences/education-programs",
   "/experiences/education-programs/register",

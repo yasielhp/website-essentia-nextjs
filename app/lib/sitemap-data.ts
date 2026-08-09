@@ -5,6 +5,7 @@ export const BLOG_POSTS_CACHE_TAG = "blog-posts";
 import { insforgePublic as insforge } from "@/lib/insforge-public";
 import {
   facialTreatments,
+  ivProtocols,
   manualTherapyTreatments,
 } from "@/data/services-data";
 import { contact } from "@/constants/contact";
@@ -146,6 +147,10 @@ export function getTreatmentPaths(): { path: string; esPath: string }[] {
     ...facialTreatments.map((t) => ({
       path: `/wellness/facial-therapies/${t.id}`,
       esPath: `/bienestar/terapias-faciales/${t.id}`,
+    })),
+    ...ivProtocols.map((p) => ({
+      path: `/medicine/intravenous-therapy/${p.id}`,
+      esPath: `/medicina/terapia-intravenosa/${p.id}`,
     })),
   ];
 }

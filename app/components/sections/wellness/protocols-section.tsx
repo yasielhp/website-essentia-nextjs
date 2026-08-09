@@ -84,7 +84,10 @@ function TreatmentCard({
 
 export default function ProtocolsSection() {
   const t = useTranslations("wellness.protocols");
-  const [first, second, third, fourth, fifth] = treatments;
+  // Bookable first and larger; what is still coming sits below in a smaller
+  // row. Split by the flag rather than by position, so the list can grow.
+  const bookable = treatments.filter((t) => !t.comingSoon);
+  const upcoming = treatments.filter((t) => t.comingSoon);
 
   return (
     <section id="protocols" className="bg-sand-50">
@@ -103,17 +106,26 @@ export default function ProtocolsSection() {
 
             {/* ── Grid ── */}
             <div className="flex flex-col gap-4">
-              {/* Row 1: 2 wider cards — the treatments that are bookable today */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <TreatmentCard treatment={fourth} tall />
-                <TreatmentCard treatment={fifth} tall />
+                {bookable.map((treatment) => (
+                  <TreatmentCard
+                    key={treatment.href}
+                    treatment={treatment}
+                    tall
+                  />
+                ))}
               </div>
-              {/* Row 2: 3 equal cards */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <TreatmentCard treatment={first} />
-                <TreatmentCard treatment={second} />
-                <TreatmentCard treatment={third} />
-              </div>
+              {upcoming.length > 0 && (
+                <div
+                  className={`grid grid-cols-1 gap-4 ${
+                    upcoming.length > 2 ? "md:grid-cols-3" : "md:grid-cols-2"
+                  }`}
+                >
+                  {upcoming.map((treatment) => (
+                    <TreatmentCard key={treatment.href} treatment={treatment} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

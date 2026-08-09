@@ -208,5 +208,76 @@
     },
     "breadcrumbHome": "Home",
     "breadcrumbMedicine": "Medicine"
+  },
+  "iv": {
+    "eyebrow": "Our IV protocols",
+    "heading": "A protocol for each moment",
+    "subtitle": "Each protocol is designed with a specific purpose. The prior assessment helps us choose the one that best fits what your body needs today.",
+    "book": "Book",
+    "disclaimer": "Intravenous protocols are always given under medical assessment and supervision. They do not replace medical treatment or a balanced diet, and they are not suitable for everyone.",
+    "protocols": {
+      "essentia-iv-signature": {
+        "title": "Essentia IV Signature",
+        "meta": "LYMPHATIC DRAINAGE + IV THERAPY",
+        "description": "Advanced Lymphatic Drainage · Essentia Method combined with a formula developed with VitalDrip: NAD+, magnesium, vitamin C and L-carnitine."
+      },
+      "power-drip": {
+        "title": "Power Drip",
+        "meta": "45–60 MIN",
+        "description": "An intravenous protocol for low-energy spells, demanding days or periods of strain. B-group vitamins, B12, amino acids and magnesium to support vitality and recovery."
+      },
+      "immunity-drip": {
+        "title": "Immunity Drip",
+        "meta": "45–60 MIN",
+        "description": "Vitamin C, zinc, B-group vitamins and glutathione, designed as nutritional support during demanding periods and for the normal functioning of the immune system."
+      },
+      "nirvana-drip": {
+        "title": "Nirvana Drip",
+        "meta": "45–60 MIN",
+        "description": "Focused on relaxation and wellbeing during stressful periods or poor sleep. Magnesium, B-group vitamins and tryptophan to support calm and recovery."
+      },
+      "stress-balance": {
+        "title": "Stress Balance",
+        "meta": "45–60 MIN",
+        "description": "For stress, mental tension or insufficient rest. Magnesium, B vitamins, vitamin C, glycine and zinc to support relaxation and wellbeing."
+      },
+      "beauty-hair-glow": {
+        "title": "Beauty & Hair Glow",
+        "meta": "45–60 MIN",
+        "description": "Skin and hair cared for from within. Biotin, zinc, vitamin C, glutathione and selected amino acids within an experience aimed at aesthetic wellbeing."
+      },
+      "vitamin-c": {
+        "title": "Vitamin C",
+        "meta": "45–60 MIN",
+        "description": "A high-concentration vitamin C protocol for antioxidant support and general wellbeing. A specific option, always chosen after individual medical assessment."
+      },
+      "nad-plus": {
+        "title": "NAD+",
+        "meta": "45–60 MIN",
+        "description": "Focused on cellular performance, mental clarity and energy recovery. It can also be added to any other protocol as a boost."
+      },
+      "resurrection-drip": {
+        "title": "Resurrection Drip",
+        "meta": "45–60 MIN",
+        "description": "Hydration and recovery for periods of strain. Saline solution, B-group vitamins, vitamin C, magnesium and zinc to support rehydration."
+      },
+      "body-drip": {
+        "title": "Body Drip",
+        "meta": "45–60 MIN",
+        "description": "MIC complex, B-group vitamins and alpha lipoic acid, approached from a metabolic and body-composition perspective."
+      },
+      "fit-drip": {
+        "title": "Fit Drip",
+        "meta": "45–60 MIN",
+        "description": "For physical activity, recovery and demanding periods. Essential amino acids, B-group vitamins, magnesium and calcium to support hydration and recovery."
+      },
+      "calm-drip": {
+        "title": "Calm Drip",
+        "meta": "45–60 MIN",
+        "description": "Aimed at rest and relaxation, especially in stressful periods. Tryptophan, magnesium, glutathione and essential amino acids to support calm and recovery."
+      }
+    },
+    "metaSuffix": "Essentia Medicine",
+    "view": "View protocol"
   }
 }

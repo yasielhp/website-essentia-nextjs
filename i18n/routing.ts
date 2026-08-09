@@ -61,6 +61,10 @@ export const routing = defineRouting({
       en: "/medicine/intravenous-therapy",
       es: "/medicina/terapia-intravenosa",
     },
+    "/medicine/intravenous-therapy/[slug]": {
+      en: "/medicine/intravenous-therapy/[slug]",
+      es: "/medicina/terapia-intravenosa/[slug]",
+    },
     "/medicine/regenerative-medicine": {
       en: "/medicine/regenerative-medicine",
       es: "/medicina/medicina-regenerativa",
