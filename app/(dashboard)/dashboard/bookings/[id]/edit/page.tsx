@@ -37,6 +37,7 @@ import {
   getCalendarDays,
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
+import { EmailInput } from "@/components/ui/email-input";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -1217,11 +1218,10 @@ function ClientSection({
           >
             {t("fields.email")} <span className="text-red-400">*</span>
           </label>
-          <input
+          <EmailInput
             id="email"
-            type="email"
             value={email}
-            onChange={(e) => onFieldChange("email", e.target.value)}
+            onChange={(value) => onFieldChange("email", value)}
             placeholder={t("fields.emailPlaceholder")}
             disabled={submitting}
             className={INPUT_CLASS}

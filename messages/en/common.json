@@ -52,5 +52,9 @@
     "lastNameRequired": "Last name is required",
     "phoneInvalid": "Enter a valid phone number",
     "consentRequired": "You must accept the terms and privacy policy"
+  },
+  "emailField": {
+    "invalid": "Check the address — something is missing or mistyped.",
+    "didYouMean": "Did you mean"
   }
 }

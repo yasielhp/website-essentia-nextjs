@@ -10,6 +10,7 @@ import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 import { useAuth } from "@/components/auth-provider";
+import { EmailInput } from "@/components/ui/email-input";
 
 export default function SignInForm() {
   const t = useTranslations("auth.signIn");
@@ -79,15 +80,14 @@ export default function SignInForm() {
           >
             {t("email")}
           </label>
-          <input
+          <EmailInput
             id="email"
-            type="email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
+            onChange={(value) => {
+              setEmail(value);
               setFieldErrors((p) => ({ ...p, email: undefined }));
             }}
-            autoComplete="email"
+            hasError={!!fieldErrors.email}
             placeholder={t("emailPlaceholder")}
             className={`text-petroleum-700 placeholder:text-petroleum-100 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 ${fieldErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-sand-200 focus:border-petroleum-400 focus:ring-petroleum-100"}`}
           />

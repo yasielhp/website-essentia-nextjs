@@ -8,6 +8,7 @@ import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import type { DetailsState } from "@/types";
 import type { Gender } from "@/types/person";
+import { EmailInput } from "@/components/ui/email-input";
 
 const inputClass =
   "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
@@ -101,13 +102,15 @@ export function DetailsStep({
         </Field>
       </div>
       <Field label={t("email")} id="email" required error={errors.email}>
-        <input
+        <EmailInput
           id="email"
-          type="email"
-          autoComplete="email"
           placeholder={t("emailPlaceholder")}
           value={details.email}
-          onChange={set("email")}
+          onChange={(value) => {
+            onChange({ ...details, email: value });
+            onClearError?.("email");
+          }}
+          hasError={!!errors.email}
           className={`${inputClass} ${errors.email ? inputErr : inputOk}`}
         />
       </Field>

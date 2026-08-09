@@ -8,6 +8,7 @@ import { Button } from "@components/ui/button";
 import { contact } from "@/constants/contact";
 import { AnimatedIconLink } from "@components/ui/animated-text";
 import { sendContactMessage } from "@/actions/contact-message";
+import { EmailInput } from "@/components/ui/email-input";
 
 // ─── Input ────────────────────────────────────────────────────
 
@@ -41,6 +42,9 @@ export default function ContactSection() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Controlled so the field can check itself as it is filled in; the form
+  // still reads it through FormData by name.
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -89,6 +93,7 @@ export default function ContactSection() {
     }
 
     form.reset();
+    setEmail("");
     setSubmitted(true);
   };
 
@@ -162,13 +167,13 @@ export default function ContactSection() {
                 </div>
 
                 <Field label={t("form.email")} id="email">
-                  <input
+                  <EmailInput
                     id="email"
                     name="email"
-                    type="email"
                     required
-                    autoComplete="email"
                     placeholder={t("form.emailPlaceholder")}
+                    value={email}
+                    onChange={setEmail}
                     className={inputClass}
                   />
                 </Field>

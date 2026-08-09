@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { resetPassword, sendResetPasswordEmail } from "@/actions/auth";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
 
 type Stage = "email" | "reset";
 
@@ -256,15 +257,13 @@ export default function ForgotPasswordForm() {
           >
             {t("email")}
           </label>
-          <input
+          <EmailInput
             id="email"
-            type="email"
             value={email}
-            onChange={(e) =>
-              dispatch({ type: "SET_EMAIL", payload: e.target.value })
+            onChange={(value) =>
+              dispatch({ type: "SET_EMAIL", payload: value })
             }
             required
-            autoComplete="email"
             placeholder={t("emailPlaceholder")}
             className={inputClass}
           />

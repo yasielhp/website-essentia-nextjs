@@ -19,6 +19,7 @@ import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { toStoredGender, type GenderValue } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { useFieldError } from "@/hooks/use-field-error";
+import { EmailInput } from "@/components/ui/email-input";
 
 /**
  * What this form can create.
@@ -392,15 +393,14 @@ export default function NewUserPage() {
                 >
                   {t("fields.email")} <span className="text-red-400">*</span>
                 </label>
-                <input
+                <EmailInput
                   id="email"
-                  type="email"
                   value={email}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     dispatch({
                       type: "SET_FIELD",
                       field: "email",
-                      value: e.target.value,
+                      value: value,
                     })
                   }
                   placeholder={t("fields.emailPlaceholder")}

@@ -35,6 +35,7 @@ import {
   getCalendarDays,
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
+import { EmailInput } from "@/components/ui/email-input";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -1639,15 +1640,14 @@ function NewBookingPageInner() {
                   >
                     {t("fields.email")} <span className="text-red-400">*</span>
                   </label>
-                  <input
+                  <EmailInput
                     id="email"
-                    type="email"
                     value={email}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       dispatchForm({
                         type: "SET_FIELD",
                         field: "email",
-                        value: e.target.value,
+                        value: value,
                       })
                     }
                     placeholder={t("fields.emailPlaceholder")}
