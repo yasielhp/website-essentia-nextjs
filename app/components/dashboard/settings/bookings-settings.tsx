@@ -3,125 +3,13 @@
 import { useState, useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
-import {
-  connectServiceCalendar,
-  disconnectServiceCalendar,
-  fetchServiceConnections,
-  syncServiceCalendar,
-} from "@/services/calendar.client";
-import { Button } from "@/components/ui/button";
-import {
-  loadColorSettings,
-  DEFAULT_COLORS,
-  SERVICES,
-} from "@/utils/color-settings";
+import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
+import { bookableServices } from "@/data/services-data";
 import type { ColorSettings } from "@/utils/color-settings";
 import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
-
-// ─── Google Calendar types ────────────────────────────────────────────────────
-
-type ServiceCalendarConfig = {
-  service_id: string;
-  google_connected_email: string | null;
-  google_calendar_id: string | null;
-};
-
-// ─── Google Calendar widget ───────────────────────────────────────────────────
-
-function GoogleCalendarWidget({
-  serviceId,
-  config,
-  onDisconnected,
-}: {
-  serviceId: string;
-  config: ServiceCalendarConfig | undefined;
-  onDisconnected: (serviceId: string) => void;
-}) {
-  const t = useTranslations("dashboard.settings.calendar");
-  const [disconnecting, setDisconnecting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-
-  const handleDisconnect = async () => {
-    setDisconnecting(true);
-    try {
-      await disconnectServiceCalendar(serviceId);
-      onDisconnected(serviceId);
-    } catch {
-      // ignore
-    } finally {
-      setDisconnecting(false);
-    }
-  };
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await syncServiceCalendar(serviceId);
-    } catch {
-      // ignore
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const isConnected = !!config?.google_connected_email;
-
-  return (
-    <div
-      className={`mt-2 flex items-center justify-between rounded-xl border px-4 py-3 ${isConnected ? "border-green-200 bg-green-50" : "border-petroleum-100 bg-petroleum-100"}`}
-    >
-      <div className="flex flex-col gap-0.5">
-        <span
-          className={`text-sm font-medium ${isConnected ? "text-green-700" : "text-petroleum-400"}`}
-        >
-          {isConnected ? t("connected") : t("notConnected")}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`size-1.5 shrink-0 rounded-full ${isConnected ? "bg-green-500" : "hidden"}`}
-          />
-          <span className="text-petroleum-500 max-w-50 truncate text-xs">
-            {isConnected
-              ? config!.google_connected_email
-              : "No calendar linked"}
-          </span>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {isConnected ? (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void handleSync()}
-              disabled={syncing}
-            >
-              {syncing ? t("syncing") : t("resync")}
-            </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => void handleDisconnect()}
-              disabled={disconnecting}
-            >
-              {disconnecting ? t("disconnecting") : t("disconnect")}
-            </Button>
-          </>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void connectServiceCalendar(serviceId)}
-          >
-            {t("connect")}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
+import { TabButton } from "@/components/dashboard/settings/tab-button";
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -129,8 +17,9 @@ type DataState = {
   mounted: boolean;
   colors: ColorSettings;
   serviceTiers: Record<string, TierRow[]>;
+  /** Names of the staff assigned to each session type, keyed by tier id. */
+  tierStaff: Record<string, string[]>;
   modal: ModalState | null;
-  calendarConfigs: ServiceCalendarConfig[];
 };
 
 type DataAction =
@@ -138,20 +27,55 @@ type DataAction =
       type: "INIT_DONE";
       colors: ColorSettings;
       serviceTiers: Record<string, TierRow[]>;
-      calendarConfigs: ServiceCalendarConfig[];
+      tierStaff: Record<string, string[]>;
     }
   | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
+  | { type: "SET_TIER_STAFF"; tierStaff: Record<string, string[]> }
   | { type: "SET_MODAL"; modal: ModalState | null }
-  | { type: "SET_COLORS"; colors: ColorSettings }
-  | { type: "REMOVE_CALENDAR_CONFIG"; serviceId: string };
+  | { type: "SET_COLORS"; colors: ColorSettings };
 
 const initialDataState: DataState = {
   mounted: false,
   colors: DEFAULT_COLORS,
   serviceTiers: {},
+  tierStaff: {},
   modal: null,
-  calendarConfigs: [],
 };
+
+/** Who performs each session type, as names ready to print. */
+async function loadTierStaff(): Promise<Record<string, string[]>> {
+  const [assigned, staff] = await Promise.all([
+    insforge.database
+      .from("staff_tiers")
+      .select("tier_id, staff_id, sort_order")
+      .order("sort_order"),
+    insforge.database
+      .from("profiles")
+      .select("id, full_name, first_name")
+      .eq("role", "staff"),
+  ]);
+
+  const names = new Map(
+    (
+      (staff.data ?? []) as {
+        id: string;
+        full_name: string | null;
+        first_name: string | null;
+      }[]
+    ).map((p) => [p.id, p.full_name ?? p.first_name ?? "—"]),
+  );
+
+  const byTier: Record<string, string[]> = {};
+  for (const row of (assigned.data ?? []) as {
+    tier_id: string;
+    staff_id: string;
+  }[]) {
+    const name = names.get(row.staff_id);
+    if (!name) continue;
+    (byTier[row.tier_id] ??= []).push(name);
+  }
+  return byTier;
+}
 
 function dataReducer(state: DataState, action: DataAction): DataState {
   switch (action.type) {
@@ -161,21 +85,16 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         mounted: true,
         colors: action.colors,
         serviceTiers: action.serviceTiers,
-        calendarConfigs: action.calendarConfigs,
+        tierStaff: action.tierStaff,
       };
     case "SET_SERVICE_TIERS":
       return { ...state, serviceTiers: action.serviceTiers };
+    case "SET_TIER_STAFF":
+      return { ...state, tierStaff: action.tierStaff };
     case "SET_MODAL":
       return { ...state, modal: action.modal };
     case "SET_COLORS":
       return { ...state, colors: action.colors };
-    case "REMOVE_CALENDAR_CONFIG":
-      return {
-        ...state,
-        calendarConfigs: state.calendarConfigs.filter(
-          (c) => c.service_id !== action.serviceId,
-        ),
-      };
     default:
       return state;
   }
@@ -185,131 +104,171 @@ function dataReducer(state: DataState, action: DataAction): DataState {
 
 function ServicesContent({
   serviceTiers,
-  calendarConfigs,
-  onAddTier,
+  tierStaff,
   onEditTier,
-  onCalendarDisconnected,
 }: {
   serviceTiers: Record<string, TierRow[]>;
-  calendarConfigs: ServiceCalendarConfig[];
-  onAddTier: (serviceId: string) => void;
+  tierStaff: Record<string, string[]>;
   onEditTier: (serviceId: string, tier: TierRow) => void;
-  onCalendarDisconnected: (serviceId: string) => void;
 }) {
   const t = useTranslations("dashboard.settings.services");
   const tServices = useTranslations("dashboard.services");
   const tTiers = useTranslations("dashboard.settings.tiers");
+  // The catalogue is fixed in code: these are the services that exist, and
+  // their session types are seeded rather than added from here.
+  const [service, setService] = useState(bookableServices[0]?.id ?? "");
+
   return (
     <div className="flex flex-col gap-4">
-      {SERVICES.map(({ id }) => {
-        const tiers = serviceTiers[id] ?? [];
-        const calConfig = calendarConfigs.find((c) => c.service_id === id);
-        return (
-          <div key={id} className="border-sand-200 rounded-2xl border bg-white">
-            <div className="px-5 py-4">
-              <div className="flex items-center justify-between">
-                <span className="text-petroleum-700 font-semibold">
-                  {tServices(id)}
-                </span>
-                <Button variant="solid" size="sm" onClick={() => onAddTier(id)}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 5v14M5 12h14"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  {t("addTier")}
-                </Button>
-              </div>
-              <GoogleCalendarWidget
-                serviceId={id}
-                config={calConfig}
-                onDisconnected={onCalendarDisconnected}
-              />
-            </div>
+      <div className="flex gap-1 overflow-x-auto">
+        {bookableServices.map(({ id }) => (
+          <TabButton
+            key={id}
+            active={service === id}
+            onClick={() => setService(id)}
+          >
+            <span className="whitespace-nowrap">{tServices(id)}</span>
+          </TabButton>
+        ))}
+      </div>
 
-            {tiers.length > 0 ? (
-              <div className="border-sand-100 border-t">
-                <div className="grid grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 px-5 py-2">
-                  {[
-                    "",
-                    "name",
-                    "color",
-                    "duration",
-                    "centre",
-                    "suite",
-                    "status",
-                  ].map((h, i) => (
-                    <span
-                      key={h || "image"}
-                      className={`text-petroleum-400 text-xs font-medium ${i >= 4 && i <= 5 ? "text-right" : i === 6 ? "text-center" : ""}`}
-                    >
-                      {h ? t(`columns.${h}`) : ""}
-                    </span>
-                  ))}
-                </div>
-                {tiers.map((tier) => (
-                  <button
-                    key={tier.id}
-                    type="button"
-                    onClick={() => onEditTier(id, tier)}
-                    className="border-sand-100 hover:bg-sand-50 grid w-full grid-cols-[40px_1fr_48px_88px_80px_80px_72px] items-center gap-3 border-t px-5 py-3 text-left transition-colors"
-                  >
-                    <TierThumbnail
-                      imageUrl={tier.image_url}
-                      color={tier.color}
-                      label={tier.label}
-                      className="size-10"
-                      sizes="40px"
-                    />
-                    <span className="text-petroleum-700 min-w-0 truncate text-sm">
-                      {tier.label ?? "—"}
-                    </span>
-                    <div
-                      className="size-4 shrink-0 rounded-full ring-1 ring-black/10"
-                      style={{ backgroundColor: tier.color ?? "#6b7280" }}
-                    />
-                    <span className="text-petroleum-500 text-sm">
-                      {tier.duration_minutes != null
-                        ? `${tier.duration_minutes} min`
-                        : "—"}
-                    </span>
-                    <span className="text-petroleum-700 text-right text-sm font-medium">
-                      {tier.price_center_eur != null
-                        ? `€${tier.price_center_eur}`
-                        : tier.price_eur != null
-                          ? `€${tier.price_eur}`
-                          : "—"}
-                    </span>
-                    <span className="text-petroleum-500 text-right text-sm">
-                      {tier.price_suite_eur != null
-                        ? `€${tier.price_suite_eur}`
-                        : "—"}
-                    </span>
-                    <span className="flex justify-center">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          tier.active
-                            ? "bg-green-100 text-green-700"
-                            : "bg-sand-100 text-petroleum-400"
-                        }`}
+      {bookableServices
+        .filter(({ id }) => id === service)
+        .map(({ id }) => {
+          const tiers = serviceTiers[id] ?? [];
+          return (
+            <div key={id}>
+              {tiers.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {/* The calendar colour tints the whole card, so a tier is
+                      recognisable here the same way it is on the calendar.
+                      Kept faint: the text still has to read on top of it. */}
+                  {tiers.map((tier) => {
+                    // Whatever the two prices say — the percentage is not
+                    // stored, so it can never disagree with what is charged.
+                    const discount =
+                      tier.price_center_eur != null &&
+                      tier.price_eur != null &&
+                      tier.price_center_eur > tier.price_eur
+                        ? Math.round(
+                            (1 - tier.price_eur / tier.price_center_eur) * 100,
+                          )
+                        : null;
+                    return (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => onEditTier(id, tier)}
+                        style={{
+                          backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
+                          borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
+                        }}
+                        className="hover:ring-petroleum-300 flex flex-col gap-3 rounded-2xl border p-4 text-left transition-shadow hover:ring-2"
                       >
-                        {tier.active ? tTiers("active") : tTiers("off")}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="border-sand-100 border-t px-5 py-4">
-                <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
-              </div>
-            )}
-          </div>
-        );
-      })}
+                        <div className="flex items-start gap-3">
+                          <TierThumbnail
+                            imageUrl={tier.image_url}
+                            color={tier.color}
+                            label={tier.label}
+                            className="size-12 shrink-0"
+                            sizes="48px"
+                          />
+                          <span className="text-petroleum-700 min-w-0 flex-1 truncate text-sm font-medium">
+                            {tier.label ?? "—"}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                              tier.active
+                                ? "bg-green-100 text-green-700"
+                                : "text-petroleum-400 bg-white/70"
+                            }`}
+                          >
+                            {tier.active ? tTiers("active") : tTiers("off")}
+                          </span>
+                        </div>
+
+                        <dl className="flex flex-col gap-1 border-t border-black/10 pt-3 text-xs">
+                          {(
+                            [
+                              [
+                                "duration",
+                                tier.duration_minutes != null
+                                  ? `${tier.duration_minutes} min`
+                                  : "—",
+                              ],
+                              [
+                                "priceWeb",
+                                tier.price_eur != null
+                                  ? `${tier.price_eur} €${
+                                      discount != null
+                                        ? ` (−${discount} %)`
+                                        : ""
+                                    }`
+                                  : "—",
+                              ],
+                              [
+                                "priceCentre",
+                                tier.price_center_eur != null
+                                  ? `${tier.price_center_eur} €`
+                                  : "—",
+                              ],
+                              [
+                                "priceSuite",
+                                tier.price_suite_eur != null
+                                  ? `${tier.price_suite_eur} €`
+                                  : "—",
+                              ],
+                            ] as const
+                          ).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between gap-2"
+                            >
+                              <dt className="text-petroleum-400">
+                                {t(`card.${key}`)}
+                              </dt>
+                              <dd className="text-petroleum-700 font-medium">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+
+                        {/* Nobody assigned means nobody can be booked for it,
+                          so the empty case is spelled out rather than blank. */}
+                        <div className="flex flex-col gap-1.5 border-t border-black/10 pt-3">
+                          <span className="text-petroleum-400 text-xs">
+                            {t("card.staff")}
+                          </span>
+                          {(tierStaff[tier.id] ?? []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(tierStaff[tier.id] ?? []).map((name) => (
+                                <span
+                                  key={name}
+                                  className="text-petroleum-700 rounded-full bg-white/70 px-2 py-0.5 text-xs"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-red-600">
+                              {t("card.noStaff")}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="border-sand-200 rounded-2xl border bg-white px-5 py-4">
+                  <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -356,6 +315,7 @@ export function BookingsSettings() {
         [serviceId]: (rows as TierRow[] | null) ?? [],
       },
     });
+    dispatch({ type: "SET_TIER_STAFF", tierStaff: await loadTierStaff() });
     showToast("Saved");
   }
 
@@ -363,15 +323,14 @@ export function BookingsSettings() {
     async function init() {
       const colors = loadColorSettings();
 
-      const [tiersRes, calRes] = await Promise.all([
-        insforge.database
-          .from("service_tiers")
-          .select(
-            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
-          )
-          .order("sort_order"),
-        fetchServiceConnections(),
-      ]);
+      const tiersRes = await insforge.database
+        .from("service_tiers")
+        .select(
+          "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
+        )
+        .order("sort_order");
+
+      const tierStaff = await loadTierStaff();
 
       const serviceTiers: Record<string, TierRow[]> = {};
       if (tiersRes.data) {
@@ -381,9 +340,7 @@ export function BookingsSettings() {
         }
       }
 
-      const calendarConfigs = calRes as ServiceCalendarConfig[];
-
-      dispatch({ type: "INIT_DONE", colors, serviceTiers, calendarConfigs });
+      dispatch({ type: "INIT_DONE", colors, serviceTiers, tierStaff });
     }
     void init();
   }, []);
@@ -392,33 +349,44 @@ export function BookingsSettings() {
 
   if (!data.mounted) {
     return (
-      <div>
-        <div className="mb-8">
-          <div className="bg-sand-100 h-8 w-32 animate-pulse rounded-lg" />
-        </div>
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
+        {/* Same shape as the loaded page: service tabs, then the card grid. */}
+        <div className="flex gap-1">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="border-sand-200 rounded-2xl border bg-white"
+              className="bg-sand-100 h-9 w-28 animate-pulse rounded-full"
+            />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="border-sand-200 flex flex-col gap-3 rounded-2xl border bg-white p-4"
             >
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="bg-sand-100 h-5 w-36 animate-pulse rounded" />
-                <div className="bg-sand-100 h-8 w-20 animate-pulse rounded-lg" />
+              <div className="flex items-start gap-3">
+                <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+                <div className="flex-1">
+                  <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                </div>
+                <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
               </div>
-              <div className="border-sand-100 border-t">
-                {[0, 1].map((j) => (
-                  <div
-                    key={j}
-                    className="border-sand-100 flex items-center gap-3 border-t px-5 py-3"
-                  >
-                    <div className="bg-sand-100 h-4 flex-1 animate-pulse rounded" />
-                    <div className="bg-sand-100 size-4 shrink-0 animate-pulse rounded-full" />
-                    <div className="bg-sand-100 h-4 w-16 animate-pulse rounded" />
-                    <div className="bg-sand-100 h-4 w-12 animate-pulse rounded" />
-                    <div className="bg-sand-100 h-5 w-12 animate-pulse rounded-full" />
+              <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
+                {[0, 1, 2, 3].map((j) => (
+                  <div key={j} className="flex justify-between gap-2">
+                    <div className="bg-sand-100 h-3 w-20 animate-pulse rounded" />
+                    <div className="bg-sand-100 h-3 w-12 animate-pulse rounded" />
                   </div>
                 ))}
+              </div>
+              <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
+                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+                <div className="flex gap-1.5">
+                  <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                  <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                </div>
               </div>
             </div>
           ))}
@@ -431,17 +399,10 @@ export function BookingsSettings() {
     <div>
       <ServicesContent
         serviceTiers={data.serviceTiers}
-        calendarConfigs={data.calendarConfigs}
-        onAddTier={(serviceId) =>
-          dispatch({ type: "SET_MODAL", modal: { serviceId } })
-        }
+        tierStaff={data.tierStaff}
         onEditTier={(serviceId, tier) =>
           dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
         }
-        onCalendarDisconnected={(serviceId) => {
-          dispatch({ type: "REMOVE_CALENDAR_CONFIG", serviceId });
-          showToast("Google Calendar disconnected");
-        }}
       />
 
       {data.modal && (
