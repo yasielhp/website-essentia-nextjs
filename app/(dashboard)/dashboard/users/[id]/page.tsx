@@ -23,20 +23,19 @@ import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { toStoredGender, type GenderValue } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import {
-  connectStaffCalendar,
-  disconnectStaffCalendar,
+  connectAccountCalendar,
+  disconnectAccountCalendar,
+  resyncAccountCalendar,
 } from "@/services/calendar.client";
-import {
-  IconTrash,
-  IconCheck,
-  IconCalendarConnect,
-} from "@/components/ui/icons";
+import { IconTrash, IconCalendarConnect } from "@/components/ui/icons";
 import { EmailInput } from "@/components/ui/email-input";
+import {
+  StaffScheduleEditor,
+  normaliseSchedule,
+} from "@/components/dashboard/users/staff-schedule-editor";
+import type { WeeklySchedule } from "@/types/schedule";
 
 type SystemRole = "admin" | "staff" | "partner";
-
-type ServiceRow = { id: string; title: string };
-type Assignment = { service_id: string; google_calendar_email: string };
 
 type Profile = {
   id: string;
@@ -47,8 +46,12 @@ type Profile = {
   email: string | null;
   phone: string | null;
   gender: GenderValue | null;
+  job_title: string | null;
   preferred_language: string | null;
   role: SystemRole;
+  google_connected_email: string | null;
+  schedule: WeeklySchedule | null;
+  slot_interval_minutes: number | null;
 };
 
 // ─── State ────────────────────────────────────────────────────
@@ -72,6 +75,7 @@ type State = {
   language: string;
   role: SystemRole;
   avatarUrl: string;
+  jobTitle: string;
 };
 
 type Action =
@@ -84,7 +88,8 @@ type Action =
   | { type: "SET_ERROR"; msg: string | null }
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone";
+      field:
+        "firstName" | "lastName" | "email" | "phone" | "jobTitle" | "sortOrder";
       value: string;
     }
   | { type: "SET_GENDER"; gender: GenderValue }
@@ -110,6 +115,7 @@ const initial: State = {
   language: "en",
   role: "staff",
   avatarUrl: "",
+  jobTitle: "",
 };
 
 function reducer(state: State, action: Action): State {
@@ -130,6 +136,7 @@ function reducer(state: State, action: Action): State {
         originalEmail: action.profile.email ?? "",
         phone: action.profile.phone ?? "",
         gender: action.profile.gender ?? "",
+        jobTitle: action.profile.job_title ?? "",
         language: action.profile.preferred_language ?? "en",
         role: action.profile.role,
         avatarUrl: action.profile.avatar_url ?? "",
@@ -181,6 +188,8 @@ export default function EditUserPage() {
   const t = useTranslations("dashboard.users.detail");
   const tForm = useTranslations("dashboard.users.form");
   const tCommon = useTranslations("dashboard.common");
+  const tSchedule = useTranslations("dashboard.users.schedule");
+  const tCalendar = useTranslations("dashboard.users.calendarBox");
   const genderOptions = useGenderOptions();
   const roles: SelectOption<SystemRole>[] = ROLE_VALUES.map((value) => ({
     value,
@@ -193,11 +202,14 @@ export default function EditUserPage() {
   const { loading, notFound, saving, removing, confirmRemove, error } = state;
   const { avatarUrl } = state;
 
-  const [availableServices, setAvailableServices] = useState<ServiceRow[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
+  const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [resyncing, setResyncing] = useState(false);
+  const [schedule, setSchedule] = useState<WeeklySchedule>(() =>
+    normaliseSchedule(null),
+  );
+  const [slotInterval, setSlotInterval] = useState(30);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
@@ -207,7 +219,7 @@ export default function EditUserPage() {
       const { data } = await insforge.database
         .from("profiles")
         .select(
-          "id, first_name, last_name, full_name, email, phone, gender, role, preferred_language, avatar_url",
+          "id, first_name, last_name, full_name, email, phone, gender, role, preferred_language, avatar_url, job_title, google_connected_email, schedule, slot_interval_minutes",
         )
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
@@ -219,41 +231,12 @@ export default function EditUserPage() {
         return;
       }
       dispatch({ type: "LOADED", profile });
-
-      const [svcs, assigned] = await Promise.all([
-        insforge.database
-          .from("service_settings")
-          .select("id, title")
-          .eq("active", true)
-          .order("title"),
-        insforge.database
-          .from("staff_services")
-          .select("service_id, google_calendar_email")
-          .eq("staff_id", id),
-      ]);
-
-      setAvailableServices((svcs.data as ServiceRow[] | null) ?? []);
-      setAssignments(
-        (
-          (assigned.data as
-            | { service_id: string; google_calendar_email: string | null }[]
-            | null) ?? []
-        ).map((r) => ({
-          service_id: r.service_id,
-          google_calendar_email: r.google_calendar_email ?? "",
-        })),
-      );
+      setCalendarEmail(profile.google_connected_email);
+      setSchedule(normaliseSchedule(profile.schedule));
+      setSlotInterval(profile.slot_interval_minutes ?? 30);
     }
     void load();
   }, [id]);
-
-  function toggleService(serviceId: string) {
-    setAssignments((prev) => {
-      const exists = prev.find((a) => a.service_id === serviceId);
-      if (exists) return prev.filter((a) => a.service_id !== serviceId);
-      return [...prev, { service_id: serviceId, google_calendar_email: "" }];
-    });
-  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -291,24 +274,16 @@ export default function EditUserPage() {
       role: state.role,
       currentEmail: state.originalEmail,
       avatarUrl: state.avatarUrl || null,
+      jobTitle: state.role === "staff" ? state.jobTitle.trim() : null,
+      ...(state.role === "staff"
+        ? { schedule, slotIntervalMinutes: slotInterval }
+        : {}),
     });
 
     if (error) {
       dispatch({ type: "SET_ERROR", msg: error });
       dispatch({ type: "SET_SAVING", value: false });
       return;
-    }
-
-    // Sync staff_services: delete all then re-insert
-    await insforge.database.from("staff_services").delete().eq("staff_id", id);
-    if (state.role === "staff" && assignments.length > 0) {
-      await insforge.database.from("staff_services").insert(
-        assignments.map((a) => ({
-          staff_id: id,
-          service_id: a.service_id,
-          google_calendar_email: a.google_calendar_email || null,
-        })),
-      );
     }
 
     dispatch({ type: "SET_SAVING", value: false });
@@ -588,6 +563,37 @@ export default function EditUserPage() {
                   )}
                 </div>
 
+                {/* Only staff hold a job title: it names what they do. */}
+                {state.role === "staff" && (
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="job-title"
+                      className="text-petroleum-500 text-xs font-medium"
+                    >
+                      {tForm("fields.jobTitle")}
+                    </label>
+                    {loading ? (
+                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+                    ) : (
+                      <input
+                        id="job-title"
+                        type="text"
+                        value={state.jobTitle}
+                        onChange={(e) =>
+                          dispatch({
+                            type: "SET_FIELD",
+                            field: "jobTitle",
+                            value: e.target.value,
+                          })
+                        }
+                        placeholder={tForm("fields.jobTitlePlaceholder")}
+                        disabled={saving}
+                        className={INPUT_CLASS}
+                      />
+                    )}
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="language"
@@ -687,108 +693,28 @@ export default function EditUserPage() {
               </div>
             )}
 
-            {/* Services — only when role is Staff */}
+            {/* Schedule — whoever takes bookings has working days */}
             {!loading && state.role === "staff" && (
               <div className="border-sand-200 rounded-2xl border bg-white p-6">
                 <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                  {t("sections.services")}
+                  {tSchedule("heading")}
                 </h2>
                 <p className="text-petroleum-400 mb-4 text-xs">
-                  {t("servicesHint")}
+                  {tSchedule("hint")}
                 </p>
-                <div className="space-y-2">
-                  {availableServices.map((svc) => {
-                    const assigned = assignments.find(
-                      (a) => a.service_id === svc.id,
-                    );
-                    const isOn = !!assigned;
-                    const calEmail = assigned?.google_calendar_email ?? null;
-                    return (
-                      <div
-                        key={svc.id}
-                        className={`rounded-xl border transition-colors ${isOn ? "border-petroleum-200 bg-petroleum-50/40" : "border-sand-200"}`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleService(svc.id)}
-                          disabled={saving}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                        >
-                          <span
-                            className={`flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                              isOn
-                                ? "border-petroleum-500 bg-petroleum-500 text-white"
-                                : "border-sand-300 bg-white"
-                            }`}
-                          >
-                            {isOn && <IconCheck />}
-                          </span>
-                          <span
-                            className={`text-sm font-medium ${isOn ? "text-petroleum-700" : "text-petroleum-500"}`}
-                          >
-                            {svc.title}
-                          </span>
-                        </button>
-
-                        {isOn && (
-                          <div className="border-petroleum-100 border-t px-4 pt-3 pb-3">
-                            <p className="text-petroleum-400 mb-2 text-xs font-medium">
-                              {t("calendar.label")}
-                            </p>
-                            {calEmail ? (
-                              <div className="flex items-center gap-3">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                                  <span className="size-1.5 rounded-full bg-green-500" />
-                                  {t("calendar.connected")}
-                                </span>
-                                <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
-                                  {calEmail}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    await disconnectStaffCalendar(id, svc.id);
-                                    setAssignments((prev) =>
-                                      prev.map((a) =>
-                                        a.service_id === svc.id
-                                          ? { ...a, google_calendar_email: "" }
-                                          : a,
-                                      ),
-                                    );
-                                  }}
-                                  className="text-petroleum-300 text-xs transition-colors hover:text-red-500"
-                                >
-                                  {t("calendar.disconnect")}
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void connectStaffCalendar(
-                                    id,
-                                    svc.id,
-                                    `/dashboard/users/${id}`,
-                                  )
-                                }
-                                className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors"
-                              >
-                                <IconCalendarConnect />
-                                {t("calendar.connect")}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <StaffScheduleEditor
+                  schedule={schedule}
+                  interval={slotInterval}
+                  onChange={setSchedule}
+                  onIntervalChange={setSlotInterval}
+                  disabled={saving}
+                />
               </div>
             )}
           </div>
 
           {/* Photo, alongside the fields rather than between them */}
-          <div className="lg:sticky lg:top-24">
+          <div className="flex flex-col gap-6 lg:sticky lg:top-24">
             {/* Photo — every role has one, same bucket the account page uses */}
             <div className="border-sand-200 rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
@@ -807,6 +733,77 @@ export default function EditUserPage() {
                 />
               )}
             </div>
+
+            {/* Google Calendar — theirs, checked when offering slots */}
+            {!loading && state.role === "staff" && (
+              <div className="border-sand-200 rounded-2xl border bg-white p-6">
+                <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+                  {t("calendar.label")}
+                </h2>
+                <p className="text-petroleum-400 mb-4 text-xs">
+                  {tCalendar("hint")}
+                </p>
+                {calendarEmail && (
+                  <p className="text-petroleum-400 mb-3 truncate text-xs">
+                    {calendarEmail}
+                  </p>
+                )}
+                <div className="flex flex-col gap-2">
+                  {calendarEmail ? (
+                    <>
+                      {/* Bookings made while the calendar was disconnected —
+                          or whose sync failed — have no event yet. */}
+                      <button
+                        type="button"
+                        disabled={resyncing}
+                        onClick={async () => {
+                          setResyncing(true);
+                          const result = await resyncAccountCalendar(id);
+                          setResyncing(false);
+                          notifySuccess(
+                            result
+                              ? tCalendar("resynced", {
+                                  synced: result.synced,
+                                  failed: result.failed,
+                                })
+                              : tCalendar("resyncFailed"),
+                          );
+                        }}
+                        className="border-sand-200 text-petroleum-700 hover:bg-sand-50 w-full rounded-xl border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50"
+                      >
+                        {resyncing
+                          ? tCalendar("resyncing")
+                          : tCalendar("resync")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await disconnectAccountCalendar(id);
+                          setCalendarEmail(null);
+                        }}
+                        className="w-full rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        {tCalendar("disconnect")}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void connectAccountCalendar(
+                          id,
+                          `/dashboard/users/${id}`,
+                        )
+                      }
+                      className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-white transition-colors"
+                    >
+                      <IconCalendarConnect />
+                      {tCalendar("connect")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </form>

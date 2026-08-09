@@ -302,6 +302,66 @@ export async function getValidAccessToken(
   }
 }
 
+type ProfileTokenRow = {
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expires_at: string | null;
+  google_calendar_id?: string | null;
+};
+
+/**
+ * A valid access token for a person's own calendar, from `profiles`.
+ *
+ * Same refresh dance as the service-level token, against the row where the
+ * calendar now lives: a therapist has one calendar, not one per treatment.
+ */
+export async function getStaffAccessToken(
+  staffId: string,
+): Promise<string | null> {
+  const adminClient = getAdminClient();
+
+  const { data, error } = await adminClient.database
+    .from("profiles")
+    .select(
+      "google_access_token, google_refresh_token, google_token_expires_at",
+    )
+    .eq("id", staffId)
+    .single<ProfileTokenRow>();
+
+  if (
+    error ||
+    !data ||
+    !data.google_access_token ||
+    !data.google_refresh_token
+  ) {
+    return null;
+  }
+
+  const expiresAt = data.google_token_expires_at
+    ? new Date(data.google_token_expires_at).getTime()
+    : 0;
+  const nowMs = Date.now();
+  const bufferMs = 60 * 1000;
+
+  if (expiresAt - nowMs > bufferMs) return data.google_access_token;
+
+  try {
+    const refreshed = await refreshGoogleToken(data.google_refresh_token);
+    await adminClient.database
+      .from("profiles")
+      .update({
+        google_access_token: refreshed.access_token,
+        google_token_expires_at: new Date(
+          nowMs + refreshed.expires_in * 1000,
+        ).toISOString(),
+      })
+      .eq("id", staffId);
+    return refreshed.access_token;
+  } catch {
+    return null;
+  }
+}
+
 type StaffServiceRow = {
   staff_id: string;
   google_access_token: string | null;
