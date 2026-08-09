@@ -6,7 +6,15 @@ import {
   cancellationLink,
 } from "./_base";
 
-export function bookingConfirmedEmail({
+/**
+ * The nudge two days out.
+ *
+ * Its job is not to be read for pleasure: it is the last comfortable moment to
+ * cancel, which is why the link is here and why it goes out before the
+ * 24-hour window closes. A freed slot two days ahead can still be sold; a
+ * no-show cannot.
+ */
+export function bookingReminderEmail({
   name,
   service,
   sessionType,
@@ -24,7 +32,6 @@ export function bookingConfirmedEmail({
   time: string;
   duration?: string | null;
   dateIso?: string;
-  /** Link that cancels this booking without signing in. */
   cancelUrl?: string | null;
   locale?: "en" | "es";
 }): string {
@@ -41,17 +48,18 @@ export function bookingConfirmedEmail({
       )
     : "";
   const cancelBlock = cancelUrl ? cancellationLink(cancelUrl, locale) : "";
+
   if (locale === "es") {
     return emailBase({
       locale,
-      preheader: `Tu reserva de ${service} el ${date} ha sido confirmada.`,
+      preheader: `Tu sesión de ${service} es el ${date} a las ${time}.`,
       body: `
-        <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Reserva confirmada</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Tu próxima sesión</p>
         <h1 style="margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-          Tu reserva ha sido confirmada, ${name}.
+          Te esperamos pronto, ${name}.
         </h1>
         <p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
-          Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión.
+          Un recordatorio de tu cita. Ven con ropa cómoda y, si puedes, llega cinco minutos antes.
         </p>
 
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
@@ -69,24 +77,20 @@ export function bookingConfirmedEmail({
 
         ${calBtn}
         ${cancelBlock}
-
-        <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-          Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.
-        </p>
       `,
     });
   }
 
   return emailBase({
     locale,
-    preheader: `Your ${service} booking on ${date} is confirmed.`,
+    preheader: `Your ${service} session is on ${date} at ${time}.`,
     body: `
-      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Booking confirmed</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Your next session</p>
       <h1 style="margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-        Your booking is confirmed, ${name}.
+        See you soon, ${name}.
       </h1>
       <p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
-        We look forward to seeing you. Here are the details of your upcoming session.
+        A reminder of your appointment. Wear something comfortable and, if you can, arrive five minutes early.
       </p>
 
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
@@ -104,10 +108,6 @@ export function bookingConfirmedEmail({
 
       ${calBtn}
       ${cancelBlock}
-
-      <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-        If you need to cancel or reschedule, please contact us at least 24 hours before your session.
-      </p>
     `,
   });
 }

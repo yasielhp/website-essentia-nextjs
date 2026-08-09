@@ -26,6 +26,20 @@ export type UpdateBookingPayload = {
   status: string;
 };
 
+/** What the public cancellation page needs, and nothing that identifies anyone else. */
+export type CancellableBooking = {
+  serviceTitle: string | null;
+  sessionType: string | null;
+  date: string | null;
+  time: string | null;
+  duration: string | null;
+  status: string | null;
+  firstName: string | null;
+  /** False once the session is inside the free-cancellation window. */
+  cancellable: boolean;
+  alreadyCancelled: boolean;
+};
+
 /** A booking row as read from the database. */
 export type Booking = {
   id: string;

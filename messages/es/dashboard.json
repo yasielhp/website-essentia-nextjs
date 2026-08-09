@@ -1237,7 +1237,8 @@
     "contactDeleted": "Contacto eliminado",
     "subscriptionCreated": "Suscripción creada",
     "accountSaved": "Cuenta guardada",
-    "passwordChanged": "Contraseña cambiada"
+    "passwordChanged": "Contraseña cambiada",
+    "tierSaved": "Tipo de sesión actualizado"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",

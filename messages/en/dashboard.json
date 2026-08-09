@@ -1237,7 +1237,8 @@
     "contactDeleted": "Contact deleted",
     "subscriptionCreated": "Subscription created",
     "accountSaved": "Account saved",
-    "passwordChanged": "Password changed"
+    "passwordChanged": "Password changed",
+    "tierSaved": "Session type updated"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",

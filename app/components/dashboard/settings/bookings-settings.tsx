@@ -3,6 +3,7 @@
 import { useState, useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { notifySuccess } from "@/lib/feedback";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
 import { bookableServices } from "@/data/services-data";
 import type { ColorSettings } from "@/utils/color-settings";
@@ -276,29 +277,9 @@ function ServicesContent({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function BookingsSettings() {
-  const [initialToast] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const p = new URLSearchParams(window.location.search);
-    if (p.get("connected") === "1") return "Google Calendar connected";
-    if (p.get("error")) return `Calendar error: ${p.get("error")}`;
-    return null;
-  });
-
-  const [toast, setToast] = useState<string | null>(initialToast);
-
-  useEffect(() => {
-    if (!initialToast) return;
-    const t = setTimeout(() => setToast(null), 2200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const tToasts = useTranslations("dashboard.toasts");
 
   const [data, dispatch] = useReducer(dataReducer, initialDataState);
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2200);
-  }
 
   async function reloadServiceTiers(serviceId: string) {
     const { data: rows } = await insforge.database
@@ -316,7 +297,7 @@ export function BookingsSettings() {
       },
     });
     dispatch({ type: "SET_TIER_STAFF", tierStaff: await loadTierStaff() });
-    showToast("Saved");
+    notifySuccess(tToasts("tierSaved"));
   }
 
   useEffect(() => {
@@ -411,21 +392,6 @@ export function BookingsSettings() {
           onClose={() => dispatch({ type: "SET_MODAL", modal: null })}
           onSaved={reloadServiceTiers}
         />
-      )}
-
-      {toast && (
-        <div className="bg-petroleum-700 fixed right-6 bottom-6 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-white shadow-lg">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {toast}
-        </div>
       )}
     </div>
   );

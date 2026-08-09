@@ -45,21 +45,45 @@ function formatDate(dateStr: string, locale: "en" | "es" = "en"): string {
  * attacker-controlled. Sending to a caller-supplied address would turn this
  * action into an open relay for mail signed by the Essentia domain.
  */
-async function getBookingRecipient(
-  bookingId: string,
-): Promise<{ email: string; serviceId: string | null } | null> {
+async function getBookingRecipient(bookingId: string): Promise<{
+  email: string;
+  serviceId: string | null;
+  cancelToken: string | null;
+} | null> {
   if (!bookingId) return null;
   const { data } = await getAdminClient()
     .database.from("bookings")
-    .select("email, service_id")
+    .select("email, service_id, cancel_token")
     .eq("id", bookingId)
     .maybeSingle();
   const row = data as {
     email: string | null;
     service_id: string | null;
+    cancel_token: string | null;
   } | null;
   if (!row?.email) return null;
-  return { email: row.email, serviceId: row.service_id };
+  return {
+    email: row.email,
+    serviceId: row.service_id,
+    cancelToken: row.cancel_token,
+  };
+}
+
+/**
+ * The link that cancels this booking from an inbox.
+ *
+ * Spanish speakers get the Spanish route: the email is already in their
+ * language, and bouncing them through the English URL first would be odd.
+ */
+function buildCancelUrl(
+  token: string | null,
+  locale: "en" | "es",
+): string | null {
+  if (!token) return null;
+  const base = getAppUrl();
+  return locale === "es"
+    ? `${base}/es/reserva/cancelar?token=${token}`
+    : `${base}/booking/cancel?token=${token}`;
 }
 
 async function upsertContact(
@@ -145,6 +169,7 @@ export async function notifyBooking(
   const time = payload.time;
 
   const dashboardUrl = getAppUrl();
+  const cancelUrl = buildCancelUrl(recipient.cancelToken, locale);
 
   // ── Client emails ──────────────────────────────────────────────
   const clientTemplates: Record<BookingNotificationEvent, () => string> = {
@@ -157,6 +182,7 @@ export async function notifyBooking(
         time,
         duration,
         amountDueEur,
+        cancelUrl,
         locale,
       }),
     confirmed: () =>
@@ -168,6 +194,7 @@ export async function notifyBooking(
         time,
         duration,
         dateIso: payload.date,
+        cancelUrl,
         locale,
       }),
     cancelled: () =>
@@ -189,6 +216,7 @@ export async function notifyBooking(
         time,
         duration,
         dateIso: payload.date,
+        cancelUrl,
         locale,
       }),
   };

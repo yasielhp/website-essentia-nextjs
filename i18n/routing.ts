@@ -14,6 +14,7 @@ export const routing = defineRouting({
     "/blog/[slug]": "/blog/[slug]",
     "/shop": { en: "/shop", es: "/tienda" },
     "/booking": { en: "/booking", es: "/reserva" },
+    "/booking/cancel": { en: "/booking/cancel", es: "/reserva/cancelar" },
 
     // Wellness
     "/wellness": { en: "/wellness", es: "/bienestar" },

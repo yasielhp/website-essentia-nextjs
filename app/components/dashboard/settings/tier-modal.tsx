@@ -349,8 +349,6 @@ export function TierModal({
             </button>
           </div>
 
-          <div className="border-sand-100 border-t" />
-
           <NumberField
             id="tier-duration"
             label={t("duration")}
@@ -423,7 +421,7 @@ export function TierModal({
             )}
           </div>
 
-          <div className="border-sand-100 flex flex-col gap-1.5 border-t pt-4">
+          <div className="flex flex-col gap-1.5">
             <span className="text-petroleum-500 text-xs font-medium">
               {t("staffHeading")}
             </span>

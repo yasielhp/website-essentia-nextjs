@@ -173,7 +173,7 @@
     "priceLabel": "Price",
     "discountLabel": "Discount",
     "totalLabel": "Total",
-    "cancellationNote": "You can cancel or move your appointment up to 24 hours before at no cost.",
+    "cancellationNote": "Cancel or change your appointment up to 24 hours before at no cost; if you have already paid online, we refund it. Within the last 24 hours there is no refund.",
     "payOnlineNoteNoDiscount": "Pay online as you confirm and your appointment is held straight away."
   },
   "paymentOverlay": {
@@ -212,5 +212,36 @@
     "contactNote": "Please keep an eye on your email. We will reach out to confirm your appointment.",
     "contactNoteWithPhone": "Please keep an eye on your email and phone <phone>{phoneValue}</phone>. We will reach out to confirm your appointment.",
     "cta": "Back to home"
+  },
+  "cancel": {
+    "confirm": {
+      "heading": "Cancel your appointment?",
+      "body": "You can cancel at no cost. If you already paid online, we refund it.",
+      "action": "Yes, cancel my appointment",
+      "working": "Cancelling…"
+    },
+    "done": {
+      "heading": "Appointment cancelled",
+      "body": "Your appointment is cancelled and the slot is free again. If you paid online, the refund arrives within a few days."
+    },
+    "late": {
+      "heading": "Too late to cancel online",
+      "body": "Your session is less than 24 hours away. Call or write to us and we will see what we can do."
+    },
+    "already": {
+      "heading": "This appointment was already cancelled",
+      "body": "There is nothing left to do. Book again whenever you like."
+    },
+    "missing": {
+      "heading": "Invalid link",
+      "body": "This link does not match any appointment. Check that you copied all of it from your email."
+    },
+    "detail": {
+      "service": "Session",
+      "date": "Date",
+      "time": "Time"
+    },
+    "keep": "Keep my appointment",
+    "bookAgain": "Book another session"
   }
 }
