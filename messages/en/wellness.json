@@ -394,7 +394,6 @@
       },
       "essentia-iv-signature": {
         "title": "Essentia IV Signature",
-        "eyebrow": "Drainage + IV Therapy",
         "description": "Advanced Lymphatic Drainage · Essentia Method combined with a formula developed with VitalDrip: NAD+, magnesium, vitamin C and L-carnitine.",
         "body": "The house protocol: a session of Advanced Lymphatic Drainage · Essentia Method followed by an intravenous formula developed with VitalDrip.\n\nThe manual work comes first, moving fluid and supporting the lymphatic system. The intravenous formula follows — NAD+, magnesium, vitamin C and L-carnitine — sustaining from within what the drainage set in motion.\n\nIt is the longest session in the catalogue and the most complete. Like the rest, it is decided after assessment: if it is not the right moment, we will suggest another.",
         "highlights": {
@@ -414,7 +413,6 @@
       },
       "power-drip": {
         "title": "Power Drip",
-        "eyebrow": "Energy and performance",
         "description": "An intravenous protocol for low-energy spells, demanding days or periods of strain. B-group vitamins, B12, amino acids and magnesium to support vitality and recovery.",
         "body": "Intravenous therapy for the demanding stretches: long weeks, back-to-back travel, hard training, or the kind of fatigue that one more night's sleep does not shift.\n\nB complex, vitamin B12, amino acids and magnesium, given intravenously so they are available without passing through the digestive system.\n\nIngredients: B complex (B1, B2, B3, B5, B6), vitamin B12, amino acids and magnesium, among others.",
         "highlights": {
@@ -434,7 +432,6 @@
       },
       "immunity-drip": {
         "title": "Immunity Drip",
-        "eyebrow": "Immune support",
         "description": "Vitamin C, zinc, B-group vitamins and glutathione, designed as nutritional support during demanding periods and for the normal functioning of the immune system.",
         "body": "The protocol most asked for ahead of a demanding period: changing seasons, travel, weeks of heavy contact, or a recovery that is dragging on.\n\nHigh-dose vitamin C, zinc, B-group vitamins and glutathione. Vitamin C and zinc contribute to the normal function of the immune system.\n\nIngredients: vitamin C (high dose), zinc, B complex vitamins and glutathione, among others.",
         "highlights": {
@@ -454,7 +451,6 @@
       },
       "nirvana-drip": {
         "title": "Nirvana Drip",
-        "eyebrow": "Calm and rest",
         "description": "Focused on relaxation and wellbeing during stressful periods or poor sleep. Magnesium, B-group vitamins and tryptophan to support calm and recovery.",
         "body": "For the stretches when the mind will not slow down and sleep does not restore: sustained stress, broken nights, tension that settles in.\n\nMagnesium, B-group vitamins and tryptophan — micronutrients involved in the normal functioning of the nervous system.\n\nIngredients: magnesium, B complex vitamins and tryptophan, among others.",
         "highlights": {
@@ -474,7 +470,6 @@
       },
       "stress-balance": {
         "title": "Stress Balance",
-        "eyebrow": "Regulation and balance",
         "description": "For stress, mental tension or insufficient rest. Magnesium, B vitamins, vitamin C, glycine and zinc to support relaxation and wellbeing.",
         "body": "Intravenous therapy formulated to support the body when stress stops being occasional: sustained tension, low mood, sleep that never quite restores.\n\nMagnesium, B vitamin complex, vitamin C, L-glycine and zinc, delivering essential micronutrients directly.\n\nIngredients: magnesium, B vitamin complex (B1, B6, B12), vitamin C, L-glycine and zinc, among others.",
         "highlights": {
@@ -494,7 +489,6 @@
       },
       "beauty-hair-glow": {
         "title": "Beauty & Hair Glow",
-        "eyebrow": "Skin and hair",
         "description": "Skin and hair cared for from within. Biotin, zinc, vitamin C, glutathione and selected amino acids within an experience aimed at aesthetic wellbeing.",
         "body": "Aesthetic care that starts on the inside. A protocol focused on skin health and hair strength, working at the cellular level rather than on the surface.\n\nBiotin, zinc, vitamin C, glutathione and selected amino acids. Biotin and zinc contribute to the maintenance of normal hair and skin.\n\nIngredients: biotin (vitamin B7), zinc, vitamin C, glutathione, amino acids (cysteine, glycine, proline) and organic silicon, among others.",
         "highlights": {
@@ -514,7 +508,6 @@
       },
       "vitamin-c": {
         "title": "Vitamin C",
-        "eyebrow": "High-dose antioxidant",
         "description": "A high-concentration vitamin C protocol for antioxidant support and general wellbeing. A specific option, always chosen after individual medical assessment.",
         "body": "High-concentration vitamin C given intravenously, for antioxidant support and general wellbeing.\n\nVitamin C contributes to the protection of cells from oxidative damage and to normal immune function. The intravenous route reaches concentrations the oral one cannot.\n\nIt is the most specific protocol in the catalogue and the one that depends most on the prior assessment: it is not suitable for everyone.",
         "highlights": {
@@ -534,7 +527,6 @@
       },
       "nad-plus": {
         "title": "NAD+",
-        "eyebrow": "Cellular performance",
         "description": "Focused on cellular performance, mental clarity and energy recovery. It can also be added to any other protocol as a boost.",
         "body": "NAD+ is a coenzyme present in every cell and central to energy metabolism. Its levels fall with age.\n\nThis protocol delivers it intravenously, aimed at cellular performance, mental clarity and energy recovery.\n\nIt can also be added to any other protocol as a boost, for a supplement on top of the main session.",
         "highlights": {
@@ -554,7 +546,6 @@
       },
       "resurrection-drip": {
         "title": "Resurrection Drip",
-        "eyebrow": "Hydration and recovery",
         "description": "Hydration and recovery for periods of strain. Saline solution, B-group vitamins, vitamin C, magnesium and zinc to support rehydration.",
         "body": "The rescue protocol. For the day after an excess: dehydration, headache, general malaise and the feeling of not getting started.\n\nSaline solution, B-group vitamins, vitamin C, magnesium and zinc, with rehydration straight into circulation.\n\nIngredients: saline solution, B complex vitamins, vitamin C, magnesium and zinc, among others.",
         "highlights": {
@@ -574,7 +565,6 @@
       },
       "body-drip": {
         "title": "Body Drip",
-        "eyebrow": "Metabolism and body composition",
         "description": "MIC complex, B-group vitamins and alpha lipoic acid, approached from a metabolic and body-composition perspective.",
         "body": "Approached from a metabolic perspective, as a complement to — never a substitute for — appropriate nutrition and physical activity.\n\nMIC complex (methionine, inositol, choline), B-group vitamins and alpha lipoic acid: components involved in fat metabolism and liver function.\n\nIngredients: MIC (methionine, inositol, choline), B complex and alpha lipoic acid, among others.",
         "highlights": {
@@ -594,7 +584,6 @@
       },
       "fit-drip": {
         "title": "Fit Drip",
-        "eyebrow": "Sport and recovery",
         "description": "For physical activity, recovery and demanding periods. Essential amino acids, B-group vitamins, magnesium and calcium to support hydration and recovery.",
         "body": "For those who train seriously: preparing for an event, high-load blocks, or the recovery of the days that follow.\n\nEssential amino acids, B-group vitamins, magnesium and calcium, with deep intravenous hydration.\n\nIngredients: essential amino acids, B complex vitamins, magnesium and calcium, among others.",
         "highlights": {
@@ -614,7 +603,6 @@
       },
       "calm-drip": {
         "title": "Calm Drip",
-        "eyebrow": "Restorative rest",
         "description": "Aimed at rest and relaxation, especially in stressful periods. Tryptophan, magnesium, glutathione and essential amino acids to support calm and recovery.",
         "body": "Aimed at rest: lowering the sense of stress, improving sleep quality and encouraging a serenity that holds over the following days.\n\nTryptophan, magnesium, glutathione and essential amino acids.\n\nIngredients: tryptophan, magnesium, glutathione and essential amino acids, among others.",
         "highlights": {

@@ -394,7 +394,6 @@
       },
       "essentia-iv-signature": {
         "title": "Essentia IV Signature",
-        "eyebrow": "Drenaje + IV Therapy",
         "description": "Drenaje Linfático Avanzado · Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina.",
         "body": "El protocolo propio de la casa: una sesión de Drenaje Linfático Avanzado · Método Essentia seguida de una fórmula intravenosa desarrollada junto a VitalDrip.\n\nPrimero el trabajo manual, que moviliza líquidos y acompaña el sistema linfático. Después la vía intravenosa, con NAD+, magnesio, vitamina C y L-carnitina, para sostener desde dentro lo que el drenaje ha puesto en marcha.\n\nEs la sesión más larga del catálogo y también la más completa. Como el resto, se decide tras la valoración: si no es el momento adecuado, te propondremos otra.",
         "highlights": {
@@ -414,7 +413,6 @@
       },
       "power-drip": {
         "title": "Power Drip",
-        "eyebrow": "Energía y rendimiento",
         "description": "Protocolo intravenoso orientado a momentos de baja energía, jornadas exigentes o mayor desgaste. Combina vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar vitalidad y recuperación.",
         "body": "Terapia intravenosa pensada para los tramos de más desgaste: semanas largas, viajes encadenados, entrenamientos exigentes o esa fatiga que no se va durmiendo una noche más.\n\nCombina complejo B, vitamina B12, aminoácidos y magnesio, administrados por vía intravenosa para que estén disponibles sin pasar por el sistema digestivo.\n\nIngredientes: complejo B (B1, B2, B3, B5, B6), vitamina B12, aminoácidos y magnesio, entre otros.",
         "highlights": {
@@ -434,7 +432,6 @@
       },
       "immunity-drip": {
         "title": "Immunity Drip",
-        "eyebrow": "Apoyo inmunitario",
         "description": "Protocolo con vitamina C, zinc, vitaminas del grupo B y glutatión, diseñado como apoyo nutricional en periodos de mayor exigencia y para acompañar el funcionamiento normal del sistema inmunitario.",
         "body": "El protocolo más pedido cuando se acerca un periodo exigente: cambios de estación, viajes, semanas de mucho contacto o una recuperación que se está haciendo larga.\n\nCombina vitamina C en dosis alta, zinc, vitaminas del grupo B y glutatión. La vitamina C y el zinc contribuyen al funcionamiento normal del sistema inmunitario.\n\nIngredientes: vitamina C (megadosis), zinc, vitaminas del complejo B y glutatión, entre otros.",
         "highlights": {
@@ -454,7 +451,6 @@
       },
       "nirvana-drip": {
         "title": "Nirvana Drip",
-        "eyebrow": "Calma y descanso",
         "description": "Protocolo centrado en relajación y bienestar durante periodos de estrés o descanso deficiente. Combina magnesio, vitaminas del grupo B y triptófano para acompañar calma y recuperación.",
         "body": "Para las temporadas en que la cabeza no baja de revoluciones y el descanso no repara: estrés sostenido, sueño fragmentado, tensión que se instala.\n\nCombina magnesio, vitaminas del grupo B y triptófano, micronutrientes implicados en el funcionamiento normal del sistema nervioso.\n\nIngredientes: magnesio, vitaminas del complejo B y triptófano, entre otros.",
         "highlights": {
@@ -474,7 +470,6 @@
       },
       "stress-balance": {
         "title": "Stress Balance",
-        "eyebrow": "Regulación y equilibrio",
         "description": "Protocolo pensado para momentos de estrés, tensión mental o descanso insuficiente. Combina magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar relajación y bienestar.",
         "body": "Terapia intravenosa formulada para acompañar al organismo cuando el estrés deja de ser puntual: tensión mantenida, ánimo bajo, sueño que no termina de reparar.\n\nCombina magnesio, complejo de vitaminas B, vitamina C, L-glicina y zinc, con administración directa de micronutrientes esenciales.\n\nIngredientes: magnesio, complejo de vitaminas B (B1, B6, B12), vitamina C, L-glicina y zinc, entre otros.",
         "highlights": {
@@ -494,7 +489,6 @@
       },
       "beauty-hair-glow": {
         "title": "Beauty & Hair Glow",
-        "eyebrow": "Piel y cabello",
         "description": "Protocolo enfocado en el cuidado de piel y cabello desde dentro. Combina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados dentro de una experiencia orientada al bienestar estético.",
         "body": "El cuidado estético que empieza por dentro. Un protocolo enfocado en la salud de la piel y la fortaleza del cabello, trabajando a nivel celular en lugar de sobre la superficie.\n\nCombina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados. La biotina y el zinc contribuyen al mantenimiento del cabello y la piel en condiciones normales.\n\nIngredientes: biotina (vitamina B7), zinc, vitamina C, glutatión, aminoácidos (cisteína, glicina, prolina) y silicio orgánico, entre otros.",
         "highlights": {
@@ -514,7 +508,6 @@
       },
       "vitamin-c": {
         "title": "Vitamina C",
-        "eyebrow": "Megadosis antioxidante",
         "description": "Protocolo intravenoso de alta concentración en vitamina C, orientado al apoyo antioxidante y al bienestar general. Una opción específica que debe seleccionarse siempre tras valoración sanitaria individual.",
         "body": "Alta concentración de vitamina C por vía intravenosa, orientada al apoyo antioxidante y al bienestar general.\n\nLa vitamina C contribuye a la protección de las células frente al daño oxidativo y al funcionamiento normal del sistema inmunitario. Por vía intravenosa se alcanzan concentraciones que la vía oral no permite.\n\nEs el protocolo más específico del catálogo y el que más depende de la valoración previa: no es adecuado para todo el mundo.",
         "highlights": {
@@ -534,7 +527,6 @@
       },
       "nad-plus": {
         "title": "NAD+",
-        "eyebrow": "Rendimiento celular",
         "description": "Protocolo centrado en rendimiento celular, claridad mental y recuperación energética. También puede añadirse a cualquier otro protocolo como refuerzo.",
         "body": "NAD+ es una coenzima presente en todas las células y central en el metabolismo energético. Con la edad, sus niveles descienden.\n\nEste protocolo la administra por vía intravenosa, orientado al rendimiento celular, la claridad mental y la recuperación energética.\n\nTambién puede añadirse a cualquier otro protocolo como refuerzo, con un suplemento sobre el precio de la sesión principal.",
         "highlights": {
@@ -554,7 +546,6 @@
       },
       "resurrection-drip": {
         "title": "Resurrection Drip",
-        "eyebrow": "Hidratación y recuperación",
         "description": "Protocolo de hidratación y recuperación pensado para momentos de mayor desgaste. Combina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc para acompañar la rehidratación.",
         "body": "El protocolo de rescate. Pensado para los días después de un exceso: deshidratación, dolor de cabeza, malestar general y esa sensación de no arrancar.\n\nCombina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc, con rehidratación directa por vía intravenosa.\n\nIngredientes: solución salina, vitaminas del complejo B, vitamina C, magnesio y zinc, entre otros.",
         "highlights": {
@@ -574,7 +565,6 @@
       },
       "body-drip": {
         "title": "Body Drip",
-        "eyebrow": "Metabolismo y composición corporal",
         "description": "Protocolo con complejo MIC, vitaminas del grupo B y ácido alfa lipoico, planteado desde una mirada metabólica y corporal para complementar objetivos de bienestar y composición corporal.",
         "body": "Planteado desde una mirada metabólica, como complemento —nunca sustituto— de una alimentación y una actividad física adecuadas.\n\nCombina complejo MIC (metionina, inositol, colina), vitaminas del grupo B y ácido alfa lipoico, componentes implicados en el metabolismo de las grasas y la función hepática.\n\nIngredientes: MIC (metionina, inositol, colina), complejo B y ácido alfa lipoico, entre otros.",
         "highlights": {
@@ -594,7 +584,6 @@
       },
       "fit-drip": {
         "title": "Fit Drip",
-        "eyebrow": "Deporte y recuperación",
         "description": "Protocolo pensado para actividad física, recuperación y periodos de mayor exigencia. Combina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar hidratación y recuperación.",
         "body": "Para quien entrena en serio: preparación de una prueba, bloques de carga alta o la recuperación de los días siguientes.\n\nCombina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio, con hidratación profunda por vía intravenosa.\n\nIngredientes: aminoácidos esenciales, vitaminas del complejo B, magnesio y calcio, entre otros.",
         "highlights": {
@@ -614,7 +603,6 @@
       },
       "calm-drip": {
         "title": "Calm Drip",
-        "eyebrow": "Descanso reparador",
         "description": "Protocolo orientado al descanso y la relajación, especialmente en periodos de mayor estrés. Combina triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar calma y recuperación.",
         "body": "Orientado al descanso: reducir la sensación de estrés, mejorar la calidad del sueño y favorecer un estado de serenidad que se sostenga los días siguientes.\n\nCombina triptófano, magnesio, glutatión y aminoácidos esenciales.\n\nIngredientes: triptófano, magnesio, glutatión y aminoácidos esenciales, entre otros.",
         "highlights": {
