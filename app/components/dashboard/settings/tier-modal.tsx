@@ -93,6 +93,58 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
+/**
+ * A number with its unit inside the box.
+ *
+ * The unit used to live in the label — "Duración (min)", "Precio — Centro (€)"
+ * — which reads as part of the field's name rather than of its value, and made
+ * three price labels wrap in a modal this narrow.
+ */
+function NumberField({
+  id,
+  label,
+  suffix,
+  value,
+  onChange,
+  placeholder,
+  step = "1",
+  max,
+}: {
+  id: string;
+  label: string;
+  suffix: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  step?: string;
+  max?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-petroleum-500 text-xs font-medium">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type="number"
+          min="0"
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${INPUT_CLASS} pr-16`}
+        />
+        {/* Divided off so the unit reads as a unit, not as part of the value. */}
+        <span className="border-sand-200 text-petroleum-300 pointer-events-none absolute inset-y-px right-px flex items-center rounded-r-xl border-l px-3 text-xs font-medium tracking-wide uppercase">
+          {suffix}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────
 
 export function TierModal({
@@ -299,135 +351,82 @@ export function TierModal({
 
           <div className="border-sand-100 border-t" />
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="tier-duration"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("duration")}
-            </label>
-            <input
-              id="tier-duration"
-              type="number"
-              min="0"
-              step="1"
-              value={form.duration}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_DURATION",
-                  duration: e.target.value,
-                })
-              }
-              placeholder={t("durationPlaceholder")}
-              className={INPUT_CLASS}
-            />
-          </div>
+          <NumberField
+            id="tier-duration"
+            label={t("duration")}
+            suffix="min"
+            value={form.duration}
+            onChange={(duration) =>
+              dispatchForm({ type: "SET_DURATION", duration })
+            }
+            placeholder={t("durationPlaceholder")}
+          />
 
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="tier-price-web"
-                className="text-petroleum-500 text-xs font-medium"
-              >
-                {t("priceWeb")}
-              </label>
-              <input
-                id="tier-price-web"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.priceWeb}
-                onChange={(e) =>
-                  dispatchForm({ type: "SET_PRICE_WEB", price: e.target.value })
-                }
-                placeholder={t("priceWebPlaceholder")}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="tier-price-center"
-                className="text-petroleum-500 text-xs font-medium"
-              >
-                {t("priceCentre")}
-              </label>
-              <input
-                id="tier-price-center"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.priceCenter}
-                onChange={(e) =>
-                  dispatchForm({
-                    type: "SET_PRICE_CENTER",
-                    price: e.target.value,
-                  })
-                }
-                placeholder={t("priceCentrePlaceholder")}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="tier-price-suite"
-                className="text-petroleum-500 text-xs font-medium"
-              >
-                {t("priceSuite")}
-              </label>
-              <input
-                id="tier-price-suite"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.priceSuite}
-                onChange={(e) =>
-                  dispatchForm({
-                    type: "SET_PRICE_SUITE",
-                    price: e.target.value,
-                  })
-                }
-                placeholder={t("priceSuitePlaceholder")}
-                className={INPUT_CLASS}
-              />
-            </div>
+            <NumberField
+              id="tier-price-web"
+              label={t("priceWeb")}
+              suffix="€"
+              step="0.01"
+              value={form.priceWeb}
+              onChange={(price) =>
+                dispatchForm({ type: "SET_PRICE_WEB", price })
+              }
+              placeholder={t("priceWebPlaceholder")}
+            />
+            <NumberField
+              id="tier-price-center"
+              label={t("priceCentre")}
+              suffix="€"
+              step="0.01"
+              value={form.priceCenter}
+              onChange={(price) =>
+                dispatchForm({ type: "SET_PRICE_CENTER", price })
+              }
+              placeholder={t("priceCentrePlaceholder")}
+            />
+            <NumberField
+              id="tier-price-suite"
+              label={t("priceSuite")}
+              suffix="€"
+              step="0.01"
+              value={form.priceSuite}
+              onChange={(price) =>
+                dispatchForm({ type: "SET_PRICE_SUITE", price })
+              }
+              placeholder={t("priceSuitePlaceholder")}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="tier-discount"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("discount")}
-            </label>
-            <input
+            <NumberField
               id="tier-discount"
-              type="number"
-              min="0"
+              label={t("discount")}
+              suffix="%"
               max="100"
-              step="1"
               value={form.discount}
-              onChange={(e) =>
-                dispatchForm({ type: "SET_DISCOUNT", discount: e.target.value })
+              onChange={(discount) =>
+                dispatchForm({ type: "SET_DISCOUNT", discount })
               }
               placeholder="0"
-              className={INPUT_CLASS}
             />
-            <p className="text-petroleum-300 text-xs">
-              {saving_eur != null
-                ? t("discountSaving", {
-                    amount: saving_eur,
-                    centre: form.priceCenter,
-                    web: form.priceWeb,
-                  })
-                : t("discountHint")}
-            </p>
+            {/* Only when there is something to say: with no discount set the
+                line was explaining the field's own name. */}
+            {saving_eur != null && (
+              <p className="text-petroleum-300 text-xs">
+                {t("discountSaving", {
+                  amount: saving_eur,
+                  centre: form.priceCenter,
+                  web: form.priceWeb,
+                })}
+              </p>
+            )}
           </div>
 
           <div className="border-sand-100 flex flex-col gap-1.5 border-t pt-4">
             <span className="text-petroleum-500 text-xs font-medium">
               {t("staffHeading")}
             </span>
-            <p className="text-petroleum-300 mb-1 text-xs">{t("staffHint")}</p>
             <TierStaffPicker selected={staffIds} onChange={setStaffIds} />
           </div>
 
