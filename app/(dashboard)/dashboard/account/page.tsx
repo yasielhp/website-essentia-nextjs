@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { PasswordSection } from "./password-section";
 import { ProfileForm } from "./profile-form";
+import { ScheduleSection } from "./schedule-section";
 import { initialState, reducer } from "./state";
 import { useRole } from "@/context/role-context";
 import { insforge } from "@/lib/insforge";
@@ -316,6 +317,12 @@ export default function DashboardAccountPage() {
                   section from opting the whole page out of prerendering. */}
               <GoogleCalendarSection userId={user.id} />
             </Suspense>
+          )}
+
+          {/* Only staff hold a schedule, and this is theirs: what it says is
+              what the public is offered. */}
+          {!loading && user && role === "staff" && (
+            <ScheduleSection userId={user.id} />
           )}
 
           <PasswordSection userId={user!.id} />

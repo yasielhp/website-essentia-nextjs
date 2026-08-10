@@ -1138,7 +1138,14 @@
       "mismatch": "The passwords do not match.",
       "tooShort": "The password must be at least 8 characters."
     },
-    "preferredLanguage": "Preferred language"
+    "preferredLanguage": "Preferred language",
+    "schedule": {
+      "heading": "Working hours",
+      "hint": "The days and hours you take bookings, and how far apart the start times are. This is what clients are offered.",
+      "save": "Save schedule",
+      "saving": "Saving…",
+      "saved": "Schedule saved"
+    }
   },
   "settings": {
     "plans": {

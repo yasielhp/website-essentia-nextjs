@@ -1138,7 +1138,14 @@
       "mismatch": "Las contraseñas no coinciden.",
       "tooShort": "La contraseña debe tener al menos 8 caracteres."
     },
-    "preferredLanguage": "Idioma preferido"
+    "preferredLanguage": "Idioma preferido",
+    "schedule": {
+      "heading": "Horario de trabajo",
+      "hint": "Los días y horas en que atiendes reservas, y cada cuánto empiezan las citas. Esto es lo que se ofrece a los clientes.",
+      "save": "Guardar horario",
+      "saving": "Guardando…",
+      "saved": "Horario guardado"
+    }
   },
   "settings": {
     "plans": {
