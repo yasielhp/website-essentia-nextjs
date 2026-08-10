@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useCallback, useState, useRef } from "react";
 import { dateFormatter } from "@/utils/intl";
+import { localDateStr } from "@/utils/format";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -78,15 +79,15 @@ const DATE_PRESETS = [
 ] as const;
 
 function presetDates(days: number): [string, string] {
-  const today = new Date().toISOString().split("T")[0]!;
+  const today = localDateStr(new Date());
   if (days === -1) {
     const d = new Date();
     d.setMonth(0, 1);
-    return [d.toISOString().split("T")[0]!, today];
+    return [localDateStr(d), today];
   }
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return [d.toISOString().split("T")[0]!, today];
+  return [localDateStr(d), today];
 }
 
 type Translator = ReturnType<typeof useTranslations<"dashboard">>;
@@ -98,7 +99,7 @@ function dateRangeLabel(
   locale: string,
 ): string {
   if (!from && !to) return t("common.dates.all");
-  const today = new Date().toISOString().split("T")[0]!;
+  const today = localDateStr(new Date());
   for (const { key, days } of DATE_PRESETS) {
     const [f] = presetDates(days);
     if (from === f && to === today) return t(`common.dates.${key}`);

@@ -14,10 +14,7 @@ import {
 } from "@/utils/calendar-helpers";
 import { fetchAvailability, type Availability } from "@/actions/availability";
 import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
-
-function localDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { localDateStr } from "@/utils/format";
 
 function CalendarView({
   selected,

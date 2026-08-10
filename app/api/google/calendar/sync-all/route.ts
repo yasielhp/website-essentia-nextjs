@@ -46,6 +46,8 @@ async function syncBookings(
   accessToken: string,
   calendarId: string,
   bookings: Booking[],
+  /** Set for a mirror: the event is recorded against this owner, not the row. */
+  mirrorOwnerId?: string,
 ): Promise<{ synced: number; failed: number }> {
   const db = getAdminClient().database;
 
@@ -75,10 +77,22 @@ async function syncBookings(
 
         if (!eventId) return false;
 
-        await db
-          .from("bookings")
-          .update({ google_event_id: eventId })
-          .eq("id", booking.id);
+        if (mirrorOwnerId) {
+          // A mirror never touches `google_event_id`: that column belongs to
+          // the professional's or the service's copy of this booking.
+          await db.from("booking_calendar_mirrors").insert([
+            {
+              booking_id: booking.id,
+              owner_id: mirrorOwnerId,
+              event_id: eventId,
+            },
+          ]);
+        } else {
+          await db
+            .from("bookings")
+            .update({ google_event_id: eventId })
+            .eq("id", booking.id);
+        }
         return true;
       } catch {
         return false;
@@ -105,7 +119,7 @@ export async function POST(request: NextRequest) {
   const [{ data: staffRows }, { data: serviceRows }] = await Promise.all([
     db
       .from("profiles")
-      .select("id, full_name, first_name")
+      .select("id, full_name, first_name, role")
       .not("google_refresh_token", "is", null),
     db
       .from("service_configs")
@@ -113,16 +127,17 @@ export async function POST(request: NextRequest) {
       .not("google_refresh_token", "is", null),
   ]);
 
-  const staff = (staffRows ?? []) as {
+  const people = (staffRows ?? []) as {
     id: string;
     full_name: string | null;
     first_name: string | null;
+    role: string | null;
   }[];
   const services = (serviceRows ?? []) as { service_id: string }[];
 
   const report: {
     target: string;
-    kind: "staff" | "service";
+    kind: "staff" | "admin" | "service";
     synced: number;
     failed: number;
     skipped?: string;
@@ -131,13 +146,13 @@ export async function POST(request: NextRequest) {
   // Sequential across calendars on purpose: a token refresh writes back to the
   // row it came from, and two calendars belonging to the same account would
   // otherwise race to store their own refreshed token.
-  for (const person of staff) {
+  for (const person of people) {
     const label = person.full_name ?? person.first_name ?? person.id;
     const accessToken = await getStaffAccessToken(person.id);
     if (!accessToken) {
       report.push({
         target: label,
-        kind: "staff",
+        kind: person.role === "admin" ? "admin" : "staff",
         synced: 0,
         failed: 0,
         skipped: "no valid token",
@@ -145,20 +160,60 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const { data } = await db
-      .from("bookings")
-      .select(BOOKING_FIELDS)
-      .eq("staff_id", person.id)
-      .in("status", ["confirmed", "paid"])
-      .gte("date", today)
-      .is("google_event_id", null);
+    // An admin's calendar mirrors the whole centre; a member of staff's holds
+    // the sessions they perform. Nothing an admin has on their own calendar
+    // narrows availability either — the booking flow reads staff schedules and
+    // `staff_services` calendars, and an admin is in neither.
+    const isAdmin = person.role === "admin";
+
+    let pending: Booking[];
+
+    if (isAdmin) {
+      // Everything the centre has ahead of it, minus what this calendar was
+      // already given. `google_event_id` says nothing here: a booking already
+      // on the professional's calendar still has to reach the administrator's.
+      const [{ data: all }, { data: mirrored }] = await Promise.all([
+        db
+          .from("bookings")
+          .select(BOOKING_FIELDS)
+          .in("status", ["confirmed", "paid"])
+          .gte("date", today),
+        db
+          .from("booking_calendar_mirrors")
+          .select("booking_id")
+          .eq("owner_id", person.id),
+      ]);
+
+      const already = new Set(
+        ((mirrored ?? []) as { booking_id: string }[]).map(
+          (row) => row.booking_id,
+        ),
+      );
+      pending = ((all ?? []) as Booking[]).filter(
+        (booking) => !already.has(booking.id),
+      );
+    } else {
+      const { data } = await db
+        .from("bookings")
+        .select(BOOKING_FIELDS)
+        .eq("staff_id", person.id)
+        .in("status", ["confirmed", "paid"])
+        .gte("date", today)
+        .is("google_event_id", null);
+      pending = (data ?? []) as Booking[];
+    }
 
     const result = await syncBookings(
       accessToken,
       "primary",
-      (data ?? []) as Booking[],
+      pending,
+      isAdmin ? person.id : undefined,
     );
-    report.push({ target: label, kind: "staff", ...result });
+    report.push({
+      target: label,
+      kind: person.role === "admin" ? "admin" : "staff",
+      ...result,
+    });
   }
 
   for (const service of services) {

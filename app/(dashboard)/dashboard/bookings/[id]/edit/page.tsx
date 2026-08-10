@@ -44,6 +44,7 @@ import { EmailInput } from "@/components/ui/email-input";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
+import { localDateStr } from "@/utils/format";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -205,10 +206,6 @@ function canPartnerEdit(date: string | null, time: string | null): boolean {
   const [y, mo, d] = date.split("-").map(Number) as [number, number, number];
   const appt = new Date(y, mo - 1, d, h, m);
   return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
-}
-
-function localDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function useServicePickerLabels() {

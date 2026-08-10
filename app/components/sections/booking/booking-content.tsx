@@ -35,6 +35,7 @@ import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { localDateStr } from "@/utils/format";
 
 const EMPTY_DETAILS: DetailsState = {
   firstName: "",
@@ -649,7 +650,7 @@ function BookingContentInner() {
     if (bookingId && selectedDate && selectedTime) {
       await insforge.database.rpc("update_booking_datetime", {
         p_booking_id: bookingId,
-        p_date: selectedDate.toISOString().split("T")[0],
+        p_date: localDateStr(selectedDate),
         p_time: selectedTime,
       });
     }
@@ -660,9 +661,7 @@ function BookingContentInner() {
     if (!selectedService || !selectedTierId) return;
     dispatch({ type: "CONFIRM_START" });
 
-    const dateStr = selectedDate
-      ? selectedDate.toISOString().split("T")[0]
-      : null;
+    const dateStr = selectedDate ? localDateStr(selectedDate) : null;
     const timeStr = selectedTime ?? null;
 
     let resolvedBookingId = bookingId;

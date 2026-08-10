@@ -27,7 +27,7 @@ import { z } from "zod";
 import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
-import { formatCalendarDay } from "@/utils/format";
+import { formatCalendarDay, localDateStr } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
@@ -385,7 +385,7 @@ function CalendarView({
           const isToday = isSameDay(day, today);
           return (
             <button
-              key={day.toISOString().slice(0, 10)}
+              key={localDateStr(day)}
               // The 1st sits in its own weekday column; the rest follow it.
               style={i === 0 ? { gridColumnStart: startColumn } : undefined}
               type="button"

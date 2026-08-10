@@ -160,3 +160,17 @@ export function addMinutesToTime(time: string, minutes: number): string {
   const endMinute = (total % 60).toString().padStart(2, "0");
   return `${endHour}:${endMinute}`;
 }
+
+/**
+ * The calendar date of a `Date`, as the person looking at it sees it.
+ *
+ * `toISOString().slice(0, 10)` is the trap this replaces. A day picked in a
+ * calendar is built as `new Date(year, month, day)` — local midnight — and in
+ * any timezone ahead of UTC that instant belongs to the previous day in UTC.
+ * The Canaries are UTC+1 in summer, so a visitor choosing Monday had Sunday
+ * written to their booking, while the availability check beside it read
+ * Monday. Read the fields the calendar set, not a UTC projection of them.
+ */
+export function localDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}

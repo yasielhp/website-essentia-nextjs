@@ -11,7 +11,6 @@ import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
-import { CalendarSyncCard } from "./calendar-sync-card";
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -122,8 +121,6 @@ function ServicesContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <CalendarSyncCard />
-
       <div className="flex gap-1 overflow-x-auto">
         {bookableServices.map(({ id }) => (
           <TabButton

@@ -755,7 +755,11 @@ export default function EditUserPage() {
             </div>
 
             {/* Google Calendar — theirs, checked when offering slots */}
-            {!loading && state.role === "staff" && (
+            {/* Staff connect a calendar so their bookings appear on it and
+                their busy hours narrow what the public can book. An admin
+                connects one to mirror the whole centre's diary — nothing they
+                have on it ever hides a slot from a client. */}
+            {!loading && (state.role === "staff" || state.role === "admin") && (
               <div className="border-sand-200 rounded-2xl border bg-white p-6">
                 <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
                   {t("calendar.label")}

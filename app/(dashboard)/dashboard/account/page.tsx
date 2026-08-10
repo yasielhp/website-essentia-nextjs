@@ -308,8 +308,9 @@ export default function DashboardAccountPage() {
             onSubmit={(e) => void handleSave(e)}
           />
 
-          {/* Google Calendar — solo para staff */}
-          {!loading && user && role === "staff" && (
+          {/* Staff and admins both: staff so their own bookings land on their
+              calendar, admins so one calendar mirrors the whole centre. */}
+          {!loading && user && (role === "staff" || role === "admin") && (
             <Suspense fallback={null}>
               {/* The boundary is what keeps `useSearchParams` inside this
                   section from opting the whole page out of prerendering. */}

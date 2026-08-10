@@ -1212,7 +1212,8 @@
     "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
     "tabs": {
       "bookings": "Reservas",
-      "subscriptions": "Suscripciones"
+      "subscriptions": "Suscripciones",
+      "calendar": "Google Calendar"
     },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
@@ -1223,7 +1224,7 @@
     },
     "calendarSync": {
       "title": "Sincronizar Google Calendar",
-      "description": "Envía a su calendario todas las reservas confirmadas o pagadas que aún no estén en él. Recorre el calendario de cada profesional y el de cada servicio conectado. Repetirlo no duplica nada.",
+      "description": "Envía a cada calendario conectado las reservas confirmadas o pagadas que aún no estén en él. El calendario de un profesional recibe sus sesiones; el de un administrador recibe todas las del centro. Repetirlo no duplica nada, y lo que un administrador tenga en su calendario nunca quita horas al público.",
       "action": "Sincronizar todas las reservas",
       "running": "Sincronizando…",
       "done": "{synced} reservas enviadas a {calendars} calendarios.",

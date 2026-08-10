@@ -1212,7 +1212,8 @@
     "colorHint": "The colour is stored in this browser, so it does not change what your colleagues see.",
     "tabs": {
       "bookings": "Bookings",
-      "subscriptions": "Subscriptions"
+      "subscriptions": "Subscriptions",
+      "calendar": "Google Calendar"
     },
     "staff": {
       "noStaff": "No staff on the system yet.",
@@ -1223,7 +1224,7 @@
     },
     "calendarSync": {
       "title": "Sync Google Calendar",
-      "description": "Sends every confirmed or paid booking that is not on a calendar yet. It walks each member of staff's calendar and each connected service's. Running it again duplicates nothing.",
+      "description": "Sends each connected calendar the confirmed or paid bookings it does not have yet. A professional's calendar receives the sessions they perform; an administrator's receives every booking in the centre. Running it again duplicates nothing, and whatever an administrator has on their own calendar never takes hours away from the public.",
       "action": "Sync all bookings",
       "running": "Syncing…",
       "done": "{synced} bookings sent to {calendars} calendars.",
