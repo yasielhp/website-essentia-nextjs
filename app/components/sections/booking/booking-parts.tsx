@@ -16,7 +16,7 @@ import type { BookingAction } from "./booking-state";
  * member sees before booking as a guest, the back-and-next buttons, whichever
  * step is on show, and the overlays that cover all of it.
  */
-export function MemberBlockerModal({ onContinue }: { onContinue: () => void }) {
+function MemberBlockerModal({ onContinue }: { onContinue: () => void }) {
   const t = useTranslations("booking.memberBlocker");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">

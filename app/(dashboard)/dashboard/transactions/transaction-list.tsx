@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import type { TxType, UnifiedRow } from "./types";
 
@@ -44,66 +45,54 @@ function StatusBadge({ status }: { status: string | null }) {
 }
 
 /**
- * One formatter per locale, not one per cell.
+ * The three formatters this table needs, built once per locale.
  *
- * A page of ten payments draws a date, a time and an amount for each, and every
- * one of them built a fresh `Intl` formatter — the expensive part of formatting,
- * repeated thirty times a render for an answer that never changes.
+ * An `Intl` constructor loads a locale-data table; a page of ten payments draws
+ * a date, a time and an amount each, so building them per cell meant thirty
+ * such loads a render for an answer that never changes. `useMemo` in the one
+ * component that formats keeps the constructors out of the drawing.
  */
-const DATE_FORMATS = new Map<string, Intl.DateTimeFormat>();
-const TIME_FORMATS = new Map<string, Intl.DateTimeFormat>();
-const AMOUNT_FORMATS = new Map<string, Intl.NumberFormat>();
+type Formatters = {
+  date: Intl.DateTimeFormat;
+  time: Intl.DateTimeFormat;
+  amount: Intl.NumberFormat;
+};
 
-function cached<T>(store: Map<string, T>, locale: string, build: () => T): T {
-  const found = store.get(locale);
-  if (found) return found;
-  const made = build();
-  store.set(locale, made);
-  return made;
+function buildFormatters(locale: string): Formatters {
+  return {
+    date: new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }),
+    time: new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    amount: new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "EUR",
+    }),
+  };
 }
 
-function formatDate(value: string | null, locale: string): string {
+function formatDate(value: string | null, fmt: Formatters): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return cached(
-    DATE_FORMATS,
-    locale,
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      }),
-  ).format(d);
+  return fmt.date.format(d);
 }
 
-function formatTime(value: string | null, locale: string): string {
+function formatTime(value: string | null, fmt: Formatters): string {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return cached(
-    TIME_FORMATS,
-    locale,
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-  ).format(d);
+  return fmt.time.format(d);
 }
 
-function formatAmount(value: number | null, locale: string): string {
+function formatAmount(value: number | null, fmt: Formatters): string {
   if (value === null || Number.isNaN(value)) return "—";
-  return cached(
-    AMOUNT_FORMATS,
-    locale,
-    () =>
-      new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: "EUR",
-      }),
-  ).format(value);
+  return fmt.amount.format(value);
 }
 
 /**
@@ -124,6 +113,7 @@ export function TransactionList({
   locale: string;
 }) {
   const t = useTranslations("dashboard");
+  const fmt = useMemo(() => buildFormatters(locale), [locale]);
 
   return (
     <>
@@ -192,15 +182,15 @@ export function TransactionList({
                   <div className="mt-1.5 flex items-center gap-3">
                     {row.created_at && (
                       <span className="text-petroleum-300 text-xs">
-                        {formatDate(row.created_at, locale)}
-                        {formatTime(row.created_at, locale)
-                          ? ` · ${formatTime(row.created_at, locale)}`
+                        {formatDate(row.created_at, fmt)}
+                        {formatTime(row.created_at, fmt)
+                          ? ` · ${formatTime(row.created_at, fmt)}`
                           : ""}
                       </span>
                     )}
                     {row.amount !== null && (
                       <span className="text-petroleum-700 text-xs font-medium">
-                        {formatAmount(row.amount, locale)}
+                        {formatAmount(row.amount, fmt)}
                       </span>
                     )}
                   </div>
@@ -290,10 +280,10 @@ export function TransactionList({
                       >
                         <td className="px-5 py-4">
                           <p className="text-petroleum-500">
-                            {formatDate(row.created_at, locale)}
+                            {formatDate(row.created_at, fmt)}
                           </p>
                           <p className="text-petroleum-400 text-xs">
-                            {formatTime(row.created_at, locale)}
+                            {formatTime(row.created_at, fmt)}
                           </p>
                         </td>
                         <td className="px-5 py-4">
@@ -341,7 +331,7 @@ export function TransactionList({
                           })()}
                         </td>
                         <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
-                          {formatAmount(row.amount, locale)}
+                          {formatAmount(row.amount, fmt)}
                         </td>
                       </tr>
                     );
