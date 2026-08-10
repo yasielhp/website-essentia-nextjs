@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
-import { sendEmail } from "@/emails/send";
+import { sendEmailBatch } from "@/emails/send";
 import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
 
 /**
@@ -82,9 +82,14 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  let sent = 0;
   let skipped = 0;
+  const due: {
+    id: string;
+    email: Parameters<typeof sendEmailBatch>[0][number];
+  }[] = [];
 
+  // The loop only decides who is due and writes their email; nothing is sent
+  // or stamped inside it, so there is no request waiting on the one before.
   for (const booking of (data ?? []) as Row[]) {
     if (!booking.email || !booking.date || !booking.time) {
       skipped++;
@@ -109,43 +114,51 @@ async function handle(request: NextRequest) {
     const dateIso = booking.date.slice(0, 10);
     const service = booking.service_title ?? "Essentia";
 
-    // Sequential on purpose, and not a candidate for `Promise.all`.
-    //
-    // Resend rate-limits by default, and the stamp below goes in *before* the
-    // send: a request that came back 429 would leave a booking marked as
-    // reminded and never remind it, which is the one failure this job must not
-    // have. The rule's own guidance keeps loops sequential for rate-limited
-    // services, and a reminder run is a handful of emails once an hour, so
-    // there is nothing to win by racing them.
-    //
-    // Stamped before sending: a duplicate email is worse than a missing one,
-    // and a crash mid-send would otherwise resend on the next run.
-    await db
-      .from("bookings")
-      .update({ reminder_sent_at: new Date().toISOString() })
-      .eq("id", booking.id);
-
-    await sendEmail({
-      to: booking.email,
-      subject: `Tu sesión del ${formatDate(dateIso, locale)} — ${service}`,
-      html: bookingReminderEmail({
-        name: booking.first_name ?? "",
-        service,
-        sessionType: tierLabel(booking),
-        date: formatDate(dateIso, locale),
-        time: booking.time.slice(0, 5),
-        duration: booking.duration,
-        dateIso,
-        cancelUrl: booking.cancel_token
-          ? `${getAppUrl()}/es/reserva/cancelar?token=${booking.cancel_token}`
-          : null,
-        locale,
-      }),
-    }).catch((err) => {
-      console.error("[cron/booking-reminders] send failed:", err);
+    due.push({
+      id: booking.id,
+      email: {
+        to: booking.email,
+        subject: `Tu sesión del ${formatDate(dateIso, locale)} — ${service}`,
+        html: bookingReminderEmail({
+          name: booking.first_name ?? "",
+          service,
+          sessionType: tierLabel(booking),
+          date: formatDate(dateIso, locale),
+          time: booking.time.slice(0, 5),
+          duration: booking.duration,
+          dateIso,
+          cancelUrl: booking.cancel_token
+            ? `${getAppUrl()}/es/reserva/cancelar?token=${booking.cancel_token}`
+            : null,
+          locale,
+        }),
+      },
     });
+  }
 
-    sent++;
+  if (due.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, skipped });
+  }
+
+  // Stamped before sending, all of them at once: a duplicate reminder is worse
+  // than a missing one, and a crash between here and the send would otherwise
+  // send the lot again on the next run.
+  await db
+    .from("bookings")
+    .update({ reminder_sent_at: new Date().toISOString() })
+    .in(
+      "id",
+      due.map((item) => item.id),
+    );
+
+  // One request for the whole run, which is what keeps this off Resend's rate
+  // limit — the reason the loop above used to be sequential.
+  const { sent, error: sendError } = await sendEmailBatch(
+    due.map((item) => item.email),
+  );
+
+  if (sendError) {
+    console.error("[cron/booking-reminders] batch failed:", sendError);
   }
 
   return NextResponse.json({ ok: true, sent, skipped });

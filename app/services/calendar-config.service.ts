@@ -128,9 +128,7 @@ export async function listStaffWithCalendar(
   return (
     (data as
       { staff_id: string; google_access_token: string | null }[] | null) ?? []
-  )
-    .filter((r) => !!r.google_access_token)
-    .map((r) => r.staff_id);
+  ).flatMap((r) => (r.google_access_token ? [r.staff_id] : []));
 }
 
 /** Every service with a Google account connected. */

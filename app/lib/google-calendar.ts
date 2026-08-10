@@ -123,7 +123,7 @@ async function listCalendarIds(accessToken: string): Promise<string[]> {
   const data = (await res.json()) as {
     items?: { id: string; accessRole: string }[];
   };
-  return (data.items ?? []).map((c) => c.id).filter(Boolean);
+  return (data.items ?? []).flatMap((c) => (c.id ? [c.id] : []));
 }
 
 /**

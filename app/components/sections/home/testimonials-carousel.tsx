@@ -228,9 +228,10 @@ export default function TestimonialsCarousel({
   const sliderRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<HTMLDivElement>(null);
   const mobileTrackRef = useRef<HTMLDivElement>(null);
-  const groupRefs = useRef<(HTMLDivElement | null)[]>(
-    Array.from({ length: groupCount }, () => null),
-  );
+  // Starts empty and fills itself: the ref callbacks below assign by index as
+  // each group mounts. `useRef(Array.from(...))` rebuilt that array on every
+  // render and threw it away, since a ref keeps only the first value.
+  const groupRefs = useRef<(HTMLDivElement | null)[]>([]);
   const animatingRef = useRef(false);
   const activeGroupRef = useRef(0);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);

@@ -1,3 +1,4 @@
+import { dateFormatter } from "@/utils/intl";
 import type { BookableService } from "@/data/services-data";
 import type { WeeklySchedule } from "@/types/schedule";
 
@@ -47,17 +48,16 @@ export function getLocalizedMonthName(
   year: number,
   month: number,
 ): string {
-  return new Intl.DateTimeFormat(locale, { month: "long" }).format(
+  return dateFormatter(locale, { month: "long" }).format(
     new Date(year, month, 1),
   );
 }
 
 export function getLocalizedDayNames(locale: string): string[] {
   // Jan 6 2025 is a Monday — use Mon–Sun as base week
+  const formatter = dateFormatter(locale, { weekday: "short" });
   return Array.from({ length: 7 }, (_, i) =>
-    new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
-      new Date(2025, 0, 6 + i),
-    ),
+    formatter.format(new Date(2025, 0, 6 + i)),
   );
 }
 

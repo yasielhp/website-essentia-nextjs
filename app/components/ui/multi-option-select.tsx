@@ -46,9 +46,9 @@ export function MultiOptionSelect<T extends string>({
   // option on every render, and the array scan made that quadratic.
   const selectedSet = useMemo(() => new Set(value), [value]);
 
-  const selectedLabels = options
-    .filter((o) => selectedSet.has(o.value))
-    .map((o) => o.label);
+  const selectedLabels = options.flatMap((o) =>
+    selectedSet.has(o.value) ? [o.label] : [],
+  );
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();

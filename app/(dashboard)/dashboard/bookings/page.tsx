@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useCallback, useState, useRef } from "react";
+import { dateFormatter } from "@/utils/intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -101,10 +102,9 @@ function dateRangeLabel(
     if (from === f && to === today) return t(`common.dates.${key}`);
   }
   const fmt = (s: string) =>
-    new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "short",
-    }).format(new Date(s));
+    dateFormatter(locale, { day: "2-digit", month: "short" }).format(
+      new Date(s),
+    );
   if (from && to)
     return t("common.dates.range", { from: fmt(from), to: fmt(to) });
   if (from) return t("common.dates.fromOnly", { date: fmt(from) });

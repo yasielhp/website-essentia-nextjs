@@ -267,7 +267,9 @@ export default function CheckInPage() {
   const q = query.trim().toLowerCase();
   const results: SearchResult[] = q
     ? registrations
-        .map((r) => {
+        // Scored and dropped in one pass: the unscored rows never become
+        // objects only to be thrown away a line later.
+        .flatMap((r) => {
           const name = (r.full_name ?? "").toLowerCase();
           const email = (r.email ?? "").toLowerCase();
           const phone = (r.phone ?? "").toLowerCase();
@@ -275,9 +277,8 @@ export default function CheckInPage() {
           if (name.startsWith(q)) score = 3;
           else if (name.includes(q)) score = 2;
           else if (email.includes(q) || phone.includes(q)) score = 1;
-          return { ...r, matchScore: score };
+          return score > 0 ? [{ ...r, matchScore: score }] : [];
         })
-        .filter((r) => r.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
     : [];
 

@@ -150,16 +150,16 @@ export function CalendarFiltersModal({
               className={FIELD_CLASS}
             >
               <option value="">{t("allTiers")}</option>
-              {tierOptions
-                .filter(
-                  (tier) =>
-                    !draft.serviceId || tier.service_id === draft.serviceId,
-                )
-                .map((tier) => (
-                  <option key={tier.id} value={tier.id}>
-                    {tier.label}
-                  </option>
-                ))}
+              {/* Filtered and rendered in one pass. */}
+              {tierOptions.flatMap((tier) =>
+                !draft.serviceId || tier.service_id === draft.serviceId
+                  ? [
+                      <option key={tier.id} value={tier.id}>
+                        {tier.label}
+                      </option>,
+                    ]
+                  : [],
+              )}
             </select>
           </div>
         </div>

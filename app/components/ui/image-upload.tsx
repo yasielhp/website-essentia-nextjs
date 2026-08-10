@@ -6,43 +6,48 @@ import NextImage from "next/image";
 import { insforge } from "@/lib/insforge";
 import { IconImage, IconX } from "@/components/ui/icons";
 
+/** Decodes a file into an `<img>`, or rejects if the browser cannot read it. */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not read the image."));
+    img.src = src;
+  });
+}
+
 async function compressImage(
   file: File,
   maxPx = 1200,
   quality = 0.82,
 ): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    // A decode failure — a truncated upload, an unsupported format — used to
-    // leave the URL alive, and with it the whole File pinned in memory.
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read the image."));
-    };
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, w, h);
+  // An object URL pins its File in memory until it is revoked, and a decode
+  // that fails is exactly when that is easiest to forget. In a `finally` it is
+  // released on every way out of this function, including the throwing ones.
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+
+    const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, w, h);
+
+    return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (blob) =>
           blob ? resolve(blob) : reject(new Error("Compression failed")),
         "image/webp",
         quality,
       );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Load failed"));
-    };
-    img.src = url;
-  });
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 type ImageUploadProps = {

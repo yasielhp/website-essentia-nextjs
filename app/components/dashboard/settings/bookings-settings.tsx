@@ -133,143 +133,138 @@ function ServicesContent({
         ))}
       </div>
 
-      {bookableServices
-        .filter(({ id }) => id === service)
-        .map(({ id }) => {
-          const tiers = serviceTiers[id] ?? [];
-          return (
-            <div key={id}>
-              {tiers.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {/* The calendar colour tints the whole card, so a tier is
+      {/* One pass: only the selected service produces a panel. */}
+      {bookableServices.flatMap(({ id }) => {
+        if (id !== service) return [];
+        const tiers = serviceTiers[id] ?? [];
+        return [
+          <div key={id}>
+            {tiers.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {/* The calendar colour tints the whole card, so a tier is
                       recognisable here the same way it is on the calendar.
                       Kept faint: the text still has to read on top of it. */}
-                  {tiers.map((tier) => {
-                    // Whatever the two prices say — the percentage is not
-                    // stored, so it can never disagree with what is charged.
-                    const discount =
-                      tier.price_center_eur != null &&
-                      tier.price_eur != null &&
-                      tier.price_center_eur > tier.price_eur
-                        ? Math.round(
-                            (1 - tier.price_eur / tier.price_center_eur) * 100,
-                          )
-                        : null;
-                    return (
-                      <button
-                        key={tier.id}
-                        type="button"
-                        onClick={() => onEditTier(id, tier)}
-                        style={{
-                          backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
-                          borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
-                        }}
-                        className="hover:ring-petroleum-300 flex flex-col gap-3 rounded-2xl border p-4 text-left transition-shadow hover:ring-2"
-                      >
-                        <div className="flex items-start gap-3">
-                          <TierThumbnail
-                            imageUrl={tier.image_url}
-                            color={tier.color}
-                            label={tier.label}
-                            className="size-12 shrink-0"
-                            sizes="48px"
-                          />
-                          <span className="text-petroleum-700 min-w-0 flex-1 truncate text-sm font-medium">
-                            {tier.label ?? "—"}
-                          </span>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                              tier.active
-                                ? "bg-green-100 text-green-700"
-                                : "text-petroleum-400 bg-white/70"
-                            }`}
-                          >
-                            {tier.active ? tTiers("active") : tTiers("off")}
-                          </span>
-                        </div>
+                {tiers.map((tier) => {
+                  // Whatever the two prices say — the percentage is not
+                  // stored, so it can never disagree with what is charged.
+                  const discount =
+                    tier.price_center_eur != null &&
+                    tier.price_eur != null &&
+                    tier.price_center_eur > tier.price_eur
+                      ? Math.round(
+                          (1 - tier.price_eur / tier.price_center_eur) * 100,
+                        )
+                      : null;
+                  return (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => onEditTier(id, tier)}
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
+                        borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
+                      }}
+                      className="hover:ring-petroleum-300 flex flex-col gap-3 rounded-2xl border p-4 text-left transition-shadow hover:ring-2"
+                    >
+                      <div className="flex items-start gap-3">
+                        <TierThumbnail
+                          imageUrl={tier.image_url}
+                          color={tier.color}
+                          label={tier.label}
+                          className="size-12 shrink-0"
+                          sizes="48px"
+                        />
+                        <span className="text-petroleum-700 min-w-0 flex-1 truncate text-sm font-medium">
+                          {tier.label ?? "—"}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            tier.active
+                              ? "bg-green-100 text-green-700"
+                              : "text-petroleum-400 bg-white/70"
+                          }`}
+                        >
+                          {tier.active ? tTiers("active") : tTiers("off")}
+                        </span>
+                      </div>
 
-                        <dl className="flex flex-col gap-1 border-t border-black/10 pt-3 text-xs">
-                          {(
+                      <dl className="flex flex-col gap-1 border-t border-black/10 pt-3 text-xs">
+                        {(
+                          [
                             [
-                              [
-                                "duration",
-                                tier.duration_minutes != null
-                                  ? `${tier.duration_minutes} min`
-                                  : "—",
-                              ],
-                              [
-                                "priceWeb",
-                                tier.price_eur != null
-                                  ? `${tier.price_eur} €${
-                                      discount != null
-                                        ? ` (−${discount} %)`
-                                        : ""
-                                    }`
-                                  : "—",
-                              ],
-                              [
-                                "priceCentre",
-                                tier.price_center_eur != null
-                                  ? `${tier.price_center_eur} €`
-                                  : "—",
-                              ],
-                              [
-                                "priceSuite",
-                                tier.price_suite_eur != null
-                                  ? `${tier.price_suite_eur} €`
-                                  : "—",
-                              ],
-                            ] as const
-                          ).map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between gap-2"
-                            >
-                              <dt className="text-petroleum-400">
-                                {t(`card.${key}`)}
-                              </dt>
-                              <dd className="text-petroleum-700 font-medium">
-                                {value}
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
+                              "duration",
+                              tier.duration_minutes != null
+                                ? `${tier.duration_minutes} min`
+                                : "—",
+                            ],
+                            [
+                              "priceWeb",
+                              tier.price_eur != null
+                                ? `${tier.price_eur} €${
+                                    discount != null ? ` (−${discount} %)` : ""
+                                  }`
+                                : "—",
+                            ],
+                            [
+                              "priceCentre",
+                              tier.price_center_eur != null
+                                ? `${tier.price_center_eur} €`
+                                : "—",
+                            ],
+                            [
+                              "priceSuite",
+                              tier.price_suite_eur != null
+                                ? `${tier.price_suite_eur} €`
+                                : "—",
+                            ],
+                          ] as const
+                        ).map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-2">
+                            <dt className="text-petroleum-400">
+                              {t(`card.${key}`)}
+                            </dt>
+                            <dd className="text-petroleum-700 font-medium">
+                              {value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
 
-                        {/* Nobody assigned means nobody can be booked for it,
+                      {/* Nobody assigned means nobody can be booked for it,
                           so the empty case is spelled out rather than blank. */}
-                        <div className="flex flex-col gap-1.5 border-t border-black/10 pt-3">
-                          <span className="text-petroleum-400 text-xs">
-                            {t("card.staff")}
+                      <div className="flex flex-col gap-1.5 border-t border-black/10 pt-3">
+                        <span className="text-petroleum-400 text-xs">
+                          {t("card.staff")}
+                        </span>
+                        {(tierStaff[tier.id] ?? []).length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {(tierStaff[tier.id] ?? []).map((name) => (
+                              <span
+                                key={name}
+                                className="text-petroleum-700 rounded-full bg-white/70 px-2 py-0.5 text-xs"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-red-600">
+                            {t("card.noStaff")}
                           </span>
-                          {(tierStaff[tier.id] ?? []).length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {(tierStaff[tier.id] ?? []).map((name) => (
-                                <span
-                                  key={name}
-                                  className="text-petroleum-700 rounded-full bg-white/70 px-2 py-0.5 text-xs"
-                                >
-                                  {name}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-red-600">
-                              {t("card.noStaff")}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="border-sand-200 rounded-2xl border bg-white px-5 py-4">
-                  <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="border-sand-200 rounded-2xl border bg-white px-5 py-4">
+                <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
+              </div>
+            )}
+          </div>,
+        ];
+      })}
     </div>
   );
 }

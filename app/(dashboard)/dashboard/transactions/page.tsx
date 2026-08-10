@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import { dateFormatter, numberFormatter } from "@/utils/intl";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -158,10 +159,9 @@ function dateRangeLabel(
     if (from === f && to === today) return t(`common.dates.${key}`);
   }
   const fmt = (s: string) =>
-    new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "short",
-    }).format(new Date(s));
+    dateFormatter(locale, { day: "2-digit", month: "short" }).format(
+      new Date(s),
+    );
   if (from && to)
     return t("common.dates.range", { from: fmt(from), to: fmt(to) });
   if (from) return t("common.dates.fromOnly", { date: fmt(from) });
@@ -731,7 +731,7 @@ export default function TransactionsPage() {
             <div className="bg-sand-100 mt-2 h-8 w-24 animate-pulse rounded-lg" />
           ) : (
             <p className="font-display text-petroleum-700 mt-1 text-3xl">
-              {new Intl.NumberFormat(locale, {
+              {numberFormatter(locale, {
                 style: "currency",
                 currency: "EUR",
                 maximumFractionDigits: 0,
