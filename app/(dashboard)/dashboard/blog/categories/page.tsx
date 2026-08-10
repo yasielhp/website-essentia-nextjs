@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
@@ -43,6 +43,77 @@ const TAB_BTN = (active: boolean) =>
       : "text-petroleum-400 hover:text-petroleum-600",
   ].join(" ");
 
+/**
+ * The form half of this screen, as one value.
+ *
+ * Editing a category and cancelling both rewrite the same six things at once,
+ * and as six setters that was six chances to forget one — the error message
+ * outliving the row it belonged to, a slug left over from the last edit. One
+ * action per transition says what happened instead of listing what changed.
+ */
+type FormState = {
+  editing: Category | null;
+  name: string;
+  slug: string;
+  nameEs: string;
+  slugEs: string;
+  error: string | null;
+};
+
+type FormAction =
+  | { type: "START_EDIT"; category: Category }
+  | { type: "CANCEL_EDIT" }
+  | { type: "SET_NAME"; value: string }
+  | { type: "SET_SLUG"; value: string }
+  | { type: "SET_NAME_ES"; value: string }
+  | { type: "SET_SLUG_ES"; value: string }
+  | { type: "SET_ERROR"; message: string | null };
+
+const EMPTY_FORM: FormState = {
+  editing: null,
+  name: "",
+  slug: "",
+  nameEs: "",
+  slugEs: "",
+  error: null,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "START_EDIT":
+      return {
+        editing: action.category,
+        name: action.category.name,
+        slug: action.category.slug,
+        nameEs: action.category.name_es ?? "",
+        slugEs: action.category.slug_es ?? "",
+        error: null,
+      };
+    case "CANCEL_EDIT":
+      return EMPTY_FORM;
+    case "SET_NAME":
+      // A new category takes its slug from its name; an existing one keeps the
+      // slug it was published under.
+      return {
+        ...state,
+        name: action.value,
+        slug: state.editing ? state.slug : slugify(action.value),
+      };
+    case "SET_NAME_ES":
+      return {
+        ...state,
+        nameEs: action.value,
+        slugEs: state.editing ? state.slugEs : slugify(action.value),
+      };
+    case "SET_SLUG":
+      return { ...state, slug: action.value };
+    case "SET_SLUG_ES":
+      return { ...state, slugEs: action.value };
+    case "SET_ERROR":
+      return { ...state, error: action.message };
+  }
+}
+
 export default function BlogCategoriesPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.blog.categories_page");
@@ -50,15 +121,9 @@ export default function BlogCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<"en" | "es">("en");
-
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [nameEs, setNameEs] = useState("");
-  const [slugEs, setSlugEs] = useState("");
-
-  const [editing, setEditing] = useState<Category | null>(null);
+  const [form, dispatch] = useReducer(formReducer, EMPTY_FORM);
+  const { editing, name, slug, nameEs, slugEs, error } = form;
 
   async function reload() {
     const { data } = await insforge.database
@@ -80,38 +145,21 @@ export default function BlogCategoriesPage() {
   }, []);
 
   function startEdit(cat: Category) {
-    setEditing(cat);
-    setName(cat.name);
-    setSlug(cat.slug);
-    setNameEs(cat.name_es ?? "");
-    setSlugEs(cat.slug_es ?? "");
-    setError(null);
+    dispatch({ type: "START_EDIT", category: cat });
   }
 
   function cancelEdit() {
-    setEditing(null);
-    setName("");
-    setSlug("");
-    setNameEs("");
-    setSlugEs("");
-    setError(null);
-  }
-
-  function handleNameChange(val: string) {
-    setName(val);
-    if (!editing) setSlug(slugify(val));
-  }
-
-  function handleNameEsChange(val: string) {
-    setNameEs(val);
-    if (!editing) setSlugEs(slugify(val));
+    dispatch({ type: "CANCEL_EDIT" });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    dispatch({ type: "SET_ERROR", message: null });
     if (!name.trim() || !slug.trim() || !nameEs.trim() || !slugEs.trim()) {
-      setError("Name and slug are required in both languages.");
+      dispatch({
+        type: "SET_ERROR",
+        message: "Name and slug are required in both languages.",
+      });
       return;
     }
     setSaving(true);
@@ -132,9 +180,11 @@ export default function BlogCategoriesPage() {
           .update(payload)
           .eq("id", editing.id);
         if (err) {
-          setError(
-            (err as { message?: string }).message ?? t("errors.saveFailed"),
-          );
+          dispatch({
+            type: "SET_ERROR",
+            message:
+              (err as { message?: string }).message ?? t("errors.saveFailed"),
+          });
           return;
         }
         cancelEdit();
@@ -143,15 +193,14 @@ export default function BlogCategoriesPage() {
           .from("blog_categories")
           .insert([payload]);
         if (err) {
-          setError(
-            (err as { message?: string }).message ?? t("errors.createFailed"),
-          );
+          dispatch({
+            type: "SET_ERROR",
+            message:
+              (err as { message?: string }).message ?? t("errors.createFailed"),
+          });
           return;
         }
-        setName("");
-        setSlug("");
-        setNameEs("");
-        setSlugEs("");
+        dispatch({ type: "CANCEL_EDIT" });
       }
     } finally {
       setSaving(false);
@@ -218,7 +267,9 @@ export default function BlogCategoriesPage() {
                     id="category-name"
                     type="text"
                     value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({ type: "SET_NAME", value: e.target.value })
+                    }
                     placeholder={t("fields.namePlaceholder")}
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -235,7 +286,12 @@ export default function BlogCategoriesPage() {
                     id="category-slug"
                     type="text"
                     value={slug}
-                    onChange={(e) => setSlug(sanitizeSlug(e.target.value))}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_SLUG",
+                        value: sanitizeSlug(e.target.value),
+                      })
+                    }
                     placeholder={t("fields.slugPlaceholder")}
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -255,7 +311,9 @@ export default function BlogCategoriesPage() {
                     id="category-name-es"
                     type="text"
                     value={nameEs}
-                    onChange={(e) => handleNameEsChange(e.target.value)}
+                    onChange={(e) =>
+                      dispatch({ type: "SET_NAME_ES", value: e.target.value })
+                    }
                     placeholder={t("fields.namePlaceholderEs")}
                     disabled={saving}
                     className={INPUT_CLASS}
@@ -272,7 +330,12 @@ export default function BlogCategoriesPage() {
                     id="category-slug-es"
                     type="text"
                     value={slugEs}
-                    onChange={(e) => setSlugEs(sanitizeSlug(e.target.value))}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "SET_SLUG_ES",
+                        value: sanitizeSlug(e.target.value),
+                      })
+                    }
                     placeholder={t("fields.slugPlaceholderEs")}
                     disabled={saving}
                     className={INPUT_CLASS}
