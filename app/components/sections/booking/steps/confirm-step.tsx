@@ -12,6 +12,7 @@ import {
 import type { DetailsState } from "@/types";
 import { onlineSaving, onlineDiscountPercent } from "@/lib/pricing";
 import { insforge } from "@/lib/insforge";
+import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
 
 export type PaymentMethod = "online" | "on-site";
 
@@ -62,7 +63,6 @@ export function ConfirmStep({
   const tCards = useTranslations("wellness.treatments");
   const tServices = useTranslations("booking.serviceStep");
   const locale = useLocale();
-  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
 
   const treatment = treatmentByLabel(tierLabel);
   const cardKey = treatment
@@ -181,7 +181,7 @@ export function ConfirmStep({
             {
               label: t("date"),
               value: date
-                ? date.toLocaleDateString(dateLocale, {
+                ? formatCalendarDay(date, locale as SupportedLocale, {
                     weekday: "long",
                     day: "numeric",
                     month: "long",

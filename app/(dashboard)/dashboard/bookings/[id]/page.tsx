@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
+import {
+  TIME_ZONE,
+  formatBookingDate,
+  type SupportedLocale,
+} from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -63,23 +69,18 @@ function canPartnerEdit(date: string | null, time: string | null): boolean {
   return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
 }
 
-function formatDate(dateStr: string | null, locale: string): string {
+function formatDate(dateStr: string | null, locale: SupportedLocale): string {
   if (!dateStr) return "—";
-  const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return formatBookingDate(dateStr, locale);
 }
 
-function formatCreated(iso: string | null, locale: string): string {
+function formatCreated(iso: string | null, locale: SupportedLocale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(locale, {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -199,7 +200,7 @@ export default function BookingDetailPage() {
   const tPayment = useTranslations("dashboard.bookings.paymentStatus");
   const tLocations = useTranslations("dashboard.bookings.locations");
   const tSources = useTranslations("dashboard.bookings.sources");
-  const locale = useLocale();
+  const locale = useDashboardLocale();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
@@ -586,6 +587,7 @@ export default function BookingDetailPage() {
                           month: "short",
                           hour: "2-digit",
                           minute: "2-digit",
+                          timeZone: TIME_ZONE,
                         },
                       )}
                     </span>

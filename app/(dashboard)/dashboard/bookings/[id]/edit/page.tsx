@@ -26,6 +26,7 @@ import { deleteBooking, updateBookingByAdmin } from "@/actions/booking-draft";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
+import { formatCalendarDay } from "@/utils/format";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
 
@@ -1095,12 +1096,13 @@ function DateTimeSection({
             <div className="flex flex-col gap-1">
               <p className="text-petroleum-400 text-xs">Date</p>
               <p className="text-petroleum-700 font-medium">
-                {selectedDate?.toLocaleDateString("en-GB", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {selectedDate &&
+                  formatCalendarDay(selectedDate, "en", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
               </p>
             </div>
             <ChevronDown className="text-petroleum-400 shrink-0" size={16} />

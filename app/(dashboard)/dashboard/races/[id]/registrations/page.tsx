@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { TIME_ZONE } from "@/utils/format";
 import {
   IconQr,
   IconPlus,
@@ -131,6 +132,7 @@ function formatDate(iso: string | null, locale: string): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -141,6 +143,7 @@ function formatDateTime(iso: string, locale: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 

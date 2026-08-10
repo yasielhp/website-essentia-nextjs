@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
+import { TIME_ZONE } from "@/utils/format";
 import {
   IconCheckmark,
   IconArrowLeft,
@@ -91,7 +92,7 @@ function CheckInCard({
           {t("checkedInAt", {
             time: new Date(registration.checked_in_at!).toLocaleTimeString(
               locale,
-              { hour: "2-digit", minute: "2-digit" },
+              { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE },
             ),
           })}
         </div>

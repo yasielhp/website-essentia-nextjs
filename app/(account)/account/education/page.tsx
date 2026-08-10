@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { TIME_ZONE } from "@/utils/format";
 
 type EducationSession = {
   id: string;
@@ -27,6 +28,7 @@ function formatDateTime(iso: string | null): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 

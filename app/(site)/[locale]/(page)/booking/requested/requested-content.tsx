@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatBookingDate, type SupportedLocale } from "@/utils/format";
 
 export function RequestedContent() {
   const t = useTranslations("booking.requested");
@@ -17,15 +18,8 @@ export function RequestedContent() {
   const payOnSite = searchParams.get("payment") === "on-site";
 
   const dateIso = dateStr?.split("T")[0];
-  const date = dateIso ? new Date(`${dateIso}T12:00:00`) : null;
-  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
-  const formattedDate = date
-    ? date.toLocaleDateString(dateLocale, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+  const formattedDate = dateIso
+    ? formatBookingDate(dateIso, locale as SupportedLocale)
     : null;
 
   const hasDetails = service || formattedDate || time;

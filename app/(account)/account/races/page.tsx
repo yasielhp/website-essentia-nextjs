@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { TIME_ZONE } from "@/utils/format";
 
 type Race = {
   id: string;
@@ -25,6 +26,7 @@ function formatDate(iso: string | null): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 

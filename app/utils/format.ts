@@ -7,19 +7,37 @@
  *
  * All date helpers take an ISO `YYYY-MM-DD` string and build the Date from its
  * components, so the rendered day never shifts because of the UTC offset.
+ *
+ * Every helper also names its locale *and* its time zone. Leaving either out
+ * makes the output depend on the machine doing the formatting: Node renders a
+ * page on the server in whatever `TZ` the host was started with, the browser
+ * re-renders it in the visitor's own, and React then reports a hydration
+ * mismatch and throws the server's markup away. Naming both keeps the two
+ * sides byte-identical.
  */
 
 export type SupportedLocale = "en" | "es";
 
+/** The centre is in Tenerife; every appointment it schedules happens there. */
+export const TIME_ZONE = "Atlantic/Canary";
+
 const intlLocale = (locale: SupportedLocale) =>
   locale === "es" ? "es-ES" : "en-GB";
 
-/** Parses `YYYY-MM-DD` into a local-time Date. Returns null when malformed. */
+/**
+ * Parses `YYYY-MM-DD` into a Date pinned to midnight UTC. Returns null when
+ * malformed.
+ *
+ * UTC rather than local time on purpose: the plain-date helpers below format
+ * with `timeZone: "UTC"`, and the pair together is what makes a date come out
+ * as the same day everywhere. Building at local midnight instead would push
+ * the date back a day for anyone east of Greenwich.
+ */
 export function parseIsoDate(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null;
   const [y, m, d] = dateStr.split("-").map(Number);
   if (!y || !m || !d) return null;
-  const date = new Date(y, m - 1, d);
+  const date = new Date(Date.UTC(y, m - 1, d));
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -35,6 +53,31 @@ export function formatBookingDate(
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Formats a `Date` that stands for a calendar day somebody picked — the day in
+ * a date picker, not an instant on a timeline.
+ *
+ * Such a Date carries the browser's own midnight, so handing it straight to
+ * `toLocaleDateString` with an explicit zone can roll it over to the day
+ * before or after. Re-anchoring to midday UTC first and formatting in UTC
+ * gives twelve hours of slack on either side, which no time zone on earth can
+ * cross, so the day printed is always the day chosen.
+ */
+export function formatCalendarDay(
+  date: Date,
+  locale: SupportedLocale,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const midday = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12),
+  );
+  return midday.toLocaleDateString(intlLocale(locale), {
+    ...options,
+    timeZone: "UTC",
   });
 }
 
@@ -49,6 +92,7 @@ export function formatLongDate(
     day: "2-digit",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -63,6 +107,7 @@ export function formatShortDate(
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -82,6 +127,7 @@ export function formatMediumDate(
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -96,6 +142,7 @@ export function formatTimeOfDay(
   return date.toLocaleTimeString(intlLocale(locale), {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -113,6 +160,7 @@ export function formatDateTime(
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 
