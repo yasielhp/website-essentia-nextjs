@@ -110,34 +110,37 @@ async function targetsFor(booking: BookingRow): Promise<Target[]> {
     .select("owner_id, event_id")
     .eq("booking_id", booking.id);
 
-  for (const mirror of (mirrors ?? []) as {
-    owner_id: string;
-    event_id: string;
-  }[]) {
-    const token = await getStaffAccessToken(mirror.owner_id);
-    if (!token) continue;
-    targets.push({
-      label: `owner:${mirror.owner_id}`,
-      accessToken: token,
-      eventId: mirror.event_id,
-      remember: async (eventId) => {
-        await db
-          .from("booking_calendar_mirrors")
-          .update({ event_id: eventId })
-          .eq("booking_id", booking.id)
-          .eq("owner_id", mirror.owner_id);
+  // Each mirror belongs to a different person, so their tokens are resolved
+  // together rather than one round trip at a time.
+  const mirrorTargets = await Promise.all(
+    ((mirrors ?? []) as { owner_id: string; event_id: string }[]).map(
+      async (mirror) => {
+        const token = await getStaffAccessToken(mirror.owner_id);
+        if (!token) return null;
+        return {
+          label: `owner:${mirror.owner_id}`,
+          accessToken: token,
+          eventId: mirror.event_id,
+          remember: async (eventId: string) => {
+            await db
+              .from("booking_calendar_mirrors")
+              .update({ event_id: eventId })
+              .eq("booking_id", booking.id)
+              .eq("owner_id", mirror.owner_id);
+          },
+          forget: async () => {
+            await db
+              .from("booking_calendar_mirrors")
+              .delete()
+              .eq("booking_id", booking.id)
+              .eq("owner_id", mirror.owner_id);
+          },
+        };
       },
-      forget: async () => {
-        await db
-          .from("booking_calendar_mirrors")
-          .delete()
-          .eq("booking_id", booking.id)
-          .eq("owner_id", mirror.owner_id);
-      },
-    });
-  }
+    ),
+  );
 
-  return targets;
+  return [...targets, ...mirrorTargets.filter((t) => t !== null)];
 }
 
 async function loadBooking(bookingId: string): Promise<BookingRow | null> {

@@ -337,35 +337,38 @@ function CalendarView({
   selected,
   onSelect,
   openDates,
+  viewYear,
+  viewMonth,
   onMonthChange,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
   /** Days the chosen professional can actually take, `YYYY-MM-DD`. */
   openDates: Set<string>;
+  /**
+   * The month on show, owned by the page.
+   *
+   * It used to be local state here, announced upwards from an effect so the
+   * page could ask for that month's availability — which meant every arrow
+   * press rendered twice, once to move the calendar and once to tell the page
+   * it had moved. The page needs the month to fetch with, so the page holds
+   * it, and the arrows say what they did rather than an effect noticing.
+   */
+  viewYear: number;
+  viewMonth: number;
   onMonthChange: (year: number, month: number) => void;
 }) {
   const today = new Date();
-  const [viewYear, setViewYear] = useState(() => today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
   const days = getCalendarDays(viewYear, viewMonth);
   const startColumn = getCalendarStartColumn(viewYear, viewMonth);
 
-  useEffect(() => {
-    onMonthChange(viewYear, viewMonth);
-  }, [viewYear, viewMonth, onMonthChange]);
-
   const prevMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else setViewMonth((m) => m - 1);
+    if (viewMonth === 0) onMonthChange(viewYear - 1, 11);
+    else onMonthChange(viewYear, viewMonth - 1);
   };
   const nextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else setViewMonth((m) => m + 1);
+    if (viewMonth === 11) onMonthChange(viewYear + 1, 0);
+    else onMonthChange(viewYear, viewMonth + 1);
   };
 
   const tCal = useTranslations("dashboard.common");
@@ -774,10 +777,11 @@ function NewBookingPageInner() {
 
   const openDates = useMemo(
     () =>
+      // One pass: a day with no free hour never becomes an entry to discard.
       new Set(
-        Object.entries(currentAvailability)
-          .filter(([, times]) => times.length > 0)
-          .map(([date]) => date),
+        Object.entries(currentAvailability).flatMap(([date, times]) =>
+          times.length > 0 ? [date] : [],
+        ),
       ),
     [currentAvailability],
   );
@@ -1626,6 +1630,8 @@ function NewBookingPageInner() {
                     <CalendarView
                       selected={selectedDate}
                       openDates={openDates}
+                      viewYear={availabilityMonth.year}
+                      viewMonth={availabilityMonth.month}
                       onMonthChange={handleMonthChange}
                       onSelect={(d) =>
                         dispatchForm({ type: "SET_DATE", value: d })
