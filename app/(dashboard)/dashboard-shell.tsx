@@ -17,6 +17,7 @@ import {
   useBreadcrumbContext,
 } from "@/context/breadcrumb-context";
 import type { Role } from "@/types";
+import { MobileDrawer } from "./mobile-drawer";
 
 /** What staff and partners see: the two screens their role can act on. */
 const restrictedNavLinks = [
@@ -247,99 +248,20 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* ── Mobile drawer ──────────────────────────────────── */}
-      <div
-        role="button"
-        tabIndex={mobileOpen ? 0 : -1}
-        className={`fixed inset-0 z-40 transition-opacity duration-300 lg:hidden ${
-          mobileOpen
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0"
-        }`}
-        onClick={() => setMobileOpenAtPathname(null)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setMobileOpenAtPathname(null);
-        }}
-      >
-        <div className="absolute inset-0 bg-black/20" />
-        <aside
-          className={`absolute top-0 left-0 flex h-full w-64 flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out ${
-            mobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <div className="border-sand-200 flex h-12 items-center border-b px-6">
-            <Link href="/dashboard" className="text-petroleum-500">
-              <Logo />
-            </Link>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto px-2 py-3">
-            <ul className="space-y-0.5">
-              {visibleNavLinks.map(({ key, href }) => {
-                const active = isNavActive(href);
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
-                        active
-                          ? "bg-petroleum-700 text-white"
-                          : "text-petroleum-500 hover:bg-sand-50 hover:text-petroleum-700"
-                      }`}
-                    >
-                      <span
-                        className={active ? "text-white" : "text-petroleum-400"}
-                      >
-                        {navIcons[key]}
-                      </span>
-                      {t(`nav.${key}`)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* Settings sits with the account here too. It lived only in the
-              desktop sidebar, so on a phone an administrator had no way to
-              reach it at all — the link is outside `navLinks`, and the drawer
-              only ever rendered that list. */}
-          {role === "admin" && (
-            <div className="shrink-0 px-2 pb-1">
-              <Link
-                href="/dashboard/settings"
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
-                  isNavActive("/dashboard/settings")
-                    ? "bg-petroleum-700 text-white"
-                    : "text-petroleum-500 hover:bg-sand-50 hover:text-petroleum-700"
-                }`}
-              >
-                <span
-                  className={
-                    isNavActive("/dashboard/settings")
-                      ? "text-white"
-                      : "text-petroleum-400"
-                  }
-                >
-                  <IconSettings />
-                </span>
-                {t("nav.settings")}
-              </Link>
-            </div>
-          )}
-
-          <div className="border-sand-200 shrink-0 border-t p-3">
-            <UserMenu
-              displayName={displayName}
-              email={user?.email ?? ""}
-              role={role ?? ""}
-              onSignOut={() => void signOut()}
-              onEditAccount={() => push("/dashboard/account")}
-            />
-          </div>
-        </aside>
-      </div>
+      <MobileDrawer
+        open={mobileOpen}
+        onClose={() => setMobileOpenAtPathname(null)}
+        navLinks={visibleNavLinks}
+        navIcons={navIcons}
+        isNavActive={isNavActive}
+        isAdmin={role === "admin"}
+        t={t}
+        displayName={displayName}
+        email={user?.email ?? ""}
+        role={role ?? ""}
+        onSignOut={() => void signOut()}
+        onEditAccount={() => push("/dashboard/account")}
+      />
     </div>
   );
 }
