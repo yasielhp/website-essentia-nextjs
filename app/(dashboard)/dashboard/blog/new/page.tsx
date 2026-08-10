@@ -266,11 +266,15 @@ export default function NewPostPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 mb-1 text-xs font-medium">
+                  <label
+                    htmlFor="post-content"
+                    className="text-petroleum-500 mb-1 text-xs font-medium"
+                  >
                     Content
                   </label>
                   <div data-color-mode="light">
                     <MDEditor
+                      textareaProps={{ id: "post-content" }}
                       value={content}
                       onChange={(val) => set("content", val ?? "")}
                       height={480}
@@ -325,11 +329,15 @@ export default function NewPostPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 mb-1 text-xs font-medium">
+                  <label
+                    htmlFor="post-content-es"
+                    className="text-petroleum-500 mb-1 text-xs font-medium"
+                  >
                     Contenido
                   </label>
                   <div data-color-mode="light">
                     <MDEditor
+                      textareaProps={{ id: "post-content-es" }}
                       value={contentEs}
                       onChange={(val) => set("contentEs", val ?? "")}
                       height={480}
@@ -384,6 +392,7 @@ export default function NewPostPage() {
               <select
                 value={categoryId}
                 onChange={(e) => set("categoryId", e.target.value)}
+                aria-label={t("sections.category")}
                 disabled={saving}
                 className={SELECT_CLASS}
               >

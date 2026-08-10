@@ -352,11 +352,17 @@ export function TierModal({
         <div className="space-y-4 px-6 py-5">
           {/* Active — first */}
           <div className="flex items-center justify-between">
-            <span className="text-petroleum-700 text-sm font-medium">
+            <span
+              id="tier-active-caption"
+              className="text-petroleum-700 text-sm font-medium"
+            >
               {t("active")}
             </span>
             <button
               type="button"
+              role="switch"
+              aria-checked={form.active}
+              aria-labelledby="tier-active-caption"
               onClick={() => dispatchForm({ type: "TOGGLE_ACTIVE" })}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                 form.active ? "bg-petroleum-700" : "bg-sand-200"
@@ -450,14 +456,22 @@ export function TierModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-petroleum-500 text-xs font-medium">
+            {/* The label is the colour swatch, so it has no text of its own;
+                the caption beside it is what names the control. */}
+            <span
+              id="tier-color-caption"
+              className="text-petroleum-500 text-xs font-medium"
+            >
               {t("calendarColor")}
             </span>
             <label
+              htmlFor="tier-color"
               className="border-sand-200 relative block h-11 cursor-pointer overflow-hidden rounded-xl border"
               style={{ backgroundColor: form.color }}
             >
               <input
+                id="tier-color"
+                aria-labelledby="tier-color-caption"
                 type="color"
                 value={form.color}
                 onChange={(e) =>

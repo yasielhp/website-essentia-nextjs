@@ -205,13 +205,13 @@ export default function BlogCategoriesPage() {
               <>
                 <div className="flex flex-col gap-1.5">
                   <label
-                    htmlFor="category-field"
+                    htmlFor="category-name"
                     className="text-petroleum-500 text-xs font-medium"
                   >
                     {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
-                    id="category-field"
+                    id="category-name"
                     type="text"
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
@@ -222,13 +222,13 @@ export default function BlogCategoriesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
-                    htmlFor="category-field-2"
+                    htmlFor="category-slug"
                     className="text-petroleum-500 text-xs font-medium"
                   >
                     {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
-                    id="category-field-2"
+                    id="category-slug"
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(sanitizeSlug(e.target.value))}
@@ -242,13 +242,13 @@ export default function BlogCategoriesPage() {
               <>
                 <div className="flex flex-col gap-1.5">
                   <label
-                    htmlFor="category-field-3"
+                    htmlFor="category-name-es"
                     className="text-petroleum-500 text-xs font-medium"
                   >
                     {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
-                    id="category-field-3"
+                    id="category-name-es"
                     type="text"
                     value={nameEs}
                     onChange={(e) => handleNameEsChange(e.target.value)}
@@ -259,13 +259,13 @@ export default function BlogCategoriesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
-                    htmlFor="category-field-4"
+                    htmlFor="category-slug-es"
                     className="text-petroleum-500 text-xs font-medium"
                   >
                     {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
-                    id="category-field-4"
+                    id="category-slug-es"
                     type="text"
                     value={slugEs}
                     onChange={(e) => setSlugEs(sanitizeSlug(e.target.value))}
@@ -370,6 +370,7 @@ export default function BlogCategoriesPage() {
                           </button>
                           <button
                             onClick={() => void handleDelete(c.id)}
+                            aria-label={`${t("delete")} — ${c.name}`}
                             className="text-petroleum-300 transition-colors hover:text-red-500"
                           >
                             <IconTrash />

@@ -10,7 +10,17 @@ import { AuthProvider } from "@components/auth-provider";
 import { WebMcpTools } from "@components/webmcp-tools";
 import { JsonLd } from "@/components/json-ld";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
+/**
+ * The public origin, with the published domain as the floor.
+ *
+ * `NEXT_PUBLIC_APP_URL` is set by hand in the deployment environment, and
+ * `new URL()` throws on a malformed one — which, from here, means every page
+ * on the site failing to render over a typo in a dashboard field somewhere.
+ */
+const fallbackUrl = `https://${contact.domain}`;
+const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+const siteUrl =
+  configuredUrl && URL.canParse(configuredUrl) ? configuredUrl : fallbackUrl;
 
 /**
  * The public site's root layout.

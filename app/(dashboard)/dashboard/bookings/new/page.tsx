@@ -339,12 +339,14 @@ function CalendarView({
     } else setViewMonth((m) => m + 1);
   };
 
+  const tCal = useTranslations("dashboard.common");
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={prevMonth}
+          aria-label={tCal("prevMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronLeft size={16} />
@@ -355,6 +357,7 @@ function CalendarView({
         <button
           type="button"
           onClick={nextMonth}
+          aria-label={tCal("nextMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronRight size={16} />

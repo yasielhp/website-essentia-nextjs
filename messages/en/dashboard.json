@@ -76,7 +76,9 @@
     },
     "required": "*",
     "english": "English",
-    "spanish": "Español"
+    "spanish": "Español",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "blog": {
     "newPost": "New post",
@@ -147,7 +149,8 @@
       "errors": {
         "saveFailed": "Failed to save.",
         "createFailed": "Failed to create."
-      }
+      },
+      "delete": "Delete"
     },
     "detail": {
       "title": "Edit post",
@@ -591,7 +594,9 @@
         "5": "Friday",
         "6": "Saturday",
         "0": "Sunday"
-      }
+      },
+      "start": "Start",
+      "end": "End"
     },
     "calendarBox": {
       "hint": "Their calendar is checked when offering slots: busy hours are not shown.",

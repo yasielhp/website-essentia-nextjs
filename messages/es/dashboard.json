@@ -76,7 +76,9 @@
     },
     "required": "*",
     "english": "English",
-    "spanish": "Español"
+    "spanish": "Español",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
   },
   "blog": {
     "newPost": "Nueva entrada",
@@ -147,7 +149,8 @@
       "errors": {
         "saveFailed": "No se pudo guardar.",
         "createFailed": "No se pudo crear."
-      }
+      },
+      "delete": "Eliminar"
     },
     "detail": {
       "title": "Editar entrada",
@@ -591,7 +594,9 @@
         "5": "Viernes",
         "6": "Sábado",
         "0": "Domingo"
-      }
+      },
+      "start": "Inicio",
+      "end": "Fin"
     },
     "calendarBox": {
       "hint": "Su calendario se consulta al ofrecer horas: las que tenga ocupadas no se muestran.",

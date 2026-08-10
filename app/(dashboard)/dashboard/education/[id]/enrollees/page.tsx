@@ -267,6 +267,7 @@ function AddEnrolleeModal({
   onAdd,
 }: AddEnrolleeModalProps) {
   const t = useTranslations("dashboard.education.enrollees");
+  const tCommon = useTranslations("dashboard.common");
   return (
     <div
       role="presentation"
@@ -284,6 +285,7 @@ function AddEnrolleeModal({
           </h2>
           <button
             onClick={onClose}
+            aria-label={tCommon("close")}
             className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 rounded-lg p-1.5 transition-colors"
           >
             <IconX />

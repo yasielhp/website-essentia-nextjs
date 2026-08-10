@@ -65,11 +65,14 @@ export function StaffScheduleEditor({
               key={day}
               className="grid grid-cols-[1fr_auto_auto] items-center gap-2"
             >
+              {/* Ids carry the day: this block is inside a map over the week,
+                  so a fixed one would repeat seven times in the document. */}
               <label
-                htmlFor="schedule-setday-day-classname-accent-petroleum-700-size-4"
+                htmlFor={`schedule-${day}-open`}
                 className="flex cursor-pointer items-center gap-2"
               >
                 <input
+                  id={`schedule-${day}-open`}
                   type="checkbox"
                   checked={value.open}
                   disabled={disabled}
@@ -82,7 +85,8 @@ export function StaffScheduleEditor({
               </label>
 
               <input
-                id="schedule-setday-day-classname-accent-petroleum-700-size-4"
+                id={`schedule-${day}-start`}
+                aria-label={`${t(`days.${day}`)} — ${t("start")}`}
                 type="time"
                 value={value.start}
                 disabled={disabled || !value.open}
@@ -90,6 +94,8 @@ export function StaffScheduleEditor({
                 className="border-sand-200 text-petroleum-700 rounded-lg border px-2 py-1 text-sm disabled:opacity-40"
               />
               <input
+                id={`schedule-${day}-end`}
+                aria-label={`${t(`days.${day}`)} — ${t("end")}`}
                 type="time"
                 value={value.end}
                 disabled={disabled || !value.open}
@@ -102,10 +108,14 @@ export function StaffScheduleEditor({
       </div>
 
       <div className="border-sand-100 flex items-center justify-between border-t pt-3">
-        <span className="text-petroleum-500 text-xs font-medium">
+        <label
+          htmlFor="schedule-interval"
+          className="text-petroleum-500 text-xs font-medium"
+        >
           {t("interval")}
-        </span>
+        </label>
         <select
+          id="schedule-interval"
           value={interval}
           disabled={disabled}
           onChange={(e) => onIntervalChange(parseInt(e.target.value, 10))}
