@@ -298,7 +298,8 @@
         "phonePlaceholder": "+34 600 000 000",
         "notes": "Notas",
         "notesPlaceholder": "Notas adicionales para esta reserva…",
-        "gender": "Género"
+        "gender": "Género",
+        "language": "Idioma preferido"
       },
       "errors": {
         "createFailed": "No se pudo crear la reserva.",

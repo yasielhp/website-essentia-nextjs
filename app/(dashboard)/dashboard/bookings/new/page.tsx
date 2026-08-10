@@ -505,6 +505,8 @@ type FormState = {
   firstName: string;
   /** Stored on the contact, not the booking: it describes the person. */
   gender: GenderValue;
+  /** Which language to write to this client in, theirs rather than ours. */
+  language: string;
   lastName: string;
   email: string;
   phone: string;
@@ -524,7 +526,8 @@ type FormAction =
   | { type: "SET_CALENDAR_VIEW"; value: "date" | "time" }
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone" | "gender";
+      field:
+        "firstName" | "lastName" | "email" | "phone" | "gender" | "language";
       value: string;
     }
   | { type: "SET_STAFF"; value: string }
@@ -543,6 +546,7 @@ const formInitial: FormState = {
   calendarView: "date",
   firstName: "",
   gender: GENDER_UNSPECIFIED,
+  language: "es",
   lastName: "",
   email: "",
   phone: "",
@@ -672,6 +676,7 @@ function NewBookingPageInner() {
     calendarView,
     firstName,
     gender,
+    language,
     lastName,
     email,
     phone,
@@ -970,7 +975,7 @@ function NewBookingPageInner() {
           p_first_name: firstName.trim(),
           p_last_name: lastName.trim(),
           p_phone: phone.trim() || null,
-          p_language: locale,
+          p_language: language,
           p_gender: toStoredGender(gender),
         });
       // A booking is worth more than its contact link, so a failure here does
@@ -1048,6 +1053,8 @@ function NewBookingPageInner() {
             selectedTier?.duration_minutes != null
               ? `${selectedTier.duration_minutes} min`
               : null,
+          // The client's language, not the language of whoever is at the desk.
+          locale: language === "en" ? "en" : "es",
         });
       } catch {
         // Notification failed silently — booking is already saved
@@ -1832,6 +1839,31 @@ function NewBookingPageInner() {
                         {option.label}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="client-language"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {t("fields.language")}
+                  </label>
+                  <select
+                    id="client-language"
+                    value={language}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "language",
+                        value: e.target.value,
+                      })
+                    }
+                    disabled={submitting}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">

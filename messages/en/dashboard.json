@@ -298,7 +298,8 @@
         "phonePlaceholder": "+34 600 000 000",
         "notes": "Notes",
         "notesPlaceholder": "Any additional notes for this booking…",
-        "gender": "Gender"
+        "gender": "Gender",
+        "language": "Preferred language"
       },
       "errors": {
         "createFailed": "Failed to create booking.",
