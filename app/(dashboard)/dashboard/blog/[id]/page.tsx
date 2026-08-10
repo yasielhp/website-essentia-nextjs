@@ -380,7 +380,10 @@ export default function EditPostPage() {
                 {lang === "en" ? (
                   <>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.title")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
@@ -388,6 +391,7 @@ export default function EditPostPage() {
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
                       ) : (
                         <input
+                          id="post-field"
                           type="text"
                           value={title}
                           onChange={(e) => set("title", e.target.value)}
@@ -397,7 +401,10 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-2"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.slug")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
@@ -409,6 +416,7 @@ export default function EditPostPage() {
                             /blog/
                           </span>
                           <input
+                            id="post-field-2"
                             type="text"
                             value={slug}
                             onChange={(e) => setSlug(e.target.value)}
@@ -419,13 +427,17 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-3"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.excerpt")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
                       ) : (
                         <textarea
+                          id="post-field-3"
                           value={excerpt}
                           onChange={(e) => set("excerpt", e.target.value)}
                           rows={2}
@@ -455,7 +467,10 @@ export default function EditPostPage() {
                 ) : (
                   <>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-4"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.title")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
@@ -463,6 +478,7 @@ export default function EditPostPage() {
                         <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
                       ) : (
                         <input
+                          id="post-field-4"
                           type="text"
                           value={titleEs}
                           onChange={(e) => set("titleEs", e.target.value)}
@@ -472,7 +488,10 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-5"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.slug")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
@@ -484,6 +503,7 @@ export default function EditPostPage() {
                             /blog/
                           </span>
                           <input
+                            id="post-field-5"
                             type="text"
                             value={slugEs}
                             onChange={(e) => setSlugEs(e.target.value)}
@@ -494,13 +514,17 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-6"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.excerpt")}
                       </label>
                       {loading ? (
                         <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />
                       ) : (
                         <textarea
+                          id="post-field-6"
                           value={excerptEs}
                           onChange={(e) => set("excerptEs", e.target.value)}
                           rows={2}
@@ -627,7 +651,10 @@ export default function EditPostPage() {
                 {lang === "en" ? (
                   <>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-7"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.metaTitle")}
                       </label>
                       {loading ? (
@@ -635,6 +662,7 @@ export default function EditPostPage() {
                       ) : (
                         <>
                           <input
+                            id="post-field-7"
                             type="text"
                             value={seoTitle}
                             onChange={(e) => set("seoTitle", e.target.value)}
@@ -649,7 +677,10 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-8"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.metaDescription")}
                       </label>
                       {loading ? (
@@ -657,6 +688,7 @@ export default function EditPostPage() {
                       ) : (
                         <>
                           <textarea
+                            id="post-field-8"
                             value={seoDescription}
                             onChange={(e) =>
                               set("seoDescription", e.target.value)
@@ -675,7 +707,10 @@ export default function EditPostPage() {
                 ) : (
                   <>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-9"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.metaTitle")}
                       </label>
                       {loading ? (
@@ -683,6 +718,7 @@ export default function EditPostPage() {
                       ) : (
                         <>
                           <input
+                            id="post-field-9"
                             type="text"
                             value={seoTitleEs}
                             onChange={(e) => set("seoTitleEs", e.target.value)}
@@ -697,7 +733,10 @@ export default function EditPostPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-petroleum-500 text-xs font-medium">
+                      <label
+                        htmlFor="post-field-10"
+                        className="text-petroleum-500 text-xs font-medium"
+                      >
                         {t("fields.metaDescription")}
                       </label>
                       {loading ? (
@@ -705,6 +744,7 @@ export default function EditPostPage() {
                       ) : (
                         <>
                           <textarea
+                            id="post-field-10"
                             value={seoDescriptionEs}
                             onChange={(e) =>
                               set("seoDescriptionEs", e.target.value)

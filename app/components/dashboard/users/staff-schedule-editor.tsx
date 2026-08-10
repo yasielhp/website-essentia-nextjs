@@ -65,7 +65,10 @@ export function StaffScheduleEditor({
               key={day}
               className="grid grid-cols-[1fr_auto_auto] items-center gap-2"
             >
-              <label className="flex cursor-pointer items-center gap-2">
+              <label
+                htmlFor="schedule-setday-day-classname-accent-petroleum-700-size-4"
+                className="flex cursor-pointer items-center gap-2"
+              >
                 <input
                   type="checkbox"
                   checked={value.open}
@@ -79,6 +82,7 @@ export function StaffScheduleEditor({
               </label>
 
               <input
+                id="schedule-setday-day-classname-accent-petroleum-700-size-4"
                 type="time"
                 value={value.start}
                 disabled={disabled || !value.open}

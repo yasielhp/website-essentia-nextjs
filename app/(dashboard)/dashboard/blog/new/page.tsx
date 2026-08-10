@@ -210,10 +210,14 @@ export default function NewPostPage() {
               </h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-title"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Title <span className="text-red-400">*</span>
                   </label>
                   <input
+                    id="post-title"
                     type="text"
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
@@ -223,7 +227,10 @@ export default function NewPostPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-slug"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Slug <span className="text-red-400">*</span>
                   </label>
                   <div className="flex items-center">
@@ -231,6 +238,7 @@ export default function NewPostPage() {
                       /blog/
                     </span>
                     <input
+                      id="post-slug"
                       type="text"
                       value={slug}
                       onChange={(e) => set("slug", e.target.value)}
@@ -241,10 +249,14 @@ export default function NewPostPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-excerpt"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Excerpt
                   </label>
                   <textarea
+                    id="post-excerpt"
                     value={excerpt}
                     onChange={(e) => set("excerpt", e.target.value)}
                     placeholder="Brief description of the article…"
@@ -279,10 +291,14 @@ export default function NewPostPage() {
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-titulo"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Título
                   </label>
                   <input
+                    id="post-titulo"
                     type="text"
                     value={titleEs}
                     onChange={(e) => set("titleEs", e.target.value)}
@@ -292,10 +308,14 @@ export default function NewPostPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-extracto"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Extracto
                   </label>
                   <textarea
+                    id="post-extracto"
                     value={excerptEs}
                     onChange={(e) => set("excerptEs", e.target.value)}
                     placeholder="Breve descripción del artículo…"
@@ -386,10 +406,14 @@ export default function NewPostPage() {
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-meta-title"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Meta title
                   </label>
                   <input
+                    id="post-meta-title"
                     type="text"
                     value={seoTitle}
                     onChange={(e) => set("seoTitle", e.target.value)}
@@ -402,10 +426,14 @@ export default function NewPostPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-meta-description"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Meta description
                   </label>
                   <textarea
+                    id="post-meta-description"
                     value={seoDescription}
                     onChange={(e) => set("seoDescription", e.target.value)}
                     placeholder="Brief description for search engines…"
@@ -430,10 +458,14 @@ export default function NewPostPage() {
               </p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-meta-titulo"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Meta título
                   </label>
                   <input
+                    id="post-meta-titulo"
                     type="text"
                     value={seoTitleEs}
                     onChange={(e) => set("seoTitleEs", e.target.value)}
@@ -446,10 +478,14 @@ export default function NewPostPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="post-meta-descripcion"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     Meta descripción
                   </label>
                   <textarea
+                    id="post-meta-descripcion"
                     value={seoDescriptionEs}
                     onChange={(e) => set("seoDescriptionEs", e.target.value)}
                     placeholder="Breve descripción para buscadores…"

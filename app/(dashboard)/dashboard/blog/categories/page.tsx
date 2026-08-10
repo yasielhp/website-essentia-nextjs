@@ -204,10 +204,14 @@ export default function BlogCategoriesPage() {
             {lang === "en" ? (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="category-field"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
+                    id="category-field"
                     type="text"
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
@@ -217,10 +221,14 @@ export default function BlogCategoriesPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="category-field-2"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
+                    id="category-field-2"
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(sanitizeSlug(e.target.value))}
@@ -233,10 +241,14 @@ export default function BlogCategoriesPage() {
             ) : (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="category-field-3"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     {t("fields.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
+                    id="category-field-3"
                     type="text"
                     value={nameEs}
                     onChange={(e) => handleNameEsChange(e.target.value)}
@@ -246,10 +258,14 @@ export default function BlogCategoriesPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-petroleum-500 text-xs font-medium">
+                  <label
+                    htmlFor="category-field-4"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
                     {t("fields.slug")} <span className="text-red-400">*</span>
                   </label>
                   <input
+                    id="category-field-4"
                     type="text"
                     value={slugEs}
                     onChange={(e) => setSlugEs(sanitizeSlug(e.target.value))}
