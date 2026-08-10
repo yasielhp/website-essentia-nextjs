@@ -64,7 +64,7 @@ function CalendarServiceRow({
             <span className="size-1.5 rounded-full bg-green-500" />
             {t("connected")}
           </span>
-          <span className="text-petroleum-400 max-w-[200px] truncate text-xs">
+          <span className="text-petroleum-400 max-w-50 truncate text-xs">
             {email}
           </span>
           <button
