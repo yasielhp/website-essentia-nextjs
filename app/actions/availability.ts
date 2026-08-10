@@ -4,9 +4,12 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { getScheduledStartTimes } from "@/utils/calendar-helpers";
 import { parseDurationMinutes } from "@/utils/format";
 import type { WeeklySchedule } from "@/types/schedule";
+import { getFreeBusy, getStaffAccessToken } from "@/lib/google-calendar";
 
 /** Available start times per date, keyed by `YYYY-MM-DD`. */
 export type Availability = Record<string, string[]>;
+
+type Busy = { start: number; end: number };
 
 type StaffRow = {
   id: string;
@@ -94,14 +97,80 @@ export async function fetchAvailability({
 
   // Their existing bookings, as busy minute ranges per person per day.
   const busy = new Map<string, { start: number; end: number }[]>();
+  const addBusy = (staffId: string, day: string, range: Busy) => {
+    const key = `${staffId}|${day}`;
+    busy.set(key, [...(busy.get(key) ?? []), range]);
+  };
+
   for (const b of (bookings ?? []) as BookingRow[]) {
     if (!b.staff_id || !b.date || !b.time) continue;
     const start = toMinutes(b.time);
-    const key = `${b.staff_id}|${b.date.slice(0, 10)}`;
-    const list = busy.get(key) ?? [];
-    list.push({ start, end: start + parseDurationMinutes(b.duration) });
-    busy.set(key, list);
+    addBusy(b.staff_id, b.date.slice(0, 10), {
+      start,
+      end: start + parseDurationMinutes(b.duration),
+    });
   }
+
+  /**
+   * And whatever their own Google Calendar says they are doing.
+   *
+   * This was the gap: availability was built from the working schedule and
+   * from Essentia's own bookings, and nothing else. A professional who blocked
+   * tomorrow in their calendar — a holiday, a doctor's appointment, a day off
+   * — was still offered to the public for the whole day, because the site
+   * never asked.
+   *
+   * The tokens are read from the profile, which is where connecting a calendar
+   * from the dashboard puts them. `staff_services` holds a per-service copy
+   * from an older flow; `getStaffAccessToken` prefers the profile and both end
+   * up on the same calendar.
+   */
+  await Promise.all(
+    staff.map(async (person) => {
+      try {
+        const token = await getStaffAccessToken(person.id);
+        if (!token) return;
+
+        const intervals = await getFreeBusy(
+          token,
+          "primary",
+          from,
+          `${to}T23:59:59Z`,
+        );
+
+        for (const interval of intervals) {
+          // An interval can span days — an all-day block is one of them — so
+          // it is cut at midnight and each day gets the part that is its own.
+          const start = new Date(interval.start);
+          const end = new Date(interval.end);
+          const cursorDay = new Date(start);
+          cursorDay.setHours(0, 0, 0, 0);
+
+          while (cursorDay < end) {
+            const dayKey = toKey(cursorDay);
+            const dayStart = new Date(cursorDay);
+            const dayEnd = new Date(cursorDay);
+            dayEnd.setDate(dayEnd.getDate() + 1);
+
+            const from0 = start > dayStart ? start : dayStart;
+            const to0 = end < dayEnd ? end : dayEnd;
+
+            addBusy(person.id, dayKey, {
+              start: from0.getHours() * 60 + from0.getMinutes(),
+              end:
+                to0.getTime() === dayEnd.getTime()
+                  ? 24 * 60
+                  : to0.getHours() * 60 + to0.getMinutes(),
+            });
+
+            cursorDay.setDate(cursorDay.getDate() + 1);
+          }
+        }
+      } catch {
+        // Fail open: Google being unreachable must not close the calendar.
+      }
+    }),
+  );
 
   const availability: Availability = {};
   const now = new Date();
