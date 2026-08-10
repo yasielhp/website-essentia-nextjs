@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useReducer, useMemo } from "react";
+import { useMonthFreeBusy, useDayFreeBusy } from "@/hooks/use-free-busy";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
@@ -1380,41 +1381,12 @@ export default function EditBookingPage() {
     );
   };
 
-  // ── Month-level freeBusy (blocks fully-booked days in the calendar) ───────
-  const [monthFreeBusy, setMonthFreeBusy] = useState<{
-    busy: { start: string; end: string }[];
-    loading: boolean;
-  }>({ busy: [], loading: false });
-  const { busy: monthBusy, loading: loadingMonth } = monthFreeBusy;
-
-  useEffect(() => {
-    if (!serviceId) return;
-    let cancelled = false;
-    void (async () => {
-      setMonthFreeBusy({ busy: [], loading: true });
-      let busy: { start: string; end: string }[] = [];
-      try {
-        const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
-        const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-        const endDate = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-        const res = await fetch(
-          `/api/google/calendar/freebusy?service_id=${serviceId}&start=${startDate}&end=${endDate}`,
-        );
-        if (res.ok) {
-          const json = (await res.json()) as {
-            busy: { start: string; end: string }[];
-          };
-          busy = json.busy ?? [];
-        }
-      } catch {
-        // fail-open
-      }
-      if (!cancelled) setMonthFreeBusy({ busy, loading: false });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [serviceId, viewYear, viewMonth]);
+  // Month-level freeBusy: blocks fully-booked days in the calendar.
+  const { busy: monthBusy, loading: loadingMonth } = useMonthFreeBusy(
+    serviceId,
+    viewYear,
+    viewMonth,
+  );
 
   const fullyBlockedDates = useMemo(() => {
     const blocked = new Set<string>();
@@ -1436,40 +1408,10 @@ export default function EditBookingPage() {
   }, [monthBusy, viewYear, viewMonth, selectedService, selectedTier]);
 
   // ── freeBusy for time-slot availability ───────────────────────
-  const [slotsFreeBusy, setSlotsFreeBusy] = useState<{
-    busy: { start: string; end: string }[];
-    loading: boolean;
-  }>({ busy: [], loading: false });
-  const { busy: busyIntervals, loading: loadingSlots } = slotsFreeBusy;
-
-  useEffect(() => {
-    if (!selectedDate || !serviceId) return;
-    let cancelled = false;
-    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
-    void (async () => {
-      setSlotsFreeBusy({ busy: [], loading: true });
-      let busy: { start: string; end: string }[] = [];
-      try {
-        const r = await fetch(
-          `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
-        );
-        // `fetch` resolves on 4xx/5xx, and the error body has no `busy`, so
-        // an outage silently read as "nothing is booked".
-        if (r.ok) {
-          const json = (await r.json()) as {
-            busy?: { start: string; end: string }[];
-          };
-          busy = json.busy ?? [];
-        }
-      } catch {
-        // fail-open
-      }
-      if (!cancelled) setSlotsFreeBusy({ busy, loading: false });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedDate, serviceId]);
+  const { busy: busyIntervals, loading: loadingSlots } = useDayFreeBusy(
+    serviceId,
+    selectedDate,
+  );
 
   const timeSlots = selectedDate
     ? getTimeSlotsForDashboard(

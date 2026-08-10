@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useReducer, Suspense } from "react";
+import { useDayFreeBusy } from "@/hooks/use-free-busy";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -663,41 +664,11 @@ function NewBookingPageInner() {
     };
   }, [tierId]);
 
-  // ── freeBusy for time-slot availability ───────────────────────
-  const [busyIntervals, setBusyIntervals] = useState<
-    { start: string; end: string }[]
-  >([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-
-  useEffect(() => {
-    if (!selectedDate || !serviceId) return;
-    let cancelled = false;
-    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
-    async function fetchBusy() {
-      setLoadingSlots(true);
-      try {
-        const r = await fetch(
-          `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
-        );
-        // `fetch` resolves on 4xx/5xx, and the error body has no `busy`, so
-        // an outage silently read as "nothing is booked".
-        const json = r.ok
-          ? ((await r.json()) as { busy?: { start: string; end: string }[] })
-          : null;
-        if (!cancelled) setBusyIntervals(json?.busy ?? []);
-      } catch {
-        if (!cancelled) setBusyIntervals([]);
-      } finally {
-        // The two paths cleared the flag separately, which is one edit away
-        // from a spinner that never stops.
-        if (!cancelled) setLoadingSlots(false);
-      }
-    }
-    void fetchBusy();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedDate, serviceId]);
+  // freeBusy for time-slot availability.
+  const { busy: busyIntervals, loading: loadingSlots } = useDayFreeBusy(
+    serviceId,
+    selectedDate,
+  );
 
   const timeSlots = selectedDate
     ? getTimeSlotsForDashboard(
