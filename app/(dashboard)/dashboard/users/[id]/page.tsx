@@ -32,6 +32,7 @@ import { EmailInput } from "@/components/ui/email-input";
 import { StaffScheduleEditor } from "@/components/dashboard/users/staff-schedule-editor";
 import { normaliseSchedule } from "@/utils/staff-schedule";
 import type { WeeklySchedule } from "@/types/schedule";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -624,21 +625,16 @@ export default function EditUserPage() {
                   {loading ? (
                     <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
                   ) : (
-                    <select
+                    <OptionSelect
                       id="language"
                       value={state.language}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_LANGUAGE",
-                          language: e.target.value,
-                        })
+                      options={LANGUAGE_OPTIONS}
+                      onChange={(next) =>
+                        dispatch({ type: "SET_LANGUAGE", language: next })
                       }
                       disabled={saving}
-                      className={INPUT_CLASS}
-                    >
-                      <option value="en">English</option>
-                      <option value="es">Español</option>
-                    </select>
+                      ariaLabel={t("fields.preferredLanguage")}
+                    />
                   )}
                 </div>
               </div>

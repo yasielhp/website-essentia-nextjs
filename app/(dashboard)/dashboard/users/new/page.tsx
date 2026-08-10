@@ -21,6 +21,7 @@ import { toStoredGender, type GenderValue } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { useFieldError } from "@/hooks/use-field-error";
 import { EmailInput } from "@/components/ui/email-input";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 /**
  * What this form can create.
@@ -476,18 +477,16 @@ export default function NewUserPage() {
                 >
                   {t("fields.preferredLanguage")}
                 </label>
-                <select
+                <OptionSelect
                   id="language"
                   value={language}
-                  onChange={(e) =>
-                    dispatch({ type: "SET_LANGUAGE", language: e.target.value })
+                  options={LANGUAGE_OPTIONS}
+                  onChange={(next) =>
+                    dispatch({ type: "SET_LANGUAGE", language: next })
                   }
                   disabled={submitting}
-                  className={INPUT_CLASS}
-                >
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                </select>
+                  ariaLabel={t("fields.preferredLanguage")}
+                />
               </div>
             </div>
           </div>

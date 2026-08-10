@@ -59,6 +59,7 @@ import {
 } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { OptionSelect } from "@/components/ui/option-select";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -180,12 +181,6 @@ function useLocationOptions(): LocationOption[] {
     },
   ];
 }
-
-/** The two languages the centre writes in. */
-const LANGUAGE_OPTIONS = [
-  { value: "es", label: "Español" },
-  { value: "en", label: "English" },
-];
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",

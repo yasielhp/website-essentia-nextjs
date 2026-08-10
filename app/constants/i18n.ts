@@ -15,3 +15,14 @@ export const LOCALE_COOKIE = "NEXT_LOCALE";
 
 /** One year, in seconds — how long the preference survives. */
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/**
+ * The two languages the centre writes in, ready for an `OptionSelect`.
+ *
+ * The names are in their own language on purpose: somebody choosing a language
+ * for a client reads "Español", not "Spanish", whatever the panel is set to.
+ */
+export const LANGUAGE_OPTIONS = [
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+];

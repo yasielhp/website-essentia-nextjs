@@ -18,6 +18,7 @@ import { toStoredGender, type GenderValue } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { useFieldError } from "@/hooks/use-field-error";
 import { EmailInput } from "@/components/ui/email-input";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 const INPUT_CLASS =
   "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
@@ -372,22 +373,20 @@ export default function NewContactPage() {
                 >
                   {t("fields.preferredLanguage")}
                 </label>
-                <select
+                <OptionSelect
                   id="language"
                   value={language}
-                  onChange={(e) =>
+                  options={LANGUAGE_OPTIONS}
+                  onChange={(next) =>
                     dispatch({
                       type: "SET_FIELD",
                       field: "language",
-                      value: e.target.value,
+                      value: next,
                     })
                   }
                   disabled={submitting}
-                  className={INPUT_CLASS}
-                >
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                </select>
+                  ariaLabel={t("fields.preferredLanguage")}
+                />
               </div>
             </div>
           </div>

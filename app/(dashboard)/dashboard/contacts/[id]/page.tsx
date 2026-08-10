@@ -41,6 +41,7 @@ import type {
 } from "@/types/contact";
 import { EmailInput } from "@/components/ui/email-input";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 /** The four views of a contact's history. */
 type HistoryTab = "transactions" | "bookings" | "races" | "education";
@@ -446,16 +447,14 @@ function ContactDetailsCard({
           {loading ? (
             <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
           ) : (
-            <select
+            <OptionSelect
               id="language"
               value={language}
-              onChange={(e) => field("language", e.target.value)}
+              options={LANGUAGE_OPTIONS}
+              onChange={(next) => field("language", next)}
               disabled={saving}
-              className={INPUT_CLASS}
-            >
-              <option value="en">English</option>
-              <option value="es">Español</option>
-            </select>
+              ariaLabel={t("fields.preferredLanguage")}
+            />
           )}
         </div>
 

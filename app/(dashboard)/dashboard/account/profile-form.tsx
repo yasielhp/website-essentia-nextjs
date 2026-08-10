@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import type { Dispatch } from "react";
 import type { PageAction, PageState } from "./state";
+import { OptionSelect } from "@/components/ui/option-select";
+import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 
 /**
  * Name, phone and language — the part of the account that is a form.
@@ -151,21 +153,16 @@ export function ProfileForm({
             {loading ? (
               <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
             ) : (
-              <select
+              <OptionSelect
                 id="language"
                 value={language}
-                onChange={(e) =>
-                  dispatch({
-                    type: "SET_LANGUAGE",
-                    value: e.target.value,
-                  })
+                options={LANGUAGE_OPTIONS}
+                onChange={(next) =>
+                  dispatch({ type: "SET_LANGUAGE", value: next })
                 }
                 disabled={saving}
-                className={INPUT_CLASS}
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
+                ariaLabel={tUsers("fields.preferredLanguage")}
+              />
             )}
           </div>
         </div>
