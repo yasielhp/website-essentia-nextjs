@@ -10,7 +10,8 @@
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:messages": "python3 scripts/check-dashboard-messages.py"
+    "check:messages": "python3 scripts/check-dashboard-messages.py",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@c15t/dev-tools": "^2.2.0",
