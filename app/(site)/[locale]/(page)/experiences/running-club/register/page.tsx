@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
-import { ComingSoon } from "@components/coming-soon";
+import RunRegisterSection from "@components/sections/experiences/run-register-section";
 
 export async function generateMetadata({
   params,
@@ -14,7 +13,6 @@ export async function generateMetadata({
     namespace: "experiences.runningClub.register.meta",
   });
   return {
-    robots: UNLAUNCHED_ROBOTS,
     title: { absolute: t("title") },
     description: t("description"),
     alternates: {
@@ -38,18 +36,5 @@ export default async function RunRegisterPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEs = locale === "es";
-
-  // TODO: restore the sign-up form when the parent experience goes live.
-  return (
-    <ComingSoon
-      isEs={isEs}
-      title={isEs ? "Club de Running" : "Running Club"}
-      body={
-        isEs
-          ? "Salidas en grupo por rutas seleccionadas, con entrenamiento estructurado."
-          : "Group runs along curated routes, with structured training."
-      }
-    />
-  );
+  return <RunRegisterSection />;
 }

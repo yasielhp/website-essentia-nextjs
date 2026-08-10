@@ -136,7 +136,6 @@ export const maiMenu = [
       {
         itemName: "Education and programs",
         href: "/experiences/education-programs",
-        comingSoon: true,
         card: {
           title: "Education and Programs",
           description:
@@ -147,7 +146,6 @@ export const maiMenu = [
       {
         itemName: "Running club",
         href: "/experiences/running-club",
-        comingSoon: true,
         card: {
           title: "Running Club",
           description:
