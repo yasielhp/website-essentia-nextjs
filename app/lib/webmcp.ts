@@ -35,6 +35,12 @@ export function registerWebMcpTools(tools: ModelContextTool[]) {
         await modelContext.registerTool(tool, { signal: controller.signal });
         registered.push(tool.name);
       } catch (error) {
+        // An abort is this helper's own cleanup, not a failure. React runs
+        // effects twice in development, so the first pass is torn down while
+        // its registrations are still in flight — reporting that would mean an
+        // error in the console on every page load, for something working
+        // exactly as intended.
+        if (controller.signal.aborted) return;
         console.error(`WebMCP: could not register "${tool.name}"`, error);
       }
     }),
@@ -50,6 +56,10 @@ export function registerWebMcpTools(tools: ModelContextTool[]) {
         // A tool already dropped by a route change is not worth reporting.
       }
     }
-    controller.abort();
+    // With a reason: an abort raised without one surfaces as "signal is
+    // aborted without reason", which says nothing to whoever reads the console.
+    controller.abort(
+      new DOMException("WebMCP tools released on unmount", "AbortError"),
+    );
   };
 }
