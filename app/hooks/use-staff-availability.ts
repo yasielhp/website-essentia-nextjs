@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDayFreeBusy } from "@/hooks/use-free-busy";
 import { fetchAvailability, type Availability } from "@/actions/availability";
-import { getTimeSlotsForDashboard } from "@/utils/calendar-helpers";
+import { markBookedSlots } from "@/utils/calendar-helpers";
 import { localDateStr } from "@/utils/format";
 
 /**
@@ -19,14 +19,12 @@ import { localDateStr } from "@/utils/format";
  */
 export function useStaffAvailability({
   serviceId,
-  serviceCategory,
   tierId,
   staffId,
   selectedDate,
   durationMinutes,
 }: {
   serviceId: string;
-  serviceCategory: string | undefined;
   tierId: string;
   staffId: string;
   selectedDate: Date | null;
@@ -97,19 +95,28 @@ export function useStaffAvailability({
     [current],
   );
 
-  const timeSlots = (() => {
-    if (!selectedDate) return [];
-    const all = getTimeSlotsForDashboard(
-      selectedDate,
-      serviceCategory,
-      durationMinutes,
-      busyIntervals,
-    );
-    // Kept to the hours this person is free: the grid still marks what the
-    // service calendar has taken, and an hour they do not work never appears.
-    const free = new Set(current[localDateStr(selectedDate)] ?? []);
-    return all.filter((slot) => free.has(slot.time));
-  })();
+  /**
+   * The hours this person can actually start at.
+   *
+   * These come straight from `fetchAvailability`, which already knows their
+   * working day, their slot interval, their other bookings and their own
+   * Google Calendar. They used to be filtered against a fixed grid that landed
+   * on the hour, so a professional working 10:00–13:00 with a 15-minute
+   * interval was offered as 10:00 and 11:00 — two of the nine starts she
+   * actually had. The grid decided the shape of the day; the schedule only got
+   * to veto it.
+   *
+   * The service's own calendar still marks a slot taken, which is all it was
+   * ever entitled to say.
+   */
+  const timeSlots = selectedDate
+    ? markBookedSlots(
+        selectedDate,
+        current[localDateStr(selectedDate)] ?? [],
+        durationMinutes,
+        busyIntervals,
+      )
+    : [];
 
   return { month, onMonthChange, openDates, timeSlots, loadingSlots };
 }

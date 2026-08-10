@@ -221,6 +221,35 @@ function computeSlots(
 /**
  * Dashboard variant — takes explicit category and duration instead of BookableService.
  */
+/**
+ * Marks which of these start times the service's own calendar has taken.
+ *
+ * The times come from somewhere that already knows the professional's working
+ * hours and their interval; this only adds what Google says about the room or
+ * the service. Building the list here instead would impose one fixed grid on
+ * everybody — which is exactly how a 15-minute interval became hourly.
+ */
+export function markBookedSlots(
+  date: Date,
+  times: string[],
+  durationMinutes: number,
+  busyIntervals: { start: string; end: string }[] = [],
+): { time: string; booked: boolean }[] {
+  const bufferMs = BOOKING_BUFFER_MINUTES * 60 * 1000;
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  return times.map((time) => {
+    const slotStartMs = new Date(`${dateStr}T${time}:00`).getTime();
+    const slotEndMs = slotStartMs + durationMinutes * 60 * 1000;
+    const booked = busyIntervals.some(({ start, end }) => {
+      const busyStartMs = new Date(start).getTime();
+      const busyEndMs = new Date(end).getTime() + bufferMs;
+      return slotStartMs < busyEndMs && slotEndMs > busyStartMs;
+    });
+    return { time, booked };
+  });
+}
+
 export function getTimeSlotsForDashboard(
   date: Date,
   category: string | undefined | null,

@@ -86,7 +86,6 @@ function NewBookingPageInner() {
     loadingSlots,
   } = useStaffAvailability({
     serviceId,
-    serviceCategory: selectedService?.category,
     tierId,
     staffId,
     selectedDate,
