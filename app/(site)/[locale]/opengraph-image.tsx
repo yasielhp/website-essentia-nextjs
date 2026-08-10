@@ -17,8 +17,15 @@ const copy = {
   },
 };
 
-export default function Image({ params }: { params: { locale: string } }) {
-  const t = copy[params.locale as keyof typeof copy] ?? copy.en;
+export default async function Image({
+  params,
+}: {
+  // Route params are a Promise in Next 16; reading `.locale` off the object
+  // itself silently gave `undefined`, so every OG image fell back to English.
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = copy[locale as keyof typeof copy] ?? copy.en;
 
   return new ImageResponse(
     <div
