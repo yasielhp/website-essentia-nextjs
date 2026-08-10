@@ -76,6 +76,8 @@ export default function DashboardPage() {
   const bookedByLabel = t("bookedBy");
   // A booking whose owner has no name — still a booking, not a calendar hole.
   const bookedLabel = t("booked");
+  // What a partner sees instead: taken, and nothing about by whom or why.
+  const blockedLabel = t("blocked");
 
   // Filters. They narrow the query rather than the drawn events, so a month
   // with two hundred bookings does not have to be fetched to show three.
@@ -337,9 +339,13 @@ export default function DashboardPage() {
           id: `busy-${slot.date}-${slot.time ?? "allday"}-${i}`,
           date: slot.date,
           time: slot.time,
-          title: slot.bookedBy
-            ? `${bookedByLabel} ${slot.bookedBy}`
-            : bookedLabel,
+          // A partner sees only that the hour is taken. Whose it is, and even
+          // that it is a booking rather than a block, is not theirs to know.
+          title: isPartner
+            ? blockedLabel
+            : slot.bookedBy
+              ? `${bookedByLabel} ${slot.bookedBy}`
+              : bookedLabel,
           subtitle: slot.duration ?? undefined,
           color: BUSY_COLOR,
           href: "",
@@ -416,6 +422,7 @@ export default function DashboardPage() {
     busyLabel,
     bookedByLabel,
     bookedLabel,
+    blockedLabel,
     tTooltip,
     filters,
   ]);

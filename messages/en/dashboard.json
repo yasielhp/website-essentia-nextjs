@@ -983,7 +983,8 @@
       "clear": "Clear filters",
       "title": "Filters",
       "apply": "Apply"
-    }
+    },
+    "blocked": "Blocked"
   },
   "roles": {
     "admin": "Admin",

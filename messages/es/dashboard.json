@@ -983,7 +983,8 @@
       "clear": "Quitar filtros",
       "title": "Filtros",
       "apply": "Aplicar"
-    }
+    },
+    "blocked": "Bloqueado"
   },
   "roles": {
     "admin": "Administrador",

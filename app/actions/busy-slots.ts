@@ -22,11 +22,16 @@ import type { BusySlot } from "@/types/calendar";
  * date, time, duration and who booked it — never the client's name, email,
  * phone, service or id.
  *
- * `bookedBy` names whoever booked the slot — partner, staff or admin — so the
- * partner can tell a colleague's appointment from an opaque Google Calendar
- * block. It is null for a booking taken by a visitor on the public site, or
- * when the owner has no name on their profile; the UI then says "booked"
- * without a name, still distinct from "busy".
+ * `bookedBy` names whoever booked the slot — staff or admin — so a colleague's
+ * appointment reads differently from an opaque Google Calendar block. It is
+ * null for a booking taken by a visitor on the public site, or when the owner
+ * has no name on their profile.
+ *
+ * A partner never receives it. Their own bookings arrive through their own
+ * query with full detail; everything else is a slot they cannot have, and who
+ * holds it is the centre's business, not theirs. The name is dropped here
+ * rather than hidden in the interface, because a name that reaches the browser
+ * has already been disclosed.
  *
  * The caller's own bookings are left out: those already arrive through the
  * partner's own query, with full detail.
@@ -86,14 +91,19 @@ export async function fetchBusySlots(
       row.partner_id !== caller.userId,
   );
 
-  // One lookup for every owner in the range rather than one per booking.
-  const ownerIds = [
-    ...new Set(
-      rows
-        .map((row) => row.created_by_user_id ?? row.partner_id)
-        .filter((id): id is string => id !== null),
-    ),
-  ];
+  const isPartner = caller.role === "partner";
+
+  // One lookup for every owner in the range rather than one per booking, and
+  // none at all for a partner, who is never told a name.
+  const ownerIds = isPartner
+    ? []
+    : [
+        ...new Set(
+          rows
+            .map((row) => row.created_by_user_id ?? row.partner_id)
+            .filter((id): id is string => id !== null),
+        ),
+      ];
 
   const names = new Map<string, string>();
   if (ownerIds.length > 0) {
@@ -114,7 +124,7 @@ export async function fetchBusySlots(
       date: row.date!.slice(0, 10),
       time: row.time,
       duration: row.duration,
-      bookedBy: ownerId ? (names.get(ownerId) ?? null) : null,
+      bookedBy: isPartner || !ownerId ? null : (names.get(ownerId) ?? null),
     };
   });
 }
