@@ -14,8 +14,8 @@ export type {
  * Builds the Redsys provider from environment variables.
  *
  * Replaces four identical `buildRedsysProvider()` copies across the checkout
- * routes, the webhook and the payment-status action. `REDSYS_TERMINAL` defaults
- * to `"001"`, which is what those copies already assumed.
+ * routes and the webhook. `REDSYS_TERMINAL` defaults to `"001"`, which is what
+ * those copies already assumed.
  */
 export function getRedsysProvider(): RedsysProvider | null {
   const merchantCode = process.env.REDSYS_MERCHANT_CODE;
