@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { NotFoundDocument } from "@components/not-found-document";
+import { metadataBase } from "@/lib/site-url";
 
 /**
  * The 404 for any URL that matches no route.
@@ -17,6 +18,9 @@ import { NotFoundDocument } from "@components/not-found-document";
  */
 
 export const metadata: Metadata = {
+  // This page has no layout above it at all, so it states its own base or the
+  // social images resolve against localhost.
+  metadataBase,
   title: "404 — Page not found | Essentia",
   description: "The page you're looking for doesn't exist.",
 };

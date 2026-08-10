@@ -6,6 +6,7 @@ import { AuthProvider } from "@components/auth-provider";
 import { DashboardShell } from "./dashboard-shell";
 import { DashboardToaster } from "@components/dashboard/dashboard-toaster";
 import { getDashboardLocale, getDashboardMessages } from "./i18n";
+import { metadataBase } from "@/lib/site-url";
 
 /**
  * The dashboard's own root layout.
@@ -37,6 +38,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 
   return {
+    // Stated here for the same reason as the account tree: nothing above it
+    // declares one, and the fallback is localhost.
+    metadataBase,
     title: t("metaTitle"),
     robots: { index: false, follow: false },
   };

@@ -1,0 +1,17 @@
+-- A booking taken at the desk may not have a phone number.
+--
+-- `phone` has been `NOT NULL` since the table was created, which was true of
+-- the only flow that existed then: the public form asks for one and refuses to
+-- submit without it. The dashboard does not, and should not — somebody
+-- standing at reception is already there, and a member of staff booking their
+-- next session has no reason to invent a number.
+--
+-- Creating that booking failed with:
+--
+--   null value in column "phone" of relation "bookings" violates not-null
+--   constraint
+--
+-- Nullable rather than defaulted to an empty string: "we do not have a phone
+-- number for this person" and "their phone number is the empty string" are
+-- different statements, and only one of them is true.
+ALTER TABLE bookings ALTER COLUMN phone DROP NOT NULL;

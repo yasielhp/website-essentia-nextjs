@@ -9,27 +9,7 @@ import { ConsentManager } from "@components/consent-manager";
 import { AuthProvider } from "@components/auth-provider";
 import { WebMcpTools } from "@components/webmcp-tools";
 import { JsonLd } from "@/components/json-ld";
-
-/**
- * The public origin, with the published domain as the floor.
- *
- * `NEXT_PUBLIC_APP_URL` is set by hand in the deployment environment, and
- * `new URL()` throws on a malformed one — which, from here, means every page
- * on the site failing to render over a typo in a dashboard field somewhere.
- */
-const fallbackUrl = `https://${contact.domain}`;
-const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
-const siteUrl =
-  configuredUrl && URL.canParse(configuredUrl) ? configuredUrl : fallbackUrl;
-
-/**
- * Built once, and with the fallback as its base.
- *
- * The two-argument form cannot throw on a relative or half-written value the
- * way `new URL(x)` does: it resolves against the published domain instead. A
- * `TypeError` here would fail the render of every page on the site.
- */
-const metadataBase = new URL(siteUrl, fallbackUrl);
+import { metadataBase, siteUrl } from "@/lib/site-url";
 
 /**
  * The public site's root layout.

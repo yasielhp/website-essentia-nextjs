@@ -4,8 +4,6 @@ import { useState, useEffect, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
-import { getAccessToken } from "@/lib/client-session";
-import { fetchBusySlots, fetchCalendarBusy } from "@/actions/busy-slots";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
@@ -17,20 +15,16 @@ import {
   activeFilterCount,
   type CalendarFilters,
 } from "@/utils/calendar-filters";
-import type { BusySlot, CalendarView, CalendarEvent } from "@/types/calendar";
+import type { CalendarView, CalendarEvent } from "@/types/calendar";
 import {
   toYMD,
   getWeekDays,
   groupByDate,
   formatPeriod,
-  intervalToLocalSlot,
   isPastDay,
   isPastSlot,
   navigateAnchor,
 } from "@/utils/dashboard-calendar";
-/** Neutral grey for slots a partner may see as taken but never open. */
-const BUSY_COLOR = "#94a3b8";
-
 // ─── Calendar navigation reducer ─────────────────────────────
 
 type CalNav = { view: CalendarView; anchor: Date };
@@ -196,18 +190,12 @@ export default function DashboardPage() {
         filters.tierId
       );
 
-      // Partners cannot read anyone else's bookings, so those slots would show
-      // up empty and bookable. Pull them as anonymous blocks instead, plus
-      // whatever the connected Google calendars report as busy.
-      const [bookingsRes, busySlots, calendarBusy] = await Promise.all([
-        bookingsQuery,
-        isPartner
-          ? fetchBusySlots(getAccessToken(), fromDate, toDate)
-          : Promise.resolve([] as BusySlot[]),
-        isPartner
-          ? fetchCalendarBusy(getAccessToken(), fromDate, toDate)
-          : Promise.resolve([] as { start: string; end: string }[]),
-      ]);
+      // A partner sees their own bookings and nothing else — not even a grey
+      // block where somebody else's sits. The hours those occupy are refused
+      // by `fetchAvailability` when a booking is made, which reads every
+      // booking that professional has whoever entered it, so an empty square
+      // here is not an offer.
+      const [bookingsRes] = await Promise.all([bookingsQuery]);
 
       const [racesRes, sessionsRes] =
         isPartner || filtering
@@ -329,46 +317,6 @@ export default function DashboardPage() {
 
       // Every slot already accounted for, so a booking that also lives on the
       // Google calendar is not drawn twice.
-      const claimed = new Set(
-        events.map((e) => `${e.date} ${e.time?.slice(0, 5) ?? ""}`),
-      );
-
-      busySlots.forEach((slot, i) => {
-        claimed.add(`${slot.date} ${slot.time?.slice(0, 5) ?? ""}`);
-        events.push({
-          id: `busy-${slot.date}-${slot.time ?? "allday"}-${i}`,
-          date: slot.date,
-          time: slot.time,
-          // A partner sees only that the hour is taken. Whose it is, and even
-          // that it is a booking rather than a block, is not theirs to know.
-          title: isPartner
-            ? blockedLabel
-            : slot.bookedBy
-              ? `${bookedByLabel} ${slot.bookedBy}`
-              : bookedLabel,
-          subtitle: slot.duration ?? undefined,
-          color: BUSY_COLOR,
-          href: "",
-          type: "busy",
-        });
-      });
-
-      calendarBusy.forEach((interval, i) => {
-        const { date, time, minutes } = intervalToLocalSlot(interval);
-        if (claimed.has(`${date} ${time}`)) return;
-        claimed.add(`${date} ${time}`);
-        events.push({
-          id: `gcal-${date}-${time}-${i}`,
-          date,
-          time,
-          title: busyLabel,
-          subtitle: minutes > 0 ? `${minutes} min` : undefined,
-          color: BUSY_COLOR,
-          href: "",
-          type: "busy",
-        });
-      });
-
       for (const r of (racesRes?.data ?? []) as Record<string, unknown>[]) {
         events.push({
           id: r.id as string,
