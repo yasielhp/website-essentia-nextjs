@@ -181,14 +181,23 @@ function ConfirmDeleteModal({
     >
       <div
         role="dialog"
+        aria-modal="true"
+        // Named after its own heading: without this a screen reader announces
+        // "dialog" and stops, on a box whose whole job is to ask whether to
+        // delete something.
+        aria-labelledby="delete-race-title"
+        aria-describedby="delete-race-body"
         className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-petroleum-700 text-xl">
+        <h2
+          id="delete-race-title"
+          className="font-display text-petroleum-700 text-xl"
+        >
           {t("deleteDialog.title")}
         </h2>
-        <p className="text-petroleum-400 mt-2 text-sm">
+        <p id="delete-race-body" className="text-petroleum-400 mt-2 text-sm">
           {t.rich("deleteDialog.body", {
             name: () => (
               <span className="text-petroleum-500 font-medium">{title}</span>

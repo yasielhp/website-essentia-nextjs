@@ -154,56 +154,63 @@ export function ImageUpload({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => !uploading && inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            if (!uploading) inputRef.current?.click();
-          }
-        }}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        className={`border-sand-300 relative flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed transition-colors ${
-          dragging
-            ? "border-petroleum-500 bg-petroleum-50"
-            : uploading
-              ? "opacity-60"
-              : "hover:border-petroleum-400 hover:bg-sand-50"
-        }`}
-      >
-        {value ? (
-          <NextImage
-            src={value}
-            alt="Preview"
-            fill
-            sizes="100%"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex flex-col items-center gap-1 px-4 py-6 text-center">
-            <IconImage className="text-petroleum-300" />
-            <span className="text-petroleum-400 text-xs">
-              {uploading ? t("uploading") : dragging ? t("drop") : t("prompt")}
-            </span>
-          </div>
-        )}
+      {/* The remove button is a sibling of the dropzone, not a child: a
+          focusable control inside another one loses its own semantics, and
+          keyboard users reached the dropzone instead of the button. This
+          wrapper is what the button positions against. */}
+      <div className="relative">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => !uploading && inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              if (!uploading) inputRef.current?.click();
+            }
+          }}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className={`border-sand-300 relative flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed transition-colors ${
+            dragging
+              ? "border-petroleum-500 bg-petroleum-50"
+              : uploading
+                ? "opacity-60"
+                : "hover:border-petroleum-400 hover:bg-sand-50"
+          }`}
+        >
+          {value ? (
+            <NextImage
+              src={value}
+              alt="Preview"
+              fill
+              sizes="100%"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1 px-4 py-6 text-center">
+              <IconImage className="text-petroleum-300" />
+              <span className="text-petroleum-400 text-xs">
+                {uploading
+                  ? t("uploading")
+                  : dragging
+                    ? t("drop")
+                    : t("prompt")}
+              </span>
+            </div>
+          )}
 
-        {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-            <div className="border-petroleum-700 size-6 animate-spin rounded-full border-2 border-t-transparent" />
-          </div>
-        )}
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+              <div className="border-petroleum-700 size-6 animate-spin rounded-full border-2 border-t-transparent" />
+            </div>
+          )}
+        </div>
 
         {value && !uploading && (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange("");
-            }}
+            onClick={() => onChange("")}
             aria-label={t("removeImage")}
             className="text-petroleum-500 absolute top-2 right-2 rounded-full bg-white/80 p-1 shadow transition-colors hover:bg-white hover:text-red-500"
           >
