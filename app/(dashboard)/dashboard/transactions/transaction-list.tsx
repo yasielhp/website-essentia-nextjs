@@ -43,33 +43,67 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+/**
+ * One formatter per locale, not one per cell.
+ *
+ * A page of ten payments draws a date, a time and an amount for each, and every
+ * one of them built a fresh `Intl` formatter — the expensive part of formatting,
+ * repeated thirty times a render for an answer that never changes.
+ */
+const DATE_FORMATS = new Map<string, Intl.DateTimeFormat>();
+const TIME_FORMATS = new Map<string, Intl.DateTimeFormat>();
+const AMOUNT_FORMATS = new Map<string, Intl.NumberFormat>();
+
+function cached<T>(store: Map<string, T>, locale: string, build: () => T): T {
+  const found = store.get(locale);
+  if (found) return found;
+  const made = build();
+  store.set(locale, made);
+  return made;
+}
+
 function formatDate(value: string | null, locale: string): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  }).format(d);
+  return cached(
+    DATE_FORMATS,
+    locale,
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      }),
+  ).format(d);
 }
 
 function formatTime(value: string | null, locale: string): string {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  return cached(
+    TIME_FORMATS,
+    locale,
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+  ).format(d);
 }
 
 function formatAmount(value: number | null, locale: string): string {
   if (value === null || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: "EUR",
-  }).format(value);
+  return cached(
+    AMOUNT_FORMATS,
+    locale,
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "EUR",
+      }),
+  ).format(value);
 }
 
 /**

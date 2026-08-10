@@ -8,12 +8,12 @@ import { EmailInput } from "@/components/ui/email-input";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { formatCalendarDay } from "@/utils/format";
 import {
-  LocationSelect,
   TENERIFE_MUNICIPALITIES,
   type DashboardLocation,
   type LocationAddress,
   type LocationOption,
-} from "../../_shared/location";
+} from "../../_shared/location-options";
+import { LocationSelect } from "../../_shared/location";
 import { StatusSelect } from "./status-select";
 import { CalendarView } from "./calendar-view";
 import {

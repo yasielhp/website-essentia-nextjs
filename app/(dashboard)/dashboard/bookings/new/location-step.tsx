@@ -5,12 +5,12 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import {
-  LocationSelect,
   TENERIFE_MUNICIPALITIES,
   type DashboardLocation,
   type LocationAddress,
   type LocationOption,
-} from "../_shared/location";
+} from "../_shared/location-options";
+import { LocationSelect } from "../_shared/location";
 import type { FormAction } from "./form-state";
 import { CompletedRow } from "./completed-row";
 

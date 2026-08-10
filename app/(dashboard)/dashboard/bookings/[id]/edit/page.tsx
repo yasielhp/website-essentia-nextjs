@@ -47,7 +47,7 @@ import {
   EMPTY_ADDRESS,
   useLocationOptions,
   type DashboardLocation,
-} from "../../_shared/location";
+} from "../../_shared/location-options";
 
 // ─── Helpers ──────────────────────────────────────────────────
 

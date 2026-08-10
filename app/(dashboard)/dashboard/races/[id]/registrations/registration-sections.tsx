@@ -101,7 +101,7 @@ type RegistrationRowProps = {
   onRemove: (id: string) => void;
 };
 
-export function RegistrationRow({
+function RegistrationRow({
   reg,
   index,
   removeOpen,

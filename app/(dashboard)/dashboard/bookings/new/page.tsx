@@ -43,7 +43,7 @@ import {
   toTierOption,
   type Tier,
 } from "./form-state";
-import { useLocationOptions } from "../_shared/location";
+import { useLocationOptions } from "../_shared/location-options";
 import { ClientStep } from "./client-step";
 import { DateTimeStep } from "./datetime-step";
 

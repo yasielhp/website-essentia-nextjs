@@ -1,6 +1,9 @@
 import type { TierPickerOption } from "@/components/ui/tier-picker";
-import type { DashboardLocation, LocationAddress } from "../_shared/location";
-import { EMPTY_ADDRESS } from "../_shared/location";
+import type {
+  DashboardLocation,
+  LocationAddress,
+} from "../_shared/location-options";
+import { EMPTY_ADDRESS } from "../_shared/location-options";
 import { GENDER_UNSPECIFIED, type GenderValue } from "@/constants/gender";
 
 /**

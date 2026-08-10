@@ -1,9 +1,9 @@
 import type { TierPickerOption } from "@/components/ui/tier-picker";
-import { EMPTY_ADDRESS } from "../../_shared/location";
+import { EMPTY_ADDRESS } from "../../_shared/location-options";
 import type {
   DashboardLocation,
   LocationAddress,
-} from "../../_shared/location";
+} from "../../_shared/location-options";
 
 /**
  * A booking being changed, and everything the screen is waiting on.
