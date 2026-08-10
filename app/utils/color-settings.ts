@@ -30,21 +30,15 @@ export const DEFAULT_COLORS: ColorSettings = {
   sessions: "#0369a1",
 };
 
-const STORAGE_KEY = "essentia:color-settings";
-
-/** Bumped whenever the stored shape changes; see `booking-storage.ts`. */
-const SETTINGS_VERSION = 1;
+/** Bump the `:v1` when the stored shape changes; see `booking-storage.ts`. */
+const STORAGE_KEY = "essentia:color-settings:v1";
 
 export function loadColorSettings(): ColorSettings {
   if (typeof window === "undefined") return DEFAULT_COLORS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_COLORS;
-    const parsed = JSON.parse(raw) as Partial<ColorSettings> & {
-      version?: number;
-    };
-    // An older shape falls back to the defaults instead of merging halves.
-    if (parsed.version !== SETTINGS_VERSION) return DEFAULT_COLORS;
+    const parsed = JSON.parse(raw) as Partial<ColorSettings>;
     return {
       services: { ...DEFAULT_COLORS.services, ...(parsed.services ?? {}) },
       races: parsed.races ?? DEFAULT_COLORS.races,
@@ -56,8 +50,5 @@ export function loadColorSettings(): ColorSettings {
 }
 
 export function saveColorSettings(settings: ColorSettings): void {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ ...settings, version: SETTINGS_VERSION }),
-  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }

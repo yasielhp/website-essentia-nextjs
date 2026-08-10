@@ -112,17 +112,22 @@ export async function sendTemplate(opts: {
       },
     );
 
-    const payload = (await response
-      .json()
-      .catch(() => null)) as MetaResponse | null;
-
+    // Status first: `fetch` resolves on 4xx, and Meta answers both cases with
+    // a JSON body, so the two are only told apart by the status.
     if (!response.ok) {
+      const failure = (await response
+        .json()
+        .catch(() => null)) as MetaResponse | null;
       const detail =
-        payload?.error?.error_data?.details ??
-        payload?.error?.message ??
+        failure?.error?.error_data?.details ??
+        failure?.error?.message ??
         `HTTP ${response.status}`;
       return { status: "failed", error: detail };
     }
+
+    const payload = (await response
+      .json()
+      .catch(() => null)) as MetaResponse | null;
 
     return { status: "sent", providerId: payload?.messages?.[0]?.id ?? null };
   } catch (err) {
