@@ -573,7 +573,8 @@
         "label": "Google Calendar",
         "connected": "Conectado",
         "disconnect": "Desconectar",
-        "connect": "Conectar Google Calendar"
+        "connect": "Conectar Google Calendar",
+        "adminHint": "Este calendario recibe todas las reservas del centro. Lo que tengas ocupado en él no afecta a las horas que se ofrecen al público."
       },
       "removeDialog": {
         "title": "¿Retirar el acceso al sistema?",

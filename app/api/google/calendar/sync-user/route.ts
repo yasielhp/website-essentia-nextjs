@@ -66,13 +66,61 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split("T")[0]!;
     const db = getAdminClient().database;
 
-    const { data: bookings, error: bookingsErr } = await db
-      .from("bookings")
-      .select("id, service_title, first_name, last_name, date, time, duration")
-      .eq("staff_id", staffId)
-      .in("status", ["confirmed", "paid"])
-      .gte("date", today)
-      .is("google_event_id", null);
+    // Whose diary is this? A member of staff's calendar holds the sessions they
+    // perform, so `staff_id` is the filter. An administrator's mirrors the
+    // whole centre — filtering by `staff_id` there asks for the sessions an
+    // administrator performs, which is none of them, and the resync reported
+    // nothing to do while the month was full of bookings.
+    const { data: targetProfile } = await db
+      .from("profiles")
+      .select("role")
+      .eq("id", staffId)
+      .maybeSingle();
+
+    const isAdmin =
+      (targetProfile as { role?: string } | null)?.role === "admin";
+
+    let bookings: Booking[] | null = null;
+    let bookingsErr: unknown = null;
+
+    if (isAdmin) {
+      const [all, mirrored] = await Promise.all([
+        db
+          .from("bookings")
+          .select(
+            "id, service_title, first_name, last_name, date, time, duration",
+          )
+          .in("status", ["confirmed", "paid"])
+          .gte("date", today),
+        db
+          .from("booking_calendar_mirrors")
+          .select("booking_id")
+          .eq("owner_id", staffId),
+      ]);
+
+      bookingsErr = all.error;
+      const already = new Set(
+        ((mirrored.data ?? []) as { booking_id: string }[]).map(
+          (row) => row.booking_id,
+        ),
+      );
+      bookings = ((all.data ?? []) as Booking[]).filter(
+        (booking) => !already.has(booking.id),
+      );
+    } else {
+      const result = await db
+        .from("bookings")
+        .select(
+          "id, service_title, first_name, last_name, date, time, duration",
+        )
+        .eq("staff_id", staffId)
+        .in("status", ["confirmed", "paid"])
+        .gte("date", today)
+        .is("google_event_id", null);
+
+      bookings = (result.data ?? []) as Booking[];
+      bookingsErr = result.error;
+    }
 
     if (bookingsErr) {
       console.error("[google/calendar/sync-user] bookings error:", bookingsErr);

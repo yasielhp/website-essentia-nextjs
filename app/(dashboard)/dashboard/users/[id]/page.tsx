@@ -765,7 +765,9 @@ export default function EditUserPage() {
                   {t("calendar.label")}
                 </h2>
                 <p className="text-petroleum-400 mb-4 text-xs">
-                  {tCalendar("hint")}
+                  {state.role === "admin"
+                    ? t("calendar.adminHint")
+                    : tCalendar("hint")}
                 </p>
                 {calendarEmail && (
                   <p className="text-petroleum-400 mb-3 truncate text-xs">

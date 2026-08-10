@@ -573,7 +573,8 @@
         "label": "Google Calendar",
         "connected": "Connected",
         "disconnect": "Disconnect",
-        "connect": "Connect Google Calendar"
+        "connect": "Connect Google Calendar",
+        "adminHint": "This calendar receives every booking in the centre. Whatever you have on it does not affect the hours offered to clients."
       },
       "removeDialog": {
         "title": "Remove system access?",
