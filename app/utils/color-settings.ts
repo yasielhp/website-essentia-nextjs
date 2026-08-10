@@ -1,14 +1,3 @@
-export const SERVICES = [
-  { id: "manual-therapies", label: "Manual Therapies" },
-  { id: "facial-therapies", label: "Therapeutic Facials" },
-  { id: "contrast-therapy", label: "Contrast Therapy" },
-  { id: "breathing-sessions", label: "Breathing Sessions" },
-  { id: "red-light-therapy", label: "Red Light Therapy" },
-  { id: "hyperbaric-chambers", label: "Hyperbaric Chambers" },
-  { id: "intravenous-therapy", label: "Intravenous Therapy" },
-  { id: "regenerative-medicine", label: "Regenerative Medicine" },
-] as const;
-
 export type ColorSettings = {
   services: Record<string, string>;
   races: string;
@@ -47,8 +36,4 @@ export function loadColorSettings(): ColorSettings {
   } catch {
     return DEFAULT_COLORS;
   }
-}
-
-export function saveColorSettings(settings: ColorSettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }

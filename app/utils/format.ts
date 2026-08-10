@@ -95,22 +95,6 @@ export function formatLongDate(
     timeZone: "UTC",
   });
 }
-
-/** `20/05/2026` — compact form for dense dashboard tables. */
-export function formatShortDate(
-  dateStr: string | null | undefined,
-  locale: SupportedLocale = "es",
-): string {
-  const date = parseIsoDate(dateStr);
-  if (!date) return "—";
-  return date.toLocaleDateString(intlLocale(locale), {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 /**
  * `May 20, 2026` / `20 may 2026` — the listing format shared by the users,
  * members and contact detail screens, which each carried a byte-identical copy
@@ -145,25 +129,6 @@ export function formatTimeOfDay(
     timeZone: TIME_ZONE,
   });
 }
-
-/** Formats a timestamp (not a plain date) for dashboard listings. */
-export function formatDateTime(
-  timestamp: string | null | undefined,
-  locale: SupportedLocale = "es",
-): string {
-  if (!timestamp) return "—";
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString(intlLocale(locale), {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: TIME_ZONE,
-  });
-}
-
 /** `1.234,50 €` in Spanish, `€1,234.50` in English. */
 export function formatPrice(
   amount: number | null | undefined,

@@ -112,14 +112,6 @@ export const newDashboardPersonSchema = z
       });
     }
   });
-
-export const locationAddressSchema = z.object({
-  street: z.string().min(1, "Street is required"),
-  building: z.string().optional(),
-  postalCode: z.string().regex(/^\d{5}$/, "Postal code must be 5 digits"),
-  municipality: z.string().min(1, "Municipality is required"),
-});
-
 /** Keys against `dashboard.validation`, like the other dashboard schemas. */
 export const accountProfileSchema = z.object({
   firstName: z.string().min(1, "firstNameRequired"),

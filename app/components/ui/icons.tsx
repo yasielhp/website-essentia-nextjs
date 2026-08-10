@@ -29,29 +29,6 @@ export const IconFacebook = () => (
     />
   </svg>
 );
-
-export const IconYouTube = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-  >
-    <g
-      fill="none"
-      stroke="currentColor"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-    >
-      <path
-        strokeLinecap="round"
-        d="M2.4 11.4c0-3.0.3-4.5 1.2-5.4s2.4-.937 5.4-.937h5.7c3.0 0 4.5 0 5.4.9s1.2 2.4 1.2 5.4v1.1c0 3.0-.3 4.5-1.2 5.4s-2.4.9-5.4.9h-5.7c-3.0 0-4.5 0-5.4-.937S2.4 15.5 2.4 12.5z"
-      />
-      <path d="m14.6 11.4l-4.2-2.6a.6.6 0 0 0-.918.5v5.3a.6.6 0 0 0 .918.5l4.2-2.6a.6.6 0 0 0 0-1.0Z" />
-    </g>
-  </svg>
-);
-
 export const IconWorld = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -406,55 +383,6 @@ export const IconEyeOff = () => (
     />
   </svg>
 );
-
-export const IconPlay = ({ className }: { className?: string }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
-
-export const IconPause = ({ className }: { className?: string }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-  </svg>
-);
-
-export const IconVolume = ({ className }: { className?: string }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-  </svg>
-);
-
-export const IconVolumeMute = ({ className }: { className?: string }) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d="M4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
-  </svg>
-);
-
 export const IconImage = ({ className }: { className?: string }) => (
   <svg
     width="24"
@@ -714,28 +642,6 @@ export const IconBook = () => (
     />
   </svg>
 );
-
-export const IconContacts = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <rect
-      x="4"
-      y="2"
-      width="16"
-      height="20"
-      rx="2"
-      stroke="currentColor"
-      strokeWidth="1.5"
-    />
-    <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M7 19c0-2.7 2.2-4 5-4s5 1.2 5 4"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
 export const IconMembers = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <rect

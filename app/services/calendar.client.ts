@@ -35,12 +35,6 @@ async function startOAuth(
   window.location.href = url;
   return { error: null };
 }
-
-/** Starts the OAuth flow for a service-level calendar. Admin only. */
-export function connectServiceCalendar(serviceId: string) {
-  return startOAuth("/api/google/calendar/connect", { service_id: serviceId });
-}
-
 /** Starts the OAuth flow for a staff member's service calendar. */
 export function connectStaffCalendar(
   staffId: string,
@@ -81,16 +75,6 @@ export async function resyncAccountCalendar(
   if (!res.ok) return null;
   return (await res.json()) as { synced: number; failed: number };
 }
-
-/** Removes a service-level calendar connection. Admin only. */
-export async function disconnectServiceCalendar(
-  serviceId: string,
-): Promise<void> {
-  await authFetch(`/api/google/calendar/disconnect?service_id=${serviceId}`, {
-    method: "DELETE",
-  });
-}
-
 /** Removes a staff member's service calendar connection. */
 export async function disconnectStaffCalendar(
   staffId: string,
@@ -107,17 +91,6 @@ export type ServiceConnectionRow = {
   google_connected_email: string | null;
   google_calendar_id: string | null;
 };
-
-/** Connection status for every service. */
-export async function fetchServiceConnections(): Promise<
-  ServiceConnectionRow[]
-> {
-  const res = await authFetch("/api/google/calendar/configs");
-  if (!res.ok) return [];
-  const { data } = (await res.json()) as { data: ServiceConnectionRow[] };
-  return data ?? [];
-}
-
 /** Connection status for the services assigned to a staff member. */
 export async function fetchStaffCalendarConfigs(
   staffId: string,
@@ -144,17 +117,4 @@ export async function fetchStaffServices(
     services: { id: string; title: string }[];
   };
   return services ?? [];
-}
-
-/** Back-fills calendar events for a service's future bookings. Admin only. */
-export async function syncServiceCalendar(
-  serviceId: string,
-): Promise<{ synced: number; failed: number } | null> {
-  const res = await authFetch("/api/google/calendar/sync", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ service_id: serviceId }),
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as { synced: number; failed: number };
 }

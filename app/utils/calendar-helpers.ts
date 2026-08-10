@@ -1,5 +1,4 @@
 import { dateFormatter } from "@/utils/intl";
-import type { BookableService } from "@/data/services-data";
 import type { WeeklySchedule } from "@/types/schedule";
 
 /** One person's working week, as the availability helpers need it. */
@@ -219,19 +218,6 @@ function computeSlots(
 
   return slots;
 }
-
-export function getTimeSlots(
-  date: Date,
-  service: BookableService,
-  busyIntervals: { start: string; end: string }[] = [],
-): { time: string; booked: boolean }[] {
-  const durationMinutes =
-    service.durations.length > 0
-      ? parseInt(service.durations[0], 10) || 60
-      : 60;
-  return computeSlots(date, service.category, durationMinutes, busyIntervals);
-}
-
 /**
  * Dashboard variant — takes explicit category and duration instead of BookableService.
  */

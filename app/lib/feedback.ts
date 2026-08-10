@@ -61,8 +61,3 @@ export function notifySuccess(message: string): void {
   play("success");
   toast.success(message);
 }
-
-export function notifyError(message: string): void {
-  play("error");
-  toast.error(message);
-}

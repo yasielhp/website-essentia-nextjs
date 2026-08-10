@@ -176,12 +176,3 @@ export function navigateAnchor(
   }
   return d;
 }
-
-export function formatUpcomingDate(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(iso));
-}
