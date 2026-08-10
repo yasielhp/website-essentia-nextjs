@@ -27,17 +27,12 @@ import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
 import { formatCalendarDay, localDateStr } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
-import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
 import { getTimeSlotsForDashboard } from "@/utils/calendar-helpers";
-import { EmailInput } from "@/components/ui/email-input";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 import { fetchAvailability, type Availability } from "@/actions/availability";
 import { toStoredGender } from "@/constants/gender";
-import { useGenderOptions } from "@/hooks/use-gender-options";
-import { OptionSelect } from "@/components/ui/option-select";
-import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 import { CalendarView } from "./calendar-view";
 import { CompletedRow } from "./completed-row";
 import { LocationStep } from "./location-step";
@@ -51,6 +46,7 @@ import {
   type Tier,
 } from "./form-state";
 import { useLocationOptions } from "../_shared/location";
+import { ClientStep } from "./client-step";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -85,7 +81,6 @@ function NewBookingPageInner() {
   const tCommon = useTranslations("dashboard.common");
   const locale = useDashboardLocale();
   const locationOptions = useLocationOptions();
-  const genderOptions = useGenderOptions();
   const servicePickerLabels = useServicePickerLabels();
   const tierPickerLabels = useTierPickerLabels();
   const { push } = useRouter();
@@ -884,175 +879,17 @@ function NewBookingPageInner() {
               asking for it before there is an hour to attach it to is asking
               someone to type a name into nothing. */}
           {tierId && staffId && selectedDate && selectedTime && (
-            <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("steps.client")}
-              </h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="firstName"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {t("fields.firstName")}{" "}
-                      <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_FIELD",
-                          field: "firstName",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder={t("fields.firstNamePlaceholder")}
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="lastName"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {t("fields.lastName")}
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) =>
-                        dispatchForm({
-                          type: "SET_FIELD",
-                          field: "lastName",
-                          value: e.target.value,
-                        })
-                      }
-                      placeholder={t("fields.lastNamePlaceholder")}
-                      disabled={submitting}
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.email")} <span className="text-red-400">*</span>
-                  </label>
-                  <EmailInput
-                    id="email"
-                    value={email}
-                    onChange={(value) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "email",
-                        value: value,
-                      })
-                    }
-                    placeholder={t("fields.emailPlaceholder")}
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="phone"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.phone")}
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "phone",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder={t("fields.phonePlaceholder")}
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="client-gender"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.gender")}
-                  </label>
-                  <OptionSelect
-                    id="client-gender"
-                    value={gender}
-                    options={genderOptions}
-                    onChange={(next) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "gender",
-                        value: next,
-                      })
-                    }
-                    disabled={submitting}
-                    ariaLabel={t("fields.gender")}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="client-language"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.language")}
-                  </label>
-                  <OptionSelect
-                    id="client-language"
-                    value={language}
-                    options={LANGUAGE_OPTIONS}
-                    onChange={(next) =>
-                      dispatchForm({
-                        type: "SET_FIELD",
-                        field: "language",
-                        value: next,
-                      })
-                    }
-                    disabled={submitting}
-                    ariaLabel={t("fields.language")}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="notes"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.notes")}
-                  </label>
-                  <textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) =>
-                      dispatchForm({
-                        type: "SET_NOTES",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder={t("fields.notesPlaceholder")}
-                    rows={3}
-                    disabled={submitting}
-                    className={INPUT_CLASS + " resize-none"}
-                  />
-                </div>
-              </div>
-            </div>
+            <ClientStep
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              phone={phone}
+              gender={gender}
+              language={language}
+              notes={notes}
+              submitting={submitting}
+              dispatchForm={dispatchForm}
+            />
           )}
         </div>
 
