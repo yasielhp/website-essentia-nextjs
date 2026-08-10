@@ -52,6 +52,12 @@ import { EmailInput } from "@/components/ui/email-input";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 import { fetchAvailability, type Availability } from "@/actions/availability";
+import {
+  GENDER_UNSPECIFIED,
+  toStoredGender,
+  type GenderValue,
+} from "@/constants/gender";
+import { useGenderOptions } from "@/hooks/use-gender-options";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -497,6 +503,8 @@ type FormState = {
   selectedTime: string;
   calendarView: "date" | "time";
   firstName: string;
+  /** Stored on the contact, not the booking: it describes the person. */
+  gender: GenderValue;
   lastName: string;
   email: string;
   phone: string;
@@ -516,7 +524,7 @@ type FormAction =
   | { type: "SET_CALENDAR_VIEW"; value: "date" | "time" }
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone";
+      field: "firstName" | "lastName" | "email" | "phone" | "gender";
       value: string;
     }
   | { type: "SET_STAFF"; value: string }
@@ -534,6 +542,7 @@ const formInitial: FormState = {
   selectedTime: "",
   calendarView: "date",
   firstName: "",
+  gender: GENDER_UNSPECIFIED,
   lastName: "",
   email: "",
   phone: "",
@@ -634,6 +643,7 @@ function NewBookingPageInner() {
   const tCommon = useTranslations("dashboard.common");
   const locale = useDashboardLocale();
   const locationOptions = useLocationOptions();
+  const genderOptions = useGenderOptions();
   const servicePickerLabels = useServicePickerLabels();
   const tierPickerLabels = useTierPickerLabels();
   const { push } = useRouter();
@@ -661,6 +671,7 @@ function NewBookingPageInner() {
     selectedTime,
     calendarView,
     firstName,
+    gender,
     lastName,
     email,
     phone,
@@ -960,6 +971,7 @@ function NewBookingPageInner() {
           p_last_name: lastName.trim(),
           p_phone: phone.trim() || null,
           p_language: locale,
+          p_gender: toStoredGender(gender),
         });
       // A booking is worth more than its contact link, so a failure here does
       // not stop the write — but it is said out loud. Swallowing it is how
@@ -1689,8 +1701,12 @@ function NewBookingPageInner() {
             </>
           )}
 
-          {/* ── Step 5: Client ── */}
-          {tierId && (
+          {/* ── Step 5: Client ──
+              Last, and only once the appointment itself exists: who it is for
+              is the one thing that cannot be worked out from the rest, and
+              asking for it before there is an hour to attach it to is asking
+              someone to type a name into nothing. */}
+          {tierId && staffId && selectedDate && selectedTime && (
             <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
               <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
                 {t("steps.client")}
@@ -1789,6 +1805,34 @@ function NewBookingPageInner() {
                     disabled={submitting}
                     className={INPUT_CLASS}
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="client-gender"
+                    className="text-petroleum-500 text-xs font-medium"
+                  >
+                    {t("fields.gender")}
+                  </label>
+                  <select
+                    id="client-gender"
+                    value={gender}
+                    onChange={(e) =>
+                      dispatchForm({
+                        type: "SET_FIELD",
+                        field: "gender",
+                        value: e.target.value,
+                      })
+                    }
+                    disabled={submitting}
+                    className={INPUT_CLASS}
+                  >
+                    {genderOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
