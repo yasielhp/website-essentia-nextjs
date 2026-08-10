@@ -19,6 +19,9 @@ import { createInsForgeServerClient } from "@/lib/insforge-server";
  */
 
 /** Writes the locale cookie. Safe to call with an unknown or missing value. */
+// Writes a cookie, nothing else. A visitor with no account still gets to
+// choose a language.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function applyPreferredLanguage(language?: string | null) {
   if (!hasLocale(routing.locales, language)) return;
 
@@ -36,6 +39,10 @@ export async function applyPreferredLanguage(language?: string | null) {
  * A visitor with no session still gets the cookie — that is how the public
  * site remembers a language for someone who never signs in.
  */
+// The row it writes is the caller's own, resolved from their session by
+// `getCurrentUser()` — not from an id they passed in. With no session it
+// returns before touching the database.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function setPreferredLanguage(language: string) {
   if (!hasLocale(routing.locales, language)) return;
 

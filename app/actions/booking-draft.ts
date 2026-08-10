@@ -20,6 +20,10 @@ import type { UpdateBookingPayload } from "@/types/booking";
  */
 
 /** Attaches tier, price and notes to a booking that is still a draft. */
+// Anonymous by design and scoped to `status = 'draft'`, as the note at the
+// top of this file explains: the public booking flow has no session, and the
+// draft scope is what stops a known id from rewriting a confirmed booking.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function updateDraftBookingMeta(
   bookingId: string,
   tierId: string | null,
@@ -93,6 +97,8 @@ export async function updateDraftBookingMeta(
  * visitor may have gone back past the details step and chosen another service
  * before returning.
  */
+// Same reasoning: anonymous visitor, writes confined to their own draft.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function updateDraftBookingDetails(
   bookingId: string,
   details: {
@@ -129,6 +135,10 @@ export async function updateDraftBookingDetails(
 }
 
 /** Promotes a draft booking to `pending`. */
+// Anonymous by design. The write is scoped to `status = 'draft'`, and the
+// WhatsApp below only goes out on the actual draft → pending transition, so a
+// replay cannot ring the professional twice.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function confirmDraftBooking(
   bookingId: string,
   tierId: string | null,

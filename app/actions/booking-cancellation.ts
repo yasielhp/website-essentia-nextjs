@@ -77,6 +77,12 @@ export async function fetchCancellableBooking(
  * token. Staff are notified through the usual path, so the dashboard and the
  * client's inbox tell the same story.
  */
+// The token IS the credential: a `gen_random_uuid()` with a unique index,
+// handed out only in the confirmation email. `requireRole` here would break
+// the feature, because whoever clicks that link has no session by design. The
+// booking is resolved *by* the token, the email goes to the address on the
+// row, and a replay stops at the `already` branch before anything is written.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function cancelBookingByToken(
   token: string,
   locale: "en" | "es" = "es",

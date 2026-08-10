@@ -264,6 +264,12 @@ export default async function BlogPostPage({
           {html && (
             <div
               className="prose prose-lg prose-headings:font-display max-w-none"
+              // Sanitised at the source: `html` comes from `renderMarkdown`,
+              // which runs the parsed markdown through `sanitize-html` with a
+              // tag allowlist, drops `javascript:`/`data:` URLs and every
+              // `on*` handler. See app/lib/markdown.ts — that allowlist is the
+              // thing to review, not this line.
+              // react-doctor-disable-next-line react-doctor/dangerous-html-sink
               dangerouslySetInnerHTML={{ __html: html }}
             />
           )}

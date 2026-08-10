@@ -16,6 +16,10 @@ function computeInitials(name: string): string {
   );
 }
 
+// The public "leave a review" form. It writes with `status = 'draft'`, so
+// nothing reaches the home page until a member of staff publishes it, and the
+// field lengths are capped just above to keep the table from being inflated.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function submitReview(
   formData: FormData,
 ): Promise<{ error?: string }> {

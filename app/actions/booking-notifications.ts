@@ -127,6 +127,10 @@ async function getStaffEmail(serviceId: string): Promise<string | null> {
  * anonymously but the recipient is read from the booking row. Every other event
  * is a staff operation and requires a dashboard role.
  */
+// Only `received` is anonymous — it is the one the public booking flow
+// sends — and even then the recipient is read from the booking row rather
+// than the payload. Every other event calls `requireRole` a few lines down.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function notifyBooking(
   accessToken: string | null,
   payload: BookingNotificationPayload,
