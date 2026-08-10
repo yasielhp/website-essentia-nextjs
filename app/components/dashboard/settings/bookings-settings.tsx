@@ -304,14 +304,16 @@ export function BookingsSettings() {
     async function init() {
       const colors = loadColorSettings();
 
-      const tiersRes = await insforge.database
-        .from("service_tiers")
-        .select(
-          "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
-        )
-        .order("sort_order");
-
-      const tierStaff = await loadTierStaff();
+      // Neither reads the other, so they wait together rather than in turn.
+      const [tiersRes, tierStaff] = await Promise.all([
+        insforge.database
+          .from("service_tiers")
+          .select(
+            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
+          )
+          .order("sort_order"),
+        loadTierStaff(),
+      ]);
 
       const serviceTiers: Record<string, TierRow[]> = {};
       if (tiersRes.data) {

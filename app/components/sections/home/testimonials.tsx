@@ -20,16 +20,17 @@ const LIGHT_CLASSES = {
 };
 
 export default async function Testimonials() {
-  const [t, locale] = await Promise.all([
+  // The reviews query reads neither the translations nor the locale, so all
+  // three are in flight at once rather than the database waiting its turn.
+  const [t, locale, { data }] = await Promise.all([
     getTranslations("home.testimonials"),
     getLocale(),
+    insforge.database
+      .from("reviews")
+      .select("id, quote, name, age, initials, display_order")
+      .eq("status", "published")
+      .order("display_order", { ascending: true }),
   ]);
-
-  const { data } = await insforge.database
-    .from("reviews")
-    .select("id, quote, name, age, initials, display_order")
-    .eq("status", "published")
-    .order("display_order", { ascending: true });
 
   const formatAge = (age: string) => {
     if (!age) return "";
