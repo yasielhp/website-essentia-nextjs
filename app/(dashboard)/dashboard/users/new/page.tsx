@@ -8,20 +8,19 @@ import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { createUserAccount } from "@/actions/create-user-account";
 import { upsertStaffProfile } from "@/actions/upsert-staff-profile";
-import {
-  newDashboardPersonSchema,
-  parseErrors,
-  type FormErrors,
-} from "@/lib/schemas";
+import { newDashboardPersonSchema, parseErrors } from "@/lib/schemas";
 import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
-import { INPUT_CLASS } from "@/constants/form-styles";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
-import { toStoredGender, type GenderValue } from "@/constants/gender";
-import { useGenderOptions } from "@/hooks/use-gender-options";
-import { useFieldError } from "@/hooks/use-field-error";
-import { EmailInput } from "@/components/ui/email-input";
-import { LANGUAGE_OPTIONS } from "@/constants/i18n";
+import { toStoredGender } from "@/constants/gender";
+import { PersonFields } from "./person-fields";
+import {
+  formReducer,
+  initialState,
+  isSystemRole,
+  ROLE_VALUES,
+  type NewUserKind,
+} from "./form-state";
 
 /**
  * What this form can create.
@@ -32,108 +31,12 @@ import { LANGUAGE_OPTIONS } from "@/constants/i18n";
  * needs a plan and dates, so this form only creates the underlying contact and
  * hands over to the membership screen.
  */
-type NewUserKind = "admin" | "staff" | "partner" | "client" | "member";
-
-type SystemRole = "admin" | "staff" | "partner";
-
-const SYSTEM_ROLES: SystemRole[] = ["admin", "staff", "partner"];
-
-function isSystemRole(kind: NewUserKind): kind is SystemRole {
-  return (SYSTEM_ROLES as NewUserKind[]).includes(kind);
-}
-
-// ─── Form state ───────────────────────────────────────────────
-
-type PersonErrors = FormErrors<typeof newDashboardPersonSchema>;
-
-type FormState = {
-  submitting: boolean;
-  error: string | null;
-  fieldErrors: PersonErrors;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  gender: GenderValue;
-  language: string;
-  role: NewUserKind;
-};
-
-type FormAction =
-  | {
-      type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone";
-      value: string;
-    }
-  | { type: "SET_ROLE"; role: NewUserKind }
-  | { type: "SET_GENDER"; gender: GenderValue }
-  | { type: "SET_LANGUAGE"; language: string }
-  | { type: "SUBMIT_START" }
-  | { type: "SUBMIT_ERROR"; message: string }
-  | { type: "SET_FIELD_ERRORS"; errors: PersonErrors }
-  | { type: "CLEAR_ERROR" };
-
-const ROLE_VALUES: NewUserKind[] = [
-  "client",
-  "member",
-  "staff",
-  "partner",
-  "admin",
-];
-
-/** Keeps the default in step with whatever ROLE_VALUES lists first. */
-const ROLES_DEFAULT: NewUserKind = ROLE_VALUES[0]!;
-
-const initialState: FormState = {
-  submitting: false,
-  error: null,
-  fieldErrors: {},
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  gender: "",
-  language: "en",
-  // The first option in ROLES, so the form opens on what the list shows first
-  // rather than on a different choice further down.
-  role: ROLES_DEFAULT,
-};
-
-function formReducer(state: FormState, action: FormAction): FormState {
-  switch (action.type) {
-    case "SET_FIELD":
-      return {
-        ...state,
-        [action.field]: action.value,
-        fieldErrors: { ...state.fieldErrors, [action.field]: undefined },
-      };
-    case "SET_FIELD_ERRORS":
-      return { ...state, fieldErrors: action.errors, submitting: false };
-    case "SET_ROLE":
-      return { ...state, role: action.role };
-    case "SET_GENDER":
-      return { ...state, gender: action.gender };
-    case "SET_LANGUAGE":
-      return { ...state, language: action.language };
-    case "SUBMIT_START":
-      return { ...state, submitting: true, error: null };
-    case "SUBMIT_ERROR":
-      return { ...state, submitting: false, error: action.message };
-    case "CLEAR_ERROR":
-      return { ...state, error: null };
-    default:
-      return state;
-  }
-}
-
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NewUserPage() {
   const t = useTranslations("dashboard.users.form");
   const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
-  const fieldError = useFieldError();
-  const genderOptions = useGenderOptions();
   const roles: SelectOption<NewUserKind>[] = ROLE_VALUES.map((value) => ({
     value,
     label: t(`roles.${value}.label`),
@@ -144,7 +47,6 @@ export default function NewUserPage() {
   const {
     submitting,
     error,
-    fieldErrors,
     firstName,
     lastName,
     email,
@@ -329,167 +231,7 @@ export default function NewUserPage() {
           </div>
 
           {/* Details */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              {t("sections.details")}
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.firstName")}{" "}
-                    <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "firstName",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder={t("fields.firstNamePlaceholder")}
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                  {fieldErrors.firstName && (
-                    <p className="text-xs text-red-500">
-                      {fieldError(fieldErrors.firstName)}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("fields.lastName")}
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "lastName",
-                        value: e.target.value,
-                      })
-                    }
-                    placeholder={t("fields.lastNamePlaceholder")}
-                    disabled={submitting}
-                    className={INPUT_CLASS}
-                  />
-                  {fieldErrors.lastName && (
-                    <p className="text-xs text-red-500">
-                      {fieldError(fieldErrors.lastName)}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="email"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("fields.email")} <span className="text-red-400">*</span>
-                </label>
-                <EmailInput
-                  id="email"
-                  value={email}
-                  onChange={(value) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "email",
-                      value: value,
-                    })
-                  }
-                  placeholder={t("fields.emailPlaceholder")}
-                  disabled={submitting}
-                  className={INPUT_CLASS}
-                />
-                {fieldErrors.email && (
-                  <p className="text-xs text-red-500">
-                    {fieldError(fieldErrors.email)}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="phone"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("fields.phone")}
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "phone",
-                      value: e.target.value,
-                    })
-                  }
-                  placeholder={t("fields.phonePlaceholder")}
-                  disabled={submitting}
-                  className={INPUT_CLASS}
-                />
-                {fieldErrors.phone && (
-                  <p className="text-xs text-red-500">
-                    {fieldError(fieldErrors.phone)}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="gender"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("fields.gender")}
-                </label>
-                <OptionSelect
-                  id="gender"
-                  value={gender}
-                  options={genderOptions}
-                  onChange={(next) =>
-                    dispatch({ type: "SET_GENDER", gender: next })
-                  }
-                  disabled={submitting}
-                  ariaLabel={t("fields.gender")}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="language"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("fields.preferredLanguage")}
-                </label>
-                <OptionSelect
-                  id="language"
-                  value={language}
-                  options={LANGUAGE_OPTIONS}
-                  onChange={(next) =>
-                    dispatch({ type: "SET_LANGUAGE", language: next })
-                  }
-                  disabled={submitting}
-                  ariaLabel={t("fields.preferredLanguage")}
-                />
-              </div>
-            </div>
-          </div>
+          <PersonFields state={state} dispatch={dispatch} />
         </div>
       </form>
     </div>
