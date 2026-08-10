@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useReducer,
+  useCallback,
+  useMemo,
+  Suspense,
+} from "react";
 import { useDayFreeBusy } from "@/hooks/use-free-busy";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -43,6 +51,7 @@ import {
 import { EmailInput } from "@/components/ui/email-input";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
+import { fetchAvailability, type Availability } from "@/actions/availability";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -319,15 +328,24 @@ function LocationSelect({
 function CalendarView({
   selected,
   onSelect,
+  openDates,
+  onMonthChange,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
+  /** Days the chosen professional can actually take, `YYYY-MM-DD`. */
+  openDates: Set<string>;
+  onMonthChange: (year: number, month: number) => void;
 }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(() => today.getFullYear());
   const [viewMonth, setViewMonth] = useState(() => today.getMonth());
   const days = getCalendarDays(viewYear, viewMonth);
   const startColumn = getCalendarStartColumn(viewYear, viewMonth);
+
+  useEffect(() => {
+    onMonthChange(viewYear, viewMonth);
+  }, [viewYear, viewMonth, onMonthChange]);
 
   const prevMonth = () => {
     if (viewMonth === 0) {
@@ -380,7 +398,10 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          const available = isAvailableDay(day);
+          // Open means both "not in the past" and "this person works then and
+          // has the hour free" — the same answer the public site gets.
+          const available =
+            isAvailableDay(day) && openDates.has(localDateStr(day));
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
@@ -670,14 +691,92 @@ function NewBookingPageInner() {
     selectedDate,
   );
 
-  const timeSlots = selectedDate
-    ? getTimeSlotsForDashboard(
-        selectedDate,
-        selectedService?.category,
-        selectedTier?.duration_minutes ?? 60,
-        busyIntervals,
-      )
-    : [];
+  /**
+   * What the chosen professional can actually take, month by month.
+   *
+   * The dashboard used to draw every future day and every hour of the day,
+   * filtered only by the service's Google calendar — so it offered slots on
+   * days the person does not work, and hours another of their sessions already
+   * had. This is the same answer the public site gets, asked for one person.
+   */
+  // The answer carries the question it answers, so a reply for the previous
+  // professional is simply an answer nobody asked for any more — and nothing
+  // has to be cleared from inside an effect to make that true.
+  const [availability, setAvailability] = useState<{
+    key: string;
+    data: Availability;
+  }>({ key: "", data: {} });
+  const [availabilityMonth, setAvailabilityMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  const handleMonthChange = useCallback((year: number, month: number) => {
+    setAvailabilityMonth({ year, month });
+  }, []);
+
+  const availabilityKey =
+    tierId && staffId
+      ? `${tierId}|${staffId}|${availabilityMonth.year}-${availabilityMonth.month}`
+      : "";
+
+  useEffect(() => {
+    if (!availabilityKey) return;
+    let cancelled = false;
+    const { year, month } = availabilityMonth;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const mm = String(month + 1).padStart(2, "0");
+
+    void fetchAvailability({
+      tierId,
+      staffId,
+      from: `${year}-${mm}-01`,
+      to: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      durationMinutes: selectedTier?.duration_minutes ?? 60,
+    }).then((result) => {
+      if (!cancelled) setAvailability({ key: availabilityKey, data: result });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    availabilityKey,
+    availabilityMonth,
+    tierId,
+    staffId,
+    selectedTier?.duration_minutes,
+  ]);
+
+  /** Only the answer to the question being asked; anything older is ignored. */
+  const currentAvailability = useMemo(
+    () => (availability.key === availabilityKey ? availability.data : {}),
+    [availability, availabilityKey],
+  );
+
+  const openDates = useMemo(
+    () =>
+      new Set(
+        Object.entries(currentAvailability)
+          .filter(([, times]) => times.length > 0)
+          .map(([date]) => date),
+      ),
+    [currentAvailability],
+  );
+
+  const timeSlots = (() => {
+    if (!selectedDate) return [];
+    const all = getTimeSlotsForDashboard(
+      selectedDate,
+      selectedService?.category,
+      selectedTier?.duration_minutes ?? 60,
+      busyIntervals,
+    );
+    // Kept to the hours this person is free: the grid still marks what the
+    // service calendar has taken, and an hour they do not work never appears.
+    const free = new Set(currentAvailability[localDateStr(selectedDate)] ?? []);
+    return all.filter((slot) => free.has(slot.time));
+  })();
 
   const allowedLocations =
     role === "partner"
@@ -1486,8 +1585,10 @@ function NewBookingPageInner() {
             </div>
           )}
 
-          {/* ── Step 4: Date & Time ── */}
-          {tierId && (
+          {/* ── Step 4: Date & Time ──
+              Only once somebody is chosen: the calendar answers "when is this
+              person free", and without a person there is no question. */}
+          {tierId && staffId && (
             <>
               {selectedDate && selectedTime && editingStep !== "datetime" ? (
                 <CompletedRow
@@ -1503,6 +1604,8 @@ function NewBookingPageInner() {
                   {calendarView === "date" ? (
                     <CalendarView
                       selected={selectedDate}
+                      openDates={openDates}
+                      onMonthChange={handleMonthChange}
                       onSelect={(d) =>
                         dispatchForm({ type: "SET_DATE", value: d })
                       }
