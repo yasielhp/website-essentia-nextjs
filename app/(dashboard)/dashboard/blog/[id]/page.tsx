@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { revalidateBlog } from "@/actions/revalidate-blog";
+import { getAccessToken } from "@/lib/client-session";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -282,7 +283,11 @@ export default function EditPostPage() {
       });
       return;
     }
-    await revalidateBlog(slug.trim(), slugEs.trim() || undefined);
+    await revalidateBlog(
+      getAccessToken(),
+      slug.trim(),
+      slugEs.trim() || undefined,
+    );
     notifySuccess(tToasts("postSaved"));
     push("/dashboard/blog");
   }
@@ -290,7 +295,11 @@ export default function EditPostPage() {
   async function handleDelete() {
     dispatch({ type: "DELETING" });
     await insforge.database.from("blog_posts").delete().eq("id", id);
-    await revalidateBlog(slug.trim(), slugEs.trim() || undefined);
+    await revalidateBlog(
+      getAccessToken(),
+      slug.trim(),
+      slugEs.trim() || undefined,
+    );
     notifySuccess(tToasts("postDeleted"));
     push("/dashboard/blog");
   }

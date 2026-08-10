@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { AuthError, requireRole } from "@/lib/auth-guard";
 import { BLOG_POSTS_CACHE_TAG } from "@/lib/sitemap-data";
 
 /**
@@ -18,7 +19,21 @@ import { BLOG_POSTS_CACHE_TAG } from "@/lib/sitemap-data";
  * Both slugs are passed because a post has one per language, and the Spanish
  * one may be absent, in which case that tree serves the English slug.
  */
-export async function revalidateBlog(slug?: string, slugEs?: string) {
+export async function revalidateBlog(
+  accessToken: string | null,
+  slug?: string,
+  slugEs?: string,
+) {
+  // Only the blog editor calls this, and it is a Server Action — a public HTTP
+  // endpoint. Left open, anyone could purge the cache of an arbitrary path in
+  // a loop and make every following visit re-render the page from scratch.
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return;
+    throw err;
+  }
+
   // The listings, in both trees.
   revalidatePath("/blog");
   revalidatePath("/es/blog");

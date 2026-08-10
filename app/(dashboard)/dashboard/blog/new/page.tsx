@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { revalidateBlog } from "@/actions/revalidate-blog";
+import { getAccessToken } from "@/lib/client-session";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
@@ -172,7 +173,7 @@ export default function NewPostPage() {
       });
       return;
     }
-    await revalidateBlog(slug.trim());
+    await revalidateBlog(getAccessToken(), slug.trim());
     push("/dashboard/blog");
   }
 

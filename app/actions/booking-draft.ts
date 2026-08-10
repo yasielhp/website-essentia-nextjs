@@ -141,6 +141,25 @@ export async function confirmDraftBooking(
 
   const db = getAdminClient().database;
 
+  // Read the state first, and leave if this booking is no longer a draft.
+  //
+  // The update below is already scoped to `status = 'draft'`, so a second call
+  // cannot rewrite a confirmed booking — but the WhatsApp that follows is a
+  // message to a real phone, and this action is public and unauthenticated by
+  // design. Sending it without checking would let anyone holding a booking id
+  // ring the same professional as often as they liked.
+  const { data: before } = await db
+    .from("bookings")
+    .select("status, staff_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  const row = before as {
+    status: string | null;
+    staff_id: string | null;
+  } | null;
+  if (row?.status !== "draft") return;
+
   await db
     .from("bookings")
     .update({
@@ -158,15 +177,12 @@ export async function confirmDraftBooking(
   // Only now does the visitor's choice become a session someone has to be
   // there for, and only now are the date and time settled — so this, and not
   // the moment the professional was picked, is when the WhatsApp goes out.
-  const { data } = await db
-    .from("bookings")
-    .select("staff_id")
-    .eq("id", bookingId)
-    .maybeSingle();
-
-  const staffId = (data as { staff_id: string | null } | null)?.staff_id;
-  if (staffId) {
-    await notifyStaffOnWhatsApp({ bookingId, staffId, event: "assigned" });
+  if (row.staff_id) {
+    await notifyStaffOnWhatsApp({
+      bookingId,
+      staffId: row.staff_id,
+      event: "assigned",
+    });
   }
 }
 

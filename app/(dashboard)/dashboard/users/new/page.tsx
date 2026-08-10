@@ -7,6 +7,7 @@ import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { createUserAccount } from "@/actions/create-user-account";
+import { upsertStaffProfile } from "@/actions/upsert-staff-profile";
 import {
   newDashboardPersonSchema,
   parseErrors,
@@ -254,19 +255,25 @@ export default function NewUserPage() {
       }
     }
 
-    await insforge.database.from("profiles").upsert([
-      {
-        id: userId,
-        role,
-        first_name: trimFirst,
-        last_name: lastName.trim() || null,
-        full_name: fullName,
-        email: trimEmail,
-        phone: trimPhone,
-        gender: toStoredGender(gender),
-        preferred_language: language,
-      },
-    ]);
+    // Through a Server Action rather than the browser client: `role` decides
+    // who reaches the dashboard, so the write belongs where the caller's own
+    // role is checked.
+    const { error: profileError } = await upsertStaffProfile(getAccessToken(), {
+      id: userId,
+      role,
+      firstName: trimFirst,
+      lastName: lastName.trim() || null,
+      fullName,
+      email: trimEmail,
+      phone: trimPhone,
+      gender: toStoredGender(gender),
+      preferredLanguage: language,
+    });
+
+    if (profileError) {
+      dispatch({ type: "SUBMIT_ERROR", message: profileError });
+      return;
+    }
 
     notifySuccess(tToasts("userCreated"));
     push("/dashboard/users?tab=system");
