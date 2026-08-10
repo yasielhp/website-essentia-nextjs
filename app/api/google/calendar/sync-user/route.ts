@@ -83,47 +83,48 @@ export async function POST(request: NextRequest) {
     }
 
     const rows = (bookings ?? []) as Booking[];
-    let synced = 0;
-    let failed = 0;
+    // One booking says nothing about the next, so they go to Google together
+    // rather than one round trip at a time. Each keeps its own try/catch, so a
+    // booking that fails is counted and the rest still sync — `Promise.all`
+    // rejecting on the first error would have thrown the tally away.
+    const outcomes = await Promise.all(
+      rows.map(async (booking) => {
+        if (!booking.date || !booking.time) return false;
 
-    for (const booking of rows) {
-      if (!booking.date || !booking.time) {
-        failed++;
-        continue;
-      }
+        const durationMinutes = parseDurationMinutes(booking.duration);
+        const clientName =
+          [booking.first_name, booking.last_name].filter(Boolean).join(" ") ||
+          "Client";
+        const summary = `${booking.service_title ?? "Essentia"} — ${clientName}`;
 
-      const durationMinutes = parseDurationMinutes(booking.duration);
-      const clientName =
-        [booking.first_name, booking.last_name].filter(Boolean).join(" ") ||
-        "Client";
-      const summary = `${booking.service_title ?? "Essentia"} — ${clientName}`;
+        try {
+          const eventId = await createCalendarEvent(accessToken, "primary", {
+            summary,
+            start: {
+              dateTime: `${booking.date}T${booking.time}:00`,
+              timeZone: TIMEZONE,
+            },
+            end: {
+              dateTime: `${booking.date}T${addMinutesToTime(booking.time, durationMinutes)}:00`,
+              timeZone: TIMEZONE,
+            },
+          });
 
-      try {
-        const eventId = await createCalendarEvent(accessToken, "primary", {
-          summary,
-          start: {
-            dateTime: `${booking.date}T${booking.time}:00`,
-            timeZone: TIMEZONE,
-          },
-          end: {
-            dateTime: `${booking.date}T${addMinutesToTime(booking.time, durationMinutes)}:00`,
-            timeZone: TIMEZONE,
-          },
-        });
+          if (!eventId) return false;
 
-        if (eventId) {
           await db
             .from("bookings")
             .update({ google_event_id: eventId })
             .eq("id", booking.id);
-          synced++;
-        } else {
-          failed++;
+          return true;
+        } catch {
+          return false;
         }
-      } catch {
-        failed++;
-      }
-    }
+      }),
+    );
+
+    const synced = outcomes.filter(Boolean).length;
+    const failed = outcomes.length - synced;
 
     return NextResponse.json({ ok: true, synced, failed, total: rows.length });
   } catch (err) {

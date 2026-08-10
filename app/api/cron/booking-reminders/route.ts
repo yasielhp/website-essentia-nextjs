@@ -109,6 +109,15 @@ async function handle(request: NextRequest) {
     const dateIso = booking.date.slice(0, 10);
     const service = booking.service_title ?? "Essentia";
 
+    // Sequential on purpose, and not a candidate for `Promise.all`.
+    //
+    // Resend rate-limits by default, and the stamp below goes in *before* the
+    // send: a request that came back 429 would leave a booking marked as
+    // reminded and never remind it, which is the one failure this job must not
+    // have. The rule's own guidance keeps loops sequential for rate-limited
+    // services, and a reminder run is a handful of emails once an hour, so
+    // there is nothing to win by racing them.
+    //
     // Stamped before sending: a duplicate email is worse than a missing one,
     // and a crash mid-send would otherwise resend on the next run.
     await db
