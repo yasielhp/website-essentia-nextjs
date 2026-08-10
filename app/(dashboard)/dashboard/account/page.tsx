@@ -5,13 +5,12 @@ import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { PasswordSection } from "./password-section";
+import { ProfileForm } from "./profile-form";
+import { initialState, reducer } from "./state";
 import { useRole } from "@/context/role-context";
 import { insforge } from "@/lib/insforge";
-import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { PasswordInput } from "@/components/ui/input";
-import { setUserPassword } from "@/actions/set-user-password";
-import { getAccessToken } from "@/lib/client-session";
 import {
   connectStaffCalendar,
   disconnectStaffCalendar,
@@ -21,71 +20,6 @@ import {
 import { accountProfileSchema, parseErrors } from "@/lib/schemas";
 import { useFieldError } from "@/hooks/use-field-error";
 import { setPreferredLanguage } from "@/actions/preferred-language";
-
-const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
-
-type PageState = {
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  language: string;
-  avatarUrl: string;
-};
-
-type PageAction =
-  | {
-      type: "LOAD_SUCCESS";
-      payload: {
-        firstName: string;
-        lastName: string;
-        phone: string;
-        language: string;
-        avatarUrl: string;
-      };
-    }
-  | { type: "SET_SAVING"; value: boolean }
-  | { type: "SET_ERROR"; error: string | null }
-  | { type: "SET_FIRST_NAME"; value: string }
-  | { type: "SET_LAST_NAME"; value: string }
-  | { type: "SET_PHONE"; value: string }
-  | { type: "SET_LANGUAGE"; value: string }
-  | { type: "SET_AVATAR_URL"; value: string };
-
-const initialState: PageState = {
-  loading: true,
-  saving: false,
-  error: null,
-  firstName: "",
-  lastName: "",
-  phone: "",
-  language: "en",
-  avatarUrl: "",
-};
-
-function reducer(state: PageState, action: PageAction): PageState {
-  switch (action.type) {
-    case "LOAD_SUCCESS":
-      return { ...state, loading: false, ...action.payload };
-    case "SET_SAVING":
-      return { ...state, saving: action.value };
-    case "SET_ERROR":
-      return { ...state, error: action.error };
-    case "SET_FIRST_NAME":
-      return { ...state, firstName: action.value };
-    case "SET_LAST_NAME":
-      return { ...state, lastName: action.value };
-    case "SET_PHONE":
-      return { ...state, phone: action.value };
-    case "SET_LANGUAGE":
-      return { ...state, language: action.value };
-    case "SET_AVATAR_URL":
-      return { ...state, avatarUrl: action.value };
-  }
-}
 
 type ServiceCalConfig = {
   service_id: string;
@@ -255,29 +189,13 @@ export default function DashboardAccountPage() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.account");
   const { refresh } = useRouter();
-  const tUsers = useTranslations("dashboard.users.form");
   const tValidation = useTranslations("dashboard.validation");
   const fieldError = useFieldError();
   const { user } = useAuth();
   const { role } = useRole();
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const [pwNew, setPwNew] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
-  const [pwError, setPwError] = useState<string | null>(null);
-  const [pwOk, setPwOk] = useState(false);
-  const [pwLoading, setPwLoading] = useState(false);
-
-  const {
-    loading,
-    saving,
-    error,
-    firstName,
-    lastName,
-    phone,
-    language,
-    avatarUrl,
-  } = state;
+  const { loading, firstName, lastName, phone, language, avatarUrl } = state;
 
   useEffect(() => {
     if (!user) return;
@@ -333,38 +251,6 @@ export default function DashboardAccountPage() {
     };
   }, [user]);
 
-  async function handleChangePw(e: React.FormEvent) {
-    e.preventDefault();
-    setPwError(null);
-    setPwOk(false);
-    if (pwNew !== pwConfirm) {
-      setPwError(t("password.mismatch"));
-      return;
-    }
-    if (pwNew.length < 8) {
-      setPwError(t("password.tooShort"));
-      return;
-    }
-    setPwLoading(true);
-    try {
-      const { error } = await setUserPassword(
-        getAccessToken(),
-        user!.id,
-        pwNew,
-      );
-      if (error) {
-        setPwError(error);
-        return;
-      }
-      setPwNew("");
-      setPwConfirm("");
-      setPwOk(true);
-    } finally {
-      // A thrown action used to leave the form disabled with no way back.
-      setPwLoading(false);
-    }
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     dispatch({ type: "SET_ERROR", error: null });
@@ -415,158 +301,12 @@ export default function DashboardAccountPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
-          <form onSubmit={(e) => void handleSave(e)} noValidate>
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("sections.profile")}
-              </h2>
-
-              {error && (
-                <p className="mb-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                  {error}
-                </p>
-              )}
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="firstName"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {tUsers("fields.firstName")}{" "}
-                      <span className="text-red-400">*</span>
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <input
-                        id="firstName"
-                        type="text"
-                        value={firstName}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET_FIRST_NAME",
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder={tUsers("fields.firstNamePlaceholder")}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="lastName"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {tUsers("fields.lastName")}
-                    </label>
-                    {loading ? (
-                      <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                    ) : (
-                      <input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET_LAST_NAME",
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder={tUsers("fields.lastNamePlaceholder")}
-                        disabled={saving}
-                        className={INPUT_CLASS}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {tUsers("fields.email")}
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={user?.email ?? ""}
-                    disabled
-                    readOnly
-                    className={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="phone"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {tUsers("fields.phone")}
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) =>
-                        dispatch({ type: "SET_PHONE", value: e.target.value })
-                      }
-                      placeholder={tUsers("fields.phonePlaceholder")}
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    />
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="language"
-                    className="text-petroleum-500 text-xs font-medium"
-                  >
-                    {t("preferredLanguage")}
-                  </label>
-                  {loading ? (
-                    <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
-                  ) : (
-                    <select
-                      id="language"
-                      value={language}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "SET_LANGUAGE",
-                          value: e.target.value,
-                        })
-                      }
-                      disabled={saving}
-                      className={INPUT_CLASS}
-                    >
-                      <option value="en">English</option>
-                      <option value="es">Español</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-5 flex justify-end">
-                <Button
-                  type="submit"
-                  variant="solid"
-                  size="md"
-                  disabled={saving || loading}
-                  className="gap-1.5"
-                >
-                  {saving ? t("saving") : t("saveChanges")}
-                </Button>
-              </div>
-            </div>
-          </form>
+          <ProfileForm
+            state={state}
+            dispatch={dispatch}
+            email={user?.email ?? ""}
+            onSubmit={(e) => void handleSave(e)}
+          />
 
           {/* Google Calendar — solo para staff */}
           {!loading && user && role === "staff" && (
@@ -577,75 +317,7 @@ export default function DashboardAccountPage() {
             </Suspense>
           )}
 
-          {/* Security */}
-          <div className="border-sand-200 rounded-2xl border bg-white p-6">
-            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-              {t("sections.security")}
-            </h2>
-            <form
-              onSubmit={(e) => void handleChangePw(e)}
-              className="space-y-4"
-              noValidate
-            >
-              {pwError && (
-                <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                  {pwError}
-                </p>
-              )}
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="pw-new"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("password.new")}
-                </label>
-                <PasswordInput
-                  id="pw-new"
-                  value={pwNew}
-                  onChange={(e) => setPwNew(e.target.value)}
-                  placeholder={t("password.placeholder")}
-                  disabled={pwLoading}
-                  autoComplete="new-password"
-                  inputClassName={INPUT_CLASS}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="pw-confirm"
-                  className="text-petroleum-500 text-xs font-medium"
-                >
-                  {t("password.confirm")}
-                </label>
-                <PasswordInput
-                  id="pw-confirm"
-                  value={pwConfirm}
-                  onChange={(e) => setPwConfirm(e.target.value)}
-                  placeholder={t("password.placeholder")}
-                  disabled={pwLoading}
-                  autoComplete="new-password"
-                  inputClassName={INPUT_CLASS}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-4">
-                {pwOk && (
-                  <p className="text-sm font-medium text-green-700">
-                    {t("password.updated")}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  variant="solid"
-                  size="md"
-                  disabled={pwLoading || !pwNew || !pwConfirm}
-                >
-                  {pwLoading ? t("saving") : t("password.change")}
-                </Button>
-              </div>
-            </form>
-          </div>
+          <PasswordSection userId={user!.id} />
         </div>
 
         <div>
