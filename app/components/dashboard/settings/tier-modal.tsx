@@ -186,7 +186,13 @@ export function TierModal({
   const [staffIds, setStaffIds] = useState<string[]>([]);
   // Saving rewrites the assignments wholesale, so it must not run before they
   // have been read: an empty list is indistinguishable from "unassign all".
-  const [staffLoaded, setStaffLoaded] = useState(false);
+  /**
+   * Whether the assigned staff came back from the server.
+   *
+   * A ref, not state: it is read when saving and never rendered, so the extra
+   * render it caused bought nothing.
+   */
+  const staffLoadedRef = useRef(false);
 
   useEffect(() => {
     const tierId = modal.tier?.id;
@@ -206,7 +212,7 @@ export function TierModal({
       setStaffIds(
         ((data ?? []) as { staff_id: string }[]).map((r) => r.staff_id),
       );
-      setStaffLoaded(true);
+      staffLoadedRef.current = true;
     }
     void loadAssignments();
 
@@ -302,13 +308,13 @@ export function TierModal({
 
       // Replace the assignments wholesale: the set is small and a diff would
       // buy nothing but a chance to leave a stale row behind.
-      if (staffLoaded) {
+      if (staffLoadedRef.current) {
         await insforge.database
           .from("staff_tiers")
           .delete()
           .eq("tier_id", tierId);
       }
-      if (staffLoaded && staffIds.length > 0) {
+      if (staffLoadedRef.current && staffIds.length > 0) {
         await insforge.database.from("staff_tiers").insert(
           // The position in the list is the position in the booking form.
           staffIds.map((staff_id, index) => ({

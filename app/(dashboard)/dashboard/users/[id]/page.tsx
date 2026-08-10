@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
@@ -212,7 +212,14 @@ export default function EditUserPage() {
   const [slotInterval, setSlotInterval] = useState(30);
   // Saving overwrites the schedule, so it must not run before the stored one
   // has been read: the empty form would be written over the real hours.
-  const [scheduleLoaded, setScheduleLoaded] = useState(false);
+  /**
+   * Whether the schedule came back from the server.
+   *
+   * A ref, not state: nothing on screen depends on it. It exists so that
+   * saving before the load finishes does not write an empty schedule over a
+   * real one, and every render it forced was a render for nobody.
+   */
+  const scheduleLoadedRef = useRef(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwOk, setPwOk] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
@@ -241,7 +248,7 @@ export default function EditUserPage() {
       setCalendarEmail(profile.google_connected_email);
       setSchedule(normaliseSchedule(profile.schedule));
       setSlotInterval(profile.slot_interval_minutes ?? 30);
-      setScheduleLoaded(true);
+      scheduleLoadedRef.current = true;
     }
     void load();
 
@@ -287,7 +294,7 @@ export default function EditUserPage() {
       currentEmail: state.originalEmail,
       avatarUrl: state.avatarUrl || null,
       jobTitle: state.role === "staff" ? state.jobTitle.trim() : null,
-      ...(state.role === "staff" && scheduleLoaded
+      ...(state.role === "staff" && scheduleLoadedRef.current
         ? { schedule, slotIntervalMinutes: slotInterval }
         : {}),
     });
