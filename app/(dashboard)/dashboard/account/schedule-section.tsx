@@ -67,17 +67,24 @@ export function ScheduleSection({ userId }: { userId: string }) {
   async function handleSave() {
     setSaving(true);
     setError(null);
-    const { error: saveError } = await updateOwnSchedule(getAccessToken(), {
-      schedule,
-      slotIntervalMinutes: interval,
-    });
-    setSaving(false);
+    try {
+      const { error: saveError } = await updateOwnSchedule(getAccessToken(), {
+        schedule,
+        slotIntervalMinutes: interval,
+      });
 
-    if (saveError) {
-      setError(saveError);
-      return;
+      if (saveError) {
+        setError(saveError);
+        return;
+      }
+      notifySuccess(t("saved"));
+    } finally {
+      // In `finally`, not after the await: the action answers with an `error`
+      // rather than throwing, but the call itself still can — a dropped
+      // connection, a session that expired mid-request — and a reset that only
+      // runs on the happy path leaves the button disabled with no way back.
+      setSaving(false);
     }
-    notifySuccess(t("saved"));
   }
 
   return (
