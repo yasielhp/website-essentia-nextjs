@@ -130,19 +130,6 @@ export async function listStaffWithCalendar(
       { staff_id: string; google_access_token: string | null }[] | null) ?? []
   ).flatMap((r) => (r.google_access_token ? [r.staff_id] : []));
 }
-
-/** Every service with a Google account connected. */
-export async function listConnectedServices(): Promise<string[]> {
-  const { data } = await getAdminClient()
-    .database.from("service_configs")
-    .select("service_id")
-    .not("google_access_token", "is", null);
-
-  return ((data as { service_id: string }[] | null) ?? []).map(
-    (r) => r.service_id,
-  );
-}
-
 /** Other services that have a calendar connected, used as a shared fallback. */
 export async function listOtherConnectedServices(
   excludeServiceId: string,

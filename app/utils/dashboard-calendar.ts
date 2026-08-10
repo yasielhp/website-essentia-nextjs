@@ -28,33 +28,6 @@ export function toYMD(d: Date): string {
     String(d.getDate()).padStart(2, "0"),
   ].join("-");
 }
-
-/**
- * A Google FreeBusy interval placed on the viewer's clock.
- *
- * Google answers in UTC; the calendar grid speaks local time, so the
- * conversion happens in the browser rather than on a server whose timezone is
- * whatever the host decided.
- */
-export function intervalToLocalSlot(interval: { start: string; end: string }): {
-  date: string;
-  time: string;
-  minutes: number;
-} {
-  const start = new Date(interval.start);
-  const end = new Date(interval.end);
-  return {
-    date: toYMD(start),
-    time: [start.getHours(), start.getMinutes()]
-      .map((n) => String(n).padStart(2, "0"))
-      .join(":"),
-    minutes: Math.max(
-      0,
-      Math.round((end.getTime() - start.getTime()) / 60_000),
-    ),
-  };
-}
-
 /**
  * A day that already went by. The overview calendar turns every empty cell
  * into "create a booking here", which made it possible to book last month.
