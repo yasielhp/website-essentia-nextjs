@@ -58,6 +58,7 @@ import {
   type GenderValue,
 } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
+import { OptionSelect } from "@/components/ui/option-select";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -179,6 +180,12 @@ function useLocationOptions(): LocationOption[] {
     },
   ];
 }
+
+/** The two languages the centre writes in. */
+const LANGUAGE_OPTIONS = [
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+];
 
 const EMPTY_ADDRESS: LocationAddress = {
   street: "",
@@ -1821,25 +1828,20 @@ function NewBookingPageInner() {
                   >
                     {t("fields.gender")}
                   </label>
-                  <select
+                  <OptionSelect
                     id="client-gender"
                     value={gender}
-                    onChange={(e) =>
+                    options={genderOptions}
+                    onChange={(next) =>
                       dispatchForm({
                         type: "SET_FIELD",
                         field: "gender",
-                        value: e.target.value,
+                        value: next,
                       })
                     }
                     disabled={submitting}
-                    className={INPUT_CLASS}
-                  >
-                    {genderOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    ariaLabel={t("fields.gender")}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -1849,22 +1851,20 @@ function NewBookingPageInner() {
                   >
                     {t("fields.language")}
                   </label>
-                  <select
+                  <OptionSelect
                     id="client-language"
                     value={language}
-                    onChange={(e) =>
+                    options={LANGUAGE_OPTIONS}
+                    onChange={(next) =>
                       dispatchForm({
                         type: "SET_FIELD",
                         field: "language",
-                        value: e.target.value,
+                        value: next,
                       })
                     }
                     disabled={submitting}
-                    className={INPUT_CLASS}
-                  >
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                  </select>
+                    ariaLabel={t("fields.language")}
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label
