@@ -1,80 +1,83 @@
 "use server";
 
-import { Resend } from "resend";
 import { getAdminClient } from "@/lib/insforge-admin";
-import { AuthError, authenticate } from "@/lib/auth-guard";
+import {
+  ADMIN_ROLES,
+  AuthError,
+  authenticate,
+  requireRole,
+} from "@/lib/auth-guard";
+import { emailForUnsubscribeToken, setNewsletterState } from "@/lib/newsletter";
 
-const NEWSLETTER_AUDIENCE_ID =
-  process.env.RESEND_NEWSLETTER_AUDIENCE_ID ??
-  "63633279-d212-4a95-a395-38316b58ec47";
+/**
+ * Three doors onto the newsletter list, one per kind of caller.
+ *
+ * Signing up is public, because a signup form is. Coming off the list is done
+ * with a token, because an email address is not a secret and the old action
+ * took one straight from a query string. Staff changing someone else's
+ * preference from the dashboard need a role.
+ */
 
-function getResend(): Resend | null {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[newsletter] RESEND_API_KEY not set — skipping Resend");
-    return null;
-  }
-  return new Resend(apiKey);
-}
-
-async function syncContactNewsletter(
-  email: string,
-  subscribed: boolean,
-): Promise<void> {
-  try {
-    // Upsert the contact so new subscribers also appear in the contacts table
-    await getAdminClient()
-      .database.from("contacts")
-      .upsert(
-        { email, newsletter_subscribed: subscribed },
-        { onConflict: "email" },
-      );
-  } catch {
-    // fail-open: DB sync failure must not block the subscription
-  }
-}
-
+/**
+ * Adds an address to the list.
+ *
+ * Public on purpose: this is the form in the site footer, and its caller has
+ * no session. The exposure it carries is the one every open signup form has —
+ * someone can put an address that is not theirs on the list. Closing that means
+ * double opt-in (a confirmation email before the address counts as subscribed),
+ * which is a product decision rather than a guard.
+ */
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function subscribeToNewsletter(
   email: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const resend = getResend();
-  if (!resend) return { ok: true };
-
-  const { error } = await resend.contacts.create({
-    audienceId: NEWSLETTER_AUDIENCE_ID,
-    email,
-    unsubscribed: false,
-  });
-
-  if (error) {
-    console.error("[newsletter] subscribe error:", error);
-    return { ok: false, error: error.message };
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !trimmed.includes("@")) {
+    return { ok: false, error: "invalid" };
   }
-
-  await syncContactNewsletter(email, true);
-  return { ok: true };
+  return setNewsletterState(trimmed, true);
 }
 
-export async function unsubscribeFromNewsletter(
+/** What the unsubscribe page shows before asking for confirmation. */
+export async function fetchUnsubscribeEmail(
+  token: string,
+): Promise<string | null> {
+  return emailForUnsubscribeToken(token);
+}
+
+/**
+ * Takes the holder of this token off the list.
+ *
+ * The token is the credential — a `gen_random_uuid()` on the contact row,
+ * handed out only inside the link — so the address is resolved from it rather
+ * than accepted from the caller. That is the whole point: with the address as
+ * the argument, anyone could unsubscribe anyone.
+ */
+// react-doctor-disable-next-line react-doctor/server-auth-actions
+export async function unsubscribeByToken(
+  token: string,
+): Promise<{ ok: boolean; error?: "not_found" | "failed" }> {
+  const email = await emailForUnsubscribeToken(token);
+  if (!email) return { ok: false, error: "not_found" };
+
+  const result = await setNewsletterState(email, false);
+  return result.ok ? { ok: true } : { ok: false, error: "failed" };
+}
+
+/** Staff changing a contact's preference from the dashboard. */
+export async function setContactNewsletter(
+  accessToken: string | null,
   email: string,
+  subscribe: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
-  const resend = getResend();
-  if (!resend) return { ok: true };
-
-  // Resend upserts by email: calling create with unsubscribed:true marks the contact
-  const { error } = await resend.contacts.create({
-    audienceId: NEWSLETTER_AUDIENCE_ID,
-    email,
-    unsubscribed: true,
-  });
-
-  if (error) {
-    console.error("[newsletter] unsubscribe error:", error);
-    return { ok: false, error: error.message };
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.message };
+    throw err;
   }
 
-  await syncContactNewsletter(email, false);
-  return { ok: true };
+  return setNewsletterState(email.trim().toLowerCase(), subscribe);
 }
 
 /**
@@ -91,7 +94,7 @@ export async function updateNewsletterForUser(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const caller = await authenticate(accessToken);
-    if (caller.userId !== userId && caller.role !== "admin") {
+    if (caller.userId !== userId && !ADMIN_ROLES.includes(caller.role)) {
       return { ok: false, error: "Insufficient permissions" };
     }
   } catch (err) {
@@ -99,16 +102,11 @@ export async function updateNewsletterForUser(
     throw err;
   }
 
-  const resendResult = subscribe
-    ? await subscribeToNewsletter(email)
-    : await unsubscribeFromNewsletter(email);
-
+  const resendResult = await setNewsletterState(email, subscribe);
   if (!resendResult.ok) return resendResult;
 
-  const adminClient = getAdminClient();
-
-  const { error: dbError } = await adminClient.database
-    .from("profiles")
+  const { error: dbError } = await getAdminClient()
+    .database.from("profiles")
     .update({ newsletter_subscribed: subscribe })
     .eq("id", userId);
 

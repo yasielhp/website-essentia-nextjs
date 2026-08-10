@@ -1,23 +1,44 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@components/ui/button";
-import { unsubscribeFromNewsletter } from "@/actions/newsletter";
+import {
+  fetchUnsubscribeEmail,
+  unsubscribeByToken,
+} from "@/actions/newsletter";
 
 type State = "idle" | "loading" | "success" | "error";
 
 function UnsubscribeContent() {
   const params = useSearchParams();
-  const email = params.get("email") ?? "";
+  // The token is the credential. The address is looked up from it, never read
+  // from the URL: with `?email=` anyone could unsubscribe anyone.
+  const token = params.get("token") ?? "";
+  const [email, setEmail] = useState<string | null>(null);
   const [state, setState] = useState<State>("idle");
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!token) return;
+    void fetchUnsubscribeEmail(token).then((found) => {
+      if (!cancelled) setEmail(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const handleUnsubscribe = async () => {
-    if (!email) return;
+    if (!token) return;
     setState("loading");
-    const result = await unsubscribeFromNewsletter(email);
-    setState(result.ok ? "success" : "error");
+    try {
+      const result = await unsubscribeByToken(token);
+      setState(result.ok ? "success" : "error");
+    } catch {
+      setState("error");
+    }
   };
 
   return (
@@ -55,9 +76,9 @@ function UnsubscribeContent() {
             </p>
           </div>
 
-          {!email && (
+          {!token && (
             <p className="text-xs text-red-500">
-              No email address provided. Please use the link from your email.
+              This link is incomplete. Please use the one from your email.
             </p>
           )}
 
@@ -66,7 +87,7 @@ function UnsubscribeContent() {
               variant="solid"
               size="md"
               onClick={handleUnsubscribe}
-              disabled={state === "loading" || !email}
+              disabled={state === "loading" || !token}
               className="w-full"
             >
               {state === "loading" ? "Processing…" : "Confirm unsubscribe"}

@@ -53,7 +53,6 @@ type NewsletterProps = { variant?: Variant };
 
 export default function Newsletter({ variant = "light" }: NewsletterProps) {
   const [email, setEmail] = useState("");
-  const [submittedEmail, setSubmittedEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("idle");
@@ -86,7 +85,6 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
     try {
       const result = await subscribeToNewsletter(email);
       if (!result.ok) throw new Error(result.error);
-      setSubmittedEmail(email);
       setState("success");
       setEmail("");
       setConsent(false);
@@ -114,14 +112,11 @@ export default function Newsletter({ variant = "light" }: NewsletterProps) {
           <div className="flex flex-col gap-1 text-center">
             <p className={`${th.heading} font-medium`}>{t("successHeading")}</p>
             <p className={`${th.subheading} text-sm`}>{t("successBody")}</p>
+            {/* No link from here: it would have to carry the address in the
+                URL, which is exactly what the token replaced. Every newsletter
+                carries an unsubscribe link of its own. */}
             <p className={`${th.muted} mt-3 text-xs`}>
-              {t("successUnsubscribe")}{" "}
-              <Link
-                href={`/newsletter/unsubscribe?email=${encodeURIComponent(submittedEmail)}`}
-                className={`${th.link} underline underline-offset-2 transition-colors`}
-              >
-                {t("unsubscribeLink")}
-              </Link>
+              {t("successUnsubscribe")}
             </p>
           </div>
         ) : (

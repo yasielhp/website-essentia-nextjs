@@ -5,10 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { Button } from "@/components/ui/button";
-import {
-  subscribeToNewsletter,
-  unsubscribeFromNewsletter,
-} from "@/actions/newsletter";
+import { setContactNewsletter } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
@@ -1034,11 +1031,11 @@ export default function ContactDetailPage() {
     const trimmedEmail = email.trim();
     if (trimmedEmail && newsletterSubscribed !== originalNewsletter.current) {
       try {
-        if (newsletterSubscribed) {
-          await subscribeToNewsletter(trimmedEmail);
-        } else {
-          await unsubscribeFromNewsletter(trimmedEmail);
-        }
+        await setContactNewsletter(
+          getAccessToken(),
+          trimmedEmail,
+          newsletterSubscribed,
+        );
         originalNewsletter.current = newsletterSubscribed;
       } catch {
         // fail-open: Resend sync failure must not block navigation
