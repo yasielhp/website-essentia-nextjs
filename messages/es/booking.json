@@ -117,7 +117,9 @@
     "noAvailability": "Sin disponibilidad para este día",
     "tryAnother": "Por favor, elige otra fecha.",
     "chooseAnother": "Elegir otra fecha",
-    "date": "Fecha"
+    "date": "Fecha",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
   },
   "detailsStep": {
     "firstName": "Nombre",

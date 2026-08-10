@@ -341,6 +341,7 @@ export function TierModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label={tCommon("close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <IconX />

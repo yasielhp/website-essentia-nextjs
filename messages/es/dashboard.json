@@ -1260,7 +1260,8 @@
     "uploading": "Subiendo…",
     "invalidType": "Selecciona un archivo de imagen.",
     "failed": "No se ha podido subir la imagen.",
-    "genericError": "Algo ha salido mal. Inténtalo de nuevo."
+    "genericError": "Algo ha salido mal. Inténtalo de nuevo.",
+    "removeImage": "Quitar imagen"
   },
   "emailField": {
     "invalid": "Revisa el correo: falta algo o hay un carácter de más.",

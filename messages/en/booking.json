@@ -117,7 +117,9 @@
     "noAvailability": "No availability for this day",
     "tryAnother": "Please choose a different date.",
     "chooseAnother": "Choose another date",
-    "date": "Date"
+    "date": "Date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "detailsStep": {
     "firstName": "First name",

@@ -157,6 +157,7 @@ export function OptionSelect<T extends string>({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search…"
+                aria-label="Search"
                 className="border-sand-200 text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 w-full rounded-xl border px-3 py-2 text-sm outline-none"
               />
             </li>

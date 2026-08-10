@@ -1260,7 +1260,8 @@
     "uploading": "Uploading…",
     "invalidType": "Please select an image file.",
     "failed": "Upload failed.",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "removeImage": "Remove image"
   },
   "emailField": {
     "invalid": "Check the address — something is missing or mistyped.",

@@ -73,6 +73,7 @@ export function CalendarFiltersModal({
           <h3 className="text-petroleum-700 font-semibold">{t("title")}</h3>
           <button
             onClick={onClose}
+            aria-label={tCommon("close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"
           >
             <IconX />

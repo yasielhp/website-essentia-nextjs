@@ -40,6 +40,7 @@ function CalendarView({
   loadingMonth: boolean;
   locale: string;
 }) {
+  const t = useTranslations("booking.datetimeStep");
   const today = new Date();
   const days = getCalendarDays(viewYear, viewMonth);
   const monthName = getLocalizedMonthName(locale, viewYear, viewMonth);
@@ -50,6 +51,7 @@ function CalendarView({
       <div className="flex items-center justify-between">
         <button
           onClick={onPrevMonth}
+          aria-label={t("prevMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronLeft size={16} />
@@ -64,6 +66,7 @@ function CalendarView({
         </div>
         <button
           onClick={onNextMonth}
+          aria-label={t("nextMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
         >
           <ChevronRight size={16} />
