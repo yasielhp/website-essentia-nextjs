@@ -18,6 +18,12 @@ import {
 } from "@/context/breadcrumb-context";
 import type { Role } from "@/types";
 
+/** What staff and partners see: the two screens their role can act on. */
+const restrictedNavLinks = [
+  { key: "overview", href: "/dashboard" },
+  { key: "bookings", href: "/dashboard/bookings" },
+];
+
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const t = useTranslations("dashboard");
   const { user, loading: authLoading, signOut } = useAuth();
@@ -80,11 +86,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           ]
         : [rawCrumbs[0]!, { label: dynamicLabel }]
       : rawCrumbs;
-
-  const restrictedNavLinks = [
-    { key: "overview", href: "/dashboard" },
-    { key: "bookings", href: "/dashboard/bookings" },
-  ];
 
   const visibleNavLinks =
     (role as Role) === "partner" || (role as Role) === "staff"
