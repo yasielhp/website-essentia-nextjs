@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
@@ -86,6 +87,9 @@ function FilterModal({
   const t = useTranslations("dashboard");
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -402,7 +406,13 @@ export default function SubscriptionsPage() {
                       className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
                     >
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
-                        {m.first_name} {m.last_name}
+                        <Link
+                          href={`/dashboard/subscriptions/${m.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded outline-offset-2"
+                        >
+                          {m.first_name} {m.last_name}
+                        </Link>
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5">
                         <div>{m.email ?? t("common.empty")}</div>

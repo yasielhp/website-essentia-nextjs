@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
@@ -71,6 +72,9 @@ function FilterModal({
 
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -406,7 +410,13 @@ export default function ReviewsPage() {
                         <Avatar initials={r.initials} />
                         <div>
                           <p className="text-petroleum-700 font-medium">
-                            {r.name}
+                            <Link
+                              href={`/dashboard/reviews/${r.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="rounded outline-offset-2"
+                            >
+                              {r.name}
+                            </Link>
                           </p>
                           <p className="text-petroleum-400 text-xs">{r.age}</p>
                         </div>

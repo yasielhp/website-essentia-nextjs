@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
@@ -730,7 +731,15 @@ function BookingsSection({
                   >
                     <td className="py-3 pr-4">
                       <p className="text-petroleum-500">
-                        {formatCreatedDate(b.created_at, locale)}
+                        {/* The row is clickable for a mouse; this is the same
+                            destination as something a keyboard can reach. */}
+                        <Link
+                          href={`/dashboard/bookings/${b.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded outline-offset-2"
+                        >
+                          {formatCreatedDate(b.created_at, locale)}
+                        </Link>
                       </p>
                       <p className="text-petroleum-400 text-xs">
                         {formatCreatedTime(b.created_at, locale)}

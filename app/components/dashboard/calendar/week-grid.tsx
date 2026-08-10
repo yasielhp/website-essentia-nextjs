@@ -10,6 +10,7 @@ import {
   getShortWeekdays,
 } from "@/utils/dashboard-calendar";
 import { EventPill } from "./event-pill";
+import { activatable } from "@/lib/a11y";
 
 export function WeekGrid({
   anchor,
@@ -74,7 +75,7 @@ export function WeekGrid({
           return (
             <div
               key={ymd}
-              onClick={past ? undefined : () => onDayClick(day)}
+              {...activatable(past ? undefined : () => onDayClick(day))}
               className={`border-sand-100 border-r p-0.5 transition-colors last:border-r-0 sm:p-1.5 ${
                 past ? "" : "hover:bg-sand-50 cursor-pointer"
               }`}

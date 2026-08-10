@@ -10,6 +10,7 @@ import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
+import { activatable } from "@/lib/a11y";
 
 type RaceAccess = "members" | "open";
 
@@ -56,6 +57,9 @@ function FilterModal({
   const t = useTranslations("dashboard");
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -263,7 +267,7 @@ export default function RacesPage() {
           races.map((race) => (
             <div
               key={race.id}
-              onClick={() => push(`/dashboard/races/${race.id}/edit`)}
+              {...activatable(() => push(`/dashboard/races/${race.id}/edit`))}
               className="hover:bg-sand-50 flex cursor-pointer items-stretch transition-colors"
             >
               <div className="bg-sand-100 relative w-20 shrink-0 overflow-hidden">

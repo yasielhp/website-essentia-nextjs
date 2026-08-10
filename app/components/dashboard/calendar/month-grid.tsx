@@ -10,6 +10,7 @@ import {
   getShortWeekdays,
 } from "@/utils/dashboard-calendar";
 import { EventPill } from "./event-pill";
+import { activatable } from "@/lib/a11y";
 
 export function MonthGrid({
   anchor,
@@ -59,7 +60,7 @@ export function MonthGrid({
           return (
             <div
               key={ymd}
-              onClick={past ? undefined : () => onDayClick(day)}
+              {...activatable(past ? undefined : () => onDayClick(day))}
               className={`border-sand-100 min-h-16 border-r border-b p-0.5 transition-colors sm:min-h-22 sm:p-1.5 [&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0 ${
                 past ? "" : "hover:bg-sand-50 cursor-pointer"
               } ${!isCurrentMonth ? "bg-sand-50/60" : ""}`}

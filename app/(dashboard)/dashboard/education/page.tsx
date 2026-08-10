@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -10,6 +11,7 @@ import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/dashboard/pagination";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
+import { activatable } from "@/lib/a11y";
 
 type AccessType = "members_only" | "open" | "paid" | "paid_members_free";
 
@@ -57,6 +59,9 @@ function FilterModal({
   const t = useTranslations("dashboard");
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -270,7 +275,9 @@ export default function EducationPage() {
           sessions.map((session) => (
             <div
               key={session.id}
-              onClick={() => push(`/dashboard/education/${session.id}/edit`)}
+              {...activatable(() =>
+                push(`/dashboard/education/${session.id}/edit`),
+              )}
               className="hover:bg-sand-50 flex cursor-pointer items-stretch transition-colors"
             >
               <div className="bg-sand-100 relative w-20 shrink-0 overflow-hidden">
@@ -488,7 +495,14 @@ export default function EducationPage() {
                       )}
                     </td>
                     <td className="text-petroleum-700 px-5 py-4 font-medium">
-                      {session.title}
+                      {/* Same destination as the row click, reachable by keyboard. */}
+                      <Link
+                        href={`/dashboard/education/${session.id}/edit`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded outline-offset-2"
+                      >
+                        {session.title}
+                      </Link>
                     </td>
                     <td className="px-5 py-4">
                       <span

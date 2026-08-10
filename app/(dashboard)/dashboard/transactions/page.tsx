@@ -323,6 +323,9 @@ function FilterModal({
   const t = useTranslations("dashboard");
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();

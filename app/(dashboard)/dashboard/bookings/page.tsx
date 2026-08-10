@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useCallback, useState, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
@@ -267,6 +268,9 @@ function FilterModal({
   const t = useTranslations("dashboard");
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -895,7 +899,15 @@ export default function BookingsPage() {
                   >
                     <td className="px-5 py-4">
                       <p className="text-petroleum-500">
-                        {formatCreatedDate(b.created_at, locale)}
+                        {/* The row is clickable for a mouse; this is the same
+                            destination as something a keyboard can reach. */}
+                        <Link
+                          href={`/dashboard/bookings/${b.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded outline-offset-2"
+                        >
+                          {formatCreatedDate(b.created_at, locale)}
+                        </Link>
                       </p>
                       <p className="text-petroleum-400 text-xs">
                         {formatCreatedTime(b.created_at, locale)}

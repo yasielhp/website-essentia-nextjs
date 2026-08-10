@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useAsyncData } from "@/hooks/use-async-data";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 import { formatMediumDate } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { activatable } from "@/lib/a11y";
 
 type Post = {
   id: string;
@@ -54,6 +56,9 @@ function FilterModal({
 
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -222,7 +227,7 @@ export default function BlogDashboardPage() {
           filteredPosts.map((p) => (
             <div
               key={p.id}
-              onClick={() => push(`/dashboard/blog/${p.id}`)}
+              {...activatable(() => push(`/dashboard/blog/${p.id}`))}
               className="hover:bg-sand-50 cursor-pointer px-5 py-4 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
@@ -323,7 +328,14 @@ export default function BlogDashboardPage() {
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors"
                   >
                     <td className="text-petroleum-700 px-5 py-4 font-medium">
-                      {p.title}
+                      {/* Same destination as the row click, reachable by keyboard. */}
+                      <Link
+                        href={`/dashboard/blog/${p.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded outline-offset-2"
+                      >
+                        {p.title}
+                      </Link>
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
                       {p.category?.name ?? t("common.empty")}

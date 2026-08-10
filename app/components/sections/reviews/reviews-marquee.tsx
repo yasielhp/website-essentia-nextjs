@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { IconQuote } from "@/components/ui/icons";
 import type { TestimonialItem } from "@/components/sections/home/testimonials-carousel";
+import { activatable } from "@/lib/a11y";
 
 const ROW_SPEEDS = [60, 48, 70, 54];
 const ROW_DIRS: ("left" | "right")[] = ["left", "right", "left", "right"];
@@ -18,6 +19,9 @@ function ReviewModal({
 }) {
   return (
     <div
+      // Decorative: the click that closes is a convenience for a mouse. The
+      // dialog itself is the element inside, and Escape closes it too.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -78,7 +82,7 @@ function ReviewCard({
 }) {
   return (
     <div
-      onClick={onClick}
+      {...activatable(onClick)}
       className="group bg-sand-50 hover:bg-petroleum-700 relative flex w-72 shrink-0 cursor-pointer flex-col justify-between gap-5 rounded-2xl p-5 transition-colors duration-300"
     >
       <div
