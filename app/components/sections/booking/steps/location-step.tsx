@@ -6,6 +6,11 @@ import { useTranslations } from "next-intl";
 import { Building2, Home, ChevronDown, Check, X } from "lucide-react";
 import { contact } from "@/constants/contact";
 
+/** Whether the viewport is phone-sized. No state, so no reason to rebuild it. */
+const isMobile = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
 export type LocationAddress = {
   street: string;
   building: string;
@@ -92,10 +97,6 @@ function LocationSelect({
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isMobile = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 767px)").matches;
-
   const updateDropdownPosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();

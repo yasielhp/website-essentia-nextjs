@@ -4,22 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { bookableServices } from "@/data/services-data";
 import { IconX } from "@/components/ui/icons";
-
-export type CalendarFilters = {
-  staffId: string;
-  serviceId: string;
-  tierId: string;
-};
-
-export const EMPTY_FILTERS: CalendarFilters = {
-  staffId: "",
-  serviceId: "",
-  tierId: "",
-};
-
-export function activeFilterCount(filters: CalendarFilters): number {
-  return Object.values(filters).filter(Boolean).length;
-}
+import {
+  activeFilterCount,
+  EMPTY_FILTERS,
+  type CalendarFilters,
+} from "@/utils/calendar-filters";
 
 const FIELD_CLASS =
   "border-sand-200 text-petroleum-700 focus:border-petroleum-400 w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none";

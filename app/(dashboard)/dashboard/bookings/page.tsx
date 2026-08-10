@@ -13,12 +13,14 @@ import { Pagination } from "@/components/dashboard/pagination";
 import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import {
   LocationBadge,
-  SOURCE_BADGE,
   StatusBadge,
+} from "@/components/dashboard/booking-cells";
+import {
+  SOURCE_BADGE,
   formatBookingDate,
   formatCreatedDate,
   formatCreatedTime,
-} from "@/components/dashboard/booking-cells";
+} from "@/utils/booking-display";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 
 type Booking = {

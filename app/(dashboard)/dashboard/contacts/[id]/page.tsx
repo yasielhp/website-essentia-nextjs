@@ -25,11 +25,13 @@ import {
   LocationBadge,
   SourceBadge,
   StatusBadge,
+} from "@/components/dashboard/booking-cells";
+import {
   formatBookingDate,
   formatCreatedDate,
   formatCreatedTime,
   locationDetail,
-} from "@/components/dashboard/booking-cells";
+} from "@/utils/booking-display";
 import { fetchContactDetail, updateContact } from "@/actions/contacts";
 import type {
   ContactBooking,

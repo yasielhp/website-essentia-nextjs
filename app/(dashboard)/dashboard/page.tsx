@@ -11,12 +11,12 @@ import { useRole } from "@/context/role-context";
 import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
+import { CalendarFiltersModal } from "@/components/dashboard/calendar/calendar-filters-modal";
 import {
-  CalendarFiltersModal,
   EMPTY_FILTERS,
   activeFilterCount,
   type CalendarFilters,
-} from "@/components/dashboard/calendar/calendar-filters-modal";
+} from "@/utils/calendar-filters";
 import type { BusySlot, CalendarView, CalendarEvent } from "@/types/calendar";
 import {
   toYMD,

@@ -29,10 +29,8 @@ import {
 } from "@/services/calendar.client";
 import { IconTrash, IconCalendarConnect } from "@/components/ui/icons";
 import { EmailInput } from "@/components/ui/email-input";
-import {
-  StaffScheduleEditor,
-  normaliseSchedule,
-} from "@/components/dashboard/users/staff-schedule-editor";
+import { StaffScheduleEditor } from "@/components/dashboard/users/staff-schedule-editor";
+import { normaliseSchedule } from "@/utils/staff-schedule";
 import type { WeeklySchedule } from "@/types/schedule";
 
 type SystemRole = "admin" | "staff" | "partner";

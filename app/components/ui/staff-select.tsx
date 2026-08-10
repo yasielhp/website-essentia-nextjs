@@ -6,6 +6,11 @@ import Image from "next/image";
 import { ChevronDown, Check, X } from "lucide-react";
 import type { TierStaff } from "@/actions/tier-staff";
 
+/** Whether the viewport is phone-sized. No state, so no reason to rebuild it. */
+const isMobile = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
 /** The photo, or their initial when there is none. */
 function StaffAvatar({ person }: { person: TierStaff }) {
   if (person.avatarUrl) {
@@ -97,10 +102,6 @@ export function StaffSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((o) => o.id === selected) ?? null;
-
-  const isMobile = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 767px)").matches;
 
   const updatePosition = () => {
     if (!triggerRef.current) return;
