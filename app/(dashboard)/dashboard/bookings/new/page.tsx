@@ -684,15 +684,13 @@ function NewBookingPageInner() {
         const json = r.ok
           ? ((await r.json()) as { busy?: { start: string; end: string }[] })
           : null;
-        if (!cancelled) {
-          setBusyIntervals(json?.busy ?? []);
-          setLoadingSlots(false);
-        }
+        if (!cancelled) setBusyIntervals(json?.busy ?? []);
       } catch {
-        if (!cancelled) {
-          setBusyIntervals([]);
-          setLoadingSlots(false);
-        }
+        if (!cancelled) setBusyIntervals([]);
+      } finally {
+        // The two paths cleared the flag separately, which is one edit away
+        // from a spinner that never stops.
+        if (!cancelled) setLoadingSlots(false);
       }
     }
     void fetchBusy();

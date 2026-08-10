@@ -82,29 +82,34 @@ export default function NewSessionPage() {
 
     const isoDateTime = new Date(form.date + "T" + form.time).toISOString();
 
-    const { error: insertError } = await insforge.database
-      .from("education_sessions")
-      .insert([
-        {
-          title: trimmedTitle,
-          description: form.description.trim() || null,
-          date: isoDateTime,
-          duration_minutes: parseInt(form.duration) || null,
-          location: form.location.trim() || null,
-          max_participants: parseInt(form.maxParticipants) || null,
-          image_url: form.imageUrl || null,
-          access: form.access,
-        },
-      ]);
+    // The reset lives in a `finally`: a rejected insert — a dropped
+    // connection, a 500 — skipped the line below and left the form disabled
+    // behind a spinner that never stopped.
+    try {
+      const { error: insertError } = await insforge.database
+        .from("education_sessions")
+        .insert([
+          {
+            title: trimmedTitle,
+            description: form.description.trim() || null,
+            date: isoDateTime,
+            duration_minutes: parseInt(form.duration) || null,
+            location: form.location.trim() || null,
+            max_participants: parseInt(form.maxParticipants) || null,
+            image_url: form.imageUrl || null,
+            access: form.access,
+          },
+        ]);
 
-    setSubmitting(false);
-
-    if (insertError) {
-      setError(
-        (insertError as { message?: string })?.message ??
-          t("errors.createFailed"),
-      );
-      return;
+      if (insertError) {
+        setError(
+          (insertError as { message?: string })?.message ??
+            t("errors.createFailed"),
+        );
+        return;
+      }
+    } finally {
+      setSubmitting(false);
     }
 
     notifySuccess(tToasts("sessionCreated"));

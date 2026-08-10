@@ -23,6 +23,15 @@ const siteUrl =
   configuredUrl && URL.canParse(configuredUrl) ? configuredUrl : fallbackUrl;
 
 /**
+ * Built once, and with the fallback as its base.
+ *
+ * The two-argument form cannot throw on a relative or half-written value the
+ * way `new URL(x)` does: it resolves against the published domain instead. A
+ * `TypeError` here would fail the render of every page on the site.
+ */
+const metadataBase = new URL(siteUrl, fallbackUrl);
+
+/**
  * The public site's root layout.
  *
  * It sits inside `[locale]` rather than at `app/` so that the locale arrives
@@ -46,7 +55,7 @@ export async function generateMetadata({
   const { locale } = await params;
 
   return {
-    metadataBase: new URL(siteUrl),
+    metadataBase,
     title: {
       default: "Essentia — Longevity Center & Social Wellness Club in Tenerife",
       template: "%s | Essentia",

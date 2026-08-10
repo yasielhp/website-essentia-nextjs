@@ -340,33 +340,38 @@ export default function NewSubscriptionPage() {
 
     setSubmitting(true);
 
-    const { error: insertError } = await insforge.database
-      .from("memberships")
-      .insert([
-        {
-          // Both the link and the copy: `contact_id` is the relationship, the
-          // rest is what the subscriptions list reads directly off this row.
-          contact_id: contact.id,
-          first_name: contact.first_name ?? "",
-          last_name: contact.last_name ?? "",
-          email: contact.email ?? null,
-          phone: contact.phone ?? null,
-          plan: form.plan,
-          status: form.status,
-          start_date: form.startDate || null,
-          end_date: form.endDate || null,
-          notes: form.notes.trim() || null,
-        },
-      ]);
+    // The reset lives in a `finally`: a rejected insert — a dropped
+    // connection, a 500 — skipped the line below and left the form disabled
+    // behind a spinner that never stopped.
+    try {
+      const { error: insertError } = await insforge.database
+        .from("memberships")
+        .insert([
+          {
+            // Both the link and the copy: `contact_id` is the relationship, the
+            // rest is what the subscriptions list reads directly off this row.
+            contact_id: contact.id,
+            first_name: contact.first_name ?? "",
+            last_name: contact.last_name ?? "",
+            email: contact.email ?? null,
+            phone: contact.phone ?? null,
+            plan: form.plan,
+            status: form.status,
+            start_date: form.startDate || null,
+            end_date: form.endDate || null,
+            notes: form.notes.trim() || null,
+          },
+        ]);
 
-    setSubmitting(false);
-
-    if (insertError) {
-      setError(
-        (insertError as { message?: string })?.message ??
-          t("errors.createFailed"),
-      );
-      return;
+      if (insertError) {
+        setError(
+          (insertError as { message?: string })?.message ??
+            t("errors.createFailed"),
+        );
+        return;
+      }
+    } finally {
+      setSubmitting(false);
     }
 
     notifySuccess(tToasts("subscriptionCreated"));

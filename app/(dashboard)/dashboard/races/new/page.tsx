@@ -80,31 +80,38 @@ export default function NewRacePage() {
 
     const dateTime = form.time ? `${form.date}T${form.time}:00` : form.date;
 
-    const { error: insertError } = await insforge.database
-      .from("races")
-      .insert([
-        {
-          title: trimmedTitle,
-          description: form.description.trim() || null,
-          date: dateTime,
-          location: form.location.trim() || null,
-          distance_km: form.distance ? parseFloat(form.distance) || null : null,
-          max_participants: form.maxParticipants
-            ? parseInt(form.maxParticipants) || null
-            : null,
-          access: form.access,
-          image_url: form.imageUrl || null,
-        },
-      ]);
+    // The reset lives in a `finally`: a rejected insert — a dropped
+    // connection, a 500 — skipped the line below and left the form disabled
+    // behind a spinner that never stopped.
+    try {
+      const { error: insertError } = await insforge.database
+        .from("races")
+        .insert([
+          {
+            title: trimmedTitle,
+            description: form.description.trim() || null,
+            date: dateTime,
+            location: form.location.trim() || null,
+            distance_km: form.distance
+              ? parseFloat(form.distance) || null
+              : null,
+            max_participants: form.maxParticipants
+              ? parseInt(form.maxParticipants) || null
+              : null,
+            access: form.access,
+            image_url: form.imageUrl || null,
+          },
+        ]);
 
-    setSubmitting(false);
-
-    if (insertError) {
-      setError(
-        (insertError as { message?: string })?.message ??
-          t("errors.createFailed"),
-      );
-      return;
+      if (insertError) {
+        setError(
+          (insertError as { message?: string })?.message ??
+            t("errors.createFailed"),
+        );
+        return;
+      }
+    } finally {
+      setSubmitting(false);
     }
 
     notifySuccess(tToasts("raceCreated"));

@@ -123,34 +123,38 @@ export default function BlogCategoriesPage() {
       slug_es: slugEs.trim() || null,
     };
 
-    if (editing) {
-      const { error: err } = await insforge.database
-        .from("blog_categories")
-        .update(payload)
-        .eq("id", editing.id);
-      setSaving(false);
-      if (err) {
-        setError(
-          (err as { message?: string }).message ?? t("errors.saveFailed"),
-        );
-        return;
+    // One `finally` for both branches: the reset used to sit on each success
+    // path, so a rejected save left the form disabled for good.
+    try {
+      if (editing) {
+        const { error: err } = await insforge.database
+          .from("blog_categories")
+          .update(payload)
+          .eq("id", editing.id);
+        if (err) {
+          setError(
+            (err as { message?: string }).message ?? t("errors.saveFailed"),
+          );
+          return;
+        }
+        cancelEdit();
+      } else {
+        const { error: err } = await insforge.database
+          .from("blog_categories")
+          .insert([payload]);
+        if (err) {
+          setError(
+            (err as { message?: string }).message ?? t("errors.createFailed"),
+          );
+          return;
+        }
+        setName("");
+        setSlug("");
+        setNameEs("");
+        setSlugEs("");
       }
-      cancelEdit();
-    } else {
-      const { error: err } = await insforge.database
-        .from("blog_categories")
-        .insert([payload]);
+    } finally {
       setSaving(false);
-      if (err) {
-        setError(
-          (err as { message?: string }).message ?? t("errors.createFailed"),
-        );
-        return;
-      }
-      setName("");
-      setSlug("");
-      setNameEs("");
-      setSlugEs("");
     }
 
     notifySuccess(tToasts("categorySaved"));
