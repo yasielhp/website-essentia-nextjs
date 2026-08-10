@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import type { BookableService } from "@/data/services-data";
+import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
 
 export function SuccessState({
   service,
@@ -18,8 +19,7 @@ export function SuccessState({
 }) {
   const t = useTranslations("booking.successState");
   const locale = useLocale();
-  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
-  const formattedDate = date.toLocaleDateString(dateLocale, {
+  const formattedDate = formatCalendarDay(date, locale as SupportedLocale, {
     weekday: "long",
     day: "numeric",
     month: "long",

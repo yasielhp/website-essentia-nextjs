@@ -9,6 +9,7 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
+import { formatLongDate } from "@/lib/format-date";
 
 export type BookingNotificationEvent =
   "received" | "confirmed" | "cancelled" | "rescheduled";
@@ -29,14 +30,6 @@ export type BookingNotificationPayload = {
   duration?: string | null;
   locale?: "en" | "es";
 };
-
-function formatDate(dateStr: string, locale: "en" | "es" = "en"): string {
-  const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString(
-    locale === "es" ? "es-ES" : "en-GB",
-    { weekday: "long", day: "numeric", month: "long", year: "numeric" },
-  );
-}
 
 /**
  * Resolves the recipient from the booking row rather than trusting the caller.
@@ -165,7 +158,7 @@ export async function notifyBooking(
   const clientEmail = recipient.email;
   const serviceId = recipient.serviceId ?? payload.serviceId;
 
-  const date = formatDate(payload.date, locale);
+  const date = formatLongDate(payload.date, locale);
   const time = payload.time;
 
   const dashboardUrl = getAppUrl();

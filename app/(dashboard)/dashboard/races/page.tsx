@@ -150,6 +150,8 @@ export default function RacesPage() {
   const { push } = useRouter();
 
   useEffect(() => {
+    let cancelled = false;
+
     async function run() {
       let query = insforge.database
         .from("races")
@@ -168,6 +170,8 @@ export default function RacesPage() {
         page * PAGE_SIZE + PAGE_SIZE - 1,
       );
 
+      if (cancelled) return;
+
       if (!racesData || (racesData as unknown[]).length === 0) {
         setState({ races: [], loading: false, total: count ?? 0 });
         return;
@@ -180,6 +184,8 @@ export default function RacesPage() {
         .from("race_registrations")
         .select("race_id")
         .in("race_id", ids);
+
+      if (cancelled) return;
 
       const countMap: Record<string, number> = {};
       if (regData) {
@@ -198,6 +204,10 @@ export default function RacesPage() {
       });
     }
     void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, appliedFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

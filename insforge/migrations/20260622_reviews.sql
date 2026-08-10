@@ -20,14 +20,25 @@ CREATE POLICY "public_read_published" ON reviews
 CREATE POLICY "auth_read_all" ON reviews
   FOR SELECT TO authenticated USING (true);
 
--- Authenticated users can create reviews (dashboard or server action with service key)
-CREATE POLICY "auth_insert" ON reviews
-  FOR INSERT TO authenticated WITH CHECK (true);
+-- Writes belong to the dashboard, which runs in the staff member's own browser
+-- with their token, so the policies are scoped to the same two roles as the
+-- rest of the dashboard tables.
+--
+-- The public "leave a review" form does not need a policy: `submitReview` is a
+-- Server Action using the service key, which bypasses RLS. These three policies
+-- shipped as unconditional `(true)`, which let any account that could log in —
+-- every member — write, restyle or delete the testimonials on the home page.
+-- Tightened on 2026-08-10 by
+-- `20260810b_tighten-contacts-and-reviews-writes.sql`.
+CREATE POLICY "staff_insert" ON reviews
+  FOR INSERT TO authenticated
+  WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'staff'));
 
--- Authenticated users can update reviews (e.g. change status, reorder)
-CREATE POLICY "auth_update" ON reviews
-  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "staff_update" ON reviews
+  FOR UPDATE TO authenticated
+  USING (public.get_user_role(auth.uid()) IN ('admin', 'staff'))
+  WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'staff'));
 
--- Authenticated users can delete reviews
-CREATE POLICY "auth_delete" ON reviews
-  FOR DELETE TO authenticated USING (true);
+CREATE POLICY "staff_delete" ON reviews
+  FOR DELETE TO authenticated
+  USING (public.get_user_role(auth.uid()) IN ('admin', 'staff'));

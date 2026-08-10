@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useReducer, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import {
   ChevronDown,
@@ -21,10 +21,13 @@ import { useDropdownPortal } from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { z } from "zod";
 import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
+import { formatCalendarDay } from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
 import {
@@ -602,7 +605,7 @@ function NewBookingPageInner() {
   const tToasts = useTranslations("dashboard.toasts");
   const tValidation = useTranslations("dashboard.validation");
   const tCommon = useTranslations("dashboard.common");
-  const locale = useLocale();
+  const locale = useDashboardLocale();
   const locationOptions = useLocationOptions();
   const servicePickerLabels = useServicePickerLabels();
   const tierPickerLabels = useTierPickerLabels();
@@ -742,6 +745,8 @@ function NewBookingPageInner() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       if (!serviceId) {
         dispatchAsync({ type: "TIERS_LOADED", payload: [] });
@@ -758,6 +763,9 @@ function NewBookingPageInner() {
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
+
+      if (cancelled) return;
+
       const rows = (data as Tier[] | null) ?? [];
       dispatchAsync({ type: "TIERS_LOADED", payload: rows });
       if (rows.length === 1 && rows[0]) {
@@ -765,6 +773,10 @@ function NewBookingPageInner() {
       }
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -955,6 +967,16 @@ function NewBookingPageInner() {
       }
     }
 
+    // The professional gets it on WhatsApp too: whoever took this booking at
+    // the desk is not going to walk down the corridor to say so.
+    if (staffId) {
+      await notifyStaffWhatsApp(getAccessToken(), {
+        bookingId,
+        staffId,
+        event: "assigned",
+      });
+    }
+
     // Create Google Calendar event (non-blocking, only for confirmed bookings)
     if (dateStr && selectedTime) {
       // Build location string for the event
@@ -1061,16 +1083,18 @@ function NewBookingPageInner() {
     }
     return base;
   })();
-  const datetimeLabel =
-    selectedDate && selectedTime
-      ? `${selectedDate.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })} · ${selectedTime}`
-      : selectedDate
-        ? selectedDate.toLocaleDateString(locale, {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-          })
-        : "";
+  const shortDayLabel = selectedDate
+    ? formatCalendarDay(selectedDate, locale, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    : "";
+  const datetimeLabel = !selectedDate
+    ? ""
+    : selectedTime
+      ? `${shortDayLabel} · ${selectedTime}`
+      : shortDayLabel;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -1522,12 +1546,13 @@ function NewBookingPageInner() {
                         <div className="flex flex-col gap-1">
                           <p className="text-petroleum-400 text-xs">Date</p>
                           <p className="text-petroleum-700 font-medium">
-                            {selectedDate?.toLocaleDateString("en-GB", {
-                              weekday: "long",
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })}
+                            {selectedDate &&
+                              formatCalendarDay(selectedDate, "en", {
+                                weekday: "long",
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
                           </p>
                         </div>
                         <ChevronDown

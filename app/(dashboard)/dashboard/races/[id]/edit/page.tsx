@@ -613,6 +613,8 @@ export default function EditRacePage() {
   const savingRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("races")
@@ -621,6 +623,8 @@ export default function EditRacePage() {
         )
         .eq("id", id)
         .limit(1);
+
+      if (cancelled) return;
 
       const row = (data as Race[] | null)?.[0];
       if (!row) {
@@ -648,6 +652,10 @@ export default function EditRacePage() {
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSave(e: React.FormEvent) {

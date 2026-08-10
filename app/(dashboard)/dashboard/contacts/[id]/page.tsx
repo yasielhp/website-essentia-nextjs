@@ -952,8 +952,11 @@ export default function ContactDetailPage() {
   const originalNewsletter = useRef<boolean>(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const result = await fetchContactDetail(getAccessToken(), id);
+      if (cancelled) return;
       if (!result.found) {
         dispatch({ type: "NOT_FOUND" });
         return;
@@ -977,6 +980,10 @@ export default function ContactDetailPage() {
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSave(e: React.FormEvent) {

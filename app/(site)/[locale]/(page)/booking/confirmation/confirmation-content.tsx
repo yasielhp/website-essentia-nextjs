@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatBookingDate, type SupportedLocale } from "@/utils/format";
 
 export function ConfirmationContent() {
   const t = useTranslations("booking.confirmation");
@@ -15,17 +16,10 @@ export function ConfirmationContent() {
   const time = searchParams.get("time") ?? "";
   const phone = searchParams.get("phone") ?? "";
 
-  // Parse only the date portion to avoid UTC↔local shift
+  // Only the date portion, so the day never shifts with the UTC offset.
   const dateIso = dateStr?.split("T")[0];
-  const date = dateIso ? new Date(`${dateIso}T12:00:00`) : null;
-  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
-  const formattedDate = date
-    ? date.toLocaleDateString(dateLocale, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+  const formattedDate = dateIso
+    ? formatBookingDate(dateIso, locale as SupportedLocale)
     : null;
 
   const hasDetails = service || formattedDate || time;

@@ -32,7 +32,11 @@ export function EventHoverCard({
   event: CalendarEvent;
   anchor: DOMRect;
 }) {
-  // Only ever mounted in response to a mouse event, so `document` is there.
+  // Mounted only in response to a mouse event, so in practice `window` is
+  // there — but the card measures the viewport while rendering, and a
+  // component that reads a browser global during render should say so itself
+  // rather than rely on where it happens to be used.
+  if (typeof window === "undefined") return null;
   if (!event.tooltip) return null;
 
   const [heading, ...rest] = event.tooltip.split("\n");

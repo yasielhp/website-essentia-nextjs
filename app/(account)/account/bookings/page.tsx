@@ -52,6 +52,8 @@ export default function AccountBookingsPage() {
       return;
     }
 
+    let cancelled = false;
+
     async function load() {
       if (!user) return;
 
@@ -61,11 +63,16 @@ export default function AccountBookingsPage() {
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
+      if (cancelled) return;
       setBookings((data as Booking[] | null) ?? []);
       setDataLoading(false);
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading, push]);
 
   if (authLoading) return null;

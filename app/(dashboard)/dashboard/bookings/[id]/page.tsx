@@ -2,17 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import Link from "next/link";
 import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
+import { fetchBookingWhatsAppMessages } from "@/actions/staff-whatsapp";
+import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
 import { Button } from "@/components/ui/button";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
+import {
+  TIME_ZONE,
+  formatBookingDate,
+  type SupportedLocale,
+} from "@/utils/format";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -61,23 +69,18 @@ function canPartnerEdit(date: string | null, time: string | null): boolean {
   return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
 }
 
-function formatDate(dateStr: string | null, locale: string): string {
+function formatDate(dateStr: string | null, locale: SupportedLocale): string {
   if (!dateStr) return "—";
-  const [y, m, d] = dateStr.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d).toLocaleDateString(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return formatBookingDate(dateStr, locale);
 }
 
-function formatCreated(iso: string | null, locale: string): string {
+function formatCreated(iso: string | null, locale: SupportedLocale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(locale, {
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -197,7 +200,7 @@ export default function BookingDetailPage() {
   const tPayment = useTranslations("dashboard.bookings.paymentStatus");
   const tLocations = useTranslations("dashboard.bookings.locations");
   const tSources = useTranslations("dashboard.bookings.sources");
-  const locale = useLocale();
+  const locale = useDashboardLocale();
   const { id } = useParams<{ id: string }>();
   const { push } = useRouter();
   const { role } = useRole();
@@ -211,6 +214,9 @@ export default function BookingDetailPage() {
   } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [whatsappMessages, setWhatsappMessages] = useState<
+    WhatsAppMessageRow[]
+  >([]);
 
   const fullNameForCrumb =
     state.kind === "loaded"
@@ -221,6 +227,8 @@ export default function BookingDetailPage() {
   useDynamicBreadcrumb(fullNameForCrumb);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("bookings")
@@ -229,6 +237,8 @@ export default function BookingDetailPage() {
         )
         .eq("id", id)
         .limit(1);
+
+      if (cancelled) return;
 
       const booking = (data as BookingDetail[] | null)?.[0];
       if (!booking) {
@@ -247,6 +257,7 @@ export default function BookingDetailPage() {
           .select("full_name, email, role")
           .eq("id", booking.created_by_user_id)
           .limit(1);
+        if (cancelled) return;
         creator = (pData as CreatorProfile[] | null)?.[0] ?? null;
       }
 
@@ -266,6 +277,7 @@ export default function BookingDetailPage() {
               }[]
             | null
         )?.[0];
+        if (cancelled) return;
         if (person) {
           setStaffPerson({
             name: person.full_name ?? person.first_name ?? "—",
@@ -278,6 +290,22 @@ export default function BookingDetailPage() {
       setState({ kind: "loaded", booking, creator });
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Read through a Server Action, not the browser client: the table holds
+  // staff phone numbers.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchBookingWhatsAppMessages(getAccessToken(), id).then((rows) => {
+      if (!cancelled) setWhatsappMessages(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleDelete() {
@@ -511,6 +539,68 @@ export default function BookingDetailPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* WhatsApp notifications sent to the professional */}
+        {whatsappMessages.length > 0 && (
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              {t("sections.whatsapp")}
+            </h2>
+
+            {/* Until the centre has a number, every row is a dry run — say so
+                rather than let staff read "not sent" as a failure. */}
+            {whatsappMessages.some((m) => m.status === "skipped") && (
+              <p className="text-petroleum-400 mb-4 text-xs">
+                {t("whatsapp.dryRunNotice")}
+              </p>
+            )}
+
+            <ul className="flex flex-col gap-4">
+              {whatsappMessages.map((message) => (
+                <li
+                  key={message.id}
+                  className="border-sand-200 flex flex-col gap-1 border-b pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-petroleum-700 text-sm font-medium">
+                      {t(`whatsapp.events.${message.event}`)}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        message.status === "sent"
+                          ? "bg-petroleum-700 text-sand-100"
+                          : message.status === "failed"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-sand-200 text-petroleum-500"
+                      }`}
+                    >
+                      {t(`whatsapp.statuses.${message.status}`)}
+                    </span>
+                    <span className="text-petroleum-400 text-xs">
+                      {message.toPhone} ·{" "}
+                      {new Date(message.createdAt).toLocaleString(
+                        locale === "es" ? "es-ES" : "en-GB",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: TIME_ZONE,
+                        },
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-petroleum-500 text-sm">
+                    {message.bodyPreview}
+                  </p>
+                  {message.error && (
+                    <p className="text-xs text-red-700">{message.error}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { MapPin, Route, Lock, Globe } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@components/ui/button";
 import { insforge } from "@/lib/insforge";
+import { TIME_ZONE } from "@/utils/format";
 import { IconRunner } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -31,6 +32,7 @@ function formatRaceDate(iso: string | null, locale: string): string {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 

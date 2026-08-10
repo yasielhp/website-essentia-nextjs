@@ -218,6 +218,8 @@ export default function EditUserPage() {
   const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("profiles")
@@ -227,6 +229,8 @@ export default function EditUserPage() {
         .eq("id", id)
         .in("role", ["admin", "staff", "partner"])
         .limit(1);
+
+      if (cancelled) return;
 
       const profile = (data as Profile[] | null)?.[0];
       if (!profile) {
@@ -240,6 +244,10 @@ export default function EditUserPage() {
       setScheduleLoaded(true);
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSave(e: React.FormEvent) {

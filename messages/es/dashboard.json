@@ -356,7 +356,8 @@
         "client": "Cliente",
         "notes": "Notas",
         "reservedBy": "Reservado por",
-        "staff": "Personal"
+        "staff": "Personal",
+        "whatsapp": "Avisos por WhatsApp"
       },
       "fields": {
         "date": "Fecha",
@@ -380,6 +381,21 @@
         "body": "Esta reserva se eliminará permanentemente.",
         "confirm": "Sí, eliminar",
         "deleting": "Eliminando…"
+      },
+      "whatsapp": {
+        "empty": "Sin avisos por WhatsApp para esta reserva.",
+        "dryRunNotice": "Modo de prueba: no hay número de WhatsApp configurado, así que estos mensajes se guardan pero no se envían.",
+        "events": {
+          "assigned": "Asignada",
+          "unassigned": "Retirada",
+          "rescheduled": "Cambio de hora",
+          "cancelled": "Cancelada"
+        },
+        "statuses": {
+          "sent": "Enviado",
+          "skipped": "Sin enviar",
+          "failed": "Fallido"
+        }
       }
     },
     "paymentStatus": {

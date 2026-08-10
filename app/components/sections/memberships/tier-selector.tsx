@@ -272,10 +272,13 @@ function TierSelectorInner() {
     const skipEntrance =
       hasTierParam.current || window.location.hash === "#tiers";
 
+    // Owned by the cleanup below: navigating away within the 80ms would
+    // otherwise scroll a page the visitor has already left.
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
     if (hasTierParam.current) {
       const el = document.getElementById("tiers");
       if (el) {
-        setTimeout(() => {
+        scrollTimer = setTimeout(() => {
           const top = el.getBoundingClientRect().top + window.scrollY;
           window.scrollTo({ top, behavior: "smooth" });
         }, 80);
@@ -355,6 +358,7 @@ function TierSelectorInner() {
     });
 
     return () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
       ctx.revert();
       window.removeEventListener("reveal-tiers", revealAll);
     };

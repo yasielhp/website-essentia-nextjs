@@ -25,6 +25,8 @@ export function TierStaffPicker({
   const [staff, setStaff] = useState<SelectOption<string>[] | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("profiles")
@@ -32,6 +34,8 @@ export function TierStaffPicker({
         // Admins run the dashboard; the people who perform treatments are staff.
         .eq("role", "staff")
         .order("full_name");
+
+      if (cancelled) return;
 
       setStaff(
         (
@@ -55,6 +59,10 @@ export function TierStaffPicker({
       );
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [t]);
 
   if (staff === null) {

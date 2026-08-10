@@ -3,6 +3,7 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { onlineDiscountPercent } from "@/lib/pricing";
 import { AuthError, requireRole } from "@/lib/auth-guard";
+import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -138,8 +139,10 @@ export async function confirmDraftBooking(
 ): Promise<void> {
   if (!bookingId) return;
 
-  await getAdminClient()
-    .database.from("bookings")
+  const db = getAdminClient().database;
+
+  await db
+    .from("bookings")
     .update({
       status: "pending",
       tier_id: tierId,
@@ -151,6 +154,20 @@ export async function confirmDraftBooking(
     })
     .eq("id", bookingId)
     .eq("status", "draft");
+
+  // Only now does the visitor's choice become a session someone has to be
+  // there for, and only now are the date and time settled — so this, and not
+  // the moment the professional was picked, is when the WhatsApp goes out.
+  const { data } = await db
+    .from("bookings")
+    .select("staff_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  const staffId = (data as { staff_id: string | null } | null)?.staff_id;
+  if (staffId) {
+    await notifyStaffOnWhatsApp({ bookingId, staffId, event: "assigned" });
+  }
 }
 
 /** Deletes a booking outright. Staff only. */

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { TIME_ZONE } from "@/utils/format";
 import {
   IconQr,
   IconPlus,
@@ -131,6 +132,7 @@ function formatDate(iso: string | null, locale: string): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -141,6 +143,7 @@ function formatDateTime(iso: string, locale: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -646,6 +649,8 @@ export default function RaceRegistrationsPage() {
   }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       dispatch({ type: "LOAD_START" });
 
@@ -655,6 +660,8 @@ export default function RaceRegistrationsPage() {
         .eq("id", id)
         .limit(1);
 
+      if (cancelled) return;
+
       const raceRow = (raceData as Race[] | null)?.[0];
       if (!raceRow) {
         dispatch({ type: "NOT_FOUND" });
@@ -663,10 +670,16 @@ export default function RaceRegistrationsPage() {
 
       await loadRegistrations();
 
+      if (cancelled) return;
+
       dispatch({ type: "LOAD_SUCCESS", race: raceRow });
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, loadRegistrations]);
 
   async function handleRemove(regId: string) {

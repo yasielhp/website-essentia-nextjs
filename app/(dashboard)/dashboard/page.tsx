@@ -143,6 +143,8 @@ export default function DashboardPage() {
 
   // Load all calendar events when view/anchor changes
   useEffect(() => {
+    let cancelled = false;
+
     async function loadCalendar() {
       const settings = loadColorSettings();
 
@@ -397,9 +399,14 @@ export default function DashboardPage() {
         });
       }
 
+      if (cancelled) return;
       setCalendar({ loading: false, events });
     }
     void loadCalendar();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     view,
     anchor,

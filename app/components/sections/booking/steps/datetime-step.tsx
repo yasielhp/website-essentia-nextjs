@@ -12,6 +12,7 @@ import {
   getLocalizedDayNames,
 } from "@/utils/calendar-helpers";
 import { fetchAvailability, type Availability } from "@/actions/availability";
+import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
 
 function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -242,7 +243,7 @@ export function DateTimeStep({
         <div className="flex flex-col gap-1">
           <p className="text-petroleum-400 text-xs">{t("date")}</p>
           <p className="text-petroleum-700 font-medium">
-            {selectedDate!.toLocaleDateString(dateLocale, {
+            {formatCalendarDay(selectedDate!, locale as SupportedLocale, {
               weekday: "long",
               day: "numeric",
               month: "long",

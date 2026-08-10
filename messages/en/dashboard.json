@@ -356,7 +356,8 @@
         "client": "Client",
         "notes": "Notes",
         "reservedBy": "Reserved by",
-        "staff": "Staff"
+        "staff": "Staff",
+        "whatsapp": "WhatsApp notifications"
       },
       "fields": {
         "date": "Date",
@@ -380,6 +381,21 @@
         "body": "This booking will be permanently deleted.",
         "confirm": "Yes, delete",
         "deleting": "Deleting…"
+      },
+      "whatsapp": {
+        "empty": "No WhatsApp notifications for this booking.",
+        "dryRunNotice": "Test mode: no WhatsApp number is configured, so these messages are recorded but not sent.",
+        "events": {
+          "assigned": "Assigned",
+          "unassigned": "Removed",
+          "rescheduled": "Time changed",
+          "cancelled": "Cancelled"
+        },
+        "statuses": {
+          "sent": "Sent",
+          "skipped": "Not sent",
+          "failed": "Failed"
+        }
       }
     },
     "paymentStatus": {

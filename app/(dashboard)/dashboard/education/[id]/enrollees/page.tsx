@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
+import { TIME_ZONE } from "@/utils/format";
 import {
   IconPlus,
   IconTrash,
@@ -124,6 +125,7 @@ function formatDate(iso: string, locale: string): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -134,6 +136,7 @@ function formatDateTime(iso: string, locale: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   });
 }
 
@@ -469,6 +472,8 @@ export default function EnrolleesPage() {
   }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       dispatch({ type: "LOAD_START" });
 
@@ -478,6 +483,8 @@ export default function EnrolleesPage() {
         .eq("id", id)
         .limit(1);
 
+      if (cancelled) return;
+
       const sessionRow = (sessionData as Session[] | null)?.[0];
       if (!sessionRow) {
         dispatch({ type: "NOT_FOUND" });
@@ -486,10 +493,16 @@ export default function EnrolleesPage() {
 
       await loadEnrollees();
 
+      if (cancelled) return;
+
       dispatch({ type: "LOAD_SUCCESS", session: sessionRow });
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, loadEnrollees]);
 
   async function handleRemove(enrolleeId: string) {

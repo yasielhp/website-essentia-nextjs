@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { marked } from "marked";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { renderMarkdown } from "@/lib/markdown";
 import { insforgePublic as db } from "@/lib/insforge-public";
 import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
@@ -179,7 +179,8 @@ export default async function BlogPostPage({
     ? (post.category?.name_es ?? post.category?.name)
     : post.category?.name;
 
-  const html = rawContent ? await marked(rawContent) : "";
+  // Sanitised, not just parsed: `marked` passes raw HTML in the source through.
+  const html = renderMarkdown(rawContent);
 
   const siteUrl = `https://${contact.domain}`;
   const canonicalSlug = isEs ? (post.slug_es ?? post.slug) : post.slug;

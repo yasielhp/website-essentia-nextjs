@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarX, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatBookingDate, type SupportedLocale } from "@/utils/format";
 import {
   fetchCancellableBooking,
   cancelBookingByToken,
@@ -59,12 +60,8 @@ export function CancelContent() {
     );
   }
 
-  const dateLocale = locale === "es" ? "es-ES" : "en-GB";
   const formattedDate = booking?.date
-    ? new Date(`${booking.date.slice(0, 10)}T12:00:00`).toLocaleDateString(
-        dateLocale,
-        { weekday: "long", day: "numeric", month: "long", year: "numeric" },
-      )
+    ? formatBookingDate(booking.date.slice(0, 10), locale as SupportedLocale)
     : null;
 
   const copy: Record<
