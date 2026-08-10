@@ -6,6 +6,7 @@ import { serviceFaqs } from "@/data/service-faqs";
 import { ServiceFaq } from "@components/sections/service-faq";
 import TreatmentSection from "@components/sections/wellness/treatment/treatment-section";
 import { treatments } from "@components/sections/wellness/treatment/data";
+import { JsonLd } from "@/components/json-ld";
 import {
   breadcrumbSchema,
   faqPageSchema,
@@ -58,39 +59,24 @@ export default async function IvTherapyPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbMedicine"), url: "/medicine" },
-              {
-                name: t("intravenous-therapy.breadcrumb"),
-                url: "/medicine/intravenous-therapy",
-              },
-            ]),
-          ),
-        }}
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: t("breadcrumbHome"), url: "/" },
+          { name: t("breadcrumbMedicine"), url: "/medicine" },
+          {
+            name: t("intravenous-therapy.breadcrumb"),
+            url: "/medicine/intravenous-therapy",
+          },
+        ])}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqPageSchema(faqs)),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            medicalTherapySchema({
-              name: service?.title ?? "intravenous-therapy",
-              description: service?.description ?? "",
-              url: "/medicine/intravenous-therapy",
-              category: "medicine",
-            }),
-          ),
-        }}
+      <JsonLd data={faqPageSchema(faqs)} />
+      <JsonLd
+        data={medicalTherapySchema({
+          name: service?.title ?? "intravenous-therapy",
+          description: service?.description ?? "",
+          url: "/medicine/intravenous-therapy",
+          category: "medicine",
+        })}
       />
       <TreatmentSection data={treatments["intravenous-therapy"]!} />
       <ServiceFaq faqs={faqs} serviceSlug="intravenous-therapy" />

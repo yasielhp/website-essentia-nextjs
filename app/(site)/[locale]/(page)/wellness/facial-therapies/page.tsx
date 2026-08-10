@@ -11,6 +11,7 @@ import {
   medicalTherapySchema,
 } from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
+import { JsonLd } from "@/components/json-ld";
 
 export async function generateMetadata({
   params,
@@ -56,39 +57,24 @@ export default async function FacialTherapiesPage({
   const service = bookableServices.find((s) => s.id === "facial-therapies");
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbWellness"), url: "/wellness" },
-              {
-                name: t("facial-therapies.breadcrumb"),
-                url: "/wellness/facial-therapies",
-              },
-            ]),
-          ),
-        }}
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: t("breadcrumbHome"), url: "/" },
+          { name: t("breadcrumbWellness"), url: "/wellness" },
+          {
+            name: t("facial-therapies.breadcrumb"),
+            url: "/wellness/facial-therapies",
+          },
+        ])}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqPageSchema(faqs)),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            medicalTherapySchema({
-              name: service?.title ?? "facial-therapies",
-              description: service?.description ?? "",
-              url: "/wellness/facial-therapies",
-              category: "wellness",
-            }),
-          ),
-        }}
+      <JsonLd data={faqPageSchema(faqs)} />
+      <JsonLd
+        data={medicalTherapySchema({
+          name: service?.title ?? "facial-therapies",
+          description: service?.description ?? "",
+          url: "/wellness/facial-therapies",
+          category: "wellness",
+        })}
       />
       <TreatmentSection data={treatments["facial-therapies"]} />
       <ServiceFaq faqs={faqs} serviceSlug="facial-therapies" />

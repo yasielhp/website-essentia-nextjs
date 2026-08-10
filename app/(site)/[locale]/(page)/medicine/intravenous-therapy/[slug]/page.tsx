@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ivProtocols } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
 import { breadcrumbSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
 
@@ -58,24 +59,19 @@ export default async function IvProtocolPage({ params }: Props) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbMedicine"), url: "/medicine" },
-              {
-                name: t("intravenous-therapy.breadcrumb"),
-                url: "/medicine/intravenous-therapy",
-              },
-              {
-                name: protocol.title,
-                url: `/medicine/intravenous-therapy/${protocol.id}`,
-              },
-            ]),
-          ),
-        }}
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: t("breadcrumbHome"), url: "/" },
+          { name: t("breadcrumbMedicine"), url: "/medicine" },
+          {
+            name: t("intravenous-therapy.breadcrumb"),
+            url: "/medicine/intravenous-therapy",
+          },
+          {
+            name: protocol.title,
+            url: `/medicine/intravenous-therapy/${protocol.id}`,
+          },
+        ])}
       />
       <ServiceDetailView
         service={protocol}

@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
 import { breadcrumbSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
 
@@ -62,24 +63,19 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbWellness"), url: "/wellness" },
-              {
-                name: t("manual-therapies.breadcrumb"),
-                url: "/wellness/manual-therapies",
-              },
-              {
-                name: service.title,
-                url: `/wellness/manual-therapies/${service.id}`,
-              },
-            ]),
-          ),
-        }}
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: t("breadcrumbHome"), url: "/" },
+          { name: t("breadcrumbWellness"), url: "/wellness" },
+          {
+            name: t("manual-therapies.breadcrumb"),
+            url: "/wellness/manual-therapies",
+          },
+          {
+            name: service.title,
+            url: `/wellness/manual-therapies/${service.id}`,
+          },
+        ])}
       />
       <ServiceDetailView
         service={service}

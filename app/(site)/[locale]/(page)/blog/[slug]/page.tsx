@@ -8,6 +8,7 @@ import { contact } from "@/constants/contact";
 import { breadcrumbSchema } from "@/lib/seo";
 import Newsletter from "@/components/sections/newsletter";
 import { getOgImage } from "@/constants/metadata";
+import { JsonLd } from "@/components/json-ld";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -213,21 +214,13 @@ export default async function BlogPostPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: t("breadcrumbHome"), url: "/" },
-              { name: t("breadcrumbBlog"), url: "/blog" },
-              { name: displayTitle, url: canonicalPath },
-            ]),
-          ),
-        }}
+      <JsonLd data={articleSchema} />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: t("breadcrumbHome"), url: "/" },
+          { name: t("breadcrumbBlog"), url: "/blog" },
+          { name: displayTitle, url: canonicalPath },
+        ])}
       />
       <article className="bg-sand-50 text-petroleum-700 px-4 pt-36 pb-20 sm:px-8 lg:pt-48">
         <div className="mx-auto max-w-3xl">

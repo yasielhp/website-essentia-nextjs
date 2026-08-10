@@ -8,6 +8,7 @@ import { contact, OPENING_HOURS } from "@/constants/contact";
 import { ConsentManager } from "@components/consent-manager";
 import { AuthProvider } from "@components/auth-provider";
 import { WebMcpTools } from "@components/webmcp-tools";
+import { JsonLd } from "@/components/json-ld";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
 
@@ -175,10 +176,7 @@ export default async function SiteLayout({ children, params }: Props) {
           title="LLMs.txt"
           href="/llms.txt"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
-        />
+        <JsonLd data={schemaOrg} />
       </head>
       <body className="antialiased">
         <AuthProvider>
