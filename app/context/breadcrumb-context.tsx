@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 
 type BreadcrumbContextValue = {
@@ -26,8 +26,14 @@ export function BreadcrumbProvider({
     return () => clearTimeout(id);
   }, [pathname]);
 
+  // `setDynamicLabel` is stable, so this changes only when the label does.
+  const value = useMemo(
+    () => ({ dynamicLabel, setDynamicLabel }),
+    [dynamicLabel],
+  );
+
   return (
-    <BreadcrumbContext.Provider value={{ dynamicLabel, setDynamicLabel }}>
+    <BreadcrumbContext.Provider value={value}>
       {children}
     </BreadcrumbContext.Provider>
   );

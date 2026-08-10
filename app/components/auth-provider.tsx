@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useEffect,
+  useState,
+  type ReactNode,
+  useMemo,
+  useCallback,
+} from "react";
 import { getSessionUser, signOut as signOutAction } from "@/actions/auth";
 import { getAccessToken } from "@/lib/client-session";
 
@@ -54,23 +62,29 @@ export function AuthProvider({
    * This half only reads. Keeping it free of `setUser` is what lets the effect
    * below decide, after the await, whether the answer is still wanted.
    */
-  const resolveSession = async ({
-    force = false,
-  }: { force?: boolean } = {}): Promise<User | null> => {
-    // Nobody signed in means nobody to look up: a visitor who never logged in
-    // costs no request at all.
-    if (!force && !getAccessToken()) return null;
+  const resolveSession = useCallback(
+    async ({
+      force = false,
+    }: { force?: boolean } = {}): Promise<User | null> => {
+      // Nobody signed in means nobody to look up: a visitor who never logged in
+      // costs no request at all.
+      if (!force && !getAccessToken()) return null;
 
-    const { user: sessionUser, role } = await getSessionUser();
-    if (!sessionUser) return null;
+      const { user: sessionUser, role } = await getSessionUser();
+      if (!sessionUser) return null;
 
-    return { ...sessionUser, role: role ?? undefined };
-  };
+      return { ...sessionUser, role: role ?? undefined };
+    },
+    [],
+  );
 
-  const hydrateAuth = async (options?: { force?: boolean }) => {
-    setUser(await resolveSession(options));
-    setLoading(false);
-  };
+  const hydrateAuth = useCallback(
+    async (options?: { force?: boolean }) => {
+      setUser(await resolveSession(options));
+      setLoading(false);
+    },
+    [resolveSession],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -89,27 +103,29 @@ export function AuthProvider({
     return () => {
       cancelled = true;
     };
-  }, [requireSession]);
+  }, [requireSession, resolveSession]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     // Clearing the session means clearing httpOnly cookies, which only the
     // server can do.
     await signOutAction();
     setUser(null);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        signOut,
-        refreshUser: () => hydrateAuth({ force: true }),
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Memoised: the object literal was new on every render, so every consumer
+  // of this context re-rendered whenever the provider did, whether or not the
+  // user had changed.
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      signOut,
+      refreshUser: () => hydrateAuth({ force: true }),
+    }),
+    [user, loading, signOut, hydrateAuth],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

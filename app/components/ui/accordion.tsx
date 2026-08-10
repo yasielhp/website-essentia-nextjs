@@ -8,6 +8,8 @@ import {
   useImperativeHandle,
   type Ref,
   type ReactNode,
+  useMemo,
+  useCallback,
 } from "react";
 
 import { IconChevronDown } from "@components/ui/icons";
@@ -109,23 +111,26 @@ function AccordionRoot({
   const group = use(AccordionGroupContext);
 
   const isOpen = group ? group.openId === id : localOpen;
-  const toggle = () => {
+  const toggle = useCallback(() => {
     if (group) {
       group.setOpenId(group.openId === id ? null : id);
     } else {
       setLocalOpen((v) => !v);
     }
-  };
+  }, [group, id]);
+
+  const value = useMemo(
+    () => ({
+      isOpen,
+      toggle,
+      triggerId: `${id}-trigger`,
+      panelId: `${id}-panel`,
+    }),
+    [isOpen, toggle, id],
+  );
 
   return (
-    <AccordionContext.Provider
-      value={{
-        isOpen,
-        toggle,
-        triggerId: `${id}-trigger`,
-        panelId: `${id}-panel`,
-      }}
-    >
+    <AccordionContext.Provider value={value}>
       <div className={`${className ?? ""}`}>{children}</div>
     </AccordionContext.Provider>
   );
@@ -150,8 +155,10 @@ function Group({
     close: () => setOpenId(null),
   }));
 
+  const groupValue = useMemo(() => ({ openId, setOpenId }), [openId]);
+
   return (
-    <AccordionGroupContext.Provider value={{ openId, setOpenId }}>
+    <AccordionGroupContext.Provider value={groupValue}>
       <div className={className}>{children}</div>
     </AccordionGroupContext.Provider>
   );

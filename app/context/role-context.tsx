@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { insforge } from "@/lib/insforge";
 import { useAuth } from "@/components/auth-provider";
 
@@ -62,11 +62,9 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, authLoading]);
 
-  return (
-    <RoleContext.Provider value={{ role, loading }}>
-      {children}
-    </RoleContext.Provider>
-  );
+  const value = useMemo(() => ({ role, loading }), [role, loading]);
+
+  return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }
 
 export function useRole(): RoleContextValue {
