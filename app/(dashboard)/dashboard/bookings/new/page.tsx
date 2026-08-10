@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useRef,
-  useReducer,
-  useCallback,
-  useMemo,
-  Suspense,
-} from "react";
-import { useDayFreeBusy } from "@/hooks/use-free-busy";
+import { useState, useEffect, useRef, useReducer, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
@@ -24,13 +15,11 @@ import { z } from "zod";
 import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
 import { Button } from "@/components/ui/button";
-import { formatCalendarDay, localDateStr } from "@/utils/format";
+import { formatCalendarDay } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { contact } from "@/constants/contact";
-import { getTimeSlotsForDashboard } from "@/utils/calendar-helpers";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
-import { fetchAvailability, type Availability } from "@/actions/availability";
 import { toStoredGender } from "@/constants/gender";
 import { CompletedRow } from "./completed-row";
 import { LocationStep } from "./location-step";
@@ -46,6 +35,7 @@ import {
 import { useLocationOptions } from "../_shared/location-options";
 import { ClientStep } from "./client-step";
 import { DateTimeStep } from "./datetime-step";
+import { useStaffAvailability } from "@/hooks/use-staff-availability";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -134,98 +124,20 @@ function NewBookingPageInner() {
   }, [tierId]);
 
   // freeBusy for time-slot availability.
-  const { busy: busyIntervals, loading: loadingSlots } = useDayFreeBusy(
+  const {
+    month: availabilityMonth,
+    onMonthChange: handleMonthChange,
+    openDates,
+    timeSlots,
+    loadingSlots,
+  } = useStaffAvailability({
     serviceId,
-    selectedDate,
-  );
-
-  /**
-   * What the chosen professional can actually take, month by month.
-   *
-   * The dashboard used to draw every future day and every hour of the day,
-   * filtered only by the service's Google calendar — so it offered slots on
-   * days the person does not work, and hours another of their sessions already
-   * had. This is the same answer the public site gets, asked for one person.
-   */
-  // The answer carries the question it answers, so a reply for the previous
-  // professional is simply an answer nobody asked for any more — and nothing
-  // has to be cleared from inside an effect to make that true.
-  const [availability, setAvailability] = useState<{
-    key: string;
-    data: Availability;
-  }>({ key: "", data: {} });
-  const [availabilityMonth, setAvailabilityMonth] = useState(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
-  });
-
-  const handleMonthChange = useCallback((year: number, month: number) => {
-    setAvailabilityMonth({ year, month });
-  }, []);
-
-  const availabilityKey =
-    tierId && staffId
-      ? `${tierId}|${staffId}|${availabilityMonth.year}-${availabilityMonth.month}`
-      : "";
-
-  useEffect(() => {
-    if (!availabilityKey) return;
-    let cancelled = false;
-    const { year, month } = availabilityMonth;
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const mm = String(month + 1).padStart(2, "0");
-
-    void fetchAvailability({
-      tierId,
-      staffId,
-      from: `${year}-${mm}-01`,
-      to: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`,
-      durationMinutes: selectedTier?.duration_minutes ?? 60,
-    }).then((result) => {
-      if (!cancelled) setAvailability({ key: availabilityKey, data: result });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    availabilityKey,
-    availabilityMonth,
+    serviceCategory: selectedService?.category,
     tierId,
     staffId,
-    selectedTier?.duration_minutes,
-  ]);
-
-  /** Only the answer to the question being asked; anything older is ignored. */
-  const currentAvailability = useMemo(
-    () => (availability.key === availabilityKey ? availability.data : {}),
-    [availability, availabilityKey],
-  );
-
-  const openDates = useMemo(
-    () =>
-      // One pass: a day with no free hour never becomes an entry to discard.
-      new Set(
-        Object.entries(currentAvailability).flatMap(([date, times]) =>
-          times.length > 0 ? [date] : [],
-        ),
-      ),
-    [currentAvailability],
-  );
-
-  const timeSlots = (() => {
-    if (!selectedDate) return [];
-    const all = getTimeSlotsForDashboard(
-      selectedDate,
-      selectedService?.category,
-      selectedTier?.duration_minutes ?? 60,
-      busyIntervals,
-    );
-    // Kept to the hours this person is free: the grid still marks what the
-    // service calendar has taken, and an hour they do not work never appears.
-    const free = new Set(currentAvailability[localDateStr(selectedDate)] ?? []);
-    return all.filter((slot) => free.has(slot.time));
-  })();
+    selectedDate,
+    durationMinutes: selectedTier?.duration_minutes ?? 60,
+  });
 
   const allowedLocations =
     role === "partner"
