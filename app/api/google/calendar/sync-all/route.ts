@@ -143,21 +143,26 @@ export async function POST(request: NextRequest) {
     skipped?: string;
   }[] = [];
 
-  // Sequential across calendars on purpose: a token refresh writes back to the
-  // row it came from, and two calendars belonging to the same account would
-  // otherwise race to store their own refreshed token.
-  for (const person of people) {
+  // Every calendar is somebody else's, so they are worked at the same time.
+  //
+  // The one thing that looked like a shared resource is not: refreshing a
+  // token asks Google for a new access token and leaves the refresh token
+  // alone, and Google keeps previously issued access tokens valid. Two rows
+  // that happen to belong to the same Google account can each refresh and each
+  // store its own, whatever order they finish in.
+  const personReports = people.map(async (person) => {
     const label = person.full_name ?? person.first_name ?? person.id;
+    const kind: "staff" | "admin" = person.role === "admin" ? "admin" : "staff";
+
     const accessToken = await getStaffAccessToken(person.id);
     if (!accessToken) {
-      report.push({
+      return {
         target: label,
-        kind: person.role === "admin" ? "admin" : "staff",
+        kind,
         synced: 0,
         failed: 0,
         skipped: "no valid token",
-      });
-      continue;
+      };
     }
 
     // An admin's calendar mirrors the whole centre; a member of staff's holds
@@ -165,7 +170,6 @@ export async function POST(request: NextRequest) {
     // narrows availability either — the booking flow reads staff schedules and
     // `staff_services` calendars, and an admin is in neither.
     const isAdmin = person.role === "admin";
-
     let pending: Booking[];
 
     if (isAdmin) {
@@ -209,24 +213,19 @@ export async function POST(request: NextRequest) {
       pending,
       isAdmin ? person.id : undefined,
     );
-    report.push({
-      target: label,
-      kind: person.role === "admin" ? "admin" : "staff",
-      ...result,
-    });
-  }
+    return { target: label, kind, ...result };
+  });
 
-  for (const service of services) {
+  const serviceReports = services.map(async (service) => {
     const accessToken = await getValidAccessToken(service.service_id);
     if (!accessToken) {
-      report.push({
+      return {
         target: service.service_id,
-        kind: "service",
+        kind: "service" as const,
         synced: 0,
         failed: 0,
         skipped: "no valid token",
-      });
-      continue;
+      };
     }
 
     const { data } = await db
@@ -242,8 +241,10 @@ export async function POST(request: NextRequest) {
       "primary",
       (data ?? []) as Booking[],
     );
-    report.push({ target: service.service_id, kind: "service", ...result });
-  }
+    return { target: service.service_id, kind: "service" as const, ...result };
+  });
+
+  report.push(...(await Promise.all([...personReports, ...serviceReports])));
 
   return NextResponse.json({
     ok: true,
