@@ -478,7 +478,9 @@ export default function ReviewDetailPage() {
                     onChange={(e) =>
                       dispatch({
                         type: "SET_ORDER",
-                        value: Number(e.target.value),
+                        // A cleared field is "" and reads back as 0, and a
+                        // half-typed one as NaN; both then went into the row.
+                        value: Number.parseInt(e.target.value, 10) || 1,
                       })
                     }
                     disabled={submitting}

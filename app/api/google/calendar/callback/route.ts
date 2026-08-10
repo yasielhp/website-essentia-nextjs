@@ -55,8 +55,13 @@ export async function GET(request: NextRequest) {
       "https://www.googleapis.com/oauth2/v2/userinfo",
       { headers: { Authorization: `Bearer ${tokens.access_token}` } },
     );
-    const userinfo = (await userinfoRes.json()) as { email?: string };
-    const connectedEmail = userinfo.email ?? null;
+    // `fetch` resolves on 4xx, and Google answers errors with a JSON body of
+    // its own. Reading it blind stored `null` as the connected address and the
+    // dashboard then showed the calendar as connected to nobody.
+    const userinfo = userinfoRes.ok
+      ? ((await userinfoRes.json()) as { email?: string })
+      : null;
+    const connectedEmail = userinfo?.email ?? null;
 
     const expiresAt = new Date(
       Date.now() + tokens.expires_in * 1000,

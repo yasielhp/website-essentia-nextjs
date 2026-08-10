@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useState, Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -103,15 +103,19 @@ function CalendarServiceRow({
   justConnectedServiceId: string | null;
 }) {
   const t = useTranslations("dashboard.account.calendar");
-  const [email, setEmail] = useState(svc.google_calendar_email);
+  // Derived from the prop rather than copied into state: a copy taken on the
+  // first render kept showing the old address after the parent refetched.
+  // `disconnected` records only what this row itself did.
+  const [disconnected, setDisconnected] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const email = disconnected ? null : svc.google_calendar_email;
 
   const justConnected = justConnectedServiceId === svc.service_id && !!email;
 
   async function handleDisconnect() {
     setDisconnecting(true);
     await disconnectStaffCalendar(staffId, svc.service_id);
-    setEmail(null);
+    setDisconnected(true);
     setDisconnecting(false);
   }
 
@@ -559,7 +563,11 @@ export default function DashboardAccountPage() {
 
           {/* Google Calendar — solo para staff */}
           {!loading && user && role === "staff" && (
-            <GoogleCalendarSection userId={user.id} />
+            <Suspense fallback={null}>
+              {/* The boundary is what keeps `useSearchParams` inside this
+                  section from opting the whole page out of prerendering. */}
+              <GoogleCalendarSection userId={user.id} />
+            </Suspense>
           )}
 
           {/* Security */}

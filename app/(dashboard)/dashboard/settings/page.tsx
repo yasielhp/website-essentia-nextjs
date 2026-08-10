@@ -29,9 +29,16 @@ export default function SettingsPage() {
   const router = useRouter();
   const [tab, setTab] = useState<SettingsTab>("bookings");
 
+  const allowed = role === "admin";
+
   useEffect(() => {
-    if (role && role !== "admin") router.replace("/dashboard");
-  }, [role, router]);
+    if (role && !allowed) router.replace("/dashboard");
+  }, [role, allowed, router]);
+
+  // Nothing until the role is known and it is the right one. Rendering first
+  // and redirecting afterwards showed a member of staff the whole settings
+  // screen — panels, plans and prices — for as long as the redirect took.
+  if (!allowed) return null;
 
   return (
     <div className="px-6 py-8 lg:px-10">

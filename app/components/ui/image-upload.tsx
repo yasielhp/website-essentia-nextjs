@@ -14,6 +14,12 @@ async function compressImage(
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
+    // A decode failure — a truncated upload, an unsupported format — used to
+    // leave the URL alive, and with it the whole File pinned in memory.
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read the image."));
+    };
     img.onload = () => {
       URL.revokeObjectURL(url);
       const scale = Math.min(1, maxPx / Math.max(img.width, img.height));

@@ -674,11 +674,13 @@ function NewBookingPageInner() {
         const r = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
         );
-        const json = (await r.json()) as {
-          busy?: { start: string; end: string }[];
-        };
+        // `fetch` resolves on 4xx/5xx, and the error body has no `busy`, so
+        // an outage silently read as "nothing is booked".
+        const json = r.ok
+          ? ((await r.json()) as { busy?: { start: string; end: string }[] })
+          : null;
         if (!cancelled) {
-          setBusyIntervals(json.busy ?? []);
+          setBusyIntervals(json?.busy ?? []);
           setLoadingSlots(false);
         }
       } catch {

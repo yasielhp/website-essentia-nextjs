@@ -1448,10 +1448,14 @@ export default function EditBookingPage() {
         const r = await fetch(
           `/api/google/calendar/freebusy?service_id=${serviceId}&date=${dateStr}`,
         );
-        const json = (await r.json()) as {
-          busy?: { start: string; end: string }[];
-        };
-        busy = json.busy ?? [];
+        // `fetch` resolves on 4xx/5xx, and the error body has no `busy`, so
+        // an outage silently read as "nothing is booked".
+        if (r.ok) {
+          const json = (await r.json()) as {
+            busy?: { start: string; end: string }[];
+          };
+          busy = json.busy ?? [];
+        }
       } catch {
         // fail-open
       }

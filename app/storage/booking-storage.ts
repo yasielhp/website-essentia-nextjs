@@ -2,6 +2,16 @@ import type { DetailsState } from "@/types";
 
 const STORAGE_KEY = "essentia_booking";
 
+/**
+ * Bumped whenever the shape below changes.
+ *
+ * A half-finished booking outlives a deploy. Without a version, a saved
+ * session written by the previous shape came back as the new type and the
+ * flow resumed on a step that no longer meant the same thing — so the visitor
+ * met a form filled with nothing, or with the wrong thing.
+ */
+const STORAGE_VERSION = 1;
+
 export type BookingStorage = {
   step: number;
   serviceId: string | null;
@@ -22,7 +32,11 @@ export type BookingStorage = {
 export function readStorage(): Partial<BookingStorage> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as BookingStorage) : {};
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as { version?: number } & BookingStorage;
+    // Written by an older shape: start clean rather than resume half of it.
+    if (parsed.version !== STORAGE_VERSION) return {};
+    return parsed;
   } catch {
     return {};
   }
@@ -30,7 +44,10 @@ export function readStorage(): Partial<BookingStorage> {
 
 export function writeStorage(data: BookingStorage) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...data, version: STORAGE_VERSION }),
+    );
   } catch {}
 }
 
