@@ -47,17 +47,22 @@ export function CancelContent() {
 
   async function handleCancel() {
     setWorking(true);
-    const result = await cancelBookingByToken(token, locale as "en" | "es");
-    setWorking(false);
-    setScreen(
-      result.ok
-        ? "done"
-        : result.reason === "too_late"
-          ? "late"
-          : result.reason === "already"
-            ? "already"
-            : "missing",
-    );
+    try {
+      const result = await cancelBookingByToken(token, locale as "en" | "es");
+      setScreen(
+        result.ok
+          ? "done"
+          : result.reason === "too_late"
+            ? "late"
+            : result.reason === "already"
+              ? "already"
+              : "missing",
+      );
+    } finally {
+      // Otherwise a failed call leaves the only button on the page disabled,
+      // on a screen someone reached from an email to cancel an appointment.
+      setWorking(false);
+    }
   }
 
   const formattedDate = booking?.date

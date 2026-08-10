@@ -346,16 +346,23 @@ export default function DashboardAccountPage() {
       return;
     }
     setPwLoading(true);
-    const { error } = await setUserPassword(getAccessToken(), user!.id, pwNew);
-    if (error) {
-      setPwError(error);
+    try {
+      const { error } = await setUserPassword(
+        getAccessToken(),
+        user!.id,
+        pwNew,
+      );
+      if (error) {
+        setPwError(error);
+        return;
+      }
+      setPwNew("");
+      setPwConfirm("");
+      setPwOk(true);
+    } finally {
+      // A thrown action used to leave the form disabled with no way back.
       setPwLoading(false);
-      return;
     }
-    setPwNew("");
-    setPwConfirm("");
-    setPwOk(true);
-    setPwLoading(false);
   }
 
   async function handleSave(e: React.FormEvent) {

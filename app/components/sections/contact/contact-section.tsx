@@ -77,24 +77,29 @@ export default function ContactSection() {
     setError(null);
     setLoading(true);
 
-    const result = await sendContactMessage({
-      firstName: String(data.get("firstName") ?? ""),
-      lastName: String(data.get("lastName") ?? ""),
-      email: String(data.get("email") ?? ""),
-      interest: String(data.get("interest") ?? ""),
-      message: String(data.get("message") ?? ""),
-    });
+    // In a `finally`: a Server Action that throws — a dropped connection
+    // mid-submit — used to leave the button spinning for good, and the only
+    // way out was reloading the page and typing everything again.
+    try {
+      const result = await sendContactMessage({
+        firstName: String(data.get("firstName") ?? ""),
+        lastName: String(data.get("lastName") ?? ""),
+        email: String(data.get("email") ?? ""),
+        interest: String(data.get("interest") ?? ""),
+        message: String(data.get("message") ?? ""),
+      });
 
-    setLoading(false);
+      if (!result.ok) {
+        setError(t("form.error"));
+        return;
+      }
 
-    if (!result.ok) {
-      setError(t("form.error"));
-      return;
+      form.reset();
+      setEmail("");
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
     }
-
-    form.reset();
-    setEmail("");
-    setSubmitted(true);
   };
 
   return (

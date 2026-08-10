@@ -315,16 +315,19 @@ export default function EditUserPage() {
       return;
     }
     setPwLoading(true);
-    const { error } = await setUserPassword(getAccessToken(), id, pwNew);
-    if (error) {
-      setPwError(error);
+    try {
+      const { error } = await setUserPassword(getAccessToken(), id, pwNew);
+      if (error) {
+        setPwError(error);
+        return;
+      }
+      setPwNew("");
+      setPwConfirm("");
+      setPwOk(true);
+    } finally {
+      // A thrown action used to leave the form disabled with no way back.
       setPwLoading(false);
-      return;
     }
-    setPwNew("");
-    setPwConfirm("");
-    setPwOk(true);
-    setPwLoading(false);
     notifySuccess(tToasts("passwordChanged"));
   }
 

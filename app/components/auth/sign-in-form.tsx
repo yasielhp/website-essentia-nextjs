@@ -41,9 +41,12 @@ export default function SignInForm() {
     // The session cookies are written by the server, which also reports the
     // role: the browser has no session of its own until the next page load, so
     // asking it here sent every partner to the wrong place.
-    const { user, role, error } = await signInWithPassword(email, password);
-
-    setLoading(false);
+    let user, role, error;
+    try {
+      ({ user, role, error } = await signInWithPassword(email, password));
+    } finally {
+      setLoading(false);
+    }
 
     if (error) {
       if (error.statusCode === 403) {
