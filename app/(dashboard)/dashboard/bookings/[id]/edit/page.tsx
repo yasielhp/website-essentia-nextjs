@@ -1653,7 +1653,7 @@ export default function EditBookingPage() {
       return;
     }
     // Same check the create screen and the public form apply.
-    if (!z.string().email().safeParse(email.trim()).success) {
+    if (!z.email().safeParse(email.trim()).success) {
       dispatchAsync({
         type: "SET_ERROR",
         payload: tValidation("emailInvalid"),

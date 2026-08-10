@@ -785,7 +785,7 @@ function NewBookingPageInner() {
      * — no @ — was accepted, saved, and could never be matched to a contact.
      * Same rule the public booking form uses.
      */
-    if (!z.string().email().safeParse(email.trim()).success) {
+    if (!z.email().safeParse(email.trim()).success) {
       dispatchAsync({
         type: "SET_ERROR",
         payload: tValidation("emailInvalid"),

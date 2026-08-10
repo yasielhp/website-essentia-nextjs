@@ -6,7 +6,7 @@ import { isValidPhone } from "@/utils/contact";
  * the screen resolves them against `common.validation` through `useTranslations`.
  */
 export const signInSchema = z.object({
-  email: z.string().email("emailInvalid"),
+  email: z.email("emailInvalid"),
   password: z.string().min(1, "passwordRequired"),
 });
 
@@ -33,7 +33,7 @@ export const contactMessageSchema = z.object({
 export const bookingDetailsSchema = z.object({
   firstName: z.string().min(1, "firstNameRequired"),
   lastName: z.string().min(1, "lastNameRequired"),
-  email: z.string().email("emailInvalid"),
+  email: z.email("emailInvalid"),
   phone: z.string().min(6, "phoneInvalid").refine(isValidPhone, "phoneInvalid"),
   consent: z.literal(true, { error: "consentRequired" }),
 });
@@ -82,7 +82,7 @@ export const dashboardContactSchema = z.object({
   email: z
     .string()
     .trim()
-    .refine((v) => v === "" || z.string().email().safeParse(v).success, {
+    .refine((v) => v === "" || z.email().safeParse(v).success, {
       message: "emailInvalid",
     }),
 });
@@ -104,7 +104,7 @@ export const newDashboardPersonSchema = z
     const isAccount = ["admin", "staff", "partner"].includes(value.role);
     if (!isAccount && value.email === "") return;
 
-    if (!z.string().email().safeParse(value.email).success) {
+    if (!z.email().safeParse(value.email).success) {
       ctx.addIssue({
         code: "custom",
         path: ["email"],

@@ -199,7 +199,7 @@ const handler = createMcpHandler(
             ),
           first_name: z.string().min(1).describe("Customer first name"),
           last_name: z.string().min(1).describe("Customer last name"),
-          email: z.string().email().describe("Customer email address"),
+          email: z.email().describe("Customer email address"),
           phone: z
             .string()
             .min(5)
