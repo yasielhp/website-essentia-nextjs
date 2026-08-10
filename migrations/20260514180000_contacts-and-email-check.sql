@@ -20,14 +20,24 @@ CREATE TABLE IF NOT EXISTS contacts (
 
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 
--- Anyone (anon + authenticated) can upsert a contact by email
-CREATE POLICY "anyone_insert_contacts" ON contacts
-  FOR INSERT TO anon, authenticated
-  WITH CHECK (true);
-
-CREATE POLICY "anyone_update_contacts" ON contacts
-  FOR UPDATE TO anon, authenticated
-  USING (true);
+-- Public lead capture (booking, race and course registration) never writes to
+-- this table directly: it calls `public.upsert_contact`, which is SECURITY
+-- DEFINER and therefore needs no policy of its own. So the only client that
+-- has to be allowed in is the dashboard, which runs in the staff member's own
+-- browser with their token.
+--
+-- This file originally shipped `anyone_insert_contacts` / `anyone_update_contacts`,
+-- both unconditional and both granted to `anon`, which let any visitor create
+-- rows at will and overwrite the name, email, phone, gender or status of every
+-- contact in the database. The UPDATE half was closed on 2026-08-04 by
+-- `20260804190000_restrict-contact-updates.sql`, which also documents the
+-- reasoning; the INSERT half was closed on 2026-08-10 by
+-- `insforge/migrations/20260810b_tighten-contacts-and-reviews-writes.sql`.
+-- Both are folded back in here so this file describes the schema that actually
+-- exists.
+CREATE POLICY "staff_insert_contacts" ON contacts
+  FOR INSERT TO authenticated
+  WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'staff'));
 
 -- Admin/staff can read all contacts
 CREATE POLICY "admin_read_contacts" ON contacts
