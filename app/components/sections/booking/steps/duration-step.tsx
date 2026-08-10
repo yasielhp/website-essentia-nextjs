@@ -97,6 +97,8 @@ export function DurationStep({
   });
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("service_tiers")
@@ -106,6 +108,9 @@ export function DurationStep({
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
+
+      if (cancelled) return;
+
       const rows = (data as Tier[] | null) ?? [];
       setTiers(rows);
       if (rows.length === 1 && rows[0]) {
@@ -137,6 +142,10 @@ export function DurationStep({
       }
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId, preselectedLabel]);
 
   if (tiers === null) {

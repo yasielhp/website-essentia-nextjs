@@ -226,6 +226,8 @@ export default function BookingDetailPage() {
   useDynamicBreadcrumb(fullNameForCrumb);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("bookings")
@@ -234,6 +236,8 @@ export default function BookingDetailPage() {
         )
         .eq("id", id)
         .limit(1);
+
+      if (cancelled) return;
 
       const booking = (data as BookingDetail[] | null)?.[0];
       if (!booking) {
@@ -252,6 +256,7 @@ export default function BookingDetailPage() {
           .select("full_name, email, role")
           .eq("id", booking.created_by_user_id)
           .limit(1);
+        if (cancelled) return;
         creator = (pData as CreatorProfile[] | null)?.[0] ?? null;
       }
 
@@ -271,6 +276,7 @@ export default function BookingDetailPage() {
               }[]
             | null
         )?.[0];
+        if (cancelled) return;
         if (person) {
           setStaffPerson({
             name: person.full_name ?? person.first_name ?? "—",
@@ -283,6 +289,10 @@ export default function BookingDetailPage() {
       setState({ kind: "loaded", booking, creator });
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Read through a Server Action, not the browser client: the table holds

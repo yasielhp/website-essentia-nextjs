@@ -743,6 +743,8 @@ function NewBookingPageInner() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       if (!serviceId) {
         dispatchAsync({ type: "TIERS_LOADED", payload: [] });
@@ -759,6 +761,9 @@ function NewBookingPageInner() {
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
+
+      if (cancelled) return;
+
       const rows = (data as Tier[] | null) ?? [];
       dispatchAsync({ type: "TIERS_LOADED", payload: rows });
       if (rows.length === 1 && rows[0]) {
@@ -766,6 +771,10 @@ function NewBookingPageInner() {
       }
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId]);
 
   async function handleSubmit(e: React.FormEvent) {

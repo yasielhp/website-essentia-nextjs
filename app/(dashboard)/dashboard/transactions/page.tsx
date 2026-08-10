@@ -528,6 +528,8 @@ export default function TransactionsPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const [bookingsRes, membersRes, racesRes, educationRes] =
         await Promise.all([
@@ -560,6 +562,8 @@ export default function TransactionsPage() {
             .order("created_at", { ascending: false })
             .limit(100),
         ]);
+
+      if (cancelled) return;
 
       const unified: UnifiedRow[] = [];
 
@@ -647,6 +651,10 @@ export default function TransactionsPage() {
       setLoading(false);
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [membershipLabel]);
 
   const filteredRows = useMemo(() => {

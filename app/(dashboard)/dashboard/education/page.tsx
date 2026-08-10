@@ -157,6 +157,8 @@ export default function EducationPage() {
   const { push } = useRouter();
 
   useEffect(() => {
+    let cancelled = false;
+
     async function run() {
       let query = insforge.database
         .from("education_sessions")
@@ -175,6 +177,8 @@ export default function EducationPage() {
         page * PAGE_SIZE + PAGE_SIZE - 1,
       );
 
+      if (cancelled) return;
+
       if (!rows || (rows as unknown[]).length === 0) {
         setState({ sessions: [], loading: false, total: count ?? 0 });
         return;
@@ -187,6 +191,8 @@ export default function EducationPage() {
         .from("education_registrations")
         .select("session_id")
         .in("session_id", ids);
+
+      if (cancelled) return;
 
       const countMap: Record<string, number> = {};
       if (regs) {
@@ -205,6 +211,10 @@ export default function EducationPage() {
       });
     }
     void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, appliedFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

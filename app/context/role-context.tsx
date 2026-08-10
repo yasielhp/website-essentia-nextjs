@@ -27,6 +27,9 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (authLoading) return;
+
+    let cancelled = false;
+
     void (async () => {
       if (!user) {
         localStorage.removeItem(STORAGE_KEY);
@@ -39,6 +42,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         .select("role")
         .eq("id", user.id)
         .single();
+
+      // A signed-out-then-in switch can leave two lookups in flight; the
+      // stale one must not put the previous person's role back in storage.
+      if (cancelled) return;
+
       const fetched = (data as { role: string } | null)?.role ?? null;
       if (fetched) {
         localStorage.setItem(STORAGE_KEY, fetched);
@@ -48,6 +56,10 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       setRole(fetched);
       setLoading(false);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading]);
 
   return (

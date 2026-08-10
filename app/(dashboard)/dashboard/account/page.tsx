@@ -182,11 +182,15 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
       : null;
 
   useEffect(() => {
+    let cancelled = false;
+
     void (async () => {
       const [configs, assignedServices] = await Promise.all([
         fetchStaffCalendarConfigs(userId),
         fetchStaffServices(userId),
       ]);
+
+      if (cancelled) return;
 
       const configMap = new Map(
         configs.map((c) => [c.service_id, c.google_calendar_email]),
@@ -201,6 +205,10 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
       );
       setLoadingCal(false);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   if (loadingCal) {
@@ -270,6 +278,8 @@ export default function DashboardAccountPage() {
   useEffect(() => {
     if (!user) return;
 
+    let cancelled = false;
+
     async function load() {
       if (!user) return;
       const { data } = await insforge.database
@@ -279,6 +289,8 @@ export default function DashboardAccountPage() {
         )
         .eq("id", user.id)
         .single();
+
+      if (cancelled) return;
 
       const profile = data as {
         first_name: string | null;
@@ -311,6 +323,10 @@ export default function DashboardAccountPage() {
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   async function handleChangePw(e: React.FormEvent) {

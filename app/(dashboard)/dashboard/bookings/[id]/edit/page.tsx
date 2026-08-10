@@ -1495,6 +1495,8 @@ export default function EditBookingPage() {
 
   // Load booking
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("bookings")
@@ -1523,6 +1525,8 @@ export default function EditBookingPage() {
           google_event_id: string | null;
         }> | null
       )?.[0];
+
+      if (cancelled) return;
 
       if (!b) {
         dispatchAsync({ type: "BOOKING_LOADED" });
@@ -1610,6 +1614,10 @@ export default function EditBookingPage() {
       dispatchAsync({ type: "BOOKING_LOADED" });
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Who can perform the chosen session type.
@@ -1629,6 +1637,8 @@ export default function EditBookingPage() {
 
   // Load tiers when service changes
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       if (!serviceId) {
         dispatchAsync({ type: "TIERS_LOADED", payload: [] });
@@ -1643,6 +1653,9 @@ export default function EditBookingPage() {
         .eq("service_id", serviceId)
         .eq("active", true)
         .order("sort_order");
+
+      if (cancelled) return;
+
       const rows = (data as Tier[] | null) ?? [];
       dispatchAsync({ type: "TIERS_LOADED", payload: rows });
 
@@ -1655,6 +1668,10 @@ export default function EditBookingPage() {
       }
     }
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [serviceId]);
 
   async function handleSubmit(e: React.FormEvent) {

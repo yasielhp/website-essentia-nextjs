@@ -605,6 +605,8 @@ export default function EditSessionPage() {
   const savingRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       const { data } = await insforge.database
         .from("education_sessions")
@@ -613,6 +615,8 @@ export default function EditSessionPage() {
         )
         .eq("id", id)
         .limit(1);
+
+      if (cancelled) return;
 
       const row = (data as Session[] | null)?.[0];
       if (!row) {
@@ -645,6 +649,10 @@ export default function EditSessionPage() {
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSave(e: React.FormEvent) {

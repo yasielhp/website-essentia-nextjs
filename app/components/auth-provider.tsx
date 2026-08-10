@@ -50,30 +50,45 @@ export function AuthProvider({
    *
    * `force` skips the access-token check: right after a sign-in the cookie is
    * there but this component may not have re-read it yet.
+   *
+   * This half only reads. Keeping it free of `setUser` is what lets the effect
+   * below decide, after the await, whether the answer is still wanted.
    */
-  const hydrateAuth = async ({ force = false }: { force?: boolean } = {}) => {
+  const resolveSession = async ({
+    force = false,
+  }: { force?: boolean } = {}): Promise<User | null> => {
     // Nobody signed in means nobody to look up: a visitor who never logged in
     // costs no request at all.
-    if (!force && !getAccessToken()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+    if (!force && !getAccessToken()) return null;
 
     const { user: sessionUser, role } = await getSessionUser();
-    if (!sessionUser) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+    if (!sessionUser) return null;
 
-    setUser({ ...sessionUser, role: role ?? undefined });
+    return { ...sessionUser, role: role ?? undefined };
+  };
+
+  const hydrateAuth = async (options?: { force?: boolean }) => {
+    setUser(await resolveSession(options));
     setLoading(false);
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void hydrateAuth({ force: requireSession });
+    let cancelled = false;
+
+    void (async () => {
+      const next = await resolveSession({ force: requireSession });
+
+      // `requireSession` can flip while `getSessionUser()` is still in flight.
+      // Without this the slower of the two answers would be the one that wins.
+      if (cancelled) return;
+
+      setUser(next);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [requireSession]);
 
   const signOut = async () => {

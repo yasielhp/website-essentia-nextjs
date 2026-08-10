@@ -221,6 +221,8 @@ export default function SubscriptionsPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
     dispatch({ type: "loading" });
     async function run() {
       let listQuery = insforge.database
@@ -247,6 +249,8 @@ export default function SubscriptionsPage() {
           : Promise.resolve(null),
       ]);
 
+      if (cancelled) return;
+
       dispatch({
         type: "loaded",
         subscriptions: (listRes.data as Subscription[] | null) ?? [],
@@ -258,6 +262,10 @@ export default function SubscriptionsPage() {
       });
     }
     void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, appliedFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

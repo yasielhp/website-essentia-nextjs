@@ -111,6 +111,8 @@ export default function AccountPage() {
       return;
     }
 
+    let cancelled = false;
+
     async function load() {
       if (!user) return;
 
@@ -150,6 +152,7 @@ export default function AccountPage() {
           .single(),
       ]);
 
+      if (cancelled) return;
       setDataState({
         counts: {
           bookings: (bookingsCountRes as { count: number | null }).count ?? 0,
@@ -165,6 +168,10 @@ export default function AccountPage() {
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading, push]);
 
   if (authLoading) return null;

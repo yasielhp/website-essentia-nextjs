@@ -191,18 +191,28 @@ export function TierModal({
   useEffect(() => {
     const tierId = modal.tier?.id;
     if (!tierId) return;
+
+    let cancelled = false;
+
     async function loadAssignments() {
       const { data } = await insforge.database
         .from("staff_tiers")
         .select("staff_id, sort_order")
         .eq("tier_id", tierId)
         .order("sort_order");
+
+      if (cancelled) return;
+
       setStaffIds(
         ((data ?? []) as { staff_id: string }[]).map((r) => r.staff_id),
       );
       setStaffLoaded(true);
     }
     void loadAssignments();
+
+    return () => {
+      cancelled = true;
+    };
   }, [modal.tier?.id]);
 
   // Colours already spoken for, so the clash is caught while picking rather
@@ -211,10 +221,16 @@ export function TierModal({
 
   useEffect(() => {
     const tierId = modal.tier?.id;
+
+    let cancelled = false;
+
     async function loadColors() {
       const { data } = await insforge.database
         .from("service_tiers")
         .select("id, label, color");
+
+      if (cancelled) return;
+
       const taken: Record<string, string> = {};
       for (const row of (data ?? []) as {
         id: string;
@@ -227,6 +243,10 @@ export function TierModal({
       setTakenColors(taken);
     }
     void loadColors();
+
+    return () => {
+      cancelled = true;
+    };
   }, [modal.tier?.id]);
 
   const colorClash = takenColors[form.color.toLowerCase()] ?? null;

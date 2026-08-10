@@ -469,6 +469,8 @@ export default function EnrolleesPage() {
   }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       dispatch({ type: "LOAD_START" });
 
@@ -478,6 +480,8 @@ export default function EnrolleesPage() {
         .eq("id", id)
         .limit(1);
 
+      if (cancelled) return;
+
       const sessionRow = (sessionData as Session[] | null)?.[0];
       if (!sessionRow) {
         dispatch({ type: "NOT_FOUND" });
@@ -486,10 +490,16 @@ export default function EnrolleesPage() {
 
       await loadEnrollees();
 
+      if (cancelled) return;
+
       dispatch({ type: "LOAD_SUCCESS", session: sessionRow });
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, loadEnrollees]);
 
   async function handleRemove(enrolleeId: string) {

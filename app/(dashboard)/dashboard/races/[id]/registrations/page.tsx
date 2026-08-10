@@ -646,6 +646,8 @@ export default function RaceRegistrationsPage() {
   }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       dispatch({ type: "LOAD_START" });
 
@@ -655,6 +657,8 @@ export default function RaceRegistrationsPage() {
         .eq("id", id)
         .limit(1);
 
+      if (cancelled) return;
+
       const raceRow = (raceData as Race[] | null)?.[0];
       if (!raceRow) {
         dispatch({ type: "NOT_FOUND" });
@@ -663,10 +667,16 @@ export default function RaceRegistrationsPage() {
 
       await loadRegistrations();
 
+      if (cancelled) return;
+
       dispatch({ type: "LOAD_SUCCESS", race: raceRow });
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, loadRegistrations]);
 
   async function handleRemove(regId: string) {
