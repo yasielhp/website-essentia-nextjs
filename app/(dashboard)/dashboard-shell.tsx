@@ -301,6 +301,34 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </ul>
           </nav>
 
+          {/* Settings sits with the account here too. It lived only in the
+              desktop sidebar, so on a phone an administrator had no way to
+              reach it at all — the link is outside `navLinks`, and the drawer
+              only ever rendered that list. */}
+          {role === "admin" && (
+            <div className="shrink-0 px-2 pb-1">
+              <Link
+                href="/dashboard/settings"
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                  isNavActive("/dashboard/settings")
+                    ? "bg-petroleum-700 text-white"
+                    : "text-petroleum-500 hover:bg-sand-50 hover:text-petroleum-700"
+                }`}
+              >
+                <span
+                  className={
+                    isNavActive("/dashboard/settings")
+                      ? "text-white"
+                      : "text-petroleum-400"
+                  }
+                >
+                  <IconSettings />
+                </span>
+                {t("nav.settings")}
+              </Link>
+            </div>
+          )}
+
           <div className="border-sand-200 shrink-0 border-t p-3">
             <UserMenu
               displayName={displayName}
