@@ -5,6 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { ServicePicker } from "@/components/ui/service-picker";
 import { TierPicker } from "@/components/ui/tier-picker";
 import { EmailInput } from "@/components/ui/email-input";
+import { StaffSelect } from "@/components/ui/staff-select";
+import type { TierStaff } from "@/actions/tier-staff";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { formatCalendarDay } from "@/utils/format";
 import {
@@ -89,6 +91,13 @@ export function ServiceSection({
 }: ServiceSectionProps) {
   const t = useTranslations("dashboard.bookings.form");
   const servicePickerLabels = useServicePickerLabels();
+  // Manual therapies first — it is the one most bookings are for — and the
+  // rest by name, so the list does not reshuffle as services are added.
+  const sorted = services.toSorted((a, b) => {
+    if (a.id === "manual-therapies") return -1;
+    if (b.id === "manual-therapies") return 1;
+    return a.title.localeCompare(b.title);
+  });
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
@@ -98,7 +107,7 @@ export function ServiceSection({
         <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
       ) : (
         <ServicePicker
-          options={services}
+          options={sorted}
           selected={selectedService}
           onSelect={onSelect}
           labels={servicePickerLabels}
@@ -110,7 +119,9 @@ export function ServiceSection({
 
 export type LocationSectionProps = {
   location: DashboardLocation | "";
-  allowedLocations: LocationOption[];
+  /** Who is filling the form in; a partner is offered fewer places. */
+  role: string | null;
+  locationOptions: LocationOption[];
   onLocationChange: (l: DashboardLocation) => void;
   roomNumber: string;
   reservationNumber: string;
@@ -123,7 +134,8 @@ export type LocationSectionProps = {
 
 export function LocationSection({
   location,
-  allowedLocations,
+  role,
+  locationOptions,
   onLocationChange,
   roomNumber,
   reservationNumber,
@@ -134,6 +146,14 @@ export function LocationSection({
   onAddressChange,
 }: LocationSectionProps) {
   const t = useTranslations("dashboard.bookings.form");
+  // A partner books into the centre or a hotel room; a home visit is not
+  // theirs to offer.
+  const allowed =
+    role === "partner"
+      ? locationOptions.filter(
+          (l) => l.id === "centro" || l.id === "habitacion",
+        )
+      : locationOptions;
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
@@ -143,7 +163,7 @@ export function LocationSection({
         <LocationSelect
           selected={location || null}
           onSelect={onLocationChange}
-          locations={allowedLocations}
+          locations={allowed}
         />
 
         {(location === "centro" || location === "habitacion") && (
@@ -569,6 +589,44 @@ export function ClientSection({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Who performs it, among those assigned to the chosen session type.
+ *
+ * Absent until there is a session type and somebody who can do it: a picker
+ * with nothing in it is a question with no answers.
+ */
+export function StaffSection({
+  staffId,
+  tierStaff,
+  onSelect,
+}: {
+  staffId: string;
+  tierStaff: TierStaff[];
+  onSelect: (id: string) => void;
+}) {
+  const t = useTranslations("dashboard.bookings.form");
+  const tCommon = useTranslations("dashboard.common");
+
+  return (
+    <div className="border-sand-200 rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+        {t("steps.staff")}
+      </h2>
+      <StaffSelect
+        options={tierStaff}
+        selected={staffId || null}
+        onSelect={(person) => onSelect(person.id)}
+        labels={{
+          fieldLabel: t("steps.staff"),
+          placeholder: t("staff.placeholder"),
+          modalTitle: t("steps.staff"),
+          close: tCommon("cancel"),
+        }}
+      />
     </div>
   );
 }
