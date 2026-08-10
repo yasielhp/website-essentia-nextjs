@@ -6,16 +6,8 @@ import { notifySuccess } from "@/lib/feedback";
 import { insforge } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
-import { IconTrash } from "@/components/ui/icons";
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  name_es: string | null;
-  slug_es: string | null;
-  created_at: string;
-};
+import { CategoryTable } from "./category-table";
+import type { Category } from "./types";
 
 function slugify(text: string): string {
   return text
@@ -368,89 +360,13 @@ export default function BlogCategoriesPage() {
         </div>
 
         {/* List */}
-        <div className="border-sand-200 rounded-2xl border bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-sand-200 border-b text-left">
-                  <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    {t("columns.name")}
-                  </th>
-                  <th className="text-petroleum-400 px-5 py-3.5 font-medium">
-                    {t("columns.slug")}
-                  </th>
-                  <th className="text-petroleum-400 w-20 px-5 py-3.5 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <tr key={i} className="border-sand-50 border-b">
-                      {[1, 2, 3, 4].map((j) => (
-                        <td key={j} className="px-5 py-4">
-                          <div className="bg-sand-100 h-4 animate-pulse rounded" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : categories.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="text-petroleum-400 px-6 py-8 text-center text-sm"
-                    >
-                      {t("empty")}
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((c) => (
-                    <tr
-                      key={c.id}
-                      className={[
-                        "border-sand-50 border-b",
-                        editing?.id === c.id ? "bg-sand-50" : "",
-                      ].join(" ")}
-                    >
-                      <td className="text-petroleum-700 px-5 py-3.5 font-medium">
-                        {c.name}
-                        {c.name_es && (
-                          <span className="text-petroleum-300 ml-1 font-normal">
-                            / {c.name_es}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-petroleum-400 px-5 py-3.5 font-mono text-xs">
-                        {c.slug}
-                        {c.slug_es && (
-                          <span className="text-petroleum-300 ml-1">
-                            / {c.slug_es}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="text-petroleum-300 hover:text-petroleum-600 text-xs transition-colors"
-                          >
-                            {t("edit")}
-                          </button>
-                          <button
-                            onClick={() => void handleDelete(c.id)}
-                            aria-label={`${t("delete")} — ${c.name}`}
-                            className="text-petroleum-300 transition-colors hover:text-red-500"
-                          >
-                            <IconTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CategoryTable
+          categories={categories}
+          loading={loading}
+          editingId={editing?.id ?? null}
+          onEdit={startEdit}
+          onDelete={(id) => void handleDelete(id)}
+        />
       </div>
     </div>
   );
