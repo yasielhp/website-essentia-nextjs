@@ -6,6 +6,7 @@ import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
+import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import { formatLongDate } from "@/lib/format-date";
 
 const SELECT =
@@ -130,6 +131,12 @@ export async function cancelBookingByToken(
       }),
     }).catch(() => {});
   }
+
+  // Off every calendar that had it. This path never touched them, so a client
+  // who cancelled from their own email left the appointment sitting on the
+  // professional's phone — the worst version, because nobody at the centre is
+  // told and the calendar still says someone is coming.
+  await removeBookingFromCalendars(booking.id);
 
   // The professional is the one left with a hole in the day, and they are not
   // watching the dashboard between clients.

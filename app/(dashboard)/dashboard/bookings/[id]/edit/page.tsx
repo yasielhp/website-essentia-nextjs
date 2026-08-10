@@ -45,6 +45,7 @@ import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 import { localDateStr } from "@/utils/format";
+import { syncBookingToCalendars } from "@/actions/calendar-propagate";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -1856,6 +1857,15 @@ export default function EditBookingPage() {
           event: "rescheduled",
         });
       }
+
+      // Every calendar that holds this booking, not just the service's. A move
+      // used to be corrected on one and left wrong on the professional's phone
+      // and on the administrator's mirror.
+      await syncBookingToCalendars(
+        getAccessToken(),
+        id,
+        status === "cancelled" ? "removed" : "updated",
+      );
 
       // Update original ref so re-saves don't re-send
       originalRef.current = {

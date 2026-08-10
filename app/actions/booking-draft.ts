@@ -4,6 +4,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { onlineDiscountPercent } from "@/lib/pricing";
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
+import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -209,6 +210,10 @@ export async function deleteBooking(
   }
 
   if (!bookingId) return { error: "Falta el identificador de la reserva." };
+
+  // Before the row goes: the event ids live on it and on its mirror rows, and
+  // once they are deleted there is nothing left to find the events by.
+  await removeBookingFromCalendars(bookingId);
 
   const { error } = await getAdminClient()
     .database.from("bookings")
