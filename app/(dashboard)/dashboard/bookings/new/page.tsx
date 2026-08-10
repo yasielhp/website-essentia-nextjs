@@ -13,10 +13,10 @@ import { useDayFreeBusy } from "@/hooks/use-free-busy";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
-import { ChevronDown, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 import { ServicePicker } from "@/components/ui/service-picker";
-import { TierPicker, type TierPickerOption } from "@/components/ui/tier-picker";
+import { TierPicker } from "@/components/ui/tier-picker";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
@@ -29,81 +29,31 @@ import { formatCalendarDay, localDateStr } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { contact } from "@/constants/contact";
-import {
-  MONTH_NAMES,
-  DAY_NAMES,
-  isAvailableDay,
-  isSameDay,
-  getCalendarDays,
-  getCalendarStartColumn,
-  getTimeSlotsForDashboard,
-} from "@/utils/calendar-helpers";
+import { getTimeSlotsForDashboard } from "@/utils/calendar-helpers";
 import { EmailInput } from "@/components/ui/email-input";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 import { fetchAvailability, type Availability } from "@/actions/availability";
-import {
-  GENDER_UNSPECIFIED,
-  toStoredGender,
-  type GenderValue,
-} from "@/constants/gender";
+import { toStoredGender } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { OptionSelect } from "@/components/ui/option-select";
 import { LANGUAGE_OPTIONS } from "@/constants/i18n";
+import { CalendarView } from "./calendar-view";
+import { CompletedRow } from "./completed-row";
 import {
-  EMPTY_ADDRESS,
+  asyncInitial,
+  asyncReducer,
+  formInitial,
+  formReducer,
+  resolvePrice,
+  toTierOption,
+  type Tier,
+} from "./form-state";
+import {
   LocationSelect,
   TENERIFE_MUNICIPALITIES,
   useLocationOptions,
-  type DashboardLocation,
-  type LocationAddress,
 } from "../_shared/location";
-
-// ─── Types ────────────────────────────────────────────────────
-
-type Service = {
-  id: string;
-  title: string;
-  image?: string;
-  description?: string;
-  category?: string;
-};
-
-type Tier = {
-  id: string;
-  label: string | null;
-  duration_minutes: number | null;
-  price_eur: number | null;
-  price_center_eur: number | null;
-  price_suite_eur: number | null;
-  image_url: string | null;
-  color: string | null;
-};
-
-function resolvePrice(
-  tier: Tier,
-  location: DashboardLocation | "",
-): number | null {
-  if (location === "habitacion") {
-    return tier.price_suite_eur ?? tier.price_center_eur ?? tier.price_eur;
-  }
-  return tier.price_center_eur ?? tier.price_eur;
-}
-
-/** The picker shows one price, so the location decides which rate that is. */
-function toTierOption(
-  tier: Tier,
-  location: DashboardLocation | "",
-): TierPickerOption {
-  return {
-    id: tier.id,
-    label: tier.label,
-    durationMinutes: tier.duration_minutes,
-    price: resolvePrice(tier, location),
-    imageUrl: tier.image_url,
-    color: tier.color,
-  };
-}
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -127,318 +77,6 @@ function useTierPickerLabels() {
     close: t("close"),
     standard: t("standard"),
   };
-}
-
-// ─── Calendar ─────────────────────────────────────────────────
-
-function CalendarView({
-  selected,
-  onSelect,
-  openDates,
-  viewYear,
-  viewMonth,
-  onMonthChange,
-}: {
-  selected: Date | null;
-  onSelect: (d: Date) => void;
-  /** Days the chosen professional can actually take, `YYYY-MM-DD`. */
-  openDates: Set<string>;
-  /**
-   * The month on show, owned by the page.
-   *
-   * It used to be local state here, announced upwards from an effect so the
-   * page could ask for that month's availability — which meant every arrow
-   * press rendered twice, once to move the calendar and once to tell the page
-   * it had moved. The page needs the month to fetch with, so the page holds
-   * it, and the arrows say what they did rather than an effect noticing.
-   */
-  viewYear: number;
-  viewMonth: number;
-  onMonthChange: (year: number, month: number) => void;
-}) {
-  const today = new Date();
-  const days = getCalendarDays(viewYear, viewMonth);
-  const startColumn = getCalendarStartColumn(viewYear, viewMonth);
-
-  const prevMonth = () => {
-    if (viewMonth === 0) onMonthChange(viewYear - 1, 11);
-    else onMonthChange(viewYear, viewMonth - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) onMonthChange(viewYear + 1, 0);
-    else onMonthChange(viewYear, viewMonth + 1);
-  };
-
-  const tCal = useTranslations("dashboard.common");
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={prevMonth}
-          aria-label={tCal("prevMonth")}
-          className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <p className="text-petroleum-700 text-sm font-semibold tracking-wide">
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </p>
-        <button
-          type="button"
-          onClick={nextMonth}
-          aria-label={tCal("nextMonth")}
-          className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7">
-        {DAY_NAMES.map((d) => (
-          <div
-            key={d}
-            className="text-petroleum-400 py-2 text-center text-xs font-semibold tracking-wide uppercase"
-          >
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((day, i) => {
-          // Open means both "not in the past" and "this person works then and
-          // has the hour free" — the same answer the public site gets.
-          const available =
-            isAvailableDay(day) && openDates.has(localDateStr(day));
-          const isSelected = selected ? isSameDay(day, selected) : false;
-          const isToday = isSameDay(day, today);
-          return (
-            <button
-              key={localDateStr(day)}
-              // The 1st sits in its own weekday column; the rest follow it.
-              style={i === 0 ? { gridColumnStart: startColumn } : undefined}
-              type="button"
-              disabled={!available}
-              onClick={() => available && onSelect(day)}
-              className={[
-                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-medium transition-colors",
-                isSelected
-                  ? "bg-petroleum-400 text-sand-50 shadow-sm"
-                  : available
-                    ? "text-petroleum-700 hover:bg-petroleum-100 border-petroleum-100 bg-petroleum-50 cursor-pointer border"
-                    : "text-sand-400 border-sand-200 cursor-not-allowed border opacity-40",
-              ].join(" ")}
-            >
-              {day.getDate()}
-              {isToday && !isSelected && (
-                <span className="bg-petroleum-400 mt-0.5 size-1 rounded-full" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Async state ──────────────────────────────────────────────
-
-type AsyncState = {
-  submitting: boolean;
-  error: string | null;
-  services: Service[];
-  servicesLoading: boolean;
-  tiers: Tier[];
-  tiersLoading: boolean;
-};
-
-type AsyncAction =
-  | { type: "SERVICES_LOADING" }
-  | { type: "SERVICES_LOADED"; payload: Service[] }
-  | { type: "TIERS_LOADING" }
-  | { type: "TIERS_LOADED"; payload: Tier[] }
-  | { type: "SUBMIT_START" }
-  | { type: "SUBMIT_END" }
-  | { type: "SET_ERROR"; payload: string | null };
-
-const asyncInitial: AsyncState = {
-  submitting: false,
-  error: null,
-  services: [],
-  servicesLoading: true,
-  tiers: [],
-  tiersLoading: false,
-};
-
-function asyncReducer(state: AsyncState, action: AsyncAction): AsyncState {
-  switch (action.type) {
-    case "SERVICES_LOADING":
-      return { ...state, servicesLoading: true };
-    case "SERVICES_LOADED":
-      return { ...state, services: action.payload, servicesLoading: false };
-    case "TIERS_LOADING":
-      return { ...state, tiersLoading: true };
-    case "TIERS_LOADED":
-      return { ...state, tiers: action.payload, tiersLoading: false };
-    case "SUBMIT_START":
-      return { ...state, submitting: true };
-    case "SUBMIT_END":
-      return { ...state, submitting: false };
-    case "SET_ERROR":
-      return { ...state, error: action.payload };
-    default:
-      return state;
-  }
-}
-
-// ─── Form state ───────────────────────────────────────────────
-
-type FormState = {
-  serviceId: string;
-  tierId: string;
-  location: DashboardLocation | "";
-  roomNumber: string;
-  reservationNumber: string;
-  notes: string;
-  address: LocationAddress;
-  selectedDate: Date | null;
-  selectedTime: string;
-  calendarView: "date" | "time";
-  firstName: string;
-  /** Stored on the contact, not the booking: it describes the person. */
-  gender: GenderValue;
-  /** Which language to write to this client in, theirs rather than ours. */
-  language: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  staffId: string;
-};
-
-type FormAction =
-  | { type: "SET_SERVICE"; id: string }
-  | { type: "SET_TIER"; id: string }
-  | { type: "SET_LOCATION"; value: DashboardLocation }
-  | { type: "SET_ROOM_NUMBER"; value: string }
-  | { type: "SET_RESERVATION_NUMBER"; value: string }
-  | { type: "SET_NOTES"; value: string }
-  | { type: "SET_ADDRESS"; value: LocationAddress }
-  | { type: "SET_DATE"; value: Date }
-  | { type: "SET_TIME"; value: string }
-  | { type: "SET_CALENDAR_VIEW"; value: "date" | "time" }
-  | {
-      type: "SET_FIELD";
-      field:
-        "firstName" | "lastName" | "email" | "phone" | "gender" | "language";
-      value: string;
-    }
-  | { type: "SET_STAFF"; value: string }
-  | { type: "RESET_TIERS" };
-
-const formInitial: FormState = {
-  serviceId: "",
-  tierId: "",
-  location: "",
-  roomNumber: "",
-  reservationNumber: "",
-  notes: "",
-  address: EMPTY_ADDRESS,
-  selectedDate: null,
-  selectedTime: "",
-  calendarView: "date",
-  firstName: "",
-  gender: GENDER_UNSPECIFIED,
-  language: "es",
-  lastName: "",
-  email: "",
-  phone: "",
-  staffId: "",
-};
-
-function formReducer(state: FormState, action: FormAction): FormState {
-  switch (action.type) {
-    case "SET_SERVICE":
-      return {
-        ...state,
-        serviceId: action.id,
-        tierId: "",
-        staffId: "",
-      };
-    case "SET_TIER":
-      // Assignments are per session type: whoever was picked may not perform
-      // the new one.
-      return { ...state, tierId: action.id, staffId: "" };
-    case "SET_LOCATION":
-      return {
-        ...state,
-        location: action.value,
-        roomNumber: "",
-        reservationNumber: "",
-        address: EMPTY_ADDRESS,
-      };
-    case "SET_ROOM_NUMBER":
-      return { ...state, roomNumber: action.value };
-    case "SET_RESERVATION_NUMBER":
-      return { ...state, reservationNumber: action.value };
-    case "SET_NOTES":
-      return { ...state, notes: action.value };
-    case "SET_ADDRESS":
-      return { ...state, address: action.value };
-    case "SET_DATE":
-      return {
-        ...state,
-        selectedDate: action.value,
-        selectedTime: "",
-        calendarView: "time",
-      };
-    case "SET_TIME":
-      return { ...state, selectedTime: action.value };
-    case "SET_CALENDAR_VIEW":
-      return { ...state, calendarView: action.value };
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "RESET_TIERS":
-      return { ...state, tierId: "" };
-    case "SET_STAFF":
-      return { ...state, staffId: action.value };
-    default:
-      return state;
-  }
-}
-
-// ─── Completed row ───────────────────────────────────────────
-
-function CompletedRow({
-  label,
-  value,
-  onEdit,
-}: {
-  label: string;
-  value: string;
-  onEdit: () => void;
-}) {
-  const t = useTranslations("dashboard.bookings.form");
-  return (
-    <div className="border-sand-200 flex items-center gap-4 rounded-2xl border bg-white px-5 py-4">
-      <div className="bg-sand-100 flex size-8 shrink-0 items-center justify-center rounded-lg">
-        <Check size={14} className="text-petroleum-500" />
-      </div>
-      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        <p className="text-petroleum-400 text-xs">{label}</p>
-        <p className="text-petroleum-700 truncate text-sm font-medium">
-          {value}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-petroleum-400 hover:text-petroleum-700 shrink-0 text-xs transition-colors"
-      >
-        {t("change")}
-      </button>
-    </div>
-  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────
