@@ -119,8 +119,11 @@ function ServiceDetails({ service }: DetailProps) {
                   : t(`${service.id}.description`)
                 )
                   .split(/\n{2,}/)
-                  .map((paragraph, i) => (
-                    <p key={i} className="text-petroleum-500 leading-relaxed">
+                  .map((paragraph) => (
+                    <p
+                      key={paragraph}
+                      className="text-petroleum-500 leading-relaxed"
+                    >
                       {paragraph}
                     </p>
                   ))}
@@ -129,16 +132,19 @@ function ServiceDetails({ service }: DetailProps) {
 
             {/* Highlights grid */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {(service.highlights ?? []).map((_, i) => (
-                <div key={i} className="bg-sand-100 rounded-2xl p-6">
-                  <h3 className="text-petroleum-700 font-medium">
-                    {t(`${service.id}.highlights.${i}.title`)}
-                  </h3>
-                  <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
-                    {t(`${service.id}.highlights.${i}.description`)}
-                  </p>
-                </div>
-              ))}
+              {(service.highlights ?? []).map((_, i) => {
+                // The position is the translation key, so the resolved title
+                // is what identifies the card across renders.
+                const title = t(`${service.id}.highlights.${i}.title`);
+                return (
+                  <div key={title} className="bg-sand-100 rounded-2xl p-6">
+                    <h3 className="text-petroleum-700 font-medium">{title}</h3>
+                    <p className="text-petroleum-500 mt-2 text-sm leading-relaxed">
+                      {t(`${service.id}.highlights.${i}.description`)}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

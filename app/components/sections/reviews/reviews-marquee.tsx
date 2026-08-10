@@ -127,7 +127,12 @@ function MarqueeRow({
   onSelect: (item: TestimonialItem) => void;
 }) {
   const [paused, setPaused] = useState(false);
-  const doubled = [...items, ...items];
+  // Doubled so the marquee can loop seamlessly, which means every review
+  // appears twice: the copy it comes from is part of what identifies it.
+  const doubled = [
+    ...items.map((t) => ({ t, key: `first-${t.name}` })),
+    ...items.map((t) => ({ t, key: `second-${t.name}` })),
+  ];
   const animName = direction === "left" ? "marquee-left" : "marquee-right";
 
   return (
@@ -144,8 +149,8 @@ function MarqueeRow({
           animationPlayState: paused ? "paused" : "running",
         }}
       >
-        {doubled.map((item, i) => (
-          <ReviewCard key={i} t={item} onClick={() => onSelect(item)} />
+        {doubled.map(({ t: item, key }) => (
+          <ReviewCard key={key} t={item} onClick={() => onSelect(item)} />
         ))}
       </div>
     </div>

@@ -23,35 +23,40 @@ export function ServiceFaq({
         </h2>
 
         <div className="divide-sand-200 divide-y">
-          {faqs.map((_, i) => (
-            <div key={i} className="py-5">
-              <button
-                type="button"
-                onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-start justify-between gap-4 text-left"
-                aria-expanded={open === i}
-              >
-                <h3 className="text-petroleum-700 text-base leading-snug font-medium">
-                  {t(`${serviceSlug}.${i}.question`)}
-                </h3>
-                <span
-                  className="text-petroleum-400 mt-0.5 shrink-0 text-lg leading-none transition-transform duration-200"
-                  style={{
-                    transform: open === i ? "rotate(45deg)" : "rotate(0deg)",
-                  }}
-                  aria-hidden
+          {faqs.map((_, i) => {
+            // The position is the translation key, so the resolved question is
+            // what identifies the row across renders.
+            const question = t(`${serviceSlug}.${i}.question`);
+            return (
+              <div key={question} className="py-5">
+                <button
+                  type="button"
+                  onClick={() => setOpen(open === i ? null : i)}
+                  className="flex w-full items-start justify-between gap-4 text-left"
+                  aria-expanded={open === i}
                 >
-                  +
-                </span>
-              </button>
+                  <h3 className="text-petroleum-700 text-base leading-snug font-medium">
+                    {question}
+                  </h3>
+                  <span
+                    className="text-petroleum-400 mt-0.5 shrink-0 text-lg leading-none transition-transform duration-200"
+                    style={{
+                      transform: open === i ? "rotate(45deg)" : "rotate(0deg)",
+                    }}
+                    aria-hidden
+                  >
+                    +
+                  </span>
+                </button>
 
-              {open === i && (
-                <p className="text-petroleum-500 mt-4 leading-relaxed">
-                  {t(`${serviceSlug}.${i}.answer`)}
-                </p>
-              )}
-            </div>
-          ))}
+                {open === i && (
+                  <p className="text-petroleum-500 mt-4 leading-relaxed">
+                    {t(`${serviceSlug}.${i}.answer`)}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import {
   isAvailableDay,
   isSameDay,
   getCalendarDays,
+  getCalendarStartColumn,
   getLocalizedMonthName,
   getLocalizedDayNames,
 } from "@/utils/calendar-helpers";
@@ -43,6 +44,7 @@ function CalendarView({
   const t = useTranslations("booking.datetimeStep");
   const today = new Date();
   const days = getCalendarDays(viewYear, viewMonth);
+  const startColumn = getCalendarStartColumn(viewYear, viewMonth);
   const monthName = getLocalizedMonthName(locale, viewYear, viewMonth);
   const dayNames = getLocalizedDayNames(locale);
 
@@ -86,15 +88,15 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          const cellKey = day ? localDateStr(day) : `empty-${i}`;
-          if (!day) return <div key={cellKey} />;
           const available =
             isAvailableDay(day) && openDates.has(localDateStr(day));
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
             <button
-              key={cellKey}
+              key={localDateStr(day)}
+              // The 1st sits in its own weekday column; the rest follow it.
+              style={i === 0 ? { gridColumnStart: startColumn } : undefined}
               disabled={!available}
               onClick={() => available && onSelect(day)}
               className={[

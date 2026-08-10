@@ -88,8 +88,11 @@ function StorySection() {
               {/* Split on blank lines: this one grew into three paragraphs. */}
               {t("p2")
                 .split(/\n{2,}/)
-                .map((paragraph, i) => (
-                  <p key={i} className="text-petroleum-500 leading-relaxed">
+                .map((paragraph) => (
+                  <p
+                    key={paragraph}
+                    className="text-petroleum-500 leading-relaxed"
+                  >
                     {paragraph}
                   </p>
                 ))}

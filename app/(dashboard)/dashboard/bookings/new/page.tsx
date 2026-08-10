@@ -36,6 +36,7 @@ import {
   isAvailableDay,
   isSameDay,
   getCalendarDays,
+  getCalendarStartColumn,
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
 import { EmailInput } from "@/components/ui/email-input";
@@ -325,6 +326,7 @@ function CalendarView({
   const [viewYear, setViewYear] = useState(() => today.getFullYear());
   const [viewMonth, setViewMonth] = useState(() => today.getMonth());
   const days = getCalendarDays(viewYear, viewMonth);
+  const startColumn = getCalendarStartColumn(viewYear, viewMonth);
 
   const prevMonth = () => {
     if (viewMonth === 0) {
@@ -377,14 +379,14 @@ function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
-          const cellKey = day ? day.toISOString().slice(0, 10) : `empty-${i}`;
-          if (!day) return <div key={cellKey} />;
           const available = isAvailableDay(day);
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
           return (
             <button
-              key={cellKey}
+              key={day.toISOString().slice(0, 10)}
+              // The 1st sits in its own weekday column; the rest follow it.
+              style={i === 0 ? { gridColumnStart: startColumn } : undefined}
               type="button"
               disabled={!available}
               onClick={() => available && onSelect(day)}

@@ -81,15 +81,25 @@ export function isSameDay(a: Date, b: Date) {
   );
 }
 
-export function getCalendarDays(year: number, month: number): (Date | null)[] {
-  const firstDow = new Date(year, month, 1).getDay();
-  const offset = firstDow === 0 ? 6 : firstDow - 1;
+export function getCalendarDays(year: number, month: number): Date[] {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days: (Date | null)[] = [];
-  for (let i = 0; i < offset; i++) days.push(null);
+  const days: Date[] = [];
   for (let d = 1; d <= daysInMonth; d++) days.push(new Date(year, month, d));
-  while (days.length % 7 !== 0) days.push(null);
   return days;
+}
+
+/**
+ * Which of the seven columns the 1st of the month falls in, Monday first.
+ *
+ * The month used to be padded with `null`s so the first day landed in the right
+ * place. Those blanks were rendered as empty cells with nothing to key them by
+ * but their position, and a key that is a position is the one thing React
+ * cannot use when a list changes. CSS can start the grid wherever it likes, so
+ * the blanks are gone and the days are the only cells left.
+ */
+export function getCalendarStartColumn(year: number, month: number): number {
+  const firstDow = new Date(year, month, 1).getDay();
+  return (firstDow === 0 ? 6 : firstDow - 1) + 1;
 }
 
 const OPENING_MINUTES = 8 * 60; // 08:00 — first bookable slot
