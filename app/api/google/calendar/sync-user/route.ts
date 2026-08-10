@@ -6,17 +6,30 @@ import {
 } from "@/lib/google-calendar";
 import { requireApiRole, toAuthErrorResponse } from "@/lib/auth-guard";
 import { addMinutesToTime, parseDurationMinutes } from "@/utils/format";
+import {
+  bookingDescription,
+  bookingLocation,
+  bookingSummary,
+  CALENDAR_BOOKING_FIELDS,
+  type CalendarBooking,
+} from "@/lib/calendar-event";
 
 const TIMEZONE = "Atlantic/Canary";
 
-type Booking = {
-  id: string;
-  service_title: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  date: string | null;
-  time: string | null;
-  duration: string | null;
+/** Flattens the joined tier so the description can read one object. */
+function withTier(booking: Booking): CalendarBooking {
+  const tier = Array.isArray(booking.service_tiers)
+    ? booking.service_tiers[0]
+    : booking.service_tiers;
+  return { ...booking, tier_label: tier?.label ?? null };
+}
+
+/** The row the calendar description reads, plus the tier it joins. */
+type TierJoin = { label: string | null };
+
+type Booking = CalendarBooking & {
+  // The SDK types a join as an array; a single row still arrives as one.
+  service_tiers?: TierJoin | TierJoin[] | null;
 };
 
 /**
@@ -87,9 +100,7 @@ export async function POST(request: NextRequest) {
       const [all, mirrored] = await Promise.all([
         db
           .from("bookings")
-          .select(
-            "id, service_title, first_name, last_name, date, time, duration",
-          )
+          .select(CALENDAR_BOOKING_FIELDS)
           .in("status", ["confirmed", "paid"])
           .gte("date", today),
         db
@@ -110,9 +121,7 @@ export async function POST(request: NextRequest) {
     } else {
       const result = await db
         .from("bookings")
-        .select(
-          "id, service_title, first_name, last_name, date, time, duration",
-        )
+        .select(CALENDAR_BOOKING_FIELDS)
         .eq("staff_id", staffId)
         .in("status", ["confirmed", "paid"])
         .gte("date", today)
@@ -140,14 +149,14 @@ export async function POST(request: NextRequest) {
         if (!booking.date || !booking.time) return false;
 
         const durationMinutes = parseDurationMinutes(booking.duration);
-        const clientName =
-          [booking.first_name, booking.last_name].filter(Boolean).join(" ") ||
-          "Client";
-        const summary = `${booking.service_title ?? "Essentia"} — ${clientName}`;
 
         try {
           const eventId = await createCalendarEvent(accessToken, "primary", {
-            summary,
+            summary: bookingSummary(withTier(booking)),
+            description: bookingDescription(withTier(booking)),
+            ...(bookingLocation(withTier(booking))
+              ? { location: bookingLocation(withTier(booking))! }
+              : {}),
             start: {
               dateTime: `${booking.date}T${booking.time}:00`,
               timeZone: TIMEZONE,
