@@ -520,8 +520,8 @@ export default function EnrolleesPage() {
   async function openAdd() {
     dispatch({ type: "CONTACTS_LOADING" });
 
-    const registeredContactIds = enrollees.flatMap((e) =>
-      e.contact_id ? [e.contact_id] : [],
+    const registeredContactIds = new Set(
+      enrollees.flatMap((e) => (e.contact_id ? [e.contact_id] : [])),
     );
 
     const { data } = await insforge.database
@@ -543,7 +543,7 @@ export default function EnrolleesPage() {
     dispatch({
       type: "OPEN_ADD",
       contacts: all.flatMap((c) =>
-        registeredContactIds.includes(c.id)
+        registeredContactIds.has(c.id)
           ? []
           : [
               {
@@ -572,7 +572,7 @@ export default function EnrolleesPage() {
     return (
       c.full_name.toLowerCase().includes(q) ||
       (c.email ?? "").toLowerCase().includes(q) ||
-      (c.phone ?? "").includes(q)
+      String(c.phone ?? "").includes(q)
     );
   });
 

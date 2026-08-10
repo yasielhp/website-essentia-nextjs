@@ -42,8 +42,12 @@ export function MultiOptionSelect<T extends string>({
 
   const searchable = options.length >= searchableFrom;
 
+  // One pass to build, constant-time to ask. The list below asks once per
+  // option on every render, and the array scan made that quadratic.
+  const selectedSet = useMemo(() => new Set(value), [value]);
+
   const selectedLabels = options
-    .filter((o) => value.includes(o.value))
+    .filter((o) => selectedSet.has(o.value))
     .map((o) => o.label);
 
   const visible = useMemo(() => {
@@ -79,7 +83,7 @@ export function MultiOptionSelect<T extends string>({
 
   function toggle(option: T) {
     onChange(
-      value.includes(option)
+      selectedSet.has(option)
         ? value.filter((v) => v !== option)
         : [...value, option],
     );
@@ -145,7 +149,7 @@ export function MultiOptionSelect<T extends string>({
             </li>
           )}
           {visible.map((option) => {
-            const isSelected = value.includes(option.value);
+            const isSelected = selectedSet.has(option.value);
             return (
               <li key={option.value}>
                 <button

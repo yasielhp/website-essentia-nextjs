@@ -694,8 +694,8 @@ export default function RaceRegistrationsPage() {
   async function openAdd() {
     dispatch({ type: "CONTACTS_LOADING" });
 
-    const registeredContactIds = registrations.flatMap((r) =>
-      r.contact_id ? [r.contact_id] : [],
+    const registeredContactIds = new Set(
+      registrations.flatMap((r) => (r.contact_id ? [r.contact_id] : [])),
     );
 
     const { data } = await insforge.database
@@ -717,7 +717,7 @@ export default function RaceRegistrationsPage() {
     dispatch({
       type: "OPEN_ADD",
       contacts: all.flatMap((c) =>
-        registeredContactIds.includes(c.id)
+        registeredContactIds.has(c.id)
           ? []
           : [
               {
@@ -746,7 +746,7 @@ export default function RaceRegistrationsPage() {
     return (
       c.full_name.toLowerCase().includes(q) ||
       (c.email ?? "").toLowerCase().includes(q) ||
-      (c.phone ?? "").includes(q)
+      String(c.phone ?? "").includes(q)
     );
   });
 
