@@ -33,7 +33,7 @@ function TierTabs({
           key={id}
           onClick={() => onChange(id)}
           className={[
-            "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
+            "rounded-full px-5 py-2 text-sm font-medium transition-[color,background-color,box-shadow] duration-200",
             selected === id
               ? "bg-petroleum-700 text-sand-50 shadow-sm"
               : "text-petroleum-500 hover:text-petroleum-700",

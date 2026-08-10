@@ -77,7 +77,7 @@ function TierItems({
           key={option.id}
           type="button"
           onClick={() => onSelect(option)}
-          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-150 active:scale-[0.98]"
+          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
         >
           <TierThumbnail
             imageUrl={option.imageUrl}
@@ -186,7 +186,7 @@ export function TierPicker({
         type="button"
         onClick={() => setIsOpen((o) => !o)}
         className={[
-          "bg-sand-50 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-200",
+          "bg-sand-50 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors duration-200",
           isOpen
             ? "border-petroleum-400 ring-petroleum-100 ring-2"
             : "border-sand-300 hover:border-petroleum-400",

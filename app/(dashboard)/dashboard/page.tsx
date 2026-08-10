@@ -486,7 +486,7 @@ export default function DashboardPage() {
                 <button
                   key={v}
                   onClick={() => dispatchCalNav({ type: "set-view", view: v })}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
+                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-[color,background-color,box-shadow] sm:flex-none ${
                     view === v
                       ? "text-petroleum-700 bg-white shadow-sm"
                       : "text-petroleum-400 hover:text-petroleum-700"

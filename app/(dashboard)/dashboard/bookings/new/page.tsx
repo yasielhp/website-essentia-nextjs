@@ -232,7 +232,7 @@ function LocationSelect({
         type="button"
         onClick={() => !single && setIsOpen((o) => !o)}
         className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors duration-200",
           single
             ? "border-sand-300 cursor-default"
             : isOpen
@@ -288,7 +288,7 @@ function LocationSelect({
                     onSelect(id);
                     setIsOpen(false);
                   }}
-                  className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
+                  className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
                 >
                   <div className="bg-sand-200 flex size-12 shrink-0 items-center justify-center rounded-lg">
                     <Icon size={20} className="text-petroleum-500" />
@@ -389,7 +389,7 @@ function CalendarView({
               disabled={!available}
               onClick={() => available && onSelect(day)}
               className={[
-                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-medium transition-all",
+                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-medium transition-colors",
                 isSelected
                   ? "bg-petroleum-400 text-sand-50 shadow-sm"
                   : available
@@ -1546,7 +1546,7 @@ function NewBookingPageInner() {
                             value: "date",
                           })
                         }
-                        className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200"
+                        className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200"
                       >
                         <div className="flex flex-col gap-1">
                           <p className="text-petroleum-400 text-xs">Date</p>
@@ -1594,7 +1594,7 @@ function NewBookingPageInner() {
                                   setEditingStep(null);
                                 }}
                                 className={[
-                                  "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                                  "rounded-xl border py-2.5 text-sm font-medium transition-colors",
                                   selectedTime === time
                                     ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
                                     : booked

@@ -46,7 +46,7 @@ const sizeClasses: Record<Size, string> = {
 };
 
 const baseClasses =
-  "inline-flex items-center justify-center rounded-full font-medium font-body transition-all duration-200 ease-in-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petroleum-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap shrink-0";
+  "inline-flex items-center justify-center rounded-full font-medium font-body transition-[color,background-color,border-color,box-shadow,opacity] duration-200 ease-in-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petroleum-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap shrink-0";
 
 function buildClassName(variant: Variant, size: Size, className?: string) {
   return [baseClasses, variantClasses[variant], sizeClasses[size], className]

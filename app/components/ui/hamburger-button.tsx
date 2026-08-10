@@ -19,7 +19,7 @@ export function HamburgerButton({
       className={`border-petroleum-500 relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border bg-transparent ${className ?? ""}`}
     >
       <span
-        className="bg-petroleum-500 absolute h-px w-4 transition-all duration-300 ease-in-out"
+        className="bg-petroleum-500 absolute h-px w-4 transition-[transform,opacity,scale] duration-300 ease-in-out"
         style={{
           transform: setOpenMobileMenu
             ? "translateY(0) rotate(45deg)"
@@ -27,14 +27,14 @@ export function HamburgerButton({
         }}
       />
       <span
-        className="bg-petroleum-500 absolute h-px w-4 transition-all duration-300 ease-in-out"
+        className="bg-petroleum-500 absolute h-px w-4 transition-[transform,opacity,scale] duration-300 ease-in-out"
         style={{
           opacity: setOpenMobileMenu ? 0 : 1,
           scale: setOpenMobileMenu ? "0.5" : "1",
         }}
       />
       <span
-        className="bg-petroleum-500 absolute h-px w-4 transition-all duration-300 ease-in-out"
+        className="bg-petroleum-500 absolute h-px w-4 transition-[transform,opacity,scale] duration-300 ease-in-out"
         style={{
           transform: setOpenMobileMenu
             ? "translateY(0) rotate(-45deg)"

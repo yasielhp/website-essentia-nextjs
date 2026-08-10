@@ -221,7 +221,7 @@ export default function ComparisonSection() {
                       key={id}
                       onClick={() => setComparisonTier(id)}
                       className={[
-                        "flex-1 rounded-full py-2 text-sm font-medium transition-all duration-200",
+                        "flex-1 rounded-full py-2 text-sm font-medium transition-[color,background-color,box-shadow] duration-200",
                         comparisonTier === id
                           ? "bg-petroleum-700 text-sand-50 shadow-sm"
                           : "text-petroleum-500",

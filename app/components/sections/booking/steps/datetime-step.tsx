@@ -98,7 +98,7 @@ function CalendarView({
               disabled={!available}
               onClick={() => available && onSelect(day)}
               className={[
-                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-medium transition-all",
+                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-medium transition-colors",
                 isSelected
                   ? "bg-petroleum-400 text-sand-50 shadow-sm"
                   : available
@@ -241,7 +241,7 @@ export function DateTimeStep({
     <div className="flex flex-col gap-5">
       <button
         onClick={handleChangeDate}
-        className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200"
+        className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200"
       >
         <div className="flex flex-col gap-1">
           <p className="text-petroleum-400 text-xs">{t("date")}</p>
@@ -288,7 +288,7 @@ export function DateTimeStep({
                 key={time}
                 onClick={() => onSelectTime(time)}
                 className={[
-                  "rounded-xl border py-2.5 text-sm font-medium transition-all",
+                  "rounded-xl border py-2.5 text-sm font-medium transition-colors",
                   selectedTime === time
                     ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
                     : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",

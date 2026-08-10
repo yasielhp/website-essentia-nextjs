@@ -41,7 +41,7 @@ function StaffItems({
         <button
           key={opt.id}
           onClick={() => onSelect(opt)}
-          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]"
+          className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
         >
           <span className="flex min-w-0 items-center gap-3">
             <StaffAvatar person={opt} />
@@ -152,7 +152,7 @@ export function StaffSelect({
         ref={triggerRef}
         onClick={() => setIsOpen((o) => !o)}
         className={[
-          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          "bg-sand-50 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors duration-200",
           isOpen
             ? "border-petroleum-400 ring-petroleum-100 ring-2"
             : "border-sand-300 hover:border-petroleum-400",

@@ -100,7 +100,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     <div className="bg-sand-50 flex min-h-screen">
       {/* ── Desktop sidebar ────────────────────────────────── */}
       <aside
-        className={`border-sand-200 sticky top-0 hidden h-screen flex-col border-r bg-white transition-all duration-200 lg:flex ${
+        className={`border-sand-200 sticky top-0 hidden h-screen flex-col border-r bg-white transition-[width] duration-200 lg:flex ${
           sidebarCollapsed ? "w-16" : "w-64"
         }`}
       >

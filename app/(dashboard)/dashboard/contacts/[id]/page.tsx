@@ -465,7 +465,7 @@ function ContactDetailsCard({
             disabled={saving}
             onClick={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
             className={[
-              "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all duration-200",
+              "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200",
               newsletterSubscribed
                 ? "border-petroleum-200 bg-petroleum-50"
                 : "border-sand-200 bg-sand-50",

@@ -32,7 +32,7 @@ function Field({
 }
 
 const inputClass =
-  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-300 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-200";
+  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-300 border border-sand-300 rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-200 focus:border-petroleum-400 focus:ring-2 focus:ring-petroleum-200";
 
 // ─── ContactSection ───────────────────────────────────────────
 

@@ -41,7 +41,7 @@ function useLocationOptions(): LocationOption[] {
 }
 
 const INPUT_BASE =
-  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:ring-2 w-full";
+  "bg-sand-100 text-petroleum-700 placeholder:text-petroleum-100 border rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-200 focus:ring-2 w-full";
 const INPUT_CLASS = `${INPUT_BASE} border-sand-300 focus:border-petroleum-400 focus:ring-petroleum-100`;
 const INPUT_ERR = `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-100`;
 
@@ -61,7 +61,7 @@ function LocationItems({
         <button
           key={id}
           onClick={() => onSelect(id)}
-          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-all duration-150 active:scale-[0.98]"
+          className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
         >
           <div className="bg-sand-200 flex size-12 shrink-0 items-center justify-center rounded-lg">
             <Icon size={20} className="text-petroleum-500" />
@@ -148,7 +148,7 @@ function LocationSelect({
         ref={triggerRef}
         onClick={() => setIsOpen((o) => !o)}
         className={[
-          "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+          "flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors duration-200",
           isOpen
             ? "border-petroleum-400 ring-petroleum-100 ring-2"
             : "border-sand-300 hover:border-petroleum-400",

@@ -71,7 +71,7 @@ export function Checkbox({
           aria-describedby={error ? `${id}-error` : undefined}
           aria-invalid={!!error}
           className={[
-            "mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded accent-current transition-all duration-200 focus:ring-2",
+            "mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded accent-current transition-colors duration-200 focus:ring-2",
             error
               ? "border-red-400 outline outline-1 outline-red-400 focus:ring-red-500/20"
               : "border-petroleum-300 text-petroleum-700 focus:ring-petroleum-500/20",

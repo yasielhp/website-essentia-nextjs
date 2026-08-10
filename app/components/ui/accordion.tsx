@@ -85,7 +85,7 @@ function Content({ children }: { children: ReactNode }) {
       role="region"
       aria-labelledby={triggerId}
       suppressHydrationWarning
-      className="grid transition-all duration-300 ease-in-out"
+      className="grid transition-[grid-template-rows] duration-300 ease-in-out"
       style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
     >
       <div className="overflow-hidden">{children}</div>

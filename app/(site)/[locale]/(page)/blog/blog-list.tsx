@@ -158,7 +158,7 @@ export function BlogList() {
                       />
                     </div>
                   ) : (
-                    <div className="from-primary/10 to-primary/5 aspect-video w-full bg-gradient-to-br" />
+                    <div className="from-primary/10 to-primary/5 aspect-video w-full bg-linear-to-br" />
                   )}
                   <div className="p-5">
                     {displayCategory && (
