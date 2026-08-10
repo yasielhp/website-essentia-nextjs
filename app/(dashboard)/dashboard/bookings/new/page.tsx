@@ -13,7 +13,6 @@ import { useDayFreeBusy } from "@/hooks/use-free-busy";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
-import { ChevronDown } from "lucide-react";
 import { insforge } from "@/lib/insforge";
 import { ServicePicker } from "@/components/ui/service-picker";
 import { TierPicker } from "@/components/ui/tier-picker";
@@ -33,7 +32,6 @@ import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 import { fetchAvailability, type Availability } from "@/actions/availability";
 import { toStoredGender } from "@/constants/gender";
-import { CalendarView } from "./calendar-view";
 import { CompletedRow } from "./completed-row";
 import { LocationStep } from "./location-step";
 import {
@@ -47,6 +45,7 @@ import {
 } from "./form-state";
 import { useLocationOptions } from "../_shared/location";
 import { ClientStep } from "./client-step";
+import { DateTimeStep } from "./datetime-step";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -771,106 +770,21 @@ function NewBookingPageInner() {
               Only once somebody is chosen: the calendar answers "when is this
               person free", and without a person there is no question. */}
           {tierId && staffId && (
-            <>
-              {selectedDate && selectedTime && editingStep !== "datetime" ? (
-                <CompletedRow
-                  label={t("steps.datetime")}
-                  value={datetimeLabel}
-                  onEdit={() => setEditingStep("datetime")}
-                />
-              ) : (
-                <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-                  <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                    Date & Time
-                  </h2>
-                  {calendarView === "date" ? (
-                    <CalendarView
-                      selected={selectedDate}
-                      openDates={openDates}
-                      viewYear={availabilityMonth.year}
-                      viewMonth={availabilityMonth.month}
-                      onMonthChange={handleMonthChange}
-                      onSelect={(d) =>
-                        dispatchForm({ type: "SET_DATE", value: d })
-                      }
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          dispatchForm({
-                            type: "SET_CALENDAR_VIEW",
-                            value: "date",
-                          })
-                        }
-                        className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200"
-                      >
-                        <div className="flex flex-col gap-1">
-                          <p className="text-petroleum-400 text-xs">Date</p>
-                          <p className="text-petroleum-700 font-medium">
-                            {selectedDate &&
-                              formatCalendarDay(selectedDate, "en", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
-                          </p>
-                        </div>
-                        <ChevronDown
-                          className="text-petroleum-400 shrink-0"
-                          size={16}
-                        />
-                      </button>
-                      <div className="flex flex-col gap-3">
-                        <p className="text-petroleum-400 text-sm">
-                          {t("availableTimes")}
-                        </p>
-                        {loadingSlots ? (
-                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                            {Array.from({ length: 8 }).map((_, i) => (
-                              <div
-                                key={i}
-                                className="bg-sand-100 h-10 animate-pulse rounded-xl"
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                            {timeSlots.map(({ time, booked }) => (
-                              <button
-                                key={time}
-                                type="button"
-                                disabled={booked}
-                                onClick={() => {
-                                  if (booked) return;
-                                  dispatchForm({
-                                    type: "SET_TIME",
-                                    value: time,
-                                  });
-                                  setEditingStep(null);
-                                }}
-                                className={[
-                                  "rounded-xl border py-2.5 text-sm font-medium transition-colors",
-                                  selectedTime === time
-                                    ? "bg-petroleum-400 border-petroleum-400 text-sand-50 shadow-sm"
-                                    : booked
-                                      ? "border-sand-200 text-sand-400 cursor-not-allowed opacity-40"
-                                      : "bg-petroleum-50 border-petroleum-100 text-petroleum-700 hover:bg-petroleum-100 cursor-pointer",
-                                ].join(" ")}
-                              >
-                                {time}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
+            <DateTimeStep
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+              calendarView={calendarView}
+              openDates={openDates}
+              timeSlots={timeSlots}
+              loadingSlots={loadingSlots}
+              availabilityMonth={availabilityMonth}
+              datetimeLabel={datetimeLabel}
+              editing={editingStep === "datetime"}
+              onEdit={() => setEditingStep("datetime")}
+              onDone={() => setEditingStep(null)}
+              onMonthChange={handleMonthChange}
+              dispatchForm={dispatchForm}
+            />
           )}
 
           {/* ── Step 5: Client ──
