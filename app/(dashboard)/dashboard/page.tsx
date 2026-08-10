@@ -16,6 +16,11 @@ import {
   type CalendarFilters,
 } from "@/utils/calendar-filters";
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
+import { MonthGrid } from "@/components/dashboard/calendar/month-grid";
+import { WeekGrid } from "@/components/dashboard/calendar/week-grid";
+import { DayList } from "@/components/dashboard/calendar/day-list";
+import { CalendarHeader } from "./calendar-header";
+import { calNavReducer } from "./cal-nav";
 import {
   toYMD,
   getWeekDays,
@@ -23,33 +28,8 @@ import {
   formatPeriod,
   isPastDay,
   isPastSlot,
-  navigateAnchor,
 } from "@/utils/dashboard-calendar";
 // ─── Calendar navigation reducer ─────────────────────────────
-
-type CalNav = { view: CalendarView; anchor: Date };
-type CalNavAction =
-  | { type: "set-view"; view: CalendarView }
-  | { type: "set-anchor"; anchor: Date }
-  | { type: "nav"; delta: -1 | 1 };
-
-function calNavReducer(state: CalNav, action: CalNavAction): CalNav {
-  switch (action.type) {
-    case "set-view":
-      return { ...state, view: action.view };
-    case "set-anchor":
-      return { ...state, anchor: action.anchor };
-    case "nav":
-      return {
-        ...state,
-        anchor: navigateAnchor(state.view, state.anchor, action.delta),
-      };
-  }
-}
-
-import { MonthGrid } from "@/components/dashboard/calendar/month-grid";
-import { WeekGrid } from "@/components/dashboard/calendar/week-grid";
-import { DayList } from "@/components/dashboard/calendar/day-list";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard.calendar");
@@ -433,67 +413,11 @@ export default function DashboardPage() {
 
         {/* Calendar */}
         <div className="border-sand-200 border-y bg-white lg:overflow-hidden lg:rounded-2xl lg:border">
-          {/* Calendar header */}
-          <div className="border-sand-200 flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center">
-            {/* View switcher — full width on mobile, auto on desktop */}
-            <div className="border-sand-200 bg-sand-50 flex w-full rounded-xl border p-0.5 sm:w-auto">
-              {(["month", "week", "day"] as CalendarView[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => dispatchCalNav({ type: "set-view", view: v })}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-[color,background-color,box-shadow] sm:flex-none ${
-                    view === v
-                      ? "text-petroleum-700 bg-white shadow-sm"
-                      : "text-petroleum-400 hover:text-petroleum-700"
-                  }`}
-                >
-                  {t(`views.${v}`)}
-                </button>
-              ))}
-            </div>
-
-            {/* Period nav — mobile row */}
-            <div className="flex w-full items-center justify-center gap-1 sm:hidden">
-              <button
-                onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
-                aria-label={t("previousPeriod")}
-                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
-              >
-                ‹
-              </button>
-              <span className="text-petroleum-700 text-sm font-medium">
-                {periodLabel}
-              </span>
-              <button
-                onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
-                aria-label={t("nextPeriod")}
-                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
-              >
-                ›
-              </button>
-            </div>
-
-            {/* Period nav — desktop, pushed to the right */}
-            <div className="ml-auto hidden items-center gap-1 sm:flex">
-              <button
-                onClick={() => dispatchCalNav({ type: "nav", delta: -1 })}
-                aria-label={t("previousPeriod")}
-                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
-              >
-                ‹
-              </button>
-              <span className="text-petroleum-700 min-w-[148px] text-center text-sm font-medium">
-                {periodLabel}
-              </span>
-              <button
-                onClick={() => dispatchCalNav({ type: "nav", delta: 1 })}
-                aria-label={t("nextPeriod")}
-                className="text-petroleum-500 hover:bg-sand-100 flex size-7 items-center justify-center rounded-lg text-lg leading-none transition-colors"
-              >
-                ›
-              </button>
-            </div>
-          </div>
+          <CalendarHeader
+            view={view}
+            periodLabel={periodLabel}
+            dispatchCalNav={dispatchCalNav}
+          />
 
           {/* Calendar body */}
           {view === "month" && (
