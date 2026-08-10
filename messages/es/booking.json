@@ -91,23 +91,6 @@
     "noStaffTitle": "Este tipo de sesión no está disponible ahora mismo",
     "noStaffBody": "No tenemos personal asignado para este tratamiento en este momento. Escríbenos y buscamos la manera de atenderte."
   },
-  "locationStep": {
-    "label": "¿Dónde quieres recibir el servicio?",
-    "selectLocation": "Seleccionar una ubicación",
-    "modalTitle": "Seleccionar una ubicación",
-    "atTheCenter": "En el centro",
-    "homeVisit": "A domicilio",
-    "homeVisitDescription": "Vamos a tu dirección",
-    "street": "Calle y número",
-    "streetPlaceholder": "Calle El Peñón, 23",
-    "building": "Bloque, piso y puerta",
-    "buildingPlaceholder": "Bloque 3, 2.ª planta, apt B",
-    "postalCode": "Código postal",
-    "postalCodePlaceholder": "38670",
-    "municipality": "Municipio",
-    "municipalityPlaceholder": "Adeje",
-    "close": "Cerrar"
-  },
   "datetimeStep": {
     "selectDate": "Seleccionar fecha",
     "selectTime": "Seleccionar hora",
