@@ -1,65 +1,32 @@
 "use client";
 
-import { useState, useEffect, useRef, useReducer, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useRef, useReducer, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
-import { insforge } from "@/lib/insforge";
-import { ServicePicker } from "@/components/ui/service-picker";
-import { TierPicker } from "@/components/ui/tier-picker";
-import { getAccessToken, authFetch } from "@/lib/client-session";
-import { fetchBookableServices } from "@/services/bookable-services.client";
-import { notifyBooking } from "@/actions/booking-notifications";
-import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
-import { z } from "zod";
-import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
-import { Button } from "@/components/ui/button";
-import { formatCalendarDay } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
-import { contact } from "@/constants/contact";
-import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
-import { StaffSelect } from "@/components/ui/staff-select";
-import { toStoredGender } from "@/constants/gender";
-import { CompletedRow } from "./completed-row";
+import { useStaffAvailability } from "@/hooks/use-staff-availability";
 import { LocationStep } from "./location-step";
+import { ClientStep } from "./client-step";
+import { DateTimeStep } from "./datetime-step";
+import { ServiceStep, StaffStep, TierStep } from "./steps";
+import { MobileCreateBar, NewBookingHeader } from "./new-chrome";
+import { useNewBookingData } from "./use-new-booking-data";
+import { useStepLabels } from "./use-step-labels";
+import {
+  announceNewBooking,
+  createBooking,
+  validateNewBooking,
+  type NewBookingDraft,
+} from "./create-booking";
 import {
   asyncInitial,
   asyncReducer,
   formInitial,
   formReducer,
-  resolvePrice,
-  toTierOption,
-  type Tier,
 } from "./form-state";
 import { useLocationOptions } from "../_shared/location-options";
-import { ClientStep } from "./client-step";
-import { DateTimeStep } from "./datetime-step";
-import { useStaffAvailability } from "@/hooks/use-staff-availability";
-
-// ─── Helpers ──────────────────────────────────────────────────
-
-function useServicePickerLabels() {
-  const t = useTranslations("dashboard.bookings.form.servicePicker");
-  return {
-    placeholder: t("placeholder"),
-    modalTitle: t("modalTitle"),
-    close: t("close"),
-    wellness: t("wellness"),
-    medicine: t("medicine"),
-  };
-}
-
-function useTierPickerLabels() {
-  const t = useTranslations("dashboard.bookings.form.tierPicker");
-  return {
-    fieldLabel: t("fieldLabel"),
-    placeholder: t("placeholder"),
-    modalTitle: t("modalTitle"),
-    close: t("close"),
-    standard: t("standard"),
-  };
-}
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -67,13 +34,9 @@ function NewBookingPageInner() {
   const t = useTranslations("dashboard.bookings.form");
   const tToasts = useTranslations("dashboard.toasts");
   const tValidation = useTranslations("dashboard.validation");
-  const tCommon = useTranslations("dashboard.common");
   const locale = useDashboardLocale();
   const locationOptions = useLocationOptions();
-  const servicePickerLabels = useServicePickerLabels();
-  const tierPickerLabels = useTierPickerLabels();
   const { push } = useRouter();
-  const searchParams = useSearchParams();
   const { role } = useRole();
   const [async_, dispatchAsync] = useReducer(asyncReducer, asyncInitial);
   const [form, dispatchForm] = useReducer(formReducer, formInitial);
@@ -106,24 +69,15 @@ function NewBookingPageInner() {
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
-  const selectedTier = tiers.find((t) => t.id === tierId) ?? null;
+  const selectedTier = tiers.find((tier) => tier.id === tierId) ?? null;
 
-  // Who can perform the chosen session type.
-  const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
+  const { tierStaff } = useNewBookingData({
+    serviceId,
+    tierId,
+    dispatchAsync,
+    dispatchForm,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    void (
-      tierId ? fetchTierStaff(tierId) : Promise.resolve([] as TierStaff[])
-    ).then((people) => {
-      if (!cancelled) setTierStaff(people);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [tierId]);
-
-  // freeBusy for time-slot availability.
   const {
     month: availabilityMonth,
     onMonthChange: handleMonthChange,
@@ -139,6 +93,8 @@ function NewBookingPageInner() {
     durationMinutes: selectedTier?.duration_minutes ?? 60,
   });
 
+  // A partner books into the centre or a hotel room; a home visit is not
+  // theirs to offer.
   const allowedLocations =
     role === "partner"
       ? locationOptions.filter(
@@ -146,451 +102,82 @@ function NewBookingPageInner() {
         )
       : locationOptions;
 
-  const sortedServices = services.toSorted((a, b) => {
-    if (a.id === "manual-therapies") return -1;
-    if (b.id === "manual-therapies") return 1;
-    return a.title.localeCompare(b.title);
+  const { locationLabel, datetimeLabel } = useStepLabels({
+    location,
+    allowedLocations,
+    reservationNumber,
+    roomNumber,
+    address,
+    selectedDate,
+    selectedTime,
+    locale,
   });
-
-  useEffect(() => {
-    const dateParam = searchParams.get("date");
-    const timeParam = searchParams.get("time");
-    if (dateParam) {
-      const [y, m, d] = dateParam.split("-").map(Number);
-      if (y && m && d) {
-        const parsed = new Date(y, m - 1, d);
-        if (!isNaN(parsed.getTime())) {
-          dispatchForm({ type: "SET_DATE", value: parsed });
-        }
-      }
-    }
-    if (timeParam) {
-      dispatchForm({ type: "SET_TIME", value: timeParam });
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    async function load() {
-      dispatchAsync({ type: "SERVICES_LOADING" });
-      dispatchAsync({
-        type: "SERVICES_LOADED",
-        payload: await fetchBookableServices(),
-      });
-    }
-    void load();
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      if (!serviceId) {
-        dispatchAsync({ type: "TIERS_LOADED", payload: [] });
-        dispatchForm({ type: "RESET_TIERS" });
-        return;
-      }
-      dispatchAsync({ type: "TIERS_LOADING" });
-      dispatchForm({ type: "RESET_TIERS" });
-      const { data } = await insforge.database
-        .from("service_tiers")
-        .select(
-          "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, image_url, color",
-        )
-        .eq("service_id", serviceId)
-        .eq("active", true)
-        .order("sort_order");
-
-      if (cancelled) return;
-
-      const rows = (data as Tier[] | null) ?? [];
-      dispatchAsync({ type: "TIERS_LOADED", payload: rows });
-      if (rows.length === 1 && rows[0]) {
-        dispatchForm({ type: "SET_TIER", id: rows[0].id });
-      }
-    }
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [serviceId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     dispatchAsync({ type: "SET_ERROR", payload: null });
 
-    if (!serviceId) {
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload: tValidation("serviceRequired"),
-      });
-      return;
-    }
-    if (!firstName.trim()) {
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload: tValidation("firstNameRequired"),
-      });
-      return;
-    }
-    if (!email.trim()) {
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload: tValidation("emailRequired"),
-      });
-      return;
-    }
-    /**
-     * The address was only checked for being non-empty, so `oliverthomp.co.uk`
-     * — no @ — was accepted, saved, and could never be matched to a contact.
-     * Same rule the public booking form uses.
-     */
-    if (!z.email().safeParse(email.trim()).success) {
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload: tValidation("emailInvalid"),
-      });
-      return;
-    }
-    if (
-      (location === "habitacion" || location === "centro") &&
-      !reservationNumber.trim()
-    ) {
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload: t("errors.reservationRequired"),
-      });
+    const draft: NewBookingDraft = {
+      ...form,
+      service: selectedService,
+      tier: selectedTier,
+      role,
+    };
+
+    const invalid = validateNewBooking(draft, {
+      serviceRequired: tValidation("serviceRequired"),
+      firstNameRequired: tValidation("firstNameRequired"),
+      emailRequired: tValidation("emailRequired"),
+      emailInvalid: tValidation("emailInvalid"),
+      reservationRequired: t("errors.reservationRequired"),
+    });
+    if (invalid) {
+      dispatchAsync({ type: "SET_ERROR", payload: invalid });
       return;
     }
 
-    let locationAddress: string | null = null;
-    if (location === "habitacion" || location === "centro") {
-      locationAddress = JSON.stringify({ roomNumber, reservationNumber });
-    } else if (location === "domicilio") {
-      locationAddress = JSON.stringify(address);
-    }
-
-    const durationText =
-      selectedTier?.duration_minutes != null
-        ? `${selectedTier.duration_minutes} min`
-        : null;
-
-    const dateStr = selectedDate
-      ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
-      : null;
-
+    // Guarded by a ref rather than by `submitting`: a second click lands before
+    // React has re-rendered with the flag set, and two clicks are two bookings.
     if (submittingRef.current) return;
     submittingRef.current = true;
     dispatchAsync({ type: "SUBMIT_START" });
 
-    // An expired token makes the SDK fall back to the anon key, which then fails
-    // the partner RLS policies. Check the session before writing anything.
-    //
-    // Asked on the server, which is the side that holds the cookie: the browser
-    // client keeps the access token but never a user object, so its own
-    // `getCurrentUser()` answers "nobody" after every page load — and moving
-    // into the dashboard is always a full page load.
-    const { user: sessionUser } = await getSessionUser();
-    if (!sessionUser) {
-      submittingRef.current = false;
-      dispatchAsync({ type: "SUBMIT_END" });
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload:
-          "Your session expired. Please sign in again and try once more.",
-      });
-      return;
-    }
-    const authUserId = sessionUser.id;
-
-    // The id is generated client-side so the insert does not need a RETURNING
-    // clause — RETURNING would require a SELECT policy covering the new row.
-    const bookingId = crypto.randomUUID();
-
-    // Link the client's contact record. Bookings created here never set
-    // `contact_id`, which is why 81 of 100 rows had none and a client's history
-    // looked empty on their own page. `upsert_contact` creates the contact or
-    // returns the existing one, exactly as the public booking flow does.
-    let contactId: string | null = null;
-    const bookingEmail = email.trim();
-    if (bookingEmail) {
-      const { data: contactUuid, error: contactError } =
-        await insforge.database.rpc("upsert_contact", {
-          p_email: bookingEmail,
-          p_first_name: firstName.trim(),
-          p_last_name: lastName.trim(),
-          p_phone: phone.trim() || null,
-          p_language: language,
-          p_gender: toStoredGender(gender),
-        });
-      // A booking is worth more than its contact link, so a failure here does
-      // not stop the write — but it is said out loud. Swallowing it is how
-      // every dashboard booking came to be saved with no contact at all.
-      if (contactError) {
-        console.error(
-          "[booking] upsert_contact failed; the booking will have no contact:",
-          contactError,
-        );
-      }
-      contactId = (contactUuid as string | null) ?? null;
-    }
-
-    const { error: insertError } = await insforge.database
-      .from("bookings")
-      .insert([
-        {
-          id: bookingId,
-          service_id: serviceId,
-          service_title: selectedService?.title ?? serviceId,
-          tier_id: tierId || null,
-          price_eur: selectedTier ? resolvePrice(selectedTier, location) : null,
-          duration: durationText,
-          date: dateStr,
-          time: selectedTime || null,
-          location: location || null,
-          location_address: locationAddress,
-          ...(staffId ? { staff_id: staffId } : {}),
-          ...(notes.trim() ? { notes: notes.trim() } : {}),
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: bookingEmail,
-          phone: phone.trim() || null,
-          ...(contactId ? { contact_id: contactId } : {}),
-          status: "confirmed",
-          ...(role === "partner" ? { partner_id: authUserId } : {}),
-          created_by_user_id: authUserId,
-          ...(role ? { created_by_role: role as string } : {}),
-        },
-      ]);
+    const result = await createBooking(draft, {
+      sessionExpired:
+        "Your session expired. Please sign in again and try once more.",
+      createFailed: t("errors.createFailed"),
+    });
 
     dispatchAsync({ type: "SUBMIT_END" });
 
-    if (insertError) {
+    if (!result.ok) {
       submittingRef.current = false;
-      dispatchAsync({
-        type: "SET_ERROR",
-        payload:
-          (insertError as { message?: string })?.message ??
-          t("errors.createFailed"),
-      });
+      dispatchAsync({ type: "SET_ERROR", payload: result.error });
       return;
     }
 
-    const clientName = [firstName.trim(), lastName.trim()]
-      .filter(Boolean)
-      .join(" ");
-
-    // Send notifications (non-blocking)
-    if (email.trim() && dateStr) {
-      try {
-        await notifyBooking(getAccessToken(), {
-          bookingId,
-          event: "confirmed",
-          clientName,
-          clientEmail: email.trim(),
-          clientPhone: phone.trim() || null,
-          service: selectedService?.title ?? serviceId,
-          serviceId,
-          sessionType: selectedTier?.label ?? null,
-          date: dateStr,
-          time: selectedTime || "",
-          duration:
-            selectedTier?.duration_minutes != null
-              ? `${selectedTier.duration_minutes} min`
-              : null,
-          // The client's language, not the language of whoever is at the desk.
-          locale: language === "en" ? "en" : "es",
-        });
-      } catch {
-        // Notification failed silently — booking is already saved
-      }
-    }
-
-    // The professional gets it on WhatsApp too: whoever took this booking at
-    // the desk is not going to walk down the corridor to say so.
-    if (staffId) {
-      await notifyStaffWhatsApp(getAccessToken(), {
-        bookingId,
-        staffId,
-        event: "assigned",
-      });
-    }
-
-    // Create Google Calendar event (non-blocking, only for confirmed bookings)
-    if (dateStr && selectedTime) {
-      // Build location string for the event
-      const calLocation = (() => {
-        if (location === "centro") return contact.address;
-        if (location === "habitacion") {
-          const parts: string[] = [];
-          if (reservationNumber.trim())
-            parts.push(`Reservation: ${reservationNumber.trim()}`);
-          if (roomNumber.trim()) parts.push(`Room: ${roomNumber.trim()}`);
-          return parts.length
-            ? `Baobab Suites — ${parts.join(" · ")}`
-            : "Baobab Suites";
-        }
-        if (location === "domicilio") {
-          const parts: string[] = [];
-          if (address.street.trim()) parts.push(address.street.trim());
-          if (address.building.trim()) parts.push(address.building.trim());
-          if (address.postalCode.trim() || address.municipality.trim())
-            parts.push(
-              [address.postalCode.trim(), address.municipality.trim()]
-                .filter(Boolean)
-                .join(" "),
-            );
-          return parts.filter(Boolean).join(", ");
-        }
-        return "";
-      })();
-
-      const descLines = [
-        `Booking #${bookingId}`,
-        phone.trim() ? `Phone: ${phone.trim()}` : null,
-        email.trim() ? `Email: ${email.trim()}` : null,
-        notes.trim() ? `Notes: ${notes.trim()}` : null,
-      ].filter(Boolean);
-
-      const tierParts: string[] = [];
-      if (selectedTier?.label) tierParts.push(selectedTier.label);
-      if (selectedTier?.duration_minutes != null)
-        tierParts.push(`${selectedTier.duration_minutes} min`);
-      const tierInfo = tierParts.join(" · ");
-      const serviceName = selectedService?.title ?? serviceId;
-      const calSummary = tierInfo
-        ? `${serviceName} · ${tierInfo} — ${clientName}`
-        : `${serviceName} — ${clientName}`;
-
-      try {
-        const calRes = await authFetch("/api/google/calendar/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            service_id: serviceId,
-            summary: calSummary,
-            description: descLines.join("\n"),
-            location: calLocation || undefined,
-            colorId: "7",
-            date: dateStr,
-            time: selectedTime,
-            duration_minutes: selectedTier?.duration_minutes ?? 60,
-          }),
-        });
-        if (calRes.ok) {
-          const calData = (await calRes.json()) as { eventId?: string };
-          if (calData.eventId && bookingId) {
-            void insforge.database
-              .from("bookings")
-              .update({ google_event_id: calData.eventId })
-              .eq("id", bookingId);
-          }
-        }
-      } catch {
-        // fail-open: calendar error must not block navigation
-      }
-    }
+    await announceNewBooking(result.bookingId, draft);
 
     notifySuccess(tToasts("bookingCreated"));
     push("/dashboard/bookings");
   }
 
-  const locationLabel = (() => {
-    const base = allowedLocations.find((l) => l.id === location)?.label ?? "";
-    if (location === "centro" || location === "habitacion") {
-      const parts: string[] = [];
-      if (reservationNumber.trim())
-        parts.push(
-          t("locations.reservationSummary", {
-            number: reservationNumber.trim(),
-          }),
-        );
-      if (roomNumber.trim())
-        parts.push(t("locations.roomSummary", { number: roomNumber.trim() }));
-      return parts.length ? parts.join(" · ") : base;
-    }
-    if (location === "domicilio") {
-      const parts: string[] = [];
-      if (address.street.trim()) parts.push(address.street.trim());
-      if (address.postalCode.trim() || address.municipality.trim())
-        parts.push(
-          [address.postalCode.trim(), address.municipality.trim()]
-            .filter(Boolean)
-            .join(" "),
-        );
-      return parts.length ? parts.join(" · ") : base;
-    }
-    return base;
-  })();
-  const shortDayLabel = selectedDate
-    ? formatCalendarDay(selectedDate, locale, {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      })
-    : "";
-  const datetimeLabel = !selectedDate
-    ? ""
-    : selectedTime
-      ? `${shortDayLabel} · ${selectedTime}`
-      : shortDayLabel;
-
   return (
     <div className="px-6 py-8 lg:px-10">
       <form onSubmit={(e) => void handleSubmit(e)} noValidate>
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-petroleum-700 text-3xl">
-            {t("title")}
-          </h1>
-          <div className="hidden items-center gap-3 sm:flex">
-            <Button variant="outline" size="md" href="/dashboard/bookings">
-              {tCommon("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              variant="solid"
-              size="md"
-              disabled={submitting}
-            >
-              {submitting ? t("creating") : t("createBooking")}
-            </Button>
-          </div>
-        </div>
-
-        {error && (
-          <p className="mb-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-            {error}
-          </p>
-        )}
+        <NewBookingHeader submitting={submitting} error={error} />
 
         <div className="space-y-3">
           {/* ── Step 1: Service ── */}
-          {serviceId && editingStep !== "service" ? (
-            <CompletedRow
-              label={t("steps.service")}
-              value={selectedService?.title ?? ""}
-              onEdit={() => setEditingStep("service")}
-            />
-          ) : (
-            <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("steps.service")}
-              </h2>
-              {servicesLoading ? (
-                <div className="border-sand-200 bg-sand-50 h-16 animate-pulse rounded-2xl border" />
-              ) : (
-                <ServicePicker
-                  options={sortedServices}
-                  selected={selectedService}
-                  onSelect={(s) => {
-                    dispatchForm({ type: "SET_SERVICE", id: s.id });
-                    setEditingStep(null);
-                  }}
-                  labels={servicePickerLabels}
-                />
-              )}
-            </div>
-          )}
+          <ServiceStep
+            services={services}
+            loading={servicesLoading}
+            selectedService={selectedService}
+            editing={editingStep === "service"}
+            onEdit={() => setEditingStep("service")}
+            onDone={() => setEditingStep(null)}
+            dispatchForm={dispatchForm}
+          />
 
           {/* ── Step 2: Location ── */}
           {serviceId && (
@@ -608,74 +195,29 @@ function NewBookingPageInner() {
               dispatchForm={dispatchForm}
             />
           )}
+
           {/* ── Step 3: Session type ── */}
           {serviceId && location && editingStep !== "location" && (
-            <>
-              {tierId && editingStep !== "tier" ? (
-                <CompletedRow
-                  label={t("steps.sessionType")}
-                  value={
-                    selectedTier
-                      ? [
-                          selectedTier.label,
-                          selectedTier.duration_minutes != null
-                            ? `${selectedTier.duration_minutes} min`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")
-                      : ""
-                  }
-                  onEdit={() => setEditingStep("tier")}
-                />
-              ) : (
-                <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-                  <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                    {t("steps.sessionType")}
-                  </h2>
-                  {tiersLoading ? (
-                    <div className="border-sand-200 bg-sand-50 h-18.5 animate-pulse rounded-2xl border" />
-                  ) : tiers.length === 0 ? (
-                    <p className="text-petroleum-300 border-sand-200 rounded-xl border border-dashed px-4 py-3 text-sm">
-                      {t("noTiers")}
-                    </p>
-                  ) : (
-                    <TierPicker
-                      options={tiers.map((t) => toTierOption(t, location))}
-                      selectedId={tierId}
-                      labels={tierPickerLabels}
-                      collapseSingle
-                      onSelect={(o) => {
-                        dispatchForm({ type: "SET_TIER", id: o.id });
-                        setEditingStep(null);
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-            </>
+            <TierStep
+              tiers={tiers}
+              loading={tiersLoading}
+              tierId={tierId}
+              selectedTier={selectedTier}
+              location={location}
+              editing={editingStep === "tier"}
+              onEdit={() => setEditingStep("tier")}
+              onDone={() => setEditingStep(null)}
+              dispatchForm={dispatchForm}
+            />
           )}
 
           {/* ── Step 3b: who performs it, among those assigned to the tier ── */}
           {tierId !== "" && tierStaff.length > 0 && (
-            <div className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("steps.staff")}
-              </h2>
-              <StaffSelect
-                options={tierStaff}
-                selected={staffId || null}
-                onSelect={(person) =>
-                  dispatchForm({ type: "SET_STAFF", value: person.id })
-                }
-                labels={{
-                  fieldLabel: t("steps.staff"),
-                  placeholder: t("staff.placeholder"),
-                  modalTitle: t("steps.staff"),
-                  close: tCommon("cancel"),
-                }}
-              />
-            </div>
+            <StaffStep
+              staffId={staffId}
+              tierStaff={tierStaff}
+              dispatchForm={dispatchForm}
+            />
           )}
 
           {/* ── Step 4: Date & Time ──
@@ -719,28 +261,7 @@ function NewBookingPageInner() {
           )}
         </div>
 
-        {/* Mobile bottom bar */}
-        <div className="mt-6 sm:hidden">
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              size="md"
-              href="/dashboard/bookings"
-              className="w-full justify-center"
-            >
-              {tCommon("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              variant="solid"
-              size="md"
-              disabled={submitting}
-              className="w-full justify-center"
-            >
-              {submitting ? t("creating") : t("createBooking")}
-            </Button>
-          </div>
-        </div>
+        <MobileCreateBar submitting={submitting} />
       </form>
     </div>
   );
