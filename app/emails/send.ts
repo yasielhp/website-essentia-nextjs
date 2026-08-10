@@ -10,6 +10,32 @@ type SendEmailParams = {
   replyTo?: string;
 };
 
+/**
+ * The address that gets a copy of everything.
+ *
+ * The admin profile was already blind-copied, but that is whoever holds the
+ * admin role at the time, and the centre wants one inbox that sees every
+ * booking regardless of who that is. Set `EMAIL_BCC` to change it without a
+ * deploy; the fallback is the address the centre asked for.
+ */
+const STANDING_BCC = process.env.EMAIL_BCC ?? "essentiabyyuli@gmail.com";
+
+/**
+ * Everyone who should receive a blind copy of a message to `recipient`.
+ *
+ * Deduplicated, and never the recipient themselves — a client who is also the
+ * admin should get one copy, not two.
+ */
+async function blindCopies(recipient: string): Promise<string[]> {
+  const adminEmail = await getAdminEmail();
+  const all = [STANDING_BCC, adminEmail].filter((address): address is string =>
+    Boolean(address),
+  );
+  return [...new Set(all)].filter(
+    (address) => address.toLowerCase() !== recipient.toLowerCase(),
+  );
+}
+
 export async function getAdminEmail(): Promise<string | null> {
   try {
     const { data } = await getAdminClient()
@@ -43,7 +69,7 @@ export async function sendEmail({
     process.env.RESEND_FROM_EMAIL ??
     "Essentia <noreply@essentiawellnessclub.com>";
 
-  const adminBcc = await getAdminEmail();
+  const bcc = await blindCopies(to);
 
   const { error } = await resend.emails.send({
     from,
@@ -51,7 +77,7 @@ export async function sendEmail({
     subject,
     html,
     ...(replyTo ? { replyTo } : {}),
-    ...(adminBcc && adminBcc !== to ? { bcc: adminBcc } : {}),
+    ...(bcc.length > 0 ? { bcc } : {}),
   });
 
   if (error) {
@@ -93,7 +119,7 @@ export async function sendEmailBatch(
     "Essentia <noreply@essentiawellnessclub.com>";
 
   // Once for the whole batch rather than once per recipient.
-  const adminBcc = await getAdminEmail();
+  const adminEmail = await getAdminEmail();
 
   const chunks: SendEmailParams[][] = [];
   for (let i = 0; i < valid.length; i += RESEND_BATCH_LIMIT) {
@@ -109,7 +135,16 @@ export async function sendEmailBatch(
           subject: email.subject,
           html: email.html,
           ...(email.replyTo ? { replyTo: email.replyTo } : {}),
-          ...(adminBcc && adminBcc !== email.to ? { bcc: adminBcc } : {}),
+          ...(() => {
+            const bcc = [STANDING_BCC, adminEmail]
+              .filter((address): address is string => Boolean(address))
+              .filter(
+                (address, index, all) =>
+                  all.indexOf(address) === index &&
+                  address.toLowerCase() !== email.to.toLowerCase(),
+              );
+            return bcc.length > 0 ? { bcc } : {};
+          })(),
         })),
       ),
     ),

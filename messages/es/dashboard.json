@@ -1220,6 +1220,15 @@
       "noneWarning": "Sin personal asignado, este tipo de sesión no se puede reservar.",
       "placeholder": "Selecciona el personal",
       "ariaLabel": "Personal asignado"
+    },
+    "calendarSync": {
+      "title": "Sincronizar Google Calendar",
+      "description": "Envía a su calendario todas las reservas confirmadas o pagadas que aún no estén en él. Recorre el calendario de cada profesional y el de cada servicio conectado. Repetirlo no duplica nada.",
+      "action": "Sincronizar todas las reservas",
+      "running": "Sincronizando…",
+      "done": "{synced} reservas enviadas a {calendars} calendarios.",
+      "failedCount": "{n} sin enviar",
+      "failed": "No se pudo sincronizar. Inténtalo de nuevo."
     }
   },
   "services": {

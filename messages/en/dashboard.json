@@ -1220,6 +1220,15 @@
       "noneWarning": "With nobody assigned, this session type cannot be booked.",
       "placeholder": "Select staff",
       "ariaLabel": "Assigned staff"
+    },
+    "calendarSync": {
+      "title": "Sync Google Calendar",
+      "description": "Sends every confirmed or paid booking that is not on a calendar yet. It walks each member of staff's calendar and each connected service's. Running it again duplicates nothing.",
+      "action": "Sync all bookings",
+      "running": "Syncing…",
+      "done": "{synced} bookings sent to {calendars} calendars.",
+      "failedCount": "{n} not sent",
+      "failed": "Could not sync. Please try again."
     }
   },
   "services": {

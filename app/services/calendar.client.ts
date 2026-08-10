@@ -118,3 +118,31 @@ export async function fetchStaffServices(
   };
   return services ?? [];
 }
+
+/**
+ * Pushes every booking that is missing from a calendar, across all of them.
+ *
+ * Admin only, and safe to repeat: it only touches bookings whose row has no
+ * `google_event_id`, so a second run finds nothing to do.
+ */
+export async function syncAllCalendars(): Promise<{
+  ok: boolean;
+  calendars?: number;
+  synced?: number;
+  failed?: number;
+  error?: string;
+}> {
+  const res = await authFetch("/api/google/calendar/sync-all", {
+    method: "POST",
+  });
+
+  const body = (await res.json().catch(() => null)) as {
+    calendars?: number;
+    synced?: number;
+    failed?: number;
+    error?: string;
+  } | null;
+
+  if (!res.ok) return { ok: false, error: body?.error ?? `HTTP ${res.status}` };
+  return { ok: true, ...body };
+}
