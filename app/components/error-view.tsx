@@ -173,6 +173,7 @@ export function ErrorView({
 
         <div className="essentia-error__actions">
           <button
+            type="button"
             onClick={reset}
             className="essentia-error__button essentia-error__button--solid"
           >

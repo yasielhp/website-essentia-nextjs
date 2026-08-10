@@ -346,6 +346,7 @@ export function TierModal({
             {modal.tier?.label ?? t("editTier")}
           </h3>
           <button
+            type="button"
             onClick={onClose}
             aria-label={tCommon("close")}
             className="text-petroleum-300 hover:text-petroleum-500 transition-colors"

@@ -64,6 +64,7 @@ function LocationItems({
     <div className="p-3">
       {locations.map(({ id, label, description, Icon }) => (
         <button
+          type="button"
           key={id}
           onClick={() => onSelect(id)}
           className="hover:bg-sand-100 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
@@ -146,6 +147,7 @@ function LocationSelect({
   return (
     <div>
       <button
+        type="button"
         ref={triggerRef}
         onClick={() => setIsOpen((o) => !o)}
         className={[
@@ -216,6 +218,7 @@ function LocationSelect({
                 {t("modalTitle")}
               </h3>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
                 aria-label={t("close")}

@@ -239,6 +239,7 @@ export default function Hero() {
           {vimeoVisible && (
             <>
               <button
+                type="button"
                 onClick={handleTogglePlay}
                 className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
                 aria-label={t("togglePlay")}

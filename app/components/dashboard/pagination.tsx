@@ -27,6 +27,7 @@ export function Pagination({
       </p>
       <div className="flex gap-2">
         <button
+          type="button"
           onClick={() => onPage(Math.max(0, page - 1))}
           disabled={page === 0 || loading}
           className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
@@ -34,6 +35,7 @@ export function Pagination({
           {t("previous")}
         </button>
         <button
+          type="button"
           onClick={() => onPage(Math.min(totalPages - 1, page + 1))}
           disabled={page >= totalPages - 1 || loading}
           className="border-sand-200 text-petroleum-500 hover:bg-sand-50 rounded-xl border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"

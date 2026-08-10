@@ -129,6 +129,7 @@ export default function ContactSection() {
                     {t("success.body")}
                   </p>
                   <button
+                    type="button"
                     onClick={() => setSubmitted(false)}
                     className="text-petroleum-500 hover:text-petroleum-700 mt-6 text-sm underline underline-offset-4 transition-colors"
                   >

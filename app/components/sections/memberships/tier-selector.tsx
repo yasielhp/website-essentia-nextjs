@@ -30,6 +30,7 @@ function TierTabs({
     <div className="bg-petroleum-100 inline-flex rounded-full p-1">
       {tierIds.map((id) => (
         <button
+          type="button"
           key={id}
           onClick={() => onChange(id)}
           className={[

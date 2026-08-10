@@ -64,6 +64,7 @@ export function UserMenu({
           <LocaleSwitch />
           <SoundSwitch />
           <button
+            type="button"
             onClick={() => {
               setOpen(false);
               onEditAccount();
@@ -74,6 +75,7 @@ export function UserMenu({
             {t("userMenu.editAccount")}
           </button>
           <button
+            type="button"
             onClick={() => {
               setOpen(false);
               onSignOut();
@@ -87,6 +89,7 @@ export function UserMenu({
       )}
 
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="border-sand-200 hover:bg-sand-50 flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors"
       >

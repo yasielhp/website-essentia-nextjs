@@ -158,6 +158,7 @@ function SliderDots({
       <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
         {items.map((t, i) => (
           <button
+            type="button"
             key={t.name}
             aria-label={`Go to testimonial ${i + 1}`}
             className="cursor-pointer p-1"
@@ -183,6 +184,7 @@ function SliderDots({
       <div className="mt-8 hidden items-center justify-center gap-3 md:flex">
         {groups.map((_, gi) => (
           <button
+            type="button"
             key={gi}
             aria-label={`Go to slide ${gi + 1}`}
             className="cursor-pointer p-2"

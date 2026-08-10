@@ -49,6 +49,7 @@ export function WeekGrid({
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => onDayClick(day)}
                 disabled={past}
                 className={`mx-auto mt-1 flex size-6 items-center justify-center rounded-full text-xs font-medium transition-colors sm:size-7 sm:text-sm ${

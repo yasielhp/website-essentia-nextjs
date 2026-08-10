@@ -102,6 +102,7 @@ export function DayList({
               <div className="space-y-1">
                 {allDayEvents.map((e) => (
                   <button
+                    type="button"
                     key={e.id + e.type}
                     onClick={() => onEventClick(e)}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-opacity hover:opacity-75"
@@ -162,6 +163,7 @@ export function DayList({
                     </div>
                   ) : (
                     <button
+                      type="button"
                       key={slot}
                       onClick={() => onSlotClick(slot)}
                       className="border-sand-100 hover:bg-sand-50 flex min-h-12 w-full border-b text-left transition-colors last:border-b-0"

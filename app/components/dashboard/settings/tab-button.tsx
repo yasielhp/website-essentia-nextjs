@@ -11,6 +11,7 @@ export function TabButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
         active

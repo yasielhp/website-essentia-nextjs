@@ -13,6 +13,7 @@ export function HamburgerButton({
 }: HamburgerButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-label={setOpenMobileMenu ? "Cerrar menú" : "Abrir menú"}
       aria-expanded={setOpenMobileMenu}

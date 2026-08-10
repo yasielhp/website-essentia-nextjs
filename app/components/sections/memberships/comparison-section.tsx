@@ -218,6 +218,7 @@ export default function ComparisonSection() {
                 <div className="bg-petroleum-100 mb-5 flex rounded-full p-1">
                   {tierIds.map((id) => (
                     <button
+                      type="button"
                       key={id}
                       onClick={() => setComparisonTier(id)}
                       className={[

@@ -31,6 +31,7 @@ function ReviewModal({
         className={`${item.bgColor} relative flex w-full max-w-md flex-col gap-6 rounded-2xl p-7 shadow-2xl`}
       >
         <button
+          type="button"
           onClick={onClose}
           className={`${item.mutedColor} absolute top-4 right-4 transition-opacity hover:opacity-70`}
           aria-label="Close"

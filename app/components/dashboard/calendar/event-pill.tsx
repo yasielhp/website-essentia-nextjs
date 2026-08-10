@@ -46,6 +46,7 @@ export function EventPill({
           </div>
         ) : (
           <button
+            type="button"
             onClick={onClick}
             {...hoverProps}
             style={{ backgroundColor: bg, color: fg }}
@@ -84,6 +85,7 @@ export function EventPill({
         </div>
       ) : (
         <button
+          type="button"
           onClick={onClick}
           {...hoverProps}
           style={{ backgroundColor: bg, color: fg }}

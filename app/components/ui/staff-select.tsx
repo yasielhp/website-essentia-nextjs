@@ -44,6 +44,7 @@ function StaffItems({
     <div className="p-3">
       {options.map((opt) => (
         <button
+          type="button"
           key={opt.id}
           onClick={() => onSelect(opt)}
           className="hover:bg-sand-100 flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-[background-color,transform] duration-150 active:scale-[0.98]"
@@ -150,6 +151,7 @@ export function StaffSelect({
   return (
     <div>
       <button
+        type="button"
         ref={triggerRef}
         onClick={() => setIsOpen((o) => !o)}
         className={[
@@ -212,6 +214,7 @@ export function StaffSelect({
                 {labels.modalTitle}
               </h3>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-sand-50 rounded-xl p-2 transition-colors"
                 aria-label={labels.close}

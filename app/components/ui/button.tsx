@@ -103,6 +103,11 @@ export function Button({
   return (
     <button
       ref={ref}
+      // A `<button>` with no type is a submit button, and most of these live
+      // inside a form they have no business submitting — a picker opening its
+      // dropdown used to save the booking behind it. Callers that mean submit
+      // say so, and their prop wins because it is spread after this.
+      type="button"
       className={classes}
       onMouseEnter={handleMouseEnter}
       {...(props as AsButton)}

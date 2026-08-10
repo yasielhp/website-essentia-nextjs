@@ -107,6 +107,7 @@ export default function PostsSection() {
         {!loading && categories.length > 0 && (
           <div className="mb-12 flex flex-wrap justify-center gap-2">
             <button
+              type="button"
               onClick={() => setActiveCategory(null)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 activeCategory === null
@@ -118,6 +119,7 @@ export default function PostsSection() {
             </button>
             {categories.map((c) => (
               <button
+                type="button"
                 key={c.id}
                 onClick={() => setActiveCategory(c.id)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${

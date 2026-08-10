@@ -49,6 +49,7 @@ function CalendarView({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <button
+          type="button"
           onClick={onPrevMonth}
           aria-label={t("prevMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
@@ -64,6 +65,7 @@ function CalendarView({
           )}
         </div>
         <button
+          type="button"
           onClick={onNextMonth}
           aria-label={t("nextMonth")}
           className="text-petroleum-400 hover:text-petroleum-700 hover:bg-sand-200 rounded-lg p-2 transition-colors"
@@ -91,6 +93,7 @@ function CalendarView({
           const isToday = isSameDay(day, today);
           return (
             <button
+              type="button"
               key={localDateStr(day)}
               // The 1st sits in its own weekday column; the rest follow it.
               style={i === 0 ? { gridColumnStart: startColumn } : undefined}
@@ -239,6 +242,7 @@ export function DateTimeStep({
   ) : (
     <div className="flex flex-col gap-5">
       <button
+        type="button"
         onClick={handleChangeDate}
         className="border-sand-300 bg-sand-50 hover:border-petroleum-100 flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200"
       >
@@ -274,6 +278,7 @@ export function DateTimeStep({
             </p>
             <p className="text-petroleum-400 text-xs">{t("tryAnother")}</p>
             <button
+              type="button"
               onClick={handleChangeDate}
               className="bg-petroleum-700 hover:bg-petroleum-600 mt-1 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
             >
@@ -284,6 +289,7 @@ export function DateTimeStep({
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {availableSlots.map(({ time }) => (
               <button
+                type="button"
                 key={time}
                 onClick={() => onSelectTime(time)}
                 className={[
