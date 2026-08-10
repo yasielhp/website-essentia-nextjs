@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { TIME_ZONE } from "@/utils/format";
+import { SummaryTable } from "./summary-table";
+import type { Registration, SearchResult } from "./types";
 import {
   IconCheckmark,
   IconArrowLeft,
@@ -17,17 +19,6 @@ type Race = {
   date: string | null;
   seats_per_table: number | null;
 };
-
-type Registration = {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  table_number: number | null;
-  checked_in_at: string | null;
-};
-
-type SearchResult = Registration & { matchScore: number };
 
 function TableBadge({ tableNumber }: { tableNumber: number | null }) {
   const t = useTranslations("dashboard.races.checkin");
@@ -398,51 +389,13 @@ export default function CheckInPage() {
 
         {/* Summary table */}
         {!loading && !selected && !q && registrations.length > 0 && (
-          <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
-            <div className="border-sand-100 border-b px-5 py-3">
-              <p className="text-petroleum-500 text-sm font-medium">
-                {t("allRegistrations")}
-              </p>
-            </div>
-            <div className="divide-sand-100 divide-y">
-              {registrations.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => {
-                    setSelected(r);
-                    setQuery(r.full_name ?? "");
-                  }}
-                  className="hover:bg-sand-50 flex w-full items-center justify-between px-5 py-3 text-left transition-colors"
-                >
-                  <div>
-                    <p className="text-petroleum-700 text-sm font-medium">
-                      {r.full_name ?? "—"}
-                    </p>
-                    {r.email && (
-                      <p className="text-petroleum-400 text-xs">{r.email}</p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {r.table_number != null && (
-                      <span className="bg-petroleum-100 text-petroleum-500 rounded-full px-2.5 py-0.5 text-xs font-medium">
-                        {t("table", { number: r.table_number })}
-                      </span>
-                    )}
-                    {r.checked_in_at ? (
-                      <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                        ✓
-                      </span>
-                    ) : (
-                      <span className="bg-sand-100 text-petroleum-400 rounded-full px-2.5 py-0.5 text-xs">
-                        {t("pending")}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <SummaryTable
+            registrations={registrations}
+            onSelect={(r) => {
+              setSelected(r);
+              setQuery(r.full_name ?? "");
+            }}
+          />
         )}
       </div>
     </div>
