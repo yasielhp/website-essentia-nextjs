@@ -12,27 +12,21 @@ import {
 } from "@/lib/schemas";
 import { normalizeEmail, normalizePhone } from "@/utils/contact";
 import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/ui/image-upload";
 import { INPUT_CLASS } from "@/constants/form-styles";
-import { PasswordInput } from "@/components/ui/input";
-import { setUserPassword } from "@/actions/set-user-password";
 import { removeUserAccess } from "@/actions/remove-user-access";
 import { updateUserProfile } from "@/actions/update-user-profile";
 import { getAccessToken } from "@/lib/client-session";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { toStoredGender, type GenderValue } from "@/constants/gender";
 import { useGenderOptions } from "@/hooks/use-gender-options";
-import {
-  connectAccountCalendar,
-  disconnectAccountCalendar,
-  resyncAccountCalendar,
-} from "@/services/calendar.client";
-import { IconTrash, IconCalendarConnect } from "@/components/ui/icons";
+import { IconTrash } from "@/components/ui/icons";
 import { EmailInput } from "@/components/ui/email-input";
 import { StaffScheduleEditor } from "@/components/dashboard/users/staff-schedule-editor";
 import { normaliseSchedule } from "@/utils/staff-schedule";
 import type { WeeklySchedule } from "@/types/schedule";
 import { LANGUAGE_OPTIONS } from "@/constants/i18n";
+import { PasswordSection } from "./password-section";
+import { UserSidebar } from "./user-sidebar";
 
 type SystemRole = "admin" | "staff" | "partner";
 
@@ -188,7 +182,6 @@ export default function EditUserPage() {
   const tForm = useTranslations("dashboard.users.form");
   const tCommon = useTranslations("dashboard.common");
   const tSchedule = useTranslations("dashboard.users.schedule");
-  const tCalendar = useTranslations("dashboard.users.calendarBox");
   const genderOptions = useGenderOptions();
   const roles: SelectOption<SystemRole>[] = ROLE_VALUES.map((value) => ({
     value,
@@ -201,10 +194,7 @@ export default function EditUserPage() {
   const { loading, notFound, saving, removing, confirmRemove, error } = state;
   const { avatarUrl } = state;
 
-  const [pwNew, setPwNew] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
   const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
-  const [resyncing, setResyncing] = useState(false);
   const [schedule, setSchedule] = useState<WeeklySchedule>(() =>
     normaliseSchedule(null),
   );
@@ -219,9 +209,6 @@ export default function EditUserPage() {
    * real one, and every render it forced was a render for nobody.
    */
   const scheduleLoadedRef = useRef(false);
-  const [pwError, setPwError] = useState<string | null>(null);
-  const [pwOk, setPwOk] = useState(false);
-  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -307,34 +294,6 @@ export default function EditUserPage() {
     dispatch({ type: "SET_SAVING", value: false });
     notifySuccess(tToasts("userSaved"));
     push("/dashboard/users");
-  }
-
-  async function handleChangePw() {
-    setPwError(null);
-    setPwOk(false);
-    if (pwNew !== pwConfirm) {
-      setPwError(t("password.mismatch"));
-      return;
-    }
-    if (pwNew.length < 8) {
-      setPwError(t("password.tooShort"));
-      return;
-    }
-    setPwLoading(true);
-    try {
-      const { error } = await setUserPassword(getAccessToken(), id, pwNew);
-      if (error) {
-        setPwError(error);
-        return;
-      }
-      setPwNew("");
-      setPwConfirm("");
-      setPwOk(true);
-    } finally {
-      // A thrown action used to leave the form disabled with no way back.
-      setPwLoading(false);
-    }
-    notifySuccess(tToasts("passwordChanged"));
   }
 
   async function handleRemove() {
@@ -641,73 +600,7 @@ export default function EditUserPage() {
             </div>
 
             {/* Password */}
-            {!loading && (
-              <div className="border-sand-200 rounded-2xl border bg-white p-6">
-                <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                  {t("sections.password")}
-                </h2>
-                <div className="space-y-4">
-                  {pwError && (
-                    <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-                      {pwError}
-                    </p>
-                  )}
-
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="pw-new"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {t("password.new")}
-                    </label>
-                    <PasswordInput
-                      id="pw-new"
-                      value={pwNew}
-                      onChange={(e) => setPwNew(e.target.value)}
-                      placeholder={t("password.placeholder")}
-                      disabled={pwLoading || saving}
-                      autoComplete="new-password"
-                      inputClassName={INPUT_CLASS}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="pw-confirm"
-                      className="text-petroleum-500 text-xs font-medium"
-                    >
-                      {t("password.confirm")}
-                    </label>
-                    <PasswordInput
-                      id="pw-confirm"
-                      value={pwConfirm}
-                      onChange={(e) => setPwConfirm(e.target.value)}
-                      placeholder={t("password.placeholder")}
-                      disabled={pwLoading || saving}
-                      autoComplete="new-password"
-                      inputClassName={INPUT_CLASS}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-4">
-                    {pwOk && (
-                      <p className="text-sm font-medium text-green-700">
-                        {t("password.updated")}
-                      </p>
-                    )}
-                    <Button
-                      type="button"
-                      variant="solid"
-                      size="md"
-                      onClick={() => void handleChangePw()}
-                      disabled={pwLoading || saving || !pwNew || !pwConfirm}
-                    >
-                      {pwLoading ? t("saving") : t("password.change")}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {!loading && <PasswordSection userId={id} saving={saving} />}
 
             {/* Schedule — whoever takes bookings has working days */}
             {!loading && state.role === "staff" && (
@@ -729,104 +622,17 @@ export default function EditUserPage() {
             )}
           </div>
 
-          {/* Photo, alongside the fields rather than between them */}
-          <div className="flex flex-col gap-6 lg:sticky lg:top-24">
-            {/* Photo — every role has one, same bucket the account page uses */}
-            <div className="border-sand-200 rounded-2xl border bg-white p-6">
-              <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-                {t("sections.photo")}
-              </h2>
-              {loading ? (
-                <div className="bg-sand-100 h-36 animate-pulse rounded-xl" />
-              ) : (
-                <ImageUpload
-                  bucket="events"
-                  folder="staff"
-                  value={avatarUrl}
-                  onChange={(value) =>
-                    dispatch({ type: "SET_AVATAR_URL", value })
-                  }
-                />
-              )}
-            </div>
-
-            {/* Google Calendar — theirs, checked when offering slots */}
-            {/* Staff connect a calendar so their bookings appear on it and
-                their busy hours narrow what the public can book. An admin
-                connects one to mirror the whole centre's diary — nothing they
-                have on it ever hides a slot from a client. */}
-            {!loading && (state.role === "staff" || state.role === "admin") && (
-              <div className="border-sand-200 rounded-2xl border bg-white p-6">
-                <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-                  {t("calendar.label")}
-                </h2>
-                <p className="text-petroleum-400 mb-4 text-xs">
-                  {state.role === "admin"
-                    ? t("calendar.adminHint")
-                    : tCalendar("hint")}
-                </p>
-                {calendarEmail && (
-                  <p className="text-petroleum-400 mb-3 truncate text-xs">
-                    {calendarEmail}
-                  </p>
-                )}
-                <div className="flex flex-col gap-2">
-                  {calendarEmail ? (
-                    <>
-                      {/* Bookings made while the calendar was disconnected —
-                          or whose sync failed — have no event yet. */}
-                      <button
-                        type="button"
-                        disabled={resyncing}
-                        onClick={async () => {
-                          setResyncing(true);
-                          const result = await resyncAccountCalendar(id);
-                          setResyncing(false);
-                          notifySuccess(
-                            result
-                              ? tCalendar("resynced", {
-                                  synced: result.synced,
-                                  failed: result.failed,
-                                })
-                              : tCalendar("resyncFailed"),
-                          );
-                        }}
-                        className="border-sand-200 text-petroleum-700 hover:bg-sand-50 w-full rounded-xl border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50"
-                      >
-                        {resyncing
-                          ? tCalendar("resyncing")
-                          : tCalendar("resync")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await disconnectAccountCalendar(id);
-                          setCalendarEmail(null);
-                        }}
-                        className="w-full rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
-                      >
-                        {tCalendar("disconnect")}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void connectAccountCalendar(
-                          id,
-                          `/dashboard/users/${id}`,
-                        )
-                      }
-                      className="bg-petroleum-700 hover:bg-petroleum-600 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-white transition-colors"
-                    >
-                      <IconCalendarConnect />
-                      {tCalendar("connect")}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <UserSidebar
+            userId={id}
+            role={state.role}
+            loading={loading}
+            avatarUrl={avatarUrl}
+            onAvatarChange={(value) =>
+              dispatch({ type: "SET_AVATAR_URL", value })
+            }
+            calendarEmail={calendarEmail}
+            onDisconnected={() => setCalendarEmail(null)}
+          />
         </div>
       </form>
 
