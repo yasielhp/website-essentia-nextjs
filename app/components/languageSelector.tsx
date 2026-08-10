@@ -1,7 +1,6 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
-import { useParams } from "next/navigation";
-import { usePathname, useRouter } from "../../i18n/navigation";
+import { useRouter } from "next/navigation";
 import { IconWorld } from "@components/ui/icons";
 import { setPreferredLanguage } from "@/actions/preferred-language";
 
@@ -13,29 +12,41 @@ const labels: Record<string, string> = {
 export default function LanguageSelector() {
   const locale = useLocale();
   const t = useTranslations("header");
-  const pathname = usePathname();
-  const params = useParams();
   const router = useRouter();
 
   /**
-   * On a dynamic route `usePathname` returns the pattern — `/blog/[slug]` —
-   * because that is how the route is declared in `routing.ts`. Switching
-   * language without handing the params back navigated to that literal string
-   * and answered 404 from inside every blog post and therapy page.
+   * Where the other language lives, taken from the page's own `hreflang`.
    *
-   * A post's Spanish slug can differ from its English one, and this control
-   * lives in the footer with no knowledge of either. It carries the current
-   * slug across; the page resolves a post by whichever slug it is given, and
-   * its canonical points at the right URL for the language.
+   * This used to be built from `usePathname()` and `useParams()`, which meant
+   * subscribing the whole control to every URL change to read two values it
+   * only ever uses on click. `window.location` is no substitute — the routes
+   * are translated, so `/es/bienestar/terapia-de-contraste` cannot be turned
+   * back into `/wellness/contrast-therapy` without next-intl's own tables.
+   *
+   * The page already published the answer. Every page emits
+   * `<link rel="alternate" hreflang="es" …>` from its metadata, and for a blog
+   * post that link carries the real Spanish slug, which the route pattern
+   * never did.
    */
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const next = e.target.value;
+
     // Remember the choice: on the profile when there is one to write to, in
     // the cookie either way. Not awaited — the navigation should not wait on it.
-    void setPreferredLanguage(e.target.value);
+    void setPreferredLanguage(next);
+
+    const alternate = document.querySelector<HTMLLinkElement>(
+      `link[rel="alternate"][hreflang="${next}"]`,
+    );
+
+    // A page with no alternate declared falls back to the front page in the
+    // chosen language rather than guessing at a translated slug.
     router.replace(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { pathname, params } as any,
-      { locale: e.target.value },
+      alternate
+        ? new URL(alternate.href, window.location.origin).pathname
+        : next === "es"
+          ? "/es"
+          : "/",
     );
   };
 

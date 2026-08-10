@@ -13,6 +13,16 @@ export async function generateMetadata({
   return {
     title: { absolute: t("confirm.heading") },
     description: t("confirm.body"),
+    // Not for a search engine — but the language selector reads these to
+    // find its counterpart, so the pair is declared even on a noindex page.
+    alternates: {
+      canonical: locale === "es" ? "/es/reserva/cancelar" : "/booking/cancel",
+      languages: {
+        en: "/booking/cancel",
+        es: "/es/reserva/cancelar",
+        "x-default": "/booking/cancel",
+      },
+    },
     // Reached from a link in an email and scoped to one booking: there is
     // nothing here for a search engine to index.
     robots: { index: false, follow: false },

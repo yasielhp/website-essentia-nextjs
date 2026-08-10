@@ -3,6 +3,15 @@ import UnsubscribeClientPage from "./unsubscribe-content";
 import { setRequestLocale } from "next-intl/server";
 
 export const metadata: Metadata = {
+  // The path is the same in both languages, but the pair is declared anyway:
+  // the language selector reads these links to find where to go.
+  alternates: {
+    languages: {
+      en: "/newsletter/unsubscribe",
+      es: "/es/newsletter/unsubscribe",
+      "x-default": "/newsletter/unsubscribe",
+    },
+  },
   robots: { index: false, follow: false },
 };
 
