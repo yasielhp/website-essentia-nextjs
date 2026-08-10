@@ -21,6 +21,7 @@ import { useDropdownPortal } from "@/hooks/use-dropdown-portal";
 import { getAccessToken, authFetch } from "@/lib/client-session";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { z } from "zod";
 import { getSessionUser } from "@/actions/auth";
 import { useRole } from "@/context/role-context";
@@ -953,6 +954,16 @@ function NewBookingPageInner() {
       } catch {
         // Notification failed silently — booking is already saved
       }
+    }
+
+    // The professional gets it on WhatsApp too: whoever took this booking at
+    // the desk is not going to walk down the corridor to say so.
+    if (staffId) {
+      await notifyStaffWhatsApp(getAccessToken(), {
+        bookingId,
+        staffId,
+        event: "assigned",
+      });
     }
 
     // Create Google Calendar event (non-blocking, only for confirmed bookings)

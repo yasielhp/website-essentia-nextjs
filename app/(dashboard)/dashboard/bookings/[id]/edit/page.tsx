@@ -38,6 +38,7 @@ import {
   getTimeSlotsForDashboard,
 } from "@/utils/calendar-helpers";
 import { EmailInput } from "@/components/ui/email-input";
+import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { StaffSelect } from "@/components/ui/staff-select";
 
@@ -1304,6 +1305,7 @@ export default function EditBookingPage() {
     date: string | null;
     time: string;
     serviceId: string;
+    staffId: string;
     googleEventId: string | null;
   } | null>(null);
 
@@ -1572,6 +1574,7 @@ export default function EditBookingPage() {
         date: b.date ?? null,
         time: b.time ?? "",
         serviceId: b.service_id ?? "",
+        staffId: b.staff_id ?? "",
         googleEventId: b.google_event_id ?? null,
       };
       setOrigBookingDate(b.date ?? null);
@@ -1839,6 +1842,53 @@ export default function EditBookingPage() {
           // fail-open: calendar deletion failure must not block navigation
         }
       }
+    }
+
+    // WhatsApp to the professional. Outside the block above because that one
+    // also requires a client email, and a booking taken over the phone without
+    // one still has someone who has to turn up for it.
+    if (orig) {
+      const statusChanged = status !== orig.status;
+      const dateTimeChanged =
+        (dateStr ?? null) !== orig.date || (selectedTime || "") !== orig.time;
+      const staffChanged = (staffId || "") !== (orig.staffId || "");
+
+      if (statusChanged && status === "cancelled") {
+        // Whoever was holding the slot, whether or not it changed hands in the
+        // same save.
+        const holder = staffId || orig.staffId;
+        if (holder) {
+          await notifyStaffWhatsApp(getAccessToken(), {
+            bookingId: id,
+            staffId: holder,
+            event: "cancelled",
+          });
+        }
+      } else if (staffChanged) {
+        // Reassignment wins over a simultaneous time change: the message the
+        // new person gets already carries the new time, so a second
+        // `rescheduled` would only say the same thing twice.
+        if (orig.staffId) {
+          await notifyStaffWhatsApp(getAccessToken(), {
+            bookingId: id,
+            staffId: orig.staffId,
+            event: "unassigned",
+          });
+        }
+        if (staffId) {
+          await notifyStaffWhatsApp(getAccessToken(), {
+            bookingId: id,
+            staffId,
+            event: "assigned",
+          });
+        }
+      } else if (dateTimeChanged && staffId) {
+        await notifyStaffWhatsApp(getAccessToken(), {
+          bookingId: id,
+          staffId,
+          event: "rescheduled",
+        });
+      }
 
       // Update original ref so re-saves don't re-send
       originalRef.current = {
@@ -1846,6 +1896,7 @@ export default function EditBookingPage() {
         date: dateStr ?? null,
         time: selectedTime,
         serviceId,
+        staffId,
         googleEventId: originalRef.current?.googleEventId ?? null,
       };
     }

@@ -5,9 +5,11 @@ import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
 import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
+import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
+import { formatLongDate } from "@/lib/format-date";
 
 const SELECT =
-  "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, service_tiers(label)";
+  "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, staff_id, service_tiers(label)";
 
 type Row = {
   id: string;
@@ -20,17 +22,9 @@ type Row = {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  staff_id: string | null;
   service_tiers: { label: string | null } | null;
 };
-
-function formatDate(dateStr: string | null, locale: "en" | "es"): string {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
-  return new Date(y!, (m ?? 1) - 1, d ?? 1).toLocaleDateString(
-    locale === "es" ? "es-ES" : "en-GB",
-    { weekday: "long", day: "numeric", month: "long", year: "numeric" },
-  );
-}
 
 /** Hours between now and the start of the session; negative once it has begun. */
 function hoursUntil(date: string | null, time: string | null): number {
@@ -123,12 +117,22 @@ export async function cancelBookingByToken(
         name: booking.first_name ?? "",
         service,
         sessionType: booking.service_tiers?.label ?? null,
-        date: formatDate(booking.date, locale),
+        date: formatLongDate(booking.date, locale),
         time: booking.time ?? "",
         duration: booking.duration,
         locale,
       }),
     }).catch(() => {});
+  }
+
+  // The professional is the one left with a hole in the day, and they are not
+  // watching the dashboard between clients.
+  if (booking.staff_id) {
+    await notifyStaffOnWhatsApp({
+      bookingId: booking.id,
+      staffId: booking.staff_id,
+      event: "cancelled",
+    });
   }
 
   return { ok: true };

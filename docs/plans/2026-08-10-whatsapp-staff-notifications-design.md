@@ -18,12 +18,12 @@ environment variables — not by shipping more code.
 
 Four events, all addressed to the member of staff, never to the client:
 
-| Event        | When                                                     |
-| ------------ | -------------------------------------------------------- |
-| `assigned`   | booking created with staff, or staff set on an unassigned booking |
-| `unassigned` | staff replaced — the previous person is told to drop it    |
-| `rescheduled`| date or time changed on an assigned booking               |
-| `cancelled`  | booking cancelled from the dashboard or by the client      |
+| Event         | When                                                              |
+| ------------- | ----------------------------------------------------------------- |
+| `assigned`    | booking created with staff, or staff set on an unassigned booking |
+| `unassigned`  | staff replaced — the previous person is told to drop it           |
+| `rescheduled` | date or time changed on an assigned booking                       |
+| `cancelled`   | booking cancelled from the dashboard or by the client             |
 
 Out of scope: messages to clients, inbound WhatsApp, reminders. The existing
 client emails and the `staff-new-booking` email stay exactly as they are —
@@ -84,12 +84,12 @@ is involved.
 
 ## Environment
 
-| Variable                   | Purpose                          |
-| -------------------------- | -------------------------------- |
-| `WHATSAPP_ACCESS_TOKEN`    | permanent token of the Meta app   |
-| `WHATSAPP_PHONE_NUMBER_ID` | id of the sending number          |
+| Variable                   | Purpose                               |
+| -------------------------- | ------------------------------------- |
+| `WHATSAPP_ACCESS_TOKEN`    | permanent token of the Meta app       |
+| `WHATSAPP_PHONE_NUMBER_ID` | id of the sending number              |
 | `WHATSAPP_TEMPLATE_NAME`   | defaults to `essentia_booking_update` |
-| `WHATSAPP_API_VERSION`     | defaults to `v21.0`               |
+| `WHATSAPP_API_VERSION`     | defaults to `v21.0`                   |
 
 Missing either of the first two puts the whole feature in dry-run: rows are
 written, no HTTP call is made.
@@ -108,29 +108,33 @@ written, no HTTP call is made.
 - `app/lib/format-date.ts` — the long-date formatter, extracted from
   `booking-notifications.ts` where it was already duplicated in
   `booking-cancellation.ts`.
-- `app/actions/staff-whatsapp.ts` — two doors onto one body:
+- `app/lib/whatsapp/notify.ts` — `notifyStaffOnWhatsApp(input)`, the whole body
+  of the feature. Server-only and deliberately **not** a Server Action: every
+  export of a `"use server"` module is a public HTTP endpoint, and this one has
+  no role check. The anonymous flows (`booking-draft.ts`,
+  `booking-cancellation.ts`) already run on the server and import it directly.
+- `app/actions/staff-whatsapp.ts` — the browser-facing door:
   - `notifyStaffWhatsApp(accessToken, input)` — guarded by `requireRole`, for
     the dashboard pages, which are Client Components.
-  - `sendStaffWhatsApp(input)` — server-only, no guard, for `booking-draft.ts`
-    and `booking-cancellation.ts`, which serve anonymous visitors by design.
+  - `fetchBookingWhatsAppMessages(accessToken, bookingId)` — same guard, reads
+    the log through the service key because the table holds phone numbers.
 
 Neither trusts the caller for the recipient. Phone, name and language are read
 from `profiles` by `staff_id`; client, service, date and time are read from
-`bookings` by `bookingId`. The public booking flow can call this action
-unauthenticated, so accepting a caller-supplied phone number would make it an
-open relay for messages signed by the centre's WhatsApp number — the same
-reasoning as `getBookingRecipient` in `booking-notifications.ts`.
+`bookings` by `bookingId` — the same reasoning as `getBookingRecipient` in
+`booking-notifications.ts`. Accepting a caller-supplied number would turn the
+centre's WhatsApp into an open relay.
 
 Every call site wraps the call so a WhatsApp failure never breaks a booking.
 
 ## Call sites
 
-| File                                             | Event(s)                    |
-| ------------------------------------------------ | --------------------------- |
-| `app/actions/booking-draft.ts`                   | `assigned`                  |
-| `app/(dashboard)/dashboard/bookings/new/page.tsx`| `assigned`                  |
-| `app/(dashboard)/dashboard/bookings/[id]/edit/page.tsx` | all four            |
-| `app/actions/booking-cancellation.ts`            | `cancelled`                 |
+| File                                                    | Event(s)    |
+| ------------------------------------------------------- | ----------- |
+| `app/actions/booking-draft.ts`                          | `assigned`  |
+| `app/(dashboard)/dashboard/bookings/new/page.tsx`       | `assigned`  |
+| `app/(dashboard)/dashboard/bookings/[id]/edit/page.tsx` | all four    |
+| `app/actions/booking-cancellation.ts`                   | `cancelled` |
 
 Rules in the editor, next to the `statusChanged` / `dateTimeChanged` branches
 that already decide which email goes out:

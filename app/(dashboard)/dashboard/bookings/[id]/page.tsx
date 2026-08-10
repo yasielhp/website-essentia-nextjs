@@ -9,6 +9,8 @@ import Image from "next/image";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
+import { fetchBookingWhatsAppMessages } from "@/actions/staff-whatsapp";
+import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
 import { Button } from "@/components/ui/button";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
@@ -211,6 +213,9 @@ export default function BookingDetailPage() {
   } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [whatsappMessages, setWhatsappMessages] = useState<
+    WhatsAppMessageRow[]
+  >([]);
 
   const fullNameForCrumb =
     state.kind === "loaded"
@@ -278,6 +283,18 @@ export default function BookingDetailPage() {
       setState({ kind: "loaded", booking, creator });
     }
     void load();
+  }, [id]);
+
+  // Read through a Server Action, not the browser client: the table holds
+  // staff phone numbers.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchBookingWhatsAppMessages(getAccessToken(), id).then((rows) => {
+      if (!cancelled) setWhatsappMessages(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleDelete() {
@@ -511,6 +528,67 @@ export default function BookingDetailPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* WhatsApp notifications sent to the professional */}
+        {whatsappMessages.length > 0 && (
+          <div className="border-sand-200 rounded-2xl border bg-white p-6">
+            <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+              {t("sections.whatsapp")}
+            </h2>
+
+            {/* Until the centre has a number, every row is a dry run — say so
+                rather than let staff read "not sent" as a failure. */}
+            {whatsappMessages.some((m) => m.status === "skipped") && (
+              <p className="text-petroleum-400 mb-4 text-xs">
+                {t("whatsapp.dryRunNotice")}
+              </p>
+            )}
+
+            <ul className="flex flex-col gap-4">
+              {whatsappMessages.map((message) => (
+                <li
+                  key={message.id}
+                  className="border-sand-200 flex flex-col gap-1 border-b pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-petroleum-700 text-sm font-medium">
+                      {t(`whatsapp.events.${message.event}`)}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        message.status === "sent"
+                          ? "bg-petroleum-700 text-sand-100"
+                          : message.status === "failed"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-sand-200 text-petroleum-500"
+                      }`}
+                    >
+                      {t(`whatsapp.statuses.${message.status}`)}
+                    </span>
+                    <span className="text-petroleum-400 text-xs">
+                      {message.toPhone} ·{" "}
+                      {new Date(message.createdAt).toLocaleString(
+                        locale === "es" ? "es-ES" : "en-GB",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-petroleum-500 text-sm">
+                    {message.bodyPreview}
+                  </p>
+                  {message.error && (
+                    <p className="text-xs text-red-700">{message.error}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
