@@ -81,6 +81,7 @@
 - **Benefits:** Stress reduction, improved HRV, enhanced oxygen efficiency, better sleep
 
 ### Red Light Therapy
+- **Status:** announced, not yet bookable. Do not present as available.
 - **URL:** https://www.essentiawellnessclub.com/wellness/red-light-therapy
 - **Duration:** 20 minutes
 - **Price:** €25 per session
@@ -138,8 +139,9 @@
 - 120 min · €350 (centre only — not available in-suite)
 
 ### Functional Well-Being
-- **Status:** not currently offered. The page redirects to Therapeutic Facials
-- Do not present this as bookable.
+- **Status:** announced, not yet bookable. Do not present as available.
+- **URL:** https://www.essentiawellnessclub.com/wellness/functional-wellbeing
+- **Description:** Assessment and training built around how the body actually moves, to sustain strength, mobility and energy over time.
 
 ---
 
@@ -255,6 +257,6 @@ Full ecosystem access with a dedicated health advisor and founding member status
 - Memberships: https://www.essentiawellnessclub.com/experiences/memberships
 - About: https://www.essentiawellnessclub.com/about
 - Blog: https://www.essentiawellnessclub.com/blog
+- Reviews: https://www.essentiawellnessclub.com/reviews
 - Contact: https://www.essentiawellnessclub.com/contact
 - Book a session: https://www.essentiawellnessclub.com/booking
-- Shop: https://www.essentiawellnessclub.com/shop

@@ -17,6 +17,7 @@ Bookable today at the centre in Costa Adeje.
 
 - [Manual Therapies](https://www.essentiawellnessclub.com/wellness/manual-therapies): 10 precision massage and bodywork treatments, from €90 to €350. 30–120 min.
 - [Therapeutic Facials](https://www.essentiawellnessclub.com/wellness/facial-therapies): Advanced facial protocols combining manual technique and technology to restore skin health. 60 min.
+- [IV Therapy](https://www.essentiawellnessclub.com/medicine/intravenous-therapy): 12 medically supervised infusion protocols — vitamin C, NAD+, Myers, glutathione, amino acids. 45–90 min, NAD+ 2–3 h.
 
 ## Coming soon
 
@@ -28,7 +29,6 @@ pages currently say so. Do not present them as available.
 - Hyperbaric Oxygen — pure oxygen at raised atmospheric pressure for tissue repair.
 - Regenerative Medicine — PRP, peptide protocols, ozone therapy, longevity assessments.
 - Red Light Therapy — full-body red and near-infrared panels.
-- IV Therapy — vitamin, NAD+ and amino acid infusions.
 - Functional Wellbeing — assessment and training for strength, mobility and energy.
 - Running Club — group runs on coastal routes in Costa Adeje.
 - Education Programs — masterclasses, workshops and talks.
@@ -42,6 +42,7 @@ pages currently say so. Do not present them as available.
 - [About](https://www.essentiawellnessclub.com/about): Team, philosophy, and founding story of Essentia.
 - [Contact](https://www.essentiawellnessclub.com/contact): Contact form, address, and directions.
 - [Blog](https://www.essentiawellnessclub.com/blog): Articles on longevity, wellness protocols, and community.
+- [Reviews](https://www.essentiawellnessclub.com/reviews): Verified accounts from people who have been treated at the centre.
 
 ## Optional
 
