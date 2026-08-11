@@ -3,26 +3,30 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { programs } from "./data";
+import { programs, type Program } from "./data";
 
 // ─── ProgramCard ──────────────────────────────────────────────
 
-function ProgramCard({ program }: { program: (typeof programs)[number] }) {
+function ProgramCard({ program }: { program: Program }) {
   const t = useTranslations("experiences.programs");
+  const tCommon = useTranslations("common");
   const title = t(`${program.key}.title`);
   const description = t(`${program.key}.description`);
-  return (
-    <Link
-      href={program.href}
-      data-card
-      className="group relative h-80 overflow-hidden rounded-2xl md:h-96"
-    >
+  const className = "group relative h-80 overflow-hidden rounded-2xl md:h-96";
+
+  const inner = (
+    <>
       <Image
         src={program.img}
         alt={title}
         fill
         sizes="(max-width: 767px) 100vw, 50vw"
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
+        className={[
+          "object-cover",
+          program.comingSoon
+            ? "grayscale-[40%]"
+            : "transition-transform duration-500 group-hover:scale-105",
+        ].join(" ")}
       />
       <div
         className="absolute inset-0"
@@ -31,12 +35,33 @@ function ProgramCard({ program }: { program: (typeof programs)[number] }) {
             "linear-gradient(to top, rgb(9 33 33 / 0.92), rgb(9 33 33 / 0.3), transparent)",
         }}
       />
+      {program.comingSoon && (
+        <div className="absolute top-4 left-4">
+          <span className="bg-sand-100/90 text-petroleum-700 rounded-full px-3 py-1 text-xs font-medium tracking-wide uppercase">
+            {tCommon("comingSoon")}
+          </span>
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 p-6">
         <h3 className="font-body text-xl text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
           {description}
         </p>
       </div>
+    </>
+  );
+
+  if (program.comingSoon) {
+    return (
+      <div data-card className={className}>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link href={program.href} data-card className={className}>
+      {inner}
     </Link>
   );
 }

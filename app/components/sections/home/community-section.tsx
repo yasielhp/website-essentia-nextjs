@@ -16,6 +16,7 @@ export default function CommunitySection() {
   const tExp = useTranslations("home.community.experiences");
   const tEdu = useTranslations("home.community.educationPrograms");
   const tRun = useTranslations("home.community.runningClub");
+  const tCommon = useTranslations("common");
 
   const headerRef = useRef<HTMLDivElement>(null);
   const cardLeftRef = useRef<HTMLDivElement>(null);
@@ -106,6 +107,9 @@ export default function CommunitySection() {
             <div ref={cardsRightRef} className="flex flex-col gap-4">
               {/* ─── Education Programs Card ───────────────── */}
               <div className="bg-petroleum-700 rounded-2xl p-5">
+                <span className="bg-sand-100/90 text-petroleum-700 mb-3 inline-block rounded-full px-3 py-1 text-xs font-medium tracking-wide uppercase">
+                  {tCommon("comingSoon")}
+                </span>
                 <h3 className="font-display text-sand-50 text-xl">
                   {tEdu("headline")}
                 </h3>
@@ -124,6 +128,9 @@ export default function CommunitySection() {
 
               {/* ─── Running Club Card ─────────────────────── */}
               <div className="bg-sand-50 rounded-2xl p-5">
+                <span className="bg-sand-200 text-petroleum-700 mb-3 inline-block rounded-full px-3 py-1 text-xs font-medium tracking-wide uppercase">
+                  {tCommon("comingSoon")}
+                </span>
                 <h3 className="font-display text-petroleum-700 text-xl">
                   {tRun("headline")}
                 </h3>
