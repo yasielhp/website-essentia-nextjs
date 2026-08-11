@@ -41,6 +41,12 @@ const allStaticRoutes = [
     changeFrequency: "monthly",
   },
   {
+    path: "/wellness/functional-wellbeing",
+    esPath: "/bienestar/bienestar-funcional",
+    priority: 0.8,
+    changeFrequency: "monthly",
+  },
+  {
     path: "/wellness/manual-therapies",
     esPath: "/bienestar/terapias-manuales",
     priority: 0.8,
@@ -108,6 +114,12 @@ const allStaticRoutes = [
   },
   { path: "/blog", esPath: "/blog", priority: 0.8, changeFrequency: "daily" },
   {
+    path: "/reviews",
+    esPath: "/testimonios",
+    priority: 0.7,
+    changeFrequency: "weekly",
+  },
+  {
     path: "/shop",
     esPath: "/tienda",
     priority: 0.6,
@@ -124,6 +136,33 @@ const allStaticRoutes = [
     esPath: "/reserva",
     priority: 0.9,
     changeFrequency: "weekly",
+  },
+  // Untranslated in `i18n/routing.ts`, so both locales share the path. They are
+  // indexable and `llms.txt` lists them, so leaving them out only meant the
+  // sitemap disagreed with the site.
+  {
+    path: "/legal",
+    esPath: "/legal",
+    priority: 0.3,
+    changeFrequency: "yearly",
+  },
+  {
+    path: "/privacy",
+    esPath: "/privacy",
+    priority: 0.3,
+    changeFrequency: "yearly",
+  },
+  {
+    path: "/terms",
+    esPath: "/terms",
+    priority: 0.3,
+    changeFrequency: "yearly",
+  },
+  {
+    path: "/cookies",
+    esPath: "/cookies",
+    priority: 0.3,
+    changeFrequency: "yearly",
   },
 ] as const;
 
