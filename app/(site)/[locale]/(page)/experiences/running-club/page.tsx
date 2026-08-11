@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-
-export const revalidate = 3600;
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
-import RunningClubSection from "@components/sections/experiences/running-club-section";
+import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
+import { ComingSoon } from "@components/coming-soon";
 
 export async function generateMetadata({
   params,
@@ -16,6 +15,7 @@ export async function generateMetadata({
     namespace: "experiences.runningClub.meta",
   });
   return {
+    robots: UNLAUNCHED_ROBOTS,
     title: { absolute: t("title") },
     description: t("description"),
     alternates: {
@@ -43,5 +43,17 @@ export default async function RunningClubPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <RunningClubSection />;
+  const isEs = locale === "es";
+
+  return (
+    <ComingSoon
+      isEs={isEs}
+      title="Running Club"
+      body={
+        isEs
+          ? "Salidas en grupo por rutas de la costa de Costa Adeje, con entrenamiento y desayuno compartido."
+          : "Group runs along the coastal routes of Costa Adeje, with structured training and a shared breakfast."
+      }
+    />
+  );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import RunRegisterSection from "@components/sections/experiences/run-register-section";
+import { UNLAUNCHED_ROBOTS } from "@/constants/unlaunched";
+import { ComingSoon } from "@components/coming-soon";
 
 export async function generateMetadata({
   params,
@@ -13,6 +14,7 @@ export async function generateMetadata({
     namespace: "experiences.runningClub.register.meta",
   });
   return {
+    robots: UNLAUNCHED_ROBOTS,
     title: { absolute: t("title") },
     description: t("description"),
     alternates: {
@@ -36,5 +38,17 @@ export default async function RunRegisterPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <RunRegisterSection />;
+  const isEs = locale === "es";
+
+  return (
+    <ComingSoon
+      isEs={isEs}
+      title={isEs ? "Inscripción al Running Club" : "Running Club Registration"}
+      body={
+        isEs
+          ? "Las inscripciones abrirán cuando el club eche a andar."
+          : "Registration opens when the club starts running."
+      }
+    />
+  );
 }
