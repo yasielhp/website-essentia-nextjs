@@ -1,4 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+import { pushBookingToCalendars } from "@/lib/calendar-sync";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
 import { formatLongDate } from "@/utils/format";
@@ -29,6 +30,10 @@ export async function handleBookingPaid(bookingId: string): Promise<void> {
     .from("bookings")
     .update({ payment_status: "paid", status: "confirmed" })
     .eq("id", bookingId);
+
+  // The booking has just become one somebody has to be there for, so it goes
+  // on the calendars now rather than at the next quarter past the hour.
+  await pushBookingToCalendars(bookingId);
 
   // Sync contact record for paid web bookings
   try {

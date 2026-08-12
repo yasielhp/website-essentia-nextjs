@@ -111,6 +111,94 @@ async function syncBookings(
   return { synced, failed: outcomes.length - synced };
 }
 
+/**
+ * Puts one booking on every calendar that should hold it, now.
+ *
+ * The hourly job walks every calendar and fills in what is missing; this is the
+ * same rules applied to a single booking, so one taken at four in the afternoon
+ * is on the professional's phone at four in the afternoon rather than at a
+ * quarter past five. The job stays exactly as it is — it is now the net that
+ * catches whatever Google refused, not the way bookings normally arrive.
+ *
+ * SERVER ONLY. Never throws, and safe to call twice: a calendar that already
+ * holds the booking is skipped, so a second call finds nothing to do.
+ */
+export async function pushBookingToCalendars(bookingId: string): Promise<void> {
+  if (!bookingId) return;
+
+  try {
+    const db = getAdminClient().database;
+
+    const { data } = await db
+      .from("bookings")
+      .select(`${BOOKING_FIELDS}, service_id, staff_id, google_event_id`)
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    const booking = data as
+      | (Booking & {
+          service_id: string | null;
+          staff_id: string | null;
+          google_event_id: string | null;
+        })
+      | null;
+    if (!booking) return;
+
+    // The same two conditions the hourly job applies, for the same reasons: a
+    // draft is not a session anybody has to be there for, and a calendar gains
+    // nothing from an appointment that has already happened.
+    const today = new Date().toISOString().split("T")[0]!;
+    const isLive = booking.status === "confirmed" || booking.status === "paid";
+    if (!isLive || !booking.date || booking.date < today) return;
+
+    // An administrator holds a mirror of the whole centre rather than a diary
+    // of their own sessions, so one who also happens to be assigned to this
+    // booking must be served as a mirror and not twice.
+    const { data: adminRows } = await db
+      .from("profiles")
+      .select("id")
+      .eq("role", "admin");
+    const admins = ((adminRows ?? []) as { id: string }[]).map((row) => row.id);
+
+    // The professional's calendar, or the service's when there is no
+    // professional with one: both record the event in `google_event_id`, so
+    // only one of them may write it.
+    if (!booking.google_event_id) {
+      let token: string | null = null;
+      if (booking.staff_id && !admins.includes(booking.staff_id)) {
+        token = await getStaffAccessToken(booking.staff_id);
+      }
+      if (!token && booking.service_id) {
+        token = await getValidAccessToken(booking.service_id);
+      }
+      if (token) await syncBookings(token, "primary", [booking]);
+    }
+
+    const { data: mirrorRows } = await db
+      .from("booking_calendar_mirrors")
+      .select("owner_id")
+      .eq("booking_id", booking.id);
+
+    const mirrored = new Set(
+      ((mirrorRows ?? []) as { owner_id: string }[]).map((row) => row.owner_id),
+    );
+
+    await Promise.all(
+      admins
+        .filter((id) => !mirrored.has(id))
+        .map(async (id) => {
+          const token = await getStaffAccessToken(id);
+          if (!token) return;
+          await syncBookings(token, "primary", [booking], id);
+        }),
+    );
+  } catch (err) {
+    // The booking is already saved, and whoever took it cannot fix Google from
+    // where they are standing. The hourly job will try again.
+    console.error("[calendar] push failed:", err);
+  }
+}
+
 export type CalendarSyncReport = {
   target: string;
   kind: "staff" | "admin" | "service";
@@ -234,6 +322,15 @@ export async function syncAllCalendars(): Promise<{
     return { target: label, kind, ...result };
   });
 
+  // A booking whose professional has a calendar is theirs to hold. Both syncs
+  // record the event in the same `google_event_id`, so letting the service
+  // create one as well leaves a second event on a second calendar that nothing
+  // will ever move or delete — and they run at the same time, so which of the
+  // two ids survives is a coin toss.
+  const staffWithCalendar = new Set(
+    people.filter((person) => person.role !== "admin").map((p) => p.id),
+  );
+
   const serviceReports = services.map(async (service) => {
     const accessToken = await getValidAccessToken(service.service_id);
     if (!accessToken) {
@@ -248,17 +345,20 @@ export async function syncAllCalendars(): Promise<{
 
     const { data } = await db
       .from("bookings")
-      .select(BOOKING_FIELDS)
+      .select(`${BOOKING_FIELDS}, staff_id`)
       .eq("service_id", service.service_id)
       .in("status", ["confirmed", "paid"])
       .gte("date", today)
       .is("google_event_id", null);
 
-    const result = await syncBookings(
-      accessToken,
-      "primary",
-      (data ?? []) as Booking[],
+    const pending = (
+      (data ?? []) as (Booking & { staff_id?: string | null })[]
+    ).filter(
+      (booking) =>
+        !booking.staff_id || !staffWithCalendar.has(booking.staff_id),
     );
+
+    const result = await syncBookings(accessToken, "primary", pending);
     return { target: service.service_id, kind: "service" as const, ...result };
   });
 

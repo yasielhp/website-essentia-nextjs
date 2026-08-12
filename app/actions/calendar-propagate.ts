@@ -5,6 +5,7 @@ import {
   removeBookingFromCalendars,
   updateBookingOnCalendars,
 } from "@/lib/calendar-propagate";
+import { pushBookingToCalendars } from "@/lib/calendar-sync";
 
 /**
  * The dashboard's way of saying "this booking changed, fix the calendars".
@@ -30,4 +31,25 @@ export async function syncBookingToCalendars(
   } else {
     await updateBookingOnCalendars(bookingId);
   }
+}
+
+/**
+ * "This booking is real now — put it on the calendars."
+ *
+ * Its twin above corrects the copies a booking already has; this one creates
+ * the ones it is missing. Both exist because the dashboard screens are Client
+ * Components and the work is server-side.
+ */
+export async function pushBookingToCalendarsAction(
+  accessToken: string | null,
+  bookingId: string,
+): Promise<void> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return;
+    throw err;
+  }
+
+  await pushBookingToCalendars(bookingId);
 }

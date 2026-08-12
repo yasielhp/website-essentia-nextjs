@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { insforge } from "@/lib/insforge";
-import { getAccessToken, authFetch } from "@/lib/client-session";
+import { getAccessToken } from "@/lib/client-session";
 import { getSessionUser } from "@/actions/auth";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
+import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
 import { toStoredGender } from "@/constants/gender";
-import { contact } from "@/constants/contact";
 import { localDateStr } from "@/utils/format";
 import {
   resolvePrice,
@@ -191,83 +191,19 @@ export async function createBooking(
   return { ok: true, bookingId };
 }
 
-/** Where it happens, in the words a calendar entry wants. */
-function calendarLocation(draft: NewBookingDraft): string {
-  if (draft.location === "centro") return contact.address;
-
-  if (draft.location === "habitacion") {
-    const parts: string[] = [];
-    if (draft.reservationNumber.trim())
-      parts.push(`Reservation: ${draft.reservationNumber.trim()}`);
-    if (draft.roomNumber.trim()) parts.push(`Room: ${draft.roomNumber.trim()}`);
-    return parts.length
-      ? `Baobab Suites — ${parts.join(" · ")}`
-      : "Baobab Suites";
-  }
-
-  if (draft.location === "domicilio") {
-    const { street, building, postalCode, municipality } = draft.address;
-    return [
-      street.trim(),
-      building.trim(),
-      [postalCode.trim(), municipality.trim()].filter(Boolean).join(" "),
-    ]
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  return "";
-}
-
-/** Puts the new booking on the service's calendar. */
-async function writeCalendarEvent(
-  bookingId: string,
-  draft: NewBookingDraft,
-): Promise<void> {
-  const dateStr = dateOf(draft);
-  if (!dateStr || !draft.selectedTime) return;
-
-  const tierParts = [draft.tier?.label, durationOf(draft)].filter(Boolean);
-  const serviceName = draft.service?.title ?? draft.serviceId;
-  const summary = tierParts.length
-    ? `${serviceName} · ${tierParts.join(" · ")} — ${clientNameOf(draft)}`
-    : `${serviceName} — ${clientNameOf(draft)}`;
-
-  const description = [
-    `Booking #${bookingId}`,
-    draft.phone.trim() ? `Phone: ${draft.phone.trim()}` : null,
-    draft.email.trim() ? `Email: ${draft.email.trim()}` : null,
-    draft.notes.trim() ? `Notes: ${draft.notes.trim()}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const where = calendarLocation(draft);
-
+/**
+ * Puts the new booking on every calendar that should hold it.
+ *
+ * This used to build its own event and post it to the service's calendar, and
+ * only that one — so a booking taken at the desk never reached the
+ * professional's phone or the administrator's mirror until the hourly job ran,
+ * and once services stopped holding calendars of their own it reached nothing
+ * at all. The event is now built where every other calendar entry is built,
+ * from the row rather than from the form.
+ */
+async function writeCalendarEvent(bookingId: string): Promise<void> {
   try {
-    const response = await authFetch("/api/google/calendar/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        service_id: draft.serviceId,
-        summary,
-        description,
-        location: where || undefined,
-        colorId: "7",
-        date: dateStr,
-        time: draft.selectedTime,
-        duration_minutes: draft.tier?.duration_minutes ?? 60,
-      }),
-    });
-    if (response.ok) {
-      const created = (await response.json()) as { eventId?: string };
-      if (created.eventId) {
-        void insforge.database
-          .from("bookings")
-          .update({ google_event_id: created.eventId })
-          .eq("id", bookingId);
-      }
-    }
+    await pushBookingToCalendarsAction(getAccessToken(), bookingId);
   } catch {
     // fail-open: calendar error must not block navigation
   }
@@ -315,5 +251,5 @@ export async function announceNewBooking(
     });
   }
 
-  await writeCalendarEvent(bookingId, draft);
+  await writeCalendarEvent(bookingId);
 }

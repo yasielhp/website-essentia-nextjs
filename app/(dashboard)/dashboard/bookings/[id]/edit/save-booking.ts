@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { insforge } from "@/lib/insforge";
-import { authFetch } from "@/lib/client-session";
+import { getAccessToken } from "@/lib/client-session";
 import { updateBookingByAdmin } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
-import { syncBookingToCalendars } from "@/actions/calendar-propagate";
-import { contact } from "@/constants/contact";
+import {
+  pushBookingToCalendarsAction,
+  syncBookingToCalendars,
+} from "@/actions/calendar-propagate";
 import { localDateStr } from "@/utils/format";
 import {
   resolvePrice,
@@ -222,21 +223,8 @@ async function tellClient(
     }
   }
 
-  // Delete Google Calendar event when booking is cancelled
-  if (statusChanged && draft.status === "cancelled" && orig.googleEventId) {
-    try {
-      await authFetch("/api/google/calendar/event", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_id: draft.serviceId || orig.serviceId,
-          event_id: orig.googleEventId,
-        }),
-      });
-    } catch {
-      // fail-open: calendar deletion failure must not block navigation
-    }
-  }
+  // A cancelled booking is taken off the calendars by `tellStaff`, which does
+  // it for every calendar that holds it rather than only the service's.
 }
 
 /**
@@ -305,105 +293,20 @@ async function tellStaff(
   );
 }
 
-/** Where it happens, in the words a calendar entry wants. */
-function calendarLocation(draft: BookingDraft): string {
-  if (draft.location === "centro") return contact.address;
-
-  if (draft.location === "habitacion") {
-    const parts: string[] = [];
-    if (draft.reservationNumber.trim())
-      parts.push(`Reservation: ${draft.reservationNumber.trim()}`);
-    if (draft.roomNumber.trim()) parts.push(`Room: ${draft.roomNumber.trim()}`);
-    return parts.length
-      ? `Baobab Suites — ${parts.join(" · ")}`
-      : "Baobab Suites";
-  }
-
-  if (draft.location === "domicilio") {
-    const { street, building, postalCode, municipality } = draft.address;
-    return [
-      street.trim(),
-      building.trim(),
-      [postalCode.trim(), municipality.trim()].filter(Boolean).join(" "),
-    ]
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  return "";
-}
-
 /**
- * Puts the booking on the service's calendar once it is worth being there.
+ * Puts the booking on every calendar that should hold it, once it is worth
+ * being there.
  *
- * Patched rather than re-created when an event already exists, so moving a
- * booking twice does not leave two of it on the calendar.
+ * This used to build its own event and post it to the service's calendar, and
+ * only that one — so an edit that confirmed a booking never reached the
+ * professional's phone or the administrator's mirror until the hourly job ran,
+ * and once services stopped holding calendars of their own it reached nothing
+ * at all. Copies that already exist are corrected by `tellStaff`; this only
+ * creates the ones that are missing.
  */
-async function writeCalendarEvent(
-  id: string,
-  draft: BookingDraft,
-  existingEventId: string | null,
-): Promise<void> {
-  const dateStr = dateOf(draft);
-  const isConfirmed = draft.status === "confirmed" || draft.status === "paid";
-  if (!isConfirmed || !dateStr || !draft.selectedTime) return;
-
-  const tierParts = [
-    draft.tier?.label,
-    draft.tier?.duration_minutes != null
-      ? `${draft.tier.duration_minutes} min`
-      : null,
-  ].filter(Boolean);
-  const serviceName = draft.service?.title ?? draft.serviceId;
-  const summary = tierParts.length
-    ? `${serviceName} · ${tierParts.join(" · ")} — ${clientNameOf(draft)}`
-    : `${serviceName} — ${clientNameOf(draft)}`;
-
-  const description = [
-    `Booking #${id}`,
-    draft.phone.trim() ? `Phone: ${draft.phone.trim()}` : null,
-    draft.email.trim() ? `Email: ${draft.email.trim()}` : null,
-    draft.notes.trim() ? `Notes: ${draft.notes.trim()}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const where = calendarLocation(draft);
-  const body = {
-    service_id: draft.serviceId,
-    summary,
-    description,
-    location: where || undefined,
-    colorId: "7",
-    date: dateStr,
-    time: draft.selectedTime,
-    duration_minutes: draft.tier?.duration_minutes ?? 60,
-  };
-
+async function writeCalendarEvent(id: string): Promise<void> {
   try {
-    if (existingEventId) {
-      await authFetch("/api/google/calendar/event", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, event_id: existingEventId }),
-      });
-      return;
-    }
-
-    const response = await authFetch("/api/google/calendar/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (response.ok) {
-      const created = (await response.json()) as { eventId?: string };
-      if (created.eventId) {
-        void insforge.database
-          .from("bookings")
-          .update({ google_event_id: created.eventId })
-          .eq("id", id);
-      }
-    }
+    await pushBookingToCalendarsAction(getAccessToken(), id);
   } catch {
     // fail-open: calendar error must not block navigation
   }
@@ -432,7 +335,7 @@ export async function announceBookingSaved({
     await tellStaff(token, id, draft, original);
   }
 
-  await writeCalendarEvent(id, draft, original?.googleEventId ?? null);
+  await writeCalendarEvent(id);
 
   if (!original) return null;
   return {
