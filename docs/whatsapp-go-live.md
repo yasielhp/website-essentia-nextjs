@@ -35,6 +35,7 @@ se suma, no sustituye.
 | Bloque en el detalle de reserva del dashboard   | Terminado                                  |
 | Variables en `.env.local`                       | Bloque creado, las dos secretas vacías     |
 | Variables en Vercel                             | **Pendiente**                              |
+| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)      |
 | Número registrado en Meta                       | **Pendiente**                              |
 | Plantilla aprobada                              | **Pendiente**                              |
 | Teléfono en los perfiles del personal           | **Pendiente — 0 de 6 perfiles lo tienen**  |
@@ -46,6 +47,14 @@ sin llamar a Meta. Sirve para dar por bueno el redactado antes de tocar nada.
 ---
 
 ## 1. Antes de empezar: el número
+
+El número es **`+34 711 51 00 31`**, una eSIM nueva contratada para esto. No
+aparece en ningún sitio del código: lo único que el código necesita de Meta es
+el identificador del paso 2, no el teléfono.
+
+> **No instales WhatsApp ni WhatsApp Business en esa línea.** El alta en la
+> Cloud API exige que el número no tenga cuenta previa, y una vez registrado ahí
+> deja de poder usarse en la app del móvil.
 
 Requisitos del número que vayas a registrar:
 
