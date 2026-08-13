@@ -15,6 +15,17 @@ const DEFAULT_API_VERSION = "v21.0";
 const DEFAULT_TEMPLATE = "essentia_booking_update";
 const TIMEOUT_MS = 10_000;
 
+/**
+ * The only language registered with Meta.
+ *
+ * A send names the language it wants and Meta rejects it outright if the
+ * template carries no such version, so this is not a preference: it is the one
+ * value that works. It stays a constant rather than an argument so no caller
+ * can pass a language nobody has registered. Adding English means approving the
+ * English body first, then widening this.
+ */
+export const WHATSAPP_TEMPLATE_LANGUAGE = "es";
+
 /** Whether Meta can actually be reached with the current configuration. */
 export function isWhatsAppConfigured(): boolean {
   return Boolean(
@@ -65,7 +76,6 @@ type MetaResponse = {
  */
 export async function sendTemplate(opts: {
   to: string;
-  language: "es" | "en";
   params: string[];
   /** Appended to the template's dynamic URL button. */
   buttonUrlParam: string;
@@ -81,7 +91,7 @@ export async function sendTemplate(opts: {
     type: "template",
     template: {
       name: whatsAppTemplateName(),
-      language: { code: opts.language },
+      language: { code: WHATSAPP_TEMPLATE_LANGUAGE },
       components: [
         {
           type: "body",

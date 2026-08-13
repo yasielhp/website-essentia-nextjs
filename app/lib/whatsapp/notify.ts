@@ -1,5 +1,9 @@
 import { getAdminClient } from "@/lib/insforge-admin";
-import { sendTemplate, toE164 } from "@/lib/whatsapp/client";
+import {
+  sendTemplate,
+  toE164,
+  WHATSAPP_TEMPLATE_LANGUAGE,
+} from "@/lib/whatsapp/client";
 import { buildStaffMessage } from "@/lib/whatsapp/messages";
 import type { StaffWhatsAppInput } from "@/lib/whatsapp/types";
 
@@ -14,9 +18,9 @@ import type { StaffWhatsAppInput } from "@/lib/whatsapp/types";
  * requires a staff role; the anonymous booking and cancellation flows already
  * run on the server and import this directly.
  *
- * Nothing here is trusted from the caller beyond the two ids: the phone,
- * the name and the language come from `profiles`, and the client, service and
- * time come from `bookings`.
+ * Nothing here is trusted from the caller beyond the two ids: the phone and
+ * the name come from `profiles`, and the client, service and time come from
+ * `bookings`.
  *
  * It never throws. A WhatsApp problem must not undo a booking that is already
  * saved, so failures are recorded and swallowed.
@@ -32,7 +36,7 @@ export async function notifyStaffOnWhatsApp(
 
     const { data: profileData } = await db
       .from("profiles")
-      .select("first_name, full_name, phone, preferred_language")
+      .select("first_name, full_name, phone")
       .eq("id", staffId)
       .maybeSingle();
 
@@ -40,7 +44,6 @@ export async function notifyStaffOnWhatsApp(
       first_name: string | null;
       full_name: string | null;
       phone: string | null;
-      preferred_language: string | null;
     } | null;
 
     const to = toE164(profile?.phone);
@@ -67,7 +70,6 @@ export async function notifyStaffOnWhatsApp(
     } | null;
     if (!booking) return;
 
-    const language = profile?.preferred_language === "en" ? "en" : "es";
     const staffFirstName =
       profile?.first_name?.trim() ||
       profile?.full_name?.trim().split(" ")[0] ||
@@ -75,7 +77,6 @@ export async function notifyStaffOnWhatsApp(
 
     const { params, bodyPreview, buttonUrlParam } = buildStaffMessage({
       event,
-      language,
       staffFirstName,
       clientName: [booking.first_name, booking.last_name]
         .filter(Boolean)
@@ -90,7 +91,6 @@ export async function notifyStaffOnWhatsApp(
 
     const result = await sendTemplate({
       to,
-      language,
       params,
       buttonUrlParam,
     });
@@ -101,7 +101,7 @@ export async function notifyStaffOnWhatsApp(
         staff_id: staffId,
         event,
         to_phone: to,
-        language,
+        language: WHATSAPP_TEMPLATE_LANGUAGE,
         params,
         body_preview: bodyPreview,
         status: result.status,
