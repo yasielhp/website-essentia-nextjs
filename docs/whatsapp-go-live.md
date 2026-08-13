@@ -23,22 +23,34 @@ Manda un WhatsApp **al profesional**, nunca al cliente, cuando una reserva suya:
 | `rescheduled` | cambia de fecha u hora sin cambiar de profesional                |
 | `cancelled`   | se cancela, desde el dashboard o por el propio cliente           |
 
+**El admin recibe siempre una copia**, con el mismo texto y dirigido al
+profesional por su nombre: se lee como «esto es lo que le ha llegado a Yuli»,
+igual que el BCC que `sendEmail()` ya hace en todos los correos. Si el admin es
+además el profesional asignado, recibe un solo mensaje, no dos.
+
+**Todo sale en español.** El idioma no se deduce de `preferred_language`: es una
+constante, `WHATSAPP_TEMPLATE_LANGUAGE` en `app/lib/whatsapp/client.ts`. Meta
+rechaza un envío en un idioma que la plantilla no tenga registrado, y solo está
+registrado el español; dejarlo depender de un campo editable desde el dashboard
+convertiría un cambio de preferencia en un fallo de entrega. Para volver a tener
+inglés hay que aprobar antes el cuerpo inglés en Meta.
+
 Los correos actuales al cliente y el `staff-new-booking` siguen igual. WhatsApp
 se suma, no sustituye.
 
 ## Estado a día de hoy
 
-| Pieza                                           | Estado                                     |
-| ----------------------------------------------- | ------------------------------------------ |
-| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                  |
-| Tabla `whatsapp_messages`                       | Migrada (`20260810_whatsapp_messages.sql`) |
-| Bloque en el detalle de reserva del dashboard   | Terminado                                  |
-| Variables en `.env.local`                       | Bloque creado, las dos secretas vacías     |
-| Variables en Vercel                             | **Pendiente**                              |
-| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)      |
-| Número registrado en Meta                       | **Pendiente**                              |
-| Plantilla aprobada                              | **Pendiente**                              |
-| Teléfono en los perfiles del personal           | **Pendiente — 0 de 6 perfiles lo tienen**  |
+| Pieza                                           | Estado                                      |
+| ----------------------------------------------- | ------------------------------------------- |
+| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                   |
+| Tabla `whatsapp_messages`                       | Migrada (`20260810_whatsapp_messages.sql`)  |
+| Bloque en el detalle de reserva del dashboard   | Terminado                                   |
+| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)       |
+| Número registrado en Meta                       | Hecho — `id` 1313219501872182, `CONNECTED`  |
+| Token permanente                                | Hecho, en `.env.local`                      |
+| Plantilla aprobada                              | **En revisión** (`essentia_booking_update`) |
+| Variables en Vercel                             | **Pendiente**                               |
+| Teléfono en los perfiles del personal           | **Pendiente — 0 de 6 perfiles lo tienen**   |
 
 Mientras falten el token o el `PHONE_NUMBER_ID`, la función corre en seco: cada
 evento escribe su fila con estado `skipped` y el texto que se habría mandado,
@@ -95,18 +107,12 @@ En **WhatsApp Manager** → **Plantillas de mensajes** → **Crear plantilla**:
 | --------- | ----------------------------------- |
 | Nombre    | `essentia_booking_update`           |
 | Categoría | `Utilidad` (UTILITY) — no Marketing |
-| Idiomas   | Español **y** Inglés, las dos       |
+| Idioma    | Español, y solo español             |
 
-**Cuerpo en español**, con cinco variables y exactamente esta puntuación:
-
-```
-Hola {{1}}, {{2}}. Cliente: {{3}}. Servicio: {{4}}. Cuándo: {{5}}.
-```
-
-**Cuerpo en inglés:**
+**Cuerpo tal y como está registrado**, con cinco variables:
 
 ```
-Hi {{1}}, {{2}}. Client: {{3}}. Service: {{4}}. When: {{5}}.
+Hola {{1}}, tienes una actualización sobre una reserva de Essentia Social Wellness Club. {{2}}. A continuación tienes los detalles de la reserva. Cliente: {{3}}. Servicio: {{4}}. Cuándo: {{5}}. Puedes consultar todos los detalles en el botón de abajo.
 ```
 
 Qué viaja en cada variable:
@@ -114,13 +120,18 @@ Qué viaja en cada variable:
 | Variable | Contenido                                 | Ejemplo para el formulario de Meta    |
 | -------- | ----------------------------------------- | ------------------------------------- |
 | `{{1}}`  | Nombre de pila del profesional            | `Yuli`                                |
-| `{{2}}`  | La frase del evento                       | `se te ha asignado una sesión`        |
+| `{{2}}`  | La frase del evento                       | `Se te ha asignado una sesión`        |
 | `{{3}}`  | Nombre del cliente                        | `María López`                         |
 | `{{4}}`  | Servicio, con el tipo de sesión si lo hay | `Terapias manuales — ESPIRA`          |
 | `{{5}}`  | Fecha y hora ya formateadas               | `martes, 12 de agosto de 2026, 10:30` |
 
 Meta exige un ejemplo por variable para revisar la plantilla: usa los de la
 columna de la derecha.
+
+El texto de alrededor puede reescribirse sin tocar código, pero **los cinco
+huecos tienen que seguir siendo cinco y en este orden**: Meta los coloca por
+posición, y uno de más o de menos hace fallar todos los envíos. Y si `{{2}}`
+deja de abrir frase, las cuatro frases de `messages.ts` vuelven a minúscula.
 
 **Botón** — tipo **Visitar sitio web**, **URL dinámica**:
 
@@ -151,9 +162,12 @@ Para producción, token permanente de usuario del sistema:
 
 1. **Configuración del negocio** → **Usuarios** → **Usuarios del sistema** →
    crear uno, rol **Administrador**.
-2. **Añadir activos** → la cuenta de WhatsApp Business → control total.
-3. **Generar token** → app correspondiente → permisos `whatsapp_business_messaging`
-   y `whatsapp_business_management` → **caducidad: nunca**.
+2. **Añadir activos**, dos veces: la **app** de WhatsApp y la **cuenta de
+   WhatsApp Business**, ambas con control total. Asignar solo la segunda deja un
+   token que no puede llamar a la API.
+3. **Generar token** → app correspondiente → permisos
+   `whatsapp_business_messaging`, `whatsapp_business_management` y
+   `business_management` → **caducidad: nunca**.
 4. Copia el token en ese momento. No se vuelve a mostrar.
 
 **El token es una credencial con la que se puede mandar mensajes en nombre del
@@ -250,14 +264,17 @@ El código guarda literal lo que responde Meta (`error_data.details`, o
 
 Los tropiezos habituales, por orden de frecuencia:
 
-- **No aparece ninguna fila.** El profesional no tiene teléfono en el perfil, o
-  la reserva no tenía profesional asignado. No es un fallo de WhatsApp.
+- **No aparece ninguna fila.** Ni el profesional ni ningún admin tienen
+  teléfono en el perfil, o la reserva no tenía profesional asignado. No es un
+  fallo de WhatsApp.
+- **Falta la copia del admin.** El perfil con rol `admin` no tiene teléfono, o
+  es el mismo número que el del profesional: entonces sale un solo mensaje a
+  propósito.
 - **Todo sale `skipped` con las variables puestas.** No reiniciaste el servidor
   local, o en Vercel no volviste a desplegar tras añadirlas.
 - **La plantilla no existe.** El nombre en Meta no coincide exactamente con
-  `WHATSAPP_TEMPLATE_NAME`, o falta el idioma concreto: el envío usa el
-  `preferred_language` del perfil, así que un perfil en inglés necesita la
-  versión inglesa aprobada.
+  `WHATSAPP_TEMPLATE_NAME`, o le falta el español, que es el único idioma que el
+  código pide.
 - **Número de parámetros incorrecto.** El cuerpo de la plantilla no tiene las
   cinco variables, o al botón le falta la suya.
 - **Token caducado o inválido.** Es el token temporal de 24 horas. Genera el
@@ -281,11 +298,14 @@ commit.
 Las conversaciones de servicio iniciadas por el negocio con plantilla de
 utilidad tienen una franquicia mensual holgada para el volumen de un centro como
 este; a partir de ahí Meta cobra por conversación de 24 horas, no por mensaje.
-Los cuatro eventos de una misma reserva al mismo profesional en el mismo día
-caen dentro de la misma conversación.
+Los cuatro eventos de una misma reserva a la misma persona en el mismo día caen
+dentro de la misma conversación.
+
+Cuenta que cada evento abre **dos** conversaciones, no una: la del profesional y
+la copia del admin.
 
 Un número recién registrado arranca con un límite bajo de destinatarios diarios,
-que Meta va subiendo solo. Para avisar a tres profesionales, el límite inicial
+que Meta va subiendo solo. Para tres profesionales y un admin, el límite inicial
 sobra.
 
 ---
@@ -296,11 +316,12 @@ sobra.
 - [ ] Negocio verificado en Meta Business
 - [ ] Número registrado y verificado en WhatsApp Manager
 - [ ] Apuntado el **identificador del número** (no el teléfono)
-- [ ] Plantilla `essentia_booking_update` creada en español **y** en inglés
+- [ ] Plantilla `essentia_booking_update` creada en español
 - [ ] Plantilla con las 5 variables del cuerpo y el botón de URL dinámica
 - [ ] Plantilla **aprobada** por Meta
 - [ ] Token permanente de usuario del sistema, sin caducidad
-- [ ] Teléfono relleno en los 3 perfiles `staff` (y en el `admin` si procede)
+- [ ] Teléfono relleno en los 3 perfiles `staff`
+- [ ] Teléfono relleno en el perfil `admin` — sin él no hay copia de nada
 - [ ] Las 4 variables en `.env.local`, servidor reiniciado
 - [ ] Las 4 variables en Vercel (Production), **redesplegado**
 - [ ] Prueba real: fila `sent` en el detalle de la reserva

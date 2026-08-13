@@ -107,7 +107,7 @@ En **WhatsApp Manager** → **Plantillas de mensajes** → **Crear plantilla**:
 | ------------- | ------------------------------------------- |
 | **Nombre**    | `essentia_booking_update`                   |
 | **Categoría** | **Utilidad** (_Utility_) — **no** Marketing |
-| **Idioma**    | Español                                     |
+| **Idioma**    | Español, y solo español                     |
 
 Elegir **Utilidad** importa: es más barato y Meta lo aprueba mucho antes que
 Marketing.
@@ -117,24 +117,30 @@ Marketing.
 Pega este texto tal cual en el campo del cuerpo del mensaje:
 
 ```
-Hola {{1}}, {{2}}. Cliente: {{3}}. Servicio: {{4}}. Cuándo: {{5}}.
+Hola {{1}}, tienes una actualización sobre una reserva de Essentia Social Wellness Club. {{2}}. A continuación tienes los detalles de la reserva. Cliente: {{3}}. Servicio: {{4}}. Cuándo: {{5}}. Puedes consultar todos los detalles en el botón de abajo.
 ```
 
 Las llaves dobles `{{1}}`…`{{5}}` son los huecos que la web rellena en cada
-aviso. Meta pide un **ejemplo** de cada uno para poder revisar la plantilla.
-Copia estos:
+aviso. **Lo que puede cambiarse libremente es el texto de alrededor; los cinco
+huecos tienen que seguir siendo cinco y en este orden**, porque el código manda
+los valores en esa secuencia y Meta los coloca por posición.
+
+Meta pide un **ejemplo** de cada uno para poder revisar la plantilla. Copia
+estos:
 
 | Hueco   | Qué se rellena               | Ejemplo a escribir en Meta            |
 | ------- | ---------------------------- | ------------------------------------- |
 | `{{1}}` | Nombre del profesional       | `Yuli`                                |
-| `{{2}}` | Qué ha pasado con la reserva | `se te ha asignado una sesión`        |
+| `{{2}}` | Qué ha pasado con la reserva | `Se te ha asignado una sesión`        |
 | `{{3}}` | Nombre del cliente           | `María López`                         |
 | `{{4}}` | Servicio                     | `Terapias manuales — ESPIRA`          |
 | `{{5}}` | Fecha y hora                 | `martes, 12 de agosto de 2026, 10:30` |
 
-Con esos ejemplos, el revisor de Meta lee: «Hola Yuli, se te ha asignado una
-sesión. Cliente: María López. Servicio: Terapias manuales — ESPIRA. Cuándo:
-martes, 12 de agosto de 2026, 10:30.»
+> Si reescribes el cuerpo, fíjate en si `{{2}}` queda abriendo frase (detrás de
+> un punto) o dentro de ella (detrás de una coma). Las cuatro frases están en
+> `app/lib/whatsapp/messages.ts` y su mayúscula inicial tiene que acompañar al
+> cambio, o el mensaje sale con una minúscula después de punto. Avísanos y lo
+> ajustamos: es una línea.
 
 ### 4.2 El botón
 
@@ -153,19 +159,12 @@ https://www.essentiawellnessclub.com/dashboard/bookings/{{1}}
 
 El botón lleva al profesional directo a la ficha de esa reserva en el panel.
 
-### 4.3 La misma plantilla en inglés
+### 4.3 Solo español
 
-Cuando la hayas enviado, **añade el idioma inglés a la misma plantilla**
-(botón **Añadir idioma**, no crear una plantilla nueva). Cuerpo:
-
-```
-Hi {{1}}, {{2}}. Client: {{3}}. Service: {{4}}. When: {{5}}.
-```
-
-Mismos ejemplos, mismo botón, misma URL.
-
-Hacen falta los dos idiomas: cada profesional recibe el aviso en el idioma que
-tiene puesto en su perfil, y si falta ese idioma el mensaje no sale.
+**No hace falta crear la versión inglesa.** El sistema pide siempre el español,
+de forma fija, así que basta con este idioma. Si algún día se quiere en inglés,
+primero se registra y se aprueba el cuerpo inglés en Meta y después lo activamos
+nosotros: al revés, el envío falla.
 
 ### 4.4 Esperar la aprobación
 
@@ -184,13 +183,20 @@ las 24 horas. **No sirve** — hay que crear uno permanente:
 
 1. **Configuración del negocio** → **Usuarios** → **Usuarios del sistema**.
 2. **Añadir** → nombre, por ejemplo `essentia-web`, rol **Administrador**.
-3. Selecciónalo → **Añadir activos** → pestaña **Cuentas de WhatsApp** → marca
-   la cuenta de WhatsApp Business de Essentia → **Control total**.
+3. Selecciónalo → **Añadir activos**. Hay que hacerlo **dos veces**:
+   - Pestaña **Aplicaciones** → la app de WhatsApp de Essentia → **Control
+     total**
+   - Pestaña **Cuentas de WhatsApp** → la cuenta de WhatsApp Business de
+     Essentia → **Control total**
+
+   Asignar solo la segunda es el tropiezo habitual: el token sale, pero no puede
+   llamar a la API.
+
 4. **Generar token nuevo**:
    - App: la app de WhatsApp de Essentia
    - Caducidad: **Nunca**
-   - Permisos: marca **`whatsapp_business_messaging`** y
-     **`whatsapp_business_management`**
+   - Permisos: marca los tres — **`whatsapp_business_messaging`**,
+     **`whatsapp_business_management`** y **`business_management`**
 5. **Copia el token en ese mismo momento.** Es una cadena larga que empieza por
    `EAA…`. Meta **no lo vuelve a mostrar nunca**: si lo pierdes, hay que generar
    otro.
@@ -245,7 +251,6 @@ siempre, con número o sin él.
 - [ ] Copiado el **identificador del número** (15 dígitos, no el teléfono)
 - [ ] Plantilla `essentia_booking_update` creada, categoría **Utilidad**
 - [ ] Plantilla con los 5 huecos del cuerpo y el botón de URL dinámica
-- [ ] Idioma **español** e **inglés** en la misma plantilla
 - [ ] Plantilla en estado **Activa** (aprobada)
 - [ ] Token de usuario del sistema con caducidad **Nunca** y los dos permisos
 - [ ] Los dos datos enviados por un canal seguro
