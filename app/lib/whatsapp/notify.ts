@@ -7,8 +7,22 @@ import {
 import { buildStaffMessage } from "@/lib/whatsapp/messages";
 import type { StaffWhatsAppInput } from "@/lib/whatsapp/types";
 
+type Profile = {
+  id: string;
+  first_name: string | null;
+  full_name: string | null;
+  phone: string | null;
+};
+
 /**
- * Notifies a member of staff, on WhatsApp, about a booking of theirs.
+ * Notifies a member of staff, on WhatsApp, about a booking of theirs — and
+ * sends the admin the same message.
+ *
+ * The admin copy is a carbon copy, not a second message: identical wording,
+ * addressed to the professional by name, so it reads as "this is what Yuli was
+ * told". It mirrors what `sendEmail()` already does by BCC-ing the admin on
+ * every transactional email, and it is what makes the log useful when a
+ * professional says nothing arrived.
  *
  * SERVER ONLY, and deliberately **not** a Server Action: every export of a
  * `"use server"` module is a public HTTP endpoint, and this function carries no
@@ -18,8 +32,8 @@ import type { StaffWhatsAppInput } from "@/lib/whatsapp/types";
  * requires a staff role; the anonymous booking and cancellation flows already
  * run on the server and import this directly.
  *
- * Nothing here is trusted from the caller beyond the two ids: the phone and
- * the name come from `profiles`, and the client, service and time come from
+ * Nothing here is trusted from the caller beyond the two ids: the phones and
+ * the names come from `profiles`, and the client, service and time come from
  * `bookings`.
  *
  * It never throws. A WhatsApp problem must not undo a booking that is already
@@ -36,21 +50,37 @@ export async function notifyStaffOnWhatsApp(
 
     const { data: profileData } = await db
       .from("profiles")
-      .select("first_name, full_name, phone")
+      .select("id, first_name, full_name, phone")
       .eq("id", staffId)
       .maybeSingle();
 
-    const profile = profileData as {
-      first_name: string | null;
-      full_name: string | null;
-      phone: string | null;
-    } | null;
+    const profile = profileData as Profile | null;
+    if (!profile) return;
 
-    const to = toE164(profile?.phone);
-    // No number on the profile means there is nothing to send and nothing
-    // worth recording — the dashboard would only fill up with rows nobody can
-    // act on.
-    if (!to) return;
+    // Every admin, not just the first: the centre may well end up with two, and
+    // a notification that reaches only one of them is worse than none, because
+    // nobody can tell which.
+    const { data: adminData } = await db
+      .from("profiles")
+      .select("id, first_name, full_name, phone")
+      .eq("role", "admin");
+
+    // The professional first, so that a phone shared with an admin account is
+    // recorded against the person the message is actually about.
+    const recipients: { id: string; phone: string }[] = [];
+    const seen = new Set<string>();
+    for (const candidate of [profile, ...((adminData ?? []) as Profile[])]) {
+      const phone = toE164(candidate.phone);
+      // One person, one message: an admin who is also the assigned
+      // professional would otherwise get the same text twice.
+      if (!phone || seen.has(phone)) continue;
+      seen.add(phone);
+      recipients.push({ id: candidate.id, phone });
+    }
+
+    // No number anywhere means there is nothing to send and nothing worth
+    // recording — the dashboard would only fill up with rows nobody can act on.
+    if (recipients.length === 0) return;
 
     const { data: bookingData } = await db
       .from("bookings")
@@ -71,10 +101,12 @@ export async function notifyStaffOnWhatsApp(
     if (!booking) return;
 
     const staffFirstName =
-      profile?.first_name?.trim() ||
-      profile?.full_name?.trim().split(" ")[0] ||
+      profile.first_name?.trim() ||
+      profile.full_name?.trim().split(" ")[0] ||
       "";
 
+    // Built once and reused: the admin reads the professional's message, so the
+    // parameters must not be rebuilt around the admin's own name.
     const { params, bodyPreview, buttonUrlParam } = buildStaffMessage({
       event,
       staffFirstName,
@@ -89,26 +121,31 @@ export async function notifyStaffOnWhatsApp(
       bookingId,
     });
 
-    const result = await sendTemplate({
-      to,
-      params,
-      buttonUrlParam,
-    });
-
-    await db.from("whatsapp_messages").insert([
-      {
-        booking_id: bookingId,
-        staff_id: staffId,
-        event,
-        to_phone: to,
-        language: WHATSAPP_TEMPLATE_LANGUAGE,
+    // Sequential rather than parallel: two or three recipients at most, and
+    // Meta throttles a new number hard enough that a burst is not worth the
+    // risk of one send poisoning the others.
+    for (const recipient of recipients) {
+      const result = await sendTemplate({
+        to: recipient.phone,
         params,
-        body_preview: bodyPreview,
-        status: result.status,
-        error: result.status === "failed" ? result.error : null,
-        provider_id: result.status === "sent" ? result.providerId : null,
-      },
-    ]);
+        buttonUrlParam,
+      });
+
+      await db.from("whatsapp_messages").insert([
+        {
+          booking_id: bookingId,
+          staff_id: recipient.id,
+          event,
+          to_phone: recipient.phone,
+          language: WHATSAPP_TEMPLATE_LANGUAGE,
+          params,
+          body_preview: bodyPreview,
+          status: result.status,
+          error: result.status === "failed" ? result.error : null,
+          provider_id: result.status === "sent" ? result.providerId : null,
+        },
+      ]);
+    }
   } catch {
     // fail-open: the booking is already saved, and a lost notification is not
     // worth an error the visitor or member of staff can do nothing about.

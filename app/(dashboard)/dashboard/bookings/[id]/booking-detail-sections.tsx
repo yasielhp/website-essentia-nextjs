@@ -312,7 +312,10 @@ export function WhatsAppCard({
                 {t(`whatsapp.statuses.${message.status}`)}
               </span>
               <span className="text-petroleum-400 text-xs">
-                {message.toPhone} ·{" "}
+                {message.recipientName
+                  ? `${message.recipientName} · ${message.toPhone}`
+                  : message.toPhone}{" "}
+                ·{" "}
                 {new Date(message.createdAt).toLocaleString(
                   locale === "es" ? "es-ES" : "en-GB",
                   {

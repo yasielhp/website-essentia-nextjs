@@ -26,6 +26,12 @@ export type WhatsAppSendResult =
 export type WhatsAppMessageRow = {
   id: string;
   event: StaffWhatsAppEvent;
+  /**
+   * Who received it. Every event produces one row for the professional and one
+   * for each admin, all carrying the same text, so without a name the list
+   * reads as duplicates that differ only by phone number.
+   */
+  recipientName: string | null;
   toPhone: string;
   bodyPreview: string;
   status: "skipped" | "sent" | "failed";
