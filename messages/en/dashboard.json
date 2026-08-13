@@ -12,7 +12,6 @@
     "users": "Users",
     "subscriptions": "Subscriptions",
     "transactions": "Transactions",
-    "reviews": "Reviews",
     "races": "Races",
     "education": "Education",
     "blog": "Blog",
@@ -28,7 +27,6 @@
       "races": "Races",
       "education": "Education",
       "transactions": "Transactions",
-      "reviews": "Reviews",
       "account": "Edit account",
       "settings": "Settings"
     },
@@ -883,77 +881,6 @@
       "errors": {
         "contactRequired": "Select the contact this subscription belongs to.",
         "createFailed": "Failed to create subscription."
-      }
-    }
-  },
-  "reviews": {
-    "newReview": "New Review",
-    "empty": "No reviews found.",
-    "status": {
-      "published": "Published",
-      "draft": "Draft"
-    },
-    "stats": {
-      "published": "Published",
-      "draft": "Draft",
-      "total": "Total"
-    },
-    "filters": {
-      "status": "Status",
-      "allStatuses": "All statuses"
-    },
-    "columns": {
-      "author": "Author",
-      "quote": "Quote",
-      "status": "Status",
-      "created": "Created"
-    },
-    "form": {
-      "title": "New Review",
-      "saveDraft": "Save as Draft",
-      "creating": "Creating…",
-      "sections": {
-        "review": "Review",
-        "author": "Author"
-      },
-      "fields": {
-        "quote": "Quote",
-        "quotePlaceholder": "What the client said…",
-        "name": "Name",
-        "namePlaceholder": "e.g. Marcus V.",
-        "age": "Age",
-        "agePlaceholder": "47",
-        "initials": "Initials",
-        "initialsPlaceholder": "MV"
-      },
-      "errors": {
-        "required": "Quote and name are required.",
-        "createFailed": "Failed to create review."
-      }
-    },
-    "detail": {
-      "title": "Edit Review",
-      "notFound": "Review not found.",
-      "backToList": "Back to Reviews",
-      "delete": "Delete",
-      "saveChanges": "Save changes",
-      "saving": "Saving…",
-      "sections": {
-        "review": "Review",
-        "author": "Author",
-        "settings": "Settings"
-      },
-      "fields": {
-        "displayOrder": "Display order"
-      },
-      "deleteDialog": {
-        "title": "Delete review?",
-        "body": "This review will be permanently deleted.",
-        "confirm": "Yes, delete",
-        "deleting": "Deleting…"
-      },
-      "errors": {
-        "saveFailed": "Failed to save changes."
       }
     }
   },

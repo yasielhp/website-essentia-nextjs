@@ -3,21 +3,101 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 import { IconQuote } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export type TestimonialItem = {
+  /** Google returns one per review; unique enough for a key. */
+  id: string;
   quote: string;
   name: string;
-  age: string;
+  /** Google's own wording for the age of the review. */
+  when: string;
+  /** Null when the reviewer has no picture on their Google account. */
+  photoUrl: string | null;
+  /** Their Google profile. Attribution the Places policy requires. */
+  profileUrl: string | null;
+  /** Only drawn when there is no photo. */
   initials: string;
+  /** Interpolated link label for the reviewer's Google profile. */
+  profileLabel: string;
   bgColor: string;
   textColor: string;
   avatarBg: string;
   avatarText: string;
   mutedColor: string;
 };
+
+// ─── Stars ─────────────────────────────────────────────────────
+
+/**
+ * The average as five glyphs.
+ *
+ * Purely decorative: the same number sits next to it as text, so a screen
+ * reader that announced both would say it twice.
+ */
+function Stars({ rating }: { rating: number }) {
+  return (
+    <span aria-hidden="true" className="flex items-center gap-0.5">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <svg key={i} viewBox="0 0 20 20" className="h-4 w-4" fill="none">
+          <path
+            d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L1.6 7.7l5.8-.8L10 1.6z"
+            className={
+              i < Math.round(rating)
+                ? "fill-petroleum-500"
+                : "fill-petroleum-500/20"
+            }
+          />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+// ─── Avatar ────────────────────────────────────────────────────
+
+/**
+ * The reviewer's Google picture, with their initials behind it.
+ *
+ * `unoptimized` because these are already small, already square thumbnails on
+ * Google's own CDN: putting them through the image optimiser would cost a
+ * round trip and a cache entry to arrive at the same pixels.
+ *
+ * The initials are the fallback, not the design: a reviewer with no picture on
+ * their Google account comes back with no `photoUri`, and a request that fails
+ * would otherwise leave a broken-image glyph beside somebody's name for the
+ * life of the page, since a failed `img` never retries.
+ */
+function Avatar({ t, compact }: { t: TestimonialItem; compact: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const size = compact ? 32 : 40;
+  const box = compact ? "h-8 w-8" : "h-10 w-10";
+
+  if (t.photoUrl && !failed) {
+    return (
+      <Image
+        src={t.photoUrl}
+        alt=""
+        width={size}
+        height={size}
+        unoptimized
+        onError={() => setFailed(true)}
+        className={`${box} shrink-0 rounded-full object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${t.avatarBg} ${t.avatarText} ${box} flex shrink-0 items-center justify-center rounded-full text-xs font-medium`}
+    >
+      {t.initials}
+    </div>
+  );
+}
 
 // ─── TestimonialCard ───────────────────────────────────────────
 
@@ -40,28 +120,43 @@ function TestimonialCard({
       >
         <IconQuote className="h-8 w-8 opacity-15" />
       </div>
+      {/* Real reviews run to six hundred characters where the seeded ones ran
+      to a hundred, so the text is clamped rather than left to overflow a fixed
+      height and be cut through the middle of a word. Whoever wants the rest has
+      the link to the listing underneath. */}
       <p
         className={`font-body ${t.textColor} leading-snug ${
-          compact ? "pt-5 text-lg" : "pt-6 text-xl"
+          compact
+            ? "line-clamp-7 pt-5 text-base"
+            : "line-clamp-[12] pt-6 text-lg"
         }`}
       >
         {t.quote}
       </p>
       <div className="flex items-center gap-3">
-        <div
-          className={`${t.avatarBg} ${t.avatarText} flex shrink-0 items-center justify-center rounded-full font-medium ${
-            compact ? "h-8 w-8 text-xs" : "h-10 w-10 text-xs"
-          }`}
-        >
-          {t.initials}
-        </div>
+        <Avatar t={t} compact={compact} />
         <div>
           <p
             className={`${t.textColor} font-medium ${compact ? "text-xs" : "text-sm"}`}
           >
-            {t.name}
+            {/* Showing the picture obliges us to link the profile it belongs
+            to; the name carries the link so the target is a word, not an
+            image. */}
+            {t.profileUrl ? (
+              <a
+                href={t.profileUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                aria-label={t.profileLabel}
+                className="hover:underline"
+              >
+                {t.name}
+              </a>
+            ) : (
+              t.name
+            )}
           </p>
-          <p className={`${t.mutedColor} text-xs`}>{t.age}</p>
+          <p className={`${t.mutedColor} text-xs`}>{t.when}</p>
         </div>
       </div>
     </div>
@@ -82,7 +177,7 @@ function DesktopSlider({
   return (
     <div
       ref={sliderRef}
-      className="relative hidden h-64 overflow-hidden md:block"
+      className="relative hidden h-80 overflow-hidden md:block"
     >
       {groups.map((group, gi) => (
         <div
@@ -90,10 +185,18 @@ function DesktopSlider({
           ref={(el) => {
             groupRefs.current[gi] = el;
           }}
-          className="absolute inset-0 flex flex-row gap-4 px-5"
+          className="absolute inset-0 flex flex-row justify-center gap-4 px-5"
         >
           {group.map((t) => (
-            <TestimonialCard key={t.name} t={t} compact />
+            // A fixed third rather than `flex-1`: with five reviews the last
+            // slide holds two, and `flex-1` would have widened them into a
+            // different-looking card.
+            <div
+              key={t.id}
+              className="w-[calc((100%-2rem)/3)] shrink-0 md:max-w-sm"
+            >
+              <TestimonialCard t={t} compact />
+            </div>
           ))}
         </div>
       ))}
@@ -119,7 +222,7 @@ function MobileSlider({
       >
         {items.map((t) => (
           <div
-            key={t.name}
+            key={t.id}
             className="shrink-0 snap-center"
             style={{ width: "calc(100vw - 60px)" }}
           >
@@ -159,7 +262,7 @@ function SliderDots({
         {items.map((t, i) => (
           <button
             type="button"
-            key={t.name}
+            key={t.id}
             aria-label={`Go to testimonial ${i + 1}`}
             className="cursor-pointer p-1"
             onClick={() => {
@@ -211,12 +314,25 @@ export default function TestimonialsCarousel({
   items,
   headline,
   headline2,
+  rating,
+  ratingCountLabel,
+  sourceLabel,
+  viewAllLabel,
+  googleMapsUri,
 }: {
   items: TestimonialItem[];
   headline: string;
   headline2: string;
+  /** Averaged over every rating on the listing, not only the five shown. */
+  rating: number | null;
+  ratingCountLabel: string | null;
+  sourceLabel: string;
+  viewAllLabel: string;
+  googleMapsUri: string | null;
 }) {
-  const groupSize = 4;
+  // Three, not four: the listing returns at most five reviews, and four to a
+  // slide leaves the second one holding a single card.
+  const groupSize = 3;
   const groups = useMemo<TestimonialItem[][]>(() => {
     const result: TestimonialItem[][] = [];
     for (let i = 0; i < items.length; i += groupSize) {
@@ -367,6 +483,37 @@ export default function TestimonialsCarousel({
               <br />
               {headline2}
             </h2>
+
+            {/* Five quotes persuade less than five quotes standing on a score
+            anybody can go and check, so the score comes first and carries the
+            link out. It doubles as the attribution the Places policy asks
+            for. */}
+            {rating !== null && (
+              <div className="text-petroleum-500 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm">
+                <Stars rating={rating} />
+                <span className="text-petroleum-700 font-medium tabular-nums">
+                  {rating.toFixed(1)}
+                </span>
+                {ratingCountLabel && (
+                  <span className="text-petroleum-400">{ratingCountLabel}</span>
+                )}
+                <span className="text-petroleum-400" aria-hidden="true">
+                  ·
+                </span>
+                {googleMapsUri ? (
+                  <a
+                    href={googleMapsUri}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="underline underline-offset-4 hover:no-underline"
+                  >
+                    {sourceLabel}
+                  </a>
+                ) : (
+                  <span>{sourceLabel}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <DesktopSlider
@@ -387,6 +534,19 @@ export default function TestimonialsCarousel({
             items={items}
             groups={groups}
           />
+
+          {googleMapsUri && (
+            <div className="mt-10 px-5 text-center">
+              <a
+                href={googleMapsUri}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="text-petroleum-500 text-sm underline underline-offset-4 hover:no-underline"
+              >
+                {viewAllLabel}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </section>

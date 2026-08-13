@@ -29,6 +29,14 @@ const nextConfig: NextConfig = {
         destination: "/es/bienestar/terapias-faciales",
         permanent: true,
       },
+      // The testimonials page and its form are gone: the reviews now come from
+      // the Google listing and live on the home page. Both URLs were indexed,
+      // so they hand their equity to the page that carries their content now
+      // rather than answering 404.
+      { source: "/reviews", destination: "/", permanent: true },
+      { source: "/reviews/new", destination: "/", permanent: true },
+      { source: "/es/testimonios", destination: "/es", permanent: true },
+      { source: "/es/testimonios/nuevo", destination: "/es", permanent: true },
     ];
   },
   images: {
@@ -38,6 +46,11 @@ const nextConfig: NextConfig = {
         hostname: "pub-7642190515d84a34b81f6b11e42e6c44.r2.dev",
       },
       { protocol: "https", hostname: "*.insforge.app" },
+      // Reviewer profile pictures from the Google listing. Google serves them
+      // from these two hosts and the URLs are opaque, so the pattern cannot be
+      // narrower than the host.
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
 };

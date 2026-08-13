@@ -22,7 +22,6 @@ const SECTION_KEYS: Record<string, string> = {
   races: "sections.races",
   education: "sections.education",
   transactions: "sections.transactions",
-  reviews: "sections.reviews",
   account: "sections.account",
   settings: "sections.settings",
 };

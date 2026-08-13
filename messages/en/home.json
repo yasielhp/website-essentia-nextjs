@@ -87,68 +87,10 @@
   "testimonials": {
     "headline": "Heard from",
     "headline2": "those who know.",
-    "items": {
-      "0": {
-        "quote": "Essentia changed how I think about time. Not just living longer — living better, right now.",
-        "name": "Marcus V.",
-        "age": "Age 47"
-      },
-      "1": {
-        "quote": "The combination of medical protocols and the community here is unlike anything I've experienced.",
-        "name": "Claudia R.",
-        "age": "Age 39"
-      },
-      "2": {
-        "quote": "I came for the therapies. I stayed for the people. The running club has transformed my relationship with movement.",
-        "name": "James H.",
-        "age": "Age 52"
-      },
-      "3": {
-        "quote": "The hyperbaric sessions combined with personalized protocols have made a measurable difference in my recovery.",
-        "name": "Dr. Sofia M.",
-        "age": "Age 44"
-      },
-      "4": {
-        "quote": "Coming here twice a week has become non-negotiable. It's where I reset and come back sharper.",
-        "name": "Elena K.",
-        "age": "Age 41"
-      },
-      "5": {
-        "quote": "The IV protocols and cold exposure have genuinely shifted my energy levels. Science-backed and results-driven.",
-        "name": "Thomas B.",
-        "age": "Age 55"
-      },
-      "6": {
-        "quote": "I never expected to find a real community in a wellness club. The people here are extraordinary.",
-        "name": "Natalie W.",
-        "age": "Age 36"
-      },
-      "7": {
-        "quote": "As a physician, I'm selective about longevity claims. Essentia delivers evidence-based care with real integrity.",
-        "name": "Dr. Rafael A.",
-        "age": "Age 49"
-      },
-      "8": {
-        "quote": "The space itself inspires. Every detail — the light, the materials, the quiet — tells you this place is serious.",
-        "name": "Isabelle D.",
-        "age": "Age 43"
-      },
-      "9": {
-        "quote": "Red light therapy and contrast bathing have become my weekly anchor. My recovery has never been this consistent.",
-        "name": "Oliver P.",
-        "age": "Age 38"
-      },
-      "10": {
-        "quote": "Founding membership was the best investment I've made in myself. The access and the advisor relationship are unmatched.",
-        "name": "Caroline F.",
-        "age": "Age 46"
-      },
-      "11": {
-        "quote": "I've been to wellness clubs across Europe. Nothing compares to what Essentia has built in Tenerife.",
-        "name": "Marco L.",
-        "age": "Age 51"
-      }
-    }
+    "source": "Google reviews",
+    "ratingCount": "{count} reviews",
+    "viewAll": "Read them all on Google",
+    "profileLink": "See {name}'s Google profile"
   },
   "theSpace": {
     "headline": "Built for those who invest in themselves.",

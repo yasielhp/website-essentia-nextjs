@@ -87,68 +87,10 @@
   "testimonials": {
     "headline": "Lo que dicen",
     "headline2": "quienes lo viven.",
-    "items": {
-      "0": {
-        "quote": "Essentia cambió mi forma de entender el tiempo. No solo vivir más — vivir mejor, ahora mismo.",
-        "name": "Marcus V.",
-        "age": "47 años"
-      },
-      "1": {
-        "quote": "La combinación de protocolos médicos y la comunidad aquí es algo que no había experimentado en ningún otro lugar.",
-        "name": "Claudia R.",
-        "age": "39 años"
-      },
-      "2": {
-        "quote": "Vine por las terapias. Me quedé por las personas. El club de running ha transformado mi relación con el movimiento.",
-        "name": "James H.",
-        "age": "52 años"
-      },
-      "3": {
-        "quote": "Las sesiones hiperbáricas combinadas con los protocolos personalizados han marcado una diferencia medible en mi recuperación.",
-        "name": "Dra. Sofia M.",
-        "age": "44 años"
-      },
-      "4": {
-        "quote": "Venir dos veces por semana se ha vuelto innegociable. Es donde me reinicio y vuelvo más enfocado.",
-        "name": "Elena K.",
-        "age": "41 años"
-      },
-      "5": {
-        "quote": "Los protocolos IV y la exposición al frío han transformado genuinamente mis niveles de energía. Respaldado por la ciencia y orientado a resultados.",
-        "name": "Thomas B.",
-        "age": "55 años"
-      },
-      "6": {
-        "quote": "Jamás esperé encontrar una comunidad real en un club de bienestar. Las personas aquí son extraordinarias.",
-        "name": "Natalie W.",
-        "age": "36 años"
-      },
-      "7": {
-        "quote": "Como médico, soy selectivo con las promesas de longevidad. Essentia ofrece un cuidado basado en evidencia con integridad real.",
-        "name": "Dr. Rafael A.",
-        "age": "49 años"
-      },
-      "8": {
-        "quote": "El espacio en sí inspira. Cada detalle — la luz, los materiales, el silencio — te dice que este lugar es serio.",
-        "name": "Isabelle D.",
-        "age": "43 años"
-      },
-      "9": {
-        "quote": "La terapia de luz roja y los baños de contraste se han convertido en mi ancla semanal. Mi recuperación nunca había sido tan constante.",
-        "name": "Oliver P.",
-        "age": "38 años"
-      },
-      "10": {
-        "quote": "La membresía fundadora es la mejor inversión que he hecho en mí mismo. El acceso y la relación con el asesor no tienen comparación.",
-        "name": "Caroline F.",
-        "age": "46 años"
-      },
-      "11": {
-        "quote": "He estado en clubs de bienestar por toda Europa. Nada se compara con lo que Essentia ha construido en Tenerife.",
-        "name": "Marco L.",
-        "age": "51 años"
-      }
-    }
+    "source": "Reseñas de Google",
+    "ratingCount": "{count} valoraciones",
+    "viewAll": "Verlas todas en Google",
+    "profileLink": "Ver el perfil de {name} en Google"
   },
   "theSpace": {
     "headline": "Diseñado para quienes invierten en sí mismos.",

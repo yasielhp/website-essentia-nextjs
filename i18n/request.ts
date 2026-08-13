@@ -20,7 +20,6 @@ const namespaces = [
   "about",
   "memberships",
   "serviceFaqs",
-  "reviews",
   "account",
 ] as const;
 

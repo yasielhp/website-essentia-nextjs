@@ -12,7 +12,6 @@
     "users": "Usuarios",
     "subscriptions": "Suscripciones",
     "transactions": "Transacciones",
-    "reviews": "Testimonios",
     "races": "Carreras",
     "education": "Formación",
     "blog": "Blog",
@@ -28,7 +27,6 @@
       "races": "Carreras",
       "education": "Formación",
       "transactions": "Transacciones",
-      "reviews": "Testimonios",
       "account": "Editar cuenta",
       "settings": "Ajustes"
     },
@@ -883,77 +881,6 @@
       "errors": {
         "contactRequired": "Selecciona el contacto al que pertenece esta suscripción.",
         "createFailed": "No se pudo crear la suscripción."
-      }
-    }
-  },
-  "reviews": {
-    "newReview": "Nuevo testimonio",
-    "empty": "No se encontraron testimonios.",
-    "status": {
-      "published": "Publicado",
-      "draft": "Borrador"
-    },
-    "stats": {
-      "published": "Publicados",
-      "draft": "Borradores",
-      "total": "Total"
-    },
-    "filters": {
-      "status": "Estado",
-      "allStatuses": "Todos los estados"
-    },
-    "columns": {
-      "author": "Autor",
-      "quote": "Testimonio",
-      "status": "Estado",
-      "created": "Creado"
-    },
-    "form": {
-      "title": "Nuevo testimonio",
-      "saveDraft": "Guardar como borrador",
-      "creating": "Creando…",
-      "sections": {
-        "review": "Testimonio",
-        "author": "Autor"
-      },
-      "fields": {
-        "quote": "Testimonio",
-        "quotePlaceholder": "Lo que dijo el cliente…",
-        "name": "Nombre",
-        "namePlaceholder": "p. ej. Marcus V.",
-        "age": "Edad",
-        "agePlaceholder": "47",
-        "initials": "Iniciales",
-        "initialsPlaceholder": "MV"
-      },
-      "errors": {
-        "required": "El testimonio y el nombre son obligatorios.",
-        "createFailed": "No se pudo crear el testimonio."
-      }
-    },
-    "detail": {
-      "title": "Editar testimonio",
-      "notFound": "Testimonio no encontrado.",
-      "backToList": "Volver a testimonios",
-      "delete": "Eliminar",
-      "saveChanges": "Guardar cambios",
-      "saving": "Guardando…",
-      "sections": {
-        "review": "Testimonio",
-        "author": "Autor",
-        "settings": "Ajustes"
-      },
-      "fields": {
-        "displayOrder": "Orden de aparición"
-      },
-      "deleteDialog": {
-        "title": "¿Eliminar el testimonio?",
-        "body": "Este testimonio se eliminará permanentemente.",
-        "confirm": "Sí, eliminar",
-        "deleting": "Eliminando…"
-      },
-      "errors": {
-        "saveFailed": "No se pudieron guardar los cambios."
       }
     }
   },
