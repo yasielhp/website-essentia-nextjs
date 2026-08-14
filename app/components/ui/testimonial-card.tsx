@@ -38,10 +38,13 @@ export function TestimonialCard({
   t,
   compact = false,
   clamp = true,
+  eager = false,
 }: {
   t: TestimonialItem;
   /** The tighter card the desktop carousel fits three of across. */
   compact?: boolean;
+  /** Passed to the avatar for the cards that render above the fold. */
+  eager?: boolean;
   /**
    * Cards inside the carousel share a fixed height, so a six-hundred-character
    * review has to be cut somewhere. The reviews page is where someone goes to
@@ -77,6 +80,7 @@ export function TestimonialCard({
           size={compact ? 32 : 40}
           className={compact ? "h-8 w-8" : "h-10 w-10"}
           fallbackClassName={`${t.avatarBg} ${t.avatarText}`}
+          eager={eager}
         />
         <div>
           <p

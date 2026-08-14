@@ -99,11 +99,14 @@ function MarqueeRow({
   duration,
   direction,
   onSelect,
+  eager = false,
 }: {
   items: TestimonialItem[];
   duration: number;
   direction: "left" | "right";
   onSelect: (item: TestimonialItem) => void;
+  /** True for the row that starts on screen. */
+  eager?: boolean;
 }) {
   const [paused, setPaused] = useState(false);
   const onEnter = useCallback(() => setPaused(true), []);
@@ -112,8 +115,11 @@ function MarqueeRow({
   // Doubled so the loop closes seamlessly: the animation travels exactly half
   // the track, by which point the second copy sits where the first began.
   const doubled = [
-    ...items.map((t) => ({ t, key: `first-${t.id}` })),
-    ...items.map((t) => ({ t, key: `second-${t.id}` })),
+    ...items.map((t, i) => ({ t, key: `first-${t.id}`, index: i })),
+    // The second copy exists to close the loop and is always off screen at
+    // first paint, so it never asks to load early. `Infinity` rather than a
+    // negative marker: `-1 < 4` is true, which made the whole copy eager.
+    ...items.map((t) => ({ t, key: `second-${t.id}`, index: Infinity })),
   ];
   const animName = direction === "left" ? "marquee-left" : "marquee-right";
 
@@ -131,13 +137,15 @@ function MarqueeRow({
           animationPlayState: paused ? "paused" : "running",
         }}
       >
-        {doubled.map(({ t: item, key }) => (
+        {doubled.map(({ t: item, key, index }) => (
           <div
             key={key}
             {...activatable(() => onSelect(item))}
             className="w-72 shrink-0 cursor-pointer transition-opacity hover:opacity-90"
           >
-            <TestimonialCard t={item} compact />
+            {/* Four cards fit across the widest layout; the rest of the row
+            has scrolled past the edge and can wait. */}
+            <TestimonialCard t={item} compact eager={eager && index < 4} />
           </div>
         ))}
       </div>
@@ -182,6 +190,7 @@ export default function ReviewsMarquee({
             duration={speed}
             direction={ROW_DIRS[rowIdx]!}
             onSelect={setSelected}
+            eager={rowIdx === 0}
           />
         ))}
       </div>

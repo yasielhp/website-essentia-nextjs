@@ -25,6 +25,7 @@ export function ReviewAvatar({
   size = 40,
   className = "",
   fallbackClassName = "bg-petroleum-100 text-petroleum-700",
+  eager = false,
 }: {
   photoUrl: string | null;
   initials: string;
@@ -32,6 +33,13 @@ export function ReviewAvatar({
   /** Sizing utilities; the same box has to apply to photo and fallback alike. */
   className?: string;
   fallbackClassName?: string;
+  /**
+   * For the handful that sit above the fold. On the reviews page there is no
+   * hero image, which leaves a 40px avatar as the Largest Contentful Paint —
+   * and a lazy LCP element is one Next warns about, rightly: the browser waits
+   * for layout before it even asks for it.
+   */
+  eager?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -43,6 +51,7 @@ export function ReviewAvatar({
         width={size}
         height={size}
         unoptimized
+        loading={eager ? "eager" : "lazy"}
         onError={() => setFailed(true)}
         className={`${className} shrink-0 rounded-full object-cover`}
       />
