@@ -34,7 +34,16 @@ export type WhatsAppMessageRow = {
   recipientName: string | null;
   toPhone: string;
   bodyPreview: string;
-  status: "skipped" | "sent" | "failed";
+  /**
+   * How far the message got. `sent` is only "Meta accepted it"; everything
+   * after it is reported by the status webhook at
+   * `app/api/webhooks/whatsapp/route.ts`, so a row that stays on `sent` for
+   * long is itself the symptom — either the webhook is not subscribed or Meta
+   * never managed to deliver.
+   */
+  status: "skipped" | "sent" | "delivered" | "read" | "failed";
   error: string | null;
   createdAt: string;
+  deliveredAt: string | null;
+  readAt: string | null;
 };

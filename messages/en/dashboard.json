@@ -394,8 +394,12 @@
           "rescheduled": "Time changed",
           "cancelled": "Cancelled"
         },
+        "deliveredAt": "Delivered:",
+        "readAt": "Read:",
         "statuses": {
-          "sent": "Sent",
+          "sent": "Accepted by Meta",
+          "delivered": "Delivered",
+          "read": "Read",
           "skipped": "Not sent",
           "failed": "Failed"
         }

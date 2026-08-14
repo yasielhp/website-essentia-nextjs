@@ -40,17 +40,18 @@ se suma, no sustituye.
 
 ## Estado a día de hoy
 
-| Pieza                                           | Estado                                      |
-| ----------------------------------------------- | ------------------------------------------- |
-| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                   |
-| Tabla `whatsapp_messages`                       | Migrada (`20260810_whatsapp_messages.sql`)  |
-| Bloque en el detalle de reserva del dashboard   | Terminado                                   |
-| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)       |
-| Número registrado en Meta                       | Hecho — `id` 1313219501872182, `CONNECTED`  |
-| Token permanente                                | Hecho, en `.env.local`                      |
-| Plantilla aprobada                              | **En revisión** (`essentia_booking_update`) |
-| Variables en Vercel                             | **Pendiente**                               |
-| Teléfono en los perfiles del personal           | **Pendiente — 0 de 6 perfiles lo tienen**   |
+| Pieza                                           | Estado                                         |
+| ----------------------------------------------- | ---------------------------------------------- |
+| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                      |
+| Tabla `whatsapp_messages`                       | Migrada (`20260810_whatsapp_messages.sql`)     |
+| Bloque en el detalle de reserva del dashboard   | Terminado                                      |
+| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)          |
+| Número registrado en Meta                       | Hecho — `id` 1313219501872182, `CONNECTED`     |
+| Token permanente                                | Hecho, en `.env.local`                         |
+| Plantilla aprobada                              | Activa desde el 13-08-2026, categoría Utilidad |
+| Variables en Vercel                             | **Pendiente**                                  |
+| Teléfono en los perfiles del personal           | 3 de 6 (Yuli, Dolly, Jesús) + el admin         |
+| Webhook de estados (`/api/webhooks/whatsapp`)   | Código listo — **falta darlo de alta en Meta** |
 
 Mientras falten el token o el `PHONE_NUMBER_ID`, la función corre en seco: cada
 evento escribe su fila con estado `skipped` y el texto que se habría mandado,
@@ -208,14 +209,19 @@ WHATSAPP_ACCESS_TOKEN=<el token>
 WHATSAPP_PHONE_NUMBER_ID=<el identificador del paso 2>
 WHATSAPP_TEMPLATE_NAME=essentia_booking_update
 WHATSAPP_API_VERSION=v21.0
+WHATSAPP_VERIFY_TOKEN=<una cadena larga que te inventas>
+WHATSAPP_APP_SECRET=<el app secret de Meta>
 ```
+
+Las dos últimas son del webhook del paso 7. Sin ellas los mensajes se envían
+igual, pero se quedan para siempre en `Aceptado por Meta`.
 
 Reinicia el servidor de desarrollo: Next.js lee el `.env` al arrancar y no
 recarga los cambios en caliente.
 
 ### En producción
 
-Vercel → proyecto → **Settings** → **Environment Variables**. Las mismas cuatro,
+Vercel → proyecto → **Settings** → **Environment Variables**. Las mismas seis,
 en **Production** (y en **Preview** solo si quieres que las ramas de prueba
 manden mensajes de verdad — normalmente no).
 
@@ -225,7 +231,54 @@ Comprueba también que `NEXT_PUBLIC_APP_URL` en Vercel apunta al dominio real y
 sin barra final. No interviene en el botón de la plantilla, pero sí en el resto
 de enlaces absolutos del sistema.
 
-## 7. Probar
+## 7. Enganchar el webhook de estados
+
+Un `sent` significa que Meta aceptó el mensaje, y nada más. Que el móvil lo
+recibiera, que la persona lo abriera, o que el número resultara no tener
+WhatsApp, Meta lo cuenta **solo** por webhook. Sin este paso, un aviso que no
+llegó nunca es indistinguible de uno que sí, que es exactamente la avería que
+costó una tarde entera de diagnóstico el 14 de agosto de 2026.
+
+La ruta ya existe: `app/api/webhooks/whatsapp/route.ts`, servida en
+
+```
+https://www.essentiawellnessclub.com/api/webhooks/whatsapp
+```
+
+1. **Saca el app secret.** [developers.facebook.com](https://developers.facebook.com)
+   → tu app → **Configuración** → **Básica** → **Clave secreta de la
+   aplicación** → **Mostrar**. Va en `WHATSAPP_APP_SECRET`.
+2. **Inventa el verify token.** Cualquier cadena larga y aleatoria; no la da
+   Meta. Ponla en `WHATSAPP_VERIFY_TOKEN` y ten a mano la misma cadena.
+3. **Despliega con las dos variables puestas.** El handshake del paso siguiente
+   lo hace Meta contra producción, así que tienen que estar ya en Vercel.
+4. **Da de alta el webhook.** En la app de Meta → **WhatsApp** → **Configuración**
+   → **Webhooks** → **Editar**: la URL de arriba en _Callback URL_ y tu cadena
+   en _Verify token_. Meta llama al `GET` en ese momento; si las cadenas
+   coinciden, se guarda.
+5. **Suscríbete al campo `messages`.** En la misma pantalla, **Administrar** →
+   marca `messages`. Es el campo que trae los estados; sin él el webhook queda
+   dado de alta y mudo.
+
+A partir de ahí cada fila del dashboard avanza sola:
+
+```
+Aceptado por Meta → Entregado → Leído
+                  ↳ Fallido (con el motivo que dé Meta)
+```
+
+Los callbacks llegan desordenados y repetidos —un `read` puede adelantar a su
+`delivered`—, así que la ruta solo deja avanzar, nunca retroceder.
+
+Firma obligatoria: cada callback viene firmado con el app secret en
+`X-Hub-Signature-256` y la ruta rechaza con `403` lo que no cuadre. Es una URL
+pública que escribe en la base de datos; sin la firma cualquiera podría marcar
+como leído un aviso perdido. Si `WHATSAPP_APP_SECRET` falta o es el de otra app,
+**se rechaza todo** y las filas se quedan clavadas en `Aceptado por Meta`; el
+motivo queda en los logs de Vercel como
+`[webhooks/whatsapp] rejected: bad or missing signature`.
+
+## 8. Probar
 
 ### Antes de tener credenciales — ensayo en seco
 
@@ -247,16 +300,18 @@ Repite la prueba con tu propio número puesto en un perfil de staff.
 
 Qué esperar en el bloque del dashboard:
 
-| Estado    | Qué significa                                                  |
-| --------- | -------------------------------------------------------------- |
-| `sent`    | Meta lo aceptó. Guarda el `wamid` del mensaje.                 |
-| `failed`  | Meta lo rechazó. La fila muestra el error exacto que devolvió. |
-| `skipped` | Falta el token o el `PHONE_NUMBER_ID`. No se llamó a Meta.     |
+| Estado en el dashboard | Qué significa                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `Aceptado por Meta`    | La Cloud API lo cogió y devolvió un `wamid`. Aún no ha llegado a ningún móvil. |
+| `Entregado`            | Llegó al teléfono. Lo confirma el webhook del paso 7.                          |
+| `Leído`                | La persona lo abrió. También del webhook.                                      |
+| `Fallido`              | Rechazado en el envío o no entregable después. La fila muestra el motivo.      |
+| `Sin enviar`           | Falta el token o el `PHONE_NUMBER_ID`. No se llamó a Meta.                     |
 
-Un `sent` significa aceptado por Meta, no leído por la persona. La entrega final
-se ve en WhatsApp Manager.
+Si una fila se queda en `Aceptado por Meta` y no pasa nunca a `Entregado`, el
+problema es el webhook o el número de destino, no el envío. Empieza por el paso 7.
 
-## 8. Si algo falla
+## 9. Si algo falla
 
 Lo primero, siempre: leer el texto del error en la fila `failed` del dashboard.
 El código guarda literal lo que responde Meta (`error_data.details`, o
@@ -280,20 +335,24 @@ Los tropiezos habituales, por orden de frecuencia:
 - **Token caducado o inválido.** Es el token temporal de 24 horas. Genera el
   permanente del paso 4.
 - **Mensaje no entregable.** Ese número no tiene WhatsApp, o está mal escrito en
-  el perfil.
+  el perfil. Ahora se ve: la fila pasa a `Fallido` con el motivo de Meta —
+  típicamente `131026 Message undeliverable`.
+- **Todo se queda en `Aceptado por Meta`.** El webhook del paso 7 no está dado
+  de alta, no está suscrito al campo `messages`, o `WHATSAPP_APP_SECRET` no es
+  el de esta app y la ruta rechaza cada callback. Míralo en los logs de Vercel.
 
 Nada de esto rompe una reserva. `notifyStaffOnWhatsApp` no lanza excepciones y
 todos los puntos de llamada envuelven la llamada: si WhatsApp cae, la reserva se
 guarda igual y solo se pierde el aviso.
 
-## 9. Volver atrás
+## 10. Volver atrás
 
 Vacía `WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID` y vuelve a desplegar.
 La función regresa al ensayo en seco: sigue registrando cada evento en el
 dashboard y deja de mandar nada. No hace falta tocar código ni revertir ningún
 commit.
 
-## 10. Coste y límites
+## 11. Coste y límites
 
 Las conversaciones de servicio iniciadas por el negocio con plantilla de
 utilidad tienen una franquicia mensual holgada para el volumen de un centro como
@@ -322,7 +381,10 @@ sobra.
 - [ ] Token permanente de usuario del sistema, sin caducidad
 - [ ] Teléfono relleno en los 3 perfiles `staff`
 - [ ] Teléfono relleno en el perfil `admin` — sin él no hay copia de nada
-- [ ] Las 4 variables en `.env.local`, servidor reiniciado
-- [ ] Las 4 variables en Vercel (Production), **redesplegado**
-- [ ] Prueba real: fila `sent` en el detalle de la reserva
+- [ ] Las 6 variables en `.env.local`, servidor reiniciado
+- [ ] Las 6 variables en Vercel (Production), **redesplegado**
+- [ ] Webhook dado de alta en Meta con la URL `/api/webhooks/whatsapp`
+- [ ] Suscripción al campo `messages` marcada
+- [ ] Prueba real: fila `Aceptado por Meta` en el detalle de la reserva
+- [ ] La misma fila pasa a `Entregado` en segundos — si no, el webhook no llega
 - [ ] Mensaje recibido en el móvil, con el botón apuntando a la reserva correcta

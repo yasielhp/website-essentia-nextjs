@@ -45,6 +45,7 @@ app/
     google/calendar/           # Google OAuth callback + FreeBusy endpoint
     checkout/                  # Redsys payment session creation
     webhooks/redsys/           # Redsys payment webhook → triggers confirmation email
+    webhooks/whatsapp/         # Meta status callbacks → advances whatsapp_messages.status
   components/
     ui/                        # Primitives: Button, Input, Accordion, Logo, AnimatedText…
     sections/                  # Page-section components grouped by page (home/, wellness/, booking/…)

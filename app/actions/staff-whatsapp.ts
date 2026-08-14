@@ -59,7 +59,7 @@ export async function fetchBookingWhatsAppMessages(
   const { data } = await db
     .from("whatsapp_messages")
     .select(
-      "id, event, staff_id, to_phone, body_preview, status, error, created_at",
+      "id, event, staff_id, to_phone, body_preview, status, error, created_at, delivered_at, read_at",
     )
     .eq("booking_id", bookingId)
     .order("created_at", { ascending: false });
@@ -73,6 +73,8 @@ export async function fetchBookingWhatsAppMessages(
     status: string;
     error: string | null;
     created_at: string;
+    delivered_at: string | null;
+    read_at: string | null;
   }[];
 
   // Resolved in one round trip rather than joined: `staff_id` points at
@@ -108,5 +110,7 @@ export async function fetchBookingWhatsAppMessages(
     status: row.status as WhatsAppMessageRow["status"],
     error: row.error,
     createdAt: row.created_at,
+    deliveredAt: row.delivered_at,
+    readAt: row.read_at,
   }));
 }

@@ -266,6 +266,21 @@ export function StaffCard({ staffPerson }: { staffPerson: StaffPerson }) {
   );
 }
 
+/**
+ * How far a notification got, at a glance.
+ *
+ * `sent` deliberately looks the same as `skipped`: Meta accepting a message
+ * says nothing about a handset receiving it, and dressing it as a success is
+ * what once hid a fortnight of notifications that never arrived.
+ */
+const WHATSAPP_STATUS_STYLES: Record<WhatsAppMessageRow["status"], string> = {
+  read: "bg-petroleum-700 text-sand-100",
+  delivered: "bg-petroleum-100 text-petroleum-700",
+  failed: "bg-red-100 text-red-700",
+  sent: "bg-sand-200 text-petroleum-500",
+  skipped: "bg-sand-200 text-petroleum-500",
+};
+
 /** What was sent to the professional, and whether it arrived. */
 export function WhatsAppCard({
   messages,
@@ -275,6 +290,15 @@ export function WhatsAppCard({
   locale: SupportedLocale;
 }) {
   const t = useTranslations("dashboard.bookings.detail");
+
+  const stamp = (iso: string) =>
+    new Date(iso).toLocaleString(locale === "es" ? "es-ES" : "en-GB", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: TIME_ZONE,
+    });
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -302,11 +326,7 @@ export function WhatsAppCard({
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  message.status === "sent"
-                    ? "bg-petroleum-700 text-sand-100"
-                    : message.status === "failed"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-sand-200 text-petroleum-500"
+                  WHATSAPP_STATUS_STYLES[message.status]
                 }`}
               >
                 {t(`whatsapp.statuses.${message.status}`)}
@@ -315,20 +335,24 @@ export function WhatsAppCard({
                 {message.recipientName
                   ? `${message.recipientName} · ${message.toPhone}`
                   : message.toPhone}{" "}
-                ·{" "}
-                {new Date(message.createdAt).toLocaleString(
-                  locale === "es" ? "es-ES" : "en-GB",
-                  {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: TIME_ZONE,
-                  },
-                )}
+                · {stamp(message.createdAt)}
               </span>
             </div>
             <p className="text-petroleum-500 text-sm">{message.bodyPreview}</p>
+            {/* The two moments Meta reports back. Absent on a message that is
+            still only accepted, which is the whole point of showing them. */}
+            {(message.deliveredAt || message.readAt) && (
+              <p className="text-petroleum-400 text-xs">
+                {[
+                  message.deliveredAt &&
+                    `${t("whatsapp.deliveredAt")} ${stamp(message.deliveredAt)}`,
+                  message.readAt &&
+                    `${t("whatsapp.readAt")} ${stamp(message.readAt)}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
             {message.error && (
               <p className="text-xs text-red-700">{message.error}</p>
             )}
