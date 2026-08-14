@@ -369,8 +369,13 @@
         "phone": "Phone",
         "email": "Email",
         "reservationNumber": "Reservation number",
-        "roomNumber": "Room number"
+        "roomNumber": "Room number",
+        "preferredLanguage": "Language",
+        "gender": "Gender",
+        "clientSince": "Client since",
+        "newsletter": "Newsletter"
       },
+      "viewContact": "View client record",
       "therapist": {
         "male": "Male",
         "female": "Female"

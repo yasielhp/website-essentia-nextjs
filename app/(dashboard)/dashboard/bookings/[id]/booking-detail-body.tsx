@@ -2,7 +2,12 @@
 
 import type { SupportedLocale } from "@/utils/format";
 import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
-import type { BookingDetail, CreatorProfile, StaffPerson } from "./types";
+import type {
+  BookingDetail,
+  ClientContact,
+  CreatorProfile,
+  StaffPerson,
+} from "./types";
 import {
   ClientCard,
   DateTimeCard,
@@ -27,12 +32,15 @@ import { displayNotes } from "./booking-notes";
 export function BookingDetailBody({
   booking,
   creator,
+  contact,
   whatsappMessages,
   staffPerson,
   locale,
 }: {
   booking: BookingDetail;
   creator: CreatorProfile | null;
+  /** The client's record, when the booking is linked to one. */
+  contact: ClientContact | null;
   whatsappMessages: WhatsAppMessageRow[];
   /** The professional assigned to it, if the booking has one. */
   staffPerson: StaffPerson | null;
@@ -52,7 +60,7 @@ export function BookingDetailBody({
         )}
         {booking.location && <LocationCard booking={booking} />}
         <DateTimeCard booking={booking} locale={locale} />
-        <ClientCard booking={booking} />
+        <ClientCard booking={booking} contact={contact} locale={locale} />
         {notes && <NotesCard notes={notes} />}
         <ReservedByCard booking={booking} creator={creator} />
       </div>

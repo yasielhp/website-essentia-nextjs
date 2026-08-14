@@ -15,7 +15,12 @@ import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { BookingDetailBody } from "./booking-detail-body";
-import type { BookingDetail, CreatorProfile, StaffPerson } from "./types";
+import type {
+  BookingDetail,
+  ClientContact,
+  CreatorProfile,
+  StaffPerson,
+} from "./types";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -83,7 +88,13 @@ function DeleteDialog({
 type PageState =
   | { kind: "loading" }
   | { kind: "not_found" }
-  | { kind: "loaded"; booking: BookingDetail; creator: CreatorProfile | null };
+  | {
+      kind: "loaded";
+      booking: BookingDetail;
+      creator: CreatorProfile | null;
+      /** Null for a booking taken from someone who was never filed as a contact. */
+      contact: ClientContact | null;
+    };
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -119,7 +130,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id",
+          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id, contact_id",
         )
         .eq("id", id)
         .limit(1);
@@ -173,7 +184,22 @@ export default function BookingDetailPage() {
         }
       }
 
-      setState({ kind: "loaded", booking, creator });
+      // The client's own record. A booking keeps its own copy of the name and
+      // the phone, so this is only read for what the copy does not carry.
+      let contact: ClientContact | null = null;
+      if (booking.contact_id) {
+        const { data: cData } = await insforge.database
+          .from("contacts")
+          .select(
+            "id, created_at, preferred_language, gender, newsletter_subscribed",
+          )
+          .eq("id", booking.contact_id)
+          .limit(1);
+        if (cancelled) return;
+        contact = (cData as ClientContact[] | null)?.[0] ?? null;
+      }
+
+      setState({ kind: "loaded", booking, creator, contact });
     }
     void load();
 
@@ -243,7 +269,7 @@ export default function BookingDetailPage() {
     );
   }
 
-  const { booking, creator } = state;
+  const { booking, creator, contact } = state;
   const fullName =
     [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—";
 
@@ -277,6 +303,7 @@ export default function BookingDetailPage() {
       <BookingDetailBody
         booking={booking}
         creator={creator}
+        contact={contact}
         whatsappMessages={whatsappMessages}
         staffPerson={staffPerson}
         locale={locale}

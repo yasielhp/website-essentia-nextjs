@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import {
@@ -9,7 +10,12 @@ import {
   type SupportedLocale,
 } from "@/utils/format";
 import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
-import type { BookingDetail, CreatorProfile, StaffPerson } from "./types";
+import type {
+  BookingDetail,
+  ClientContact,
+  CreatorProfile,
+  StaffPerson,
+} from "./types";
 
 /**
  * The cards a booking is made of.
@@ -450,11 +456,33 @@ export function DateTimeCard({
   );
 }
 
-/** Who it is for. */
-export function ClientCard({ booking }: { booking: BookingDetail }) {
+/**
+ * Who it is for.
+ *
+ * The first three fields are the booking's own copy, taken the day it was made.
+ * The rest come from the client's record in `contacts` and are absent for
+ * someone who was never filed as one — an anonymous booking, or a draft that
+ * failed its `upsert_contact`. The card shows what it has rather than a column
+ * of dashes.
+ */
+export function ClientCard({
+  booking,
+  contact,
+  locale,
+}: {
+  booking: BookingDetail;
+  contact: ClientContact | null;
+  locale: SupportedLocale;
+}) {
   const t = useTranslations("dashboard.bookings.detail");
+  const tCommon = useTranslations("dashboard.common");
+  const tGender = useTranslations("dashboard.gender");
+  const tNewsletter = useTranslations("dashboard.contacts.detail.newsletter");
+
   const fullName =
     [booking.first_name, booking.last_name].filter(Boolean).join(" ") || "—";
+  const stay = parseLocationAddress(booking.location_address);
+  const gender = contact?.gender;
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -465,7 +493,48 @@ export function ClientCard({ booking }: { booking: BookingDetail }) {
         <Field label={t("fields.name")}>{fullName}</Field>
         <Field label={t("fields.phone")}>{booking.phone ?? "—"}</Field>
         <Field label={t("fields.email")}>{booking.email ?? "—"}</Field>
+
+        {contact && (
+          <>
+            {/* Which language this person is written to in. Worth seeing beside
+            their email, since that is what the next message obeys. */}
+            <Field label={t("fields.preferredLanguage")}>
+              {contact.preferred_language === "es"
+                ? tCommon("spanish")
+                : tCommon("english")}
+            </Field>
+            <Field label={t("fields.gender")}>
+              {gender && tGender.has(gender) ? tGender(gender) : "—"}
+            </Field>
+            <Field label={t("fields.clientSince")}>
+              {formatCreated(contact.created_at, locale)}
+            </Field>
+            <Field label={t("fields.newsletter")}>
+              {contact.newsletter_subscribed
+                ? tNewsletter("subscribed")
+                : tNewsletter("notSubscribed")}
+            </Field>
+          </>
+        )}
+
+        {/* The hotel reservation number stays out of here: it belongs to the
+        stay, not to the person, and the Location card above already carries
+        it. */}
+        {stay?.roomNumber && (
+          <Field label={t("fields.roomNumber")}>{stay.roomNumber}</Field>
+        )}
       </div>
+
+      {/* The whole history — every booking, every payment — is one screen away
+      and does not belong on this one. */}
+      {contact && (
+        <Link
+          href={`/dashboard/contacts/${contact.id}`}
+          className="text-petroleum-500 hover:text-petroleum-700 mt-4 inline-block text-sm underline"
+        >
+          {t("viewContact")}
+        </Link>
+      )}
     </div>
   );
 }
@@ -495,8 +564,6 @@ export function ReservedByCard({
   creator: CreatorProfile | null;
 }) {
   const t = useTranslations("dashboard.bookings.detail");
-  const tSources = useTranslations("dashboard.bookings.sources");
-  const source = sourceKey(booking.created_by_role);
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -521,11 +588,9 @@ export function ReservedByCard({
           {creator?.email && (
             <p className="text-petroleum-400 text-sm">{creator.email}</p>
           )}
-          <span
-            className={`mt-1 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${sourceBadge[source]!.cls}`}
-          >
-            {tSources(source)}
-          </span>
+          {/* No role badge here: the same badge already sits at the top of the
+          page, in the card that answers where the booking came from. Twice on
+          one screen read as two different facts. */}
         </div>
       </div>
     </div>

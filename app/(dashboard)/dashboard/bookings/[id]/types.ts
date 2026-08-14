@@ -25,6 +25,22 @@ export type BookingDetail = {
   created_at: string | null;
   created_by_role: string | null;
   created_by_user_id: string | null;
+  contact_id: string | null;
+};
+
+/**
+ * The client's own record, which the booking only points at.
+ *
+ * A booking copies the name, email and phone as they were typed that day;
+ * everything else about the person — the language they are written to in, how
+ * long they have been coming — lives in `contacts` and is read from there.
+ */
+export type ClientContact = {
+  id: string;
+  created_at: string | null;
+  preferred_language: string | null;
+  gender: string | null;
+  newsletter_subscribed: boolean | null;
 };
 
 export type CreatorProfile = {
