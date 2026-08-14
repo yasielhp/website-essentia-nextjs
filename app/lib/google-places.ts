@@ -111,27 +111,34 @@ async function fetchPlaceReviews(
 
     const payload = (await response.json()) as PlacesResponse;
 
+    const reviews: GoogleReview[] = [];
+    let index = 0;
+    for (const review of payload.reviews ?? []) {
+      const author = review.authorAttribution;
+      const text = review.text?.text?.trim() ?? "";
+      const authorName = author?.displayName?.trim() ?? "";
+      const id = review.name ?? `review-${index}`;
+      index += 1;
+      // A rating with no words is a rating, not a testimonial, and an
+      // anonymous quote persuades nobody.
+      if (!text || !authorName) continue;
+      reviews.push({
+        id,
+        rating: review.rating ?? 0,
+        text,
+        authorName,
+        publishedRelative: review.relativePublishTimeDescription ?? "",
+        publishedAt: review.publishTime ?? "",
+        authorPhotoUrl: author?.photoUri ?? null,
+        authorProfileUrl: author?.uri ?? null,
+      });
+    }
+
     return {
       rating: payload.rating ?? null,
       userRatingCount: payload.userRatingCount ?? null,
       googleMapsUri: payload.googleMapsUri ?? null,
-      reviews: (payload.reviews ?? [])
-        .map((review, index) => {
-          const author = review.authorAttribution;
-          return {
-            id: review.name ?? `review-${index}`,
-            rating: review.rating ?? 0,
-            text: review.text?.text?.trim() ?? "",
-            authorName: author?.displayName?.trim() ?? "",
-            publishedRelative: review.relativePublishTimeDescription ?? "",
-            publishedAt: review.publishTime ?? "",
-            authorPhotoUrl: author?.photoUri ?? null,
-            authorProfileUrl: author?.uri ?? null,
-          };
-        })
-        // A rating with no words is a rating, not a testimonial, and an
-        // anonymous quote persuades nobody.
-        .filter((review) => review.text && review.authorName),
+      reviews,
     };
   } catch {
     // Never throws: reviews are decoration on a page that sells appointments,
