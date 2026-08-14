@@ -121,31 +121,37 @@ export async function notifyStaffOnWhatsApp(
       bookingId,
     });
 
-    // Sequential rather than parallel: two or three recipients at most, and
-    // Meta throttles a new number hard enough that a burst is not worth the
-    // risk of one send poisoning the others.
-    for (const recipient of recipients) {
-      const result = await sendTemplate({
-        to: recipient.phone,
-        params,
-        buttonUrlParam,
-      });
-
-      await db.from("whatsapp_messages").insert([
-        {
-          booking_id: bookingId,
-          staff_id: recipient.id,
-          event,
-          to_phone: recipient.phone,
-          language: WHATSAPP_TEMPLATE_LANGUAGE,
+    // All at once: two or three recipients at most, each send is a separate
+    // message to a separate number, and `sendTemplate` never throws — a refusal
+    // comes back as `{ status: "failed" }`, so one bad number cannot cancel the
+    // others the way a rejection would.
+    const sent = await Promise.all(
+      recipients.map(async (recipient) => ({
+        recipient,
+        result: await sendTemplate({
+          to: recipient.phone,
           params,
-          body_preview: bodyPreview,
-          status: result.status,
-          error: result.status === "failed" ? result.error : null,
-          provider_id: result.status === "sent" ? result.providerId : null,
-        },
-      ]);
-    }
+          buttonUrlParam,
+        }),
+      })),
+    );
+
+    // One insert rather than one per recipient: the log is written after every
+    // send has answered, so the dashboard never shows half a notification.
+    await db.from("whatsapp_messages").insert(
+      sent.map(({ recipient, result }) => ({
+        booking_id: bookingId,
+        staff_id: recipient.id,
+        event,
+        to_phone: recipient.phone,
+        language: WHATSAPP_TEMPLATE_LANGUAGE,
+        params,
+        body_preview: bodyPreview,
+        status: result.status,
+        error: result.status === "failed" ? result.error : null,
+        provider_id: result.status === "sent" ? result.providerId : null,
+      })),
+    );
   } catch {
     // fail-open: the booking is already saved, and a lost notification is not
     // worth an error the visitor or member of staff can do nothing about.
