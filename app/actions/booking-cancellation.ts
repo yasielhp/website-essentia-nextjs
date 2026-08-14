@@ -144,7 +144,7 @@ export async function cancelBookingByToken(
     // catch this replaces left the cancellation looking silent. It is still
     // never allowed to undo a cancellation that already happened.
     try {
-      const { error: sendError } = await sendEmail({
+      const { error: sendError, id } = await sendEmail({
         to: booking.email,
         subject,
         html: bookingCancelledEmail({
@@ -160,7 +160,9 @@ export async function cancelBookingByToken(
       await recordBookingEvent(
         sendError
           ? { ...entry, status: "failed", error: sendError.message }
-          : { ...entry, status: "sent" },
+          : // Resend's id, so its webhook can advance this row when the message
+            // is delivered, opened or bounces.
+            { ...entry, status: "sent", providerId: id },
       );
     } catch (err) {
       await recordBookingEvent({

@@ -71,7 +71,7 @@ export async function sendEmail({
 
   const bcc = await blindCopies(to);
 
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from,
     to,
     subject,
@@ -84,7 +84,10 @@ export async function sendEmail({
     console.error("[sendEmail] Failed to send to", to, ":", error.message);
   }
 
-  return { error };
+  // The id travels back so the booking history can keep it: it is what the
+  // Resend webhook quotes when the message is delivered, opened or bounces, and
+  // without it a callback has no row to land on.
+  return { error, id: data?.id ?? null };
 }
 
 /**

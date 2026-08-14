@@ -158,11 +158,13 @@ async function sendAndRecord(params: {
   };
 
   try {
-    const { error } = await sendEmail({ to, subject, html });
+    const { error, id } = await sendEmail({ to, subject, html });
     await recordBookingEvent(
       error
         ? { ...entry, status: "failed", error: error.message }
-        : { ...entry, status: "sent" },
+        : // Resend's id, kept so its webhook can find this row again when the
+          // message is delivered, opened or bounces.
+          { ...entry, status: "sent", providerId: id },
     );
   } catch (err) {
     await recordBookingEvent({
