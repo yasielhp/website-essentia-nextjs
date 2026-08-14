@@ -70,7 +70,7 @@ function DesktopSlider({
             // different-looking card.
             <div
               key={t.id}
-              className="w-[calc((100%-2rem)/3)] shrink-0 md:max-w-sm"
+              className="w-[calc((100%-2rem)/3)] shrink-0 md:max-w-[340px]"
             >
               <TestimonialCard t={t} compact />
             </div>
