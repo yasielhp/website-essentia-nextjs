@@ -393,8 +393,11 @@
       "history": {
         "empty": "Nothing recorded for this booking yet.",
         "dryRunNotice": "Test mode: no WhatsApp number is configured, so these messages are recorded but not sent.",
-        "showMessage": "View message",
-        "showDetail": "View detail",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "justNow": "just now",
+        "showAll": "View all {count} entries",
+        "showLess": "Show less",
         "channels": {
           "whatsapp": "WhatsApp",
           "email": "Email",
@@ -428,9 +431,11 @@
         "deliveredAt": "Delivered:",
         "readAt": "Read:",
         "statuses": {
-          "sent": "Accepted by Meta",
+          "sent": "Sent",
+          "acceptedByMeta": "Accepted by Meta",
           "delivered": "Delivered",
           "read": "Read",
+          "opened": "Opened",
           "skipped": "Not sent",
           "failed": "Failed",
           "done": "Done"

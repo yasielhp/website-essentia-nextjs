@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -10,7 +11,9 @@ import {
   type SupportedLocale,
 } from "@/utils/format";
 import type {
+  BookingEventActorRole,
   BookingEventChannel,
+  BookingEventName,
   BookingEventRow,
   BookingEventStatus,
 } from "@/lib/booking-events/types";
@@ -308,16 +311,87 @@ function isMessage(channel: BookingEventChannel): boolean {
 }
 
 /**
- * Whether the summary is worth hiding behind the toggle.
+ * The colour a channel owns on the rail.
  *
- * A message carries the same template paragraph for every recipient, so a
- * booking that changed hands twice would repeat it six times; reading it once
- * is enough. Everything else says something different each time and says it in
- * a line — "Hora cambiada de 14:00 a 16:00" is the entry, not a footnote to
- * it — so it is shown outright unless somebody wrote an essay into it.
+ * The dot used to carry the status, which meant a row of identical sand dots
+ * for everything that merely happened. The status already has a badge of its
+ * own; what the eye cannot find without help is which entries were messages and
+ * which were somebody at the desk. Red overrides all five: a failure is worth
+ * more than knowing which channel failed.
  */
-function foldsAway(event: BookingEventRow): boolean {
-  return isMessage(event.channel) || event.summary.length > 120;
+const CHANNEL_DOT: Record<BookingEventChannel, string> = {
+  whatsapp: "bg-green-500",
+  email: "bg-blue-500",
+  system: "bg-petroleum-700",
+  payment: "bg-amber-500",
+  calendar: "bg-sand-500",
+};
+
+/** How many entries are worth showing before the trail is folded. */
+const VISIBLE_GROUPS = 5;
+
+/**
+ * One notification and everyone it reached, as a single entry.
+ *
+ * Every notification writes one row per recipient — the professional and each
+ * admin — all with the same wording and the same second. Listed one by one they
+ * doubled the length of the trail and read as two different things happening,
+ * when what happened was one thing told to two people.
+ */
+type HistoryGroup = {
+  key: string;
+  channel: BookingEventChannel;
+  event: BookingEventName;
+  summary: string;
+  createdAt: string;
+  entries: BookingEventRow[];
+  actorName: string | null;
+  actorRole: BookingEventActorRole | null;
+  /** Shared by every recipient, or null when they came back different. */
+  status: BookingEventStatus | null;
+  error: string | null;
+};
+
+/**
+ * Collapses the rows of one notification into one entry.
+ *
+ * Only messages are grouped. Two edits landing in the same second are two
+ * things a person did, and merging them would hide one of them.
+ */
+function groupEvents(events: BookingEventRow[]): HistoryGroup[] {
+  const groups: HistoryGroup[] = [];
+  const byKey = new Map<string, HistoryGroup>();
+
+  for (const event of events) {
+    const key = isMessage(event.channel)
+      ? `${event.channel}|${event.event}|${event.createdAt}`
+      : event.id;
+
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.entries.push(event);
+      if (existing.status !== event.status) existing.status = null;
+      existing.error ??= event.error;
+      continue;
+    }
+
+    const group: HistoryGroup = {
+      key,
+      channel: event.channel,
+      event: event.event,
+      summary: event.summary,
+      createdAt: event.createdAt,
+      entries: [event],
+      actorName: event.actorName,
+      actorRole: event.actorRole,
+      status: event.status,
+      error: event.error,
+    };
+    byKey.set(key, group);
+    groups.push(group);
+  }
+
+  return groups;
 }
 
 /**
@@ -341,15 +415,97 @@ export function HistoryCard({
   locale: SupportedLocale;
 }) {
   const t = useTranslations("dashboard.bookings.detail");
+  const [expanded, setExpanded] = useState(false);
 
-  const stamp = (iso: string) =>
-    new Date(iso).toLocaleString(locale === "es" ? "es-ES" : "en-GB", {
-      day: "numeric",
-      month: "short",
+  /**
+   * The moment the card was opened, read once and then held.
+   *
+   * "hace 12 min" is the one thing here that depends on when it is asked, and a
+   * clock read straight from the render body would make this component draw
+   * differently on every pass. Frozen at mount it stays honest for as long as
+   * anybody looks at a screen they did not leave open for an hour, and it costs
+   * no timer to keep.
+   */
+  const [now] = useState(() => Date.now());
+
+  const intlLocale = locale === "es" ? "es-ES" : "en-GB";
+
+  const clock = (iso: string) =>
+    new Date(iso).toLocaleTimeString(intlLocale, {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: TIME_ZONE,
     });
+
+  /**
+   * "hace 12 min" while it is still fresh, the clock once it is not.
+   *
+   * A relative time answers the question actually being asked of a recent
+   * entry — did this just happen? — and stops being useful the moment the
+   * answer is "yesterday", which is what the day headings are for.
+   */
+  const when = (iso: string) => {
+    const minutes = Math.round((now - new Date(iso).getTime()) / 60000);
+    if (minutes < 1) return t("history.justNow");
+    if (minutes >= 60 * 12) return clock(iso);
+
+    const rtf = new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" });
+    return minutes < 60
+      ? rtf.format(-minutes, "minute")
+      : rtf.format(-Math.round(minutes / 60), "hour");
+  };
+
+  /** `Hoy`, `Ayer`, or the date written out. */
+  const dayLabel = (iso: string) => {
+    const day = (value: Date) =>
+      value.toLocaleDateString("en-CA", { timeZone: TIME_ZONE });
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 86_400_000);
+    const stamp = day(new Date(iso));
+
+    if (stamp === day(today)) return t("history.today");
+    if (stamp === day(yesterday)) return t("history.yesterday");
+    return new Date(iso).toLocaleDateString(intlLocale, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: TIME_ZONE,
+    });
+  };
+
+  /**
+   * What a status is called on the channel that produced it.
+   *
+   * The same word means different things depending on who reported it. Meta
+   * accepting a message is not a delivery, and an email "read" is a tracking
+   * pixel being fetched — which Apple Mail does for everybody, read or not — so
+   * it is called an opening and not a reading.
+   */
+  const statusLabel = (
+    channel: BookingEventChannel,
+    status: BookingEventStatus,
+  ) => {
+    if (status === "sent" && channel === "whatsapp") {
+      return t("history.statuses.acceptedByMeta");
+    }
+    if (status === "read" && channel === "email") {
+      return t("history.statuses.opened");
+    }
+    return t(`history.statuses.${status}`);
+  };
+
+  const groups = groupEvents(events);
+  // Sliced before the days are worked out, so a fold never leaves a heading
+  // standing over nothing.
+  const shown = expanded ? groups : groups.slice(0, VISIBLE_GROUPS);
+
+  const days: { label: string; groups: HistoryGroup[] }[] = [];
+  for (const group of shown) {
+    const label = dayLabel(group.createdAt);
+    const current = days.at(-1);
+    if (current?.label === label) current.groups.push(group);
+    else days.push({ label, groups: [group] });
+  }
 
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -367,93 +523,151 @@ export function HistoryCard({
         </p>
       )}
 
-      {/* The rail is drawn on the list, not on each entry, so it stops at the
-      last dot instead of trailing off the bottom of the card. */}
-      <ul className="border-sand-200 flex flex-col gap-5 border-l pl-5">
-        {events.map((event) => {
-          const messageLike = isMessage(event.channel);
-          // Who the line is about: the person a message went to, or the person
-          // who caused everything else. A webhook or a nightly sync has no name
-          // at all, and then the role alone carries the line.
-          const who = messageLike
-            ? [event.recipientName, event.recipient]
-            : [
-                event.actorName,
-                event.actorRole ? t(`history.roles.${event.actorRole}`) : null,
-              ];
-          const meta = [...who, stamp(event.createdAt)].filter(
-            (part): part is string => Boolean(part),
-          );
-          // The two moments Meta reports back. Absent on a message that is
-          // still only accepted, which is the whole point of showing them.
-          if (event.deliveredAt) {
-            meta.push(
-              `${t("history.deliveredAt")} ${stamp(event.deliveredAt)}`,
-            );
-          }
-          if (event.readAt) {
-            meta.push(`${t("history.readAt")} ${stamp(event.readAt)}`);
-          }
+      <div className="flex flex-col gap-4">
+        {days.map((day) => (
+          <div key={day.label} className="flex flex-col gap-3">
+            <p className="text-petroleum-400 text-xs font-medium tracking-wide uppercase">
+              {day.label}
+            </p>
 
-          return (
-            <li key={event.id} className="relative flex flex-col gap-1">
-              {/* The dot sits on the rail: half its width to the left of the
-              padding, so it reads as a point on the line rather than beside
-              it. Only a delivery darkens it; `done` stays sand, because an edit
-              that simply happened is neither a success nor a wait. */}
-              <span
-                className={`absolute top-1.5 -left-[26px] size-2.5 rounded-full ring-4 ring-white ${
-                  event.status === "failed"
-                    ? "bg-red-400"
-                    : event.status === "read" || event.status === "delivered"
-                      ? "bg-petroleum-700"
-                      : "bg-sand-500"
-                }`}
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-petroleum-700 text-sm font-medium">
-                  {t(`history.events.${event.event}`)}
-                </span>
-                {/* The channel is plain text, not a second pill: two badges on
-                one line read as two states of the same thing. */}
-                <span className="text-petroleum-400 text-xs tracking-wide uppercase">
-                  {t(`history.channels.${event.channel}`)}
-                </span>
-                {/* Nothing to report on an entry that was only ever going to
-                happen — "Hecho" beside every edit is noise. */}
-                {event.status !== "done" && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      EVENT_STATUS_STYLES[event.status]
-                    }`}
-                  >
-                    {t(`history.statuses.${event.status}`)}
-                  </span>
-                )}
-              </div>
-              {!foldsAway(event) && (
-                <p className="text-petroleum-700 text-sm">{event.summary}</p>
-              )}
-              <p className="text-petroleum-400 text-xs">{meta.join(" · ")}</p>
-              {event.error && (
-                <p className="text-xs text-red-700">{event.error}</p>
-              )}
-              {foldsAway(event) && (
-                <details className="group">
-                  <summary className="text-petroleum-500 hover:text-petroleum-700 cursor-pointer list-none text-xs underline">
-                    {messageLike
-                      ? t("history.showMessage")
-                      : t("history.showDetail")}
-                  </summary>
-                  <p className="text-petroleum-500 mt-1 text-sm">
-                    {event.summary}
-                  </p>
-                </details>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+            {/* The rail is drawn on the list, not on each entry, so it stops at
+            the last dot instead of trailing off the bottom of the card. */}
+            <ul className="border-sand-200 flex flex-col gap-5 border-l pl-5">
+              {day.groups.map((group) => {
+                const messageLike = isMessage(group.channel);
+                const failed = group.entries.some((e) => e.status === "failed");
+
+                // The badge on the title only speaks for an entry with one
+                // recipient. A notification that went to two people carries a
+                // line each below, and a single badge over them would claim
+                // for both what may only be true of one.
+                const single =
+                  messageLike && group.entries.length === 1
+                    ? group.entries[0]
+                    : null;
+
+                // Who the line is about: the person a message went to, or the
+                // person who caused everything else. A webhook or a nightly
+                // sync has no name at all, and then the role carries the line.
+                const meta = (
+                  messageLike
+                    ? [single?.recipientName, single?.recipient]
+                    : [
+                        group.actorName,
+                        group.actorRole
+                          ? t(`history.roles.${group.actorRole}`)
+                          : null,
+                      ]
+                ).filter((part): part is string => Boolean(part));
+
+                meta.push(when(group.createdAt));
+
+                // The two moments Meta reports back, and only while one message
+                // is being talked about: two recipients read at two times, and
+                // the pair of stamps would belong to neither.
+                if (single?.deliveredAt) {
+                  meta.push(
+                    `${t("history.deliveredAt")} ${clock(single.deliveredAt)}`,
+                  );
+                }
+                if (single?.readAt) {
+                  meta.push(`${t("history.readAt")} ${clock(single.readAt)}`);
+                }
+
+                return (
+                  <li key={group.key} className="relative flex flex-col gap-1">
+                    {/* The dot sits on the rail: half its width to the left of
+                    the padding, so it reads as a point on the line rather than
+                    beside it. */}
+                    <span
+                      className={`absolute top-1.5 -left-[26px] size-2.5 rounded-full ring-4 ring-white ${
+                        failed ? "bg-red-400" : CHANNEL_DOT[group.channel]
+                      }`}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-petroleum-700 text-sm font-medium">
+                        {t(`history.events.${group.event}`)}
+                      </span>
+                      {/* The channel is plain text, not a second pill: two
+                      badges on one line read as two states of the same thing. */}
+                      <span className="text-petroleum-400 text-xs tracking-wide uppercase">
+                        {t(`history.channels.${group.channel}`)}
+                      </span>
+                      {single && single.status !== "done" && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            EVENT_STATUS_STYLES[single.status]
+                          }`}
+                        >
+                          {statusLabel(group.channel, single.status)}
+                        </span>
+                      )}
+                    </div>
+                    {/* The template paragraph is not shown at all: it is the
+                    same words every time, and what anyone reading this wants to
+                    know is who it reached, which is right below. Everything
+                    else says something different each time and says it here. */}
+                    {!messageLike && (
+                      <p className="text-petroleum-700 text-sm">
+                        {group.summary}
+                      </p>
+                    )}
+                    <p className="text-petroleum-400 text-xs">
+                      {meta.join(" · ")}
+                    </p>
+                    {/* One line per recipient, so "did the admin get it too?"
+                    is answered by looking rather than by counting phones. */}
+                    {messageLike && !single && (
+                      <ul className="mt-0.5 flex flex-col gap-0.5">
+                        {group.entries.map((entry) => (
+                          <li
+                            key={entry.id}
+                            className="text-petroleum-400 flex flex-wrap items-center gap-1.5 text-xs"
+                          >
+                            <span className="text-petroleum-500">
+                              {entry.recipientName ?? entry.recipient ?? "—"}
+                            </span>
+                            {entry.recipientName && entry.recipient && (
+                              <span>{entry.recipient}</span>
+                            )}
+                            <span
+                              className={`rounded-full px-2 py-0.5 ${
+                                EVENT_STATUS_STYLES[entry.status]
+                              }`}
+                            >
+                              {statusLabel(group.channel, entry.status)}
+                            </span>
+                            {entry.readAt && (
+                              <span>
+                                {t("history.readAt")} {clock(entry.readAt)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {group.error && (
+                      <p className="text-xs text-red-700">{group.error}</p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {groups.length > VISIBLE_GROUPS && (
+        <button
+          type="button"
+          onClick={() => setExpanded((open) => !open)}
+          className="text-petroleum-500 hover:text-petroleum-700 mt-4 w-full text-center text-xs underline"
+        >
+          {expanded
+            ? t("history.showLess")
+            : t("history.showAll", { count: groups.length })}
+        </button>
+      )}
     </div>
   );
 }

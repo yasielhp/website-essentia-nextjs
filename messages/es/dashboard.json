@@ -393,8 +393,11 @@
       "history": {
         "empty": "Sin movimientos registrados para esta reserva.",
         "dryRunNotice": "Modo de prueba: no hay número de WhatsApp configurado, así que estos mensajes se guardan pero no se envían.",
-        "showMessage": "Ver mensaje",
-        "showDetail": "Ver detalle",
+        "today": "Hoy",
+        "yesterday": "Ayer",
+        "justNow": "ahora mismo",
+        "showAll": "Ver las {count} entradas",
+        "showLess": "Ver menos",
         "channels": {
           "whatsapp": "WhatsApp",
           "email": "Email",
@@ -428,9 +431,11 @@
         "deliveredAt": "Entregado:",
         "readAt": "Leído:",
         "statuses": {
-          "sent": "Aceptado por Meta",
+          "sent": "Enviado",
+          "acceptedByMeta": "Aceptado por Meta",
           "delivered": "Entregado",
           "read": "Leído",
+          "opened": "Abierto",
           "skipped": "Sin enviar",
           "failed": "Fallido",
           "done": "Hecho"
