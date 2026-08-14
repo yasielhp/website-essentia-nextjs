@@ -79,12 +79,15 @@ export async function fetchBookingWhatsAppMessages(
   // `auth.users`, not at `profiles`, so there is no relation for the SDK to
   // follow.
   const names = new Map<string, string>();
-  const ids = [...new Set(rows.map((row) => row.staff_id).filter(Boolean))];
-  if (ids.length > 0) {
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (row.staff_id) ids.add(row.staff_id);
+  }
+  if (ids.size > 0) {
     const { data: profiles } = await db
       .from("profiles")
       .select("id, first_name, full_name")
-      .in("id", ids as string[]);
+      .in("id", [...ids]);
 
     for (const profile of (profiles ?? []) as {
       id: string;
