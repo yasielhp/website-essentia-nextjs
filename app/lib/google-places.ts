@@ -18,6 +18,14 @@ const ENDPOINT = "https://places.googleapis.com/v1/places";
 const FIELD_MASK = "rating,userRatingCount,googleMapsUri,reviews";
 const TIMEOUT_MS = 8_000;
 
+/** Where Google takes someone to write a review of this listing. */
+export function writeReviewUrl(): string | null {
+  const placeId = process.env.GOOGLE_PLACES_PLACE_ID;
+  return placeId
+    ? `https://search.google.com/local/writereview?placeid=${placeId}`
+    : null;
+}
+
 /**
  * Six hours.
  *
@@ -36,6 +44,8 @@ export type GoogleReview = {
   authorName: string;
   /** Google's own wording — "Hace 2 meses", "in the last week". */
   publishedRelative: string;
+  /** ISO 8601. Only used to order the full list; the cards show the wording. */
+  publishedAt: string;
   /** Null when the reviewer has no picture. */
   authorPhotoUrl: string | null;
   /** The reviewer's Google profile. Required attribution when the photo shows. */
@@ -68,6 +78,7 @@ type PlacesResponse = {
     rating?: number;
     text?: { text?: string };
     relativePublishTimeDescription?: string;
+    publishTime?: string;
     authorAttribution?: {
       displayName?: string;
       photoUri?: string;
@@ -113,6 +124,7 @@ async function fetchPlaceReviews(
             text: review.text?.text?.trim() ?? "",
             authorName: author?.displayName?.trim() ?? "",
             publishedRelative: review.relativePublishTimeDescription ?? "",
+            publishedAt: review.publishTime ?? "",
             authorPhotoUrl: author?.photoUri ?? null,
             authorProfileUrl: author?.uri ?? null,
           };
@@ -137,5 +149,43 @@ async function fetchPlaceReviews(
 export const getGoogleReviews = unstable_cache(
   fetchPlaceReviews,
   ["google-place-reviews"],
+  { revalidate: CACHE_SECONDS, tags: ["google-reviews"] },
+);
+
+/**
+ * Both languages merged: every review Places is willing to hand over.
+ *
+ * Nine of the listing's thirty-six, at the time of writing. Five per language
+ * is the ceiling and the two sets overlap — a review written in Spanish also
+ * turns up, translated, among the English five — so the union is smaller than
+ * ten and its size is Google's to decide, not ours. Nothing built on this may
+ * call the result "all the reviews".
+ *
+ * A review present in both sets is kept in the reader's own language, since
+ * that copy needs no translating.
+ */
+export const getAllGoogleReviews = unstable_cache(
+  async (language: string): Promise<GooglePlaceReviews> => {
+    const other = language === "es" ? "en" : "es";
+    const [preferred, secondary] = await Promise.all([
+      fetchPlaceReviews(language),
+      fetchPlaceReviews(other),
+    ]);
+
+    const byId = new Map(preferred.reviews.map((r) => [r.id, r]));
+    for (const review of secondary.reviews) {
+      if (!byId.has(review.id)) byId.set(review.id, review);
+    }
+
+    return {
+      ...preferred,
+      // Newest first. `publishTime` is absent on nothing Google returns today,
+      // but an empty string sorts last rather than throwing the order away.
+      reviews: [...byId.values()].sort((a, b) =>
+        b.publishedAt.localeCompare(a.publishedAt),
+      ),
+    };
+  },
+  ["google-place-reviews-all"],
   { revalidate: CACHE_SECONDS, tags: ["google-reviews"] },
 );
