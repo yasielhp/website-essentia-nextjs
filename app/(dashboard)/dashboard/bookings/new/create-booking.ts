@@ -2,6 +2,7 @@ import { z } from "zod";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { getSessionUser } from "@/actions/auth";
+import { recordBookingCreated } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
@@ -187,6 +188,11 @@ export async function createBooking(
       error: (error as { message?: string })?.message ?? messages.createFailed,
     };
   }
+
+  // Here rather than in `announceNewBooking`, which also runs for the calendar
+  // and the notifications: the history opens with the booking existing, and an
+  // entry for a row the insert refused would be worse than no entry at all.
+  await recordBookingCreated(getAccessToken(), bookingId);
 
   return { ok: true, bookingId };
 }

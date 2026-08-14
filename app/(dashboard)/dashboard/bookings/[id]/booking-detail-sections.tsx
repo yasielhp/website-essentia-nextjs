@@ -9,7 +9,11 @@ import {
   formatBookingDate,
   type SupportedLocale,
 } from "@/utils/format";
-import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
+import type {
+  BookingEventChannel,
+  BookingEventRow,
+  BookingEventStatus,
+} from "@/lib/booking-events/types";
 import type {
   BookingDetail,
   ClientContact,
@@ -21,9 +25,10 @@ import type {
  * The cards a booking is made of.
  *
  * One component per question the screen answers — what state it is in, which
- * service, who performs it, what was sent to them, where, when, for whom, what
- * they wrote, and who booked it. Each reads the fields it needs and nothing
- * else, so changing the address block cannot disturb the payment badge.
+ * service, who performs it, where, when, for whom, what they wrote, who booked
+ * it, and everything that has happened to it since. Each reads the fields it
+ * needs and nothing else, so changing the address block cannot disturb the
+ * payment badge.
  */
 
 const paymentBadgeClasses: Record<string, string> = {
@@ -273,26 +278,66 @@ export function StaffCard({ staffPerson }: { staffPerson: StaffPerson }) {
 }
 
 /**
- * How far a notification got, at a glance.
+ * How far an entry got, at a glance.
  *
  * `sent` deliberately looks the same as `skipped`: Meta accepting a message
  * says nothing about a handset receiving it, and dressing it as a success is
- * what once hid a fortnight of notifications that never arrived.
+ * what once hid a fortnight of notifications that never arrived. `done` is here
+ * only to keep the map total — an edit or a sync carries it, and the badge is
+ * not drawn for those at all.
  */
-const WHATSAPP_STATUS_STYLES: Record<WhatsAppMessageRow["status"], string> = {
+const EVENT_STATUS_STYLES: Record<BookingEventStatus, string> = {
   read: "bg-petroleum-700 text-sand-100",
   delivered: "bg-petroleum-100 text-petroleum-700",
   failed: "bg-red-100 text-red-700",
   sent: "bg-sand-200 text-petroleum-500",
   skipped: "bg-sand-200 text-petroleum-500",
+  done: "bg-sand-200 text-petroleum-500",
 };
 
-/** What was sent to the professional, and whether it arrived. */
-export function WhatsAppCard({
-  messages,
+/**
+ * The two channels that went out to somebody, as opposed to merely happening.
+ *
+ * They are the only ones with a recipient to name, and the only ones whose
+ * status is worth watching past `sent`.
+ */
+const MESSAGE_CHANNELS: readonly BookingEventChannel[] = ["whatsapp", "email"];
+
+function isMessage(channel: BookingEventChannel): boolean {
+  return MESSAGE_CHANNELS.includes(channel);
+}
+
+/**
+ * Whether the summary is worth hiding behind the toggle.
+ *
+ * A message carries the same template paragraph for every recipient, so a
+ * booking that changed hands twice would repeat it six times; reading it once
+ * is enough. Everything else says something different each time and says it in
+ * a line — "Hora cambiada de 14:00 a 16:00" is the entry, not a footnote to
+ * it — so it is shown outright unless somebody wrote an essay into it.
+ */
+function foldsAway(event: BookingEventRow): boolean {
+  return isMessage(event.channel) || event.summary.length > 120;
+}
+
+/**
+ * Everything that has happened to this booking, newest first.
+ *
+ * Read as a trail rather than a list of cards: the WhatsApp sent to the
+ * professional, the email to the client, the hour somebody moved, the payment
+ * that came back, the calendar it was written to. One vocabulary across all
+ * five, so `cancelled` is the same word whichever of them recorded it.
+ *
+ * It sits last on the page on purpose. Nobody opens a booking to read its
+ * history; they open it for the service, the time and the client, and come down
+ * here only when someone asks why something changed or says they were never
+ * told.
+ */
+export function HistoryCard({
+  events,
   locale,
 }: {
-  messages: WhatsAppMessageRow[];
+  events: BookingEventRow[];
   locale: SupportedLocale;
 }) {
   const t = useTranslations("dashboard.bookings.detail");
@@ -309,61 +354,105 @@ export function WhatsAppCard({
   return (
     <div className="border-sand-200 rounded-2xl border bg-white p-6">
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
-        {t("sections.whatsapp")}
+        {t("sections.history")}
       </h2>
 
-      {/* Until the centre has a number, every row is a dry run — say so
-      rather than let staff read "not sent" as a failure. */}
-      {messages.some((m) => m.status === "skipped") && (
+      {/* Until the centre has a number, every WhatsApp row is a dry run — say
+      so rather than let staff read "not sent" as a failure. */}
+      {events.some(
+        (e) => e.channel === "whatsapp" && e.status === "skipped",
+      ) && (
         <p className="text-petroleum-400 mb-4 text-xs">
-          {t("whatsapp.dryRunNotice")}
+          {t("history.dryRunNotice")}
         </p>
       )}
 
-      <ul className="flex flex-col gap-4">
-        {messages.map((message) => (
-          <li
-            key={message.id}
-            className="border-sand-200 flex flex-col gap-1 border-b pb-4 last:border-0 last:pb-0"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-petroleum-700 text-sm font-medium">
-                {t(`whatsapp.events.${message.event}`)}
-              </span>
+      {/* The rail is drawn on the list, not on each entry, so it stops at the
+      last dot instead of trailing off the bottom of the card. */}
+      <ul className="border-sand-200 flex flex-col gap-5 border-l pl-5">
+        {events.map((event) => {
+          const messageLike = isMessage(event.channel);
+          // Who the line is about: the person a message went to, or the person
+          // who caused everything else. A webhook or a nightly sync has no name
+          // at all, and then the role alone carries the line.
+          const who = messageLike
+            ? [event.recipientName, event.recipient]
+            : [
+                event.actorName,
+                event.actorRole ? t(`history.roles.${event.actorRole}`) : null,
+              ];
+          const meta = [...who, stamp(event.createdAt)].filter(
+            (part): part is string => Boolean(part),
+          );
+          // The two moments Meta reports back. Absent on a message that is
+          // still only accepted, which is the whole point of showing them.
+          if (event.deliveredAt) {
+            meta.push(
+              `${t("history.deliveredAt")} ${stamp(event.deliveredAt)}`,
+            );
+          }
+          if (event.readAt) {
+            meta.push(`${t("history.readAt")} ${stamp(event.readAt)}`);
+          }
+
+          return (
+            <li key={event.id} className="relative flex flex-col gap-1">
+              {/* The dot sits on the rail: half its width to the left of the
+              padding, so it reads as a point on the line rather than beside
+              it. Only a delivery darkens it; `done` stays sand, because an edit
+              that simply happened is neither a success nor a wait. */}
               <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  WHATSAPP_STATUS_STYLES[message.status]
+                className={`absolute top-1.5 -left-[26px] size-2.5 rounded-full ring-4 ring-white ${
+                  event.status === "failed"
+                    ? "bg-red-400"
+                    : event.status === "read" || event.status === "delivered"
+                      ? "bg-petroleum-700"
+                      : "bg-sand-500"
                 }`}
-              >
-                {t(`whatsapp.statuses.${message.status}`)}
-              </span>
-              <span className="text-petroleum-400 text-xs">
-                {message.recipientName
-                  ? `${message.recipientName} · ${message.toPhone}`
-                  : message.toPhone}{" "}
-                · {stamp(message.createdAt)}
-              </span>
-            </div>
-            <p className="text-petroleum-500 text-sm">{message.bodyPreview}</p>
-            {/* The two moments Meta reports back. Absent on a message that is
-            still only accepted, which is the whole point of showing them. */}
-            {(message.deliveredAt || message.readAt) && (
-              <p className="text-petroleum-400 text-xs">
-                {[
-                  message.deliveredAt &&
-                    `${t("whatsapp.deliveredAt")} ${stamp(message.deliveredAt)}`,
-                  message.readAt &&
-                    `${t("whatsapp.readAt")} ${stamp(message.readAt)}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
-            {message.error && (
-              <p className="text-xs text-red-700">{message.error}</p>
-            )}
-          </li>
-        ))}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-petroleum-700 text-sm font-medium">
+                  {t(`history.events.${event.event}`)}
+                </span>
+                {/* The channel is plain text, not a second pill: two badges on
+                one line read as two states of the same thing. */}
+                <span className="text-petroleum-400 text-xs tracking-wide uppercase">
+                  {t(`history.channels.${event.channel}`)}
+                </span>
+                {/* Nothing to report on an entry that was only ever going to
+                happen — "Hecho" beside every edit is noise. */}
+                {event.status !== "done" && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      EVENT_STATUS_STYLES[event.status]
+                    }`}
+                  >
+                    {t(`history.statuses.${event.status}`)}
+                  </span>
+                )}
+              </div>
+              {!foldsAway(event) && (
+                <p className="text-petroleum-700 text-sm">{event.summary}</p>
+              )}
+              <p className="text-petroleum-400 text-xs">{meta.join(" · ")}</p>
+              {event.error && (
+                <p className="text-xs text-red-700">{event.error}</p>
+              )}
+              {foldsAway(event) && (
+                <details className="group">
+                  <summary className="text-petroleum-500 hover:text-petroleum-700 cursor-pointer list-none text-xs underline">
+                    {messageLike
+                      ? t("history.showMessage")
+                      : t("history.showDetail")}
+                  </summary>
+                  <p className="text-petroleum-500 mt-1 text-sm">
+                    {event.summary}
+                  </p>
+                </details>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

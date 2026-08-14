@@ -8,6 +8,7 @@ import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import { formatLongDate } from "@/lib/format-date";
+import { recordBookingEvent } from "@/lib/booking-events/record";
 
 const SELECT =
   "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, staff_id, service_tiers(label)";
@@ -111,25 +112,63 @@ export async function cancelBookingByToken(
 
   if (error) return { ok: false, reason: "not_found" };
 
+  // Recorded as its own entry, separate from the email below: what the centre
+  // needs to see first is that the client ended the booking themselves, which
+  // is the difference between a no-show and a cancellation nobody read.
+  await recordBookingEvent({
+    bookingId: booking.id,
+    channel: "system",
+    event: "cancelled",
+    actorRole: "client",
+    summary: "Reserva cancelada por el cliente desde el enlace del correo",
+  });
+
   // The same email staff send when they cancel from the dashboard, so the
   // client gets one acknowledgement whichever side ended the booking. Sent
   // from here rather than through `notifyBooking`, which requires a staff role
   // for this event — and this caller has none by design.
   if (booking.email) {
     const service = booking.service_title ?? "";
-    await sendEmail({
-      to: booking.email,
-      subject: `Reserva cancelada — ${service}`,
-      html: bookingCancelledEmail({
-        name: booking.first_name ?? "",
-        service,
-        sessionType: booking.service_tiers?.label ?? null,
-        date: formatLongDate(booking.date, locale),
-        time: booking.time ?? "",
-        duration: booking.duration,
-        locale,
-      }),
-    }).catch(() => {});
+    const subject = `Reserva cancelada — ${service}`;
+    const entry = {
+      bookingId: booking.id,
+      channel: "email" as const,
+      event: "cancelled" as const,
+      // The subject, because it is the line the client saw in their inbox.
+      summary: subject,
+      recipient: booking.email,
+      actorRole: "client" as const,
+    };
+
+    // `sendEmail` throws on an address the provider rejects, and the swallowed
+    // catch this replaces left the cancellation looking silent. It is still
+    // never allowed to undo a cancellation that already happened.
+    try {
+      const { error: sendError } = await sendEmail({
+        to: booking.email,
+        subject,
+        html: bookingCancelledEmail({
+          name: booking.first_name ?? "",
+          service,
+          sessionType: booking.service_tiers?.label ?? null,
+          date: formatLongDate(booking.date, locale),
+          time: booking.time ?? "",
+          duration: booking.duration,
+          locale,
+        }),
+      });
+      await recordBookingEvent(
+        sendError
+          ? { ...entry, status: "failed", error: sendError.message }
+          : { ...entry, status: "sent" },
+      );
+    } catch (err) {
+      await recordBookingEvent({
+        ...entry,
+        status: "failed",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   // Off every calendar that had it. This path never touched them, so a client

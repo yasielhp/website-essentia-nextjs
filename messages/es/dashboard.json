@@ -360,7 +360,7 @@
         "notes": "Notas",
         "reservedBy": "Reservado por",
         "staff": "Personal",
-        "whatsapp": "Avisos por WhatsApp"
+        "history": "Historial de la reserva"
       },
       "fields": {
         "date": "Fecha",
@@ -390,14 +390,40 @@
         "confirm": "Sí, eliminar",
         "deleting": "Eliminando…"
       },
-      "whatsapp": {
-        "empty": "Sin avisos por WhatsApp para esta reserva.",
+      "history": {
+        "empty": "Sin movimientos registrados para esta reserva.",
         "dryRunNotice": "Modo de prueba: no hay número de WhatsApp configurado, así que estos mensajes se guardan pero no se envían.",
+        "showMessage": "Ver mensaje",
+        "showDetail": "Ver detalle",
+        "channels": {
+          "whatsapp": "WhatsApp",
+          "email": "Email",
+          "system": "Sistema",
+          "payment": "Pago",
+          "calendar": "Calendario"
+        },
         "events": {
           "assigned": "Asignada",
           "unassigned": "Retirada",
           "rescheduled": "Cambio de hora",
-          "cancelled": "Cancelada"
+          "cancelled": "Cancelada",
+          "confirmed": "Confirmada",
+          "received": "Recibida",
+          "created": "Creada",
+          "edited": "Editada",
+          "deleted": "Eliminada",
+          "paid": "Pagada",
+          "failed": "Fallido",
+          "synced": "Sincronizada",
+          "removed": "Evento retirado"
+        },
+        "roles": {
+          "admin": "Administrador",
+          "staff": "Personal",
+          "partner": "Partner",
+          "client": "Cliente",
+          "anonymous": "Web",
+          "system": "Sistema"
         },
         "deliveredAt": "Entregado:",
         "readAt": "Leído:",
@@ -406,7 +432,8 @@
           "delivered": "Entregado",
           "read": "Leído",
           "skipped": "Sin enviar",
-          "failed": "Fallido"
+          "failed": "Fallido",
+          "done": "Hecho"
         }
       }
     },

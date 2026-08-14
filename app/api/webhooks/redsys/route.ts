@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { handleBookingPaid } from "@/services/booking-payments.service";
+import { recordBookingEvent } from "@/lib/booking-events/record";
 
 /** Redsys retries on any non-200 response, so both outcomes reply with 200. */
 function redsysReply(body: "OK" | "KO") {
@@ -52,6 +53,27 @@ export async function POST(req: NextRequest) {
         .from("bookings")
         .update({ payment_status: "failed" })
         .eq("id", bookingId);
+
+      // A refusal used to be visible only as a booking that stayed unpaid, so
+      // the response code travels into the entry: it is the only thing that
+      // says whether the card was declined or the client simply gave up.
+      const responseCode = payload.Ds_Response ?? "";
+      await recordBookingEvent({
+        bookingId,
+        channel: "payment",
+        event: "failed",
+        status: "failed",
+        actorRole: "system",
+        summary: "Pago rechazado por Redsys",
+        providerId: orderId,
+        error: responseCode ? `Ds_Response ${responseCode}` : null,
+        payload: {
+          orderId,
+          response: responseCode || null,
+          amountCents: payload.Ds_Amount ?? null,
+          currency: payload.Ds_Currency ?? null,
+        },
+      });
     }
   } catch (err) {
     // A malformed or unsigned notification must never look like a success, and

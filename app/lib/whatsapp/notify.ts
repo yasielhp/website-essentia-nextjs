@@ -6,6 +6,7 @@ import {
 } from "@/lib/whatsapp/client";
 import { buildStaffMessage } from "@/lib/whatsapp/messages";
 import type { StaffWhatsAppInput } from "@/lib/whatsapp/types";
+import { recordBookingEvents } from "@/lib/booking-events/record";
 
 type Profile = {
   id: string;
@@ -42,7 +43,7 @@ type Profile = {
 export async function notifyStaffOnWhatsApp(
   input: StaffWhatsAppInput,
 ): Promise<void> {
-  const { bookingId, staffId, event } = input;
+  const { bookingId, staffId, event, actorId, actorRole } = input;
   if (!bookingId || !staffId) return;
 
   try {
@@ -138,18 +139,24 @@ export async function notifyStaffOnWhatsApp(
 
     // One insert rather than one per recipient: the log is written after every
     // send has answered, so the dashboard never shows half a notification.
-    await db.from("whatsapp_messages").insert(
+    await recordBookingEvents(
       sent.map(({ recipient, result }) => ({
-        booking_id: bookingId,
-        staff_id: recipient.id,
+        bookingId,
+        channel: "whatsapp" as const,
         event,
-        to_phone: recipient.phone,
-        language: WHATSAPP_TEMPLATE_LANGUAGE,
-        params,
-        body_preview: bodyPreview,
+        actorId,
+        actorRole,
+        recipientId: recipient.id,
+        recipient: recipient.phone,
+        // The text as the recipient sees it, worded here rather than rebuilt
+        // from the parameters when somebody opens the booking.
+        summary: bodyPreview,
         status: result.status,
         error: result.status === "failed" ? result.error : null,
-        provider_id: result.status === "sent" ? result.providerId : null,
+        providerId: result.status === "sent" ? result.providerId : null,
+        // Kept so a message that reads oddly can be traced back to the exact
+        // template call, which the summary alone cannot reproduce.
+        payload: { params, language: WHATSAPP_TEMPLATE_LANGUAGE },
       })),
     );
   } catch {

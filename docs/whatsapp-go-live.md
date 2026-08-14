@@ -40,18 +40,19 @@ se suma, no sustituye.
 
 ## Estado a día de hoy
 
-| Pieza                                           | Estado                                         |
-| ----------------------------------------------- | ---------------------------------------------- |
-| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                      |
-| Tabla `whatsapp_messages`                       | Migrada (`20260810_whatsapp_messages.sql`)     |
-| Bloque en el detalle de reserva del dashboard   | Terminado                                      |
-| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)          |
-| Número registrado en Meta                       | Hecho — `id` 1313219501872182, `CONNECTED`     |
-| Token permanente                                | Hecho, en `.env.local`                         |
-| Plantilla aprobada                              | Activa desde el 13-08-2026, categoría Utilidad |
-| Variables en Vercel                             | **Pendiente**                                  |
-| Teléfono en los perfiles del personal           | 3 de 6 (Yuli, Dolly, Jesús) + el admin         |
-| Webhook de estados (`/api/webhooks/whatsapp`)   | Código listo — **falta darlo de alta en Meta** |
+| Pieza                                           | Estado                                            |
+| ----------------------------------------------- | ------------------------------------------------- |
+| Código (`app/lib/whatsapp/`, puntos de llamada) | Terminado                                         |
+| Tabla del historial                             | `booking_events` (`20260814b_booking_events.sql`) |
+| Bloque en el detalle de reserva del dashboard   | Terminado                                         |
+| Número dedicado                                 | Contratado: `+34 711 51 00 31` (eSIM)             |
+| Número registrado en Meta                       | Hecho — `id` 1313219501872182, `CONNECTED`        |
+| Token permanente                                | Hecho, en `.env.local`                            |
+| Plantilla aprobada                              | Activa desde el 13-08-2026, categoría Utilidad    |
+| Variables en Vercel                             | Puestas las seis, desplegadas                     |
+| Teléfono en los perfiles del personal           | 3 de 6 (Yuli, Dolly, Jesús) + el admin            |
+| Webhook de estados (`/api/webhooks/whatsapp`)   | Dado de alta y suscrito a `messages`              |
+| Entrega verificada                              | 14-08-2026: `read` en ambos números               |
 
 Mientras falten el token o el `PHONE_NUMBER_ID`, la función corre en seco: cada
 evento escribe su fila con estado `skipped` y el texto que se habría mandado,
@@ -259,6 +260,21 @@ https://www.essentiawellnessclub.com/api/webhooks/whatsapp
 5. **Suscríbete al campo `messages`.** En la misma pantalla, **Administrar** →
    marca `messages`. Es el campo que trae los estados; sin él el webhook queda
    dado de alta y mudo.
+
+6. **Comprueba que la cuenta de WhatsApp está suscrita a la app.** Este paso no
+   existe en la interfaz de Meta y es el que se traga las horas:
+
+   ```
+   GET  https://graph.facebook.com/v21.0/<WABA_ID>/subscribed_apps
+   POST https://graph.facebook.com/v21.0/<WABA_ID>/subscribed_apps
+   ```
+
+   con el `Authorization: Bearer <WHATSAPP_ACCESS_TOKEN>`. El `WABA_ID` sale de
+   la URL de WhatsApp Manager, en `selected_asset_id`. Si el `GET` devuelve
+   `{"data":[]}`, la app tiene su URL y sus campos pero **ninguna cuenta le
+   manda nada**: el asistente pinta el check verde en cuanto guardas la URL,
+   aunque no haya nadie al otro lado. El `POST`, sin cuerpo, lo arregla. Pasó
+   exactamente esto el 14-08-2026.
 
 A partir de ahí cada fila del dashboard avanza sola:
 

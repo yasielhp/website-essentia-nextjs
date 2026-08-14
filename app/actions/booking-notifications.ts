@@ -10,6 +10,11 @@ import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
 import { formatLongDate } from "@/lib/format-date";
+import {
+  recordBookingEvent,
+  actorFromToken,
+} from "@/lib/booking-events/record";
+import type { BookingEventActorRole } from "@/lib/booking-events/types";
 
 export type BookingNotificationEvent =
   "received" | "confirmed" | "cancelled" | "rescheduled";
@@ -118,6 +123,54 @@ async function getStaffEmail(serviceId: string): Promise<string | null> {
     (data as { google_connected_email: string | null } | null)
       ?.google_connected_email ?? null
   );
+}
+
+/**
+ * Sends one email and leaves it in the booking history either way.
+ *
+ * Two things it fixes at once. The send used to leave no trace anywhere, so
+ * "nobody told me" had nothing to answer it; and `sendEmail` throws on an
+ * address the provider rejects, which used to travel all the way up and take
+ * the caller down with it — on the public form, the reply to the person who had
+ * just booked. Here a failure is a `failed` entry and nothing more.
+ */
+async function sendAndRecord(params: {
+  bookingId: string;
+  event: BookingNotificationEvent;
+  to: string;
+  subject: string;
+  html: string;
+  actorId: string | null;
+  actorRole: BookingEventActorRole;
+}): Promise<void> {
+  const { bookingId, event, to, subject, html, actorId, actorRole } = params;
+
+  // The subject is the line the dashboard shows, because it is what the client
+  // actually saw in their inbox.
+  const entry = {
+    bookingId,
+    channel: "email" as const,
+    event,
+    summary: subject,
+    recipient: to,
+    actorId,
+    actorRole,
+  };
+
+  try {
+    const { error } = await sendEmail({ to, subject, html });
+    await recordBookingEvent(
+      error
+        ? { ...entry, status: "failed", error: error.message }
+        : { ...entry, status: "sent" },
+    );
+  } catch (err) {
+    await recordBookingEvent({
+      ...entry,
+      status: "failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**
@@ -233,10 +286,20 @@ export async function notifyBooking(
           rescheduled: `Booking rescheduled — ${service}`,
         };
 
-  await sendEmail({
+  // `received` is the public booking form, where there is no session to read a
+  // name from: the history says so rather than inventing a `system` actor.
+  const actor: { actorId: string | null; actorRole: BookingEventActorRole } =
+    event === "received"
+      ? { actorId: null, actorRole: "anonymous" }
+      : await actorFromToken(accessToken);
+
+  await sendAndRecord({
+    bookingId,
+    event,
     to: clientEmail,
     subject: clientSubjects[event],
     html: clientTemplates[event](),
+    ...actor,
   });
 
   // ── Sync contact record ────────────────────────────────────────
@@ -255,7 +318,9 @@ export async function notifyBooking(
   if ((event === "received" || event === "confirmed") && serviceId) {
     const staffEmail = await getStaffEmail(serviceId).catch(() => null);
     if (staffEmail) {
-      await sendEmail({
+      await sendAndRecord({
+        bookingId,
+        event,
         to: staffEmail,
         subject: `New booking — ${clientName} · ${service}`,
         html: staffNewBookingEmail({
@@ -270,6 +335,7 @@ export async function notifyBooking(
           bookingId,
           dashboardUrl,
         }),
+        ...actor,
       });
     }
   }

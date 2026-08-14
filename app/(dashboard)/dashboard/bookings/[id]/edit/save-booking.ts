@@ -145,7 +145,17 @@ function addressOf(draft: BookingDraft): string | null {
   return null;
 }
 
-/** Writes the row. Nothing is announced until this succeeds. */
+/**
+ * Writes the row. Nothing is announced until this succeeds.
+ *
+ * The history entries — the move, the reassignment, the confirmation — are
+ * written by `updateBookingByAdmin` itself, from the row as it stood against
+ * the payload below. Not from here: this file runs in the browser, and the log
+ * is written with the service key. Composing the lines on this side would mean
+ * a public endpoint that accepts prose for the record the centre trusts, and
+ * would let a save that the database refused still leave a trail saying it
+ * happened.
+ */
 export async function updateBooking(
   token: string | null,
   id: string,

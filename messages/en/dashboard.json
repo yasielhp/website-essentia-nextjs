@@ -360,7 +360,7 @@
         "notes": "Notes",
         "reservedBy": "Reserved by",
         "staff": "Staff",
-        "whatsapp": "WhatsApp notifications"
+        "history": "Booking history"
       },
       "fields": {
         "date": "Date",
@@ -390,14 +390,40 @@
         "confirm": "Yes, delete",
         "deleting": "Deleting…"
       },
-      "whatsapp": {
-        "empty": "No WhatsApp notifications for this booking.",
+      "history": {
+        "empty": "Nothing recorded for this booking yet.",
         "dryRunNotice": "Test mode: no WhatsApp number is configured, so these messages are recorded but not sent.",
+        "showMessage": "View message",
+        "showDetail": "View detail",
+        "channels": {
+          "whatsapp": "WhatsApp",
+          "email": "Email",
+          "system": "System",
+          "payment": "Payment",
+          "calendar": "Calendar"
+        },
         "events": {
           "assigned": "Assigned",
           "unassigned": "Removed",
           "rescheduled": "Time changed",
-          "cancelled": "Cancelled"
+          "cancelled": "Cancelled",
+          "confirmed": "Confirmed",
+          "received": "Received",
+          "created": "Created",
+          "edited": "Edited",
+          "deleted": "Deleted",
+          "paid": "Paid",
+          "failed": "Failed",
+          "synced": "Synced",
+          "removed": "Event removed"
+        },
+        "roles": {
+          "admin": "Admin",
+          "staff": "Staff",
+          "partner": "Partner",
+          "client": "Client",
+          "anonymous": "Web",
+          "system": "System"
         },
         "deliveredAt": "Delivered:",
         "readAt": "Read:",
@@ -406,7 +432,8 @@
           "delivered": "Delivered",
           "read": "Read",
           "skipped": "Not sent",
-          "failed": "Failed"
+          "failed": "Failed",
+          "done": "Done"
         }
       }
     },

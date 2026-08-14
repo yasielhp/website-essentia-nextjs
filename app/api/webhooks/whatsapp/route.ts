@@ -20,8 +20,8 @@ import { getAdminClient } from "@/lib/insforge-admin";
  *    cannot use is still acknowledged, never 500-ed.
  *
  * The one thing that does *not* get a 200 is an unsigned or wrongly signed
- * body: this endpoint is public and writes to `whatsapp_messages`, so without
- * the signature check anyone could mark a lost notification as read.
+ * body: this endpoint is public and writes to `booking_events`, so without the
+ * signature check anyone could mark a lost notification as read.
  */
 
 // `crypto.timingSafeEqual` and the raw-body read need Node, not the edge.
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
       const failure = status.errors?.[0];
 
       await db
-        .from("whatsapp_messages")
+        .from("booking_events")
         .update({
           status: next,
           ...(next === "delivered" ? { delivered_at: at } : {}),

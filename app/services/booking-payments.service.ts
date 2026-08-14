@@ -1,8 +1,9 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { pushBookingToCalendars } from "@/lib/calendar-sync";
+import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
-import { formatLongDate } from "@/utils/format";
+import { formatLongDate, formatPrice } from "@/utils/format";
 
 /**
  * Marks a booking as paid and notifies the client.
@@ -17,7 +18,13 @@ export async function handleBookingPaid(bookingId: string): Promise<void> {
 
   const { data: booking } = await adminClient.database
     .from("bookings")
-    .select("first_name, last_name, email, service_title, date, time, duration")
+    .select(
+      // The price and the order number are for the history entry below: this
+      // function is handed nothing but an id, and the row already knows what
+      // was charged and which Redsys order paid it. That column is still
+      // called `stripe_session_id` for historical reasons.
+      "first_name, last_name, email, service_title, date, time, duration, price_eur, stripe_session_id",
+    )
     .eq("id", bookingId)
     .single();
 
@@ -30,6 +37,27 @@ export async function handleBookingPaid(bookingId: string): Promise<void> {
     .from("bookings")
     .update({ payment_status: "paid", status: "confirmed" })
     .eq("id", bookingId);
+
+  const orderId = (booking.stripe_session_id as string | null) ?? null;
+  // A numeric column can arrive as a string, and a booking with no price at all
+  // must not be logged as one that cost nothing.
+  const price = booking.price_eur as number | string | null;
+  const charged = price == null ? 0 : Number(price);
+  const amount = charged > 0 ? charged : null;
+
+  await recordBookingEvent({
+    bookingId,
+    channel: "payment",
+    event: "paid",
+    // Nobody pressed anything: this arrives from Redsys' notification.
+    actorRole: "system",
+    summary:
+      amount !== null
+        ? `Pago recibido · ${formatPrice(amount, "es")}`
+        : "Pago recibido",
+    providerId: orderId,
+    payload: { orderId, amountEur: amount, currency: "EUR" },
+  });
 
   // The booking has just become one somebody has to be there for, so it goes
   // on the calendars now rather than at the next quarter past the hour.

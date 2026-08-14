@@ -8,8 +8,8 @@ import Link from "next/link";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
-import { fetchBookingWhatsAppMessages } from "@/actions/staff-whatsapp";
-import type { WhatsAppMessageRow } from "@/lib/whatsapp/types";
+import { fetchBookingEvents } from "@/actions/booking-events";
+import type { BookingEventRow } from "@/lib/booking-events/types";
 import { Button } from "@/components/ui/button";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
@@ -111,9 +111,7 @@ export default function BookingDetailPage() {
   const [staffPerson, setStaffPerson] = useState<StaffPerson | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [whatsappMessages, setWhatsappMessages] = useState<
-    WhatsAppMessageRow[]
-  >([]);
+  const [events, setEvents] = useState<BookingEventRow[]>([]);
 
   const fullNameForCrumb =
     state.kind === "loaded"
@@ -209,11 +207,11 @@ export default function BookingDetailPage() {
   }, [id]);
 
   // Read through a Server Action, not the browser client: the table holds
-  // staff phone numbers.
+  // staff phone numbers and client addresses.
   useEffect(() => {
     let cancelled = false;
-    void fetchBookingWhatsAppMessages(getAccessToken(), id).then((rows) => {
-      if (!cancelled) setWhatsappMessages(rows);
+    void fetchBookingEvents(getAccessToken(), id).then((rows) => {
+      if (!cancelled) setEvents(rows);
     });
     return () => {
       cancelled = true;
@@ -304,7 +302,7 @@ export default function BookingDetailPage() {
         booking={booking}
         creator={creator}
         contact={contact}
-        whatsappMessages={whatsappMessages}
+        events={events}
         staffPerson={staffPerson}
         locale={locale}
       />

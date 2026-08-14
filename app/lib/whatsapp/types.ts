@@ -7,6 +7,8 @@
  * function.
  */
 
+import type { BookingEventActorRole } from "@/lib/booking-events/types";
+
 /** What happened to the booking, from the point of view of the professional. */
 export type StaffWhatsAppEvent =
   "assigned" | "unassigned" | "rescheduled" | "cancelled";
@@ -15,35 +17,17 @@ export type StaffWhatsAppInput = {
   bookingId: string;
   staffId: string;
   event: StaffWhatsAppEvent;
+  /**
+   * Who caused the notification, when the caller knows. The history is read to
+   * settle "nobody told me", and an entry that cannot name the person who
+   * assigned the booking only answers half the question. The anonymous flows
+   * leave it out and the entry is recorded as the system's own doing.
+   */
+  actorId?: string | null;
+  actorRole?: BookingEventActorRole | null;
 };
 
 export type WhatsAppSendResult =
   | { status: "sent"; providerId: string | null }
   | { status: "skipped" }
   | { status: "failed"; error: string };
-
-/** One row of `whatsapp_messages`, as the dashboard reads it. */
-export type WhatsAppMessageRow = {
-  id: string;
-  event: StaffWhatsAppEvent;
-  /**
-   * Who received it. Every event produces one row for the professional and one
-   * for each admin, all carrying the same text, so without a name the list
-   * reads as duplicates that differ only by phone number.
-   */
-  recipientName: string | null;
-  toPhone: string;
-  bodyPreview: string;
-  /**
-   * How far the message got. `sent` is only "Meta accepted it"; everything
-   * after it is reported by the status webhook at
-   * `app/api/webhooks/whatsapp/route.ts`, so a row that stays on `sent` for
-   * long is itself the symptom — either the webhook is not subscribed or Meta
-   * never managed to deliver.
-   */
-  status: "skipped" | "sent" | "delivered" | "read" | "failed";
-  error: string | null;
-  createdAt: string;
-  deliveredAt: string | null;
-  readAt: string | null;
-};
