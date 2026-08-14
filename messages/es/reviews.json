@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Reseñas de nuestros miembros | Essentia Wellness Club",
+    "description": "Lo que cuentan quienes ya han pasado por Essentia, en sus propias palabras y verificado en Google."
+  },
+  "headline": "Lo que dicen",
+  "headline2": "nuestros miembros.",
+  "intro": "Reseñas escritas en la ficha de Google del centro. Ni las editamos ni las elegimos: son las que Google nos deja mostrar.",
+  "ratingCount": "{count} valoraciones en Google",
+  "ctaHeadline": "¿Tuviste una gran experiencia?",
+  "ctaText": "Comparte tu historia y ayuda a otros a descubrir lo que Essentia puede hacer por ellos.",
+  "writeReview": "Escribir una reseña",
+  "seeOnGoogle": "Ver la ficha en Google",
+  "profileLink": "Ver el perfil de {name} en Google",
+  "closeReview": "Cerrar la reseña",
+  "empty": "Ahora mismo no podemos cargar las reseñas. Puedes verlas en la ficha de Google del centro.",
+  "poweredBy": "Con tecnología de Google"
+}

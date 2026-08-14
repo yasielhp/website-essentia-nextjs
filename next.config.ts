@@ -29,14 +29,15 @@ const nextConfig: NextConfig = {
         destination: "/es/bienestar/terapias-faciales",
         permanent: true,
       },
-      // The testimonials page and its form are gone: the reviews now come from
-      // the Google listing and live on the home page. Both URLs were indexed,
-      // so they hand their equity to the page that carries their content now
-      // rather than answering 404.
-      { source: "/reviews", destination: "/", permanent: true },
-      { source: "/reviews/new", destination: "/", permanent: true },
-      { source: "/es/testimonios", destination: "/es", permanent: true },
-      { source: "/es/testimonios/nuevo", destination: "/es", permanent: true },
+      // The "leave a review" form is gone — reviews are written on the Google
+      // listing now — but the page that held it stayed, so its URL points at
+      // the page rather than at nothing.
+      { source: "/reviews/new", destination: "/reviews", permanent: true },
+      {
+        source: "/es/testimonios/nuevo",
+        destination: "/es/testimonios",
+        permanent: true,
+      },
     ];
   },
   images: {

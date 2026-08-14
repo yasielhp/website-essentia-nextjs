@@ -3,32 +3,15 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Image from "next/image";
-import { IconQuote } from "@/components/ui/icons";
+import { Link } from "../../../../i18n/navigation";
+import {
+  TestimonialCard,
+  type TestimonialItem,
+} from "@/components/ui/testimonial-card";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export type TestimonialItem = {
-  /** Google returns one per review; unique enough for a key. */
-  id: string;
-  quote: string;
-  name: string;
-  /** Google's own wording for the age of the review. */
-  when: string;
-  /** Null when the reviewer has no picture on their Google account. */
-  photoUrl: string | null;
-  /** Their Google profile. Attribution the Places policy requires. */
-  profileUrl: string | null;
-  /** Only drawn when there is no photo. */
-  initials: string;
-  /** Interpolated link label for the reviewer's Google profile. */
-  profileLabel: string;
-  bgColor: string;
-  textColor: string;
-  avatarBg: string;
-  avatarText: string;
-  mutedColor: string;
-};
+export type { TestimonialItem };
 
 // ─── Stars ─────────────────────────────────────────────────────
 
@@ -54,112 +37,6 @@ function Stars({ rating }: { rating: number }) {
         </svg>
       ))}
     </span>
-  );
-}
-
-// ─── Avatar ────────────────────────────────────────────────────
-
-/**
- * The reviewer's Google picture, with their initials behind it.
- *
- * `unoptimized` because these are already small, already square thumbnails on
- * Google's own CDN: putting them through the image optimiser would cost a
- * round trip and a cache entry to arrive at the same pixels.
- *
- * The initials are the fallback, not the design: a reviewer with no picture on
- * their Google account comes back with no `photoUri`, and a request that fails
- * would otherwise leave a broken-image glyph beside somebody's name for the
- * life of the page, since a failed `img` never retries.
- */
-function Avatar({ t, compact }: { t: TestimonialItem; compact: boolean }) {
-  const [failed, setFailed] = useState(false);
-  const size = compact ? 32 : 40;
-  const box = compact ? "h-8 w-8" : "h-10 w-10";
-
-  if (t.photoUrl && !failed) {
-    return (
-      <Image
-        src={t.photoUrl}
-        alt=""
-        width={size}
-        height={size}
-        unoptimized
-        onError={() => setFailed(true)}
-        className={`${box} shrink-0 rounded-full object-cover`}
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`${t.avatarBg} ${t.avatarText} ${box} flex shrink-0 items-center justify-center rounded-full text-xs font-medium`}
-    >
-      {t.initials}
-    </div>
-  );
-}
-
-// ─── TestimonialCard ───────────────────────────────────────────
-
-function TestimonialCard({
-  t,
-  compact = false,
-}: {
-  t: TestimonialItem;
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={`${t.bgColor} relative flex h-full flex-col justify-between rounded-2xl ${
-        compact ? "gap-4 p-5" : "gap-6 p-7"
-      }`}
-    >
-      <div
-        aria-hidden="true"
-        className={`absolute top-4 left-5 ${t.textColor}`}
-      >
-        <IconQuote className="h-8 w-8 opacity-15" />
-      </div>
-      {/* Real reviews run to six hundred characters where the seeded ones ran
-      to a hundred, so the text is clamped rather than left to overflow a fixed
-      height and be cut through the middle of a word. Whoever wants the rest has
-      the link to the listing underneath. */}
-      <p
-        className={`font-body ${t.textColor} leading-snug ${
-          compact
-            ? "line-clamp-7 pt-5 text-base"
-            : "line-clamp-[12] pt-6 text-lg"
-        }`}
-      >
-        {t.quote}
-      </p>
-      <div className="flex items-center gap-3">
-        <Avatar t={t} compact={compact} />
-        <div>
-          <p
-            className={`${t.textColor} font-medium ${compact ? "text-xs" : "text-sm"}`}
-          >
-            {/* Showing the picture obliges us to link the profile it belongs
-            to; the name carries the link so the target is a word, not an
-            image. */}
-            {t.profileUrl ? (
-              <a
-                href={t.profileUrl}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                aria-label={t.profileLabel}
-                className="hover:underline"
-              >
-                {t.name}
-              </a>
-            ) : (
-              t.name
-            )}
-          </p>
-          <p className={`${t.mutedColor} text-xs`}>{t.when}</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -316,9 +193,8 @@ export default function TestimonialsCarousel({
   headline2,
   rating,
   ratingCountLabel,
-  sourceLabel,
   viewAllLabel,
-  googleMapsUri,
+  poweredByLabel,
 }: {
   items: TestimonialItem[];
   headline: string;
@@ -326,9 +202,8 @@ export default function TestimonialsCarousel({
   /** Averaged over every rating on the listing, not only the five shown. */
   rating: number | null;
   ratingCountLabel: string | null;
-  sourceLabel: string;
   viewAllLabel: string;
-  googleMapsUri: string | null;
+  poweredByLabel: string;
 }) {
   // Three, not four: the listing returns at most five reviews, and four to a
   // slide leaves the second one holding a single card.
@@ -485,9 +360,7 @@ export default function TestimonialsCarousel({
             </h2>
 
             {/* Five quotes persuade less than five quotes standing on a score
-            anybody can go and check, so the score comes first and carries the
-            link out. It doubles as the attribution the Places policy asks
-            for. */}
+            anybody can go and check. */}
             {rating !== null && (
               <div className="text-petroleum-500 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm">
                 <Stars rating={rating} />
@@ -496,21 +369,6 @@ export default function TestimonialsCarousel({
                 </span>
                 {ratingCountLabel && (
                   <span className="text-petroleum-400">{ratingCountLabel}</span>
-                )}
-                <span className="text-petroleum-400" aria-hidden="true">
-                  ·
-                </span>
-                {googleMapsUri ? (
-                  <a
-                    href={googleMapsUri}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="underline underline-offset-4 hover:no-underline"
-                  >
-                    {sourceLabel}
-                  </a>
-                ) : (
-                  <span>{sourceLabel}</span>
                 )}
               </div>
             )}
@@ -535,18 +393,21 @@ export default function TestimonialsCarousel({
             groups={groups}
           />
 
-          {googleMapsUri && (
-            <div className="mt-10 px-5 text-center">
-              <a
-                href={googleMapsUri}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="text-petroleum-500 text-sm underline underline-offset-4 hover:no-underline"
-              >
-                {viewAllLabel}
-              </a>
-            </div>
-          )}
+          <div className="mt-10 flex flex-col items-center gap-3 px-5 text-center">
+            {/* The reviews page, not the Google listing: the full set, the
+            write-a-review button and the attribution all live there. */}
+            <Link
+              href="/reviews"
+              className="text-petroleum-500 text-sm underline underline-offset-4 hover:no-underline"
+            >
+              {viewAllLabel}
+            </Link>
+            {/* Places asks for an attribution wherever its data appears without
+            a Google map beside it. The words "Google reviews" came out of the
+            header on request; this is the smallest thing that keeps the
+            requirement met. */}
+            <p className="text-petroleum-400 text-xs">{poweredByLabel}</p>
+          </div>
         </div>
       </div>
     </section>

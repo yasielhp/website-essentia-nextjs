@@ -87,10 +87,10 @@
   "testimonials": {
     "headline": "Heard from",
     "headline2": "those who know.",
-    "source": "Google reviews",
     "ratingCount": "{count} reviews",
-    "viewAll": "Read them all on Google",
-    "profileLink": "See {name}'s Google profile"
+    "viewAll": "See all",
+    "profileLink": "See {name}'s Google profile",
+    "poweredBy": "Powered by Google"
   },
   "theSpace": {
     "headline": "Built for those who invest in themselves.",

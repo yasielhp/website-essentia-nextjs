@@ -93,6 +93,9 @@ export const routing = defineRouting({
       es: "/experiencias/programas-educativos/inscripcion",
     },
 
+    // Reviews
+    "/reviews": { en: "/reviews", es: "/testimonios" },
+
     // Untranslated routes (same in both locales)
     "/privacy": "/privacy",
     "/terms": "/terms",

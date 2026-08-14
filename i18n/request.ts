@@ -21,6 +21,7 @@ const namespaces = [
   "memberships",
   "serviceFaqs",
   "account",
+  "reviews",
 ] as const;
 
 /**

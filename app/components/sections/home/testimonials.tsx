@@ -59,9 +59,8 @@ export default async function Testimonials() {
           ? t("ratingCount", { count: place.userRatingCount })
           : null
       }
-      sourceLabel={t("source")}
       viewAllLabel={t("viewAll")}
-      googleMapsUri={place.googleMapsUri}
+      poweredByLabel={t("poweredBy")}
     />
   );
 }

@@ -114,6 +114,12 @@ const allStaticRoutes = [
   },
   { path: "/blog", esPath: "/blog", priority: 0.8, changeFrequency: "daily" },
   {
+    path: "/reviews",
+    esPath: "/testimonios",
+    priority: 0.7,
+    changeFrequency: "weekly",
+  },
+  {
     path: "/shop",
     esPath: "/tienda",
     priority: 0.6,

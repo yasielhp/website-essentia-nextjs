@@ -87,10 +87,10 @@
   "testimonials": {
     "headline": "Lo que dicen",
     "headline2": "quienes lo viven.",
-    "source": "Reseñas de Google",
     "ratingCount": "{count} valoraciones",
-    "viewAll": "Verlas todas en Google",
-    "profileLink": "Ver el perfil de {name} en Google"
+    "viewAll": "Ver todas",
+    "profileLink": "Ver el perfil de {name} en Google",
+    "poweredBy": "Con tecnología de Google"
   },
   "theSpace": {
     "headline": "Diseñado para quienes invierten en sí mismos.",
