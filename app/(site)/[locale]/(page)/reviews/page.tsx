@@ -119,12 +119,6 @@ export default async function ReviewsPage({
               )}
             </div>
           )}
-
-          {/* Said plainly, because the count above says thirty-six and the page
-          shows nine: Google decides which ones an API may hand over, and a page
-          that implied it held them all would be caught out by anyone
-          counting. */}
-          <p className="text-petroleum-500 max-w-xl text-sm">{t("intro")}</p>
         </header>
 
         {/* Deliberately outside the centred container: the rows are meant to
