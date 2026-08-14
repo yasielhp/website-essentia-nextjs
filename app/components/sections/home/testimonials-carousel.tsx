@@ -70,7 +70,12 @@ function DesktopSlider({
             // different-looking card.
             <div
               key={t.id}
-              className="w-[calc((100%-2rem)/3)] shrink-0 md:max-w-[340px]"
+              // `max-w-72` is the marquee's `w-72`: the same card should not be
+              // one width on the home page and another a click away. It stays a
+              // cap rather than a fixed width because three 288px cards plus
+              // their gaps overflow a 768px viewport, where the third-of-a-row
+              // calculation still has to win.
+              className="w-[calc((100%-2rem)/3)] shrink-0 md:max-w-72"
             >
               <TestimonialCard t={t} compact />
             </div>
