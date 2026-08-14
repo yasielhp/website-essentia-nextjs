@@ -184,13 +184,12 @@ export async function pushBookingToCalendars(bookingId: string): Promise<void> {
     );
 
     await Promise.all(
-      admins
-        .filter((id) => !mirrored.has(id))
-        .map(async (id) => {
-          const token = await getStaffAccessToken(id);
-          if (!token) return;
-          await syncBookings(token, "primary", [booking], id);
-        }),
+      admins.map(async (id) => {
+        if (mirrored.has(id)) return;
+        const token = await getStaffAccessToken(id);
+        if (!token) return;
+        await syncBookings(token, "primary", [booking], id);
+      }),
     );
   } catch (err) {
     // The booking is already saved, and whoever took it cannot fix Google from
@@ -327,9 +326,10 @@ export async function syncAllCalendars(): Promise<{
   // create one as well leaves a second event on a second calendar that nothing
   // will ever move or delete — and they run at the same time, so which of the
   // two ids survives is a coin toss.
-  const staffWithCalendar = new Set(
-    people.filter((person) => person.role !== "admin").map((p) => p.id),
-  );
+  const staffWithCalendar = new Set<string>();
+  for (const person of people) {
+    if (person.role !== "admin") staffWithCalendar.add(person.id);
+  }
 
   const serviceReports = services.map(async (service) => {
     const accessToken = await getValidAccessToken(service.service_id);
