@@ -89,8 +89,7 @@
     "headline2": "those who know.",
     "ratingCount": "{count} reviews",
     "viewAll": "See all",
-    "profileLink": "See {name}'s Google profile",
-    "poweredBy": "Powered by Google"
+    "profileLink": "See {name}'s Google profile"
   },
   "theSpace": {
     "headline": "Built for those who invest in themselves.",

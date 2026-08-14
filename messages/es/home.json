@@ -89,8 +89,7 @@
     "headline2": "quienes lo viven.",
     "ratingCount": "{count} valoraciones",
     "viewAll": "Ver todas",
-    "profileLink": "Ver el perfil de {name} en Google",
-    "poweredBy": "Con tecnología de Google"
+    "profileLink": "Ver el perfil de {name} en Google"
   },
   "theSpace": {
     "headline": "Diseñado para quienes invierten en sí mismos.",

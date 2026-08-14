@@ -194,7 +194,6 @@ export default function TestimonialsCarousel({
   rating,
   ratingCountLabel,
   viewAllLabel,
-  poweredByLabel,
 }: {
   items: TestimonialItem[];
   headline: string;
@@ -203,7 +202,6 @@ export default function TestimonialsCarousel({
   rating: number | null;
   ratingCountLabel: string | null;
   viewAllLabel: string;
-  poweredByLabel: string;
 }) {
   // Three, not four: the listing returns at most five reviews, and four to a
   // slide leaves the second one holding a single card.
@@ -402,11 +400,6 @@ export default function TestimonialsCarousel({
             >
               {viewAllLabel}
             </Link>
-            {/* Places asks for an attribution wherever its data appears without
-            a Google map beside it. The words "Google reviews" came out of the
-            header on request; this is the smallest thing that keeps the
-            requirement met. */}
-            <p className="text-petroleum-400 text-xs">{poweredByLabel}</p>
           </div>
         </div>
       </div>

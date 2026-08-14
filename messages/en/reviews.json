@@ -10,9 +10,7 @@
   "ctaHeadline": "Had a great experience?",
   "ctaText": "Share your story and help others discover what Essentia can do for them.",
   "writeReview": "Write a review",
-  "seeOnGoogle": "See the listing on Google",
   "profileLink": "See {name}'s Google profile",
   "closeReview": "Close the review",
-  "empty": "We cannot load the reviews right now. You can read them on the centre's Google listing.",
-  "poweredBy": "Powered by Google"
+  "empty": "We cannot load the reviews right now. You can read them on the centre's Google listing."
 }

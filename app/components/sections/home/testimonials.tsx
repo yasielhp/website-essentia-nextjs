@@ -60,7 +60,6 @@ export default async function Testimonials() {
           : null
       }
       viewAllLabel={t("viewAll")}
-      poweredByLabel={t("poweredBy")}
     />
   );
 }

@@ -153,22 +153,6 @@ export default async function ReviewsPage({
               {t("writeReview")}
             </a>
           )}
-
-          <div className="text-petroleum-400 mt-4 flex flex-col items-center gap-1 text-xs">
-            {place.googleMapsUri && (
-              <a
-                href={place.googleMapsUri}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="underline underline-offset-4 hover:no-underline"
-              >
-                {t("seeOnGoogle")}
-              </a>
-            )}
-            {/* Places requires an attribution wherever its data appears without
-            a Google map beside it. */}
-            <p>{t("poweredBy")}</p>
-          </div>
         </section>
       </div>
     </main>
