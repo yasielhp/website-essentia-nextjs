@@ -21,7 +21,10 @@ export function CalendarHeader({
   periodLabel: string;
   dispatchCalNav: Dispatch<CalNavAction>;
 }) {
-  const t = useTranslations("dashboard");
+  // `dashboard.calendar`, the namespace this header was cut out of: the three
+  // view names and the two arrows are the calendar's own strings, and asking
+  // for them one level up resolves to nothing.
+  const t = useTranslations("dashboard.calendar");
 
   return (
     <div className="border-sand-200 flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center">
