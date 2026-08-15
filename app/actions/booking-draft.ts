@@ -411,12 +411,15 @@ export async function deleteBooking(
   return { error: (error as { message?: string } | null)?.message ?? null };
 }
 
-/** The booking as it stood before an edit, for every column the edit writes. */
+/**
+ * The booking as it stood before an edit.
+ *
+ * It arrives as the whole row now that `update_booking_returning_previous`
+ * hands it back, rather than the hand-written column list this used to keep in
+ * step with the payload — a list that went stale the moment either side gained
+ * a field.
+ */
 type EditedColumns = Partial<UpdateBookingPayload>;
-
-/** The columns `updateBookingByAdmin` can change, read back before it does. */
-const EDITED_COLUMNS =
-  "service_id, service_title, tier_id, price_eur, duration, date, time, location, location_address, staff_id, notes, first_name, last_name, email, phone, status";
 
 /**
  * One line per thing the person at the desk actually did.
@@ -576,18 +579,20 @@ export async function updateBookingByAdmin(
 
   const db = getAdminClient().database;
 
-  // Read before writing. The history has to say what the booking was moved
-  // from, and the moment the update lands that value is gone for good.
-  const { data: before } = await db
-    .from("bookings")
-    .select(EDITED_COLUMNS)
-    .eq("id", bookingId)
-    .maybeSingle();
-
-  const { error } = await db
-    .from("bookings")
-    .update(payload)
-    .eq("id", bookingId);
+  // One call that writes the row and returns what it was.
+  //
+  // The history has to say what the session was moved *from*, and that value is
+  // gone the instant the update lands — which is why this used to be a read
+  // followed by a write, one waiting on the other. They are not independent
+  // work that happens to be sequential: they are the same row, and racing them
+  // would let the read land after the write and report "de las 16:00 a las
+  // 16:00". `update_booking_returning_previous` settles both in one statement,
+  // under `FOR UPDATE`, so the trip is halved and two people saving at once can
+  // no longer read the same "before".
+  const { data: before, error } = await db.rpc(
+    "update_booking_returning_previous",
+    { p_id: bookingId, p_payload: payload },
+  );
 
   if (error) {
     return { error: (error as { message?: string }).message ?? null };
