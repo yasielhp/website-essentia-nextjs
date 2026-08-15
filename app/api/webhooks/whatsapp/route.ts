@@ -82,6 +82,19 @@ const PRECEDING_STATES: Record<string, string[]> = {
   failed: ["sent", "delivered", "read"],
 };
 
+/**
+ * The same order, as a number, for when two states arrive at once.
+ *
+ * It has to agree with `PRECEDING_STATES`: a state ranks above exactly those it
+ * is allowed to move on from. `failed` sits on top because Meta reports it
+ * after the fact — a message can be delivered and then found undeliverable.
+ */
+const STATE_RANK: Record<string, number> = {
+  delivered: 1,
+  read: 2,
+  failed: 3,
+};
+
 /** Meta's seconds-since-epoch, as a timestamp the database will take. */
 function isoFrom(timestamp: string | undefined): string {
   const seconds = Number(timestamp);
@@ -138,45 +151,60 @@ export async function POST(req: NextRequest) {
 
   const db = getAdminClient().database;
 
+  // One payload routinely carries both a `delivered` and a `read` for the same
+  // message. Sending each on its own left the order of the writes deciding the
+  // outcome, so the two had to be awaited one after another and the later one
+  // still won by finishing last. Keeping only the furthest state per message
+  // removes the contest: every row is written at most once, whatever arrives.
+  const furthest = new Map<
+    string,
+    { next: string; at: string; error: string }
+  >();
+
+  for (const status of statuses) {
+    const providerId = status.id;
+    const next = status.status;
+    if (!providerId || !next) continue;
+
+    // `sent` we already recorded ourselves, and anything Meta adds later is
+    // not a state this log knows how to show.
+    if (!PRECEDING_STATES[next]) continue;
+
+    const current = furthest.get(providerId);
+    if (current && STATE_RANK[current.next]! >= STATE_RANK[next]!) continue;
+
+    const failure = status.errors?.[0];
+    furthest.set(providerId, {
+      next,
+      at: isoFrom(status.timestamp),
+      error:
+        failure?.error_data?.details ??
+        failure?.message ??
+        failure?.title ??
+        `WhatsApp error ${failure?.code ?? "desconocido"}`,
+    });
+  }
+
   try {
-    // One at a time rather than in parallel: a `delivered` and a `read` for the
-    // same message routinely arrive in one payload, and running them together
-    // would let the older of the two win by finishing last.
-    for (const status of statuses) {
-      const providerId = status.id;
-      const next = status.status;
-      if (!providerId || !next) continue;
-
-      const from = PRECEDING_STATES[next];
-      // `sent` we already recorded ourselves, and anything Meta adds later is
-      // not a state this log knows how to show.
-      if (!from) continue;
-
-      const at = isoFrom(status.timestamp);
-      const failure = status.errors?.[0];
-
-      await db
-        .from("booking_events")
-        .update({
-          status: next,
-          ...(next === "delivered" ? { delivered_at: at } : {}),
-          // Reading implies arrival, and the two callbacks are independent: a
-          // `read` that overtakes its `delivered` would otherwise leave the row
-          // claiming it was never delivered.
-          ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
-          ...(next === "failed"
-            ? {
-                error:
-                  failure?.error_data?.details ??
-                  failure?.message ??
-                  failure?.title ??
-                  `WhatsApp error ${failure?.code ?? "desconocido"}`,
-              }
-            : {}),
-        })
-        .eq("provider_id", providerId)
-        .in("status", from);
-    }
+    // Different messages have nothing to say to each other, so their writes go
+    // out together.
+    await Promise.all(
+      [...furthest].map(([providerId, { next, at, error }]) =>
+        db
+          .from("booking_events")
+          .update({
+            status: next,
+            ...(next === "delivered" ? { delivered_at: at } : {}),
+            // Reading implies arrival, and the two callbacks are independent: a
+            // `read` that overtakes its `delivered` in a later request would
+            // otherwise leave the row claiming it was never delivered.
+            ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
+            ...(next === "failed" ? { error } : {}),
+          })
+          .eq("provider_id", providerId)
+          .in("status", PRECEDING_STATES[next]!),
+      ),
+    );
   } catch (err) {
     // Acknowledged all the same: Meta disables a subscription that keeps
     // erroring, and losing every future callback is worse than losing this one.
