@@ -331,6 +331,19 @@ const CHANNEL_DOT: Record<BookingEventChannel, string> = {
 const VISIBLE_GROUPS = 5;
 
 /**
+ * The two formatters the trail needs, built once for the module.
+ *
+ * Constructing an `Intl` formatter is expensive — it resolves locale data —
+ * and this one was being rebuilt for every entry on every render, which on a
+ * booking with a long history is dozens of times for two possible answers. The
+ * dashboard only ever speaks these two languages, so both are made up front.
+ */
+const RELATIVE_TIME: Record<"es-ES" | "en-GB", Intl.RelativeTimeFormat> = {
+  "es-ES": new Intl.RelativeTimeFormat("es-ES", { numeric: "auto" }),
+  "en-GB": new Intl.RelativeTimeFormat("en-GB", { numeric: "auto" }),
+};
+
+/**
  * One notification and everyone it reached, as a single entry.
  *
  * Every notification writes one row per recipient — the professional and each
@@ -449,7 +462,7 @@ export function HistoryCard({
     if (minutes < 1) return t("history.justNow");
     if (minutes >= 60 * 12) return clock(iso);
 
-    const rtf = new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" });
+    const rtf = RELATIVE_TIME[intlLocale];
     return minutes < 60
       ? rtf.format(-minutes, "minute")
       : rtf.format(-Math.round(minutes / 60), "hour");
