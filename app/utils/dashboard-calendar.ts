@@ -1,3 +1,4 @@
+import { TIME_SLOTS } from "@/constants/booking";
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
 
 /**
@@ -148,4 +149,27 @@ export function navigateAnchor(
     d.setDate(d.getDate() + dir);
   }
   return d;
+}
+
+/**
+ * The slot row a booking belongs to in the day view. Times do not always land
+ * on the half hour — Google Calendar events and manually edited bookings can
+ * start at 11:15 — so a booking sits in the slot it started within instead of
+ * needing an exact match. Anything outside the day's range folds into the
+ * first or last slot rather than disappearing.
+ */
+export function slotFor(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  const floored = `${String(hours ?? 0).padStart(2, "0")}:${(minutes ?? 0) < 30 ? "00" : "30"}`;
+  if (SLOT_SET.has(floored)) return floored;
+  return (hours ?? 0) * 60 + (minutes ?? 0) < toMinutes(TIME_SLOTS[0]!)
+    ? TIME_SLOTS[0]!
+    : TIME_SLOTS[TIME_SLOTS.length - 1]!;
+}
+
+const SLOT_SET = new Set<string>(TIME_SLOTS);
+
+function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return (hours ?? 0) * 60 + (minutes ?? 0);
 }

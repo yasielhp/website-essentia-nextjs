@@ -6,7 +6,12 @@ import {
   EventHoverCard,
   useHoverAnchor,
 } from "@/components/dashboard/calendar/event-hover-card";
-import { toYMD, isPastSlot, sortByTime } from "@/utils/dashboard-calendar";
+import {
+  toYMD,
+  isPastSlot,
+  sortByTime,
+  slotFor,
+} from "@/utils/dashboard-calendar";
 import { TIME_SLOTS } from "@/constants/booking";
 
 /**
@@ -17,9 +22,11 @@ import { TIME_SLOTS } from "@/constants/booking";
  */
 function SlotEvent({
   event,
+  slot,
   onClick,
 }: {
   event: CalendarEvent;
+  slot: string;
   onClick: () => void;
 }) {
   const { anchor, props: hoverProps } = useHoverAnchor(!!event.tooltip);
@@ -41,7 +48,13 @@ function SlotEvent({
         }}
       >
         <div className="min-w-0 flex-1">
-          <div className="truncate font-medium">{event.title}</div>
+          <div className="truncate font-medium">
+            {/* The row already says 11:00; a 11:15 booking says so itself. */}
+            {event.time && event.time !== slot && (
+              <span className="mr-1.5 font-mono opacity-70">{event.time}</span>
+            )}
+            {event.title}
+          </div>
           {event.subtitle && (
             <div className="truncate opacity-70">{event.subtitle}</div>
           )}
@@ -72,9 +85,10 @@ export function DayList({
   const eventsByTime = new Map<string, CalendarEvent[]>();
   for (const e of dayEvents) {
     if (e.time) {
-      const bucket = eventsByTime.get(e.time) ?? [];
+      const slot = slotFor(e.time);
+      const bucket = eventsByTime.get(slot) ?? [];
       bucket.push(e);
-      eventsByTime.set(e.time, bucket);
+      eventsByTime.set(slot, bucket);
     }
   }
 
@@ -141,6 +155,7 @@ export function DayList({
                       <SlotEvent
                         key={e.id + e.type}
                         event={e}
+                        slot={slot}
                         onClick={() => onEventClick(e)}
                       />
                     ))}
