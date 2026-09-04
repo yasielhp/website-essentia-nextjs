@@ -5,7 +5,13 @@ import { applyPreferredLanguage } from "./preferred-language";
 import { cookies } from "next/headers";
 import { createAuthActions } from "@insforge/sdk/ssr";
 import { createInsForgeServerClient } from "@/lib/insforge-server";
-import { signInSchema, parseErrors } from "@/lib/schemas";
+import {
+  signInSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  parseErrors,
+} from "@/lib/schemas";
+import { getAppUrl } from "@/lib/env";
 import {
   LOCK_THRESHOLD,
   accountFailures,
@@ -17,8 +23,14 @@ import {
   findAccount,
   ipOverCeiling,
   recordAuthEvent,
+  resetCodeFailures,
+  resetRequests,
+  resetRequestsFromIp,
   userAgent,
   wait,
+  RESET_CODE_ATTEMPTS,
+  RESET_REQUEST_IP_LIMIT,
+  RESET_REQUEST_LIMIT,
 } from "@/lib/auth-security";
 import { notifyAccountLocked } from "@/lib/auth-security-notify";
 
@@ -291,17 +303,71 @@ export async function resendVerificationEmail(
   return { ok: !error, error: toPlainError(error) };
 }
 
-export async function sendResetPasswordEmail(
-  email: string,
-  redirectTo: string,
-) {
-  const client = await createInsForgeServerClient();
-  const { error } = await client.auth.sendResetPasswordEmail({
-    email,
-    redirectTo,
+export async function sendResetPasswordEmail(email: string) {
+  const parsed = forgotPasswordSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { ok: false, code: "invalid" as const };
+  }
+
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  /**
+   * The cheapest attack this site offers, and the only one that needs no
+   * password at all: point the form at somebody's address and their inbox
+   * fills up. Counted per address and per connection, because either alone is
+   * trivial to walk around.
+   */
+  const [byAddress, byConnection] = await Promise.all([
+    resetRequests(address),
+    resetRequestsFromIp(ip),
+  ]);
+
+  if (
+    byAddress >= RESET_REQUEST_LIMIT ||
+    byConnection >= RESET_REQUEST_IP_LIMIT
+  ) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "reset_throttled",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      ok: false,
+      code: "throttled" as const,
+      reason: "requests" as const,
+    };
+  }
+
+  await recordAuthEvent({
+    email: address,
+    outcome: "reset_requested",
+    ip,
+    userAgent: agent,
   });
 
-  return { ok: !error, error: toPlainError(error) };
+  const client = await createInsForgeServerClient();
+  const { error } = await client.auth.sendResetPasswordEmail({
+    email: address,
+    /**
+     * Built here, never taken from the caller.
+     *
+     * The page used to pass `window.location.origin`, and a Server Action is
+     * an HTTP endpoint: anyone could have called this one with an address of
+     * their own choosing and had the centre email a link to it.
+     */
+    redirectTo: `${getAppUrl()}/sign-in`,
+  });
+
+  // Logged, and then swallowed. Whether an address has an account behind it is
+  // not this form's to tell: it asks for no password, so one request per
+  // address would otherwise hand over the whole client list. Everybody is told
+  // the code is on its way.
+  if (error) console.error("[auth] reset email failed:", error.message);
+
+  return { ok: true, code: null };
 }
 
 /**
@@ -316,23 +382,98 @@ export async function resetPassword(
   otp: string,
   newPassword: string,
 ) {
+  const parsed = resetPasswordSchema.safeParse({ email, otp, newPassword });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: {
+        code: "invalid" as const,
+        fields: parseErrors(resetPasswordSchema, { email, otp, newPassword }),
+      },
+    };
+  }
+
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  /**
+   * The one that matters most on this page.
+   *
+   * The code is six digits. Uncounted, a script walks the whole million and
+   * ends up choosing somebody's password — a worse outcome than any number of
+   * unwanted emails. Running out closes the reset until the window rolls over;
+   * it does not lock the account, because this form needs no password and a
+   * lock here would be a way to shut any client out at will.
+   */
+  const failures = await resetCodeFailures(address);
+
+  if (failures >= RESET_CODE_ATTEMPTS) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "reset_throttled",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      ok: false,
+      error: { code: "throttled" as const, reason: "attempts" as const },
+    };
+  }
+
+  // The same rising cost as the sign-in, paid before the code is checked.
+  await wait(backoffMs(failures));
+
   const client = await createInsForgeServerClient();
 
   const { data, error: exchangeError } =
-    await client.auth.exchangeResetPasswordToken({ email, code: otp });
+    await client.auth.exchangeResetPasswordToken({
+      email: address,
+      code: parsed.data.otp,
+    });
 
   if (exchangeError || !data?.token) {
-    return { ok: false, stage: "exchange", error: toPlainError(exchangeError) };
+    await recordAuthEvent({
+      email: address,
+      outcome: "reset_bad_code",
+      ip,
+      userAgent: agent,
+    });
+    const remaining = RESET_CODE_ATTEMPTS - (failures + 1);
+
+    // The last wrong code closes the reset rather than reporting "0 tries
+    // left" beside a button that still looks willing.
+    if (remaining <= 0) {
+      return {
+        ok: false,
+        error: { code: "throttled" as const, reason: "attempts" as const },
+      };
+    }
+
+    return { ok: false, error: { code: "bad_code" as const, remaining } };
   }
 
   const { error: resetError } = await client.auth.resetPassword({
-    newPassword,
+    newPassword: parsed.data.newPassword,
     otp: data.token,
   });
 
   if (resetError) {
-    return { ok: false, stage: "reset", error: toPlainError(resetError) };
+    console.error("[auth] reset failed after exchange:", resetError.message);
+    return { ok: false, error: { code: "generic" as const } };
   }
 
-  return { ok: true, stage: null, error: null };
+  await recordAuthEvent({
+    email: address,
+    outcome: "reset_success",
+    ip,
+    userAgent: agent,
+  });
+
+  // Somebody who reached the mailbox and set a new password has proved more
+  // than the sign-in ever asks. Leaving the lock standing would send them
+  // straight back to a door they had just opened.
+  await clearLock(address);
+
+  return { ok: true, error: null };
 }

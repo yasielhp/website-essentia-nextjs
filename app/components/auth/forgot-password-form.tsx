@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { resetPassword, sendResetPasswordEmail } from "@/actions/auth";
+import type { ResetError } from "@/lib/auth-security";
+import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 import { EmailInput } from "@/components/ui/email-input";
@@ -16,7 +18,7 @@ type State = {
   email: string;
   otp: string;
   newPassword: string;
-  error: string | null;
+  error: ResetError | null;
   loading: boolean;
 };
 
@@ -25,7 +27,7 @@ type Action =
   | { type: "SET_EMAIL"; payload: string }
   | { type: "SET_OTP"; payload: string }
   | { type: "SET_NEW_PASSWORD"; payload: string }
-  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_ERROR"; payload: ResetError | null }
   | { type: "SET_LOADING"; payload: boolean };
 
 const initialState: State = {
@@ -67,12 +69,23 @@ export default function ForgotPasswordForm() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { stage, email, otp, newPassword, error, loading } = state;
 
+  /**
+   * Asks for a code. The server answers the same whether or not the address
+   * has an account behind it, so this only ever fails for a malformed address
+   * or a caller asking too often.
+   */
   const sendCode = async () => {
-    const { ok } = await sendResetPasswordEmail(
-      email,
-      window.location.origin + "/sign-in",
-    );
-    if (!ok) throw new Error("send failed");
+    const { ok, code } = await sendResetPasswordEmail(email);
+    if (!ok) {
+      dispatch({
+        type: "SET_ERROR",
+        payload:
+          code === "throttled"
+            ? { code: "throttled", reason: "requests" }
+            : { code: "invalid", fields: { email: "emailInvalid" } },
+      });
+    }
+    return ok;
   };
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -81,13 +94,14 @@ export default function ForgotPasswordForm() {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      await sendCode();
-      dispatch({ type: "SET_STAGE", payload: "reset" });
+      // Always on to the code step when the request went through — pausing
+      // here for an address with no account would answer the one question this
+      // form must not answer.
+      if (await sendCode()) {
+        dispatch({ type: "SET_STAGE", payload: "reset" });
+      }
     } catch {
-      dispatch({
-        type: "SET_ERROR",
-        payload: t("errorSendCode"),
-      });
+      dispatch({ type: "SET_ERROR", payload: { code: "generic" } });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }
@@ -102,34 +116,17 @@ export default function ForgotPasswordForm() {
       // Both halves run on the server: the code is exchanged for a short-lived
       // token that sets the new password, and that token never reaches the
       // page it was minted for.
-      const {
-        ok,
-        stage: failedAt,
-        error,
-      } = await resetPassword(email, otp, newPassword);
+      const { ok, error } = await resetPassword(email, otp, newPassword);
 
       if (!ok) {
-        if (failedAt === "exchange" && error?.statusCode === 400) {
-          dispatch({
-            type: "SET_ERROR",
-            payload: t("reset.errorInvalidCode"),
-          });
-        } else {
-          dispatch({
-            type: "SET_ERROR",
-            payload: error?.message ?? t("reset.errorResetFailed"),
-          });
-        }
+        dispatch({ type: "SET_ERROR", payload: error });
         dispatch({ type: "SET_LOADING", payload: false });
         return;
       }
 
       push("/sign-in?reset=1");
     } catch {
-      dispatch({
-        type: "SET_ERROR",
-        payload: t("errorGeneric"),
-      });
+      dispatch({ type: "SET_ERROR", payload: { code: "generic" } });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }
@@ -140,12 +137,43 @@ export default function ForgotPasswordForm() {
     try {
       await sendCode();
     } catch {
-      dispatch({
-        type: "SET_ERROR",
-        payload: t("reset.errorResendFailed"),
-      });
+      dispatch({ type: "SET_ERROR", payload: { code: "generic" } });
     }
   };
+
+  const validationMessage = useValidationMessage();
+
+  /**
+   * The sentence for whatever the server refused with, shared by both stages.
+   *
+   * `bad_code` counts down like the sign-in does, and reveals nothing: the
+   * count is the same whether or not the address has an account, because the
+   * code is wrong either way.
+   */
+  const message = !error
+    ? null
+    : error.code === "bad_code"
+      ? t("reset.errorAttempts", { remaining: error.remaining })
+      : error.code === "throttled"
+        ? t(
+            error.reason === "attempts"
+              ? "reset.errorTooManyCodes"
+              : "errorThrottled",
+          )
+        : error.code === "invalid"
+          ? validationMessage(
+              error.fields.otp ??
+                error.fields.newPassword ??
+                error.fields.email ??
+                "emailInvalid",
+            )
+          : t("errorGeneric");
+
+  const warn = error?.code === "bad_code" && error.remaining <= 2;
+
+  // Out of code attempts, or out of requests: another submit would only earn
+  // the same refusal.
+  const halted = error?.code === "throttled";
 
   if (stage === "reset") {
     return (
@@ -207,11 +235,17 @@ export default function ForgotPasswordForm() {
               autoComplete="new-password"
               placeholder={t("reset.newPasswordPlaceholder")}
             />
+            <p className="text-petroleum-400 text-xs">
+              {t("reset.passwordHint")}
+            </p>
           </div>
 
           {error && (
-            <p className="text-sm text-red-600" role="alert">
-              {error}
+            <p
+              className={`text-sm ${warn ? "text-amber-700" : "text-red-600"}`}
+              role="alert"
+            >
+              {message}
             </p>
           )}
 
@@ -219,7 +253,9 @@ export default function ForgotPasswordForm() {
             type="submit"
             variant="solid"
             size="md"
-            disabled={loading || otp.length !== 6 || newPassword.length === 0}
+            disabled={
+              loading || halted || otp.length !== 6 || newPassword.length < 8
+            }
             className="w-full"
           >
             {loading ? t("reset.submitting") : t("reset.submit")}
@@ -270,8 +306,11 @@ export default function ForgotPasswordForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
-            {error}
+          <p
+            className={`text-sm ${warn ? "text-amber-700" : "text-red-600"}`}
+            role="alert"
+          >
+            {message}
           </p>
         )}
 
@@ -279,7 +318,7 @@ export default function ForgotPasswordForm() {
           type="submit"
           variant="solid"
           size="md"
-          disabled={loading}
+          disabled={loading || halted}
           className="w-full"
         >
           {loading ? t("submitting") : t("submit")}

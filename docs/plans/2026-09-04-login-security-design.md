@@ -174,5 +174,20 @@ import dinámico de `i18n/request.ts` y las claves salen crudas.
 
 ## Fuera de alcance
 
-`sendResetPasswordEmail` merece su propio tope por IP — queda apuntado, no
-implementado. `sign-up` tampoco se toca en esta tanda.
+`sign-up` no se toca en esta tanda: `verifyEmail` acepta intentos ilimitados
+contra su código de 6 dígitos y `resendVerificationEmail` no tiene tope, que es
+exactamente la misma forma que el restablecimiento. Menos grave — verificar un
+correo no cambia una contraseña — pero sigue abierto.
+
+## Añadido después
+
+El restablecimiento de contraseña se endureció el mismo día, con los mismos
+contadores: tres códigos pedidos por dirección y diez por conexión cada quince
+minutos, cinco códigos erróneos antes de cerrar el restablecimiento, y la misma
+espera creciente. Quedarse sin intentos **no** bloquea la cuenta: ese formulario
+no pide contraseña, así que un bloqueo ahí sería una forma de dejar fuera a
+cualquier cliente a voluntad.
+
+De paso se cerraron dos agujeros que no eran de ritmo: `redirectTo` lo ponía el
+cliente, y el formulario decía si la dirección existía — una petición por
+dirección bastaba para llevarse la lista de clientes.

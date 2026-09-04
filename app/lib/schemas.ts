@@ -20,6 +20,36 @@ export const signInSchema = z.object({
   password: z.string().min(1, "passwordRequired").max(200, "passwordTooLong"),
 });
 
+/** The address on the "forgot my password" form. */
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(160, "emailInvalid")
+    .pipe(z.email("emailInvalid")),
+});
+
+/**
+ * The second half of the reset: the emailed code and the new password.
+ *
+ * The code is exactly six digits, so anything else is refused before it costs
+ * a round trip. The eight-character floor applies only to passwords being set
+ * from here — nobody's existing password is affected — and it is the one place
+ * worth asking for, because a reset that accepts `a` undoes every other
+ * control on this page.
+ */
+export const resetPasswordSchema = forgotPasswordSchema.extend({
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "codeInvalid"),
+  newPassword: z
+    .string()
+    .min(8, "passwordTooShort")
+    .max(200, "passwordTooLong"),
+});
+
 /**
  * The contact form. The same shape validates the browser and the server
  * action, because a form that emails the team is worth checking twice.

@@ -26,6 +26,29 @@ export const IP_CEILING = 20;
 export const LOCK_MINUTES = 30;
 
 /**
+ * Reset codes asked for by one address inside the window.
+ *
+ * Three is generous for somebody who genuinely lost their password and mean
+ * for anybody using the form to bury a client's inbox — which needs no
+ * password at all, and so is the cheapest attack the site offers.
+ */
+export const RESET_REQUEST_LIMIT = 3;
+/** The same from one connection, across every address it tries. */
+export const RESET_REQUEST_IP_LIMIT = 10;
+/**
+ * Wrong codes before the exchange is refused for the rest of the window.
+ *
+ * The code is six digits. Left uncounted, a script walks the whole million and
+ * changes somebody's password — which is why this matters more than the flood
+ * of emails above it.
+ *
+ * Running out does **not** lock the account: this form needs no password, so a
+ * lock here would be a way to shut any client out by typing wrong codes at
+ * them. It only closes the reset until the window rolls over.
+ */
+export const RESET_CODE_ATTEMPTS = 5;
+
+/**
  * What the sign-in tells the browser when it refuses.
  *
  * A code, never the SDK's own sentence: the screen is bilingual, and the
@@ -44,15 +67,42 @@ export type SignInError =
   | { code: "unverified" }
   | { code: "generic" };
 
+/**
+ * What the password reset tells the browser when it refuses.
+ *
+ * Same reasoning as `SignInError`: a code, not a sentence, so the wording can
+ * live in `messages/` in both languages.
+ */
+export type ResetError =
+  | {
+      code: "invalid";
+      fields: { email?: string; otp?: string; newPassword?: string };
+    }
+  | { code: "bad_code"; remaining: number }
+  /**
+   * Two different walls, and telling them apart matters: "wait before asking
+   * for another code" is useless advice to somebody whose codes keep coming
+   * out wrong, and it is the only advice that helps somebody who has asked
+   * three times in ten minutes.
+   */
+  | { code: "throttled"; reason: "requests" | "attempts" }
+  | { code: "generic" };
+
 export type AuthOutcome =
+  // Signing in.
   | "success"
   | "bad_password"
   | "unknown_email"
   | "locked"
   | "rate_limited"
-  | "unlocked";
+  | "unlocked"
+  // Resetting a password.
+  | "reset_requested"
+  | "reset_bad_code"
+  | "reset_success"
+  | "reset_throttled";
 
-/** The two outcomes that mean somebody guessed wrong. */
+/** The two outcomes that mean somebody guessed a password wrong. */
 const GUESSES: AuthOutcome[] = ["bad_password", "unknown_email"];
 
 /**
@@ -139,71 +189,115 @@ export async function recordAuthEvent(input: {
 }
 
 /**
- * Failures against one address since it last succeeded.
+ * How many of `counted` sit in the window, stopping at the newest `clearedBy`.
  *
- * A correct password resets the count without erasing anything: the walk stops
- * at the newest `success` rather than deleting what came before it. Refusals
- * (`locked`, `rate_limited`) are not guesses and do not count, or a locked
- * account would drive its own counter upward every time somebody tried the
- * door.
+ * Four questions turned out to be one: failed sign-ins for an address, failed
+ * sign-ins from a connection, reset codes asked for, and reset codes typed
+ * wrong. They differ only in which column they key on, which outcomes they
+ * count, and which outcome wipes the slate — so they are one function with
+ * three arguments rather than four near-copies drifting apart.
+ *
+ * `clearedBy` is what makes a success forgiving without erasing anything: the
+ * walk stops at the newest one instead of deleting what came before it, so the
+ * trail keeps the failures the counter has forgiven.
+ *
+ * Fails open — returns zero — when the table cannot be read. A database that
+ * is down must not lock everybody out, and the password or the code still has
+ * to be right, so this loosens a rate limit rather than the check itself.
  */
-export async function accountFailures(email: string): Promise<number> {
+async function countRecent({
+  column,
+  value,
+  counted,
+  clearedBy = [],
+  scan = 50,
+}: {
+  column: "email" | "ip";
+  value: string;
+  counted: AuthOutcome[];
+  clearedBy?: AuthOutcome[];
+  /** How far back to look. Comfortably above any ceiling that reads it. */
+  scan?: number;
+}): Promise<number> {
   try {
     const { data, error } = await getAdminClient()
       .database.from("auth_events")
       .select("outcome")
-      .eq("email", email)
+      .eq(column, value)
       .gte("created_at", windowStart())
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(scan);
 
     if (error) {
-      console.error("[auth-security] failure count refused:", error);
+      console.error("[auth-security] count refused:", error);
       return 0;
     }
 
-    let failures = 0;
+    let total = 0;
     for (const row of (data ?? []) as { outcome: AuthOutcome }[]) {
-      if (row.outcome === "success") break;
-      if (GUESSES.includes(row.outcome)) failures += 1;
+      if (clearedBy.includes(row.outcome)) break;
+      if (counted.includes(row.outcome)) total += 1;
     }
-    return failures;
+    return total;
   } catch (err) {
-    // Fail open: a database that cannot be read must not lock everybody out.
-    // The password still has to be right, so this loosens a rate limit rather
-    // than the authentication itself.
-    console.error("[auth-security] could not count failures:", err);
+    console.error("[auth-security] could not count:", err);
     return 0;
   }
 }
 
-/** Whether this connection has already spent its allowance. */
+/** Failed sign-ins against one address since it last succeeded. */
+export async function accountFailures(email: string): Promise<number> {
+  return countRecent({
+    column: "email",
+    value: email,
+    counted: GUESSES,
+    // A completed reset forgives them too: somebody who proved they hold the
+    // mailbox and set a new password should not meet a lock earned by the old
+    // one on their very first try.
+    clearedBy: ["success", "reset_success"],
+  });
+}
+
+/** Whether this connection has already spent its sign-in allowance. */
 export async function ipOverCeiling(ip: string | null): Promise<boolean> {
   if (!ip) return false;
+  const failures = await countRecent({
+    column: "ip",
+    value: ip,
+    counted: GUESSES,
+    scan: 200,
+  });
+  return failures >= IP_CEILING;
+}
 
-  try {
-    const { data, error } = await getAdminClient()
-      .database.from("auth_events")
-      .select("outcome")
-      .eq("ip", ip)
-      .gte("created_at", windowStart())
-      .order("created_at", { ascending: false })
-      .limit(200);
+/** Reset codes this address has asked for inside the window. */
+export async function resetRequests(email: string): Promise<number> {
+  return countRecent({
+    column: "email",
+    value: email,
+    counted: ["reset_requested"],
+  });
+}
 
-    if (error) {
-      console.error("[auth-security] ip count refused:", error);
-      return false;
-    }
+/** The same from this connection, whatever address it named. */
+export async function resetRequestsFromIp(ip: string | null): Promise<number> {
+  if (!ip) return 0;
+  return countRecent({
+    column: "ip",
+    value: ip,
+    counted: ["reset_requested"],
+    scan: 200,
+  });
+}
 
-    const failures = ((data ?? []) as { outcome: AuthOutcome }[]).filter(
-      (row) => GUESSES.includes(row.outcome),
-    ).length;
-
-    return failures >= IP_CEILING;
-  } catch (err) {
-    console.error("[auth-security] could not count ip failures:", err);
-    return false;
-  }
+/** Wrong codes typed for this address since the last successful reset. */
+export async function resetCodeFailures(email: string): Promise<number> {
+  return countRecent({
+    column: "email",
+    value: email,
+    counted: ["reset_bad_code"],
+    clearedBy: ["reset_success"],
+  });
 }
 
 export type AccountLock = {
