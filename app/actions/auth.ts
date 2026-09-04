@@ -5,6 +5,22 @@ import { applyPreferredLanguage } from "./preferred-language";
 import { cookies } from "next/headers";
 import { createAuthActions } from "@insforge/sdk/ssr";
 import { createInsForgeServerClient } from "@/lib/insforge-server";
+import { signInSchema, parseErrors } from "@/lib/schemas";
+import {
+  LOCK_THRESHOLD,
+  accountFailures,
+  activeLock,
+  backoffMs,
+  clearLock,
+  clientIp,
+  createLock,
+  findAccount,
+  ipOverCeiling,
+  recordLoginEvent,
+  userAgent,
+  wait,
+} from "@/lib/login-security";
+import { notifyAccountLocked } from "@/lib/login-security-notify";
 
 /**
  * The auth mutations, run where the cookies can be written.
@@ -36,12 +52,136 @@ function toPlainError(error: { message?: string; statusCode?: number } | null) {
 }
 
 export async function signInWithPassword(email: string, password: string) {
+  /**
+   * The same schema the form runs, run again where it counts.
+   *
+   * A Server Action is an HTTP endpoint: the browser check is a courtesy to
+   * the person typing, not a control. Zod also trims and lowercases the
+   * address here, which is what makes the counters below agree with each other
+   * — "Ana@x.com" and "ana@x.com " are one account, and were two counters.
+   */
+  const parsed = signInSchema.safeParse({ email, password });
+  if (!parsed.success) {
+    return {
+      user: null,
+      role: null,
+      error: {
+        code: "invalid" as const,
+        fields: parseErrors(signInSchema, { email, password }),
+      },
+    };
+  }
+
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  /**
+   * The connection's allowance, spent before the account's.
+   *
+   * Without this, five guesses per account is no limit at all: a script walks
+   * a list of ten thousand addresses and never touches a ceiling. It is also
+   * checked before the lock, so a barrage costs one read rather than two.
+   */
+  if (await ipOverCeiling(ip)) {
+    await recordLoginEvent({
+      email: address,
+      outcome: "rate_limited",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      user: null,
+      role: null,
+      error: { code: "ip_rate_limited" as const },
+    };
+  }
+
+  if (await activeLock(address)) {
+    await recordLoginEvent({
+      email: address,
+      outcome: "locked",
+      ip,
+      userAgent: agent,
+    });
+    return { user: null, role: null, error: { code: "locked" as const } };
+  }
+
+  const failures = await accountFailures(address);
+
+  /**
+   * The wait comes before the password is checked, not after it fails.
+   *
+   * Put it after, and a script learns the answer at full speed and only pays
+   * for being wrong. Here the fourth guess costs five seconds whether or not
+   * it was right.
+   */
+  await wait(backoffMs(failures));
+
   const auth = await authActions();
-  const { data, error } = await auth.signInWithPassword({ email, password });
+  const { data, error } = await auth.signInWithPassword({
+    email: address,
+    password: parsed.data.password,
+  });
 
   if (error || !data?.user) {
-    return { user: null, role: null, error: toPlainError(error) };
+    // Insforge answers 403 for an account that exists but has not verified its
+    // email. That is not a wrong password, so it must not spend an attempt:
+    // somebody who never clicked the link would otherwise lock themselves out
+    // by trying five times.
+    if (error?.statusCode === 403) {
+      return { user: null, role: null, error: { code: "unverified" as const } };
+    }
+
+    /**
+     * The account behind the address, if there is one. Only ever used to tell
+     * the two failures apart in the trail and to know where to send the
+     * notice — the caller is told the same thing either way.
+     */
+    const account = await findAccount(address);
+
+    await recordLoginEvent({
+      email: address,
+      outcome: account ? "bad_password" : "unknown_email",
+      userId: account?.id ?? null,
+      ip,
+      userAgent: agent,
+    });
+
+    const total = failures + 1;
+
+    if (total >= LOCK_THRESHOLD) {
+      const lock = await createLock(address, total);
+      // The notice can only go to an address somebody owns. A lock on an
+      // address nobody owns still stands — it is what stops the guessing —
+      // it just has no inbox to announce itself to.
+      if (lock && account) {
+        await notifyAccountLocked(account, total, lock.unlock_token);
+      }
+      return { user: null, role: null, error: { code: "locked" as const } };
+    }
+
+    return {
+      user: null,
+      role: null,
+      error: {
+        code: "bad_credentials" as const,
+        remaining: LOCK_THRESHOLD - total,
+      },
+    };
   }
+
+  await recordLoginEvent({
+    email: address,
+    outcome: "success",
+    userId: data.user.id,
+    ip,
+    userAgent: agent,
+  });
+
+  // A correct password ends any lock still standing. The trail keeps the
+  // failures that led to it; only the door reopens.
+  await clearLock(address);
 
   /**
    * The role comes back with the sign-in, because the caller needs it

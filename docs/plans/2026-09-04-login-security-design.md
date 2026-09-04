@@ -16,13 +16,13 @@ que le permita la red.
 
 ## Decisiones tomadas
 
-| Decisión | Elegido | Por qué |
-|---|---|---|
-| Qué se le dice al usuario | Contador visible ("te quedan 3 intentos") | Mejor UX para el cliente que se equivoca. Confirma qué emails existen; el tope por IP es lo que evita que eso sea explotable a escala. |
-| Dónde vive el estado | Postgres en Insforge | Sin dependencias nuevas, durable, correcto en serverless. Redis habría añadido servicio, env vars y factura para el tráfico de esta web. |
-| Backoff vs bloqueo | Los dos: backoff en los intentos 3–5, bloqueo al quinto | El backoff mata la fuerza bruta rápida; el bloqueo es el techo. |
-| Recuperar acceso | Enlace por email **y** caducidad a los 30 min | Sin la caducidad, quien no reciba el correo queda fuera, y cualquiera puede bloquear la cuenta de un cliente a propósito de forma indefinida. |
-| Tope por IP | 20 fallos / 15 min | Holgado para una wifi compartida, corta el barrido de cuentas. |
+| Decisión                  | Elegido                                                 | Por qué                                                                                                                                       |
+| ------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Qué se le dice al usuario | Contador visible ("te quedan 3 intentos")               | Mejor UX para el cliente que se equivoca. Confirma qué emails existen; el tope por IP es lo que evita que eso sea explotable a escala.        |
+| Dónde vive el estado      | Postgres en Insforge                                    | Sin dependencias nuevas, durable, correcto en serverless. Redis habría añadido servicio, env vars y factura para el tráfico de esta web.      |
+| Backoff vs bloqueo        | Los dos: backoff en los intentos 3–5, bloqueo al quinto | El backoff mata la fuerza bruta rápida; el bloqueo es el techo.                                                                               |
+| Recuperar acceso          | Enlace por email **y** caducidad a los 30 min           | Sin la caducidad, quien no reciba el correo queda fuera, y cualquiera puede bloquear la cuenta de un cliente a propósito de forma indefinida. |
+| Tope por IP               | 20 fallos / 15 min                                      | Holgado para una wifi compartida, corta el barrido de cuentas.                                                                                |
 
 Descartado por YAGNI: CAPTCHA (añade un tercero y el backoff ya cubre el caso)
 y 2FA (es otra funcionalidad, no endurecer el login).
@@ -34,15 +34,15 @@ y 2FA (es otra funcionalidad, no endurecer el login).
 Auditoría y fuente del contador a la vez. Una fila por intento, con éxito o sin
 él.
 
-| columna | tipo | para qué |
-|---|---|---|
-| `id` | uuid PK | |
-| `email` | text, ya normalizado a minúsculas | la clave del contador por cuenta |
-| `user_id` | uuid null → `auth.users` | solo si el email existía |
-| `ip` | inet null | de `x-forwarded-for`; null en local |
-| `user_agent` | text null | investigación |
-| `outcome` | text | `success` \| `bad_password` \| `unknown_email` \| `locked` \| `rate_limited` \| `unlocked` |
-| `created_at` | timestamptz | |
+| columna      | tipo                              | para qué                                                                                   |
+| ------------ | --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `id`         | uuid PK                           |                                                                                            |
+| `email`      | text, ya normalizado a minúsculas | la clave del contador por cuenta                                                           |
+| `user_id`    | uuid null → `auth.users`          | solo si el email existía                                                                   |
+| `ip`         | inet null                         | de `x-forwarded-for`; null en local                                                        |
+| `user_agent` | text null                         | investigación                                                                              |
+| `outcome`    | text                              | `success` \| `bad_password` \| `unknown_email` \| `locked` \| `rate_limited` \| `unlocked` |
+| `created_at` | timestamptz                       |                                                                                            |
 
 Índices en `(email, created_at DESC)` y `(ip, created_at DESC)`. Sin RLS, como
 `booking_events`: se lee solo con la service key.
@@ -51,13 +51,13 @@ Auditoría y fuente del contador a la vez. Una fila por intento, con éxito o si
 
 Estado del bloqueo, una fila viva por email.
 
-| columna | tipo | para qué |
-|---|---|---|
-| `email` | text PK | |
-| `locked_at` / `expires_at` | timestamptz | caducidad a 30 min |
-| `unlock_token` | uuid UNIQUE | *es* la credencial del enlace, como `contacts.unsubscribe_token` |
-| `unlocked_at` | timestamptz null | consumido = token quemado |
-| `attempts` | int | cuántos fallos lo provocaron, para el email |
+| columna                    | tipo             | para qué                                                         |
+| -------------------------- | ---------------- | ---------------------------------------------------------------- |
+| `email`                    | text PK          |                                                                  |
+| `locked_at` / `expires_at` | timestamptz      | caducidad a 30 min                                               |
+| `unlock_token`             | uuid UNIQUE      | _es_ la credencial del enlace, como `contacts.unsubscribe_token` |
+| `unlocked_at`              | timestamptz null | consumido = token quemado                                        |
+| `attempts`                 | int              | cuántos fallos lo provocaron, para el email                      |
 
 ### Cómo se cuenta
 
@@ -95,7 +95,7 @@ antes de gastar el siguiente.
 8. **Fallo:** mirar `profiles.email` para marcar el evento como `bad_password`
    o `unknown_email` — distinción solo de auditoría, el usuario ve lo mismo.
    Registrar. Si el contador llega a 5: crear el lock con `expires_at = now() +
-   30 min` y su `unlock_token`, enviar el email y devolver `locked`. Si no,
+30 min` y su `unlock_token`, enviar el email y devolver `locked`. Si no,
    devolver `bad_credentials` con los intentos que quedan.
 
 ### Contrato de vuelta

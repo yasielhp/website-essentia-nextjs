@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { signInWithPassword } from "@/actions/auth";
 import { signInSchema, parseErrors } from "@/lib/schemas";
+import type { SignInError } from "@/lib/login-security";
 import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -19,7 +20,7 @@ export default function SignInForm() {
   const { refreshUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SignInError | null>(null);
   const validationMessage = useValidationMessage();
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
@@ -49,11 +50,14 @@ export default function SignInForm() {
     }
 
     if (error) {
-      if (error.statusCode === 403) {
-        setError(t("errorVerify"));
-      } else {
-        setError(error.message ?? t("errorGeneric"));
+      // The server sends a code, never a sentence: the wording lives in
+      // `messages/` so it is translated, and Insforge's own phrasing never
+      // reaches the screen.
+      if (error.code === "invalid") {
+        setFieldErrors(error.fields);
+        return;
       }
+      setError(error);
       return;
     }
 
@@ -65,6 +69,32 @@ export default function SignInForm() {
       push(toDashboard ? "/dashboard" : "/account");
     }
   };
+
+  /**
+   * The sentence for whatever the server refused with.
+   *
+   * `bad_credentials` is the only one that carries a number, and the last two
+   * attempts are amber rather than red: a warning the client reads before
+   * spending the fifth is worth more than a fifth error in the same colour as
+   * the first.
+   */
+  const message = !error
+    ? null
+    : error.code === "bad_credentials"
+      ? t("errorAttempts", { remaining: error.remaining })
+      : error.code === "locked"
+        ? t("errorLocked")
+        : error.code === "ip_rate_limited"
+          ? t("errorRateLimited")
+          : error.code === "unverified"
+            ? t("errorVerify")
+            : t("errorGeneric");
+
+  const warn = error?.code === "bad_credentials" && error.remaining <= 2;
+
+  // Nothing to gain from a sixth attempt against a locked account, and the
+  // disabled button says so more plainly than the paragraph above it.
+  const locked = error?.code === "locked" || error?.code === "ip_rate_limited";
 
   return (
     <div className="flex flex-col gap-8">
@@ -89,6 +119,11 @@ export default function SignInForm() {
             onChange={(value) => {
               setEmail(value);
               setFieldErrors((p) => ({ ...p, email: undefined }));
+              // Clears the banner, which also frees the button again: after a
+              // rate limit the wait is over as soon as the client comes back
+              // to try, and a form that stays dead until a reload reads as
+              // broken rather than as protected.
+              setError(null);
             }}
             hasError={!!fieldErrors.email}
             placeholder={t("emailPlaceholder")}
@@ -114,6 +149,7 @@ export default function SignInForm() {
             onChange={(e) => {
               setPassword(e.target.value);
               setFieldErrors((p) => ({ ...p, password: undefined }));
+              setError(null);
             }}
             autoComplete="current-password"
             placeholder={t("passwordPlaceholder")}
@@ -135,8 +171,11 @@ export default function SignInForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
-            {error}
+          <p
+            className={`text-sm ${warn ? "text-amber-700" : "text-red-600"}`}
+            role="alert"
+          >
+            {message}
           </p>
         )}
 
@@ -144,7 +183,7 @@ export default function SignInForm() {
           type="submit"
           variant="solid"
           size="md"
-          disabled={loading}
+          disabled={loading || locked}
           className="w-full"
         >
           {loading ? t("submitting") : t("submit")}

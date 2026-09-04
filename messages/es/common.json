@@ -50,7 +50,8 @@
     "firstNameRequired": "El nombre es obligatorio",
     "lastNameRequired": "Los apellidos son obligatorios",
     "phoneInvalid": "Introduce un teléfono válido",
-    "consentRequired": "Debes aceptar los términos y la política de privacidad"
+    "consentRequired": "Debes aceptar los términos y la política de privacidad",
+    "passwordTooLong": "La contraseña es demasiado larga"
   },
   "emailField": {
     "invalid": "Revisa el correo: falta algo o hay un carácter de más.",

@@ -8,6 +8,15 @@ type SendEmailParams = {
   /** Set when the reply belongs to someone other than Essentia — a visitor
    *  writing through the contact form, for instance. */
   replyTo?: string;
+  /**
+   * Set to `false` for anything the recipient alone may see.
+   *
+   * Everything the centre sends is blind-copied to the office, which is right
+   * for a booking and wrong for a password: the account-lock email carries the
+   * link that opens the account, and a copy in the office inbox would hand
+   * that link to whoever reads it.
+   */
+  blindCopy?: boolean;
 };
 
 /**
@@ -55,6 +64,7 @@ export async function sendEmail({
   subject,
   html,
   replyTo,
+  blindCopy = true,
 }: SendEmailParams) {
   if (!to.includes("@")) throw new Error("Invalid recipient address");
 
@@ -69,7 +79,7 @@ export async function sendEmail({
     process.env.RESEND_FROM_EMAIL ??
     "Essentia <noreply@essentiawellnessclub.com>";
 
-  const bcc = await blindCopies(to);
+  const bcc = blindCopy ? await blindCopies(to) : [];
 
   const { data, error } = await resend.emails.send({
     from,

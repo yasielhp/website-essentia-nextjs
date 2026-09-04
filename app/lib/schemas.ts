@@ -6,8 +6,18 @@ import { isValidPhone } from "@/utils/contact";
  * the screen resolves them against `common.validation` through `useTranslations`.
  */
 export const signInSchema = z.object({
-  email: z.email("emailInvalid"),
-  password: z.string().min(1, "passwordRequired"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(160, "emailInvalid")
+    .pipe(z.email("emailInvalid")),
+  /**
+   * The upper bound is not a password policy — it is a doorstop. Without it a
+   * multi-megabyte string reaches the hash on the other side, and hashing is
+   * deliberately slow.
+   */
+  password: z.string().min(1, "passwordRequired").max(200, "passwordTooLong"),
 });
 
 /**
