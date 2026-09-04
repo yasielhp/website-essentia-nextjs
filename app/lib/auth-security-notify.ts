@@ -2,7 +2,7 @@ import { sendEmail } from "@/emails/send";
 import { accountLockedEmail } from "@/emails/templates/account-locked";
 import { accountUnlockedEmail } from "@/emails/templates/account-unlocked";
 import { getAppUrl } from "@/lib/env";
-import { LOCK_MINUTES, type Account } from "@/lib/login-security";
+import { LOCK_MINUTES, type Account } from "@/lib/auth-security";
 
 /**
  * The two emails the lock sends, kept apart from the counting so that module
@@ -58,7 +58,7 @@ export async function notifyAccountLocked(
       }),
     });
   } catch (err) {
-    console.error("[login-security] lock email failed:", err);
+    console.error("[auth-security] lock email failed:", err);
   }
 }
 
@@ -78,6 +78,6 @@ export async function notifyAccountUnlocked(account: Account): Promise<void> {
       }),
     });
   } catch (err) {
-    console.error("[login-security] unlock email failed:", err);
+    console.error("[auth-security] unlock email failed:", err);
   }
 }

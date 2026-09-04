@@ -16,11 +16,11 @@ import {
   createLock,
   findAccount,
   ipOverCeiling,
-  recordLoginEvent,
+  recordAuthEvent,
   userAgent,
   wait,
-} from "@/lib/login-security";
-import { notifyAccountLocked } from "@/lib/login-security-notify";
+} from "@/lib/auth-security";
+import { notifyAccountLocked } from "@/lib/auth-security-notify";
 
 /**
  * The auth mutations, run where the cookies can be written.
@@ -84,7 +84,7 @@ export async function signInWithPassword(email: string, password: string) {
    * checked before the lock, so a barrage costs one read rather than two.
    */
   if (await ipOverCeiling(ip)) {
-    await recordLoginEvent({
+    await recordAuthEvent({
       email: address,
       outcome: "rate_limited",
       ip,
@@ -98,7 +98,7 @@ export async function signInWithPassword(email: string, password: string) {
   }
 
   if (await activeLock(address)) {
-    await recordLoginEvent({
+    await recordAuthEvent({
       email: address,
       outcome: "locked",
       ip,
@@ -140,7 +140,7 @@ export async function signInWithPassword(email: string, password: string) {
      */
     const account = await findAccount(address);
 
-    await recordLoginEvent({
+    await recordAuthEvent({
       email: address,
       outcome: account ? "bad_password" : "unknown_email",
       userId: account?.id ?? null,
@@ -171,7 +171,7 @@ export async function signInWithPassword(email: string, password: string) {
     };
   }
 
-  await recordLoginEvent({
+  await recordAuthEvent({
     email: address,
     outcome: "success",
     userId: data.user.id,

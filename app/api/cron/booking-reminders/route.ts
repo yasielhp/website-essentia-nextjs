@@ -3,7 +3,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
-import { pruneLoginEvents } from "@/lib/login-security";
+import { pruneAuthEvents } from "@/lib/auth-security";
 
 /**
  * POST/GET /api/cron/booking-reminders
@@ -67,7 +67,7 @@ async function handle(request: NextRequest) {
   // Rides along rather than on a schedule of its own: the login trail needs
   // sweeping roughly daily and this already runs every hour, so a second cron
   // entry, a second secret and a second thing to forget buys nothing.
-  await pruneLoginEvents();
+  await pruneAuthEvents();
 
   const dayOf = (hours: number) =>
     new Date(now + hours * 3_600_000).toISOString().slice(0, 10);

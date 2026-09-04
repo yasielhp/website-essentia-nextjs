@@ -3,11 +3,11 @@
 import {
   consumeUnlockToken,
   findAccount,
-  recordLoginEvent,
+  recordAuthEvent,
   clientIp,
   userAgent,
-} from "@/lib/login-security";
-import { notifyAccountUnlocked } from "@/lib/login-security-notify";
+} from "@/lib/auth-security";
+import { notifyAccountUnlocked } from "@/lib/auth-security-notify";
 
 /**
  * Spends the token from the lock email.
@@ -34,7 +34,7 @@ export async function unlockAccount(
   const result = await consumeUnlockToken(token);
   if (result.status !== "unlocked") return { status: result.status };
 
-  await recordLoginEvent({
+  await recordAuthEvent({
     email: result.email,
     outcome: "unlocked",
     ip: await clientIp(),

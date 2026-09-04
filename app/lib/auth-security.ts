@@ -44,7 +44,7 @@ export type SignInError =
   | { code: "unverified" }
   | { code: "generic" };
 
-export type LoginOutcome =
+export type AuthOutcome =
   | "success"
   | "bad_password"
   | "unknown_email"
@@ -53,7 +53,7 @@ export type LoginOutcome =
   | "unlocked";
 
 /** The two outcomes that mean somebody guessed wrong. */
-const GUESSES: LoginOutcome[] = ["bad_password", "unknown_email"];
+const GUESSES: AuthOutcome[] = ["bad_password", "unknown_email"];
 
 /**
  * How long the caller waits before the password is even checked.
@@ -109,16 +109,16 @@ export async function userAgent(): Promise<string | null> {
  * that fails because its own log could not be written would be the worse
  * outcome. Every caller can await this without a `try`.
  */
-export async function recordLoginEvent(input: {
+export async function recordAuthEvent(input: {
   email: string;
-  outcome: LoginOutcome;
+  outcome: AuthOutcome;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
 }): Promise<void> {
   try {
     const { error } = await getAdminClient()
-      .database.from("login_events")
+      .database.from("auth_events")
       .insert([
         {
           email: input.email,
@@ -132,9 +132,9 @@ export async function recordLoginEvent(input: {
     // The SDK reports a refused write as a value, not an exception, so the
     // catch below never sees one. Silence here would disarm the counter as
     // well as the audit, because the counter reads these very rows.
-    if (error) console.error("[login-security] event insert refused:", error);
+    if (error) console.error("[auth-security] event insert refused:", error);
   } catch (err) {
-    console.error("[login-security] could not record event:", err);
+    console.error("[auth-security] could not record event:", err);
   }
 }
 
@@ -150,7 +150,7 @@ export async function recordLoginEvent(input: {
 export async function accountFailures(email: string): Promise<number> {
   try {
     const { data, error } = await getAdminClient()
-      .database.from("login_events")
+      .database.from("auth_events")
       .select("outcome")
       .eq("email", email)
       .gte("created_at", windowStart())
@@ -158,12 +158,12 @@ export async function accountFailures(email: string): Promise<number> {
       .limit(50);
 
     if (error) {
-      console.error("[login-security] failure count refused:", error);
+      console.error("[auth-security] failure count refused:", error);
       return 0;
     }
 
     let failures = 0;
-    for (const row of (data ?? []) as { outcome: LoginOutcome }[]) {
+    for (const row of (data ?? []) as { outcome: AuthOutcome }[]) {
       if (row.outcome === "success") break;
       if (GUESSES.includes(row.outcome)) failures += 1;
     }
@@ -172,7 +172,7 @@ export async function accountFailures(email: string): Promise<number> {
     // Fail open: a database that cannot be read must not lock everybody out.
     // The password still has to be right, so this loosens a rate limit rather
     // than the authentication itself.
-    console.error("[login-security] could not count failures:", err);
+    console.error("[auth-security] could not count failures:", err);
     return 0;
   }
 }
@@ -183,7 +183,7 @@ export async function ipOverCeiling(ip: string | null): Promise<boolean> {
 
   try {
     const { data, error } = await getAdminClient()
-      .database.from("login_events")
+      .database.from("auth_events")
       .select("outcome")
       .eq("ip", ip)
       .gte("created_at", windowStart())
@@ -191,17 +191,17 @@ export async function ipOverCeiling(ip: string | null): Promise<boolean> {
       .limit(200);
 
     if (error) {
-      console.error("[login-security] ip count refused:", error);
+      console.error("[auth-security] ip count refused:", error);
       return false;
     }
 
-    const failures = ((data ?? []) as { outcome: LoginOutcome }[]).filter(
+    const failures = ((data ?? []) as { outcome: AuthOutcome }[]).filter(
       (row) => GUESSES.includes(row.outcome),
     ).length;
 
     return failures >= IP_CEILING;
   } catch (err) {
-    console.error("[login-security] could not count ip failures:", err);
+    console.error("[auth-security] could not count ip failures:", err);
     return false;
   }
 }
@@ -242,7 +242,7 @@ export async function activeLock(email: string): Promise<AccountLock | null> {
     return row;
   } catch (err) {
     // Fail open, as above.
-    console.error("[login-security] could not read lock:", err);
+    console.error("[auth-security] could not read lock:", err);
     return null;
   }
 }
@@ -255,7 +255,7 @@ export async function clearLock(email: string): Promise<void> {
       .delete()
       .eq("email", email);
   } catch (err) {
-    console.error("[login-security] could not clear lock:", err);
+    console.error("[auth-security] could not clear lock:", err);
   }
 }
 
@@ -289,13 +289,13 @@ export async function createLock(
       .maybeSingle();
 
     if (error || !data) {
-      console.error("[login-security] lock insert refused:", error);
+      console.error("[auth-security] lock insert refused:", error);
       return null;
     }
 
     return data as AccountLock;
   } catch (err) {
-    console.error("[login-security] could not create lock:", err);
+    console.error("[auth-security] could not create lock:", err);
     return null;
   }
 }
@@ -343,13 +343,13 @@ export async function consumeUnlockToken(
       .eq("unlock_token", token);
 
     if (updateError) {
-      console.error("[login-security] unlock refused:", updateError);
+      console.error("[auth-security] unlock refused:", updateError);
       return { status: "invalid" };
     }
 
     return { status: "unlocked", email: row.email };
   } catch (err) {
-    console.error("[login-security] could not consume token:", err);
+    console.error("[auth-security] could not consume token:", err);
     return { status: "invalid" };
   }
 }
@@ -408,7 +408,7 @@ const RETENTION_DAYS = 90;
 /**
  * Drops the old end of the trail.
  *
- * `login_events` gains a row per attempt and is never otherwise deleted from,
+ * `auth_events` gains a row per attempt and is never otherwise deleted from,
  * so left alone it grows without bound — and the two counters read it, so a
  * table that grows forever is a login that gets slower forever. Ninety days is
  * long enough to investigate an incident somebody noticed late and short
@@ -417,19 +417,19 @@ const RETENTION_DAYS = 90;
  * Never throws: a sweep that fails is a table that is too big, not a login
  * that is broken.
  */
-export async function pruneLoginEvents(): Promise<void> {
+export async function pruneAuthEvents(): Promise<void> {
   try {
     const cutoff = new Date(
       Date.now() - RETENTION_DAYS * 24 * 3_600_000,
     ).toISOString();
 
     const { error } = await getAdminClient()
-      .database.from("login_events")
+      .database.from("auth_events")
       .delete()
       .lt("created_at", cutoff);
 
-    if (error) console.error("[login-security] prune refused:", error);
+    if (error) console.error("[auth-security] prune refused:", error);
   } catch (err) {
-    console.error("[login-security] could not prune:", err);
+    console.error("[auth-security] could not prune:", err);
   }
 }

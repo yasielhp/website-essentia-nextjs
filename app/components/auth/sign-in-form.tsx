@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { signInWithPassword } from "@/actions/auth";
 import { signInSchema, parseErrors } from "@/lib/schemas";
-import type { SignInError } from "@/lib/login-security";
+import type { SignInError } from "@/lib/auth-security";
 import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";

@@ -29,7 +29,7 @@ y 2FA (es otra funcionalidad, no endurecer el login).
 
 ## Datos
 
-### `login_events`
+### `auth_events`
 
 Auditoría y fuente del contador a la vez. Una fila por intento, con éxito o sin
 él.
@@ -69,7 +69,7 @@ Estado del bloqueo, una fila viva por email.
 
 ### Limpieza
 
-`login_events` crece sin fin. La poda de filas de más de 90 días se cuelga del
+`auth_events` crece sin fin. La poda de filas de más de 90 días se cuelga del
 cron que ya existe (`app/api/cron/booking-reminders/route.ts`), no de uno nuevo.
 
 ## Flujo del servidor
