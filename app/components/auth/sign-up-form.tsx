@@ -10,6 +10,8 @@ import {
   signUp as signUpAction,
   verifyEmail,
 } from "@/actions/auth";
+import type { CodeError, SignUpError } from "@/lib/auth-security";
+import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
 import { EmailInput } from "@/components/ui/email-input";
@@ -30,7 +32,7 @@ type State = {
   password: string;
   name: string;
   otp: string;
-  error: string | null;
+  error: SignUpError | CodeError | null;
   loading: boolean;
 };
 
@@ -40,7 +42,7 @@ type Action =
   | { type: "SET_PASSWORD"; payload: string }
   | { type: "SET_NAME"; payload: string }
   | { type: "SET_OTP"; payload: string }
-  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_ERROR"; payload: SignUpError | CodeError | null }
   | { type: "SET_LOADING"; payload: boolean };
 
 const initialState: State = {
@@ -99,10 +101,7 @@ export default function SignUpForm() {
     dispatch({ type: "SET_LOADING", payload: false });
 
     if (signUpError) {
-      dispatch({
-        type: "SET_ERROR",
-        payload: signUpError.message ?? t("errorGeneric"),
-      });
+      dispatch({ type: "SET_ERROR", payload: signUpError });
       return;
     }
 
@@ -127,17 +126,7 @@ export default function SignUpForm() {
     dispatch({ type: "SET_LOADING", payload: false });
 
     if (verifyError) {
-      if (verifyError.statusCode === 400) {
-        dispatch({
-          type: "SET_ERROR",
-          payload: t("verify.errorInvalidCode"),
-        });
-      } else {
-        dispatch({
-          type: "SET_ERROR",
-          payload: verifyError.message ?? t("verify.errorGeneric"),
-        });
-      }
+      dispatch({ type: "SET_ERROR", payload: verifyError });
       return;
     }
 
@@ -150,8 +139,55 @@ export default function SignUpForm() {
 
   const handleResend = async () => {
     dispatch({ type: "SET_ERROR", payload: null });
-    await resendVerificationEmail(email, `${window.location.origin}/sign-in`);
+    const { ok, code } = await resendVerificationEmail(email);
+    if (!ok) {
+      dispatch({
+        type: "SET_ERROR",
+        payload:
+          code === "throttled"
+            ? { code: "throttled", reason: "requests" }
+            : { code: "invalid", fields: { email: "emailInvalid" } },
+      });
+    }
   };
+
+  const validationMessage = useValidationMessage();
+
+  /**
+   * The sentence for whatever the server refused with, shared by both stages.
+   *
+   * `throttled` reads differently either side of the code: before it, too many
+   * accounts or too many emails; after it, too many wrong codes. Telling a
+   * person to stop asking for codes when their problem is mistyping one is
+   * worse than saying nothing.
+   */
+  const message = !error
+    ? null
+    : error.code === "bad_code"
+      ? t("verify.errorAttempts", { remaining: error.remaining })
+      : error.code === "throttled"
+        ? t(
+            "reason" in error && error.reason === "attempts"
+              ? "verify.errorTooManyCodes"
+              : "errorThrottled",
+          )
+        : error.code === "email_taken"
+          ? t("errorEmailTaken")
+          : error.code === "invalid"
+            ? validationMessage(
+                ("otp" in error.fields ? error.fields.otp : undefined) ??
+                  ("password" in error.fields
+                    ? error.fields.password
+                    : undefined) ??
+                  error.fields.email ??
+                  "emailInvalid",
+              )
+            : t("errorGeneric");
+
+  const warn = error?.code === "bad_code" && error.remaining <= 2;
+
+  // Another submit would only earn the same refusal.
+  const halted = error?.code === "throttled";
 
   if (stage === "verify") {
     return (
@@ -197,8 +233,11 @@ export default function SignUpForm() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600" role="alert">
-              {error}
+            <p
+              className={`text-sm ${warn ? "text-amber-700" : "text-red-600"}`}
+              role="alert"
+            >
+              {message}
             </p>
           )}
 
@@ -206,7 +245,7 @@ export default function SignUpForm() {
             type="submit"
             variant="solid"
             size="md"
-            disabled={loading || otp.length !== 6}
+            disabled={loading || halted || otp.length !== 6}
             className="w-full"
           >
             {loading ? t("verify.submitting") : t("verify.submit")}
@@ -293,11 +332,15 @@ export default function SignUpForm() {
             autoComplete="new-password"
             placeholder={t("passwordPlaceholder")}
           />
+          <p className="text-petroleum-400 text-xs">{t("passwordHint")}</p>
         </div>
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
-            {error}
+          <p
+            className={`text-sm ${warn ? "text-amber-700" : "text-red-600"}`}
+            role="alert"
+          >
+            {message}
           </p>
         )}
 
@@ -305,7 +348,7 @@ export default function SignUpForm() {
           type="submit"
           variant="solid"
           size="md"
-          disabled={loading}
+          disabled={loading || halted || password.length < 8}
           className="w-full"
         >
           {loading ? t("submitting") : t("submit")}

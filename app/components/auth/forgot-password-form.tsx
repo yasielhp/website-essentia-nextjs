@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { resetPassword, sendResetPasswordEmail } from "@/actions/auth";
-import type { ResetError } from "@/lib/auth-security";
+import type { CodeError } from "@/lib/auth-security";
 import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
 import { PasswordInput } from "@components/ui/input";
@@ -18,7 +18,7 @@ type State = {
   email: string;
   otp: string;
   newPassword: string;
-  error: ResetError | null;
+  error: CodeError | null;
   loading: boolean;
 };
 
@@ -27,7 +27,7 @@ type Action =
   | { type: "SET_EMAIL"; payload: string }
   | { type: "SET_OTP"; payload: string }
   | { type: "SET_NEW_PASSWORD"; payload: string }
-  | { type: "SET_ERROR"; payload: ResetError | null }
+  | { type: "SET_ERROR"; payload: CodeError | null }
   | { type: "SET_LOADING"; payload: boolean };
 
 const initialState: State = {

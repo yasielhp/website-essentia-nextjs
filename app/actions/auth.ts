@@ -9,6 +9,8 @@ import {
   signInSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  signUpSchema,
+  verifyEmailSchema,
   parseErrors,
 } from "@/lib/schemas";
 import { getAppUrl } from "@/lib/env";
@@ -23,14 +25,16 @@ import {
   findAccount,
   ipOverCeiling,
   recordAuthEvent,
-  resetCodeFailures,
-  resetRequests,
-  resetRequestsFromIp,
+  codeFailures,
+  codeRequests,
+  codeRequestsFromIp,
   userAgent,
   wait,
-  RESET_CODE_ATTEMPTS,
-  RESET_REQUEST_IP_LIMIT,
-  RESET_REQUEST_LIMIT,
+  signupsFromIp,
+  CODE_ATTEMPTS,
+  CODE_REQUEST_IP_LIMIT,
+  CODE_REQUEST_LIMIT,
+  SIGNUP_IP_LIMIT,
 } from "@/lib/auth-security";
 import { notifyAccountLocked } from "@/lib/auth-security-notify";
 
@@ -52,15 +56,6 @@ import { notifyAccountLocked } from "@/lib/auth-security-notify";
 
 async function authActions() {
   return createAuthActions({ cookies: await cookies() });
-}
-
-/** The SDK's error, flattened to something a Client Component can receive. */
-function toPlainError(error: { message?: string; statusCode?: number } | null) {
-  if (!error) return null;
-  return {
-    message: error.message ?? "Something went wrong",
-    statusCode: error.statusCode ?? 500,
-  };
 }
 
 export async function signInWithPassword(email: string, password: string) {
@@ -223,23 +218,168 @@ export async function signInWithPassword(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string, name: string) {
+  const parsed = signUpSchema.safeParse({ email, password, name });
+  if (!parsed.success) {
+    return {
+      user: null,
+      requireEmailVerification: false,
+      error: {
+        code: "invalid" as const,
+        fields: parseErrors(signUpSchema, { email, password, name }),
+      },
+    };
+  }
+
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  /**
+   * Capping the resend button alone would close nothing: this form sends the
+   * very same verification email, so an attacker would simply register the
+   * victim's address over and over instead of pressing resend. Counted per
+   * address for that, and per connection for the account farm.
+   */
+  const [byAddress, byConnection] = await Promise.all([
+    codeRequests("verify", address),
+    signupsFromIp(ip),
+  ]);
+
+  if (byAddress >= CODE_REQUEST_LIMIT || byConnection >= SIGNUP_IP_LIMIT) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "signup_throttled",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      user: null,
+      requireEmailVerification: false,
+      error: { code: "throttled" as const },
+    };
+  }
+
   const auth = await authActions();
-  const { data, error } = await auth.signUp({ email, password, name });
+  const { data, error } = await auth.signUp({
+    email: address,
+    password: parsed.data.password,
+    name: parsed.data.name ?? "",
+  });
+
+  if (error || !data?.user) {
+    return {
+      user: null,
+      requireEmailVerification: false,
+      // The one thing worth telling apart: an address already registered is a
+      // person who should be signing in, not an error to shrug at.
+      error: {
+        code: (error?.statusCode === 409 ? "email_taken" : "generic") as
+          "email_taken" | "generic",
+      },
+    };
+  }
+
+  // Two rows, because the sign-up spends both budgets: one account from this
+  // connection, and one verification email to this address.
+  await recordAuthEvent({
+    email: address,
+    outcome: "signup_attempt",
+    userId: data.user.id,
+    ip,
+    userAgent: agent,
+  });
+  await recordAuthEvent({
+    email: address,
+    outcome: "verify_requested",
+    userId: data.user.id,
+    ip,
+    userAgent: agent,
+  });
 
   return {
-    user: data?.user ?? null,
+    user: data.user,
     // The tokens never reach the browser; this flag is what the form needs to
     // know whether the account is live or waiting on a code.
-    requireEmailVerification: data?.requireEmailVerification ?? false,
-    error: toPlainError(error),
+    requireEmailVerification: data.requireEmailVerification ?? false,
+    error: null,
   };
 }
 
 export async function verifyEmail(email: string, otp: string) {
-  const auth = await authActions();
-  const { data, error } = await auth.verifyEmail({ email, otp });
+  const parsed = verifyEmailSchema.safeParse({ email, otp });
+  if (!parsed.success) {
+    return {
+      user: null,
+      error: {
+        code: "invalid" as const,
+        fields: parseErrors(verifyEmailSchema, { email, otp }),
+      },
+    };
+  }
 
-  return { user: data?.user ?? null, error: toPlainError(error) };
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  /**
+   * The same six digits and the same million guesses as the reset, and it was
+   * open for the same reason: nothing counted. Less valuable to reach — this
+   * one verifies an address rather than choosing a password — but it is the
+   * step that turns a registration into a live account, so it is worth no less
+   * than five tries.
+   */
+  const failures = await codeFailures("verify", address);
+
+  if (failures >= CODE_ATTEMPTS) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "verify_throttled",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      user: null,
+      error: { code: "throttled" as const, reason: "attempts" as const },
+    };
+  }
+
+  await wait(backoffMs(failures));
+
+  const auth = await authActions();
+  const { data, error } = await auth.verifyEmail({
+    email: address,
+    otp: parsed.data.otp,
+  });
+
+  if (error || !data?.user) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "verify_bad_code",
+      ip,
+      userAgent: agent,
+    });
+
+    const remaining = CODE_ATTEMPTS - (failures + 1);
+
+    if (remaining <= 0) {
+      return {
+        user: null,
+        error: { code: "throttled" as const, reason: "attempts" as const },
+      };
+    }
+
+    return { user: null, error: { code: "bad_code" as const, remaining } };
+  }
+
+  await recordAuthEvent({
+    email: address,
+    outcome: "verify_success",
+    userId: data.user.id,
+    ip,
+    userAgent: agent,
+  });
+
+  return { user: data.user, error: null };
 }
 
 /**
@@ -290,17 +430,56 @@ export async function signOut() {
   return { ok: true };
 }
 
-export async function resendVerificationEmail(
-  email: string,
-  redirectTo: string,
-) {
-  const client = await createInsForgeServerClient();
-  const { error } = await client.auth.resendVerificationEmail({
-    email,
-    redirectTo,
+export async function resendVerificationEmail(email: string) {
+  const parsed = forgotPasswordSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { ok: false, code: "invalid" as const };
+  }
+
+  const address = parsed.data.email;
+  const ip = await clientIp();
+  const agent = await userAgent();
+
+  const [byAddress, byConnection] = await Promise.all([
+    codeRequests("verify", address),
+    codeRequestsFromIp("verify", ip),
+  ]);
+
+  if (
+    byAddress >= CODE_REQUEST_LIMIT ||
+    byConnection >= CODE_REQUEST_IP_LIMIT
+  ) {
+    await recordAuthEvent({
+      email: address,
+      outcome: "verify_throttled",
+      ip,
+      userAgent: agent,
+    });
+    return {
+      ok: false,
+      code: "throttled" as const,
+      reason: "requests" as const,
+    };
+  }
+
+  await recordAuthEvent({
+    email: address,
+    outcome: "verify_requested",
+    ip,
+    userAgent: agent,
   });
 
-  return { ok: !error, error: toPlainError(error) };
+  const client = await createInsForgeServerClient();
+  const { error } = await client.auth.resendVerificationEmail({
+    email: address,
+    // Built here, never taken from the caller — the page used to pass
+    // `window.location.origin`, and this is an HTTP endpoint like any other.
+    redirectTo: `${getAppUrl()}/sign-in`,
+  });
+
+  if (error) console.error("[auth] resend failed:", error.message);
+
+  return { ok: true, code: null };
 }
 
 export async function sendResetPasswordEmail(email: string) {
@@ -320,13 +499,13 @@ export async function sendResetPasswordEmail(email: string) {
    * trivial to walk around.
    */
   const [byAddress, byConnection] = await Promise.all([
-    resetRequests(address),
-    resetRequestsFromIp(ip),
+    codeRequests("reset", address),
+    codeRequestsFromIp("reset", ip),
   ]);
 
   if (
-    byAddress >= RESET_REQUEST_LIMIT ||
-    byConnection >= RESET_REQUEST_IP_LIMIT
+    byAddress >= CODE_REQUEST_LIMIT ||
+    byConnection >= CODE_REQUEST_IP_LIMIT
   ) {
     await recordAuthEvent({
       email: address,
@@ -406,9 +585,9 @@ export async function resetPassword(
    * it does not lock the account, because this form needs no password and a
    * lock here would be a way to shut any client out at will.
    */
-  const failures = await resetCodeFailures(address);
+  const failures = await codeFailures("reset", address);
 
-  if (failures >= RESET_CODE_ATTEMPTS) {
+  if (failures >= CODE_ATTEMPTS) {
     await recordAuthEvent({
       email: address,
       outcome: "reset_throttled",
@@ -439,7 +618,7 @@ export async function resetPassword(
       ip,
       userAgent: agent,
     });
-    const remaining = RESET_CODE_ATTEMPTS - (failures + 1);
+    const remaining = CODE_ATTEMPTS - (failures + 1);
 
     // The last wrong code closes the reset rather than reporting "0 tries
     // left" beside a button that still looks willing.

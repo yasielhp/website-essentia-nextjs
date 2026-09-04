@@ -26,27 +26,56 @@ export const IP_CEILING = 20;
 export const LOCK_MINUTES = 30;
 
 /**
- * Reset codes asked for by one address inside the window.
+ * Codes asked for by one address inside the window.
  *
  * Three is generous for somebody who genuinely lost their password and mean
  * for anybody using the form to bury a client's inbox — which needs no
  * password at all, and so is the cheapest attack the site offers.
  */
-export const RESET_REQUEST_LIMIT = 3;
+export const CODE_REQUEST_LIMIT = 3;
 /** The same from one connection, across every address it tries. */
-export const RESET_REQUEST_IP_LIMIT = 10;
+export const CODE_REQUEST_IP_LIMIT = 10;
 /**
- * Wrong codes before the exchange is refused for the rest of the window.
+ * Wrong codes before the flow is refused for the rest of the window.
  *
- * The code is six digits. Left uncounted, a script walks the whole million and
- * changes somebody's password — which is why this matters more than the flood
- * of emails above it.
+ * The code is six digits. Left uncounted, a script walks the whole million —
+ * which for the reset means choosing somebody's password, and is why this
+ * matters more than the flood of emails above it.
  *
- * Running out does **not** lock the account: this form needs no password, so a
- * lock here would be a way to shut any client out by typing wrong codes at
- * them. It only closes the reset until the window rolls over.
+ * Running out does **not** lock the account: neither form needs a password, so
+ * a lock here would be a way to shut any client out by typing wrong codes at
+ * them. It only closes that flow until the window rolls over.
  */
-export const RESET_CODE_ATTEMPTS = 5;
+export const CODE_ATTEMPTS = 5;
+/** New accounts one connection may open inside the window. */
+export const SIGNUP_IP_LIMIT = 5;
+
+/**
+ * The two flows that email a six-digit code.
+ *
+ * They are the same policy with different rows, so they share the numbers
+ * above and the functions below, and differ only in which outcomes they write
+ * — separate budgets, one set of rules. Adding a third means adding a line.
+ */
+export type CodeFlow = "reset" | "verify";
+
+const FLOW: Record<
+  CodeFlow,
+  { requested: AuthOutcome; badCode: AuthOutcome; success: AuthOutcome }
+> = {
+  reset: {
+    requested: "reset_requested",
+    badCode: "reset_bad_code",
+    success: "reset_success",
+  },
+  verify: {
+    requested: "verify_requested",
+    badCode: "verify_bad_code",
+    success: "verify_success",
+  },
+};
+
+export const flowOutcomes = (flow: CodeFlow) => FLOW[flow];
 
 /**
  * What the sign-in tells the browser when it refuses.
@@ -68,12 +97,15 @@ export type SignInError =
   | { code: "generic" };
 
 /**
- * What the password reset tells the browser when it refuses.
+ * What a six-digit-code flow tells the browser when it refuses.
+ *
+ * Shared by the password reset and the sign-up verification, which are the
+ * same shape twice: ask for a code, type it in, get it wrong.
  *
  * Same reasoning as `SignInError`: a code, not a sentence, so the wording can
  * live in `messages/` in both languages.
  */
-export type ResetError =
+export type CodeError =
   | {
       code: "invalid";
       fields: { email?: string; otp?: string; newPassword?: string };
@@ -88,6 +120,21 @@ export type ResetError =
   | { code: "throttled"; reason: "requests" | "attempts" }
   | { code: "generic" };
 
+/**
+ * What creating an account tells the browser when it refuses.
+ *
+ * `email_taken` is the one failure worth naming: it is not an error so much as
+ * somebody who should be signing in instead, and the screen can say so.
+ */
+export type SignUpError =
+  | {
+      code: "invalid";
+      fields: { email?: string; password?: string; name?: string };
+    }
+  | { code: "throttled" }
+  | { code: "email_taken" }
+  | { code: "generic" };
+
 export type AuthOutcome =
   // Signing in.
   | "success"
@@ -100,7 +147,15 @@ export type AuthOutcome =
   | "reset_requested"
   | "reset_bad_code"
   | "reset_success"
-  | "reset_throttled";
+  | "reset_throttled"
+  // Verifying a new account's address.
+  | "verify_requested"
+  | "verify_bad_code"
+  | "verify_success"
+  | "verify_throttled"
+  // Creating one.
+  | "signup_attempt"
+  | "signup_throttled";
 
 /** The two outcomes that mean somebody guessed a password wrong. */
 const GUESSES: AuthOutcome[] = ["bad_password", "unknown_email"];
@@ -270,33 +325,53 @@ export async function ipOverCeiling(ip: string | null): Promise<boolean> {
   return failures >= IP_CEILING;
 }
 
-/** Reset codes this address has asked for inside the window. */
-export async function resetRequests(email: string): Promise<number> {
+/** Codes of this kind the address has asked for inside the window. */
+export async function codeRequests(
+  flow: CodeFlow,
+  email: string,
+): Promise<number> {
   return countRecent({
     column: "email",
     value: email,
-    counted: ["reset_requested"],
+    counted: [FLOW[flow].requested],
   });
 }
 
 /** The same from this connection, whatever address it named. */
-export async function resetRequestsFromIp(ip: string | null): Promise<number> {
+export async function codeRequestsFromIp(
+  flow: CodeFlow,
+  ip: string | null,
+): Promise<number> {
   if (!ip) return 0;
   return countRecent({
     column: "ip",
     value: ip,
-    counted: ["reset_requested"],
+    counted: [FLOW[flow].requested],
     scan: 200,
   });
 }
 
-/** Wrong codes typed for this address since the last successful reset. */
-export async function resetCodeFailures(email: string): Promise<number> {
+/** Wrong codes typed for this address since the flow last succeeded. */
+export async function codeFailures(
+  flow: CodeFlow,
+  email: string,
+): Promise<number> {
   return countRecent({
     column: "email",
     value: email,
-    counted: ["reset_bad_code"],
-    clearedBy: ["reset_success"],
+    counted: [FLOW[flow].badCode],
+    clearedBy: [FLOW[flow].success],
+  });
+}
+
+/** New accounts opened from this connection inside the window. */
+export async function signupsFromIp(ip: string | null): Promise<number> {
+  if (!ip) return 0;
+  return countRecent({
+    column: "ip",
+    value: ip,
+    counted: ["signup_attempt"],
+    scan: 200,
   });
 }
 

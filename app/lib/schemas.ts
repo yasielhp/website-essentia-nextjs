@@ -51,6 +51,37 @@ export const resetPasswordSchema = forgotPasswordSchema.extend({
 });
 
 /**
+ * Creating an account.
+ *
+ * The eight-character floor matches the reset: two doors onto the same
+ * password, and only one of them asking would be no floor at all.
+ */
+export const signUpSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(160, "emailInvalid")
+    .pipe(z.email("emailInvalid")),
+  password: z.string().min(8, "passwordTooShort").max(200, "passwordTooLong"),
+  name: z.string().trim().max(120).optional(),
+});
+
+/** The six-digit code that finishes a sign-up. */
+export const verifyEmailSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(160, "emailInvalid")
+    .pipe(z.email("emailInvalid")),
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "codeInvalid"),
+});
+
+/**
  * The contact form. The same shape validates the browser and the server
  * action, because a form that emails the team is worth checking twice.
  */

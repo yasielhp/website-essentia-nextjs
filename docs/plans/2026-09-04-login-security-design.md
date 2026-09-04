@@ -174,10 +174,13 @@ import dinámico de `i18n/request.ts` y las claves salen crudas.
 
 ## Fuera de alcance
 
-`sign-up` no se toca en esta tanda: `verifyEmail` acepta intentos ilimitados
-contra su código de 6 dígitos y `resendVerificationEmail` no tiene tope, que es
-exactamente la misma forma que el restablecimiento. Menos grave — verificar un
-correo no cambia una contraseña — pero sigue abierto.
+**`createProfile` corre en el navegador** (`sign-up-form.tsx`) con el cliente
+anónimo. `profiles` tiene RLS y no hay política de INSERT para usuarios
+normales, solo `admin_insert_profile`, así que el insert falla en silencio: el
+código no mira el error. El 04-09-2026 había 6 usuarios de `auth.users` sin
+fila en `profiles`, y una cuenta creada durante las pruebas reprodujo el fallo.
+Arreglarlo es mover la creación del perfil a la Server Action con la service
+key, y decidir qué hacer con los huérfanos existentes.
 
 ## Añadido después
 
@@ -191,3 +194,21 @@ cualquier cliente a voluntad.
 De paso se cerraron dos agujeros que no eran de ritmo: `redirectTo` lo ponía el
 cliente, y el formulario decía si la dirección existía — una petición por
 dirección bastaba para llevarse la lista de clientes.
+
+El registro siguió el mismo día. `verifyEmail` tenía la misma fuerza bruta de
+seis dígitos y `resendVerificationEmail` el mismo `redirectTo` del cliente y el
+mismo cero topes; ambos comparten ahora los contadores del restablecimiento,
+con presupuestos propios. `signUp` también tiene tope — tres por dirección y
+cinco cuentas por conexión cada quince minutos — porque limitar solo el botón
+de reenvío no cerraba nada: ese formulario manda el mismo correo, así que
+bastaba con volver a registrar la dirección de la víctima.
+
+Los cuatro contadores resultaron ser la misma pregunta, así que se juntaron en
+`countRecent`, y los dos flujos de código de seis dígitos comparten política a
+través de `CodeFlow`. `toPlainError` desapareció: ninguna acción de auth
+devuelve ya la frase cruda del SDK.
+
+**Ojo:** la verificación por correo está desactivada en el proyecto de Insforge,
+así que `signUp` devuelve `requireEmailVerification: false` y la pantalla del
+código no se alcanza. El tope de `verifyEmail` está puesto pero hoy es código
+muerto; si algún día se activa la verificación, ya está cubierto.
