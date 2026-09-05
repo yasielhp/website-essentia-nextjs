@@ -15,7 +15,8 @@
     "races": "Races",
     "education": "Education",
     "blog": "Blog",
-    "settings": "Settings"
+    "settings": "Settings",
+    "campaigns": "Campaigns"
   },
   "breadcrumbs": {
     "sections": {
@@ -28,7 +29,8 @@
       "education": "Education",
       "transactions": "Transactions",
       "account": "Edit account",
-      "settings": "Settings"
+      "settings": "Settings",
+      "campaigns": "Campaigns"
     },
     "leaves": {
       "new": "New",
@@ -973,7 +975,24 @@
     "emailRequired": "Email is required",
     "serviceRequired": "Please select a service",
     "dateRequired": "Please select a date",
-    "timeRequired": "Please select a time"
+    "timeRequired": "Please select a time",
+    "nameRequired": "Give the campaign a name",
+    "nameTooLong": "The name is too long",
+    "subjectRequired": "Subject is required",
+    "subjectTooLong": "Subject: 120 characters at most",
+    "preheaderTooLong": "Preheader: 150 characters at most",
+    "titleRequired": "Title is required",
+    "titleTooLong": "The title is too long",
+    "bodyRequired": "Write the body of the email",
+    "bodyTooLong": "The body is too long",
+    "ctaTextTooLong": "Button text: 60 characters at most",
+    "urlMustBeHttps": "The link must start with https://",
+    "ctaNeedsBoth": "The button needs both a text and a link",
+    "daysOutOfRange": "Enter a number of days between 1 and 3650",
+    "servicesTooMany": "Too many services selected",
+    "contactIdInvalid": "One of the chosen contacts is not valid",
+    "tooManyContacts": "Too many contacts chosen by hand",
+    "invalidInput": "Some of the data is not valid"
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1075,6 +1094,12 @@
       },
       "errors": {
         "saveFailed": "Failed to save contact."
+      },
+      "campaigns": {
+        "tab": "Campaigns",
+        "empty": "No campaigns received yet.",
+        "bounced": "This address bounced on {date}. It is excluded from campaigns until cleared.",
+        "clearBounce": "Clear bounce"
       }
     }
   },
@@ -1246,7 +1271,16 @@
     "subscriptionCreated": "Subscription created",
     "accountSaved": "Account saved",
     "passwordChanged": "Password changed",
-    "tierSaved": "Session type updated"
+    "tierSaved": "Session type updated",
+    "campaignSaved": "Campaign saved",
+    "campaignSent": "Campaign sent",
+    "campaignScheduled": "Campaign scheduled",
+    "campaignCancelled": "Send cancelled",
+    "campaignDeleted": "Campaign deleted",
+    "campaignDuplicated": "Copy created",
+    "campaignTestSent": "Test sent to {email}",
+    "campaignRetried": "Failed recipients retried",
+    "bounceCleared": "Bounce cleared"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",
@@ -1260,5 +1294,182 @@
   "emailField": {
     "invalid": "Check the address — something is missing or mistyped.",
     "didYouMean": "Did you mean"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "new": "New campaign",
+    "empty": "No campaigns yet. Write the first one.",
+    "stats": {
+      "sentThisMonth": "Sent this month",
+      "deliveryRate": "Delivery rate",
+      "openRate": "Open rate"
+    },
+    "filter": {
+      "all": "All statuses"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "recipients": "Recipients",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "clicked": "Clicks",
+      "date": "Date"
+    },
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "sent": "Sent",
+      "cancelled": "Cancelled",
+      "failed": "Failed"
+    },
+    "recipientStatus": {
+      "queued": "Queued",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "clicked": "Clicked",
+      "bounced": "Bounced",
+      "complained": "Spam",
+      "failed": "Failed"
+    },
+    "steps": {
+      "audience": "Audience",
+      "content": "Content",
+      "review": "Review"
+    },
+    "form": {
+      "name": "Internal name",
+      "namePlaceholder": "Autumn promotion",
+      "next": "Next",
+      "back": "Back",
+      "newTitle": "New campaign",
+      "editTitle": "Edit campaign",
+      "notFound": "Campaign not found",
+      "locked": "This campaign has already been sent and cannot be edited."
+    },
+    "audience": {
+      "title": "Who receives it",
+      "language": "Language",
+      "languageAny": "Both languages",
+      "languageEn": "English only",
+      "languageEs": "Spanish only",
+      "newsletter": "Newsletter subscribers only",
+      "newsletterHint": "Off: every contact with an email address.",
+      "services": "Has booked any of these services",
+      "servicesPlaceholder": "Any service",
+      "lastBooking": "Last booking",
+      "lastBookingOff": "Any time",
+      "lastBookingGt": "more than",
+      "lastBookingLt": "less than",
+      "daysAgo": "days ago",
+      "neverBooked": "Has never booked",
+      "neverBookedHint": "Leads only. Turns the two booking conditions off.",
+      "manual": "Add contacts by hand",
+      "manualSearch": "Search by name or email…",
+      "manualNone": "No contacts match",
+      "manualAdd": "Add",
+      "manualRemove": "Remove {name}",
+      "reach": "Will reach {count} people",
+      "reachOne": "Will reach 1 person",
+      "reachByLanguage": "{en} in English · {es} in Spanish",
+      "reachNone": "Nobody matches these conditions",
+      "sample": "Show a sample",
+      "sampleHide": "Hide sample",
+      "sampleMore": "…and {count} more",
+      "counting": "Counting…"
+    },
+    "content": {
+      "title": "What it says",
+      "subject": "Subject",
+      "preheader": "Preheader",
+      "preheaderHint": "The line inbox apps show next to the subject. Falls back to the title.",
+      "emailTitle": "Title",
+      "body": "Body",
+      "bodyHelp": "Blank line = new paragraph. **bold**. [text](https://link). {{first_name}} inserts the client's name.",
+      "image": "Image (optional)",
+      "imageUrl": "Or paste an image URL",
+      "ctaText": "Button text",
+      "ctaUrl": "Button link",
+      "preview": "Preview",
+      "previewMobile": "Mobile",
+      "previewDesktop": "Desktop",
+      "previewLoading": "Rendering…",
+      "notSentIn": "This campaign does not go out in {language}. Choose \"Both languages\" in the audience step to write it.",
+      "localeEn": "English",
+      "localeEs": "Spanish",
+      "characters": "{count}/{max}"
+    },
+    "review": {
+      "title": "Review and send",
+      "audienceSummary": "Audience",
+      "contentSummary": "Content",
+      "conditions": "Conditions",
+      "noConditions": "Every contact with an email address",
+      "sendTest": "Send me a test",
+      "sendingTest": "Sending…",
+      "saveDraft": "Save draft",
+      "sendNow": "Send now",
+      "schedule": "Schedule",
+      "scheduleAt": "Date and time",
+      "scheduling": "Scheduling…",
+      "sending": "Sending…",
+      "confirmSend": "Send now to {count} people? This cannot be undone.",
+      "confirm": "Yes, send",
+      "cancel": "Cancel",
+      "emptyAudience": "Nobody would receive it. Adjust the audience first.",
+      "condLanguage": "Language: {value}",
+      "condNewsletter": "Newsletter subscribers only",
+      "condServices": "Booked: {value}",
+      "condLastBookingGt": "Last booking more than {days} days ago",
+      "condLastBookingLt": "Last booking less than {days} days ago",
+      "condNeverBooked": "Never booked",
+      "condManual": "{count} added by hand"
+    },
+    "detail": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "clicked": "Clicks",
+      "bounced": "Bounced",
+      "complained": "Spam",
+      "failed": "Failed",
+      "byLanguage": "By language",
+      "recipients": "Recipients",
+      "search": "Search email…",
+      "noRecipients": "No recipients yet.",
+      "openNote": "Opens are a hint: Apple Mail counts them even when nobody reads. Delivery is the reliable number.",
+      "duplicate": "Duplicate",
+      "cancelScheduled": "Cancel send",
+      "retryFailed": "Retry failed",
+      "delete": "Delete",
+      "edit": "Edit",
+      "confirmDelete": "Delete this campaign? Its history goes with it.",
+      "scheduledFor": "Scheduled for {date}",
+      "sentAt": "Sent on {date}",
+      "draftSince": "Draft, last edited {date}",
+      "lastError": "Last error: {error}",
+      "refreshing": "Updating…",
+      "columns": {
+        "email": "Email",
+        "language": "Language",
+        "status": "Status",
+        "date": "Date",
+        "error": "Detail"
+      }
+    },
+    "errors": {
+      "not_claimable": "This campaign is already being sent, or was sent.",
+      "empty_audience": "Nobody would receive it.",
+      "no_api_key": "Email sending is not configured on the server.",
+      "db": "Something went wrong saving to the database.",
+      "locked": "This campaign can no longer be changed.",
+      "past": "Pick a time in the future.",
+      "not_found": "Campaign not found.",
+      "invalid": "Check the highlighted fields.",
+      "no_email": "Your account has no email address to send the test to.",
+      "generic": "Something went wrong. Try again."
+    }
   }
 }

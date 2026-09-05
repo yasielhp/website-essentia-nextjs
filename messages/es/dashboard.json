@@ -15,7 +15,8 @@
     "races": "Carreras",
     "education": "Formación",
     "blog": "Blog",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "campaigns": "Campañas"
   },
   "breadcrumbs": {
     "sections": {
@@ -28,7 +29,8 @@
       "education": "Formación",
       "transactions": "Transacciones",
       "account": "Editar cuenta",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "campaigns": "Campañas"
     },
     "leaves": {
       "new": "Nuevo",
@@ -973,7 +975,24 @@
     "emailRequired": "El email es obligatorio",
     "serviceRequired": "Selecciona un servicio",
     "dateRequired": "Selecciona una fecha",
-    "timeRequired": "Selecciona una hora"
+    "timeRequired": "Selecciona una hora",
+    "nameRequired": "Ponle un nombre a la campaña",
+    "nameTooLong": "El nombre es demasiado largo",
+    "subjectRequired": "El asunto es obligatorio",
+    "subjectTooLong": "Asunto: 120 caracteres como máximo",
+    "preheaderTooLong": "Pre-encabezado: 150 caracteres como máximo",
+    "titleRequired": "El título es obligatorio",
+    "titleTooLong": "El título es demasiado largo",
+    "bodyRequired": "Escribe el cuerpo del email",
+    "bodyTooLong": "El cuerpo es demasiado largo",
+    "ctaTextTooLong": "Texto del botón: 60 caracteres como máximo",
+    "urlMustBeHttps": "El enlace debe empezar por https://",
+    "ctaNeedsBoth": "El botón necesita texto y enlace",
+    "daysOutOfRange": "Indica un número de días entre 1 y 3650",
+    "servicesTooMany": "Demasiados servicios seleccionados",
+    "contactIdInvalid": "Uno de los contactos elegidos no es válido",
+    "tooManyContacts": "Demasiados contactos añadidos a mano",
+    "invalidInput": "Algún dato no es válido"
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1075,6 +1094,12 @@
       },
       "errors": {
         "saveFailed": "No se pudo guardar el contacto."
+      },
+      "campaigns": {
+        "tab": "Campañas",
+        "empty": "Todavía no ha recibido campañas.",
+        "bounced": "Este email rebotó el {date}. Está excluido de las campañas hasta que se limpie.",
+        "clearBounce": "Limpiar rebote"
       }
     }
   },
@@ -1246,7 +1271,16 @@
     "subscriptionCreated": "Suscripción creada",
     "accountSaved": "Cuenta guardada",
     "passwordChanged": "Contraseña cambiada",
-    "tierSaved": "Tipo de sesión actualizado"
+    "tierSaved": "Tipo de sesión actualizado",
+    "campaignSaved": "Campaña guardada",
+    "campaignSent": "Campaña enviada",
+    "campaignScheduled": "Campaña programada",
+    "campaignCancelled": "Envío cancelado",
+    "campaignDeleted": "Campaña eliminada",
+    "campaignDuplicated": "Copia creada",
+    "campaignTestSent": "Prueba enviada a {email}",
+    "campaignRetried": "Fallidos reintentados",
+    "bounceCleared": "Rebote limpiado"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",
@@ -1260,5 +1294,182 @@
   "emailField": {
     "invalid": "Revisa el correo: falta algo o hay un carácter de más.",
     "didYouMean": "¿Quisiste decir"
+  },
+  "campaigns": {
+    "title": "Campañas",
+    "new": "Nueva campaña",
+    "empty": "Todavía no hay campañas. Escribe la primera.",
+    "stats": {
+      "sentThisMonth": "Enviadas este mes",
+      "deliveryRate": "Tasa de entrega",
+      "openRate": "Tasa de apertura"
+    },
+    "filter": {
+      "all": "Todos los estados"
+    },
+    "table": {
+      "name": "Nombre",
+      "status": "Estado",
+      "recipients": "Destinatarios",
+      "delivered": "Entregados",
+      "opened": "Abiertos",
+      "clicked": "Clics",
+      "date": "Fecha"
+    },
+    "status": {
+      "draft": "Borrador",
+      "scheduled": "Programada",
+      "sending": "Enviando",
+      "sent": "Enviada",
+      "cancelled": "Cancelada",
+      "failed": "Fallida"
+    },
+    "recipientStatus": {
+      "queued": "En cola",
+      "sent": "Enviado",
+      "delivered": "Entregado",
+      "opened": "Abierto",
+      "clicked": "Clic",
+      "bounced": "Rebotado",
+      "complained": "Spam",
+      "failed": "Fallido"
+    },
+    "steps": {
+      "audience": "Audiencia",
+      "content": "Contenido",
+      "review": "Revisar"
+    },
+    "form": {
+      "name": "Nombre interno",
+      "namePlaceholder": "Promoción de otoño",
+      "next": "Siguiente",
+      "back": "Atrás",
+      "newTitle": "Nueva campaña",
+      "editTitle": "Editar campaña",
+      "notFound": "Campaña no encontrada",
+      "locked": "Esta campaña ya se envió y no se puede editar."
+    },
+    "audience": {
+      "title": "Quién la recibe",
+      "language": "Idioma",
+      "languageAny": "Ambos idiomas",
+      "languageEn": "Solo inglés",
+      "languageEs": "Solo español",
+      "newsletter": "Solo suscritos a la newsletter",
+      "newsletterHint": "Apagado: todos los contactos con email.",
+      "services": "Ha reservado alguno de estos servicios",
+      "servicesPlaceholder": "Cualquier servicio",
+      "lastBooking": "Última reserva",
+      "lastBookingOff": "Cualquier fecha",
+      "lastBookingGt": "hace más de",
+      "lastBookingLt": "hace menos de",
+      "daysAgo": "días",
+      "neverBooked": "Nunca ha reservado",
+      "neverBookedHint": "Solo leads. Desactiva las dos condiciones de reserva.",
+      "manual": "Añadir contactos a mano",
+      "manualSearch": "Buscar por nombre o email…",
+      "manualNone": "Ningún contacto coincide",
+      "manualAdd": "Añadir",
+      "manualRemove": "Quitar a {name}",
+      "reach": "Llegará a {count} personas",
+      "reachOne": "Llegará a 1 persona",
+      "reachByLanguage": "{en} en inglés · {es} en español",
+      "reachNone": "Nadie cumple estas condiciones",
+      "sample": "Ver una muestra",
+      "sampleHide": "Ocultar muestra",
+      "sampleMore": "…y {count} más",
+      "counting": "Contando…"
+    },
+    "content": {
+      "title": "Qué dice",
+      "subject": "Asunto",
+      "preheader": "Pre-encabezado",
+      "preheaderHint": "La línea que el correo muestra junto al asunto. Si está vacía, se usa el título.",
+      "emailTitle": "Título",
+      "body": "Cuerpo",
+      "bodyHelp": "Línea en blanco = párrafo nuevo. **negrita**. [texto](https://enlace). {{first_name}} pone el nombre del cliente.",
+      "image": "Imagen (opcional)",
+      "imageUrl": "O pega la URL de una imagen",
+      "ctaText": "Texto del botón",
+      "ctaUrl": "Enlace del botón",
+      "preview": "Vista previa",
+      "previewMobile": "Móvil",
+      "previewDesktop": "Escritorio",
+      "previewLoading": "Generando…",
+      "notSentIn": "Esta campaña no se envía en {language}. Elige \"Ambos idiomas\" en el paso de audiencia para escribirla.",
+      "localeEn": "Inglés",
+      "localeEs": "Español",
+      "characters": "{count}/{max}"
+    },
+    "review": {
+      "title": "Revisar y enviar",
+      "audienceSummary": "Audiencia",
+      "contentSummary": "Contenido",
+      "conditions": "Condiciones",
+      "noConditions": "Todos los contactos con email",
+      "sendTest": "Enviarme una prueba",
+      "sendingTest": "Enviando…",
+      "saveDraft": "Guardar borrador",
+      "sendNow": "Enviar ahora",
+      "schedule": "Programar",
+      "scheduleAt": "Fecha y hora",
+      "scheduling": "Programando…",
+      "sending": "Enviando…",
+      "confirmSend": "¿Enviar ahora a {count} personas? No se puede deshacer.",
+      "confirm": "Sí, enviar",
+      "cancel": "Cancelar",
+      "emptyAudience": "Nadie la recibiría. Ajusta primero la audiencia.",
+      "condLanguage": "Idioma: {value}",
+      "condNewsletter": "Solo suscritos a la newsletter",
+      "condServices": "Ha reservado: {value}",
+      "condLastBookingGt": "Última reserva hace más de {days} días",
+      "condLastBookingLt": "Última reserva hace menos de {days} días",
+      "condNeverBooked": "Nunca ha reservado",
+      "condManual": "{count} añadidos a mano"
+    },
+    "detail": {
+      "sent": "Enviados",
+      "delivered": "Entregados",
+      "opened": "Abiertos",
+      "clicked": "Clics",
+      "bounced": "Rebotados",
+      "complained": "Spam",
+      "failed": "Fallidos",
+      "byLanguage": "Por idioma",
+      "recipients": "Destinatarios",
+      "search": "Buscar email…",
+      "noRecipients": "Todavía no hay destinatarios.",
+      "openNote": "Las aperturas son orientativas: Apple Mail las cuenta aunque nadie lea el email. La entrega es el dato fiable.",
+      "duplicate": "Duplicar",
+      "cancelScheduled": "Cancelar envío",
+      "retryFailed": "Reintentar fallidos",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "confirmDelete": "¿Eliminar esta campaña? Su historial se pierde con ella.",
+      "scheduledFor": "Programada para el {date}",
+      "sentAt": "Enviada el {date}",
+      "draftSince": "Borrador, editado el {date}",
+      "lastError": "Último error: {error}",
+      "refreshing": "Actualizando…",
+      "columns": {
+        "email": "Email",
+        "language": "Idioma",
+        "status": "Estado",
+        "date": "Fecha",
+        "error": "Detalle"
+      }
+    },
+    "errors": {
+      "not_claimable": "Esta campaña ya se está enviando o ya se envió.",
+      "empty_audience": "Nadie la recibiría.",
+      "no_api_key": "El envío de email no está configurado en el servidor.",
+      "db": "Algo falló al guardar en la base de datos.",
+      "locked": "Esta campaña ya no se puede cambiar.",
+      "past": "Elige una fecha futura.",
+      "not_found": "Campaña no encontrada.",
+      "invalid": "Revisa los campos marcados.",
+      "no_email": "Tu cuenta no tiene email al que enviar la prueba.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo."
+    }
   }
 }
