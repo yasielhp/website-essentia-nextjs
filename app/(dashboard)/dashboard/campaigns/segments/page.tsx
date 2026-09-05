@@ -173,7 +173,6 @@ export default function SegmentsPage() {
           {t("back")}
         </Button>
       </div>
-      </div>
 
       {editor.mode !== "closed" && (
         <section className="border-sand-200 animate-fade-in-up mb-6 rounded-2xl border bg-white p-6">
