@@ -160,26 +160,19 @@ export default function SegmentsPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-petroleum-700 text-3xl">
-            {t("title")}
-          </h1>
-          <p className="text-petroleum-400 mt-1 text-sm">{t("hint")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="md" href="/dashboard/campaigns">
-            {t("back")}
-          </Button>
-          <Button
-            size="md"
-            className="gap-2"
-            disabled={editor.mode !== "closed"}
-            onClick={openNew}
-          >
-            <IconPlus />
-            {t("new")}
-          </Button>
-        </div>
+        <Button
+          size="md"
+          className="gap-2"
+          disabled={editor.mode !== "closed"}
+          onClick={openNew}
+        >
+          <IconPlus />
+          {t("new")}
+        </Button>
+        <Button variant="outline" size="md" href="/dashboard/campaigns">
+          {t("back")}
+        </Button>
+      </div>
       </div>
 
       {editor.mode !== "closed" && (
