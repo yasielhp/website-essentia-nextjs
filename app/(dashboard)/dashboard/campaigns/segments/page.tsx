@@ -251,19 +251,6 @@ export default function SegmentsPage() {
           </div>
         ) : (
           <ul className="divide-sand-100 divide-y">
-            <li className="flex items-center justify-between gap-4 px-5 py-4">
-              <div>
-                <p className="text-petroleum-700 text-sm font-medium">
-                  {tSeg("everyone")}
-                </p>
-                <p className="text-petroleum-400 text-xs">
-                  {t("everyoneHint")}
-                </p>
-              </div>
-              <span className="text-petroleum-500 text-sm tabular-nums">
-                {t("count", { count: list.everyone })}
-              </span>
-            </li>
             {list.segments.length === 0 && (
               <li className="text-petroleum-400 px-5 py-10 text-center text-sm">
                 {t("empty")}
