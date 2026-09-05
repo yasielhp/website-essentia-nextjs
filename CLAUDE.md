@@ -10,9 +10,10 @@ bun run build        # production build (also validates TypeScript)
 bun run lint         # ESLint
 bun run format       # Prettier (write)
 bun run format:check # Prettier (check only)
+bun run test         # bun test — pure modules only (campaign body parser, audience filter, email template)
 ```
 
-There are no automated tests. Validate changes with `bun run build`.
+Automated tests exist only for pure modules under `app/lib/campaigns/` and `app/emails/templates/campaign.test.ts`. Everything else is validated with `bun run build`.
 
 **Always run `bun run format && bun run lint` before committing.** Both must pass clean (zero errors, zero warnings).
 
@@ -46,6 +47,7 @@ app/
     checkout/                  # Redsys payment session creation
     webhooks/redsys/           # Redsys payment webhook → triggers confirmation email
     webhooks/whatsapp/         # Meta status callbacks → advances booking_events.status
+    cron/campaigns/            # Every 15 min: sends scheduled campaigns, resumes interrupted ones
   components/
     ui/                        # Primitives: Button, Input, Accordion, Logo, AnimatedText…
     sections/                  # Page-section components grouped by page (home/, wellness/, booking/…)
@@ -55,6 +57,7 @@ app/
     templates/                 # HTML email templates: _base.ts helpers + per-event files
   lib/
     insforge.ts                # Anon Insforge client (browser-safe)
+    campaigns/                 # audience.ts (who gets it), dispatch.ts (send + resume), body-html.ts (text → safe HTML)
     google-calendar.ts         # Google Calendar OAuth + CRUD + token auto-refresh
     payments/                  # RedsysProvider (sole payment provider)
     og-logo.ts                 # Edge-safe SVG data URL helper for OG images
@@ -97,6 +100,17 @@ Two client modes:
 ### Email System
 
 All templates are plain TypeScript functions returning HTML strings (no JSX/React Email). `_base.ts` provides `emailBase()`, `bookingDetailsCard()`, `googleCalendarUrl()`, and `calendarButton()`. `sendEmail()` auto-BCCs the admin email fetched from `profiles` table. Always pass `dateIso` (YYYY-MM-DD) alongside the formatted `date` to templates that include the calendar button.
+
+### Email Campaigns
+
+Admin-only (`/dashboard/campaigns`). Design: `docs/plans/2026-09-05-email-campaigns-design.md`.
+
+- Tables `campaigns` (jsonb `audience` + `content`, denormalised counters) and `campaign_recipients` (one row per address, UNIQUE `(campaign_id, email)`). Both have RLS with no policies: only the service key reads them.
+- Segmentation runs in `app/lib/campaigns/audience.ts` against `contacts` + `bookings`, never in Resend. Fixed exclusions: no email, `contacts.email_bounced_at` set. Manual picks are unioned with the filter.
+- `dispatchCampaign()` claims the row atomically (`draft|scheduled → sending`), freezes the audience as `queued` rows, sends in chunks of 100 via `sendEmailBatch` with `tags.campaign_id`, `blindCopy: false` and `List-Unsubscribe` headers, and stamps `provider_id`. A resume sends only `queued` rows, so a timeout never double-sends.
+- The Resend webhook (`/api/webhooks/resend`) routes events carrying `tags.campaign_id` to the `record_campaign_event` RPC, which moves a recipient forward only and bumps counters once. Opens/clicks need tracking enabled on the Resend domain and the events subscribed on the webhook.
+- Email body is plain text with three constructs (blank line, `**bold**`, `[text](https://…)`); everything else is escaped. `{{first_name}}` is the only variable.
+- **Consent rule**: the newsletter checkbox/toggle (booking form, sign-up, dashboard contact + booking) only ever sets `newsletter_subscribed = true`; unticked means "do not touch". `upsert_contact(p_newsletter)` encodes this.
 
 ### Google Calendar Integration
 
