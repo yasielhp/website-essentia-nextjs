@@ -165,16 +165,6 @@ export default function SegmentDetailPage() {
       </div>
 
       <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
-        <div className="border-sand-100 border-b px-6 py-4">
-          <h2 className="text-petroleum-500 text-sm font-semibold">
-            {t("members")}
-            {members && (
-              <span className="text-petroleum-400 ml-1.5 text-xs">
-                {members.length}
-              </span>
-            )}
-          </h2>
-        </div>
         {members === null ? (
           <div className="divide-sand-100 divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
