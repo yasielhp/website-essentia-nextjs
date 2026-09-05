@@ -89,7 +89,8 @@ export const initialFormState: FormState = {
   name: "",
   segmentId: null,
   segmentName: null,
-  audience: EMPTY_AUDIENCE,
+  // The form always names the send language; only stored rows may lack it.
+  audience: { ...EMPTY_AUDIENCE, sendLocale: "es" },
   content: { en: EMPTY_LOCALE_CONTENT, es: EMPTY_LOCALE_CONTENT },
   activeLocale: "es",
   pickedContacts: [],
@@ -128,12 +129,23 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         segmentId: action.id,
         segmentName: action.name,
         reach: null,
-        // The conditions come from the segment; the hand-picked extras stay.
-        audience: { ...action.conditions, manualIds: state.audience.manualIds },
+        // The conditions come from the segment; the hand-picked extras and
+        // the send language stay with the campaign.
+        audience: {
+          ...action.conditions,
+          manualIds: state.audience.manualIds,
+          sendLocale:
+            action.conditions.language !== "any"
+              ? action.conditions.language
+              : (state.audience.sendLocale ?? "es"),
+        },
         fieldErrors: without(state.fieldErrors, "audience"),
       };
     case "SET_AUDIENCE": {
       const audience = { ...state.audience, ...action.patch };
+      // The email is written in the segment's language when it fixes one.
+      if (audience.language !== "any") audience.sendLocale = audience.language;
+      else audience.sendLocale = audience.sendLocale ?? "es";
       // "Never booked" cannot hold alongside a booking condition.
       if (audience.neverBooked) {
         audience.services = [];
@@ -209,7 +221,9 @@ export function formReducer(state: FormState, action: FormAction): FormState {
           en: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.en },
           es: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.es },
         },
-        activeLocale: action.campaign.audience.language === "en" ? "en" : "es",
+        activeLocale:
+          action.campaign.audience.sendLocale ??
+          (action.campaign.audience.language === "en" ? "en" : "es"),
         pickedContacts: action.picked,
       };
     default:

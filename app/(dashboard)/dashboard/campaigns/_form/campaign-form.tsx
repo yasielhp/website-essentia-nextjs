@@ -6,7 +6,11 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
-import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
+import {
+  sendLocaleOf,
+  validateCampaign,
+  validateCampaignDraft,
+} from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
   isCampaignNameTaken,
@@ -167,7 +171,7 @@ export function CampaignForm({
       const result = await sendTestCampaign(
         getAccessToken(),
         state.content,
-        state.audience.language,
+        state.audience,
       );
       if (result.ok) {
         notifySuccess(tToasts("campaignTestSent", { email: result.to }));
@@ -264,10 +268,7 @@ export function CampaignForm({
   const audienceSummary = `${state.segmentName ?? t("segment.everyone")}${
     state.reach ? ` (${state.reach.count})` : ""
   }`;
-  const contentSummary = (["es", "en"] as const)
-    .map((locale) => state.content[locale].subject)
-    .filter(Boolean)
-    .join(" · ");
+  const contentSummary = state.content[sendLocaleOf(state.audience)].subject;
 
   return (
     <div className="px-6 py-8 lg:px-10">

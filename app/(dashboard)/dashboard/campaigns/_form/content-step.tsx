@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Button } from "@/components/ui/button";
-import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { useFieldError } from "@/hooks/use-field-error";
-import { requiredLocales } from "@/lib/schemas";
+import { sendLocaleOf } from "@/lib/schemas";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import type { CampaignLocale, CampaignLocaleContent } from "@/types/campaign";
 import { EmailPreview } from "./email-preview";
 import type { FormAction, FormState } from "./form-state";
@@ -36,10 +36,14 @@ export function ContentStep({
 }) {
   const t = useTranslations("dashboard.campaigns.content");
   const fieldError = useFieldError();
-  const { activeLocale, content, audience, fieldErrors, submitting } = state;
-  const locales = requiredLocales(audience.language);
-  const editable = locales.includes(activeLocale);
+  const { content, audience, fieldErrors, submitting } = state;
+  const activeLocale = sendLocaleOf(audience);
+  const editable = true;
   const block = content[activeLocale];
+  const localeOptions: SelectOption<CampaignLocale>[] = [
+    { value: "es", label: t("localeEs") },
+    { value: "en", label: t("localeEn") },
+  ];
 
   const set = (field: keyof CampaignLocaleContent) => (value: string) =>
     dispatch({ type: "SET_CONTENT", locale: activeLocale, field, value });
@@ -111,29 +115,34 @@ export function ContentStep({
   return (
     <div className="flex flex-col gap-4">
       <section className="border-sand-200 rounded-2xl border bg-white p-6">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 className="text-petroleum-500 text-sm font-semibold">
-            {t("title")}
-          </h2>
-          <div className="flex gap-1">
-            {(["es", "en"] as CampaignLocale[]).map((locale) => (
-              <TabButton
-                key={locale}
-                active={activeLocale === locale}
-                onClick={() => dispatch({ type: "SET_LOCALE", locale })}
-              >
-                {localeLabel(locale)}
-                {Object.keys(fieldErrors).some((k) =>
-                  k.startsWith(`content.${locale}.`),
-                ) && <span className="ml-1 text-red-400">•</span>}
-              </TabButton>
-            ))}
-          </div>
-        </div>
+        <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+          {t("title")}
+        </h2>
 
-        {!editable && (
-          <p className="bg-sand-50 text-petroleum-400 mb-4 rounded-xl px-4 py-3 text-sm">
-            {t("notSentIn", { language: localeLabel(activeLocale) })}
+        {audience.language === "any" ? (
+          <div className="mb-4 flex flex-col gap-1.5">
+            <label
+              htmlFor="campaign-send-locale"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              {t("emailLanguage")}
+            </label>
+            <OptionSelect
+              id="campaign-send-locale"
+              value={activeLocale}
+              options={localeOptions}
+              disabled={submitting}
+              onChange={(sendLocale) =>
+                dispatch({ type: "SET_AUDIENCE", patch: { sendLocale } })
+              }
+            />
+            <p className="text-petroleum-400 text-xs">
+              {t("emailLanguageHint")}
+            </p>
+          </div>
+        ) : (
+          <p className="bg-sand-50 text-petroleum-400 mb-4 rounded-xl px-4 py-3 text-xs">
+            {t("sentIn", { language: localeLabel(activeLocale) })}
           </p>
         )}
 

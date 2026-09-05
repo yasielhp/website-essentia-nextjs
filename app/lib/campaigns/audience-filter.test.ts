@@ -30,6 +30,16 @@ function audience(overrides: Partial<CampaignAudience>): CampaignAudience {
 const ids = (list: { id: string }[]) => list.map((r) => r.id);
 
 describe("filterAudience — fixed exclusions", () => {
+  it("a chosen send locale overrides the contact's own language", () => {
+    const en = c({ language: "en" });
+    const result = filterAudience(
+      [en],
+      audience({ language: "any", sendLocale: "es" }),
+      NOW,
+    );
+    expect(result.map((r) => r.language)).toEqual(["es"]);
+  });
+
   it("hasBooked keeps only contacts with at least one booking", () => {
     const regular = c({ bookingsCount: 2 });
     const lead = c({ id: "2" });

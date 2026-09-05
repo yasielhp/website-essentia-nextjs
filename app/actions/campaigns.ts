@@ -659,7 +659,7 @@ function withDefaults(
 export async function sendTestCampaign(
   accessToken: string | null,
   content: CampaignContent,
-  language: CampaignAudience["language"],
+  audience: Pick<CampaignAudience, "language" | "sendLocale">,
 ): Promise<{ ok: true; to: string } | Failure> {
   let caller: AuthContext;
   try {
@@ -669,7 +669,7 @@ export async function sendTestCampaign(
   }
   if (!caller.email) return { ok: false, error: "no_email" };
 
-  for (const locale of requiredLocales(language)) {
+  for (const locale of requiredLocales(audience)) {
     const { subject, html } = campaignEmail({
       content: withDefaults(content[locale]),
       firstName: locale === "es" ? "Ana" : "Anna",

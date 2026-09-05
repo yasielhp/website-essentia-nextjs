@@ -115,9 +115,9 @@ export function filterAudience(
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.
       language:
-        audience.language === "any"
-          ? toLocale(candidate.language)
-          : audience.language,
+        audience.language !== "any"
+          ? audience.language
+          : (audience.sendLocale ?? toLocale(candidate.language)),
     });
   }
 

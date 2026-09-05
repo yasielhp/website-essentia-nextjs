@@ -3,7 +3,6 @@ import { isValidPhone } from "@/utils/contact";
 import type {
   CampaignAudience,
   CampaignContent,
-  CampaignLanguage,
   CampaignLocale,
   CampaignLocaleContent,
 } from "@/types/campaign";
@@ -277,6 +276,7 @@ export const campaignAudienceSchema = z.object({
     .nullable(),
   neverBooked: z.boolean(),
   hasBooked: z.boolean().optional(),
+  sendLocale: z.enum(["en", "es"]).optional(),
   manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
 }) satisfies z.ZodType<CampaignAudience>;
 
@@ -366,9 +366,22 @@ export const campaignContentSchema = z
     }
   }) satisfies z.ZodType<CampaignContent>;
 
-/** Which locale blocks a campaign must fill in, from its language filter. */
-export function requiredLocales(language: CampaignLanguage): CampaignLocale[] {
-  return language === "any" ? ["en", "es"] : [language];
+/**
+ * The one language a campaign is written in: the segment's when it fixes one,
+ * else the admin's choice, else Spanish — the house default.
+ */
+export function sendLocaleOf(
+  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+): CampaignLocale {
+  if (audience.language !== "any") return audience.language;
+  return audience.sendLocale ?? "es";
+}
+
+/** The locale blocks a campaign must fill in: exactly one. */
+export function requiredLocales(
+  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+): CampaignLocale[] {
+  return [sendLocaleOf(audience)];
 }
 
 /**
@@ -384,7 +397,7 @@ export const campaignSchema = z
     content: campaignContentSchema,
   })
   .superRefine((value, ctx) => {
-    for (const locale of requiredLocales(value.audience.language)) {
+    for (const locale of requiredLocales(value.audience)) {
       if (isEmptyLocale(value.content[locale])) {
         refineLocale(locale, value.content[locale], ctx, ["content"]);
       }

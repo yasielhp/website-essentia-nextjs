@@ -41,13 +41,21 @@ export type CampaignAudience = {
   neverBooked: boolean;
   /** Only people with at least one booking. Optional: older rows never had it. */
   hasBooked?: boolean;
+  /**
+   * The one language the email is written in. Fixed by the segment when it
+   * selects a language; chosen by the admin when the segment spans both.
+   */
+  sendLocale?: CampaignLocale;
   /** Contacts added by hand, unioned with the filter result. */
   manualIds: string[];
 };
 
 /** One language's version of the email. Every field empty = not sent in it. */
 /** The conditions half of an audience: what a saved segment stores. */
-export type SegmentConditions = Omit<CampaignAudience, "manualIds">;
+export type SegmentConditions = Omit<
+  CampaignAudience,
+  "manualIds" | "sendLocale"
+>;
 
 /** A named set of conditions, kept for the next campaign. */
 export type CampaignSegment = {

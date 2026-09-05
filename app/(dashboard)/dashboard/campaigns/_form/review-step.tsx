@@ -131,7 +131,7 @@ export function ReviewStep({
             {t("contentSummary")}
           </h2>
           <dl className="flex flex-col gap-3">
-            {requiredLocales(audience.language).map((locale) => (
+            {requiredLocales(audience).map((locale) => (
               <div key={locale}>
                 <dt className="text-petroleum-400 text-xs font-medium">
                   {locale === "es"

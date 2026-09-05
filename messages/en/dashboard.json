@@ -1415,7 +1415,10 @@
       "localeEn": "English",
       "localeEs": "Spanish",
       "characters": "{count}/{max}",
-      "confirm": "Confirm content"
+      "confirm": "Confirm content",
+      "emailLanguage": "Email language",
+      "emailLanguageHint": "The segment includes both languages, so everyone gets this one version.",
+      "sentIn": "Sent in {language}, the language of the segment."
     },
     "review": {
       "title": "Review and send",
