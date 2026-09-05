@@ -9,6 +9,10 @@ import { notifySuccess } from "@/lib/feedback";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { Button } from "@/components/ui/button";
 import {
+  HeaderSkeleton,
+  TableSkeleton,
+} from "@/components/dashboard/skeletons";
+import {
   deleteSegment,
   listSegmentMembers,
   listSegments,
@@ -91,8 +95,10 @@ export default function SegmentDetailPage() {
   if (loaded.kind === "loading") {
     return (
       <div className="px-6 py-8 lg:px-10">
-        <div className="bg-sand-100 h-10 w-64 animate-pulse rounded-xl" />
-        <div className="bg-sand-100 mt-6 h-64 animate-pulse rounded-2xl" />
+        <HeaderSkeleton buttons={2} />
+        <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
+          <TableSkeleton cols={5} />
+        </div>
       </div>
     );
   }
@@ -166,13 +172,7 @@ export default function SegmentDetailPage() {
 
       <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
         {members === null ? (
-          <div className="divide-sand-100 divide-y">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="px-6 py-4">
-                <div className="bg-sand-100 h-4 w-56 animate-pulse rounded" />
-              </div>
-            ))}
-          </div>
+          <TableSkeleton cols={5} />
         ) : members.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">
             {t("membersEmpty")}

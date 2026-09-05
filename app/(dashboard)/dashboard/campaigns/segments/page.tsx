@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
+import { TableSkeleton } from "@/components/dashboard/skeletons";
 import { listSegments } from "@/actions/campaigns";
 import { EMPTY_AUDIENCE, type SegmentList } from "@/types/campaign";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
@@ -54,13 +55,7 @@ export default function SegmentsPage() {
 
       <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
         {list === null ? (
-          <div className="divide-sand-100 divide-y">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="px-5 py-4">
-                <div className="bg-sand-100 h-4 w-48 animate-pulse rounded" />
-              </div>
-            ))}
-          </div>
+          <TableSkeleton cols={4} />
         ) : list.segments.length === 0 ? (
           <p className="text-petroleum-400 px-5 py-16 text-center text-sm">
             {t("empty")}

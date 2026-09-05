@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
+import { CardSkeleton, HeaderSkeleton } from "@/components/dashboard/skeletons";
 import { listSegments } from "@/actions/campaigns";
 import type { CampaignSegment } from "@/types/campaign";
 import { SegmentForm } from "../../_form/segment-form";
@@ -35,8 +36,8 @@ export default function EditSegmentPage() {
   if (loaded.kind === "loading") {
     return (
       <div className="px-6 py-8 lg:px-10">
-        <div className="bg-sand-100 h-10 w-64 animate-pulse rounded-xl" />
-        <div className="bg-sand-100 mt-6 h-64 animate-pulse rounded-2xl" />
+        <HeaderSkeleton buttons={2} />
+        <CardSkeleton lines={4} />
       </div>
     );
   }

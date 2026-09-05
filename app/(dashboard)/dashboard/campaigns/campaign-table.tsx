@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
 import { Pagination } from "@/components/dashboard/pagination";
+import { TableSkeleton } from "@/components/dashboard/skeletons";
 import type { CampaignRow } from "@/types/campaign";
 import { CampaignStatusBadge } from "./status-badge";
 
@@ -59,20 +60,7 @@ export function CampaignTable({
   return (
     <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
       {loading ? (
-        <div className="divide-sand-100 divide-y">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-5 py-4"
-            >
-              <div>
-                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
-                <div className="bg-sand-100 mt-1.5 h-3 w-24 animate-pulse rounded" />
-              </div>
-              <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
-            </div>
-          ))}
-        </div>
+        <TableSkeleton cols={7} />
       ) : campaigns.length === 0 ? (
         <div className="text-petroleum-400 py-20 text-center text-sm">
           {t("empty")}

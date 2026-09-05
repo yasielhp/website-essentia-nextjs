@@ -11,6 +11,10 @@ import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { formatLongDate } from "@/utils/format";
 import { Button } from "@/components/ui/button";
 import {
+  HeaderSkeleton,
+  TableSkeleton,
+} from "@/components/dashboard/skeletons";
+import {
   activateCampaign,
   cancelCampaign,
   deleteCampaign,
@@ -126,14 +130,20 @@ export default function CampaignDetailPage() {
   if (state.kind === "loading") {
     return (
       <div className="px-6 py-8 lg:px-10">
-        <div className="bg-sand-100 h-10 w-64 animate-pulse rounded-xl" />
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <HeaderSkeleton buttons={2} />
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
-              className="bg-sand-100 h-24 animate-pulse rounded-2xl"
-            />
+              className="border-sand-200 rounded-2xl border bg-white p-4"
+            >
+              <div className="bg-sand-100 h-3 w-16 animate-pulse rounded" />
+              <div className="bg-sand-100 mt-2 h-7 w-10 animate-pulse rounded-lg" />
+            </div>
           ))}
+        </div>
+        <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
+          <TableSkeleton cols={5} />
         </div>
       </div>
     );
