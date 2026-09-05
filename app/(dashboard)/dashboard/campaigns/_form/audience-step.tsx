@@ -48,6 +48,9 @@ export function conditionsOf(audience: CampaignAudience): SegmentConditions {
 
 const EVERYONE: SegmentConditions = conditionsOf(EMPTY_AUDIENCE);
 
+/** The dropdown value that means "build a new one" rather than a segment id. */
+const NEW_SEGMENT = "__new__";
+
 /**
  * The condition controls, on their own so the segment editor and nothing else
  * owns them. Writes go straight to the campaign's audience; saving a segment
@@ -322,8 +325,14 @@ export function AudienceStep({
 
   function openNew() {
     setSegmentError(null);
+    // A new segment starts from everyone, and narrows from there.
+    dispatch({
+      type: "SET_SEGMENT",
+      id: null,
+      name: null,
+      conditions: EVERYONE,
+    });
     setEditor({ mode: "new", name: "" });
-    // A new segment starts from the current conditions, whatever they are.
   }
 
   function openEdit() {
@@ -409,7 +418,12 @@ export function AudienceStep({
               value={segmentId ?? ""}
               disabled={submitting || segments === null}
               aria-label={tSeg("title")}
-              onChange={(e) => pickSegment(e.target.value)}
+              onChange={(e) => {
+                // "New segment" lives in the list itself, right under
+                // everyone: choosing it opens the builder instead of picking.
+                if (e.target.value === NEW_SEGMENT) openNew();
+                else pickSegment(e.target.value);
+              }}
               className={`${SELECT_CLASS} sm:flex-1`}
             >
               <option value="">
@@ -417,32 +431,23 @@ export function AudienceStep({
                   ? `${tSeg("everyone")} (${list.everyone})`
                   : tSeg("everyone")}
               </option>
+              <option value={NEW_SEGMENT}>{tSeg("createOption")}</option>
               {(segments ?? []).map((segment) => (
                 <option key={segment.id} value={segment.id}>
                   {segment.name} ({segment.count})
                 </option>
               ))}
             </select>
-            <div className="flex gap-2">
-              {selected && (
-                <Button
-                  variant="outline"
-                  size="md"
-                  disabled={submitting}
-                  onClick={openEdit}
-                >
-                  {tSeg("edit")}
-                </Button>
-              )}
+            {selected && (
               <Button
-                variant="soft"
+                variant="outline"
                 size="md"
-                disabled={submitting || segments === null}
-                onClick={openNew}
+                disabled={submitting}
+                onClick={openEdit}
               >
-                {tSeg("create")}
+                {tSeg("edit")}
               </Button>
-            </div>
+            )}
           </div>
         )}
 

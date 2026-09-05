@@ -1510,7 +1510,8 @@
       "cancel": "Cancelar",
       "saveFailed": "No se pudo guardar el segmento.",
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
-      "manualHint": "Se añaden al segmento, solo para esta campaña."
+      "manualHint": "Se añaden al segmento, solo para esta campaña.",
+      "createOption": "+ Nuevo segmento…"
     }
   }
 }
