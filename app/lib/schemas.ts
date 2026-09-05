@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { isValidPhone } from "@/utils/contact";
+import type {
+  CampaignAudience,
+  CampaignContent,
+  CampaignLanguage,
+  CampaignLocaleContent,
+} from "@/types/campaign";
 
 /**
  * Message KEYS, not sentences: this form is on the bilingual public site, and
@@ -212,4 +218,166 @@ export function parseErrors<T extends z.ZodTypeAny>(
     }
   }
   return errors;
+}
+
+// ─── Email campaigns ─────────────────────────────────────────
+//
+// Message KEYS against `dashboard.validation.*`, like the other dashboard
+// schemas. `https` is enforced on every URL the admin types: the email is sent
+// in the centre's name and a plain-http link in it looks like phishing.
+
+const httpsUrl = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v), {
+    message: "urlMustBeHttps",
+  });
+
+export const campaignAudienceSchema = z.object({
+  language: z.enum(["any", "en", "es"]),
+  newsletter: z.boolean().nullable(),
+  services: z.array(z.string().min(1)).max(50),
+  lastBooking: z
+    .object({
+      op: z.enum(["gt", "lt"]),
+      days: z.number().int().min(1).max(3650),
+    })
+    .nullable(),
+  neverBooked: z.boolean(),
+  manualIds: z.array(z.uuid()).max(5000),
+});
+
+/**
+ * One language's block with only the per-field limits. The "required" rules
+ * live in `campaignLocaleContentSchema`, because a block the campaign does not
+ * go out in is allowed to stay empty.
+ */
+const localeContentShape = {
+  subject: z.string().trim().max(120, "subjectTooLong"),
+  preheader: z.string().trim().max(150, "preheaderTooLong"),
+  title: z.string().trim().max(200),
+  body: z.string().trim().max(20000),
+  imageUrl: httpsUrl,
+  ctaText: z.string().trim().max(60),
+  ctaUrl: httpsUrl,
+};
+
+/** A language block the campaign actually sends: subject, title and body. */
+const campaignLocaleContentSchema = z
+  .object({
+    ...localeContentShape,
+    subject: localeContentShape.subject.min(1, "subjectRequired"),
+    title: localeContentShape.title.min(1, "titleRequired"),
+    body: localeContentShape.body.min(1, "bodyRequired"),
+  })
+  .superRefine((value, ctx) => {
+    const hasText = value.ctaText !== "";
+    const hasUrl = value.ctaUrl !== "";
+    if (hasText !== hasUrl) {
+      ctx.addIssue({
+        code: "custom",
+        path: [hasText ? "ctaUrl" : "ctaText"],
+        message: "ctaNeedsBoth",
+      });
+    }
+  });
+
+function isEmptyLocale(block: CampaignLocaleContent): boolean {
+  return Object.values(block).every((v) => v === "");
+}
+
+/**
+ * Both language blocks. A block is valid if EITHER every field is the empty
+ * string (the campaign does not go out in that language) OR it passes
+ * `campaignLocaleContentSchema`. Whether a given language may be left empty
+ * depends on the audience filter, which is `validateCampaign`'s job.
+ */
+export const campaignContentSchema = z
+  .object({
+    en: z.object(localeContentShape),
+    es: z.object(localeContentShape),
+  })
+  .superRefine((value, ctx) => {
+    for (const locale of ["en", "es"] as const) {
+      const block = value[locale];
+      if (isEmptyLocale(block)) continue;
+      const result = campaignLocaleContentSchema.safeParse(block);
+      if (result.success) continue;
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          code: "custom",
+          path: [locale, ...issue.path],
+          message: issue.message,
+        });
+      }
+    }
+  });
+
+export const campaignSchema = z.object({
+  name: z.string().trim().min(1, "nameRequired").max(120),
+  audience: campaignAudienceSchema,
+  content: campaignContentSchema,
+});
+
+export type CampaignInput = z.infer<typeof campaignSchema>;
+
+/** Which locale blocks a campaign must fill in, from its language filter. */
+export function requiredLocales(language: CampaignLanguage): ("en" | "es")[] {
+  return language === "any" ? ["en", "es"] : [language];
+}
+
+/**
+ * A message key is a bare camelCase word; anything else is one of Zod's own
+ * sentences (`max(200)` with no key, a wrong type) and the screen shows a
+ * generic message for it.
+ */
+function issueKey(message: string): string {
+  return /^[a-z][A-Za-z0-9]*$/.test(message) ? message : "invalid";
+}
+
+/** The first issue per dotted path — `"content.es.subject"` — wins. */
+function collectIssues(
+  issues: z.core.$ZodIssue[],
+  errors: Record<string, string>,
+  prefix: PropertyKey[] = [],
+) {
+  for (const issue of issues) {
+    const key = [...prefix, ...issue.path].map(String).join(".");
+    if (key && !errors[key]) errors[key] = issueKey(issue.message);
+  }
+}
+
+export type CampaignValidation =
+  | { ok: true; data: CampaignInput }
+  | { ok: false; errors: Record<string, string> };
+
+/**
+ * The one check the client form and the server action share. Pure: no I/O.
+ *
+ * `campaignSchema` alone lets any language block stay empty; this adds the rule
+ * that the languages the audience filter selects cannot be. Error keys are
+ * dotted paths (`"name"`, `"audience.lastBooking.days"`,
+ * `"content.es.subject"`) and values are message keys.
+ */
+export function validateCampaign(input: {
+  name: string;
+  audience: CampaignAudience;
+  content: CampaignContent;
+}): CampaignValidation {
+  const errors: Record<string, string> = {};
+
+  const parsed = campaignSchema.safeParse(input);
+  if (!parsed.success) collectIssues(parsed.error.issues, errors);
+
+  for (const locale of requiredLocales(input.audience.language)) {
+    const block = campaignLocaleContentSchema.safeParse(input.content[locale]);
+    if (!block.success) {
+      collectIssues(block.error.issues, errors, ["content", locale]);
+    }
+  }
+
+  if (!parsed.success || Object.keys(errors).length > 0) {
+    return { ok: false, errors };
+  }
+  return { ok: true, data: parsed.data };
 }
