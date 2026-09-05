@@ -1620,7 +1620,14 @@
       },
       "subscribed": "Suscrito",
       "notSubscribed": "—",
-      "edit": "Editar"
+      "edit": "Editar",
+      "table": {
+        "name": "Nombre",
+        "conditions": "Condiciones",
+        "people": "Personas",
+        "updated": "Actualizado"
+      },
+      "noConditions": "Todos los contactos con email"
     },
     "template": {
       "title": "Punto de partida",

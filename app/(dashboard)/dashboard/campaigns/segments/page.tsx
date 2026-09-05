@@ -7,7 +7,13 @@ import { getAccessToken } from "@/lib/client-session";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
 import { listSegments } from "@/actions/campaigns";
-import type { SegmentList } from "@/types/campaign";
+import { EMPTY_AUDIENCE, type SegmentList } from "@/types/campaign";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { formatMediumDate } from "@/utils/format";
+import { describeAudience } from "../_form/review-step";
+
+const TH =
+  "text-petroleum-400 px-5 py-3 text-left text-xs font-medium whitespace-nowrap";
 
 /**
  * Saved segments: named sets of conditions the campaign form picks from.
@@ -16,6 +22,9 @@ import type { SegmentList } from "@/types/campaign";
  */
 export default function SegmentsPage() {
   const t = useTranslations("dashboard.campaigns.segments");
+  const tReview = useTranslations("dashboard.campaigns.review");
+  const tAudience = useTranslations("dashboard.campaigns.audience");
+  const locale = useDashboardLocale();
   const { push } = useRouter();
   const [list, setList] = useState<SegmentList | null>(null);
 
@@ -57,26 +66,51 @@ export default function SegmentsPage() {
             {t("empty")}
           </p>
         ) : (
-          <ul className="divide-sand-100 divide-y">
-            {list.segments.map((segment) => (
-              <li key={segment.id}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    push(`/dashboard/campaigns/segments/${segment.id}`)
-                  }
-                  className="hover:bg-sand-50 flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors"
-                >
-                  <span className="text-petroleum-700 truncate text-sm font-medium">
-                    {segment.name}
-                  </span>
-                  <span className="text-petroleum-500 shrink-0 text-sm tabular-nums">
-                    {t("count", { count: segment.count })}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-sand-100 border-b">
+                  <th className={TH}>{t("table.name")}</th>
+                  <th className={TH}>{t("table.conditions")}</th>
+                  <th className={`${TH} text-right`}>{t("table.people")}</th>
+                  <th className={TH}>{t("table.updated")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.segments.map((segment) => {
+                  const conditions = describeAudience(
+                    { ...EMPTY_AUDIENCE, ...segment.conditions },
+                    tReview,
+                    tAudience,
+                  );
+                  return (
+                    <tr
+                      key={segment.id}
+                      onClick={() =>
+                        push(`/dashboard/campaigns/segments/${segment.id}`)
+                      }
+                      className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
+                    >
+                      <td className="text-petroleum-700 px-5 py-3.5 font-medium">
+                        {segment.name}
+                      </td>
+                      <td className="text-petroleum-500 max-w-md truncate px-5 py-3.5 text-xs">
+                        {conditions.length > 0
+                          ? conditions.join(" · ")
+                          : t("noConditions")}
+                      </td>
+                      <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
+                        {segment.count}
+                      </td>
+                      <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
+                        {formatMediumDate(segment.updated_at, locale)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
