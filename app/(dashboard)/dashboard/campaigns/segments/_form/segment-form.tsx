@@ -9,11 +9,7 @@ import { INPUT_CLASS } from "@/constants/form-styles";
 import { Button } from "@/components/ui/button";
 import { useFieldError } from "@/hooks/use-field-error";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
-import {
-  deleteSegment,
-  previewAudience,
-  saveSegment,
-} from "@/actions/campaigns";
+import { previewAudience, saveSegment } from "@/actions/campaigns";
 import {
   EMPTY_AUDIENCE,
   type CampaignAudience,
