@@ -138,9 +138,9 @@ export default function SegmentDetailPage() {
                 {tCommon("cancel")}
               </Button>
               <Button
+                variant="danger"
                 size="md"
                 disabled={busy}
-                className="bg-red-600 hover:bg-red-700"
                 onClick={() => void remove()}
               >
                 {t("delete")}
@@ -149,11 +149,10 @@ export default function SegmentDetailPage() {
           ) : (
             <>
               <Button
-                variant="outline"
+                variant="outline-danger"
                 size="md"
                 disabled={busy}
                 onClick={() => setConfirmDelete(true)}
-                className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
               >
                 {t("delete")}
               </Button>

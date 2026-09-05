@@ -342,9 +342,9 @@ export default function CampaignDetailPage() {
                   {t("review.cancel")}
                 </Button>
                 <Button
+                  variant="danger"
                   size="md"
                   disabled={busy !== null}
-                  className="bg-red-600 hover:bg-red-700"
                   onClick={() =>
                     void act(
                       "delete",
@@ -361,7 +361,7 @@ export default function CampaignDetailPage() {
               </div>
             ) : (
               <Button
-                variant="outline"
+                variant="outline-danger"
                 size="md"
                 disabled={busy !== null}
                 onClick={() => setConfirmingDelete(true)}
