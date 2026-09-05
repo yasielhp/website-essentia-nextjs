@@ -1,4 +1,8 @@
-import type { CampaignLocale, CampaignLocaleContent } from "@/types/campaign";
+import type {
+  CampaignLocale,
+  CampaignLocaleContent,
+  ContentBlock,
+} from "@/types/campaign";
 import {
   bodyToHtml,
   escapeHtml,
@@ -10,10 +14,11 @@ import { emailBase } from "./_base";
  * The email a campaign sends to one recipient.
  *
  * Unlike the booking templates, the words here are the admin's, typed into the
- * dashboard, so every field is escaped before it meets the shell — and the
- * body goes through `bodyToHtml`, which knows the three constructs it may
- * carry. Only the footer is ours: the reason the recipient hears from us and
- * the way out, present on every campaign whatever the admin writes.
+ * dashboard as a stack of blocks, so every field is escaped before it meets
+ * the shell — paragraph text goes through `bodyToHtml`, which knows the three
+ * constructs it may carry. Only the footer is ours: the reason the recipient
+ * hears from us and the way out, present on every campaign whatever the admin
+ * writes.
  */
 export function campaignEmail({
   content,
@@ -37,9 +42,7 @@ export function campaignEmail({
 
   const body = `
         <h1 style="margin:0 0 20px;font-size:26px;font-weight:600;color:#103838;line-height:1.3;">${title}</h1>
-        ${image(content.imageUrl)}
-        ${renderVariables(bodyToHtml(content.body), vars)}
-        ${cta(content.ctaText, content.ctaUrl)}
+        ${content.blocks.map((block) => renderBlock(block, vars)).join("\n")}
         ${footer(unsubscribeUrl, locale)}
       `;
 
@@ -49,19 +52,38 @@ export function campaignEmail({
   };
 }
 
-// Decorative by design: the admin writes no alt text, and a campaign image
-// carries nothing the body does not say, so a screen reader skips it.
-function image(url: string): string {
+/** One block, as email HTML. Unknown shapes render nothing rather than throw. */
+export function renderBlock(
+  block: ContentBlock,
+  vars: { first_name: string },
+): string {
+  switch (block.type) {
+    case "paragraph":
+      return renderVariables(bodyToHtml(block.text), vars);
+    case "heading":
+      return `<h2 style="margin:24px 0 12px;font-size:20px;font-weight:600;color:#103838;line-height:1.3;">${renderVariables(escapeHtml(block.text), vars)}</h2>`;
+    case "image":
+      return image(block.url, block.alt);
+    case "button":
+      return button(block.text, block.url);
+    case "divider":
+      return `<hr style="border:0;border-top:1px solid #d7dbd9;margin:24px 0;" />`;
+    default:
+      return "";
+  }
+}
+
+function image(url: string, alt: string): string {
   if (!url) return "";
-  return `<img src="${escapeHtml(url)}" alt="" width="496" style="display:block;width:100%;max-width:496px;height:auto;border:0;border-radius:12px;margin:0 0 24px;" />`;
+  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="496" style="display:block;width:100%;max-width:496px;height:auto;border:0;border-radius:12px;margin:0 0 24px;" />`;
 }
 
 // A label without a link, or a link without a label, is a half-filled form,
 // not a button; the email simply goes out without one.
-function cta(text: string, url: string): string {
+function button(text: string, url: string): string {
   if (!text || !url) return "";
   return `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;">
           <tr>
             <td align="center">
               <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"

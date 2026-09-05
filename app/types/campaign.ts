@@ -72,14 +72,25 @@ export type SegmentList = {
   segments: (CampaignSegment & { count: number })[];
 };
 
+/**
+ * One piece of the email body. The admin stacks these in order; the template
+ * turns each into email-safe HTML. Paragraph text keeps the three inline
+ * constructs (`**bold**`, `[text](https://…)`, `{{first_name}}`).
+ */
+export type ContentBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "heading"; text: string }
+  | { type: "image"; url: string; alt: string }
+  | { type: "button"; text: string; url: string }
+  | { type: "divider" };
+
+export type ContentBlockType = ContentBlock["type"];
+
 export type CampaignLocaleContent = {
   subject: string;
   preheader: string;
   title: string;
-  body: string;
-  imageUrl: string;
-  ctaText: string;
-  ctaUrl: string;
+  blocks: ContentBlock[];
 };
 
 /** The `content` jsonb column. */
@@ -139,10 +150,7 @@ export const EMPTY_LOCALE_CONTENT: CampaignLocaleContent = {
   subject: "",
   preheader: "",
   title: "",
-  body: "",
-  imageUrl: "",
-  ctaText: "",
-  ctaUrl: "",
+  blocks: [],
 };
 
 export const EMPTY_AUDIENCE: CampaignAudience = {

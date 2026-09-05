@@ -1,183 +1,163 @@
-import { describe, expect, it } from "bun:test";
-import {
-  EMPTY_LOCALE_CONTENT,
-  type CampaignLocaleContent,
-} from "@/types/campaign";
-import { campaignEmail } from "./campaign";
+import { describe, expect, test } from "bun:test";
+import type { CampaignLocaleContent } from "@/types/campaign";
+import { campaignEmail, renderBlock } from "./campaign";
 
-const UNSUBSCRIBE = "https://www.essentiawellnessclub.com/unsubscribe?t=abc";
+const content = (
+  over: Partial<CampaignLocaleContent> = {},
+): CampaignLocaleContent => ({
+  subject: "Hola {{first_name}}",
+  preheader: "",
+  title: "Novedades para {{first_name}}",
+  blocks: [
+    { type: "paragraph", text: "Primer párrafo.\n\nSegundo **fuerte**." },
+  ],
+  ...over,
+});
 
-function content(
-  overrides: Partial<CampaignLocaleContent> = {},
-): CampaignLocaleContent {
-  return {
-    ...EMPTY_LOCALE_CONTENT,
-    subject: "Hola {{first_name}}",
-    preheader: "Novedades de septiembre",
-    title: "Bienvenida, {{first_name}}",
-    body: "Primer párrafo.\n\nSegundo párrafo.",
-    ...overrides,
-  };
-}
-
-function render(
-  overrides: Partial<CampaignLocaleContent> = {},
-  args: {
-    firstName?: string;
-    locale?: "en" | "es";
-    unsubscribeUrl?: string;
-  } = {},
-) {
-  return campaignEmail({
-    content: content(overrides),
-    firstName: args.firstName ?? "Ana",
-    unsubscribeUrl: args.unsubscribeUrl ?? UNSUBSCRIBE,
-    locale: args.locale ?? "es",
+const render = (over: Partial<CampaignLocaleContent> = {}, firstName = "Ana") =>
+  campaignEmail({
+    content: content(over),
+    firstName,
+    unsubscribeUrl: "https://x.test/u?token=abc",
+    locale: "es",
   });
-}
 
 describe("campaignEmail — subject", () => {
-  it("fills the name as plain text, never HTML-escaped", () => {
-    expect(render({}, { firstName: "Ana & Co" }).subject).toBe("Hola Ana & Co");
+  test("fills the name as plain text, never HTML-escaped", () => {
+    expect(render({}, "Ana & Co").subject).toBe("Hola Ana & Co");
   });
 
-  it("drops the token and its leading space when there is no name", () => {
-    expect(render({}, { firstName: "" }).subject).toBe("Hola");
+  test("drops the token and its leading space when there is no name", () => {
+    expect(render({}, "").subject).toBe("Hola");
   });
 });
 
-describe("campaignEmail — title", () => {
-  it("renders the title in an h1 with the name substituted and escaped", () => {
-    const { html } = render({}, { firstName: "Ana <b>x</b>" });
-    expect(html).toContain(
-      '<h1 style="margin:0 0 20px;font-size:26px;font-weight:600;color:#103838;line-height:1.3;">Bienvenida, Ana &lt;b&gt;x&lt;/b&gt;</h1>',
-    );
+describe("campaignEmail — title and preheader", () => {
+  test("escapes the name inside the title", () => {
+    expect(render({}, "<b>").html).toContain("Novedades para &lt;b&gt;</h1>");
   });
 
-  it("escapes markup typed into the title itself", () => {
-    const { html } = render({ title: "<script>1</script>" });
+  test("escapes a tag typed into the title", () => {
+    const { html } = render({ title: "<script>x</script>" });
+    expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
     expect(html).not.toContain("<script>");
-    expect(html).toContain("&lt;script&gt;1&lt;/script&gt;");
+  });
+
+  test("falls back to the escaped title when the preheader is empty", () => {
+    expect(render({ title: "A & B" }).html).toContain("A &amp; B</div>");
   });
 });
 
-describe("campaignEmail — image", () => {
-  it("has no image when imageUrl is empty", () => {
-    expect(render().html).not.toContain('width="496"');
-  });
-
-  it("places the image when imageUrl is set", () => {
-    const { html } = render({ imageUrl: "https://cdn.example.com/a.jpg" });
-    expect(html).toContain(
-      '<img src="https://cdn.example.com/a.jpg" alt="" width="496" style="display:block;width:100%;max-width:496px;height:auto;border:0;border-radius:12px;margin:0 0 24px;" />',
-    );
-  });
-
-  it("escapes a quote in the url so it cannot close the attribute", () => {
-    const { html } = render({ imageUrl: 'https://x.test/a.jpg" onerror="1' });
-    expect(html).not.toContain('" onerror="');
-    expect(html).toContain('src="https://x.test/a.jpg&quot; onerror=&quot;1"');
-  });
-});
-
-describe("campaignEmail — body", () => {
-  it("renders the paragraphs", () => {
+describe("campaignEmail — blocks", () => {
+  test("renders paragraphs with the three inline constructs", () => {
     const { html } = render();
-    expect(html).toContain('<p style="margin:0 0 16px;');
-    expect(html).toContain("Primer párrafo.</p>");
-    expect(html).toContain("Segundo párrafo.</p>");
+    expect(html).toContain("<p style=");
+    expect(html).toContain("<strong>fuerte</strong>");
   });
 
-  it("fills the name inside the body, escaped", () => {
-    const { html } = render(
-      { body: "Hola {{first_name}}." },
-      { firstName: "O'Neil" },
-    );
-    expect(html).toContain("Hola O&#39;Neil.");
-  });
-});
-
-describe("campaignEmail — call to action", () => {
-  it("shows nothing when only the text is set", () => {
-    const { html } = render({ ctaText: "Reservar" });
-    expect(html).not.toContain("Reservar");
-  });
-
-  it("shows nothing when only the url is set", () => {
-    const { html } = render({ ctaUrl: "https://x.test/book" });
-    expect(html).not.toContain("https://x.test/book");
-  });
-
-  it("renders a pill button when both are set", () => {
+  test("renders a heading, escaped and with the name filled", () => {
     const { html } = render({
-      ctaText: "Reservar ahora",
-      ctaUrl: "https://x.test/book",
+      blocks: [{ type: "heading", text: "Hola {{first_name}} <i>" }],
+    });
+    expect(html).toContain("<h2 style=");
+    expect(html).toContain("Hola Ana &lt;i&gt;</h2>");
+  });
+
+  test("renders an image with escaped src and alt", () => {
+    const { html } = render({
+      blocks: [
+        { type: "image", url: 'https://a.test/x.png?q="1', alt: "Sala <ok>" },
+      ],
+    });
+    expect(html).toContain('src="https://a.test/x.png?q=&quot;1"');
+    expect(html).toContain('alt="Sala &lt;ok&gt;"');
+  });
+
+  test("renders a button as a pill link with href and label escaped", () => {
+    const { html } = render({
+      blocks: [
+        {
+          type: "button",
+          text: "Reserva <ya>",
+          url: "https://a.test/?a=1&b=2",
+        },
+      ],
     });
     expect(html).toMatch(
-      /<a href="https:\/\/x\.test\/book"[^>]*style="[^"]*background-color:#103838;[^"]*color:#f0ede6;[^"]*border-radius:999px;[^"]*"[^>]*>\s*Reservar ahora\s*<\/a>/,
+      /<a href="https:\/\/a\.test\/\?a=1&amp;b=2"[^>]*border-radius:999px/,
     );
-    expect(html).toContain("padding:14px 32px;");
+    expect(html).toContain("Reserva &lt;ya&gt;");
   });
 
-  it("escapes the label and the href", () => {
+  test("skips a half-filled button and an image without url", () => {
     const { html } = render({
-      ctaText: "<b>Ya</b>",
-      ctaUrl: 'https://x.test/?a="1"',
+      blocks: [
+        { type: "button", text: "Solo texto", url: "" },
+        { type: "image", url: "", alt: "" },
+      ],
     });
-    expect(html).toContain("&lt;b&gt;Ya&lt;/b&gt;");
-    expect(html).toContain('href="https://x.test/?a=&quot;1&quot;"');
-    expect(html).not.toContain("<b>Ya</b>");
+    expect(html).not.toContain("border-radius:999px");
+    expect(html).not.toContain('width="496"');
+  });
+
+  test("renders a divider", () => {
+    expect(render({ blocks: [{ type: "divider" }] }).html).toContain("<hr ");
+  });
+
+  test("keeps block order", () => {
+    const { html } = render({
+      blocks: [
+        { type: "heading", text: "Uno" },
+        { type: "divider" },
+        { type: "paragraph", text: "Dos" },
+      ],
+    });
+    expect(html.indexOf("Uno")).toBeLessThan(html.indexOf("<hr "));
+    expect(html.indexOf("<hr ")).toBeLessThan(html.indexOf("Dos"));
+  });
+
+  test("an unknown block renders nothing", () => {
+    // Stored JSON may carry a shape a newer or older build does not know.
+    const stray = {
+      type: "video",
+      url: "https://a.test",
+    } as unknown as Parameters<typeof renderBlock>[0];
+    expect(renderBlock(stray, { first_name: "" })).toBe("");
   });
 });
 
-describe("campaignEmail — footer", () => {
-  it("says why in Spanish and links the unsubscribe", () => {
-    const { html } = render({}, { locale: "es" });
-    expect(html).toContain(
-      "Recibes este email porque eres cliente de Essentia.",
-    );
-    expect(html).toContain(`<a href="${UNSUBSCRIBE}"`);
-    expect(html).toContain("Darse de baja");
+describe("campaignEmail — shell and footer", () => {
+  test("wraps in the base shell with the locale", () => {
+    const { html } = render();
+    expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(html).toContain('lang="es"');
   });
 
-  it("says why in English and links the unsubscribe", () => {
-    const { html } = render({}, { locale: "en" });
-    expect(html).toContain(
+  test("footer copy and unsubscribe link follow the locale", () => {
+    const es = render().html;
+    expect(es).toContain("Recibes este email porque eres cliente de Essentia.");
+    expect(es).toContain('href="https://x.test/u?token=abc"');
+    expect(es).toContain("Darse de baja");
+
+    const en = campaignEmail({
+      content: content(),
+      firstName: "Ann",
+      unsubscribeUrl: "https://x.test/u?a=1&b=2",
+      locale: "en",
+    }).html;
+    expect(en).toContain(
       "You are receiving this email because you are a client of Essentia.",
     );
-    expect(html).toContain(`<a href="${UNSUBSCRIBE}"`);
-    expect(html).toContain("Unsubscribe");
+    expect(en).toContain('href="https://x.test/u?a=1&amp;b=2"');
+    expect(en).toContain("Unsubscribe");
+    expect(en).not.toContain("Darse de baja");
   });
 
-  it("escapes the unsubscribe url", () => {
-    const { html } = render({}, { unsubscribeUrl: "https://x.test/u?a=1&b=2" });
-    expect(html).toContain('href="https://x.test/u?a=1&amp;b=2"');
-  });
-
-  it("is not the admin's to edit: the same text whatever the content", () => {
-    const a = render({ body: "Uno" }).html;
-    const b = render({ body: "Dos" }).html;
-    const footer = /Recibes este email[\s\S]*?Darse de baja<\/a>/;
-    expect(a.match(footer)?.[0]).toBe(b.match(footer)?.[0]);
-  });
-});
-
-describe("campaignEmail — shell", () => {
-  it("is a full document in the recipient's language", () => {
-    expect(
-      render({}, { locale: "es" }).html.startsWith("<!DOCTYPE html>"),
-    ).toBe(true);
-    expect(render({}, { locale: "es" }).html).toContain('<html lang="es">');
-    expect(render({}, { locale: "en" }).html).toContain('<html lang="en">');
-  });
-
-  it("uses the preheader with the name filled in", () => {
-    const { html } = render({ preheader: "Para ti, {{first_name}}" });
-    expect(html).toContain(">Para ti, Ana</div>");
-  });
-
-  it("falls back to the title as preheader, escaped", () => {
-    const { html } = render({ preheader: "", title: "Tom & Jerry" });
-    expect(html).toContain(">Tom &amp; Jerry</div>");
+  test("the footer is not the admin's to edit", () => {
+    const a = render({ blocks: [{ type: "paragraph", text: "a" }] }).html;
+    const b = render({ blocks: [{ type: "paragraph", text: "b" }] }).html;
+    const footerOf = (html: string) =>
+      html.slice(html.indexOf("Recibes este email"));
+    expect(footerOf(a)).toBe(footerOf(b));
   });
 });

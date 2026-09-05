@@ -993,7 +993,10 @@
     "contactIdInvalid": "One of the chosen contacts is not valid",
     "tooManyContacts": "Too many contacts chosen by hand",
     "invalidInput": "Some of the data is not valid",
-    "nameTaken": "A campaign with this name already exists"
+    "nameTaken": "A campaign with this name already exists",
+    "blockTextRequired": "This block has no text",
+    "imageUrlRequired": "Add an image or its URL",
+    "tooManyBlocks": "Too many blocks"
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1418,7 +1421,31 @@
       "confirm": "Confirm content",
       "emailLanguage": "Email language",
       "emailLanguageHint": "The segment includes both languages, so everyone gets this one version.",
-      "sentIn": "Sent in {language}, the language of the segment."
+      "sentIn": "Sent in {language}, the language of the segment.",
+      "blocks": {
+        "title": "Body",
+        "add": "Add block",
+        "paragraph": "Paragraph",
+        "heading": "Heading",
+        "image": "Image",
+        "button": "Button",
+        "divider": "Divider",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove block",
+        "empty": "The body is empty. Add a paragraph, an image or a button below.",
+        "paragraphPlaceholder": "Write here…",
+        "headingPlaceholder": "Section heading",
+        "imageUrl": "Or paste an image URL",
+        "imageAlt": "Alt text (optional)",
+        "buttonText": "Button text",
+        "buttonUrl": "Button link",
+        "bold": "Bold",
+        "link": "Link",
+        "name": "Client name",
+        "linkText": "text",
+        "blockError": "Check this block"
+      }
     },
     "review": {
       "title": "Review and send",

@@ -993,7 +993,10 @@
     "contactIdInvalid": "Uno de los contactos elegidos no es válido",
     "tooManyContacts": "Demasiados contactos añadidos a mano",
     "invalidInput": "Algún dato no es válido",
-    "nameTaken": "Ya existe una campaña con este nombre"
+    "nameTaken": "Ya existe una campaña con este nombre",
+    "blockTextRequired": "Este bloque no tiene texto",
+    "imageUrlRequired": "Añade una imagen o su URL",
+    "tooManyBlocks": "Demasiados bloques"
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1418,7 +1421,31 @@
       "confirm": "Confirmar contenido",
       "emailLanguage": "Idioma del email",
       "emailLanguageHint": "El segmento incluye ambos idiomas, así que todos reciben esta única versión.",
-      "sentIn": "Se envía en {language}, el idioma del segmento."
+      "sentIn": "Se envía en {language}, el idioma del segmento.",
+      "blocks": {
+        "title": "Cuerpo",
+        "add": "Añadir bloque",
+        "paragraph": "Párrafo",
+        "heading": "Título",
+        "image": "Imagen",
+        "button": "Botón",
+        "divider": "Separador",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "remove": "Quitar bloque",
+        "empty": "El cuerpo está vacío. Añade un párrafo, una imagen o un botón abajo.",
+        "paragraphPlaceholder": "Escribe aquí…",
+        "headingPlaceholder": "Título de sección",
+        "imageUrl": "O pega la URL de una imagen",
+        "imageAlt": "Texto alternativo (opcional)",
+        "buttonText": "Texto del botón",
+        "buttonUrl": "Enlace del botón",
+        "bold": "Negrita",
+        "link": "Enlace",
+        "name": "Nombre del cliente",
+        "linkText": "texto",
+        "blockError": "Revisa este bloque"
+      }
     },
     "review": {
       "title": "Revisar y enviar",

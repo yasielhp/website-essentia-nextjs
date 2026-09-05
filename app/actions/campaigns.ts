@@ -641,11 +641,19 @@ export async function renderCampaignPreview(
 function withDefaults(
   content: Partial<CampaignLocaleContent> | undefined,
 ): CampaignLocaleContent {
-  const out = { ...EMPTY_LOCALE_CONTENT };
-  for (const key of Object.keys(out) as (keyof CampaignLocaleContent)[]) {
+  const out: CampaignLocaleContent = { ...EMPTY_LOCALE_CONTENT, blocks: [] };
+  for (const key of ["subject", "preheader", "title"] as const) {
     const value = content?.[key];
     if (typeof value === "string") out[key] = value;
   }
+  // Only blocks the template knows how to draw; anything else is dropped
+  // rather than risk a preview that throws on a half-typed block.
+  out.blocks = Array.isArray(content?.blocks)
+    ? content.blocks.filter(
+        (block): block is CampaignLocaleContent["blocks"][number] =>
+          typeof block === "object" && block !== null && "type" in block,
+      )
+    : [];
   return out;
 }
 
