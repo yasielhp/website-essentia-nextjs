@@ -28,7 +28,7 @@ const STATUSES: CampaignStatus[] = [
 ];
 
 const selectCls =
-  "border-sand-200 text-petroleum-500 rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
+  "border-sand-200 text-petroleum-500 rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-400";
 
 function percent(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;

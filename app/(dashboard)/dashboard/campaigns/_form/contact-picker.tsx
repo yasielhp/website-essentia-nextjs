@@ -70,11 +70,11 @@ export function ContactPicker({
       {query.trim().length >= 2 && (
         <ul className="border-sand-200 divide-sand-100 max-h-56 divide-y overflow-y-auto rounded-xl border bg-white">
           {searching && visible.length === 0 ? (
-            <li className="text-petroleum-300 px-4 py-3 text-sm">
+            <li className="text-petroleum-400 px-4 py-3 text-sm">
               {t("counting")}
             </li>
           ) : visible.length === 0 ? (
-            <li className="text-petroleum-300 px-4 py-3 text-sm">
+            <li className="text-petroleum-400 px-4 py-3 text-sm">
               {t("manualNone")}
             </li>
           ) : (

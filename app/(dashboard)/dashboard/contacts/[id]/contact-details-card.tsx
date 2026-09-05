@@ -10,7 +10,7 @@ import type { GenderValue } from "@/constants/gender";
 import type { ContactErrors, FormAction } from "./form-state";
 
 const INPUT_CLASS =
-  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-300 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
+  "border-sand-200 bg-white text-petroleum-700 placeholder:text-petroleum-400 focus:border-petroleum-400 focus:ring-petroleum-100 rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 w-full disabled:opacity-60";
 
 export function ContactDetailsCard({
   firstName,

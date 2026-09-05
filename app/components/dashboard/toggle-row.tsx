@@ -29,7 +29,7 @@ export function ToggleRow({
       className={[
         "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200",
         checked
-          ? "border-petroleum-200 bg-petroleum-50"
+          ? "border-petroleum-100 bg-petroleum-50"
           : "border-sand-200 bg-sand-50",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
       ].join(" ")}
@@ -41,7 +41,7 @@ export function ToggleRow({
       <div
         className={[
           "flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors duration-200",
-          checked ? "bg-petroleum-500" : "bg-sand-300",
+          checked ? "bg-petroleum-500" : "bg-sand-200",
         ].join(" ")}
       >
         <div

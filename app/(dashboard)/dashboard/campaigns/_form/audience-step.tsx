@@ -155,83 +155,92 @@ export function AudienceStep({
           }
         />
 
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="campaign-services"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("services")}
-          </label>
-          <MultiOptionSelect
-            id="campaign-services"
-            value={audience.services}
-            options={SERVICE_OPTIONS}
-            placeholder={t("servicesPlaceholder")}
-            disabled={submitting || audience.neverBooked}
-            onChange={(services) =>
-              dispatch({ type: "SET_AUDIENCE", patch: { services } })
-            }
-          />
-        </div>
+        {audience.neverBooked ? (
+          <p className="text-petroleum-400 bg-sand-50 rounded-xl px-4 py-3 text-xs">
+            {t("neverBookedNote")}
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="campaign-services"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("services")}
+              </label>
+              <MultiOptionSelect
+                id="campaign-services"
+                value={audience.services}
+                options={SERVICE_OPTIONS}
+                placeholder={t("servicesPlaceholder")}
+                disabled={submitting || audience.neverBooked}
+                onChange={(services) =>
+                  dispatch({ type: "SET_AUDIENCE", patch: { services } })
+                }
+              />
+            </div>
 
-        <div className="flex flex-col gap-1.5">
-          <span className="text-petroleum-500 text-xs font-medium">
-            {t("lastBooking")}
-          </span>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto]">
-            <select
-              value={lastBooking ? lastBooking.op : ""}
-              disabled={submitting || audience.neverBooked}
-              aria-label={t("lastBooking")}
-              onChange={(e) => {
-                const op = e.target.value as "" | "gt" | "lt";
-                dispatch({
-                  type: "SET_AUDIENCE",
-                  patch: {
-                    lastBooking: op
-                      ? { op, days: lastBooking?.days ?? 60 }
-                      : null,
-                  },
-                });
-              }}
-              className={SELECT_CLASS}
-            >
-              <option value="">{t("lastBookingOff")}</option>
-              <option value="gt">{t("lastBookingGt")}</option>
-              <option value="lt">{t("lastBookingLt")}</option>
-            </select>
-            <input
-              type="number"
-              min={1}
-              max={3650}
-              value={lastBooking?.days ?? ""}
-              disabled={submitting || !lastBooking}
-              aria-label={t("daysAgo")}
-              onChange={(e) => {
-                if (!lastBooking) return;
-                const days = Number(e.target.value);
-                dispatch({
-                  type: "SET_AUDIENCE",
-                  patch: {
-                    lastBooking: {
-                      op: lastBooking.op,
-                      days: Number.isFinite(days) ? days : 0,
-                    },
-                  },
-                });
-              }}
-              className={`${INPUT_CLASS} sm:w-28`}
-            />
-            <span className="text-petroleum-400 self-center text-sm">
-              {t("daysAgo")}
-            </span>
-          </div>
-          {state.fieldErrors["audience.lastBooking.days"] && (
-            <p className="text-xs text-red-500">
-              {state.fieldErrors["audience.lastBooking.days"]}
-            </p>
-          )}
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-petroleum-500 text-xs font-medium">
+                {t("lastBooking")}
+              </span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select
+                  value={lastBooking ? lastBooking.op : ""}
+                  disabled={submitting || audience.neverBooked}
+                  aria-label={t("lastBooking")}
+                  onChange={(e) => {
+                    const op = e.target.value as "" | "gt" | "lt";
+                    dispatch({
+                      type: "SET_AUDIENCE",
+                      patch: {
+                        lastBooking: op
+                          ? { op, days: lastBooking?.days ?? 60 }
+                          : null,
+                      },
+                    });
+                  }}
+                  className={SELECT_CLASS}
+                >
+                  <option value="">{t("lastBookingOff")}</option>
+                  <option value="gt">{t("lastBookingGt")}</option>
+                  <option value="lt">{t("lastBookingLt")}</option>
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  max={3650}
+                  value={lastBooking?.days ?? ""}
+                  disabled={submitting || !lastBooking}
+                  aria-label={t("daysAgo")}
+                  onChange={(e) => {
+                    if (!lastBooking) return;
+                    const days = Number(e.target.value);
+                    dispatch({
+                      type: "SET_AUDIENCE",
+                      patch: {
+                        lastBooking: {
+                          op: lastBooking.op,
+                          days: Number.isFinite(days) ? days : 0,
+                        },
+                      },
+                    });
+                  }}
+                  className={`${INPUT_CLASS} sm:w-28`}
+                  aria-describedby="campaign-last-booking-days"
+                />
+                <span className="text-petroleum-400 self-center text-sm">
+                  {t("daysAgo")}
+                </span>
+              </div>
+              {state.fieldErrors["audience.lastBooking.days"] && (
+                <p className="text-xs text-red-500">
+                  {state.fieldErrors["audience.lastBooking.days"]}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </Card>
 
       <Card title={t("manual")}>
@@ -246,7 +255,7 @@ export function AudienceStep({
         className={`rounded-2xl border p-5 ${
           reach && reach.count === 0
             ? "border-red-200 bg-red-50"
-            : "border-petroleum-200 bg-petroleum-50"
+            : "border-petroleum-100 bg-petroleum-50"
         }`}
       >
         {counting || reach === null ? (
@@ -286,7 +295,7 @@ export function AudienceStep({
                   </li>
                 ))}
                 {reach.count > sample.length && (
-                  <li className="text-petroleum-300 py-1.5">
+                  <li className="text-petroleum-400 py-1.5">
                     {t("sampleMore", { count: reach.count - sample.length })}
                   </li>
                 )}

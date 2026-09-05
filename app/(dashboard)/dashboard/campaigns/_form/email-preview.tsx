@@ -69,7 +69,7 @@ export function EmailPreview({
       </div>
       <div className="border-sand-200 bg-sand-50 flex justify-center overflow-hidden rounded-2xl border p-3">
         {html === null ? (
-          <div className="text-petroleum-300 flex h-160 items-center text-sm">
+          <div className="text-petroleum-400 flex h-160 items-center text-sm">
             {t("previewLoading")}
           </div>
         ) : (

@@ -68,7 +68,7 @@ export function ContentStep({
               className={`text-xs ${
                 block[name].length > limit
                   ? "text-red-500"
-                  : "text-petroleum-300"
+                  : "text-petroleum-400"
               }`}
             >
               {t("characters", { count: block[name].length, max: limit })}
@@ -97,7 +97,7 @@ export function ContentStep({
           />
         )}
         {options.hint && !error && (
-          <p className="text-petroleum-300 text-xs">{options.hint}</p>
+          <p className="text-petroleum-400 text-xs">{options.hint}</p>
         )}
         {error && <p className="text-xs text-red-500">{error}</p>}
       </div>

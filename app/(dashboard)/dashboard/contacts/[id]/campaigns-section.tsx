@@ -23,7 +23,7 @@ export function CampaignsSection({
     return <div className="bg-sand-100 h-16 animate-pulse rounded-xl" />;
   }
   if (campaigns.length === 0) {
-    return <p className="text-petroleum-300 text-sm">{t("empty")}</p>;
+    return <p className="text-petroleum-400 text-sm">{t("empty")}</p>;
   }
   return (
     <div className="overflow-x-auto">

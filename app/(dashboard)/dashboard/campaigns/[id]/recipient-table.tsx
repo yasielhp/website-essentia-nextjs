@@ -37,7 +37,7 @@ export function RecipientTable({
       <div className="border-sand-100 flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-petroleum-500 text-sm font-semibold">
           {t("recipients")}
-          <span className="text-petroleum-300 ml-1.5 text-xs">
+          <span className="text-petroleum-400 ml-1.5 text-xs">
             {recipients.length}
           </span>
         </h2>
@@ -52,7 +52,7 @@ export function RecipientTable({
       </div>
 
       {visible.length === 0 ? (
-        <p className="text-petroleum-300 px-6 py-10 text-center text-sm">
+        <p className="text-petroleum-400 px-6 py-10 text-center text-sm">
           {t("noRecipients")}
         </p>
       ) : (

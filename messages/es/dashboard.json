@@ -1379,7 +1379,8 @@
       "sample": "Ver una muestra",
       "sampleHide": "Ocultar muestra",
       "sampleMore": "…y {count} más",
-      "counting": "Contando…"
+      "counting": "Contando…",
+      "neverBookedNote": "Las condiciones de reserva están desactivadas mientras \"Nunca ha reservado\" esté encendido."
     },
     "content": {
       "title": "Qué dice",

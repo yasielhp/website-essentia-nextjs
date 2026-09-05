@@ -235,7 +235,7 @@ export function CampaignForm({
                 if (step < state.step) dispatch({ type: "GO", step });
               }}
             >
-              <span className="text-petroleum-300 mr-1.5 tabular-nums">
+              <span className="text-petroleum-400 mr-1.5 tabular-nums">
                 {step + 1}
               </span>
               {t(`steps.${key}`)}

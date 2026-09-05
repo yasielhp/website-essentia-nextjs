@@ -1379,7 +1379,8 @@
       "sample": "Show a sample",
       "sampleHide": "Hide sample",
       "sampleMore": "…and {count} more",
-      "counting": "Counting…"
+      "counting": "Counting…",
+      "neverBookedNote": "Booking conditions are off while \"Has never booked\" is on."
     },
     "content": {
       "title": "What it says",

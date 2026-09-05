@@ -183,7 +183,7 @@ export default function CampaignDetailPage() {
             </h1>
             <CampaignStatusBadge status={campaign.status} />
             {refreshing && (
-              <span className="text-petroleum-300 text-xs">
+              <span className="text-petroleum-400 text-xs">
                 {t("detail.refreshing")}
               </span>
             )}
@@ -318,7 +318,7 @@ export default function CampaignDetailPage() {
               {value}
             </p>
             {key !== "sent" && (
-              <p className="text-petroleum-300 text-xs">{rate(value, sent)}</p>
+              <p className="text-petroleum-400 text-xs">{rate(value, sent)}</p>
             )}
           </div>
         ))}
@@ -335,7 +335,7 @@ export default function CampaignDetailPage() {
               <p className="text-petroleum-400 text-xs uppercase">{lang}</p>
               <p className="text-petroleum-700 text-lg font-medium">
                 {total}
-                <span className="text-petroleum-300 ml-2 text-sm">
+                <span className="text-petroleum-400 ml-2 text-sm">
                   {t("detail.delivered").toLowerCase()} {rate(delivered, total)}
                 </span>
               </p>

@@ -73,7 +73,7 @@ export function CampaignTable({
           ))}
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="text-petroleum-300 py-20 text-center text-sm">
+        <div className="text-petroleum-400 py-20 text-center text-sm">
           {t("empty")}
         </div>
       ) : (
