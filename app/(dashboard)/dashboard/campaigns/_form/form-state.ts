@@ -17,7 +17,7 @@ import {
  * `audience.manualIds`, which the server never needs and the chips do.
  */
 
-export type Step = 0 | 1 | 2 | 3;
+export type Step = 0 | 1 | 2 | 3 | 4;
 
 /**
  * What kind of campaign this is. Only `standard` exists today; the picker

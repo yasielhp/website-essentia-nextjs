@@ -1350,7 +1350,8 @@
       "editTitle": "Editar campaña",
       "notFound": "Campaña no encontrada",
       "locked": "Esta campaña ya se envió y no se puede editar.",
-      "nameHint": "Interno, solo lo ve el equipo. Algo que reconozcas en la lista el mes que viene."
+      "nameHint": "Interno, solo lo ve el equipo. Algo que reconozcas en la lista el mes que viene.",
+      "continue": "Continuar"
     },
     "audience": {
       "title": "Quién la recibe",

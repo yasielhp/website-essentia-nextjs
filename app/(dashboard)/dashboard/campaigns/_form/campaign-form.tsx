@@ -17,6 +17,7 @@ import {
 import type { CampaignRow } from "@/types/campaign";
 import { CompletedRow } from "../../bookings/new/completed-row";
 import { TypeStep } from "./type-step";
+import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
 import { ReviewStep } from "./review-step";
@@ -30,7 +31,13 @@ import {
 } from "./form-state";
 
 /** Where an error sends the admin: the step that owns the field. */
-const STEP_OF = { name: 0, audience: 1, content: 2 } as const;
+const STEP_OF = {
+  kind: 0,
+  name: 1,
+  audience: 2,
+  content: 3,
+  review: 4,
+} as const;
 
 /**
  * One form, the way the booking form works: each step is a card, a finished
@@ -201,18 +208,17 @@ export function CampaignForm({
     push(`/dashboard/campaigns/${id}`);
   }
 
-  /** The type step is done when there is a name and a kind has been chosen. */
-  function confirmType() {
+  function confirmName() {
     if (state.name.trim() === "") {
       dispatch({ type: "SET_ERRORS", errors: { name: "nameRequired" } });
       return;
     }
-    complete(0);
+    complete(STEP_OF.name);
   }
 
   function confirmAudience() {
     if (!state.reach || state.reach.count === 0) return;
-    complete(1);
+    complete(STEP_OF.audience);
   }
 
   function confirmContent() {
@@ -229,7 +235,7 @@ export function CampaignForm({
         return;
       }
     }
-    complete(2);
+    complete(STEP_OF.content);
   }
 
   // A step shows when it has been reached and nothing before it is reopened.
@@ -254,7 +260,7 @@ export function CampaignForm({
           <h1 className="font-display text-petroleum-700 text-3xl">
             {state.id ? t("form.editTitle") : t("form.newTitle")}
           </h1>
-          {state.name.trim() && state.step > 0 && (
+          {state.name.trim() && state.step > STEP_OF.name && (
             <span className="text-petroleum-400 truncate text-sm">
               {state.name}
             </span>
@@ -282,24 +288,40 @@ export function CampaignForm({
       )}
 
       <div className="flex flex-col gap-4">
-        {/* ── Step 1: name and kind ── */}
-        {folded(0) ? (
+        {/* ── Step 1: kind ── */}
+        {folded(STEP_OF.kind) ? (
           <CompletedRow
-            label={t("steps.type")}
-            value={`${state.name} · ${t(`type.${state.kind}`)}`}
-            onEdit={() => reopen(0)}
+            label={t("type.title")}
+            value={t(`type.${state.kind}`)}
+            onEdit={() => reopen(STEP_OF.kind)}
           />
         ) : (
-          <TypeStep state={state} dispatch={dispatch} onDone={confirmType} />
+          <TypeStep
+            state={state}
+            dispatch={dispatch}
+            onDone={() => complete(STEP_OF.kind)}
+          />
         )}
 
-        {/* ── Step 2: audience ── */}
-        {visible(1) &&
-          (folded(1) ? (
+        {/* ── Step 2: name ── */}
+        {visible(STEP_OF.name) &&
+          (folded(STEP_OF.name) ? (
+            <CompletedRow
+              label={t("form.name")}
+              value={state.name}
+              onEdit={() => reopen(STEP_OF.name)}
+            />
+          ) : (
+            <NameStep state={state} dispatch={dispatch} onDone={confirmName} />
+          ))}
+
+        {/* ── Step 3: audience ── */}
+        {visible(STEP_OF.audience) &&
+          (folded(STEP_OF.audience) ? (
             <CompletedRow
               label={t("steps.audience")}
               value={audienceSummary}
-              onEdit={() => reopen(1)}
+              onEdit={() => reopen(STEP_OF.audience)}
             />
           ) : (
             <AudienceStep
@@ -309,13 +331,13 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 3: content ── */}
-        {visible(2) &&
-          (folded(2) ? (
+        {/* ── Step 4: content ── */}
+        {visible(STEP_OF.content) &&
+          (folded(STEP_OF.content) ? (
             <CompletedRow
               label={t("steps.content")}
               value={contentSummary}
-              onEdit={() => reopen(2)}
+              onEdit={() => reopen(STEP_OF.content)}
             />
           ) : (
             <ContentStep
@@ -325,8 +347,8 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 4: review and send ── */}
-        {visible(3) && (
+        {/* ── Step 5: review and send ── */}
+        {visible(STEP_OF.review) && (
           <ReviewStep
             state={state}
             onTest={handleTest}

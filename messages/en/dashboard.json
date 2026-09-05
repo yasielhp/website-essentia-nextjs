@@ -1350,7 +1350,8 @@
       "editTitle": "Edit campaign",
       "notFound": "Campaign not found",
       "locked": "This campaign has already been sent and cannot be edited.",
-      "nameHint": "Internal, only the team sees it. Something you will recognise in the list next month."
+      "nameHint": "Internal, only the team sees it. Something you will recognise in the list next month.",
+      "continue": "Continue"
     },
     "audience": {
       "title": "Who receives it",
