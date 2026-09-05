@@ -138,6 +138,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       if (audience.neverBooked) {
         audience.services = [];
         audience.lastBooking = null;
+        audience.hasBooked = false;
       }
       return {
         ...state,

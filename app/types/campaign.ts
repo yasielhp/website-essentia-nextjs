@@ -39,6 +39,8 @@ export type CampaignAudience = {
   /** "Last booking more/less than N days ago"; `null` means no condition. */
   lastBooking: { op: "gt" | "lt"; days: number } | null;
   neverBooked: boolean;
+  /** Only people with at least one booking. Optional: older rows never had it. */
+  hasBooked?: boolean;
   /** Contacts added by hand, unioned with the filter result. */
   manualIds: string[];
 };
@@ -141,6 +143,7 @@ export const EMPTY_AUDIENCE: CampaignAudience = {
   services: [],
   lastBooking: null,
   neverBooked: false,
+  hasBooked: false,
   manualIds: [],
 };
 

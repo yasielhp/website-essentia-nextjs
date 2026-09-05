@@ -276,6 +276,7 @@ export const campaignAudienceSchema = z.object({
     })
     .nullable(),
   neverBooked: z.boolean(),
+  hasBooked: z.boolean().optional(),
   manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
 }) satisfies z.ZodType<CampaignAudience>;
 

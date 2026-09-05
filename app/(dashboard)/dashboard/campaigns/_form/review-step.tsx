@@ -28,6 +28,7 @@ export function describeAudience(
   }
   if (audience.newsletter === true) lines.push(t("condNewsletter"));
   if (audience.neverBooked) lines.push(t("condNeverBooked"));
+  if (audience.hasBooked) lines.push(t("condHasBooked"));
   if (audience.services.length > 0) {
     const titles = audience.services.map(
       (id) => bookableServices.find((s) => s.id === id)?.title ?? id,

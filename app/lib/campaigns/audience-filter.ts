@@ -70,6 +70,7 @@ function matchesConditions(
     return false;
   }
   if (audience.neverBooked && candidate.bookingsCount !== 0) return false;
+  if (audience.hasBooked && candidate.bookingsCount === 0) return false;
   if (audience.lastBooking) {
     // A contact who never booked has no "last booking" to compare, so the
     // condition cannot hold for them, whichever way it points.

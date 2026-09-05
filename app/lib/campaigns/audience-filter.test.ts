@@ -30,6 +30,17 @@ function audience(overrides: Partial<CampaignAudience>): CampaignAudience {
 const ids = (list: { id: string }[]) => list.map((r) => r.id);
 
 describe("filterAudience — fixed exclusions", () => {
+  it("hasBooked keeps only contacts with at least one booking", () => {
+    const regular = c({ bookingsCount: 2 });
+    const lead = c({ id: "2" });
+    const result = filterAudience(
+      [regular, lead],
+      audience({ hasBooked: true }),
+      NOW,
+    );
+    expect(ids(result)).toEqual([regular.id]);
+  });
+
   it("drops a contact who unsubscribed, even when hand-picked", () => {
     const gone = c({ unsubscribedAt: "2026-08-01T10:00:00Z" });
     const result = filterAudience(

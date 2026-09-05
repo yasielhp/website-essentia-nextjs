@@ -1386,7 +1386,14 @@
       "sampleMore": "…and {count} more",
       "counting": "Counting…",
       "neverBookedNote": "Booking conditions are off while \"Has never booked\" is on.",
-      "confirm": "Confirm audience"
+      "confirm": "Confirm audience",
+      "subscription": "Subscription",
+      "subscriptionAny": "Everyone with an email address",
+      "subscriptionOnly": "Newsletter subscribers only",
+      "bookings": "Bookings",
+      "bookingsAny": "Booked or not",
+      "bookingsBooked": "Has booked at least once",
+      "bookingsNever": "Has never booked"
     },
     "content": {
       "title": "What it says",
@@ -1434,7 +1441,8 @@
       "condLastBookingGt": "Last booking more than {days} days ago",
       "condLastBookingLt": "Last booking less than {days} days ago",
       "condNeverBooked": "Never booked",
-      "condManual": "{count} added by hand"
+      "condManual": "{count} added by hand",
+      "condHasBooked": "Has booked at least once"
     },
     "detail": {
       "sent": "Sent",

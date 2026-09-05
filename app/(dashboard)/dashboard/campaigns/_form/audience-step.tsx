@@ -4,11 +4,10 @@ import { useEffect, useState, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
-import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
+import { INPUT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
 import { MultiOptionSelect } from "@/components/ui/multi-option-select";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
-import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { Button } from "@/components/ui/button";
 import { useFieldError } from "@/hooks/use-field-error";
 import {
@@ -44,6 +43,7 @@ export function conditionsOf(audience: CampaignAudience): SegmentConditions {
     services: audience.services,
     lastBooking: audience.lastBooking,
     neverBooked: audience.neverBooked,
+    hasBooked: audience.hasBooked ?? false,
   };
 }
 
@@ -71,75 +71,96 @@ function AudienceConditions({
   const t = useTranslations("dashboard.campaigns.audience");
   const lastBooking = audience.lastBooking;
 
+  const languageOptions: SelectOption<CampaignLanguage>[] = LANGUAGES.map(
+    ({ value, key }) => ({ value, label: t(key) }),
+  );
+  const subscriptionOptions: SelectOption<"any" | "only">[] = [
+    { value: "any", label: t("subscriptionAny") },
+    { value: "only", label: t("subscriptionOnly") },
+  ];
+  const bookingsOptions: SelectOption<"any" | "booked" | "never">[] = [
+    { value: "any", label: t("bookingsAny") },
+    { value: "booked", label: t("bookingsBooked") },
+    { value: "never", label: t("bookingsNever") },
+  ];
+  const lastBookingOptions: SelectOption<"" | "gt" | "lt">[] = [
+    { value: "", label: t("lastBookingOff") },
+    { value: "gt", label: t("lastBookingGt") },
+    { value: "lt", label: t("lastBookingLt") },
+  ];
+  const bookings = audience.neverBooked
+    ? "never"
+    : audience.hasBooked
+      ? "booked"
+      : "any";
+
+  const field = (id: string, label: string, control: React.ReactNode) => (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-petroleum-500 text-xs font-medium">
+        {label}
+      </label>
+      {control}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <span className="text-petroleum-500 text-xs font-medium">
-          {t("language")}
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {LANGUAGES.map(({ value, key }) => {
-            const active = audience.language === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                disabled={disabled}
-                onClick={() =>
-                  dispatch({ type: "SET_AUDIENCE", patch: { language: value } })
-                }
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-petroleum-700 text-white"
-                    : "bg-sand-100 text-petroleum-500 hover:bg-sand-200"
-                }`}
-              >
-                {t(key)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {field(
+        "segment-language",
+        t("language"),
+        <OptionSelect
+          id="segment-language"
+          value={audience.language}
+          options={languageOptions}
+          disabled={disabled}
+          onChange={(language) =>
+            dispatch({ type: "SET_AUDIENCE", patch: { language } })
+          }
+        />,
+      )}
 
-      <ToggleRow
-        checked={audience.newsletter === true}
-        disabled={disabled}
-        label={t("newsletter")}
-        hint={t("newsletterHint")}
-        onToggle={() =>
-          dispatch({
-            type: "SET_AUDIENCE",
-            patch: { newsletter: audience.newsletter === true ? null : true },
-          })
-        }
-      />
+      {field(
+        "segment-subscription",
+        t("subscription"),
+        <OptionSelect
+          id="segment-subscription"
+          value={audience.newsletter === true ? "only" : "any"}
+          options={subscriptionOptions}
+          disabled={disabled}
+          onChange={(value) =>
+            dispatch({
+              type: "SET_AUDIENCE",
+              patch: { newsletter: value === "only" ? true : null },
+            })
+          }
+        />,
+      )}
 
-      <ToggleRow
-        checked={audience.neverBooked}
-        disabled={disabled}
-        label={t("neverBooked")}
-        hint={t("neverBookedHint")}
-        onToggle={() =>
-          dispatch({
-            type: "SET_AUDIENCE",
-            patch: { neverBooked: !audience.neverBooked },
-          })
-        }
-      />
+      {field(
+        "segment-bookings",
+        t("bookings"),
+        <OptionSelect
+          id="segment-bookings"
+          value={bookings}
+          options={bookingsOptions}
+          disabled={disabled}
+          onChange={(value) =>
+            dispatch({
+              type: "SET_AUDIENCE",
+              patch: {
+                neverBooked: value === "never",
+                hasBooked: value === "booked",
+              },
+            })
+          }
+        />,
+      )}
 
-      {audience.neverBooked ? (
-        <p className="text-petroleum-400 bg-sand-50 rounded-xl px-4 py-3 text-xs">
-          {t("neverBookedNote")}
-        </p>
-      ) : (
+      {!audience.neverBooked && (
         <>
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="campaign-services"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("services")}
-            </label>
+          {field(
+            "campaign-services",
+            t("services"),
             <MultiOptionSelect
               id="campaign-services"
               value={audience.services}
@@ -149,37 +170,37 @@ function AudienceConditions({
               onChange={(services) =>
                 dispatch({ type: "SET_AUDIENCE", patch: { services } })
               }
-            />
-          </div>
+            />,
+          )}
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-petroleum-500 text-xs font-medium">
+            <label
+              htmlFor="segment-last-booking"
+              className="text-petroleum-500 text-xs font-medium"
+            >
               {t("lastBooking")}
-            </span>
+            </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <select
-                value={lastBooking ? lastBooking.op : ""}
-                disabled={disabled}
-                aria-label={t("lastBooking")}
-                onChange={(e) => {
-                  const op = e.target.value as "" | "gt" | "lt";
-                  dispatch({
-                    type: "SET_AUDIENCE",
-                    patch: {
-                      lastBooking: op
-                        ? { op, days: lastBooking?.days ?? 60 }
-                        : null,
-                    },
-                  });
-                }}
-                className={`${SELECT_CLASS} sm:max-w-xs`}
-              >
-                <option value="">{t("lastBookingOff")}</option>
-                <option value="gt">{t("lastBookingGt")}</option>
-                <option value="lt">{t("lastBookingLt")}</option>
-              </select>
+              <div className="min-w-0 flex-1">
+                <OptionSelect
+                  id="segment-last-booking"
+                  value={lastBooking ? lastBooking.op : ""}
+                  options={lastBookingOptions}
+                  disabled={disabled}
+                  onChange={(op) =>
+                    dispatch({
+                      type: "SET_AUDIENCE",
+                      patch: {
+                        lastBooking: op
+                          ? { op, days: lastBooking?.days ?? 60 }
+                          : null,
+                      },
+                    })
+                  }
+                />
+              </div>
               {lastBooking && (
-                <>
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     min={1}
@@ -199,12 +220,12 @@ function AudienceConditions({
                         },
                       });
                     }}
-                    className={`${INPUT_CLASS} sm:w-28`}
+                    className={`${INPUT_CLASS} w-28`}
                   />
-                  <span className="text-petroleum-400 self-center text-sm">
+                  <span className="text-petroleum-400 text-sm">
                     {t("daysAgo")}
                   </span>
-                </>
+                </div>
               )}
             </div>
             {fieldErrors["audience.lastBooking.days"] && (

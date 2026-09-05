@@ -1386,7 +1386,14 @@
       "sampleMore": "…y {count} más",
       "counting": "Contando…",
       "neverBookedNote": "Las condiciones de reserva están desactivadas mientras \"Nunca ha reservado\" esté encendido.",
-      "confirm": "Confirmar audiencia"
+      "confirm": "Confirmar audiencia",
+      "subscription": "Suscripción",
+      "subscriptionAny": "Todos los que tienen email",
+      "subscriptionOnly": "Solo suscritos a la newsletter",
+      "bookings": "Reservas",
+      "bookingsAny": "Con o sin reserva",
+      "bookingsBooked": "Ha reservado al menos una vez",
+      "bookingsNever": "Nunca ha reservado"
     },
     "content": {
       "title": "Qué dice",
@@ -1434,7 +1441,8 @@
       "condLastBookingGt": "Última reserva hace más de {days} días",
       "condLastBookingLt": "Última reserva hace menos de {days} días",
       "condNeverBooked": "Nunca ha reservado",
-      "condManual": "{count} añadidos a mano"
+      "condManual": "{count} añadidos a mano",
+      "condHasBooked": "Ha reservado al menos una vez"
     },
     "detail": {
       "sent": "Enviados",
