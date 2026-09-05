@@ -63,7 +63,7 @@ export default function SegmentsPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    push(`/dashboard/campaigns/segments/${segment.id}/edit`)
+                    push(`/dashboard/campaigns/segments/${segment.id}`)
                   }
                   className="hover:bg-sand-50 flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors"
                 >

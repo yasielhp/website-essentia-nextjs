@@ -1608,7 +1608,19 @@
       "reach": "Llega a {count} personas",
       "confirmDelete": "¿Eliminar este segmento? Las campañas que lo usaron conservan su copia.",
       "delete": "Eliminar",
-      "notFound": "Segmento no encontrado"
+      "notFound": "Segmento no encontrado",
+      "members": "Personas en este segmento",
+      "membersEmpty": "Nadie cumple estas condiciones ahora mismo.",
+      "columns": {
+        "name": "Nombre",
+        "email": "Email",
+        "phone": "Teléfono",
+        "language": "Idioma",
+        "newsletter": "Newsletter"
+      },
+      "subscribed": "Suscrito",
+      "notSubscribed": "—",
+      "edit": "Editar"
     },
     "template": {
       "title": "Punto de partida",

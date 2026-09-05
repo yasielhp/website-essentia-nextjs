@@ -1608,7 +1608,19 @@
       "reach": "Reaches {count} people",
       "confirmDelete": "Delete this segment? Campaigns that used it keep their copy.",
       "delete": "Delete",
-      "notFound": "Segment not found"
+      "notFound": "Segment not found",
+      "members": "People in this segment",
+      "membersEmpty": "Nobody matches these conditions right now.",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "language": "Language",
+        "newsletter": "Newsletter"
+      },
+      "subscribed": "Subscribed",
+      "notSubscribed": "—",
+      "edit": "Edit"
     },
     "template": {
       "title": "Starting point",

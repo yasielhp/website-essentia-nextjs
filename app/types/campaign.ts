@@ -127,6 +127,17 @@ export type CampaignContentSummary = {
   content: CampaignContent;
 };
 
+/** One person in a segment, as the segment page lists them. */
+export type SegmentMember = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone: string | null;
+  language: CampaignLocale;
+  newsletter: boolean;
+};
+
 /** What the segment picker shows: each saved segment with how many it reaches today. */
 export type SegmentList = {
   everyone: number;
