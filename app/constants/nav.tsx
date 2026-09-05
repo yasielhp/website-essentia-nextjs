@@ -20,10 +20,10 @@ export const navLinks = [
   { key: "users", href: "/dashboard/users" },
   { key: "subscriptions", href: "/dashboard/subscriptions" },
   { key: "transactions", href: "/dashboard/transactions" },
+  { key: "campaigns", href: "/dashboard/campaigns" },
   { key: "races", href: "/dashboard/races" },
   { key: "education", href: "/dashboard/education" },
   { key: "blog", href: "/dashboard/blog" },
-  { key: "campaigns", href: "/dashboard/campaigns" },
 ];
 
 export const navIcons: Record<string, React.ReactNode> = {
