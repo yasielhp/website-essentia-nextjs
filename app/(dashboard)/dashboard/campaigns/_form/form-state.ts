@@ -6,6 +6,7 @@ import {
   type CampaignLocale,
   type CampaignLocaleContent,
   type CampaignRow,
+  type SegmentConditions,
 } from "@/types/campaign";
 
 /**
@@ -36,6 +37,9 @@ export type FormState = {
   step: Step;
   kind: CampaignKind;
   name: string;
+  /** The saved segment the conditions came from; null means everyone or ad hoc. */
+  segmentId: string | null;
+  segmentName: string | null;
   audience: CampaignAudience;
   content: CampaignContent;
   activeLocale: CampaignLocale;
@@ -50,6 +54,12 @@ export type FormAction =
   | { type: "SET_NAME"; value: string }
   | { type: "SET_KIND"; kind: CampaignKind }
   | { type: "SET_AUDIENCE"; patch: Partial<CampaignAudience> }
+  | {
+      type: "SET_SEGMENT";
+      id: string | null;
+      name: string | null;
+      conditions: SegmentConditions;
+    }
   | { type: "ADD_MANUAL"; contact: PickedContact }
   | { type: "REMOVE_MANUAL"; id: string }
   | { type: "SET_REACH"; reach: FormState["reach"] }
@@ -65,13 +75,20 @@ export type FormAction =
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "SUBMIT_END" }
-  | { type: "LOAD"; campaign: CampaignRow; picked: PickedContact[] };
+  | {
+      type: "LOAD";
+      campaign: CampaignRow;
+      picked: PickedContact[];
+      segmentName: string | null;
+    };
 
 export const initialFormState: FormState = {
   id: null,
   step: 0,
   kind: "standard",
   name: "",
+  segmentId: null,
+  segmentName: null,
   audience: EMPTY_AUDIENCE,
   content: { en: EMPTY_LOCALE_CONTENT, es: EMPTY_LOCALE_CONTENT },
   activeLocale: "es",
@@ -105,6 +122,16 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     case "SET_KIND":
       if (!AVAILABLE_KINDS.includes(action.kind)) return state;
       return { ...state, kind: action.kind };
+    case "SET_SEGMENT":
+      return {
+        ...state,
+        segmentId: action.id,
+        segmentName: action.name,
+        reach: null,
+        // The conditions come from the segment; the hand-picked extras stay.
+        audience: { ...action.conditions, manualIds: state.audience.manualIds },
+        fieldErrors: without(state.fieldErrors, "audience"),
+      };
     case "SET_AUDIENCE": {
       const audience = { ...state.audience, ...action.patch };
       // "Never booked" cannot hold alongside a booking condition.
@@ -174,6 +201,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         ...initialFormState,
         id: action.campaign.id,
         name: action.campaign.name,
+        segmentId: action.campaign.segment_id ?? null,
+        segmentName: action.segmentName,
         audience: { ...EMPTY_AUDIENCE, ...action.campaign.audience },
         content: {
           en: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.en },

@@ -1282,7 +1282,8 @@
     "campaignDuplicated": "Copia creada",
     "campaignTestSent": "Prueba enviada a {email}",
     "campaignRetried": "Fallidos reintentados",
-    "bounceCleared": "Rebote limpiado"
+    "bounceCleared": "Rebote limpiado",
+    "segmentSaved": "Segmento guardado"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",
@@ -1337,7 +1338,7 @@
       "failed": "Fallido"
     },
     "steps": {
-      "audience": "Audiencia",
+      "audience": "Segmento",
       "content": "Contenido",
       "review": "Revisar",
       "type": "Tipo"
@@ -1495,6 +1496,21 @@
       "rss": "Se activa por RSS",
       "rssDesc": "Sale cada vez que el blog publica algo nuevo.",
       "hint": "Elige uno para continuar."
+    },
+    "segment": {
+      "title": "Segmento",
+      "hint": "Un segmento es un conjunto de condiciones guardado. Elige uno o crea uno nuevo a partir de todos los contactos y clientes del sistema.",
+      "everyone": "Todos los contactos",
+      "create": "Nuevo segmento",
+      "edit": "Editar segmento",
+      "name": "Nombre del segmento",
+      "namePlaceholder": "Clientes ES, 60 días sin venir",
+      "save": "Guardar segmento",
+      "saving": "Guardando…",
+      "cancel": "Cancelar",
+      "saveFailed": "No se pudo guardar el segmento.",
+      "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
+      "manualHint": "Se añaden al segmento, solo para esta campaña."
     }
   }
 }

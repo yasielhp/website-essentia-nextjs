@@ -1282,7 +1282,8 @@
     "campaignDuplicated": "Copy created",
     "campaignTestSent": "Test sent to {email}",
     "campaignRetried": "Failed recipients retried",
-    "bounceCleared": "Bounce cleared"
+    "bounceCleared": "Bounce cleared",
+    "segmentSaved": "Segment saved"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",
@@ -1337,7 +1338,7 @@
       "failed": "Failed"
     },
     "steps": {
-      "audience": "Audience",
+      "audience": "Segment",
       "content": "Content",
       "review": "Review",
       "type": "Type"
@@ -1495,6 +1496,21 @@
       "rss": "RSS triggered",
       "rssDesc": "Goes out whenever the blog publishes something new.",
       "hint": "Pick one to continue."
+    },
+    "segment": {
+      "title": "Segment",
+      "hint": "A segment is a saved set of conditions. Pick one, or build a new one from every contact and client in the system.",
+      "everyone": "All contacts",
+      "create": "New segment",
+      "edit": "Edit segment",
+      "name": "Segment name",
+      "namePlaceholder": "Spanish clients, 60 days without a visit",
+      "save": "Save segment",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "saveFailed": "The segment could not be saved.",
+      "selectedHint": "Using \"{name}\". Edit it to change the conditions for every campaign that picks it from now on.",
+      "manualHint": "Added on top of the segment, for this campaign only."
     }
   }
 }

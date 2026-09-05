@@ -279,6 +279,16 @@ export const campaignAudienceSchema = z.object({
   manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
 }) satisfies z.ZodType<CampaignAudience>;
 
+/** What a saved segment holds: the audience without the hand-picked extras. */
+export const segmentConditionsSchema = campaignAudienceSchema.omit({
+  manualIds: true,
+});
+
+export const segmentSchema = z.object({
+  name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+  conditions: segmentConditionsSchema,
+});
+
 /**
  * One language's block with only the per-field limits. The "required" rules
  * live in `campaignLocaleContentSchema`, because a block the campaign does not

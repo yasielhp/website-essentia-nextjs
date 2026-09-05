@@ -56,7 +56,11 @@ export function CampaignForm({
   initial,
 }: {
   /** The campaign being edited, with the names behind its manual picks. */
-  initial?: { campaign: CampaignRow; picked: PickedContact[] };
+  initial?: {
+    campaign: CampaignRow;
+    picked: PickedContact[];
+    segmentName: string | null;
+  };
 }) {
   const t = useTranslations("dashboard.campaigns");
   const tToasts = useTranslations("dashboard.toasts");
@@ -71,6 +75,7 @@ export function CampaignForm({
             type: "LOAD",
             campaign: init.campaign,
             picked: init.picked,
+            segmentName: init.segmentName,
           })
         : initialFormState,
   );
@@ -133,6 +138,7 @@ export function CampaignForm({
         getAccessToken(),
         {
           id: state.id,
+          segmentId: state.segmentId,
           name: state.name,
           audience: state.audience,
           content: state.content,
@@ -255,11 +261,12 @@ export function CampaignForm({
     state.step >= step && (editing === null || editing >= step);
   const folded = (step: Step) => state.step > step && editing !== step;
 
-  const audienceSummary = state.reach
+  const reachSummary = state.reach
     ? state.reach.count === 1
       ? t("audience.reachOne")
       : t("audience.reach", { count: state.reach.count })
     : "";
+  const audienceSummary = `${state.segmentName ?? t("segment.everyone")} · ${reachSummary}`;
   const contentSummary = (["es", "en"] as const)
     .map((locale) => state.content[locale].subject)
     .filter(Boolean)

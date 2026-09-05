@@ -44,6 +44,18 @@ export type CampaignAudience = {
 };
 
 /** One language's version of the email. Every field empty = not sent in it. */
+/** The conditions half of an audience: what a saved segment stores. */
+export type SegmentConditions = Omit<CampaignAudience, "manualIds">;
+
+/** A named set of conditions, kept for the next campaign. */
+export type CampaignSegment = {
+  id: string;
+  name: string;
+  conditions: SegmentConditions;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CampaignLocaleContent = {
   subject: string;
   preheader: string;
@@ -63,6 +75,8 @@ export type CampaignRow = {
   status: CampaignStatus;
   audience: CampaignAudience;
   content: CampaignContent;
+  /** The segment the conditions came from, if any; the conditions are still copied. */
+  segment_id: string | null;
   scheduled_at: string | null;
   sent_at: string | null;
   /** When a dispatch claimed the row; the cron uses it to spot a stuck send. */
@@ -151,6 +165,7 @@ export type ContactSearchHit = {
 /** What `saveCampaign` takes: the form as one value. */
 export type CampaignInput = {
   id?: string | null;
+  segmentId?: string | null;
   name: string;
   audience: CampaignAudience;
   content: CampaignContent;

@@ -11,6 +11,7 @@ import {
 import {
   campaignAudienceSchema,
   requiredLocales,
+  segmentSchema,
   validateCampaign,
   validateCampaignDraft,
 } from "@/lib/schemas";
@@ -28,6 +29,7 @@ import {
   type CampaignLocaleContent,
   type CampaignRecipientRow,
   type CampaignRow,
+  type CampaignSegment,
   type CampaignStats,
   type CampaignStatus,
   type ContactCampaignRow,
@@ -236,8 +238,102 @@ const UNIQUE_VIOLATION = "23505";
 function isNameCollision(error: { code?: string; message?: string } | null) {
   return (
     error?.code === UNIQUE_VIOLATION ||
-    (error?.message ?? "").includes("campaigns_unique_name")
+    (error?.message ?? "").includes("_unique_name")
   );
+}
+
+// ─── Segments ───────────────────────────────────────────────────
+
+const SEGMENT_FIELDS = "id, name, conditions, created_at, updated_at";
+
+/** Every saved segment, by name. Few enough that there is no paging. */
+export async function listSegments(
+  accessToken: string | null,
+): Promise<CampaignSegment[]> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return [];
+    throw err;
+  }
+  const { data, error } = await getAdminClient()
+    .database.from("campaign_segments")
+    .select(SEGMENT_FIELDS)
+    .order("name", { ascending: true })
+    .range(0, 499);
+  if (error) return [];
+  return (data ?? []) as CampaignSegment[];
+}
+
+/**
+ * Creates or updates a segment. Editing one changes only the segment: the
+ * campaigns that already used it keep the copy of the conditions they saved.
+ */
+export async function saveSegment(
+  accessToken: string | null,
+  input: { id: string | null; name: string; conditions: unknown },
+): Promise<{ ok: true; segment: CampaignSegment } | Failure> {
+  let caller: AuthContext;
+  try {
+    caller = await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+
+  const parsed = segmentSchema.safeParse({
+    name: input.name,
+    conditions: input.conditions,
+  });
+  if (!parsed.success) {
+    const nameIssue = parsed.error.issues.find((i) => i.path[0] === "name");
+    return { ok: false, error: nameIssue ? nameIssue.message : "invalid" };
+  }
+
+  const db = getAdminClient().database;
+  let taken = db
+    .from("campaign_segments")
+    .select("id", { count: "exact", head: true })
+    .ilike("name", parsed.data.name);
+  if (input.id) taken = taken.neq("id", input.id);
+  if (((await taken).count ?? 0) > 0) return { ok: false, error: "nameTaken" };
+
+  const now = new Date().toISOString();
+  const query = input.id
+    ? db
+        .from("campaign_segments")
+        .update({ ...parsed.data, updated_at: now })
+        .eq("id", input.id)
+        .select(SEGMENT_FIELDS)
+        .single()
+    : db
+        .from("campaign_segments")
+        .insert({ ...parsed.data, created_by: caller.userId })
+        .select(SEGMENT_FIELDS)
+        .single();
+  const { data, error } = await query;
+  if (error || !data) {
+    if (isNameCollision(error)) return { ok: false, error: "nameTaken" };
+    return { ok: false, error: message(error) };
+  }
+  return { ok: true, segment: data as CampaignSegment };
+}
+
+/** Removes a segment; campaigns that used it keep their copied conditions. */
+export async function deleteSegment(
+  accessToken: string | null,
+  id: string,
+): Promise<{ ok: true } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+  const { error } = await getAdminClient()
+    .database.from("campaign_segments")
+    .delete()
+    .eq("id", id);
+  if (error) return { ok: false, error: message(error) };
+  return { ok: true };
 }
 
 export async function saveCampaign(
@@ -268,7 +364,11 @@ export async function saveCampaign(
 
   const db = getAdminClient().database;
   const now = new Date().toISOString();
-  const row = { ...validated.data, updated_at: now };
+  const row = {
+    ...validated.data,
+    segment_id: input.segmentId ?? null,
+    updated_at: now,
+  };
 
   if (await nameTaken(validated.data.name, input.id ?? null)) {
     return { ok: false, error: "invalid", fieldErrors: { name: "nameTaken" } };

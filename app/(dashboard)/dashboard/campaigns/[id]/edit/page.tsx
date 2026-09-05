@@ -5,7 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
-import { fetchCampaign, fetchContactsByIds } from "@/actions/campaigns";
+import {
+  fetchCampaign,
+  fetchContactsByIds,
+  listSegments,
+} from "@/actions/campaigns";
 import type { CampaignRow } from "@/types/campaign";
 import { CampaignForm } from "../../_form/campaign-form";
 import type { PickedContact } from "../../_form/form-state";
@@ -13,7 +17,12 @@ import type { PickedContact } from "../../_form/form-state";
 type Loaded =
   | { kind: "loading" }
   | { kind: "missing" }
-  | { kind: "ready"; campaign: CampaignRow; picked: PickedContact[] };
+  | {
+      kind: "ready";
+      campaign: CampaignRow;
+      picked: PickedContact[];
+      segmentName: string | null;
+    };
 
 /**
  * A draft, a scheduled campaign or a cancelled one reopened in the editor.
@@ -44,11 +53,20 @@ export default function EditCampaignPage() {
         replace(`/dashboard/campaigns/${id}`);
         return;
       }
-      const picked = await fetchContactsByIds(
-        getAccessToken(),
-        campaign.audience.manualIds ?? [],
-      ).catch(() => []);
-      if (!cancelled) setLoaded({ kind: "ready", campaign, picked });
+      const [picked, segments] = await Promise.all([
+        fetchContactsByIds(
+          getAccessToken(),
+          campaign.audience.manualIds ?? [],
+        ).catch(() => []),
+        campaign.segment_id
+          ? listSegments(getAccessToken()).catch(() => [])
+          : Promise.resolve([]),
+      ]);
+      const segmentName =
+        segments.find((s) => s.id === campaign.segment_id)?.name ?? null;
+      if (!cancelled) {
+        setLoaded({ kind: "ready", campaign, picked, segmentName });
+      }
     })();
     return () => {
       cancelled = true;
@@ -73,7 +91,11 @@ export default function EditCampaignPage() {
   return (
     <CampaignForm
       key={loaded.campaign.id}
-      initial={{ campaign: loaded.campaign, picked: loaded.picked }}
+      initial={{
+        campaign: loaded.campaign,
+        picked: loaded.picked,
+        segmentName: loaded.segmentName,
+      }}
     />
   );
 }
