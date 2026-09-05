@@ -1607,7 +1607,8 @@
       "counting": "Contando…",
       "reach": "Llega a {count} personas",
       "confirmDelete": "¿Eliminar este segmento? Las campañas que lo usaron conservan su copia.",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "notFound": "Segmento no encontrado"
     },
     "template": {
       "title": "Punto de partida",

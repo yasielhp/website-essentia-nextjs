@@ -1607,7 +1607,8 @@
       "counting": "Counting…",
       "reach": "Reaches {count} people",
       "confirmDelete": "Delete this segment? Campaigns that used it keep their copy.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "notFound": "Segment not found"
     },
     "template": {
       "title": "Starting point",
