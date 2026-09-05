@@ -23,8 +23,11 @@ export type RecipientStatus =
   | "complained"
   | "failed";
 
+/** The two languages an email can go out in. */
+export type CampaignLocale = "en" | "es";
+
 /** The language filter of a campaign; `any` sends each contact their own. */
-export type CampaignLanguage = "any" | "en" | "es";
+export type CampaignLanguage = CampaignLocale | "any";
 
 /** The `audience` jsonb column: conditions plus hand-picked contacts. */
 export type CampaignAudience = {
@@ -52,10 +55,7 @@ export type CampaignLocaleContent = {
 };
 
 /** The `content` jsonb column. */
-export type CampaignContent = {
-  en: CampaignLocaleContent;
-  es: CampaignLocaleContent;
-};
+export type CampaignContent = Record<CampaignLocale, CampaignLocaleContent>;
 
 export type CampaignRow = {
   id: string;
@@ -84,7 +84,7 @@ export type CampaignRecipientRow = {
   id: string;
   contact_id: string | null;
   email: string;
-  language: "en" | "es";
+  language: CampaignLocale;
   status: RecipientStatus;
   error: string | null;
   sent_at: string | null;
@@ -97,7 +97,12 @@ export type CampaignRecipientRow = {
 export type AudiencePreview = {
   count: number;
   byLanguage: { en: number; es: number };
-  sample: { id: string; name: string; email: string; language: "en" | "es" }[];
+  sample: {
+    id: string;
+    name: string;
+    email: string;
+    language: CampaignLocale;
+  }[];
 };
 
 export const EMPTY_LOCALE_CONTENT: CampaignLocaleContent = {

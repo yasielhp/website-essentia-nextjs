@@ -4,6 +4,7 @@ import type {
   CampaignAudience,
   CampaignContent,
   CampaignLanguage,
+  CampaignLocale,
   CampaignLocaleContent,
 } from "@/types/campaign";
 
@@ -226,26 +227,56 @@ export function parseErrors<T extends z.ZodTypeAny>(
 // schemas. `https` is enforced on every URL the admin types: the email is sent
 // in the centre's name and a plain-http link in it looks like phishing.
 
+/**
+ * Every key a campaign issue can carry. `collectIssues` maps anything else —
+ * a wrong type at the root, a shape Zod describes in its own words — to
+ * `invalidInput`, so the screen never shows a bare English sentence.
+ */
+const CAMPAIGN_MESSAGE_KEYS = new Set([
+  "nameRequired",
+  "nameTooLong",
+  "subjectRequired",
+  "subjectTooLong",
+  "preheaderTooLong",
+  "titleRequired",
+  "titleTooLong",
+  "bodyRequired",
+  "bodyTooLong",
+  "ctaTextTooLong",
+  "urlMustBeHttps",
+  "ctaNeedsBoth",
+  "daysOutOfRange",
+  "servicesTooMany",
+  "contactIdInvalid",
+  "tooManyContacts",
+  "invalidInput",
+]);
+
+/** Empty, or a well-formed `https://` URL. */
 const httpsUrl = z
   .string()
   .trim()
-  .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v), {
-    message: "urlMustBeHttps",
-  });
+  .pipe(
+    z.url({ protocol: /^https$/, error: "urlMustBeHttps" }).or(z.literal("")),
+  );
 
 export const campaignAudienceSchema = z.object({
   language: z.enum(["any", "en", "es"]),
   newsletter: z.boolean().nullable(),
-  services: z.array(z.string().min(1)).max(50),
+  services: z.array(z.string().min(1)).max(50, "servicesTooMany"),
   lastBooking: z
     .object({
       op: z.enum(["gt", "lt"]),
-      days: z.number().int().min(1).max(3650),
+      days: z
+        .number()
+        .int("daysOutOfRange")
+        .min(1, "daysOutOfRange")
+        .max(3650, "daysOutOfRange"),
     })
     .nullable(),
   neverBooked: z.boolean(),
-  manualIds: z.array(z.uuid()).max(5000),
-});
+  manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
+}) satisfies z.ZodType<CampaignAudience>;
 
 /**
  * One language's block with only the per-field limits. The "required" rules
@@ -255,10 +286,10 @@ export const campaignAudienceSchema = z.object({
 const localeContentShape = {
   subject: z.string().trim().max(120, "subjectTooLong"),
   preheader: z.string().trim().max(150, "preheaderTooLong"),
-  title: z.string().trim().max(200),
-  body: z.string().trim().max(20000),
+  title: z.string().trim().max(200, "titleTooLong"),
+  body: z.string().trim().max(20000, "bodyTooLong"),
   imageUrl: httpsUrl,
-  ctaText: z.string().trim().max(60),
+  ctaText: z.string().trim().max(60, "ctaTextTooLong"),
   ctaUrl: httpsUrl,
 };
 
@@ -286,11 +317,29 @@ function isEmptyLocale(block: CampaignLocaleContent): boolean {
   return Object.values(block).every((v) => v === "");
 }
 
+/** Runs the strict block schema and reports its issues under `content.<locale>`. */
+function refineLocale(
+  locale: CampaignLocale,
+  block: CampaignLocaleContent,
+  ctx: z.RefinementCtx,
+  prefix: PropertyKey[],
+) {
+  const result = campaignLocaleContentSchema.safeParse(block);
+  if (result.success) return;
+  for (const issue of result.error.issues) {
+    ctx.addIssue({
+      code: "custom",
+      path: [...prefix, locale, ...issue.path],
+      message: issue.message,
+    });
+  }
+}
+
 /**
  * Both language blocks. A block is valid if EITHER every field is the empty
  * string (the campaign does not go out in that language) OR it passes
  * `campaignLocaleContentSchema`. Whether a given language may be left empty
- * depends on the audience filter, which is `validateCampaign`'s job.
+ * depends on the audience filter, which `campaignSchema` checks.
  */
 export const campaignContentSchema = z
   .object({
@@ -299,52 +348,54 @@ export const campaignContentSchema = z
   })
   .superRefine((value, ctx) => {
     for (const locale of ["en", "es"] as const) {
-      const block = value[locale];
-      if (isEmptyLocale(block)) continue;
-      const result = campaignLocaleContentSchema.safeParse(block);
-      if (result.success) continue;
-      for (const issue of result.error.issues) {
-        ctx.addIssue({
-          code: "custom",
-          path: [locale, ...issue.path],
-          message: issue.message,
-        });
+      if (!isEmptyLocale(value[locale])) {
+        refineLocale(locale, value[locale], ctx, []);
       }
     }
-  });
-
-export const campaignSchema = z.object({
-  name: z.string().trim().min(1, "nameRequired").max(120),
-  audience: campaignAudienceSchema,
-  content: campaignContentSchema,
-});
-
-export type CampaignInput = z.infer<typeof campaignSchema>;
+  }) satisfies z.ZodType<CampaignContent>;
 
 /** Which locale blocks a campaign must fill in, from its language filter. */
-export function requiredLocales(language: CampaignLanguage): ("en" | "es")[] {
+export function requiredLocales(language: CampaignLanguage): CampaignLocale[] {
   return language === "any" ? ["en", "es"] : [language];
 }
 
 /**
- * A message key is a bare camelCase word; anything else is one of Zod's own
- * sentences (`max(200)` with no key, a wrong type) and the screen shows a
- * generic message for it.
+ * The whole campaign. On top of the field rules, the languages the audience
+ * filter selects cannot be left empty — the one rule that needs `audience` and
+ * `content` side by side. Non-empty blocks are already checked by
+ * `campaignContentSchema`, so only the empty ones are re-run here.
  */
-function issueKey(message: string): string {
-  return /^[a-z][A-Za-z0-9]*$/.test(message) ? message : "invalid";
-}
+export const campaignSchema = z
+  .object({
+    name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+    audience: campaignAudienceSchema,
+    content: campaignContentSchema,
+  })
+  .superRefine((value, ctx) => {
+    for (const locale of requiredLocales(value.audience.language)) {
+      if (isEmptyLocale(value.content[locale])) {
+        refineLocale(locale, value.content[locale], ctx, ["content"]);
+      }
+    }
+  });
 
-/** The first issue per dotted path — `"content.es.subject"` — wins. */
-function collectIssues(
-  issues: z.core.$ZodIssue[],
-  errors: Record<string, string>,
-  prefix: PropertyKey[] = [],
-) {
+export type CampaignInput = z.infer<typeof campaignSchema>;
+
+/**
+ * The first issue per dotted path — `"content.es.subject"` — wins. An issue
+ * with no path (the payload itself is not an object) lands under `"_"`, so the
+ * consumer always has something to show.
+ */
+function collectIssues(issues: z.core.$ZodIssue[]): Record<string, string> {
+  const errors: Record<string, string> = {};
   for (const issue of issues) {
-    const key = [...prefix, ...issue.path].map(String).join(".");
-    if (key && !errors[key]) errors[key] = issueKey(issue.message);
+    const key = issue.path.map(String).join(".") || "_";
+    if (errors[key]) continue;
+    errors[key] = CAMPAIGN_MESSAGE_KEYS.has(issue.message)
+      ? issue.message
+      : "invalidInput";
   }
+  return errors;
 }
 
 export type CampaignValidation =
@@ -352,32 +403,13 @@ export type CampaignValidation =
   | { ok: false; errors: Record<string, string> };
 
 /**
- * The one check the client form and the server action share. Pure: no I/O.
- *
- * `campaignSchema` alone lets any language block stay empty; this adds the rule
- * that the languages the audience filter selects cannot be. Error keys are
+ * The one check the client form and the server action share. Pure: no I/O,
+ * and it never throws — `input` is whatever came over the wire. Error keys are
  * dotted paths (`"name"`, `"audience.lastBooking.days"`,
- * `"content.es.subject"`) and values are message keys.
+ * `"content.es.subject"`, `"_"` for the root) and values are message keys.
  */
-export function validateCampaign(input: {
-  name: string;
-  audience: CampaignAudience;
-  content: CampaignContent;
-}): CampaignValidation {
-  const errors: Record<string, string> = {};
-
+export function validateCampaign(input: unknown): CampaignValidation {
   const parsed = campaignSchema.safeParse(input);
-  if (!parsed.success) collectIssues(parsed.error.issues, errors);
-
-  for (const locale of requiredLocales(input.audience.language)) {
-    const block = campaignLocaleContentSchema.safeParse(input.content[locale]);
-    if (!block.success) {
-      collectIssues(block.error.issues, errors, ["content", locale]);
-    }
-  }
-
-  if (!parsed.success || Object.keys(errors).length > 0) {
-    return { ok: false, errors };
-  }
-  return { ok: true, data: parsed.data };
+  if (parsed.success) return { ok: true, data: parsed.data };
+  return { ok: false, errors: collectIssues(parsed.error.issues) };
 }
