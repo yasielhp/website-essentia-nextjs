@@ -17,6 +17,11 @@ import {
  * the tables ever outgrow this, the same signature can sit over an RPC that
  * does the fold in Postgres.
  *
+ * Bookings are matched to contacts by `contact_id` and, failing that, by
+ * email: bookings created from the dashboard never set a `contact_id` (81 of
+ * the first 100 rows carried none), so keying on it alone would call most
+ * clients "never booked".
+ *
  * SERVER ONLY: reads through the admin client.
  */
 
@@ -30,7 +35,8 @@ type ContactRow = {
 };
 
 type BookingRow = {
-  contact_id: string;
+  contact_id: string | null;
+  email: string | null;
   service_id: string | null;
   /** Nullable in the live table: some imported rows carry no date. */
   date: string | null;
@@ -61,9 +67,8 @@ export async function resolveAudience(
       .range(0, MAX_ROWS),
     db
       .from("bookings")
-      .select("contact_id, service_id, date")
+      .select("contact_id, email, service_id, date")
       .neq("status", "cancelled")
-      .not("contact_id", "is", null)
       .range(0, MAX_ROWS),
   ]);
 
@@ -78,11 +83,30 @@ export async function resolveAudience(
     );
   }
 
+  const contacts = (contactsResult.data ?? []) as ContactRow[];
+
+  // Contact emails are stored lowercased; booking emails are typed by hand,
+  // so the booking side is normalised before the lookup.
+  const contactIdByEmail = new Map<string, string>();
+  for (const row of contacts) {
+    const email = row.email.trim().toLowerCase();
+    if (!contactIdByEmail.has(email)) contactIdByEmail.set(email, row.id);
+  }
+
   // One pass over bookings, keyed by contact: the latest date, the set of
   // services ever booked, and how many bookings count towards "never booked".
+  // Each booking resolves to at most one contact, so a row carrying both a
+  // matching id and email is counted once.
   const byContact = new Map<string, BookingSummary>();
   for (const booking of (bookingsResult.data ?? []) as BookingRow[]) {
-    const summary = byContact.get(booking.contact_id) ?? {
+    const contactId =
+      booking.contact_id ??
+      (booking.email
+        ? contactIdByEmail.get(booking.email.trim().toLowerCase())
+        : undefined);
+    if (!contactId) continue;
+
+    const summary = byContact.get(contactId) ?? {
       last: null,
       services: new Set<string>(),
       count: 0,
@@ -97,12 +121,10 @@ export async function resolveAudience(
     }
     if (booking.service_id) summary.services.add(booking.service_id);
     summary.count += 1;
-    byContact.set(booking.contact_id, summary);
+    byContact.set(contactId, summary);
   }
 
-  const candidates: ContactCandidate[] = (
-    (contactsResult.data ?? []) as ContactRow[]
-  ).map((row) => {
+  const candidates: ContactCandidate[] = contacts.map((row) => {
     const bookings = byContact.get(row.id);
     return {
       id: row.id,
