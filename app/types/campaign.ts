@@ -233,6 +233,9 @@ export const EMPTY_AUDIENCE: CampaignAudience = {
   manualIds: [],
 };
 
+/** How many campaigns sit in each state; the cards on top of the list. */
+export type CampaignStatusCounts = Record<CampaignStatus | "all", number>;
+
 /** The three numbers on top of the campaign list. */
 export type CampaignStats = {
   sentThisMonth: number;

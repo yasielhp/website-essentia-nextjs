@@ -33,6 +33,7 @@ import {
   type CampaignSegment,
   type CampaignContentSummary,
   type CampaignStats,
+  type CampaignStatusCounts,
   type SegmentList,
   EMPTY_AUDIENCE,
   isAutomatedKind,
@@ -107,6 +108,42 @@ export async function listCampaigns(
     return { campaigns: [], total: 0 };
   }
   return { campaigns: (data ?? []) as CampaignRow[], total: count ?? 0 };
+}
+
+/** One count per status, for the cards that double as the list's filter. */
+export async function fetchCampaignStatusCounts(
+  accessToken: string | null,
+): Promise<CampaignStatusCounts> {
+  const empty: CampaignStatusCounts = {
+    all: 0,
+    draft: 0,
+    scheduled: 0,
+    sending: 0,
+    sent: 0,
+    cancelled: 0,
+    failed: 0,
+    active: 0,
+    paused: 0,
+  };
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return empty;
+    throw err;
+  }
+  const { data, error } = await getAdminClient()
+    .database.from("campaigns")
+    .select("status")
+    .range(0, 9_999);
+  if (error) return empty;
+  return ((data ?? []) as { status: CampaignStatus }[]).reduce(
+    (acc, row) => {
+      acc.all += 1;
+      if (row.status in acc) acc[row.status] += 1;
+      return acc;
+    },
+    { ...empty },
+  );
 }
 
 /** Sent campaigns this calendar month, and what happened to their emails. */
