@@ -10,12 +10,8 @@ import {
   IconSettings,
   IconWorld,
 } from "@/components/ui/icons";
-import {
-  AVAILABLE_KINDS,
-  type CampaignKind,
-  type FormAction,
-  type FormState,
-} from "./form-state";
+import type { CampaignKind } from "@/types/campaign";
+import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
 
 const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
   { kind: "standard", icon: <IconMail /> },

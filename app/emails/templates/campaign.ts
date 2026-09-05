@@ -23,15 +23,18 @@ import { emailBase } from "./_base";
 export function campaignEmail({
   content,
   firstName,
+  vars: extraVars,
   unsubscribeUrl,
   locale,
 }: {
   content: CampaignLocaleContent;
   firstName: string;
+  /** Per-send values beyond the name: a blog post's title and link, say. */
+  vars?: Record<string, string>;
   unsubscribeUrl: string;
   locale: CampaignLocale;
 }): { subject: string; html: string } {
-  const vars = { first_name: firstName };
+  const vars: Record<string, string> = { ...extraVars, first_name: firstName };
   // The name is already escaped by `renderVariables`; escaping the text first
   // and filling the token afterwards is what keeps the two from stacking.
   const title = renderVariables(escapeHtml(content.title), vars);
@@ -55,7 +58,7 @@ export function campaignEmail({
 /** One block, as email HTML. Unknown shapes render nothing rather than throw. */
 export function renderBlock(
   block: ContentBlock,
-  vars: { first_name: string },
+  vars: Record<string, string>,
 ): string {
   switch (block.type) {
     case "paragraph":

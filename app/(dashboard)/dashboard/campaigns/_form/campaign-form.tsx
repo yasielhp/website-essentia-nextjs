@@ -115,6 +115,8 @@ export function CampaignForm({
       mode === "draft" ? validateCampaignDraft : validateCampaign;
     const check = validate({
       name: state.name,
+      kind: state.kind,
+      trigger: state.trigger,
       audience: state.audience,
       content: state.content,
     });
@@ -143,6 +145,8 @@ export function CampaignForm({
         {
           id: state.id,
           segmentId: state.segmentId,
+          kind: state.kind,
+          trigger: state.trigger,
           name: state.name,
           audience: state.audience,
           content: state.content,
@@ -246,6 +250,8 @@ export function CampaignForm({
   function confirmContent() {
     const check = validateCampaign({
       name: state.name,
+      kind: state.kind,
+      trigger: state.trigger,
       audience: state.audience,
       content: state.content,
     });

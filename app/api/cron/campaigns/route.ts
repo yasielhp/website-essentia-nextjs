@@ -5,12 +5,14 @@ import {
   STUCK_AFTER_MS,
   dispatchCampaign,
 } from "@/lib/campaigns/dispatch";
+import { runAutomation } from "@/lib/campaigns/automations";
+import type { CampaignRow } from "@/types/campaign";
 
 /**
  * POST/GET /api/cron/campaigns
  *
- * Sends the campaigns whose time has come, and finishes the ones a previous
- * run left half-done.
+ * Sends the campaigns whose time has come, finishes the ones a previous run
+ * left half-done, and gives every active automation its turn.
  *
  * Meant to run every fifteen minutes. A scheduled campaign resolves its
  * audience here, not when it was scheduled, so a client who signed up this
@@ -82,6 +84,21 @@ async function handle(request: NextRequest) {
       results[row.id] = { abandoned: true };
     } else {
       results[row.id] = await dispatchCampaign(row.id, { resume: true });
+    }
+  }
+
+  // Automated campaigns: every active one is evaluated on every run. A rule
+  // that owes nobody today costs one read; one that does mails them now.
+  const { data: active } = await db
+    .from("campaigns")
+    .select("*")
+    .eq("status", "active");
+  for (const campaign of (active ?? []) as CampaignRow[]) {
+    try {
+      results[campaign.id] = await runAutomation(campaign);
+    } catch (err) {
+      console.error("[cron/campaigns] automation failed:", campaign.id, err);
+      results[campaign.id] = { error: (err as Error).message };
     }
   }
 

@@ -248,6 +248,7 @@ const CAMPAIGN_MESSAGE_KEYS = new Set([
   "blockTextRequired",
   "imageUrlRequired",
   "tooManyBlocks",
+  "subjectBRequired",
   "daysOutOfRange",
   "servicesTooMany",
   "contactIdInvalid",
@@ -348,6 +349,7 @@ const strictBlockSchema = z.discriminatedUnion("type", [
 
 const localeContentShape = {
   subject: z.string().trim().max(120, "subjectTooLong"),
+  subjectB: z.string().trim().max(120, "subjectTooLong").optional(),
   preheader: z.string().trim().max(150, "preheaderTooLong"),
   title: z.string().trim().max(200, "titleTooLong"),
   blocks: z.array(looseBlockSchema).max(50, "tooManyBlocks"),
@@ -367,6 +369,7 @@ const campaignLocaleContentSchema = z.object({
 function isEmptyLocale(block: CampaignLocaleContent): boolean {
   return (
     block.subject === "" &&
+    !block.subjectB &&
     block.preheader === "" &&
     block.title === "" &&
     block.blocks.length === 0
@@ -434,9 +437,39 @@ export function requiredLocales(
  * `content` side by side. Non-empty blocks are already checked by
  * `campaignContentSchema`, so only the empty ones are re-run here.
  */
+export const campaignKindSchema = z.enum([
+  "standard",
+  "automated",
+  "autoresponder",
+  "split",
+  "rss",
+  "dateBased",
+]);
+
+export const campaignTriggerSchema = z.object({
+  event: z
+    .enum([
+      "newsletter_subscribed",
+      "segment_entry",
+      "after_booking",
+      "birthday",
+      "first_booking_anniversary",
+      "new_blog_post",
+    ])
+    .optional(),
+  days: z
+    .number()
+    .int("daysOutOfRange")
+    .min(0, "daysOutOfRange")
+    .max(365, "daysOutOfRange")
+    .optional(),
+});
+
 export const campaignSchema = z
   .object({
     name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+    kind: campaignKindSchema,
+    trigger: campaignTriggerSchema,
     audience: campaignAudienceSchema,
     content: campaignContentSchema,
   })
@@ -444,6 +477,14 @@ export const campaignSchema = z
     for (const locale of requiredLocales(value.audience)) {
       if (isEmptyLocale(value.content[locale])) {
         refineLocale(locale, value.content[locale], ctx, ["content"]);
+      }
+      // An A/B test with one subject is not a test.
+      if (value.kind === "split" && !value.content[locale].subjectB?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["content", locale, "subjectB"],
+          message: "subjectBRequired",
+        });
       }
     }
   });
@@ -458,6 +499,8 @@ export type CampaignInput = z.infer<typeof campaignSchema>;
  */
 export const campaignDraftSchema = z.object({
   name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+  kind: campaignKindSchema,
+  trigger: campaignTriggerSchema,
   audience: campaignAudienceSchema,
   content: z.object({
     en: z.object(localeContentShape),

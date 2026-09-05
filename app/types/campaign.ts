@@ -6,7 +6,59 @@
  * bounced — those are counted on the row instead.
  */
 export type CampaignStatus =
-  "draft" | "scheduled" | "sending" | "sent" | "cancelled" | "failed";
+  | "draft"
+  | "scheduled"
+  | "sending"
+  | "sent"
+  | "cancelled"
+  | "failed"
+  /** An automated campaign the cron evaluates on every run. */
+  | "active"
+  /** An automated campaign switched off, keeping its history. */
+  | "paused";
+
+/**
+ * What kind of campaign this is. `standard` and `split` go out once;
+ * the rest stay active and mail whoever newly qualifies.
+ */
+export type CampaignKind =
+  "standard" | "automated" | "autoresponder" | "split" | "rss" | "dateBased";
+
+export type TriggerEvent =
+  | "newsletter_subscribed"
+  | "segment_entry"
+  | "after_booking"
+  | "birthday"
+  | "first_booking_anniversary"
+  | "new_blog_post";
+
+/** The kind's settings. Flat and optional so every kind shares one column. */
+export type CampaignTrigger = {
+  event?: TriggerEvent;
+  /** `after_booking`: how many days after the booking the email goes out. */
+  days?: number;
+};
+
+/** The event each kind runs on when it has no choice to make. */
+export const DEFAULT_TRIGGER: Record<CampaignKind, CampaignTrigger> = {
+  standard: {},
+  split: {},
+  autoresponder: { event: "newsletter_subscribed" },
+  automated: { event: "segment_entry" },
+  dateBased: { event: "birthday" },
+  rss: { event: "new_blog_post" },
+};
+
+export const AUTOMATED_KINDS: CampaignKind[] = [
+  "automated",
+  "autoresponder",
+  "rss",
+  "dateBased",
+];
+
+export function isAutomatedKind(kind: CampaignKind): boolean {
+  return AUTOMATED_KINDS.includes(kind);
+}
 
 /**
  * Advances in this order: `queued` → `sent` → `delivered` → `opened` →
@@ -88,6 +140,8 @@ export type ContentBlockType = ContentBlock["type"];
 
 export type CampaignLocaleContent = {
   subject: string;
+  /** A/B test only: the subject half the audience sees instead. */
+  subjectB?: string;
   preheader: string;
   title: string;
   blocks: ContentBlock[];
@@ -100,6 +154,10 @@ export type CampaignRow = {
   id: string;
   name: string;
   status: CampaignStatus;
+  kind: CampaignKind;
+  trigger: CampaignTrigger;
+  activated_at: string | null;
+  last_run_at: string | null;
   audience: CampaignAudience;
   content: CampaignContent;
   /** The segment the conditions came from, if any; the conditions are still copied. */
@@ -127,6 +185,9 @@ export type CampaignRecipientRow = {
   email: string;
   language: CampaignLocale;
   status: RecipientStatus;
+  /** "" for one-shot sends; the year, the post id… for repeating rules. */
+  cycle: string;
+  variant: "a" | "b" | null;
   error: string | null;
   sent_at: string | null;
   delivered_at: string | null;
@@ -191,6 +252,8 @@ export type ContactSearchHit = {
 export type CampaignInput = {
   id?: string | null;
   segmentId?: string | null;
+  kind: CampaignKind;
+  trigger: CampaignTrigger;
   name: string;
   audience: CampaignAudience;
   content: CampaignContent;

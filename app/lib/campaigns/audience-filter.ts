@@ -22,6 +22,12 @@ export type ContactCandidate = {
   lastBookingDate: string | null;
   serviceIds: string[];
   bookingsCount: number;
+  /** YYYY-MM-DD of the earliest non-cancelled booking, for anniversaries. */
+  firstBookingDate?: string | null;
+  /** When the contact said yes to the newsletter, for autoresponders. */
+  subscribedAt?: string | null;
+  /** YYYY-MM-DD, for birthday campaigns. */
+  birthdate?: string | null;
 };
 
 export type Recipient = {
@@ -29,6 +35,11 @@ export type Recipient = {
   email: string;
   firstName: string;
   language: CampaignLocale;
+  /** Carried through for the automation rules; the send ignores them. */
+  lastBookingDate?: string | null;
+  firstBookingDate?: string | null;
+  subscribedAt?: string | null;
+  birthdate?: string | null;
 };
 
 const DAY_MS = 86_400_000;
@@ -111,6 +122,10 @@ export function filterAudience(
       id: candidate.id,
       email,
       firstName: candidate.firstName,
+      lastBookingDate: candidate.lastBookingDate,
+      firstBookingDate: candidate.firstBookingDate ?? null,
+      subscribedAt: candidate.subscribedAt ?? null,
+      birthdate: candidate.birthdate ?? null,
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.

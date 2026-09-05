@@ -13,7 +13,9 @@ import { resolveAudience } from "./audience";
  * Sends one campaign, or finishes sending it.
  *
  * SERVER ONLY. Called by the "send now" action and by the cron that dispatches
- * scheduled campaigns and resumes interrupted ones.
+ * scheduled campaigns and resumes interrupted ones. Automated campaigns share
+ * `sendQueued` but not the claim: they stay `active` and are fed by
+ * `automations.ts` instead.
  *
  * Claiming the row is the whole concurrency story. The UPDATE that flips the
  * campaign to `sending` only matches from `draft`/`scheduled`, or from a
@@ -43,17 +45,22 @@ export type DispatchResult =
       detail?: string;
     };
 
-type QueuedRow = {
+export type QueuedRow = {
   id: string;
   contact_id: string | null;
   email: string;
   language: CampaignLocale;
+  variant: "a" | "b" | null;
+  vars: Record<string, string> | null;
   // The SDK types an embedded relation as an array even when it is one row.
   contacts:
     | { first_name: string | null; unsubscribe_token: string | null }
     | { first_name: string | null; unsubscribe_token: string | null }[]
     | null;
 };
+
+export const QUEUED_FIELDS =
+  "id, contact_id, email, language, variant, vars, contacts(first_name, unsubscribe_token)";
 
 const one = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;
@@ -104,6 +111,129 @@ async function claim(
   return ((data as CampaignRow[] | null) ?? [])[0] ?? null;
 }
 
+/**
+ * Mails every row still `queued` for a campaign, in chunks, stamping each as
+ * `sent` or `failed`. Shared by one-off sends and automations.
+ *
+ * A row's `variant` picks the A/B subject; its `vars` (a blog post's title
+ * and link, say) join the recipient's first name in the template.
+ */
+export async function sendQueued(
+  campaign: CampaignRow,
+  rows: QueuedRow[],
+): Promise<{ sent: number; failed: number; lastError: string | null }> {
+  const db = getAdminClient().database;
+  const content = campaign.content as CampaignContent;
+  const appUrl = getAppUrl();
+  let sent = 0;
+  let failed = 0;
+  let lastError: string | null = null;
+
+  for (let start = 0; start < rows.length; start += CHUNK) {
+    const chunk = rows.slice(start, start + CHUNK);
+    const emails = chunk.map((row) => {
+      const contact = one(row.contacts);
+      const token = contact?.unsubscribe_token ?? "";
+      const unsubscribeUrl = `${appUrl}${row.language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
+      const block = content[row.language];
+      const { subject, html } = campaignEmail({
+        content:
+          row.variant === "b" && block.subjectB
+            ? { ...block, subject: block.subjectB }
+            : block,
+        firstName: contact?.first_name ?? "",
+        vars: row.vars ?? undefined,
+        unsubscribeUrl,
+        locale: row.language,
+      });
+      return {
+        to: row.email,
+        subject,
+        html,
+        blindCopy: false,
+        tags: { campaign_id: campaign.id },
+        headers: {
+          "List-Unsubscribe": `<${unsubscribeUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+      };
+    });
+
+    // `sendEmailBatch` already paces its own chunks; each call here is one
+    // chunk, so the pacing between calls is ours to keep.
+    if (start > 0) await pause(600);
+    let result = await sendEmailBatch(emails);
+    if (result.error && result.sent === 0) {
+      // One retry for a whole-chunk rejection (a 429, a blip); a second
+      // failure is recorded and the run moves on.
+      await pause(2000);
+      result = await sendEmailBatch(emails);
+    }
+
+    const at = new Date().toISOString();
+    await Promise.all(
+      chunk.map((row, index) => {
+        const providerId = result.ids[index] ?? null;
+        if (providerId) {
+          sent += 1;
+          return db
+            .from("campaign_recipients")
+            .update({ status: "sent", provider_id: providerId, sent_at: at })
+            .eq("id", row.id);
+        }
+        failed += 1;
+        lastError = result.error ?? "no id returned";
+        return db
+          .from("campaign_recipients")
+          .update({ status: "failed", error: lastError })
+          .eq("id", row.id);
+      }),
+    );
+  }
+
+  return { sent, failed, lastError };
+}
+
+/** The rows of a campaign still waiting to go out. */
+export async function loadQueued(campaignId: string): Promise<QueuedRow[]> {
+  const { data, error } = await getAdminClient()
+    .database.from("campaign_recipients")
+    .select(QUEUED_FIELDS)
+    .eq("campaign_id", campaignId)
+    .eq("status", "queued")
+    .range(0, 9_999);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as QueuedRow[];
+}
+
+/** Recounts the campaign's totals from its rows. */
+export async function refreshCounts(
+  campaignId: string,
+  extra: Record<string, unknown> = {},
+): Promise<void> {
+  const db = getAdminClient().database;
+  const [{ count: total }, { count: failedTotal }] = await Promise.all([
+    db
+      .from("campaign_recipients")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId),
+    db
+      .from("campaign_recipients")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .eq("status", "failed"),
+  ]);
+  await db
+    .from("campaigns")
+    .update({
+      recipients_count: total ?? 0,
+      failed_count: failedTotal ?? 0,
+      updated_at: new Date().toISOString(),
+      ...extra,
+    })
+    .eq("id", campaignId);
+}
+
 export async function dispatchCampaign(
   campaignId: string,
   opts: { resume?: boolean } = {},
@@ -144,16 +274,20 @@ export async function dispatchCampaign(
     }
 
     // Emails arrive lowercased and deduped from the resolver, which is what
-    // the unique index on (campaign_id, email) relies on.
+    // the unique index on (campaign_id, email, cycle) relies on. An A/B test
+    // deals its recipients out alternately, so both halves are the same size.
+    const split = campaign.kind === "split";
     const { error: insertError } = await db.from("campaign_recipients").upsert(
-      recipients.map((r) => ({
+      recipients.map((r, index) => ({
         campaign_id: campaignId,
         contact_id: r.id,
         email: r.email,
         language: r.language,
         status: "queued",
+        cycle: "",
+        variant: split ? (index % 2 === 0 ? "a" : "b") : null,
       })),
-      { onConflict: "campaign_id,email", ignoreDuplicates: true },
+      { onConflict: "campaign_id,email,cycle", ignoreDuplicates: true },
     );
     if (insertError) {
       await markFailed(campaignId, insertError.message);
@@ -161,106 +295,23 @@ export async function dispatchCampaign(
     }
   }
 
-  const { data: queued, error: queuedError } = await db
-    .from("campaign_recipients")
-    .select(
-      "id, contact_id, email, language, contacts(first_name, unsubscribe_token)",
-    )
-    .eq("campaign_id", campaignId)
-    .eq("status", "queued");
-  if (queuedError) {
-    await markFailed(campaignId, queuedError.message);
-    return { ok: false, error: "db", detail: queuedError.message };
+  let rows: QueuedRow[];
+  try {
+    rows = await loadQueued(campaignId);
+  } catch (err) {
+    const detail = (err as Error).message;
+    await markFailed(campaignId, detail);
+    return { ok: false, error: "db", detail };
   }
 
-  const rows = (queued ?? []) as QueuedRow[];
-  const content = campaign.content as CampaignContent;
-  const appUrl = getAppUrl();
-  let sent = 0;
-  let failed = 0;
-  let lastError: string | null = null;
-
-  for (let start = 0; start < rows.length; start += CHUNK) {
-    const chunk = rows.slice(start, start + CHUNK);
-    const emails = chunk.map((row) => {
-      const contact = one(row.contacts);
-      const token = contact?.unsubscribe_token ?? "";
-      const unsubscribeUrl = `${appUrl}${row.language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
-      const { subject, html } = campaignEmail({
-        content: content[row.language],
-        firstName: contact?.first_name ?? "",
-        unsubscribeUrl,
-        locale: row.language,
-      });
-      return {
-        to: row.email,
-        subject,
-        html,
-        blindCopy: false,
-        tags: { campaign_id: campaignId },
-        headers: {
-          "List-Unsubscribe": `<${unsubscribeUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
-      };
-    });
-
-    // `sendEmailBatch` already paces its own chunks; each call here is one
-    // chunk, so the pacing between calls is ours to keep.
-    if (start > 0) await pause(600);
-    let result = await sendEmailBatch(emails);
-    if (result.error && result.sent === 0) {
-      // One retry for a whole-chunk rejection (a 429, a blip); a second
-      // failure is recorded and the run moves on.
-      await pause(2000);
-      result = await sendEmailBatch(emails);
-    }
-
-    const at = new Date().toISOString();
-    await Promise.all(
-      chunk.map((row, index) => {
-        const providerId = result.ids[index] ?? null;
-        if (providerId) {
-          sent += 1;
-          return db
-            .from("campaign_recipients")
-            .update({ status: "sent", provider_id: providerId, sent_at: at })
-            .eq("id", row.id);
-        }
-        failed += 1;
-        lastError = result.error ?? "no id returned";
-        return db
-          .from("campaign_recipients")
-          .update({ status: "failed", error: lastError })
-          .eq("id", row.id);
-      }),
-    );
-  }
-
-  const [{ count: total }, { count: failedTotal }] = await Promise.all([
-    db
-      .from("campaign_recipients")
-      .select("id", { count: "exact", head: true })
-      .eq("campaign_id", campaignId),
-    db
-      .from("campaign_recipients")
-      .select("id", { count: "exact", head: true })
-      .eq("campaign_id", campaignId)
-      .eq("status", "failed"),
-  ]);
+  const { sent, failed, lastError } = await sendQueued(campaign, rows);
 
   const finishedAt = new Date().toISOString();
-  await db
-    .from("campaigns")
-    .update({
-      status: "sent",
-      sent_at: finishedAt,
-      updated_at: finishedAt,
-      recipients_count: total ?? 0,
-      failed_count: failedTotal ?? 0,
-      last_error: lastError,
-    })
-    .eq("id", campaignId);
+  await refreshCounts(campaignId, {
+    status: "sent",
+    sent_at: finishedAt,
+    last_error: lastError,
+  });
 
   return { ok: true, sent, failed };
 }

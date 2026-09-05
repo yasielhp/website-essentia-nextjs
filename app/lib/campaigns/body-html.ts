@@ -58,31 +58,30 @@ export function bodyToHtml(body: string): string {
     .join("");
 }
 
-const FIRST_NAME_TOKEN_SOURCE = String.raw`\{\{\s*first_name\s*\}\}`;
-const FIRST_NAME_TOKEN = new RegExp(FIRST_NAME_TOKEN_SOURCE, "g");
-// With no name to insert, the token goes together with the one space before
-// it, so "Hola {{first_name}}, bienvenida" reads "Hola, bienvenida" and not
-// "Hola , bienvenida". Only one space: a deliberate double space is theirs.
-const FIRST_NAME_TOKEN_WITH_SPACE = new RegExp(
-  ` ?${FIRST_NAME_TOKEN_SOURCE}`,
-  "g",
-);
+// Any `{{name}}` token. With nothing to insert, the token goes together with
+// the one space before it, so "Hola {{first_name}}, bienvenida" reads
+// "Hola, bienvenida" and not "Hola , bienvenida". Only one space: a deliberate
+// double space is theirs.
+const TOKEN = /( ?)\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi;
 
 /**
- * Fills `{{first_name}}` in either the subject or the body. Escaping is on by
+ * Fills `{{first_name}}` — and any other variable the sender provides, such as
+ * a blog post's title — in either the subject or the body. Escaping is on by
  * default because the body is HTML; the subject is plain text and passes
  * `escape: false`, or a subscriber called "Ana & Luis" would read `&amp;`.
+ * A token nobody provided a value for is removed, never left showing.
  */
 export function renderVariables(
   text: string,
-  vars: { first_name: string },
+  vars: Record<string, string>,
   options: { escape?: boolean } = {},
 ): string {
-  const firstName = vars.first_name.trim();
-  if (firstName.length === 0) {
-    return text.replace(FIRST_NAME_TOKEN_WITH_SPACE, "").trim();
-  }
-  const value = options.escape === false ? firstName : escapeHtml(firstName);
-  // A function, not a string: `$&` in a name would otherwise paste the token.
-  return text.replace(FIRST_NAME_TOKEN, () => value);
+  return text
+    .replace(TOKEN, (_match, space: string, name: string) => {
+      const raw = (vars[name] ?? "").trim();
+      if (raw.length === 0) return "";
+      const value = options.escape === false ? raw : escapeHtml(raw);
+      return space + value;
+    })
+    .trim();
 }

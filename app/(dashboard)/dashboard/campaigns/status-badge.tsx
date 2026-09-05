@@ -16,6 +16,8 @@ const CAMPAIGN_STYLES: Record<CampaignStatus, string> = {
   sent: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-sand-200 text-petroleum-400",
   failed: "bg-red-100 text-red-700",
+  active: "bg-emerald-100 text-emerald-800",
+  paused: "bg-amber-100 text-amber-800",
 };
 
 const RECIPIENT_STYLES: Record<RecipientStatus, string> = {

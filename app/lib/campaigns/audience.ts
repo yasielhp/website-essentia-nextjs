@@ -33,6 +33,8 @@ type ContactRow = {
   newsletter_subscribed: boolean | null;
   email_bounced_at: string | null;
   newsletter_unsubscribed_at: string | null;
+  newsletter_subscribed_at: string | null;
+  birthdate: string | null;
 };
 
 type BookingRow = {
@@ -45,6 +47,7 @@ type BookingRow = {
 
 type BookingSummary = {
   last: string | null;
+  first: string | null;
   services: Set<string>;
   count: number;
 };
@@ -71,7 +74,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
     db
       .from("contacts")
       .select(
-        "id, email, first_name, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at",
+        "id, email, first_name, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate",
       )
       .not("email", "is", null)
       .range(0, MAX_ROWS),
@@ -118,6 +121,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
 
     const summary = byContact.get(contactId) ?? {
       last: null,
+      first: null,
       services: new Set<string>(),
       count: 0,
     };
@@ -128,6 +132,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
     if (booking.date) {
       const day = booking.date.slice(0, 10);
       if (summary.last === null || day > summary.last) summary.last = day;
+      if (summary.first === null || day < summary.first) summary.first = day;
     }
     if (booking.service_id) summary.services.add(booking.service_id);
     summary.count += 1;
@@ -145,6 +150,9 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       bouncedAt: row.email_bounced_at,
       unsubscribedAt: row.newsletter_unsubscribed_at,
       lastBookingDate: bookings?.last ?? null,
+      firstBookingDate: bookings?.first ?? null,
+      subscribedAt: row.newsletter_subscribed_at,
+      birthdate: row.birthdate,
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,
     };

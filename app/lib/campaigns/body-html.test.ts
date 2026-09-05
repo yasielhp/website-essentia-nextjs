@@ -211,9 +211,10 @@ describe("renderVariables", () => {
     ).toBe("Hola $'!");
   });
 
-  it("does not touch other tokens", () => {
-    expect(renderVariables("{{last_name}}", { first_name: "Ana" })).toBe(
-      "{{last_name}}",
+  it("removes a token nobody provided a value for", () => {
+    // A stray placeholder must never reach a client's inbox as-is.
+    expect(renderVariables("Hola {{last_name}}!", { first_name: "Ana" })).toBe(
+      "Hola!",
     );
   });
 
@@ -252,5 +253,16 @@ describe("renderVariables", () => {
     it("trims the result", () => {
       expect(renderVariables(" {{first_name}} ", { first_name: "" })).toBe("");
     });
+  });
+});
+
+describe("renderVariables — other variables", () => {
+  it("fills any provided variable and drops unknown ones", () => {
+    expect(
+      renderVariables("Nuevo: {{post_title}} {{unknown}}!", {
+        first_name: "",
+        post_title: "Otoño <b>",
+      }),
+    ).toBe("Nuevo: Otoño &lt;b&gt;!");
   });
 });

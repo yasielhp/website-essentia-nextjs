@@ -101,6 +101,7 @@ export function ContentStep({
     const limit = LIMITS[name];
     const error = errorFor(name);
     const id = `campaign-${locale}-${name}`;
+    const value = block[name] ?? "";
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between">
@@ -113,19 +114,17 @@ export function ContentStep({
           {limit && (
             <span
               className={`text-xs ${
-                block[name].length > limit
-                  ? "text-red-500"
-                  : "text-petroleum-400"
+                value.length > limit ? "text-red-500" : "text-petroleum-400"
               }`}
             >
-              {t("characters", { count: block[name].length, max: limit })}
+              {t("characters", { count: value.length, max: limit })}
             </span>
           )}
         </div>
         <input
           id={id}
           type="text"
-          value={block[name]}
+          value={value}
           disabled={submitting}
           onChange={(e) => set(name)(e.target.value)}
           className={INPUT_CLASS}

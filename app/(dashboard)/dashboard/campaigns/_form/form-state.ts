@@ -8,6 +8,9 @@ import {
   type CampaignRow,
   type ContentBlock,
   type SegmentConditions,
+  type CampaignKind,
+  type CampaignTrigger,
+  DEFAULT_TRIGGER,
 } from "@/types/campaign";
 
 /**
@@ -21,15 +24,15 @@ import {
 
 export type Step = 0 | 1 | 2 | 3 | 4;
 
-/**
- * What kind of campaign this is. Only `standard` exists today; the picker
- * shows the others so the admin sees where the product is going, and the
- * value is kept in the form so adding one later is a case, not a refactor.
- */
-export type CampaignKind =
-  "standard" | "automated" | "autoresponder" | "split" | "rss" | "dateBased";
-
-export const AVAILABLE_KINDS: CampaignKind[] = ["standard"];
+/** Every kind can be built; the picker shows them all. */
+export const AVAILABLE_KINDS: CampaignKind[] = [
+  "standard",
+  "automated",
+  "autoresponder",
+  "split",
+  "rss",
+  "dateBased",
+];
 
 export type PickedContact = { id: string; name: string; email: string };
 
@@ -37,6 +40,7 @@ export type FormState = {
   id: string | null;
   step: Step;
   kind: CampaignKind;
+  trigger: CampaignTrigger;
   name: string;
   /** The saved segment the conditions came from; null means everyone or ad hoc. */
   segmentId: string | null;
@@ -54,6 +58,7 @@ export type FormState = {
 export type FormAction =
   | { type: "SET_NAME"; value: string }
   | { type: "SET_KIND"; kind: CampaignKind }
+  | { type: "SET_TRIGGER"; trigger: CampaignTrigger }
   | { type: "SET_AUDIENCE"; patch: Partial<CampaignAudience> }
   | {
       type: "SET_SEGMENT";
@@ -101,6 +106,7 @@ export const initialFormState: FormState = {
   id: null,
   step: 0,
   kind: "standard",
+  trigger: {},
   name: "",
   segmentId: null,
   segmentName: null,
@@ -137,7 +143,17 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       };
     case "SET_KIND":
       if (!AVAILABLE_KINDS.includes(action.kind)) return state;
-      return { ...state, kind: action.kind };
+      return {
+        ...state,
+        kind: action.kind,
+        // A new kind starts from its default event; the admin refines it.
+        trigger:
+          action.kind === state.kind
+            ? state.trigger
+            : { ...DEFAULT_TRIGGER[action.kind] },
+      };
+    case "SET_TRIGGER":
+      return { ...state, trigger: action.trigger };
     case "SET_SEGMENT":
       return {
         ...state,
@@ -254,6 +270,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return {
         ...initialFormState,
         id: action.campaign.id,
+        kind: action.campaign.kind ?? "standard",
+        trigger: action.campaign.trigger ?? {},
         name: action.campaign.name,
         segmentId: action.campaign.segment_id ?? null,
         segmentName: action.segmentName,

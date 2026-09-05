@@ -283,14 +283,13 @@ describe("filterAudience — dedupe and normalisation", () => {
     const first = c({ email: " Ana@Example.com " });
     const second = c({ email: "ana@example.com" });
     const result = filterAudience([first, second], EMPTY_AUDIENCE, NOW);
-    expect(result).toEqual([
-      {
-        id: first.id,
-        email: "ana@example.com",
-        firstName: first.firstName,
-        language: "en",
-      },
-    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: first.id,
+      email: "ana@example.com",
+      firstName: first.firstName,
+      language: "en",
+    });
   });
 
   it("dedupes across a filter match and a manual pick", () => {
