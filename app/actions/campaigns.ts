@@ -430,34 +430,24 @@ export async function listSegmentMembers(
   });
   if (!parsed.success) return [];
 
+  // Everything the page shows travels with the recipient: a second query
+  // filtered by a hundred ids is the kind of URL the gateway refuses.
   const recipients = await resolveAudience(parsed.data).catch(() => []);
-  if (recipients.length === 0) return [];
-  const byId = new Map(recipients.map((r) => [r.id, r]));
-
-  const { data, error } = await getAdminClient()
-    .database.from("contacts")
-    .select("id, first_name, last_name, email, phone, newsletter_subscribed")
-    .in("id", [...byId.keys()].slice(0, 5000))
-    .order("first_name", { ascending: true });
-  if (error) return [];
-
-  type Row = {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-    phone: string | null;
-    newsletter_subscribed: boolean | null;
-  };
-  return ((data ?? []) as Row[]).map((row) => ({
-    id: row.id,
-    first_name: row.first_name,
-    last_name: row.last_name,
-    email: byId.get(row.id)?.email ?? row.email ?? "",
-    phone: row.phone,
-    language: byId.get(row.id)?.language ?? "en",
-    newsletter: row.newsletter_subscribed === true,
-  }));
+  return recipients
+    .map((r) => ({
+      id: r.id,
+      first_name: r.firstName || null,
+      last_name: r.lastName ?? null,
+      email: r.email,
+      phone: r.phone ?? null,
+      language: r.language,
+      newsletter: r.newsletter ?? false,
+    }))
+    .sort((a, b) =>
+      `${a.first_name ?? ""} ${a.last_name ?? ""}`.localeCompare(
+        `${b.first_name ?? ""} ${b.last_name ?? ""}`,
+      ),
+    );
 }
 
 /** Removes a segment; campaigns that used it keep their copied conditions. */

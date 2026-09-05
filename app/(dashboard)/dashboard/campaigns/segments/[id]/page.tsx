@@ -153,6 +153,7 @@ export default function SegmentDetailPage() {
                 size="md"
                 disabled={busy}
                 onClick={() => setConfirmDelete(true)}
+                className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
               >
                 {t("delete")}
               </Button>

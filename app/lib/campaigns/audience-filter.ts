@@ -28,6 +28,8 @@ export type ContactCandidate = {
   subscribedAt?: string | null;
   /** YYYY-MM-DD, for birthday campaigns. */
   birthdate?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
 };
 
 export type Recipient = {
@@ -40,6 +42,9 @@ export type Recipient = {
   firstBookingDate?: string | null;
   subscribedAt?: string | null;
   birthdate?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  newsletter?: boolean;
 };
 
 const DAY_MS = 86_400_000;
@@ -126,6 +131,9 @@ export function filterAudience(
       firstBookingDate: candidate.firstBookingDate ?? null,
       subscribedAt: candidate.subscribedAt ?? null,
       birthdate: candidate.birthdate ?? null,
+      lastName: candidate.lastName ?? null,
+      phone: candidate.phone ?? null,
+      newsletter: candidate.newsletter,
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.

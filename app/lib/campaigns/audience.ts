@@ -35,6 +35,8 @@ type ContactRow = {
   newsletter_unsubscribed_at: string | null;
   newsletter_subscribed_at: string | null;
   birthdate: string | null;
+  last_name: string | null;
+  phone: string | null;
 };
 
 type BookingRow = {
@@ -74,7 +76,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
     db
       .from("contacts")
       .select(
-        "id, email, first_name, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate",
+        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate",
       )
       .not("email", "is", null)
       .range(0, MAX_ROWS),
@@ -153,6 +155,8 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       firstBookingDate: bookings?.first ?? null,
       subscribedAt: row.newsletter_subscribed_at,
       birthdate: row.birthdate,
+      lastName: row.last_name,
+      phone: row.phone,
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,
     };
