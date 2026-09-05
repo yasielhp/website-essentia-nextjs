@@ -193,6 +193,21 @@ export function DetailsStep({
         )}
       </div>
 
+      {/* Optional, and its own box: consent to marketing is a different
+          question from accepting the terms, and the law wants it asked apart. */}
+      <Checkbox
+        name="newsletter"
+        checked={details.newsletter ?? false}
+        onChange={(e) => {
+          onChange({ ...details, newsletter: e.target.checked });
+        }}
+        label={
+          <span className="text-petroleum-400 text-sm">
+            {t("newsletterOptIn")}
+          </span>
+        }
+      />
+
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">
           <span className="text-petroleum-400 w-full text-center text-xs tracking-wide uppercase">

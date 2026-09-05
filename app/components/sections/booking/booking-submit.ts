@@ -8,6 +8,7 @@ import {
   confirmDraftBooking,
 } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
+import { updateNewsletterForUser } from "@/actions/newsletter";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -83,6 +84,8 @@ export async function saveDetailsStep({
         p_phone: details.phone,
         p_language: locale,
         p_gender: details.gender || null,
+        // `null`, not `false`: an unticked box must not undo a yes given before.
+        p_newsletter: details.newsletter ? true : null,
       });
 
     // Never swallow this. A failure here used to pass unnoticed and the draft
@@ -98,6 +101,18 @@ export async function saveDetailsStep({
     } else {
       resolvedContactId = contactUuid as string;
     }
+  }
+
+  // A signed-in client has no contact row to upsert here, so the preference
+  // goes through the account path. Best effort: a booking is worth more than
+  // a newsletter flag.
+  if (user && details.newsletter) {
+    void updateNewsletterForUser(
+      getAccessToken(),
+      user.id,
+      details.email,
+      true,
+    ).catch(() => undefined);
   }
 
   let draftId = bookingId;

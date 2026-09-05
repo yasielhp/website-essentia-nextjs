@@ -135,7 +135,8 @@
     "legalBasisValue": "your consent (GDPR art. 6.1.a)",
     "rights": "Your rights:",
     "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
-    "fullDetails": "Full details in our"
+    "fullDetails": "Full details in our",
+    "newsletterOptIn": "I'd like to receive Essentia news and offers by email (optional)."
   },
   "confirmStep": {
     "date": "Date",

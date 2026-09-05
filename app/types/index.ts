@@ -14,6 +14,8 @@ export type DetailsState = {
   /** Empty string means the visitor left it unanswered. */
   gender?: Gender | "";
   consent: boolean;
+  /** Opt-in to news and offers. Unticked means "do not touch", never "no". */
+  newsletter?: boolean;
   notes?: string;
 };
 

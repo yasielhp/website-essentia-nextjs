@@ -135,7 +135,8 @@
     "legalBasisValue": "tu consentimiento (RGPD art. 6.1.a)",
     "rights": "Tus derechos:",
     "rightsValue": "acceso, rectificación, supresión, limitación, portabilidad y oposición: escribe a",
-    "fullDetails": "Más detalles en nuestra"
+    "fullDetails": "Más detalles en nuestra",
+    "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email (opcional)."
   },
   "confirmStep": {
     "date": "Fecha",
