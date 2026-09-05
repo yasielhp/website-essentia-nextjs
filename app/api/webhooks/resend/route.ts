@@ -3,7 +3,12 @@ import { Resend } from "resend";
 import { getAdminClient } from "@/lib/insforge-admin";
 
 /**
- * Resend's delivery callbacks for the booking emails.
+ * Resend's delivery callbacks, for booking emails and campaign emails alike.
+ *
+ * The two are told apart by the tag the message went out with: a campaign
+ * email carries `campaign_id` and lands in `campaign_recipients` through the
+ * `record_campaign_event` RPC; everything else is a booking email and follows
+ * the older path below.
  *
  * `sent` only ever meant that Resend accepted the message — the same half-truth
  * `sent` told about WhatsApp before Meta's webhook existed. What happened next,
@@ -26,7 +31,31 @@ export const dynamic = "force-dynamic";
 type ResendEvent = {
   type?: string;
   created_at?: string;
-  data?: { email_id?: string; bounce?: { message?: string } };
+  data?: {
+    email_id?: string;
+    bounce?: { message?: string };
+    /** Echoed back from the send; a campaign email carries `campaign_id`. */
+    tags?: Record<string, string>;
+  };
+};
+
+/**
+ * What a campaign email's callback means to its recipient row.
+ *
+ * Campaigns keep their own vocabulary rather than borrowing `booking_events`':
+ * a marketing email cares about clicks, and "read" would overstate what an
+ * open pixel proves. `record_campaign_event` applies the ranking and the
+ * counters in one statement, so this map is the whole translation.
+ */
+const CAMPAIGN_EVENT: Record<
+  string,
+  "delivered" | "opened" | "clicked" | "bounced" | "complained"
+> = {
+  "email.delivered": "delivered",
+  "email.opened": "opened",
+  "email.clicked": "clicked",
+  "email.bounced": "bounced",
+  "email.complained": "complained",
 };
 
 /**
@@ -98,6 +127,32 @@ export async function POST(req: NextRequest) {
   }
 
   const emailId = event.data?.email_id;
+
+  // The tag decides which table the callback belongs to. Campaign emails go
+  // out with `campaign_id`; booking emails carry no tags at all.
+  if (emailId && event.data?.tags?.campaign_id) {
+    const campaignEvent = event.type ? CAMPAIGN_EVENT[event.type] : undefined;
+    if (campaignEvent) {
+      try {
+        await getAdminClient().database.rpc("record_campaign_event", {
+          p_provider_id: emailId,
+          p_event: campaignEvent,
+          p_at: event.created_at ?? new Date().toISOString(),
+          p_error:
+            campaignEvent === "bounced" || campaignEvent === "complained"
+              ? reasonFor(event)
+              : null,
+        });
+      } catch (err) {
+        console.error(
+          "[webhooks/resend] could not record campaign event:",
+          err,
+        );
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
   const next = event.type ? NEXT_STATUS[event.type] : undefined;
   // `email.sent` and `email.delivery_delayed` come through the same
   // subscription and say nothing this log does not already know.
