@@ -13,15 +13,24 @@ import {
 import type { CodeError, SignUpError } from "@/lib/auth-security";
 import { useValidationMessage } from "@/hooks/use-validation-message";
 import { Button } from "@components/ui/button";
-import { PasswordInput } from "@components/ui/input";
+import { Checkbox, PasswordInput } from "@components/ui/input";
 import { EmailInput } from "@/components/ui/email-input";
 
-async function createProfile(userId: string, fullName: string, email: string) {
-  await insforge.database
-    .from("profiles")
-    .insert([
-      { id: userId, role: "contact", full_name: fullName || null, email },
-    ]);
+async function createProfile(
+  userId: string,
+  fullName: string,
+  email: string,
+  newsletter: boolean,
+) {
+  await insforge.database.from("profiles").insert([
+    {
+      id: userId,
+      role: "contact",
+      full_name: fullName || null,
+      email,
+      newsletter_subscribed: newsletter,
+    },
+  ]);
 }
 
 type Stage = "register" | "verify";
@@ -31,6 +40,7 @@ type State = {
   email: string;
   password: string;
   name: string;
+  newsletter: boolean;
   otp: string;
   error: SignUpError | CodeError | null;
   loading: boolean;
@@ -41,6 +51,7 @@ type Action =
   | { type: "SET_EMAIL"; payload: string }
   | { type: "SET_PASSWORD"; payload: string }
   | { type: "SET_NAME"; payload: string }
+  | { type: "SET_NEWSLETTER"; payload: boolean }
   | { type: "SET_OTP"; payload: string }
   | { type: "SET_ERROR"; payload: SignUpError | CodeError | null }
   | { type: "SET_LOADING"; payload: boolean };
@@ -50,6 +61,7 @@ const initialState: State = {
   email: "",
   password: "",
   name: "",
+  newsletter: false,
   otp: "",
   error: null,
   loading: false,
@@ -65,6 +77,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, password: action.payload };
     case "SET_NAME":
       return { ...state, name: action.payload };
+    case "SET_NEWSLETTER":
+      return { ...state, newsletter: action.payload };
     case "SET_OTP":
       return { ...state, otp: action.payload };
     case "SET_ERROR":
@@ -85,7 +99,8 @@ export default function SignUpForm() {
   const { push, refresh } = router;
 
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { stage, email, password, name, otp, error, loading } = state;
+  const { stage, email, password, name, newsletter, otp, error, loading } =
+    state;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +111,7 @@ export default function SignUpForm() {
       user,
       requireEmailVerification,
       error: signUpError,
-    } = await signUpAction(email, password, name);
+    } = await signUpAction(email, password, name, newsletter);
 
     dispatch({ type: "SET_LOADING", payload: false });
 
@@ -110,7 +125,7 @@ export default function SignUpForm() {
     } else if (user) {
       // The tokens stay on the server now, so a live account is the absence of
       // a verification step rather than an access token in the response.
-      await createProfile(user.id, name, email);
+      await createProfile(user.id, name, email, newsletter);
       push("/booking");
       refresh();
     }
@@ -131,7 +146,7 @@ export default function SignUpForm() {
     }
 
     if (user) {
-      await createProfile(user.id, name, email);
+      await createProfile(user.id, name, email, newsletter);
       push("/booking");
       refresh();
     }
@@ -334,6 +349,19 @@ export default function SignUpForm() {
           />
           <p className="text-petroleum-400 text-xs">{t("passwordHint")}</p>
         </div>
+
+        <Checkbox
+          name="newsletter"
+          checked={newsletter}
+          onChange={(e) =>
+            dispatch({ type: "SET_NEWSLETTER", payload: e.target.checked })
+          }
+          label={
+            <span className="text-petroleum-400 text-sm">
+              {t("newsletterOptIn")}
+            </span>
+          }
+        />
 
         {error && (
           <p

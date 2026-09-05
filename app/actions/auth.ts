@@ -14,6 +14,7 @@ import {
   parseErrors,
 } from "@/lib/schemas";
 import { getAppUrl } from "@/lib/env";
+import { getAdminClient } from "@/lib/insforge-admin";
 import {
   LOCK_THRESHOLD,
   accountFailures,
@@ -217,7 +218,12 @@ export async function signInWithPassword(email: string, password: string) {
   };
 }
 
-export async function signUp(email: string, password: string, name: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  name: string,
+  newsletter = false,
+) {
   const parsed = signUpSchema.safeParse({ email, password, name });
   if (!parsed.success) {
     return {
@@ -295,6 +301,27 @@ export async function signUp(email: string, password: string, name: string) {
     ip,
     userAgent: agent,
   });
+
+  // Consent lands on the contact row, which is what campaigns read. The
+  // profile may not exist yet — the browser creates it after this returns — so
+  // it is not touched here. Best effort: bookkeeping must never fail a sign-up.
+  if (newsletter) {
+    try {
+      await getAdminClient()
+        .database.from("contacts")
+        .upsert(
+          {
+            email: address,
+            first_name: parsed.data.name?.trim().split(/\s+/)[0] || null,
+            newsletter_subscribed: true,
+            newsletter_subscribed_at: new Date().toISOString(),
+          },
+          { onConflict: "email" },
+        );
+    } catch (err) {
+      console.error("[signUp] could not record newsletter consent:", err);
+    }
+  }
 
   return {
     user: data.user,
