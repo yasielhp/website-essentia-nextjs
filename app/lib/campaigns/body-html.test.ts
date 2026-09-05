@@ -119,6 +119,20 @@ describe("bodyToHtml — links", () => {
     );
   });
 
+  // `**` inside the URL has already become a <strong> by the time links run.
+  // The `<` it carries is refused by the URL class, so the link degrades to
+  // text instead of putting a tag inside the href.
+  it("refuses a URL carrying bold markers", () => {
+    const html = bodyToHtml("[a](https://x.com/**b**)");
+    expect(html).not.toContain("<a ");
+  });
+
+  it("keeps the HTML balanced when a bold closes inside a URL", () => {
+    const html = bodyToHtml("**[a](https://x.com/**) resto");
+    expect(html).not.toContain("<a ");
+    expect(html.split("<strong>").length).toBe(html.split("</strong>").length);
+  });
+
   it("escapes the link label", () => {
     expect(bodyToHtml("[<b>](https://a.com)")).toBe(
       `${P_OPEN}<a href="https://a.com" ${A_STYLE}>&lt;b&gt;</a></p>`,
@@ -176,6 +190,25 @@ describe("renderVariables", () => {
         { escape: false },
       ),
     ).toBe("Hola Ana & Luis");
+  });
+
+  // `$&`, `$\``, `$'` mean something to String.replace when the replacement is
+  // a string. A subscriber's name must land as typed, never as a copy of the
+  // surrounding text.
+  it("inserts a name with $ sequences literally", () => {
+    expect(renderVariables("Hola {{first_name}}!", { first_name: "$&" })).toBe(
+      "Hola $&amp;!",
+    );
+    expect(renderVariables("Hola {{first_name}}!", { first_name: "$`" })).toBe(
+      "Hola $`!",
+    );
+    expect(
+      renderVariables(
+        "Hola {{first_name}}!",
+        { first_name: "$'" },
+        { escape: false },
+      ),
+    ).toBe("Hola $'!");
   });
 
   it("does not touch other tokens", () => {

@@ -28,8 +28,12 @@ export function escapeHtml(value: string): string {
 
 // The URL may contain no whitespace and no `)`, which is also what closes the
 // construct. Quotes have already been escaped to `&quot;` by the time this
-// runs, so they cannot end the href attribute.
-const LINK_PATTERN = /\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/gi;
+// runs, so they cannot end the href attribute. Nor may it contain `<`: bold
+// runs before links, so a `<` here can only be a <strong> that `**` inside the
+// URL produced, and the link degrades to text rather than carry a tag.
+const LINK_PATTERN = /\[([^\][]+)\]\((https:\/\/[^\s)<]+)\)/gi;
+// `.` does not cross a newline, so `**a\nb**` stays literal — on purpose, a
+// bold that spans lines is almost always a forgotten closing marker.
 const BOLD_PATTERN = /\*\*(.+?)\*\*/g;
 
 function paragraphToHtml(paragraph: string): string {
@@ -54,11 +58,15 @@ export function bodyToHtml(body: string): string {
     .join("");
 }
 
-const FIRST_NAME_TOKEN = /\{\{\s*first_name\s*\}\}/g;
+const FIRST_NAME_TOKEN_SOURCE = String.raw`\{\{\s*first_name\s*\}\}`;
+const FIRST_NAME_TOKEN = new RegExp(FIRST_NAME_TOKEN_SOURCE, "g");
 // With no name to insert, the token goes together with the one space before
 // it, so "Hola {{first_name}}, bienvenida" reads "Hola, bienvenida" and not
 // "Hola , bienvenida". Only one space: a deliberate double space is theirs.
-const FIRST_NAME_TOKEN_WITH_SPACE = / ?\{\{\s*first_name\s*\}\}/g;
+const FIRST_NAME_TOKEN_WITH_SPACE = new RegExp(
+  ` ?${FIRST_NAME_TOKEN_SOURCE}`,
+  "g",
+);
 
 /**
  * Fills `{{first_name}}` in either the subject or the body. Escaping is on by
@@ -75,5 +83,6 @@ export function renderVariables(
     return text.replace(FIRST_NAME_TOKEN_WITH_SPACE, "").trim();
   }
   const value = options.escape === false ? firstName : escapeHtml(firstName);
-  return text.replace(FIRST_NAME_TOKEN, value);
+  // A function, not a string: `$&` in a name would otherwise paste the token.
+  return text.replace(FIRST_NAME_TOKEN, () => value);
 }
