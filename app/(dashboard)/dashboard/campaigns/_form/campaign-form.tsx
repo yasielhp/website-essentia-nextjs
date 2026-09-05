@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
-import { validateCampaign } from "@/lib/schemas";
+import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { Button } from "@/components/ui/button";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
@@ -70,9 +70,19 @@ export function CampaignForm({
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
 
-  /** Validates locally and, when clean, persists. Returns the id or null. */
-  async function persist(): Promise<string | null> {
-    const check = validateCampaign({
+  /**
+   * Validates locally and, when clean, persists. Returns the id or null.
+   *
+   * A draft is held to draft rules — a name and nothing malformed — so
+   * "save draft" means what it says. Everything that leaves the building
+   * (test, schedule, send) is held to the full rules.
+   */
+  async function persist(
+    mode: "draft" | "full" = "full",
+  ): Promise<string | null> {
+    const validate =
+      mode === "draft" ? validateCampaignDraft : validateCampaign;
+    const check = validate({
       name: state.name,
       audience: state.audience,
       content: state.content,
@@ -93,12 +103,22 @@ export function CampaignForm({
     }
 
     dispatch({ type: "SUBMIT_START" });
-    const result = await saveCampaign(getAccessToken(), {
-      id: state.id,
-      name: state.name,
-      audience: state.audience,
-      content: state.content,
-    });
+    let result: Awaited<ReturnType<typeof saveCampaign>>;
+    try {
+      result = await saveCampaign(
+        getAccessToken(),
+        {
+          id: state.id,
+          name: state.name,
+          audience: state.audience,
+          content: state.content,
+        },
+        { draft: mode === "draft" },
+      );
+    } catch {
+      dispatch({ type: "SUBMIT_ERROR", message: errorText("generic") });
+      return null;
+    }
     if (!result.ok) {
       if (result.fieldErrors) {
         dispatch({ type: "SET_ERRORS", errors: result.fieldErrors });
@@ -113,20 +133,24 @@ export function CampaignForm({
   async function handleTest() {
     const id = await persist();
     if (!id) return;
-    const result = await sendTestCampaign(
-      getAccessToken(),
-      state.content,
-      state.audience.language,
-    );
-    if (result.ok) {
-      notifySuccess(tToasts("campaignTestSent", { email: result.to }));
-    } else {
-      toast.error(errorText(result.error));
+    try {
+      const result = await sendTestCampaign(
+        getAccessToken(),
+        state.content,
+        state.audience.language,
+      );
+      if (result.ok) {
+        notifySuccess(tToasts("campaignTestSent", { email: result.to }));
+      } else {
+        toast.error(errorText(result.error));
+      }
+    } catch {
+      toast.error(errorText("generic"));
     }
   }
 
   async function handleSaveDraft() {
-    const id = await persist();
+    const id = await persist("draft");
     if (!id) return;
     notifySuccess(tToasts("campaignSaved"));
     push("/dashboard/campaigns");
@@ -135,7 +159,9 @@ export function CampaignForm({
   async function handleSchedule(iso: string) {
     const id = await persist();
     if (!id) return;
-    const result = await scheduleCampaign(getAccessToken(), id, iso);
+    const result = await scheduleCampaign(getAccessToken(), id, iso).catch(
+      () => ({ ok: false as const, error: "generic" }),
+    );
     if (!result.ok) {
       dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
       return;
@@ -147,7 +173,10 @@ export function CampaignForm({
   async function handleSendNow() {
     const id = await persist();
     if (!id) return;
-    const result = await sendCampaignNow(getAccessToken(), id);
+    const result = await sendCampaignNow(getAccessToken(), id).catch(() => ({
+      ok: false as const,
+      error: "generic",
+    }));
     if (!result.ok) {
       dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
       return;

@@ -66,8 +66,9 @@ export function AudienceStep({
     let cancelled = false;
     const timer = setTimeout(() => {
       setCounting(true);
-      void previewAudience(getAccessToken(), JSON.parse(audienceKey)).then(
-        (result) => {
+      void previewAudience(getAccessToken(), JSON.parse(audienceKey))
+        .catch(() => ({ ok: false as const, error: "generic" }))
+        .then((result) => {
           if (cancelled) return;
           setCounting(false);
           if ("count" in result) {
@@ -84,8 +85,7 @@ export function AudienceStep({
             dispatch({ type: "SET_REACH", reach: { count: 0, en: 0, es: 0 } });
             setSample([]);
           }
-        },
-      );
+        });
     }, 400);
     return () => {
       cancelled = true;

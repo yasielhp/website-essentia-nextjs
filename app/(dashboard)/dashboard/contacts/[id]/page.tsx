@@ -349,13 +349,15 @@ export default function ContactDetailPage() {
             clearing={clearingBounce}
             onClear={() => {
               setClearingBounce(true);
-              void clearContactBounce(getAccessToken(), id).then((result) => {
-                setClearingBounce(false);
-                if (result.ok) {
-                  dispatch({ type: "BOUNCE_CLEARED" });
-                  notifySuccess(tToasts("bounceCleared"));
-                }
-              });
+              void clearContactBounce(getAccessToken(), id)
+                .catch(() => ({ ok: false as const, error: "generic" }))
+                .then((result) => {
+                  setClearingBounce(false);
+                  if (result.ok) {
+                    dispatch({ type: "BOUNCE_CLEARED" });
+                    notifySuccess(tToasts("bounceCleared"));
+                  }
+                });
             }}
           />
         )}

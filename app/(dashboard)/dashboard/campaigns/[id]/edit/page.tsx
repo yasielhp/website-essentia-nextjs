@@ -30,7 +30,9 @@ export default function EditCampaignPage() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const { campaign } = await fetchCampaign(getAccessToken(), id);
+      const { campaign } = await fetchCampaign(getAccessToken(), id).catch(
+        () => ({ campaign: null }),
+      );
       if (cancelled) return;
       if (!campaign) {
         setLoaded({ kind: "missing" });
@@ -43,7 +45,7 @@ export default function EditCampaignPage() {
       const picked = await fetchContactsByIds(
         getAccessToken(),
         campaign.audience.manualIds ?? [],
-      );
+      ).catch(() => []);
       if (!cancelled) setLoaded({ kind: "ready", campaign, picked });
     })();
     return () => {

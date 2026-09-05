@@ -38,11 +38,13 @@ export function ContactPicker({
     let cancelled = false;
     const timer = setTimeout(() => {
       setSearching(true);
-      void searchContactsForCampaign(getAccessToken(), term).then((found) => {
-        if (cancelled) return;
-        setHits(found);
-        setSearching(false);
-      });
+      void searchContactsForCampaign(getAccessToken(), term)
+        .catch(() => [])
+        .then((found) => {
+          if (cancelled) return;
+          setHits(found);
+          setSearching(false);
+        });
     }, 300);
     return () => {
       cancelled = true;

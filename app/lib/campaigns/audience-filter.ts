@@ -104,7 +104,13 @@ export function filterAudience(
       id: candidate.id,
       email,
       firstName: candidate.firstName,
-      language: toLocale(candidate.language),
+      // A campaign written in one language is sent in that language to
+      // everyone on it, hand-picked contacts included: the other block is
+      // allowed to be empty, and an empty email is worse than a foreign one.
+      language:
+        audience.language === "any"
+          ? toLocale(candidate.language)
+          : audience.language,
     });
   }
 

@@ -221,6 +221,8 @@ describe("filterAudience — manual picks", () => {
       NOW,
     );
     expect(ids(result)).toEqual([es.id, en.id]);
+    // The campaign only has Spanish copy, so that is what the pick receives.
+    expect(result.map((r) => r.language)).toEqual(["es", "es"]);
   });
 
   it("keeps a hand-picked contact once, in input order", () => {

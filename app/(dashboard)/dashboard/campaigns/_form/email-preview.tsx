@@ -32,9 +32,11 @@ export function EmailPreview({
         getAccessToken(),
         JSON.parse(contentKey),
         locale,
-      ).then((result) => {
-        if (!cancelled && "html" in result) setHtml(result.html);
-      });
+      )
+        .catch(() => ({ ok: false as const, error: "generic" }))
+        .then((result) => {
+          if (!cancelled && "html" in result) setHtml(result.html);
+        });
     }, 500);
     return () => {
       cancelled = true;

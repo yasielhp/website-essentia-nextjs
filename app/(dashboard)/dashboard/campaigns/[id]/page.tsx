@@ -77,7 +77,10 @@ export default function CampaignDetailPage() {
   useDynamicBreadcrumb(state.kind === "ready" ? state.campaign.name : null);
 
   const load = useCallback(async () => {
-    const { campaign, recipients } = await fetchCampaign(getAccessToken(), id);
+    const { campaign, recipients } = await fetchCampaign(
+      getAccessToken(),
+      id,
+    ).catch(() => ({ campaign: null, recipients: [] }));
     if (!campaign) {
       dispatch({ type: "missing" });
       return;

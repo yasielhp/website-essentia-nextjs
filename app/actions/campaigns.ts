@@ -12,6 +12,7 @@ import {
   campaignAudienceSchema,
   requiredLocales,
   validateCampaign,
+  validateCampaignDraft,
 } from "@/lib/schemas";
 import { resolveAudience } from "@/lib/campaigns/audience";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
@@ -194,6 +195,8 @@ export async function fetchCampaign(
 export async function saveCampaign(
   accessToken: string | null,
   input: CampaignInput,
+  /** A draft only needs a name and well-formed fields; a send needs it all. */
+  options: { draft?: boolean } = {},
 ): Promise<
   | { ok: true; id: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> }
@@ -205,7 +208,8 @@ export async function saveCampaign(
     return authFailure(err);
   }
 
-  const validated = validateCampaign({
+  const check = options.draft ? validateCampaignDraft : validateCampaign;
+  const validated = check({
     name: input.name,
     audience: input.audience,
     content: input.content,

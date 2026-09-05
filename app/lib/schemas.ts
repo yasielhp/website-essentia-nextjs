@@ -382,6 +382,21 @@ export const campaignSchema = z
 export type CampaignInput = z.infer<typeof campaignSchema>;
 
 /**
+ * What a draft has to satisfy: a name, well-shaped conditions, and blocks
+ * within their limits. Nothing has to be filled in — a draft is by definition
+ * unfinished — but nothing may be malformed either, so a saved draft always
+ * loads back into the form.
+ */
+export const campaignDraftSchema = z.object({
+  name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+  audience: campaignAudienceSchema,
+  content: z.object({
+    en: z.object(localeContentShape),
+    es: z.object(localeContentShape),
+  }),
+});
+
+/**
  * The first issue per dotted path — `"content.es.subject"` — wins. An issue
  * with no path (the payload itself is not an object) lands under `"_"`, so the
  * consumer always has something to show.
@@ -410,6 +425,13 @@ export type CampaignValidation =
  */
 export function validateCampaign(input: unknown): CampaignValidation {
   const parsed = campaignSchema.safeParse(input);
+  if (parsed.success) return { ok: true, data: parsed.data };
+  return { ok: false, errors: collectIssues(parsed.error.issues) };
+}
+
+/** The draft-strength check; same shape of answer as `validateCampaign`. */
+export function validateCampaignDraft(input: unknown): CampaignValidation {
+  const parsed = campaignDraftSchema.safeParse(input);
   if (parsed.success) return { ok: true, data: parsed.data };
   return { ok: false, errors: collectIssues(parsed.error.issues) };
 }

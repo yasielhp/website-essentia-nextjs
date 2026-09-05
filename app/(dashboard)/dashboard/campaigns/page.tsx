@@ -65,14 +65,16 @@ export default function CampaignsPage() {
       status,
       page,
       pageSize: PAGE_SIZE,
-    }).then((result) => {
-      if (cancelled) return;
-      dispatch({
-        type: "loaded",
-        campaigns: result.campaigns,
-        total: result.total,
+    })
+      .catch(() => ({ campaigns: [], total: 0 }))
+      .then((result) => {
+        if (cancelled) return;
+        dispatch({
+          type: "loaded",
+          campaigns: result.campaigns,
+          total: result.total,
+        });
       });
-    });
     return () => {
       cancelled = true;
     };
@@ -80,9 +82,16 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchCampaignStats(getAccessToken()).then((result) => {
-      if (!cancelled) setStats(result);
-    });
+    void fetchCampaignStats(getAccessToken())
+      .catch(() => ({
+        sentThisMonth: 0,
+        recipients: 0,
+        delivered: 0,
+        opened: 0,
+      }))
+      .then((result) => {
+        if (!cancelled) setStats(result);
+      });
     return () => {
       cancelled = true;
     };

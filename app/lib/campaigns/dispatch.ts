@@ -274,25 +274,33 @@ export async function dispatchCampaign(
 export async function retryFailed(campaignId: string): Promise<DispatchResult> {
   const db = getAdminClient().database;
 
-  const { error: requeueError } = await db
-    .from("campaign_recipients")
-    .update({ status: "queued", error: null })
-    .eq("campaign_id", campaignId)
-    .eq("status", "failed");
-  if (requeueError) {
-    return { ok: false, error: "db", detail: requeueError.message };
-  }
-
-  const { error: reopenError } = await db
+  // Reopen first, requeue second: if the campaign is not a finished send the
+  // reopen matches nothing, and requeued rows would otherwise sit in `queued`
+  // with nobody coming back for them.
+  const { data: reopened, error: reopenError } = await db
     .from("campaigns")
     .update({
       status: "sending",
       sending_started_at: new Date(0).toISOString(),
     })
     .eq("id", campaignId)
-    .eq("status", "sent");
+    .eq("status", "sent")
+    .select("id");
   if (reopenError) {
     return { ok: false, error: "db", detail: reopenError.message };
+  }
+  if (!reopened || (reopened as unknown[]).length === 0) {
+    return { ok: false, error: "not_claimable" };
+  }
+
+  const { error: requeueError } = await db
+    .from("campaign_recipients")
+    .update({ status: "queued", error: null })
+    .eq("campaign_id", campaignId)
+    .eq("status", "failed");
+  if (requeueError) {
+    await markFailed(campaignId, requeueError.message);
+    return { ok: false, error: "db", detail: requeueError.message };
   }
 
   return dispatchCampaign(campaignId, { resume: true });
