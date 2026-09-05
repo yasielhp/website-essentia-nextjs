@@ -1487,7 +1487,9 @@
       "split": "Prueba A/B",
       "splitDesc": "Dos asuntos o dos versiones; la que mejor funcione va al resto de la lista.",
       "dateBased": "Basada en fecha",
-      "dateBasedDesc": "Se envía alrededor de una fecha del contacto, como un cumpleaños o un aniversario."
+      "dateBasedDesc": "Se envía alrededor de una fecha del contacto, como un cumpleaños o un aniversario.",
+      "rss": "Se activa por RSS",
+      "rssDesc": "Sale cada vez que el blog publica algo nuevo."
     }
   }
 }

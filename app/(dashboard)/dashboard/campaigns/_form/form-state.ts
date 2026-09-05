@@ -25,7 +25,7 @@ export type Step = 0 | 1 | 2 | 3;
  * value is kept in the form so adding one later is a case, not a refactor.
  */
 export type CampaignKind =
-  "standard" | "automated" | "autoresponder" | "split" | "dateBased";
+  "standard" | "automated" | "autoresponder" | "split" | "rss" | "dateBased";
 
 export const AVAILABLE_KINDS: CampaignKind[] = ["standard"];
 

@@ -1487,7 +1487,9 @@
       "split": "A/B test",
       "splitDesc": "Two subjects or two versions; the better one goes to the rest of the list.",
       "dateBased": "Date based",
-      "dateBasedDesc": "Sent around a date on the contact, such as a birthday or an anniversary."
+      "dateBasedDesc": "Sent around a date on the contact, such as a birthday or an anniversary.",
+      "rss": "RSS triggered",
+      "rssDesc": "Goes out whenever the blog publishes something new."
     }
   }
 }

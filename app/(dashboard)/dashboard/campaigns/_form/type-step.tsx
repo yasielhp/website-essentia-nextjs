@@ -4,7 +4,14 @@ import type { Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { useFieldError } from "@/hooks/use-field-error";
-import { IconCheckmark } from "@/components/ui/icons";
+import {
+  IconCalendar,
+  IconCheck,
+  IconEdit,
+  IconMail,
+  IconSettings,
+  IconWorld,
+} from "@/components/ui/icons";
 import {
   AVAILABLE_KINDS,
   type CampaignKind,
@@ -12,12 +19,13 @@ import {
   type FormState,
 } from "./form-state";
 
-const KINDS: CampaignKind[] = [
-  "standard",
-  "automated",
-  "autoresponder",
-  "split",
-  "dateBased",
+const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
+  { kind: "standard", icon: <IconMail /> },
+  { kind: "automated", icon: <IconSettings /> },
+  { kind: "autoresponder", icon: <IconCheck /> },
+  { kind: "split", icon: <IconEdit /> },
+  { kind: "rss", icon: <IconWorld /> },
+  { kind: "dateBased", icon: <IconCalendar /> },
 ];
 
 /**
@@ -39,14 +47,15 @@ export function TypeStep({
   const nameError = fieldError(state.fieldErrors.name);
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="border-sand-200 rounded-2xl border bg-white p-6">
+    <div className="border-sand-200 mx-auto w-full max-w-5xl rounded-2xl border bg-white px-6 py-10 lg:px-12">
+      <section className="mx-auto flex max-w-3xl flex-col items-center gap-3 text-center">
         <label
           htmlFor="campaign-name"
-          className="text-petroleum-500 mb-2 block text-sm font-semibold"
+          className="font-display text-petroleum-700 text-2xl"
         >
           {t("form.name")}
         </label>
+        <p className="text-petroleum-400 text-sm">{t("form.nameHint")}</p>
         <input
           id="campaign-name"
           type="text"
@@ -57,18 +66,19 @@ export function TypeStep({
           onChange={(e) =>
             dispatch({ type: "SET_NAME", value: e.target.value })
           }
-          className={`${INPUT_CLASS} text-base`}
+          className={`${INPUT_CLASS} mt-2 text-base`}
         />
-        <p className="text-petroleum-400 mt-2 text-xs">{t("form.nameHint")}</p>
-        {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
+        {nameError && <p className="text-xs text-red-500">{nameError}</p>}
       </section>
 
-      <section className="border-sand-200 rounded-2xl border bg-white p-6">
-        <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+      <hr className="border-sand-200 my-10" />
+
+      <section className="flex flex-col gap-6">
+        <h2 className="font-display text-petroleum-700 text-center text-2xl">
           {t("type.title")}
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {KINDS.map((kind) => {
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {KINDS.map(({ kind, icon }) => {
             const available = AVAILABLE_KINDS.includes(kind);
             const active = state.kind === kind;
             return (
@@ -79,32 +89,39 @@ export function TypeStep({
                 aria-pressed={active}
                 onClick={() => dispatch({ type: "SET_KIND", kind })}
                 className={[
-                  "relative flex flex-col gap-1.5 rounded-2xl border p-5 text-left transition-colors",
+                  "flex items-start gap-4 rounded-2xl border p-5 text-left transition-colors",
                   active
-                    ? "border-petroleum-700 bg-petroleum-50/60"
+                    ? "border-petroleum-700 bg-petroleum-50/50 ring-petroleum-100 ring-2"
                     : "border-sand-200 bg-white",
                   available
                     ? "hover:border-petroleum-400 cursor-pointer"
-                    : "cursor-not-allowed opacity-60",
+                    : "cursor-not-allowed opacity-55",
                 ].join(" ")}
               >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-petroleum-700 text-sm font-semibold">
-                    {t(`type.${kind}`)}
-                  </span>
-                  {active && (
-                    <span className="bg-petroleum-700 flex size-5 items-center justify-center rounded-full text-white">
-                      <IconCheckmark />
-                    </span>
-                  )}
-                  {!available && (
-                    <span className="bg-sand-100 text-petroleum-400 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
-                      {t("type.comingSoon")}
-                    </span>
-                  )}
+                <span
+                  className={[
+                    "flex size-12 shrink-0 items-center justify-center rounded-xl [&_svg]:size-6",
+                    active
+                      ? "bg-petroleum-700 text-white"
+                      : "bg-sand-100 text-petroleum-500",
+                  ].join(" ")}
+                >
+                  {icon}
                 </span>
-                <span className="text-petroleum-400 text-xs leading-relaxed">
-                  {t(`type.${kind}Desc`)}
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-petroleum-700 text-sm font-semibold">
+                      {t(`type.${kind}`)}
+                    </span>
+                    {!available && (
+                      <span className="bg-sand-100 text-petroleum-400 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
+                        {t("type.comingSoon")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-petroleum-400 text-xs leading-relaxed">
+                    {t(`type.${kind}Desc`)}
+                  </span>
                 </span>
               </button>
             );
