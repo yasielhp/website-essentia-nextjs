@@ -1382,7 +1382,8 @@
       "sampleHide": "Hide sample",
       "sampleMore": "…and {count} more",
       "counting": "Counting…",
-      "neverBookedNote": "Booking conditions are off while \"Has never booked\" is on."
+      "neverBookedNote": "Booking conditions are off while \"Has never booked\" is on.",
+      "confirm": "Confirm audience"
     },
     "content": {
       "title": "What it says",
@@ -1403,7 +1404,8 @@
       "notSentIn": "This campaign does not go out in {language}. Choose \"Both languages\" in the audience step to write it.",
       "localeEn": "English",
       "localeEs": "Spanish",
-      "characters": "{count}/{max}"
+      "characters": "{count}/{max}",
+      "confirm": "Confirm content"
     },
     "review": {
       "title": "Review and send",
@@ -1489,7 +1491,8 @@
       "dateBased": "Date based",
       "dateBasedDesc": "Sent around a date on the contact, such as a birthday or an anniversary.",
       "rss": "RSS triggered",
-      "rssDesc": "Goes out whenever the blog publishes something new."
+      "rssDesc": "Goes out whenever the blog publishes something new.",
+      "hint": "Pick one to continue."
     }
   }
 }

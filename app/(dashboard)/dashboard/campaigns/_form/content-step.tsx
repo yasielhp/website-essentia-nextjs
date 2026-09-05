@@ -4,6 +4,7 @@ import type { Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { Button } from "@/components/ui/button";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { useFieldError } from "@/hooks/use-field-error";
 import { requiredLocales } from "@/lib/schemas";
@@ -26,9 +27,12 @@ const LIMITS: Partial<Record<keyof CampaignLocaleContent, number>> = {
 export function ContentStep({
   state,
   dispatch,
+  onDone,
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
+  /** Validates the copy and opens the review step. */
+  onDone: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.content");
   const fieldError = useFieldError();
@@ -166,6 +170,12 @@ export function ContentStep({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {field("ctaText", t("ctaText"))}
             {field("ctaUrl", t("ctaUrl"), { placeholder: "https://" })}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button size="md" disabled={submitting} onClick={onDone}>
+              {t("confirm")}
+            </Button>
           </div>
         </div>
       </section>

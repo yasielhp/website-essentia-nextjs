@@ -66,13 +66,11 @@ function defaultScheduleValue(): string {
 export function ReviewStep({
   state,
   onTest,
-  onSaveDraft,
   onSchedule,
   onSendNow,
 }: {
   state: FormState;
   onTest: () => Promise<void>;
-  onSaveDraft: () => Promise<void>;
   onSchedule: (iso: string) => Promise<void>;
   onSendNow: () => Promise<void>;
 }) {
@@ -82,9 +80,7 @@ export function ReviewStep({
   const { audience, content, reach, submitting, error } = state;
   const [confirming, setConfirming] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
-  const [busy, setBusy] = useState<
-    "test" | "draft" | "schedule" | "send" | null
-  >(null);
+  const [busy, setBusy] = useState<"test" | "schedule" | "send" | null>(null);
 
   const conditions = describeAudience(audience, t, tAudience);
   const count = reach?.count ?? 0;
@@ -174,14 +170,6 @@ export function ReviewStep({
             onClick={() => void run("test", onTest)}
           >
             {busy === "test" ? t("sendingTest") : t("sendTest")}
-          </Button>
-          <Button
-            variant="outline"
-            size="md"
-            disabled={disabled}
-            onClick={() => void run("draft", onSaveDraft)}
-          >
-            {t("saveDraft")}
           </Button>
         </div>
 

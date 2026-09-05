@@ -1382,7 +1382,8 @@
       "sampleHide": "Ocultar muestra",
       "sampleMore": "…y {count} más",
       "counting": "Contando…",
-      "neverBookedNote": "Las condiciones de reserva están desactivadas mientras \"Nunca ha reservado\" esté encendido."
+      "neverBookedNote": "Las condiciones de reserva están desactivadas mientras \"Nunca ha reservado\" esté encendido.",
+      "confirm": "Confirmar audiencia"
     },
     "content": {
       "title": "Qué dice",
@@ -1403,7 +1404,8 @@
       "notSentIn": "Esta campaña no se envía en {language}. Elige \"Ambos idiomas\" en el paso de audiencia para escribirla.",
       "localeEn": "Inglés",
       "localeEs": "Español",
-      "characters": "{count}/{max}"
+      "characters": "{count}/{max}",
+      "confirm": "Confirmar contenido"
     },
     "review": {
       "title": "Revisar y enviar",
@@ -1489,7 +1491,8 @@
       "dateBased": "Basada en fecha",
       "dateBasedDesc": "Se envía alrededor de una fecha del contacto, como un cumpleaños o un aniversario.",
       "rss": "Se activa por RSS",
-      "rssDesc": "Sale cada vez que el blog publica algo nuevo."
+      "rssDesc": "Sale cada vez que el blog publica algo nuevo.",
+      "hint": "Elige uno para continuar."
     }
   }
 }

@@ -8,6 +8,7 @@ import { bookableServices } from "@/data/services-data";
 import { MultiOptionSelect } from "@/components/ui/multi-option-select";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { previewAudience } from "@/actions/campaigns";
+import { Button } from "@/components/ui/button";
 import type { CampaignLanguage } from "@/types/campaign";
 import { ContactPicker } from "./contact-picker";
 import type { FormAction, FormState } from "./form-state";
@@ -47,9 +48,12 @@ function Card({
 export function AudienceStep({
   state,
   dispatch,
+  onDone,
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
+  /** Confirms the audience as it stands and opens the next step. */
+  onDone: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.audience");
   const { audience, pickedContacts, reach, submitting } = state;
@@ -303,6 +307,16 @@ export function AudienceStep({
             )}
           </>
         )}
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          size="md"
+          disabled={submitting || counting || !reach || reach.count === 0}
+          onClick={onDone}
+        >
+          {t("confirm")}
+        </Button>
       </div>
     </div>
   );

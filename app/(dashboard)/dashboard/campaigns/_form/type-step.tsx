@@ -38,9 +38,12 @@ const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
 export function TypeStep({
   state,
   dispatch,
+  onDone,
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
+  /** Called when a kind is chosen; the shell checks the name and moves on. */
+  onDone: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns");
   const fieldError = useFieldError();
@@ -66,6 +69,12 @@ export function TypeStep({
           onChange={(e) =>
             dispatch({ type: "SET_NAME", value: e.target.value })
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onDone();
+            }
+          }}
           className={`${INPUT_CLASS} mt-2 text-base`}
         />
         {nameError && <p className="text-xs text-red-500">{nameError}</p>}
@@ -74,9 +83,12 @@ export function TypeStep({
       <hr className="border-sand-200 my-10" />
 
       <section className="flex flex-col gap-6">
-        <h2 className="font-display text-petroleum-700 text-center text-2xl">
-          {t("type.title")}
-        </h2>
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h2 className="font-display text-petroleum-700 text-2xl">
+            {t("type.title")}
+          </h2>
+          <p className="text-petroleum-400 text-sm">{t("type.hint")}</p>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {KINDS.map(({ kind, icon }) => {
             const available = AVAILABLE_KINDS.includes(kind);
@@ -87,7 +99,10 @@ export function TypeStep({
                 type="button"
                 disabled={!available || state.submitting}
                 aria-pressed={active}
-                onClick={() => dispatch({ type: "SET_KIND", kind })}
+                onClick={() => {
+                  dispatch({ type: "SET_KIND", kind });
+                  onDone();
+                }}
                 className={[
                   "flex items-start gap-4 rounded-2xl border p-5 text-left transition-colors",
                   active
