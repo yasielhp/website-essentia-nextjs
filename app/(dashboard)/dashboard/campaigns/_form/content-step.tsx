@@ -109,7 +109,7 @@ export function ContentStep({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="flex flex-col gap-4">
       <section className="border-sand-200 rounded-2xl border bg-white p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <h2 className="text-petroleum-500 text-sm font-semibold">
@@ -180,9 +180,9 @@ export function ContentStep({
         </div>
       </section>
 
-      <div className="lg:sticky lg:top-6 lg:self-start">
+      <section className="border-sand-200 rounded-2xl border bg-white p-6">
         <EmailPreview content={block} locale={activeLocale} />
-      </div>
+      </section>
     </div>
   );
 }
