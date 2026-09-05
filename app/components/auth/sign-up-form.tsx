@@ -28,7 +28,8 @@ async function createProfile(
       role: "contact",
       full_name: fullName || null,
       email,
-      newsletter_subscribed: newsletter,
+      // Only ever a yes: a blank box is not a no.
+      ...(newsletter ? { newsletter_subscribed: true } : {}),
     },
   ]);
 }

@@ -48,7 +48,12 @@ type Failure = { ok: false; error: string };
 const LIST_PATH = "/dashboard/campaigns";
 
 /** The statuses a campaign can still be edited or deleted in. */
-const EDITABLE: CampaignStatus[] = ["draft", "scheduled", "cancelled"];
+const EDITABLE: CampaignStatus[] = [
+  "draft",
+  "scheduled",
+  "cancelled",
+  "failed",
+];
 const DELETABLE: CampaignStatus[] = ["draft", "cancelled", "failed"];
 
 async function admin(accessToken: string | null): Promise<AuthContext> {
@@ -223,8 +228,8 @@ export async function saveCampaign(
   const row = { ...validated.data, updated_at: now };
 
   if (input.id) {
-    // Editing a cancelled campaign brings it back as a draft; a draft or a
-    // scheduled one keeps its state, the schedule included.
+    // Editing a cancelled or failed campaign brings it back as a draft; a
+    // draft or a scheduled one keeps its state, the schedule included.
     const { data, error } = await db
       .from("campaigns")
       .select("status")
@@ -238,8 +243,8 @@ export async function saveCampaign(
       .from("campaigns")
       .update({
         ...row,
-        ...(status === "cancelled"
-          ? { status: "draft", scheduled_at: null }
+        ...(status === "cancelled" || status === "failed"
+          ? { status: "draft", scheduled_at: null, last_error: null }
           : {}),
       })
       .eq("id", input.id);
@@ -593,7 +598,7 @@ export async function fetchContactCampaigns(
     .database.from("campaign_recipients")
     .select("id, status, sent_at, campaigns(id, name, sent_at)")
     .eq("contact_id", contactId)
-    .order("sent_at", { ascending: false });
+    .order("sent_at", { ascending: false, nullsFirst: false });
   if (error) return [];
 
   type Row = Omit<ContactCampaignRow, "campaign"> & {

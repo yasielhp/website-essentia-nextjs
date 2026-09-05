@@ -38,7 +38,9 @@ export default function EditCampaignPage() {
         setLoaded({ kind: "missing" });
         return;
       }
-      if (!["draft", "scheduled", "cancelled"].includes(campaign.status)) {
+      if (
+        !["draft", "scheduled", "cancelled", "failed"].includes(campaign.status)
+      ) {
         replace(`/dashboard/campaigns/${id}`);
         return;
       }

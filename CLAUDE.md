@@ -110,7 +110,7 @@ Admin-only (`/dashboard/campaigns`). Design: `docs/plans/2026-09-05-email-campai
 - `dispatchCampaign()` claims the row atomically (`draft|scheduled → sending`), freezes the audience as `queued` rows, sends in chunks of 100 via `sendEmailBatch` with `tags.campaign_id`, `blindCopy: false` and `List-Unsubscribe` headers, and stamps `provider_id`. A resume sends only `queued` rows, so a timeout never double-sends.
 - The Resend webhook (`/api/webhooks/resend`) routes events carrying `tags.campaign_id` to the `record_campaign_event` RPC, which moves a recipient forward only and bumps counters once. Opens/clicks need tracking enabled on the Resend domain and the events subscribed on the webhook.
 - Email body is plain text with three constructs (blank line, `**bold**`, `[text](https://…)`); everything else is escaped. `{{first_name}}` is the only variable.
-- **Consent rule**: the newsletter checkbox/toggle (booking form, sign-up, dashboard contact + booking) only ever sets `newsletter_subscribed = true`; unticked means "do not touch". `upsert_contact(p_newsletter)` encodes this.
+- **Consent rule**: the newsletter checkbox/toggle (booking form, sign-up, dashboard contact + booking) only ever sets `newsletter_subscribed = true`; unticked means "do not touch". `upsert_contact(p_newsletter)` encodes this. An explicit unsubscribe stamps `contacts.newsletter_unsubscribed_at`, and the audience resolver excludes those contacts whatever the campaign's filter says.
 
 ### Google Calendar Integration
 

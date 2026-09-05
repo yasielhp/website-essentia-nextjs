@@ -23,16 +23,28 @@ function getResend(): Resend | null {
   return new Resend(apiKey);
 }
 
-/** Keeps the `contacts` row in step, so new subscribers also appear there. */
+/**
+ * Keeps the `contacts` row in step, so new subscribers also appear there.
+ *
+ * A no is stamped, not just stored as `false`: campaigns may write to clients
+ * who were never asked, but never to somebody who asked to be left alone, and
+ * only the timestamp tells those two apart. A later yes clears it.
+ */
 async function syncContactNewsletter(
   email: string,
   subscribed: boolean,
 ): Promise<void> {
+  const now = new Date().toISOString();
   try {
     await getAdminClient()
       .database.from("contacts")
       .upsert(
-        { email, newsletter_subscribed: subscribed },
+        {
+          email,
+          newsletter_subscribed: subscribed,
+          newsletter_unsubscribed_at: subscribed ? null : now,
+          ...(subscribed ? { newsletter_subscribed_at: now } : {}),
+        },
         { onConflict: "email" },
       );
   } catch {

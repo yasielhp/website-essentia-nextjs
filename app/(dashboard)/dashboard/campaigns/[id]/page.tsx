@@ -197,7 +197,9 @@ export default function CampaignDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {["draft", "scheduled", "cancelled"].includes(campaign.status) && (
+          {["draft", "scheduled", "cancelled", "failed"].includes(
+            campaign.status,
+          ) && (
             <Button
               variant="outline"
               size="md"

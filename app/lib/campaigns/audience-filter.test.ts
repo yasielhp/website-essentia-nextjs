@@ -15,6 +15,7 @@ function c(overrides: Partial<ContactCandidate> = {}): ContactCandidate {
     language: "en",
     newsletter: false,
     bouncedAt: null,
+    unsubscribedAt: null,
     lastBookingDate: null,
     serviceIds: [],
     bookingsCount: 0,
@@ -29,6 +30,16 @@ function audience(overrides: Partial<CampaignAudience>): CampaignAudience {
 const ids = (list: { id: string }[]) => list.map((r) => r.id);
 
 describe("filterAudience — fixed exclusions", () => {
+  it("drops a contact who unsubscribed, even when hand-picked", () => {
+    const gone = c({ unsubscribedAt: "2026-08-01T10:00:00Z" });
+    const result = filterAudience(
+      [gone],
+      audience({ manualIds: [gone.id] }),
+      NOW,
+    );
+    expect(ids(result)).toEqual([]);
+  });
+
   it("returns everyone sendable for the empty audience", () => {
     const a = c();
     const b = c({ language: "es", newsletter: true, bookingsCount: 3 });

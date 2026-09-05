@@ -307,17 +307,27 @@ export async function signUp(
   // it is not touched here. Best effort: bookkeeping must never fail a sign-up.
   if (newsletter) {
     try {
-      await getAdminClient()
-        .database.from("contacts")
-        .upsert(
-          {
-            email: address,
-            first_name: parsed.data.name?.trim().split(/\s+/)[0] || null,
-            newsletter_subscribed: true,
-            newsletter_subscribed_at: new Date().toISOString(),
-          },
-          { onConflict: "email" },
-        );
+      const db = getAdminClient().database;
+      const consent = {
+        newsletter_subscribed: true,
+        newsletter_subscribed_at: new Date().toISOString(),
+        newsletter_unsubscribed_at: null,
+      };
+      const { data: existing } = await db
+        .from("contacts")
+        .select("id")
+        .eq("email", address)
+        .maybeSingle();
+      if (existing) {
+        // A known client: only the consent changes, never the name on file.
+        await db.from("contacts").update(consent).eq("email", address);
+      } else {
+        await db.from("contacts").insert({
+          email: address,
+          first_name: parsed.data.name?.trim().split(/\s+/)[0] || null,
+          ...consent,
+        });
+      }
     } catch (err) {
       console.error("[signUp] could not record newsletter consent:", err);
     }

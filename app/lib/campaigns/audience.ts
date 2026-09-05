@@ -32,6 +32,7 @@ type ContactRow = {
   preferred_language: string | null;
   newsletter_subscribed: boolean | null;
   email_bounced_at: string | null;
+  newsletter_unsubscribed_at: string | null;
 };
 
 type BookingRow = {
@@ -61,7 +62,7 @@ export async function resolveAudience(
     db
       .from("contacts")
       .select(
-        "id, email, first_name, preferred_language, newsletter_subscribed, email_bounced_at",
+        "id, email, first_name, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at",
       )
       .not("email", "is", null)
       .range(0, MAX_ROWS),
@@ -133,6 +134,7 @@ export async function resolveAudience(
       language: row.preferred_language,
       newsletter: row.newsletter_subscribed === true,
       bouncedAt: row.email_bounced_at,
+      unsubscribedAt: row.newsletter_unsubscribed_at,
       lastBookingDate: bookings?.last ?? null,
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,

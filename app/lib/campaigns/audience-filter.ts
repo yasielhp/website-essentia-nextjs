@@ -16,6 +16,8 @@ export type ContactCandidate = {
   language: string | null;
   newsletter: boolean;
   bouncedAt: string | null;
+  /** Set when the contact asked to be left alone; nothing overrides it. */
+  unsubscribedAt: string | null;
   /** YYYY-MM-DD of the most recent non-cancelled booking, or null. */
   lastBookingDate: string | null;
   serviceIds: string[];
@@ -42,7 +44,11 @@ function toLocale(language: string | null): CampaignLocale {
  * the sender reputation.
  */
 function isSendable(candidate: ContactCandidate): boolean {
-  return candidate.bouncedAt === null && candidate.email.includes("@");
+  return (
+    candidate.bouncedAt === null &&
+    candidate.email.includes("@") &&
+    candidate.unsubscribedAt === null
+  );
 }
 
 function matchesConditions(
