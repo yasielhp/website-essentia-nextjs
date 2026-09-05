@@ -431,11 +431,12 @@ export function AudienceStep({
       value: "",
       label: list ? `${tSeg("everyone")} (${list.everyone})` : tSeg("everyone"),
     },
-    { value: NEW_SEGMENT, label: tSeg("createOption") },
     ...(segments ?? []).map((segment) => ({
       value: segment.id,
       label: `${segment.name} (${segment.count})`,
     })),
+    // Always last, after every saved segment.
+    { value: NEW_SEGMENT, label: tSeg("createOption") },
   ];
 
   return (
@@ -457,8 +458,8 @@ export function AudienceStep({
                 ariaLabel={tSeg("title")}
                 placeholder={tSeg("everyone")}
                 onChange={(value) => {
-                  // "New segment" lives in the list itself, right under
-                  // everyone: choosing it opens the builder instead of picking.
+                  // "New segment" lives in the list itself, at the end:
+                  // choosing it opens the builder instead of picking.
                   if (value === NEW_SEGMENT) openNew();
                   else pickSegment(value);
                 }}
