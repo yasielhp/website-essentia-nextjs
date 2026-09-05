@@ -73,6 +73,7 @@ export default function SegmentsPage() {
                   <th className={TH}>{t("table.name")}</th>
                   <th className={TH}>{t("table.conditions")}</th>
                   <th className={`${TH} text-right`}>{t("table.people")}</th>
+                  <th className={TH}>{t("table.created")}</th>
                   <th className={TH}>{t("table.updated")}</th>
                 </tr>
               </thead>
@@ -101,6 +102,9 @@ export default function SegmentsPage() {
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
                         {segment.count}
+                      </td>
+                      <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
+                        {formatMediumDate(segment.created_at, locale)}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
                         {formatMediumDate(segment.updated_at, locale)}

@@ -1625,7 +1625,8 @@
         "name": "Nombre",
         "conditions": "Condiciones",
         "people": "Personas",
-        "updated": "Actualizado"
+        "updated": "Actualizado",
+        "created": "Creado"
       },
       "noConditions": "Todos los contactos con email"
     },
