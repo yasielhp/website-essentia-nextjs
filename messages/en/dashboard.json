@@ -1402,7 +1402,7 @@
       "preheaderHint": "The line inbox apps show next to the subject. Falls back to the title.",
       "emailTitle": "Title",
       "body": "Body",
-      "bodyHelp": "Blank line = new paragraph. **bold**. [text](https://link). {{first_name}} inserts the client's name.",
+      "bodyHelp": "Blank line = new paragraph. **bold**. [text](https://link). '{{'first_name'}}' inserts the client's name.",
       "image": "Image (optional)",
       "imageUrl": "Or paste an image URL",
       "ctaText": "Button text",

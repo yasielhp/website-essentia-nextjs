@@ -1402,7 +1402,7 @@
       "preheaderHint": "La línea que el correo muestra junto al asunto. Si está vacía, se usa el título.",
       "emailTitle": "Título",
       "body": "Cuerpo",
-      "bodyHelp": "Línea en blanco = párrafo nuevo. **negrita**. [texto](https://enlace). {{first_name}} pone el nombre del cliente.",
+      "bodyHelp": "Línea en blanco = párrafo nuevo. **negrita**. [texto](https://enlace). '{{'first_name'}}' pone el nombre del cliente.",
       "image": "Imagen (opcional)",
       "imageUrl": "O pega la URL de una imagen",
       "ctaText": "Texto del botón",
