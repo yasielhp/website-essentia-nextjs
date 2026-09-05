@@ -153,6 +153,7 @@ export default function SegmentsPage() {
       return;
     }
     notifySuccess(tToasts("segmentDeleted"));
+    setEditor({ mode: "closed" });
     load();
   }
 
@@ -215,9 +216,45 @@ export default function SegmentsPage() {
             />
 
             <div className="border-sand-100 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-              <p className="text-petroleum-500 text-sm">
-                {reach === null ? t("counting") : t("reach", { count: reach })}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-petroleum-500 text-sm">
+                  {reach === null
+                    ? t("counting")
+                    : t("reach", { count: reach })}
+                </p>
+                {editor.mode === "edit" &&
+                  (confirmDelete === editor.id ? (
+                    <>
+                      <span className="text-petroleum-500 text-xs">
+                        {t("confirmDelete")}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="md"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        {tSeg("cancel")}
+                      </Button>
+                      <Button
+                        size="md"
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => void remove(editor.id)}
+                      >
+                        {t("delete")}
+                      </Button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => setConfirmDelete(editor.id)}
+                      className="text-petroleum-400 flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors hover:text-red-600 disabled:opacity-40"
+                    >
+                      <IconTrash />
+                      {t("delete")}
+                    </button>
+                  ))}
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -269,49 +306,14 @@ export default function SegmentsPage() {
                     {t("count", { count: segment.count })}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {confirmDelete === segment.id ? (
-                    <>
-                      <span className="text-petroleum-500 text-xs">
-                        {t("confirmDelete")}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="md"
-                        onClick={() => setConfirmDelete(null)}
-                      >
-                        {tSeg("cancel")}
-                      </Button>
-                      <Button
-                        size="md"
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => void remove(segment.id)}
-                      >
-                        {t("delete")}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="md"
-                        disabled={editor.mode !== "closed"}
-                        onClick={() => openEdit(segment.id)}
-                      >
-                        {tSeg("edit")}
-                      </Button>
-                      <button
-                        type="button"
-                        aria-label={t("delete")}
-                        disabled={editor.mode !== "closed"}
-                        onClick={() => setConfirmDelete(segment.id)}
-                        className="text-petroleum-400 rounded-lg p-2 transition-colors hover:text-red-600 disabled:opacity-40"
-                      >
-                        <IconTrash />
-                      </button>
-                    </>
-                  )}
-                </div>
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={editor.mode !== "closed"}
+                  onClick={() => openEdit(segment.id)}
+                >
+                  {tSeg("edit")}
+                </Button>
               </li>
             ))}
           </ul>
