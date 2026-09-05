@@ -22,7 +22,7 @@ import {
  * `audience.manualIds`, which the server never needs and the chips do.
  */
 
-export type Step = 0 | 1 | 2 | 3 | 4 | 5;
+export type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /** Every kind can be built; the picker shows them all. */
 export const AVAILABLE_KINDS: CampaignKind[] = [
@@ -74,6 +74,11 @@ export type FormAction =
       locale: CampaignLocale;
       field: Exclude<keyof CampaignLocaleContent, "blocks">;
       value: string;
+    }
+  | {
+      type: "SET_CONTENT_ALL";
+      locale: CampaignLocale;
+      content: CampaignLocaleContent;
     }
   | { type: "ADD_BLOCK"; locale: CampaignLocale; block: ContentBlock }
   | {
@@ -227,6 +232,12 @@ export function formReducer(state: FormState, action: FormAction): FormState {
           state.fieldErrors,
           `content.${action.locale}.${action.field}`,
         ),
+      };
+    case "SET_CONTENT_ALL":
+      return {
+        ...state,
+        content: { ...state.content, [action.locale]: action.content },
+        fieldErrors: without(state.fieldErrors, `content.${action.locale}`),
       };
     case "ADD_BLOCK":
     case "UPDATE_BLOCK":

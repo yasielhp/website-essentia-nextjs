@@ -102,10 +102,19 @@ export default function CampaignsPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <Button href="/dashboard/campaigns/new" className="gap-2">
-          <IconPlus />
-          {t("new")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button href="/dashboard/campaigns/new" className="gap-2">
+            <IconPlus />
+            {t("new")}
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            href="/dashboard/campaigns/segments"
+          >
+            {t("segments.title")}
+          </Button>
+        </div>
         <select
           value={status}
           onChange={(e) => {

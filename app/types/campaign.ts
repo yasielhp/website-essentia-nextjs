@@ -118,6 +118,15 @@ export type CampaignSegment = {
   updated_at: string;
 };
 
+/** A past campaign's words, offered as a starting point for a new one. */
+export type CampaignContentSummary = {
+  id: string;
+  name: string;
+  kind: CampaignKind;
+  sent_at: string | null;
+  content: CampaignContent;
+};
+
 /** What the segment picker shows: each saved segment with how many it reaches today. */
 export type SegmentList = {
   everyone: number;

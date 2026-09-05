@@ -40,7 +40,8 @@
       "checkin": "Check-in",
       "enrollees": "Inscritos",
       "categories": "Categorías",
-      "staff": "Personal"
+      "staff": "Personal",
+      "segments": "Segmentos"
     }
   },
   "userMenu": {
@@ -1291,7 +1292,8 @@
     "bounceCleared": "Rebote limpiado",
     "segmentSaved": "Segmento guardado",
     "campaignActivated": "Campaña activada",
-    "campaignPaused": "Campaña pausada"
+    "campaignPaused": "Campaña pausada",
+    "segmentDeleted": "Segmento eliminado"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",
@@ -1554,7 +1556,7 @@
     },
     "segment": {
       "title": "Segmento",
-      "hint": "Un segmento es un conjunto de condiciones guardado. Elige uno o crea uno nuevo a partir de todos los contactos y clientes del sistema.",
+      "hint": "Un segmento es un conjunto de condiciones guardado. Elige uno, o todos los contactos.",
       "everyone": "Todos los contactos",
       "create": "Nuevo segmento",
       "edit": "Editar segmento",
@@ -1566,7 +1568,8 @@
       "saveFailed": "No se pudo guardar el segmento.",
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
       "manualHint": "Se añaden al segmento, solo para esta campaña.",
-      "createOption": "+ Nuevo segmento…"
+      "createOption": "+ Nuevo segmento…",
+      "manage": "Gestionar segmentos"
     },
     "trigger": {
       "title": "Disparador",
@@ -1590,6 +1593,57 @@
         "birthday": "Una vez al año, a los contactos con fecha de nacimiento.",
         "first_booking_anniversary": "Una vez al año, a partir del segundo.",
         "new_blog_post": "Un email por entrada, con su título, resumen y enlace."
+      }
+    },
+    "segments": {
+      "title": "Segmentos",
+      "hint": "Conjuntos de condiciones guardados, creados una vez y elegibles desde cualquier campaña.",
+      "new": "Nuevo segmento",
+      "editTitle": "Editar segmento",
+      "back": "Campañas",
+      "empty": "Todavía no hay segmentos. Crea el primero.",
+      "everyoneHint": "Todos los contactos con email, sin rebotes ni bajas.",
+      "count": "{count} personas",
+      "counting": "Contando…",
+      "reach": "Llega a {count} personas",
+      "confirmDelete": "¿Eliminar este segmento? Las campañas que lo usaron conservan su copia.",
+      "delete": "Eliminar"
+    },
+    "template": {
+      "title": "Punto de partida",
+      "hint": "Elige de dónde parte el texto. Todo sigue siendo editable en el paso siguiente.",
+      "chosen": "Elegido",
+      "blank": "Empezar de cero",
+      "blankHint": "Cuerpo vacío; añade bloques uno a uno.",
+      "keepCurrent": "Mantener el contenido actual",
+      "keepCurrentHint": "Continuar con lo que ya está escrito.",
+      "templates": "Plantillas",
+      "recommended": "Sugerida",
+      "previous": "Campañas anteriores",
+      "previousPlaceholder": "Elige una campaña…",
+      "previousEmpty": "Ninguna campaña anterior tiene contenido que reutilizar.",
+      "usePrevious": "Usar este cuerpo",
+      "names": {
+        "newsletter": "Newsletter mensual",
+        "promotion": "Promoción",
+        "announcement": "Novedad",
+        "welcome": "Bienvenida",
+        "birthday": "Cumpleaños",
+        "win-back": "Te echamos de menos",
+        "after-visit": "Después de la visita",
+        "blog-post": "Nueva entrada del blog",
+        "event": "Invitación a evento"
+      },
+      "descriptions": {
+        "newsletter": "Lo destacado del mes y un botón de reserva.",
+        "promotion": "Un descuento con imagen y llamada a la acción clara.",
+        "announcement": "Algo nuevo en el centro, explicado en tres partes.",
+        "welcome": "El primer email que recibe un nuevo suscriptor.",
+        "birthday": "Una felicitación anual con regalo.",
+        "win-back": "Para clientes que llevan tiempo sin venir.",
+        "after-visit": "Un seguimiento unos días después de la sesión.",
+        "blog-post": "Título, resumen y enlace de la última entrada, rellenados solos.",
+        "event": "Reserva la fecha, detalles y botón de confirmar."
       }
     }
   }

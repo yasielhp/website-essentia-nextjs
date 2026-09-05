@@ -31,6 +31,7 @@ import {
   type CampaignRecipientRow,
   type CampaignRow,
   type CampaignSegment,
+  type CampaignContentSummary,
   type CampaignStats,
   type SegmentList,
   EMPTY_AUDIENCE,
@@ -246,6 +247,29 @@ function isNameCollision(error: { code?: string; message?: string } | null) {
     error?.code === UNIQUE_VIOLATION ||
     (error?.message ?? "").includes("_unique_name")
   );
+}
+
+/** Recent campaigns' words, for "start from a campaign I already wrote". */
+export async function listCampaignContents(
+  accessToken: string | null,
+): Promise<CampaignContentSummary[]> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return [];
+    throw err;
+  }
+  const { data, error } = await getAdminClient()
+    .database.from("campaigns")
+    .select("id, name, kind, sent_at, content")
+    .order("updated_at", { ascending: false })
+    .limit(50);
+  if (error) return [];
+  return ((data ?? []) as CampaignContentSummary[]).filter((row) => {
+    const es = row.content?.es;
+    const en = row.content?.en;
+    return Boolean(es?.blocks?.length || en?.blocks?.length);
+  });
 }
 
 // ─── Segments ───────────────────────────────────────────────────

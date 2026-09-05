@@ -27,6 +27,7 @@ import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
 import { TriggerStep, hasTriggerStep } from "./trigger-step";
+import { TemplateStep } from "./template-step";
 import { ReviewStep } from "./review-step";
 import {
   firstErroredLocale,
@@ -43,8 +44,9 @@ const STEP_OF = {
   name: 1,
   audience: 2,
   trigger: 3,
-  content: 4,
-  review: 5,
+  template: 4,
+  content: 5,
+  review: 6,
 } as const;
 
 /**
@@ -96,7 +98,7 @@ export function CampaignForm({
     setEditing(null);
     let next = (step + 1) as Step;
     if (next === STEP_OF.trigger && !hasTriggerStep(state.kind)) {
-      next = STEP_OF.content;
+      next = STEP_OF.template;
     }
     if (state.step <= step) dispatch({ type: "GO", step: next });
   }
@@ -395,7 +397,23 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 5: content ── */}
+        {/* ── Step 5: where the words start from ── */}
+        {visible(STEP_OF.template) &&
+          (folded(STEP_OF.template) ? (
+            <CompletedRow
+              label={t("template.title")}
+              value={t("template.chosen")}
+              onEdit={() => reopen(STEP_OF.template)}
+            />
+          ) : (
+            <TemplateStep
+              state={state}
+              dispatch={dispatch}
+              onDone={() => complete(STEP_OF.template)}
+            />
+          ))}
+
+        {/* ── Step 6: content ── */}
         {visible(STEP_OF.content) &&
           (folded(STEP_OF.content) ? (
             <CompletedRow
@@ -411,7 +429,7 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 6: review and send, or activate ── */}
+        {/* ── Step 7: review and send, or activate ── */}
         {visible(STEP_OF.review) && (
           <ReviewStep
             state={state}

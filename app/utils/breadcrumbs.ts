@@ -42,6 +42,7 @@ const LEAF_KEYS: Record<string, string> = {
   enrollees: "leaves.enrollees",
   categories: "leaves.categories",
   staff: "leaves.staff",
+  segments: "leaves.segments",
 };
 
 function crumb(map: Record<string, string>, segment: string): Breadcrumb {

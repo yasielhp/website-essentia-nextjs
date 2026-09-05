@@ -40,7 +40,8 @@
       "checkin": "Check-in",
       "enrollees": "Enrollees",
       "categories": "Categories",
-      "staff": "Staff"
+      "staff": "Staff",
+      "segments": "Segments"
     }
   },
   "userMenu": {
@@ -1291,7 +1292,8 @@
     "bounceCleared": "Bounce cleared",
     "segmentSaved": "Segment saved",
     "campaignActivated": "Campaign activated",
-    "campaignPaused": "Campaign paused"
+    "campaignPaused": "Campaign paused",
+    "segmentDeleted": "Segment deleted"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",
@@ -1554,7 +1556,7 @@
     },
     "segment": {
       "title": "Segment",
-      "hint": "A segment is a saved set of conditions. Pick one, or build a new one from every contact and client in the system.",
+      "hint": "A segment is a saved set of conditions. Pick one, or everyone.",
       "everyone": "All contacts",
       "create": "New segment",
       "edit": "Edit segment",
@@ -1566,7 +1568,8 @@
       "saveFailed": "The segment could not be saved.",
       "selectedHint": "Using \"{name}\". Edit it to change the conditions for every campaign that picks it from now on.",
       "manualHint": "Added on top of the segment, for this campaign only.",
-      "createOption": "+ New segment…"
+      "createOption": "+ New segment…",
+      "manage": "Manage segments"
     },
     "trigger": {
       "title": "Trigger",
@@ -1590,6 +1593,57 @@
         "birthday": "Once a year, to contacts with a birthdate on file.",
         "first_booking_anniversary": "Once a year, from the second year on.",
         "new_blog_post": "One email per post, with its title, excerpt and link."
+      }
+    },
+    "segments": {
+      "title": "Segments",
+      "hint": "Saved sets of conditions, built once and picked from any campaign.",
+      "new": "New segment",
+      "editTitle": "Edit segment",
+      "back": "Campaigns",
+      "empty": "No segments yet. Build the first one.",
+      "everyoneHint": "Every contact with an email address, minus bounces and unsubscribes.",
+      "count": "{count} people",
+      "counting": "Counting…",
+      "reach": "Reaches {count} people",
+      "confirmDelete": "Delete this segment? Campaigns that used it keep their copy.",
+      "delete": "Delete"
+    },
+    "template": {
+      "title": "Starting point",
+      "hint": "Pick where the words start from. Everything stays editable in the next step.",
+      "chosen": "Chosen",
+      "blank": "Start from scratch",
+      "blankHint": "An empty body; add blocks one by one.",
+      "keepCurrent": "Keep the current content",
+      "keepCurrentHint": "Continue with what is already written.",
+      "templates": "Templates",
+      "recommended": "Suggested",
+      "previous": "Previous campaigns",
+      "previousPlaceholder": "Pick a campaign…",
+      "previousEmpty": "No earlier campaign has content to reuse yet.",
+      "usePrevious": "Use this body",
+      "names": {
+        "newsletter": "Monthly newsletter",
+        "promotion": "Promotion",
+        "announcement": "Announcement",
+        "welcome": "Welcome",
+        "birthday": "Birthday",
+        "win-back": "We miss you",
+        "after-visit": "After the visit",
+        "blog-post": "New blog post",
+        "event": "Event invitation"
+      },
+      "descriptions": {
+        "newsletter": "Highlights of the month and a booking button.",
+        "promotion": "A discount with an image and a clear call to action.",
+        "announcement": "Something new at the centre, explained in three parts.",
+        "welcome": "The first email a new subscriber receives.",
+        "birthday": "A yearly greeting with a gift.",
+        "win-back": "For clients who have not been in for a while.",
+        "after-visit": "A check-in a few days after a session.",
+        "blog-post": "Title, excerpt and link of the latest post, filled in automatically.",
+        "event": "Save the date, details and a confirm button."
       }
     }
   }
