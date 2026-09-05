@@ -22,7 +22,7 @@ import {
  * `audience.manualIds`, which the server never needs and the chips do.
  */
 
-export type Step = 0 | 1 | 2 | 3 | 4;
+export type Step = 0 | 1 | 2 | 3 | 4 | 5;
 
 /** Every kind can be built; the picker shows them all. */
 export const AVAILABLE_KINDS: CampaignKind[] = [

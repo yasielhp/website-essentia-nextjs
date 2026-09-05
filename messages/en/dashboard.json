@@ -996,7 +996,8 @@
     "nameTaken": "A campaign with this name already exists",
     "blockTextRequired": "This block has no text",
     "imageUrlRequired": "Add an image or its URL",
-    "tooManyBlocks": "Too many blocks"
+    "tooManyBlocks": "Too many blocks",
+    "subjectBRequired": "The A/B test needs a second subject"
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1023,7 +1024,8 @@
         "gender": "Gender",
         "emailPlaceholder": "jane@example.com",
         "type": "Type",
-        "preferredLanguage": "Preferred language"
+        "preferredLanguage": "Preferred language",
+        "birthdate": "Date of birth"
       },
       "typeOptions": {
         "lead": "Lead — no booking yet",
@@ -1045,7 +1047,8 @@
         "notSubscribed": "Not subscribed"
       },
       "fields": {
-        "preferredLanguage": "Preferred language"
+        "preferredLanguage": "Preferred language",
+        "birthdate": "Date of birth"
       },
       "transactions": {
         "heading": "Transactions",
@@ -1286,7 +1289,9 @@
     "campaignTestSent": "Test sent to {email}",
     "campaignRetried": "Failed recipients retried",
     "bounceCleared": "Bounce cleared",
-    "segmentSaved": "Segment saved"
+    "segmentSaved": "Segment saved",
+    "campaignActivated": "Campaign activated",
+    "campaignPaused": "Campaign paused"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",
@@ -1328,7 +1333,9 @@
       "sending": "Sending",
       "sent": "Sent",
       "cancelled": "Cancelled",
-      "failed": "Failed"
+      "failed": "Failed",
+      "active": "Active",
+      "paused": "Paused"
     },
     "recipientStatus": {
       "queued": "Queued",
@@ -1445,7 +1452,10 @@
         "name": "Client name",
         "linkText": "text",
         "blockError": "Check this block"
-      }
+      },
+      "subjectA": "Subject A",
+      "subjectB": "Subject B",
+      "subjectBHint": "Half the audience gets A, half gets B. The report shows which one was opened more."
     },
     "review": {
       "title": "Review and send",
@@ -1472,7 +1482,10 @@
       "condLastBookingLt": "Last booking less than {days} days ago",
       "condNeverBooked": "Never booked",
       "condManual": "{count} added by hand",
-      "condHasBooked": "Has booked at least once"
+      "condHasBooked": "Has booked at least once",
+      "activate": "Activate",
+      "activating": "Activating…",
+      "activateHint": "The campaign stays on and mails whoever qualifies, checked every 15 minutes. You can pause it any time."
     },
     "detail": {
       "sent": "Sent",
@@ -1504,7 +1517,11 @@
         "status": "Status",
         "date": "Date",
         "error": "Detail"
-      }
+      },
+      "pause": "Pause",
+      "resume": "Resume",
+      "lastRun": "last checked {date}",
+      "variants": "A/B test"
     },
     "errors": {
       "not_claimable": "This campaign is already being sent, or was sent.",
@@ -1550,6 +1567,30 @@
       "selectedHint": "Using \"{name}\". Edit it to change the conditions for every campaign that picks it from now on.",
       "manualHint": "Added on top of the segment, for this campaign only.",
       "createOption": "+ New segment…"
+    },
+    "trigger": {
+      "title": "Trigger",
+      "hint": "When the campaign writes to someone. Each person gets it once per occasion.",
+      "when": "Send when",
+      "days": "Delay",
+      "daysAfter": "days after the booking",
+      "confirm": "Confirm trigger",
+      "event": {
+        "newsletter_subscribed": "Someone subscribes to the newsletter",
+        "segment_entry": "Someone enters the segment",
+        "after_booking": "Some days after a booking",
+        "birthday": "On the client's birthday",
+        "first_booking_anniversary": "On the anniversary of the first booking",
+        "new_blog_post": "A new blog post is published"
+      },
+      "eventDesc": {
+        "newsletter_subscribed": "Sent once, shortly after they sign up.",
+        "segment_entry": "Sent once to everyone who matches, now and as new people qualify.",
+        "after_booking": "Sent once per booking, the chosen number of days after it.",
+        "birthday": "Once a year, to contacts with a birthdate on file.",
+        "first_booking_anniversary": "Once a year, from the second year on.",
+        "new_blog_post": "One email per post, with its title, excerpt and link."
+      }
     }
   }
 }

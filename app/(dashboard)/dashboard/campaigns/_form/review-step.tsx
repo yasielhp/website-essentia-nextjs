@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
 import { requiredLocales } from "@/lib/schemas";
-import type { CampaignAudience } from "@/types/campaign";
+import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
 import type { FormState } from "./form-state";
 
 /** The conditions as sentences, so the admin reads what they built. */
@@ -69,19 +69,27 @@ export function ReviewStep({
   onTest,
   onSchedule,
   onSendNow,
+  onActivate,
 }: {
   state: FormState;
   onTest: () => Promise<void>;
   onSchedule: (iso: string) => Promise<void>;
   onSendNow: () => Promise<void>;
+  /** Automated kinds: switch the campaign on instead of sending it. */
+  onActivate: () => Promise<void>;
 }) {
   const t = useTranslations("dashboard.campaigns.review");
   const tAudience = useTranslations("dashboard.campaigns.audience");
   const tContent = useTranslations("dashboard.campaigns.content");
-  const { audience, content, reach, submitting, error } = state;
+  const tTrigger = useTranslations("dashboard.campaigns.trigger");
+  const tType = useTranslations("dashboard.campaigns.type");
+  const { audience, content, reach, submitting, error, kind, trigger } = state;
+  const automated = isAutomatedKind(kind);
   const [confirming, setConfirming] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
-  const [busy, setBusy] = useState<"test" | "schedule" | "send" | null>(null);
+  const [busy, setBusy] = useState<
+    "test" | "schedule" | "send" | "activate" | null
+  >(null);
 
   const conditions = describeAudience(audience, t, tAudience);
   const count = reach?.count ?? 0;
@@ -139,8 +147,14 @@ export function ReviewStep({
                     : tContent("localeEn")}
                 </dt>
                 <dd className="text-petroleum-700 text-sm font-medium">
+                  {kind === "split" ? "A · " : ""}
                   {content[locale].subject}
                 </dd>
+                {kind === "split" && (
+                  <dd className="text-petroleum-700 text-sm font-medium">
+                    B · {content[locale].subjectB}
+                  </dd>
+                )}
                 <dd className="text-petroleum-500 text-sm">
                   {content[locale].title}
                 </dd>
@@ -174,73 +188,97 @@ export function ReviewStep({
           </Button>
         </div>
 
-        <div className="border-sand-100 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-end">
-          <label className="flex flex-1 flex-col gap-1.5">
-            <span className="text-petroleum-500 text-xs font-medium">
-              {t("scheduleAt")}
-            </span>
-            <input
-              type="datetime-local"
-              value={scheduleAt}
-              min={defaultScheduleValue()}
-              disabled={disabled}
-              onChange={(e) => setScheduleAt(e.target.value)}
-              className={INPUT_CLASS}
-            />
-          </label>
-          <Button
-            variant="soft"
-            size="md"
-            disabled={disabled || count === 0 || !scheduleAt}
-            onClick={() =>
-              void run("schedule", () =>
-                onSchedule(new Date(scheduleAt).toISOString()),
-              )
-            }
-          >
-            {busy === "schedule" ? t("scheduling") : t("schedule")}
-          </Button>
-        </div>
-
-        <div className="border-sand-100 border-t pt-4">
-          {confirming ? (
-            <div className="bg-petroleum-50 flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center sm:justify-between">
+        {automated ? (
+          <div className="border-sand-100 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
               <p className="text-petroleum-700 text-sm font-medium">
-                {t("confirmSend", { count })}
+                {tType(kind)} ·{" "}
+                {trigger.event ? tTrigger(`event.${trigger.event}`) : ""}
+                {trigger.event === "after_booking"
+                  ? ` (${trigger.days ?? 0} ${tTrigger("daysAfter")})`
+                  : ""}
               </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="md"
-                  disabled={disabled}
-                  onClick={() => setConfirming(false)}
-                >
-                  {t("cancel")}
-                </Button>
-                <Button
-                  size="md"
-                  disabled={disabled}
-                  onClick={() =>
-                    void run("send", async () => {
-                      await onSendNow();
-                      setConfirming(false);
-                    })
-                  }
-                >
-                  {busy === "send" ? t("sending") : t("confirm")}
-                </Button>
-              </div>
+              <p className="text-petroleum-400 text-xs">{t("activateHint")}</p>
             </div>
-          ) : (
             <Button
               size="md"
-              disabled={disabled || count === 0}
-              onClick={() => setConfirming(true)}
+              disabled={disabled}
+              onClick={() => void run("activate", onActivate)}
             >
-              {t("sendNow")}
+              {busy === "activate" ? t("activating") : t("activate")}
             </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="border-sand-100 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-end">
+              <label className="flex flex-1 flex-col gap-1.5">
+                <span className="text-petroleum-500 text-xs font-medium">
+                  {t("scheduleAt")}
+                </span>
+                <input
+                  type="datetime-local"
+                  value={scheduleAt}
+                  min={defaultScheduleValue()}
+                  disabled={disabled}
+                  onChange={(e) => setScheduleAt(e.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </label>
+              <Button
+                variant="soft"
+                size="md"
+                disabled={disabled || count === 0 || !scheduleAt}
+                onClick={() =>
+                  void run("schedule", () =>
+                    onSchedule(new Date(scheduleAt).toISOString()),
+                  )
+                }
+              >
+                {busy === "schedule" ? t("scheduling") : t("schedule")}
+              </Button>
+            </div>
+
+            <div className="border-sand-100 border-t pt-4">
+              {confirming ? (
+                <div className="bg-petroleum-50 flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-petroleum-700 text-sm font-medium">
+                    {t("confirmSend", { count })}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="md"
+                      disabled={disabled}
+                      onClick={() => setConfirming(false)}
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      size="md"
+                      disabled={disabled}
+                      onClick={() =>
+                        void run("send", async () => {
+                          await onSendNow();
+                          setConfirming(false);
+                        })
+                      }
+                    >
+                      {busy === "send" ? t("sending") : t("confirm")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  size="md"
+                  disabled={disabled || count === 0}
+                  onClick={() => setConfirming(true)}
+                >
+                  {t("sendNow")}
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

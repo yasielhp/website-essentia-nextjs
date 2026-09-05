@@ -34,6 +34,7 @@ import {
   type CampaignStats,
   type SegmentList,
   EMPTY_AUDIENCE,
+  isAutomatedKind,
   type CampaignStatus,
   type ContactCampaignRow,
   type ContactSearchHit,
@@ -58,8 +59,10 @@ const EDITABLE: CampaignStatus[] = [
   "scheduled",
   "cancelled",
   "failed",
+  "paused",
+  "active",
 ];
-const DELETABLE: CampaignStatus[] = ["draft", "cancelled", "failed"];
+const DELETABLE: CampaignStatus[] = ["draft", "cancelled", "failed", "paused"];
 
 async function admin(accessToken: string | null): Promise<AuthContext> {
   return requireRole(accessToken, ADMIN_ROLES);
@@ -181,7 +184,7 @@ export async function fetchCampaign(
     db
       .from("campaign_recipients")
       .select(
-        "id, contact_id, email, language, status, error, sent_at, delivered_at, opened_at, clicked_at",
+        "id, contact_id, email, language, status, cycle, variant, error, sent_at, delivered_at, opened_at, clicked_at",
       )
       .eq("campaign_id", id)
       .order("email", { ascending: true })
@@ -739,6 +742,88 @@ export async function scheduleCampaign(
     })
     .eq("id", id)
     .in("status", EDITABLE)
+    .select("id");
+  if (error) return { ok: false, error: message(error) };
+  if (!data || (data as unknown[]).length === 0) {
+    return { ok: false, error: "locked" };
+  }
+
+  revalidatePath(LIST_PATH);
+  return { ok: true };
+}
+
+/**
+ * Switches an automated campaign on. Held to the full rules, like a send:
+ * from now on the cron mails whoever qualifies, once per occasion.
+ */
+export async function activateCampaign(
+  accessToken: string | null,
+  id: string,
+): Promise<{ ok: true } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+
+  const db = getAdminClient().database;
+  const { data, error } = await db
+    .from("campaigns")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "not_found" };
+  const row = data as CampaignRow;
+  if (!isAutomatedKind(row.kind)) return { ok: false, error: "locked" };
+
+  const check = validateCampaign({
+    name: row.name,
+    kind: row.kind,
+    trigger: row.trigger,
+    audience: row.audience,
+    content: row.content,
+  });
+  if (!check.ok) return { ok: false, error: "invalid" };
+
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await db
+    .from("campaigns")
+    .update({
+      status: "active",
+      // A paused campaign resumes where it left off; a fresh one starts now,
+      // so nobody who qualified in the past is mailed late.
+      activated_at: row.activated_at ?? now,
+      updated_at: now,
+      last_error: null,
+    })
+    .eq("id", id)
+    .in("status", ["draft", "paused", "failed", "cancelled"])
+    .select("id");
+  if (updateError) return { ok: false, error: message(updateError) };
+  if (!updated || (updated as unknown[]).length === 0) {
+    return { ok: false, error: "locked" };
+  }
+
+  revalidatePath(LIST_PATH);
+  return { ok: true };
+}
+
+/** Switches an automated campaign off; its history stays. */
+export async function pauseCampaign(
+  accessToken: string | null,
+  id: string,
+): Promise<{ ok: true } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+
+  const { data, error } = await getAdminClient()
+    .database.from("campaigns")
+    .update({ status: "paused", updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "active")
     .select("id");
   if (error) return { ok: false, error: message(error) };
   if (!data || (data as unknown[]).length === 0) {

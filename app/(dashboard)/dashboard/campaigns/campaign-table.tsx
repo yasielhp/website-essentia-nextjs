@@ -12,7 +12,8 @@ export function campaignHref(campaign: CampaignRow): string {
     campaign.status === "draft" ||
     campaign.status === "scheduled" ||
     campaign.status === "cancelled" ||
-    campaign.status === "failed";
+    campaign.status === "failed" ||
+    campaign.status === "paused";
   return editable
     ? `/dashboard/campaigns/${campaign.id}/edit`
     : `/dashboard/campaigns/${campaign.id}`;

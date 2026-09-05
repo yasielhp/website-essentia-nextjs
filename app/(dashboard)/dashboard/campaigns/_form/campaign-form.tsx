@@ -13,6 +13,7 @@ import {
 } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
+  activateCampaign,
   isCampaignNameTaken,
   saveCampaign,
   scheduleCampaign,
@@ -25,6 +26,7 @@ import { TypeStep } from "./type-step";
 import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
+import { TriggerStep, hasTriggerStep } from "./trigger-step";
 import { ReviewStep } from "./review-step";
 import {
   firstErroredLocale,
@@ -40,8 +42,9 @@ const STEP_OF = {
   kind: 0,
   name: 1,
   audience: 2,
-  content: 3,
-  review: 4,
+  trigger: 3,
+  content: 4,
+  review: 5,
 } as const;
 
 /**
@@ -88,12 +91,14 @@ export function CampaignForm({
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
 
-  /** Marks `step` done and opens the next one. */
+  /** Marks `step` done and opens the next one the kind actually has. */
   function complete(step: Step) {
     setEditing(null);
-    if (state.step <= step) {
-      dispatch({ type: "GO", step: (step + 1) as Step });
+    let next = (step + 1) as Step;
+    if (next === STEP_OF.trigger && !hasTriggerStep(state.kind)) {
+      next = STEP_OF.content;
     }
+    if (state.step <= step) dispatch({ type: "GO", step: next });
   }
 
   /** Sends the admin back to the step that owns an error. */
@@ -208,6 +213,21 @@ export function CampaignForm({
     push("/dashboard/campaigns");
   }
 
+  async function handleActivate() {
+    const id = await persist();
+    if (!id) return;
+    const result = await activateCampaign(getAccessToken(), id).catch(() => ({
+      ok: false as const,
+      error: "generic",
+    }));
+    if (!result.ok) {
+      dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
+      return;
+    }
+    notifySuccess(tToasts("campaignActivated"));
+    push(`/dashboard/campaigns/${id}`);
+  }
+
   async function handleSendNow() {
     const id = await persist();
     if (!id) return;
@@ -274,6 +294,13 @@ export function CampaignForm({
   const audienceSummary = `${state.segmentName ?? t("segment.everyone")}${
     state.reach ? ` (${state.reach.count})` : ""
   }`;
+  const triggerSummary = state.trigger.event
+    ? `${t(`trigger.event.${state.trigger.event}`)}${
+        state.trigger.event === "after_booking"
+          ? ` · ${state.trigger.days ?? 0} ${t("trigger.daysAfter")}`
+          : ""
+      }`
+    : "";
   const contentSummary = state.content[sendLocaleOf(state.audience)].subject;
 
   return (
@@ -351,7 +378,24 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 4: content ── */}
+        {/* ── Step 4: trigger, for the kinds that offer a choice ── */}
+        {hasTriggerStep(state.kind) &&
+          visible(STEP_OF.trigger) &&
+          (folded(STEP_OF.trigger) ? (
+            <CompletedRow
+              label={t("trigger.title")}
+              value={triggerSummary}
+              onEdit={() => reopen(STEP_OF.trigger)}
+            />
+          ) : (
+            <TriggerStep
+              state={state}
+              dispatch={dispatch}
+              onDone={() => complete(STEP_OF.trigger)}
+            />
+          ))}
+
+        {/* ── Step 5: content ── */}
         {visible(STEP_OF.content) &&
           (folded(STEP_OF.content) ? (
             <CompletedRow
@@ -367,13 +411,14 @@ export function CampaignForm({
             />
           ))}
 
-        {/* ── Step 5: review and send ── */}
+        {/* ── Step 6: review and send, or activate ── */}
         {visible(STEP_OF.review) && (
           <ReviewStep
             state={state}
             onTest={handleTest}
             onSchedule={handleSchedule}
             onSendNow={handleSendNow}
+            onActivate={handleActivate}
           />
         )}
       </div>

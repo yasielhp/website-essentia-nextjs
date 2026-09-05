@@ -34,6 +34,8 @@ export type ContactDetail = {
   preferred_language: string | null;
   /** Set by the Resend webhook on a hard bounce; cleared by staff. */
   email_bounced_at: string | null;
+  /** YYYY-MM-DD, for date-based campaigns. Optional. */
+  birthdate: string | null;
 };
 
 export type ContactBooking = {
@@ -100,4 +102,5 @@ export type UpdateContactPayload = {
   gender: Gender | null;
   preferred_language: string;
   newsletter_subscribed: boolean;
+  birthdate: string | null;
 };

@@ -172,7 +172,12 @@ export function ContentStep({
         )}
 
         <div className="flex flex-col gap-4">
-          {textField("subject", t("subject"))}
+          {textField(
+            "subject",
+            state.kind === "split" ? t("subjectA") : t("subject"),
+          )}
+          {state.kind === "split" &&
+            textField("subjectB", t("subjectB"), t("subjectBHint"))}
           {textField("preheader", t("preheader"), t("preheaderHint"))}
           {textField("title", t("emailTitle"))}
         </div>

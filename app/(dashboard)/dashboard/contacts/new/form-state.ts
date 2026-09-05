@@ -15,6 +15,8 @@ export type FormState = {
   email: string;
   phone: string;
   language: string;
+  /** YYYY-MM-DD or "". */
+  birthdate: string;
   gender: GenderValue;
   status: ContactStatus;
   /** Consent the client gave in person. Off means "not asked", not "no". */
@@ -24,7 +26,8 @@ export type FormState = {
 export type FormAction =
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone" | "language";
+      field:
+        "firstName" | "lastName" | "email" | "phone" | "language" | "birthdate";
       value: string;
     }
   | { type: "SET_STATUS"; status: ContactStatus }
@@ -44,6 +47,7 @@ export const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  birthdate: "",
   gender: "",
   status: "lead",
   newsletter: false,

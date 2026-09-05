@@ -996,7 +996,8 @@
     "nameTaken": "Ya existe una campaña con este nombre",
     "blockTextRequired": "Este bloque no tiene texto",
     "imageUrlRequired": "Añade una imagen o su URL",
-    "tooManyBlocks": "Demasiados bloques"
+    "tooManyBlocks": "Demasiados bloques",
+    "subjectBRequired": "La prueba A/B necesita un segundo asunto"
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1023,7 +1024,8 @@
         "gender": "Género",
         "emailPlaceholder": "juana@ejemplo.com",
         "type": "Tipo",
-        "preferredLanguage": "Idioma preferido"
+        "preferredLanguage": "Idioma preferido",
+        "birthdate": "Fecha de nacimiento"
       },
       "typeOptions": {
         "lead": "Lead — aún sin reservas",
@@ -1045,7 +1047,8 @@
         "notSubscribed": "No suscrito"
       },
       "fields": {
-        "preferredLanguage": "Idioma preferido"
+        "preferredLanguage": "Idioma preferido",
+        "birthdate": "Fecha de nacimiento"
       },
       "transactions": {
         "heading": "Transacciones",
@@ -1286,7 +1289,9 @@
     "campaignTestSent": "Prueba enviada a {email}",
     "campaignRetried": "Fallidos reintentados",
     "bounceCleared": "Rebote limpiado",
-    "segmentSaved": "Segmento guardado"
+    "segmentSaved": "Segmento guardado",
+    "campaignActivated": "Campaña activada",
+    "campaignPaused": "Campaña pausada"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",
@@ -1328,7 +1333,9 @@
       "sending": "Enviando",
       "sent": "Enviada",
       "cancelled": "Cancelada",
-      "failed": "Fallida"
+      "failed": "Fallida",
+      "active": "Activa",
+      "paused": "Pausada"
     },
     "recipientStatus": {
       "queued": "En cola",
@@ -1445,7 +1452,10 @@
         "name": "Nombre del cliente",
         "linkText": "texto",
         "blockError": "Revisa este bloque"
-      }
+      },
+      "subjectA": "Asunto A",
+      "subjectB": "Asunto B",
+      "subjectBHint": "La mitad recibe A y la otra mitad B. El informe muestra cuál se abrió más."
     },
     "review": {
       "title": "Revisar y enviar",
@@ -1472,7 +1482,10 @@
       "condLastBookingLt": "Última reserva hace menos de {days} días",
       "condNeverBooked": "Nunca ha reservado",
       "condManual": "{count} añadidos a mano",
-      "condHasBooked": "Ha reservado al menos una vez"
+      "condHasBooked": "Ha reservado al menos una vez",
+      "activate": "Activar",
+      "activating": "Activando…",
+      "activateHint": "La campaña queda encendida y escribe a quien cumpla las condiciones, revisado cada 15 minutos. Puedes pausarla cuando quieras."
     },
     "detail": {
       "sent": "Enviados",
@@ -1504,7 +1517,11 @@
         "status": "Estado",
         "date": "Fecha",
         "error": "Detalle"
-      }
+      },
+      "pause": "Pausar",
+      "resume": "Reanudar",
+      "lastRun": "última revisión {date}",
+      "variants": "Prueba A/B"
     },
     "errors": {
       "not_claimable": "Esta campaña ya se está enviando o ya se envió.",
@@ -1550,6 +1567,30 @@
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
       "manualHint": "Se añaden al segmento, solo para esta campaña.",
       "createOption": "+ Nuevo segmento…"
+    },
+    "trigger": {
+      "title": "Disparador",
+      "hint": "Cuándo la campaña escribe a alguien. Cada persona la recibe una vez por ocasión.",
+      "when": "Enviar cuando",
+      "days": "Retraso",
+      "daysAfter": "días después de la reserva",
+      "confirm": "Confirmar disparador",
+      "event": {
+        "newsletter_subscribed": "Alguien se suscribe a la newsletter",
+        "segment_entry": "Alguien entra en el segmento",
+        "after_booking": "Unos días después de una reserva",
+        "birthday": "El día del cumpleaños del cliente",
+        "first_booking_anniversary": "En el aniversario de la primera reserva",
+        "new_blog_post": "Se publica una entrada nueva en el blog"
+      },
+      "eventDesc": {
+        "newsletter_subscribed": "Se envía una vez, poco después de apuntarse.",
+        "segment_entry": "Se envía una vez a quien cumple las condiciones, ahora y según vayan entrando.",
+        "after_booking": "Una vez por reserva, los días elegidos después de ella.",
+        "birthday": "Una vez al año, a los contactos con fecha de nacimiento.",
+        "first_booking_anniversary": "Una vez al año, a partir del segundo.",
+        "new_blog_post": "Un email por entrada, con su título, resumen y enlace."
+      }
     }
   }
 }

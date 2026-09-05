@@ -37,6 +37,7 @@ export function ContactFields({
     email,
     phone,
     language,
+    birthdate,
     gender,
     status,
     newsletter,
@@ -226,6 +227,29 @@ export function ContactFields({
             }
             disabled={submitting}
             ariaLabel={t("fields.preferredLanguage")}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="birthdate"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            {t("fields.birthdate")}
+          </label>
+          <input
+            id="birthdate"
+            type="date"
+            value={birthdate}
+            onChange={(e) =>
+              dispatch({
+                type: "SET_FIELD",
+                field: "birthdate",
+                value: e.target.value,
+              })
+            }
+            disabled={submitting}
+            className={INPUT_CLASS}
           />
         </div>
 

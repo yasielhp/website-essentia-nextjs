@@ -15,6 +15,8 @@ export type FormState = {
   email: string;
   phone: string;
   language: string;
+  /** YYYY-MM-DD or "". */
+  birthdate: string;
   gender: GenderValue;
   newsletterSubscribed: boolean;
   fieldErrors: ContactErrors;
@@ -32,12 +34,14 @@ export type FormAction =
       email: string;
       phone: string;
       language: string;
+      birthdate: string;
       gender: GenderValue;
       newsletterSubscribed: boolean;
     }
   | {
       type: "SET_FIELD";
-      field: "firstName" | "lastName" | "email" | "phone" | "language";
+      field:
+        "firstName" | "lastName" | "email" | "phone" | "language" | "birthdate";
       value: string;
     }
   | { type: "SET_GENDER"; gender: GenderValue }
@@ -56,6 +60,7 @@ export const initialFormState: FormState = {
   email: "",
   phone: "",
   language: "en",
+  birthdate: "",
   gender: "",
   newsletterSubscribed: false,
   fieldErrors: {},
@@ -75,6 +80,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         email: action.email,
         phone: action.phone,
         language: action.language,
+        birthdate: action.birthdate,
         gender: action.gender,
         newsletterSubscribed: action.newsletterSubscribed,
       };

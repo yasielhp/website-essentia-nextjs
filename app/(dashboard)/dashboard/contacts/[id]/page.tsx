@@ -157,6 +157,7 @@ export default function ContactDetailPage() {
     email,
     phone,
     language,
+    birthdate,
     gender,
     newsletterSubscribed,
     fieldErrors,
@@ -189,6 +190,7 @@ export default function ContactDetailPage() {
         email: contact.email ?? "",
         phone: contact.phone ?? "",
         language: contact.preferred_language ?? "en",
+        birthdate: contact.birthdate ?? "",
         gender: contact.gender ?? "",
         newsletterSubscribed: initialNewsletter,
       });
@@ -244,6 +246,7 @@ export default function ContactDetailPage() {
         preferred_language: language === "es" ? "es" : "en",
         gender: toStoredGender(gender),
         newsletter_subscribed: newsletterSubscribed,
+        birthdate: birthdate || null,
       },
     );
 
@@ -368,6 +371,7 @@ export default function ContactDetailPage() {
           email={email}
           phone={phone}
           language={language}
+          birthdate={birthdate}
           gender={gender}
           newsletterSubscribed={newsletterSubscribed}
           fieldErrors={fieldErrors}

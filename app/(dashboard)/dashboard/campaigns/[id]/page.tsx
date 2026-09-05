@@ -11,12 +11,15 @@ import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { formatLongDate } from "@/utils/format";
 import { Button } from "@/components/ui/button";
 import {
+  activateCampaign,
   cancelCampaign,
   deleteCampaign,
   duplicateCampaign,
   fetchCampaign,
+  pauseCampaign,
   retryFailedRecipients,
 } from "@/actions/campaigns";
+import { isAutomatedKind } from "@/types/campaign";
 import type { CampaignRecipientRow, CampaignRow } from "@/types/campaign";
 import { CampaignStatusBadge } from "../status-badge";
 import { rate, sentCount } from "../campaign-table";
@@ -188,7 +191,24 @@ export default function CampaignDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-petroleum-400 text-sm">{when}</p>
+          <p className="text-petroleum-400 text-sm">
+            {isAutomatedKind(campaign.kind) && campaign.trigger.event
+              ? [
+                  t(`type.${campaign.kind}`),
+                  t(`trigger.event.${campaign.trigger.event}`),
+                  campaign.trigger.event === "after_booking"
+                    ? `${campaign.trigger.days ?? 0} ${t("trigger.daysAfter")}`
+                    : null,
+                  campaign.last_run_at
+                    ? t("detail.lastRun", {
+                        date: formatLongDate(campaign.last_run_at, locale),
+                      })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : when}
+          </p>
           {campaign.last_error && (
             <p className="text-xs text-red-500">
               {t("detail.lastError", { error: campaign.last_error })}
@@ -197,9 +217,14 @@ export default function CampaignDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {["draft", "scheduled", "cancelled", "failed"].includes(
-            campaign.status,
-          ) && (
+          {[
+            "draft",
+            "scheduled",
+            "cancelled",
+            "failed",
+            "paused",
+            "active",
+          ].includes(campaign.status) && (
             <Button
               variant="outline"
               size="md"
@@ -225,6 +250,44 @@ export default function CampaignDetailPage() {
           >
             {t("detail.duplicate")}
           </Button>
+          {campaign.status === "active" && (
+            <Button
+              variant="outline"
+              size="md"
+              disabled={busy !== null}
+              onClick={() =>
+                void act(
+                  "pause",
+                  () => pauseCampaign(getAccessToken(), campaign.id),
+                  () => {
+                    notifySuccess(tToasts("campaignPaused"));
+                    void load();
+                  },
+                )
+              }
+            >
+              {t("detail.pause")}
+            </Button>
+          )}
+          {campaign.status === "paused" && (
+            <Button
+              variant="soft"
+              size="md"
+              disabled={busy !== null}
+              onClick={() =>
+                void act(
+                  "resume",
+                  () => activateCampaign(getAccessToken(), campaign.id),
+                  () => {
+                    notifySuccess(tToasts("campaignActivated"));
+                    void load();
+                  },
+                )
+              }
+            >
+              {t("detail.resume")}
+            </Button>
+          )}
           {campaign.status === "scheduled" && (
             <Button
               variant="outline"
@@ -263,7 +326,9 @@ export default function CampaignDetailPage() {
               {t("detail.retryFailed")}
             </Button>
           )}
-          {["draft", "cancelled", "failed"].includes(campaign.status) &&
+          {["draft", "cancelled", "failed", "paused"].includes(
+            campaign.status,
+          ) &&
             (confirmingDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-petroleum-500 text-xs">
@@ -343,6 +408,41 @@ export default function CampaignDetailPage() {
           ))}
         </div>
       </section>
+
+      {campaign.kind === "split" && (
+        <section className="border-sand-200 rounded-2xl border bg-white p-6">
+          <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
+            {t("detail.variants")}
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {(["a", "b"] as const).map((variant) => {
+              const rows = recipients.filter((r) => r.variant === variant);
+              const opened = rows.filter((r) =>
+                ["opened", "clicked"].includes(r.status),
+              ).length;
+              const clicked = rows.filter((r) => r.status === "clicked").length;
+              const block = campaign.content[recipients[0]?.language ?? "es"];
+              const subject = variant === "a" ? block.subject : block.subjectB;
+              return (
+                <div key={variant}>
+                  <p className="text-petroleum-400 text-xs uppercase">
+                    {variant}
+                  </p>
+                  <p className="text-petroleum-700 truncate text-sm font-medium">
+                    {subject}
+                  </p>
+                  <p className="text-petroleum-500 mt-1 text-sm">
+                    {rows.length} · {t("detail.opened").toLowerCase()}{" "}
+                    {rate(opened, rows.length)} ·{" "}
+                    {t("detail.clicked").toLowerCase()}{" "}
+                    {rate(clicked, rows.length)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <RecipientTable recipients={recipients} locale={locale} />
     </div>

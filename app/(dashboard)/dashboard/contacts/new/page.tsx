@@ -33,6 +33,7 @@ export default function NewContactPage() {
     gender,
     status,
     newsletter,
+    birthdate,
   } = state;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -67,6 +68,7 @@ export default function NewContactPage() {
           email: trimmedEmail,
           phone: normalizePhone(phone),
           preferred_language: language === "es" ? "es" : "en",
+          birthdate: birthdate || null,
           gender: toStoredGender(gender),
           status,
           // Only ever set to true: a form left untouched says nothing about

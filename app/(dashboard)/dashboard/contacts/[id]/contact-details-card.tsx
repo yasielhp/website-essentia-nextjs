@@ -18,6 +18,7 @@ export function ContactDetailsCard({
   email,
   phone,
   language,
+  birthdate,
   gender,
   newsletterSubscribed,
   fieldErrors,
@@ -30,6 +31,7 @@ export function ContactDetailsCard({
   email: string;
   phone: string;
   language: string;
+  birthdate: string;
   gender: GenderValue;
   newsletterSubscribed: boolean;
   fieldErrors: ContactErrors;
@@ -41,7 +43,7 @@ export function ContactDetailsCard({
   const tForm = useTranslations("dashboard.contacts.form");
   const genderOptions = useGenderOptions();
   function field(
-    f: "firstName" | "lastName" | "email" | "phone" | "language",
+    f: "firstName" | "lastName" | "email" | "phone" | "language" | "birthdate",
     value: string,
   ) {
     dispatchForm({ type: "SET_FIELD", field: f, value });
@@ -192,6 +194,27 @@ export function ContactDetailsCard({
               onChange={(next) => field("language", next)}
               disabled={saving}
               ariaLabel={t("fields.preferredLanguage")}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="birthdate"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            {t("fields.birthdate")}
+          </label>
+          {loading ? (
+            <div className="bg-sand-100 h-11 animate-pulse rounded-xl" />
+          ) : (
+            <input
+              id="birthdate"
+              type="date"
+              value={birthdate}
+              onChange={(e) => field("birthdate", e.target.value)}
+              disabled={saving}
+              className={INPUT_CLASS}
             />
           )}
         </div>
