@@ -1338,7 +1338,8 @@
     "steps": {
       "audience": "Audiencia",
       "content": "Contenido",
-      "review": "Revisar"
+      "review": "Revisar",
+      "type": "Tipo"
     },
     "form": {
       "name": "Nombre interno",
@@ -1348,7 +1349,8 @@
       "newTitle": "Nueva campaña",
       "editTitle": "Editar campaña",
       "notFound": "Campaña no encontrada",
-      "locked": "Esta campaña ya se envió y no se puede editar."
+      "locked": "Esta campaña ya se envió y no se puede editar.",
+      "nameHint": "Interno, solo lo ve el equipo. Algo que reconozcas en la lista el mes que viene."
     },
     "audience": {
       "title": "Quién la recibe",
@@ -1472,6 +1474,20 @@
       "invalid": "Revisa los campos marcados.",
       "no_email": "Tu cuenta no tiene email al que enviar la prueba.",
       "generic": "Algo ha fallado. Inténtalo de nuevo."
+    },
+    "type": {
+      "title": "Tipo de campaña",
+      "comingSoon": "Próximamente",
+      "standard": "Estándar",
+      "standardDesc": "Un email a la audiencia que elijas, enviado ahora o a una hora programada.",
+      "automated": "Automatizada",
+      "automatedDesc": "Una secuencia que se dispara por lo que hace el cliente, como reservar o dejar de venir.",
+      "autoresponder": "Autorespuesta",
+      "autoresponderDesc": "Se envía sola a cada nuevo suscriptor en el momento de apuntarse.",
+      "split": "Prueba A/B",
+      "splitDesc": "Dos asuntos o dos versiones; la que mejor funcione va al resto de la lista.",
+      "dateBased": "Basada en fecha",
+      "dateBasedDesc": "Se envía alrededor de una fecha del contacto, como un cumpleaños o un aniversario."
     }
   }
 }

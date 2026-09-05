@@ -1338,7 +1338,8 @@
     "steps": {
       "audience": "Audience",
       "content": "Content",
-      "review": "Review"
+      "review": "Review",
+      "type": "Type"
     },
     "form": {
       "name": "Internal name",
@@ -1348,7 +1349,8 @@
       "newTitle": "New campaign",
       "editTitle": "Edit campaign",
       "notFound": "Campaign not found",
-      "locked": "This campaign has already been sent and cannot be edited."
+      "locked": "This campaign has already been sent and cannot be edited.",
+      "nameHint": "Internal, only the team sees it. Something you will recognise in the list next month."
     },
     "audience": {
       "title": "Who receives it",
@@ -1472,6 +1474,20 @@
       "invalid": "Check the highlighted fields.",
       "no_email": "Your account has no email address to send the test to.",
       "generic": "Something went wrong. Try again."
+    },
+    "type": {
+      "title": "Campaign type",
+      "comingSoon": "Coming soon",
+      "standard": "Standard",
+      "standardDesc": "One email to the audience you choose, sent now or at a scheduled time.",
+      "automated": "Automated",
+      "automatedDesc": "A sequence triggered by what a client does, such as booking or going quiet.",
+      "autoresponder": "Auto responder",
+      "autoresponderDesc": "Sent automatically to each new subscriber the moment they sign up.",
+      "split": "A/B test",
+      "splitDesc": "Two subjects or two versions; the better one goes to the rest of the list.",
+      "dateBased": "Date based",
+      "dateBasedDesc": "Sent around a date on the contact, such as a birthday or an anniversary."
     }
   }
 }

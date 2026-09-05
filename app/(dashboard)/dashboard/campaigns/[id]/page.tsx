@@ -174,7 +174,7 @@ export default function CampaignDetailPage() {
         });
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 lg:px-10">
+    <div className="mx-auto flex flex-col gap-6 px-6 py-8 lg:px-10">
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">

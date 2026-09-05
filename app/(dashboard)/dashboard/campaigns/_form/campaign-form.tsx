@@ -1,16 +1,14 @@
 "use client";
 
-import { useReducer, type Dispatch } from "react";
+import { useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
 import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
-import { INPUT_CLASS } from "@/constants/form-styles";
 import { Button } from "@/components/ui/button";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
-import { useFieldError } from "@/hooks/use-field-error";
 import {
   saveCampaign,
   scheduleCampaign,
@@ -18,6 +16,7 @@ import {
   sendTestCampaign,
 } from "@/actions/campaigns";
 import type { CampaignRow } from "@/types/campaign";
+import { TypeStep } from "./type-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
 import { ReviewStep } from "./review-step";
@@ -25,20 +24,26 @@ import {
   firstErroredLocale,
   formReducer,
   initialFormState,
-  type FormAction,
   type FormState,
   type PickedContact,
   type Step,
 } from "./form-state";
 
-const STEPS: { step: Step; key: "audience" | "content" | "review" }[] = [
-  { step: 0, key: "audience" },
-  { step: 1, key: "content" },
-  { step: 2, key: "review" },
+const STEPS: {
+  step: Step;
+  key: "type" | "audience" | "content" | "review";
+}[] = [
+  { step: 0, key: "type" },
+  { step: 1, key: "audience" },
+  { step: 2, key: "content" },
+  { step: 3, key: "review" },
 ];
 
+/** Where an error sends the admin: the step that owns the field. */
+const STEP_OF = { name: 0, audience: 1, content: 2 } as const;
+
 /**
- * One form, three steps, for a new campaign and for an existing draft alike.
+ * One form, four steps, for a new campaign and for an existing draft alike.
  *
  * Every exit — test, draft, schedule, send — saves first, so the server
  * always acts on what the admin is looking at, and a test email cannot go out
@@ -52,7 +57,6 @@ export function CampaignForm({
 }) {
   const t = useTranslations("dashboard.campaigns");
   const tToasts = useTranslations("dashboard.toasts");
-  const fieldError = useFieldError();
   const { push } = useRouter();
   const [state, dispatch] = useReducer(
     formReducer,
@@ -92,11 +96,13 @@ export function CampaignForm({
       const locale = firstErroredLocale(check.errors);
       if (locale) {
         dispatch({ type: "SET_LOCALE", locale });
-        dispatch({ type: "GO", step: 1 });
+        dispatch({ type: "GO", step: STEP_OF.content });
       } else if (
         Object.keys(check.errors).some((k) => k.startsWith("audience"))
       ) {
-        dispatch({ type: "GO", step: 0 });
+        dispatch({ type: "GO", step: STEP_OF.audience });
+      } else if (check.errors.name) {
+        dispatch({ type: "GO", step: STEP_OF.name });
       }
       toast.error(errorText("invalid"));
       return null;
@@ -187,11 +193,19 @@ export function CampaignForm({
 
   function next() {
     if (state.step === 0) {
-      if (!state.reach || state.reach.count === 0) return;
+      if (state.name.trim() === "") {
+        dispatch({ type: "SET_ERRORS", errors: { name: "nameRequired" } });
+        return;
+      }
       dispatch({ type: "GO", step: 1 });
       return;
     }
     if (state.step === 1) {
+      if (!state.reach || state.reach.count === 0) return;
+      dispatch({ type: "GO", step: 2 });
+      return;
+    }
+    if (state.step === 2) {
       const check = validateCampaign({
         name: state.name,
         audience: state.audience,
@@ -200,32 +214,37 @@ export function CampaignForm({
       if (!check.ok) {
         dispatch({ type: "SET_ERRORS", errors: check.errors });
         const locale = firstErroredLocale(check.errors);
-        if (locale) dispatch({ type: "SET_LOCALE", locale });
-        // A name problem is shown at the top of every step; only content
-        // errors keep the admin here.
-        if (locale) return;
+        // Only content errors keep the admin here; anything else is shown
+        // on its own step when they get back to it.
+        if (locale) {
+          dispatch({ type: "SET_LOCALE", locale });
+          return;
+        }
       }
-      dispatch({ type: "GO", step: 2 });
+      dispatch({ type: "GO", step: 3 });
     }
   }
 
   const canAdvance =
     state.step === 0
-      ? Boolean(state.reach && state.reach.count > 0)
-      : state.step === 1;
+      ? state.name.trim() !== ""
+      : state.step === 1
+        ? Boolean(state.reach && state.reach.count > 0)
+        : state.step === 2;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 lg:px-10">
+    <div className="mx-auto flex flex-col gap-6 px-6 py-8 lg:px-10">
       <header className="flex flex-col gap-4">
-        <h1 className="font-display text-petroleum-700 text-3xl">
-          {state.id ? t("form.editTitle") : t("form.newTitle")}
-        </h1>
-        <NameField
-          value={state.name}
-          error={fieldError(state.fieldErrors.name)}
-          disabled={state.submitting}
-          dispatch={dispatch}
-        />
+        <div className="flex flex-wrap items-baseline gap-3">
+          <h1 className="font-display text-petroleum-700 text-3xl">
+            {state.id ? t("form.editTitle") : t("form.newTitle")}
+          </h1>
+          {state.name.trim() && state.step > 0 && (
+            <span className="text-petroleum-400 truncate text-sm">
+              {state.name}
+            </span>
+          )}
+        </div>
         <nav className="border-sand-200 flex gap-1 overflow-x-auto rounded-2xl border bg-white p-2">
           {STEPS.map(({ step, key }) => (
             <TabButton
@@ -244,9 +263,10 @@ export function CampaignForm({
         </nav>
       </header>
 
-      {state.step === 0 && <AudienceStep state={state} dispatch={dispatch} />}
-      {state.step === 1 && <ContentStep state={state} dispatch={dispatch} />}
-      {state.step === 2 && (
+      {state.step === 0 && <TypeStep state={state} dispatch={dispatch} />}
+      {state.step === 1 && <AudienceStep state={state} dispatch={dispatch} />}
+      {state.step === 2 && <ContentStep state={state} dispatch={dispatch} />}
+      {state.step === 3 && (
         <ReviewStep
           state={state}
           onTest={handleTest}
@@ -256,7 +276,7 @@ export function CampaignForm({
         />
       )}
 
-      {state.step < 2 && (
+      {state.step < 3 && (
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
@@ -277,40 +297,6 @@ export function CampaignForm({
           </Button>
         </div>
       )}
-    </div>
-  );
-}
-
-function NameField({
-  value,
-  error,
-  disabled,
-  dispatch,
-}: {
-  value: string;
-  error: string;
-  disabled: boolean;
-  dispatch: Dispatch<FormAction>;
-}) {
-  const t = useTranslations("dashboard.campaigns.form");
-  return (
-    <div className="flex max-w-md flex-col gap-1.5">
-      <label
-        htmlFor="campaign-name"
-        className="text-petroleum-500 text-xs font-medium"
-      >
-        {t("name")}
-      </label>
-      <input
-        id="campaign-name"
-        type="text"
-        value={value}
-        disabled={disabled}
-        placeholder={t("namePlaceholder")}
-        onChange={(e) => dispatch({ type: "SET_NAME", value: e.target.value })}
-        className={INPUT_CLASS}
-      />
-      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

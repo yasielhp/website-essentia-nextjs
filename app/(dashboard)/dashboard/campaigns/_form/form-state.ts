@@ -17,13 +17,24 @@ import {
  * `audience.manualIds`, which the server never needs and the chips do.
  */
 
-export type Step = 0 | 1 | 2;
+export type Step = 0 | 1 | 2 | 3;
+
+/**
+ * What kind of campaign this is. Only `standard` exists today; the picker
+ * shows the others so the admin sees where the product is going, and the
+ * value is kept in the form so adding one later is a case, not a refactor.
+ */
+export type CampaignKind =
+  "standard" | "automated" | "autoresponder" | "split" | "dateBased";
+
+export const AVAILABLE_KINDS: CampaignKind[] = ["standard"];
 
 export type PickedContact = { id: string; name: string; email: string };
 
 export type FormState = {
   id: string | null;
   step: Step;
+  kind: CampaignKind;
   name: string;
   audience: CampaignAudience;
   content: CampaignContent;
@@ -37,6 +48,7 @@ export type FormState = {
 
 export type FormAction =
   | { type: "SET_NAME"; value: string }
+  | { type: "SET_KIND"; kind: CampaignKind }
   | { type: "SET_AUDIENCE"; patch: Partial<CampaignAudience> }
   | { type: "ADD_MANUAL"; contact: PickedContact }
   | { type: "REMOVE_MANUAL"; id: string }
@@ -58,6 +70,7 @@ export type FormAction =
 export const initialFormState: FormState = {
   id: null,
   step: 0,
+  kind: "standard",
   name: "",
   audience: EMPTY_AUDIENCE,
   content: { en: EMPTY_LOCALE_CONTENT, es: EMPTY_LOCALE_CONTENT },
@@ -89,6 +102,9 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         name: action.value,
         fieldErrors: without(state.fieldErrors, "name"),
       };
+    case "SET_KIND":
+      if (!AVAILABLE_KINDS.includes(action.kind)) return state;
+      return { ...state, kind: action.kind };
     case "SET_AUDIENCE": {
       const audience = { ...state.audience, ...action.patch };
       // "Never booked" cannot hold alongside a booking condition.
