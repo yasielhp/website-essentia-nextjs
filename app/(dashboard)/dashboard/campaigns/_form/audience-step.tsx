@@ -7,6 +7,7 @@ import { notifySuccess } from "@/lib/feedback";
 import { INPUT_CLASS, SELECT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
 import { MultiOptionSelect } from "@/components/ui/multi-option-select";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { Button } from "@/components/ui/button";
 import { useFieldError } from "@/hooks/use-field-error";
@@ -404,6 +405,18 @@ export function AudienceStep({
 
   const editing = editor.mode !== "closed";
 
+  const segmentOptions: SelectOption<string>[] = [
+    {
+      value: "",
+      label: list ? `${tSeg("everyone")} (${list.everyone})` : tSeg("everyone"),
+    },
+    { value: NEW_SEGMENT, label: tSeg("createOption") },
+    ...(segments ?? []).map((segment) => ({
+      value: segment.id,
+      label: `${segment.name} (${segment.count})`,
+    })),
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <section className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
@@ -414,30 +427,22 @@ export function AudienceStep({
 
         {!editing && (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <select
-              value={segmentId ?? ""}
-              disabled={submitting || segments === null}
-              aria-label={tSeg("title")}
-              onChange={(e) => {
-                // "New segment" lives in the list itself, right under
-                // everyone: choosing it opens the builder instead of picking.
-                if (e.target.value === NEW_SEGMENT) openNew();
-                else pickSegment(e.target.value);
-              }}
-              className={`${SELECT_CLASS} sm:flex-1`}
-            >
-              <option value="">
-                {list
-                  ? `${tSeg("everyone")} (${list.everyone})`
-                  : tSeg("everyone")}
-              </option>
-              <option value={NEW_SEGMENT}>{tSeg("createOption")}</option>
-              {(segments ?? []).map((segment) => (
-                <option key={segment.id} value={segment.id}>
-                  {segment.name} ({segment.count})
-                </option>
-              ))}
-            </select>
+            <div className="sm:flex-1">
+              <OptionSelect
+                id="campaign-segment"
+                value={segmentId ?? ""}
+                options={segmentOptions}
+                disabled={submitting || segments === null}
+                ariaLabel={tSeg("title")}
+                placeholder={tSeg("everyone")}
+                onChange={(value) => {
+                  // "New segment" lives in the list itself, right under
+                  // everyone: choosing it opens the builder instead of picking.
+                  if (value === NEW_SEGMENT) openNew();
+                  else pickSegment(value);
+                }}
+              />
+            </div>
             {selected && (
               <Button
                 variant="outline"
