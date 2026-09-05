@@ -123,3 +123,35 @@ export const EMPTY_AUDIENCE: CampaignAudience = {
   neverBooked: false,
   manualIds: [],
 };
+
+/** The three numbers on top of the campaign list. */
+export type CampaignStats = {
+  sentThisMonth: number;
+  recipients: number;
+  delivered: number;
+  opened: number;
+};
+
+/** One campaign as seen from a contact's page. */
+export type ContactCampaignRow = {
+  id: string;
+  status: RecipientStatus;
+  sent_at: string | null;
+  campaign: { id: string; name: string; sent_at: string | null } | null;
+};
+
+/** A hit in the manual-recipient picker. */
+export type ContactSearchHit = {
+  id: string;
+  name: string;
+  email: string;
+  language: CampaignLocale;
+};
+
+/** What `saveCampaign` takes: the form as one value. */
+export type CampaignInput = {
+  id?: string | null;
+  name: string;
+  audience: CampaignAudience;
+  content: CampaignContent;
+};
