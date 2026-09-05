@@ -59,11 +59,15 @@ export default function EditCampaignPage() {
           campaign.audience.manualIds ?? [],
         ).catch(() => []),
         campaign.segment_id
-          ? listSegments(getAccessToken()).catch(() => [])
-          : Promise.resolve([]),
+          ? listSegments(getAccessToken()).catch(() => ({
+              everyone: 0,
+              segments: [],
+            }))
+          : Promise.resolve({ everyone: 0, segments: [] }),
       ]);
       const segmentName =
-        segments.find((s) => s.id === campaign.segment_id)?.name ?? null;
+        segments.segments.find((s) => s.id === campaign.segment_id)?.name ??
+        null;
       if (!cancelled) {
         setLoaded({ kind: "ready", campaign, picked, segmentName });
       }

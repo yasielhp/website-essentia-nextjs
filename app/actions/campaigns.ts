@@ -15,7 +15,8 @@ import {
   validateCampaign,
   validateCampaignDraft,
 } from "@/lib/schemas";
-import { resolveAudience } from "@/lib/campaigns/audience";
+import { loadCandidates, resolveAudience } from "@/lib/campaigns/audience";
+import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
@@ -31,6 +32,8 @@ import {
   type CampaignRow,
   type CampaignSegment,
   type CampaignStats,
+  type SegmentList,
+  EMPTY_AUDIENCE,
   type CampaignStatus,
   type ContactCampaignRow,
   type ContactSearchHit,
@@ -246,14 +249,19 @@ function isNameCollision(error: { code?: string; message?: string } | null) {
 
 const SEGMENT_FIELDS = "id, name, conditions, created_at, updated_at";
 
-/** Every saved segment, by name. Few enough that there is no paging. */
+/**
+ * Every saved segment, by name, each with the number of people it reaches
+ * today — plus the count for "everyone". One read of the tables serves all
+ * of them.
+ */
 export async function listSegments(
   accessToken: string | null,
-): Promise<CampaignSegment[]> {
+): Promise<SegmentList> {
+  const empty: SegmentList = { everyone: 0, segments: [] };
   try {
     await admin(accessToken);
   } catch (err) {
-    if (err instanceof AuthError) return [];
+    if (err instanceof AuthError) return empty;
     throw err;
   }
   const { data, error } = await getAdminClient()
@@ -261,8 +269,30 @@ export async function listSegments(
     .select(SEGMENT_FIELDS)
     .order("name", { ascending: true })
     .range(0, 499);
-  if (error) return [];
-  return (data ?? []) as CampaignSegment[];
+  if (error) return empty;
+
+  try {
+    const candidates = await loadCandidates();
+    const now = new Date();
+    const count = (conditions: CampaignSegment["conditions"]) =>
+      filterAudience(candidates, { ...conditions, manualIds: [] }, now).length;
+    return {
+      everyone: count(EMPTY_AUDIENCE),
+      segments: ((data ?? []) as CampaignSegment[]).map((segment) => ({
+        ...segment,
+        count: count(segment.conditions),
+      })),
+    };
+  } catch (err) {
+    console.error("[campaigns] segment counts failed:", err);
+    return {
+      everyone: 0,
+      segments: ((data ?? []) as CampaignSegment[]).map((s) => ({
+        ...s,
+        count: 0,
+      })),
+    };
+  }
 }
 
 /**

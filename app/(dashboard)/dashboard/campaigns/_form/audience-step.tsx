@@ -19,10 +19,9 @@ import {
   EMPTY_AUDIENCE,
   type CampaignAudience,
   type CampaignLanguage,
-  type CampaignSegment,
   type SegmentConditions,
+  type SegmentList,
 } from "@/types/campaign";
-import { ContactPicker } from "./contact-picker";
 import type { FormAction, FormState } from "./form-state";
 
 const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
@@ -239,9 +238,10 @@ export function AudienceStep({
   const tSeg = useTranslations("dashboard.campaigns.segment");
   const tToasts = useTranslations("dashboard.toasts");
   const fieldError = useFieldError();
-  const { audience, pickedContacts, reach, submitting, segmentId } = state;
+  const { audience, reach, submitting, segmentId } = state;
 
-  const [segments, setSegments] = useState<CampaignSegment[] | null>(null);
+  const [list, setList] = useState<SegmentList | null>(null);
+  const segments = list?.segments ?? null;
   const [editor, setEditor] = useState<
     | { mode: "closed" }
     | { mode: "new"; name: string }
@@ -250,18 +250,14 @@ export function AudienceStep({
   const [savingSegment, setSavingSegment] = useState(false);
   const [segmentError, setSegmentError] = useState<string | null>(null);
 
-  const [sample, setSample] = useState<
-    { id: string; name: string; email: string; language: string }[]
-  >([]);
-  const [showSample, setShowSample] = useState(false);
   const [counting, setCounting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void listSegments(getAccessToken())
-      .catch(() => [])
+      .catch(() => ({ everyone: 0, segments: [] }))
       .then((rows) => {
-        if (!cancelled) setSegments(rows);
+        if (!cancelled) setList(rows);
       });
     return () => {
       cancelled = true;
@@ -289,10 +285,8 @@ export function AudienceStep({
                 es: result.byLanguage.es,
               },
             });
-            setSample(result.sample);
           } else {
             dispatch({ type: "SET_REACH", reach: { count: 0, en: 0, es: 0 } });
-            setSample([]);
           }
         });
     }, 400);
@@ -381,10 +375,13 @@ export function AudienceStep({
       );
       return;
     }
-    const saved = result.segment;
-    setSegments((rows) => {
-      const rest = (rows ?? []).filter((s) => s.id !== saved.id);
-      return [...rest, saved].sort((a, b) => a.name.localeCompare(b.name));
+    const saved = { ...result.segment, count: reach?.count ?? 0 };
+    setList((current) => {
+      const rest = (current?.segments ?? []).filter((s) => s.id !== saved.id);
+      return {
+        everyone: current?.everyone ?? 0,
+        segments: [...rest, saved].sort((a, b) => a.name.localeCompare(b.name)),
+      };
     });
     dispatch({
       type: "SET_SEGMENT",
@@ -415,10 +412,14 @@ export function AudienceStep({
               onChange={(e) => pickSegment(e.target.value)}
               className={`${SELECT_CLASS} sm:flex-1`}
             >
-              <option value="">{tSeg("everyone")}</option>
+              <option value="">
+                {list
+                  ? `${tSeg("everyone")} (${list.everyone})`
+                  : tSeg("everyone")}
+              </option>
               {(segments ?? []).map((segment) => (
                 <option key={segment.id} value={segment.id}>
-                  {segment.name}
+                  {segment.name} ({segment.count})
                 </option>
               ))}
             </select>
@@ -510,73 +511,12 @@ export function AudienceStep({
             {tSeg("selectedHint", { name: selected.name })}
           </p>
         )}
-      </section>
-
-      <section className="border-sand-200 rounded-2xl border bg-white p-6">
-        <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-          {t("manual")}
-        </h2>
-        <p className="text-petroleum-400 mb-4 text-xs">{tSeg("manualHint")}</p>
-        <ContactPicker
-          picked={pickedContacts}
-          dispatch={dispatch}
-          disabled={submitting || editing}
-        />
-      </section>
-
-      <div
-        className={`rounded-2xl border p-5 ${
-          reach && reach.count === 0
-            ? "border-red-200 bg-red-50"
-            : "border-petroleum-100 bg-petroleum-50"
-        }`}
-      >
-        {counting || reach === null ? (
-          <p className="text-petroleum-400 text-sm">{t("counting")}</p>
-        ) : reach.count === 0 ? (
-          <p className="text-sm font-medium text-red-600">{t("reachNone")}</p>
-        ) : (
-          <>
-            <p className="text-petroleum-700 text-base font-medium">
-              {reach.count === 1
-                ? t("reachOne")
-                : t("reach", { count: reach.count })}
-            </p>
-            <p className="text-petroleum-400 mt-0.5 text-xs">
-              {t("reachByLanguage", { en: reach.en, es: reach.es })}
-            </p>
-            {sample.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowSample((v) => !v)}
-                className="text-petroleum-500 hover:text-petroleum-700 mt-3 text-xs font-medium underline underline-offset-2"
-              >
-                {showSample ? t("sampleHide") : t("sample")}
-              </button>
-            )}
-            {showSample && (
-              <ul className="divide-sand-200 mt-2 divide-y text-xs">
-                {sample.map((person) => (
-                  <li
-                    key={person.id}
-                    className="text-petroleum-500 flex justify-between gap-3 py-1.5"
-                  >
-                    <span className="truncate">{person.name || "—"}</span>
-                    <span className="text-petroleum-400 truncate">
-                      {person.email} · {person.language.toUpperCase()}
-                    </span>
-                  </li>
-                ))}
-                {reach.count > sample.length && (
-                  <li className="text-petroleum-400 py-1.5">
-                    {t("sampleMore", { count: reach.count - sample.length })}
-                  </li>
-                )}
-              </ul>
-            )}
-          </>
+        {!editing && !counting && reach && reach.count === 0 && (
+          <p className="mt-3 text-xs font-medium text-red-600">
+            {t("reachNone")}
+          </p>
         )}
-      </div>
+      </section>
 
       <div className="flex justify-end">
         <Button

@@ -56,6 +56,12 @@ export type CampaignSegment = {
   updated_at: string;
 };
 
+/** What the segment picker shows: each saved segment with how many it reaches today. */
+export type SegmentList = {
+  everyone: number;
+  segments: (CampaignSegment & { count: number })[];
+};
+
 export type CampaignLocaleContent = {
   subject: string;
   preheader: string;

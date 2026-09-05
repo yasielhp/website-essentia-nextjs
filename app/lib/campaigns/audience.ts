@@ -56,6 +56,15 @@ export async function resolveAudience(
   audience: CampaignAudience,
   now = new Date(),
 ): Promise<Recipient[]> {
+  return filterAudience(await loadCandidates(), audience, now);
+}
+
+/**
+ * Every contact with its booking history folded in, ready for the filter.
+ * Separate from `resolveAudience` so a screen that counts several segments
+ * at once reads the tables once, not once per segment.
+ */
+export async function loadCandidates(): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
   const [contactsResult, bookingsResult] = await Promise.all([
@@ -141,5 +150,5 @@ export async function resolveAudience(
     };
   });
 
-  return filterAudience(candidates, audience, now);
+  return candidates;
 }

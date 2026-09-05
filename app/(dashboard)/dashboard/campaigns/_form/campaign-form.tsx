@@ -261,12 +261,9 @@ export function CampaignForm({
     state.step >= step && (editing === null || editing >= step);
   const folded = (step: Step) => state.step > step && editing !== step;
 
-  const reachSummary = state.reach
-    ? state.reach.count === 1
-      ? t("audience.reachOne")
-      : t("audience.reach", { count: state.reach.count })
-    : "";
-  const audienceSummary = `${state.segmentName ?? t("segment.everyone")} · ${reachSummary}`;
+  const audienceSummary = `${state.segmentName ?? t("segment.everyone")}${
+    state.reach ? ` (${state.reach.count})` : ""
+  }`;
   const contentSummary = (["es", "en"] as const)
     .map((locale) => state.content[locale].subject)
     .filter(Boolean)
