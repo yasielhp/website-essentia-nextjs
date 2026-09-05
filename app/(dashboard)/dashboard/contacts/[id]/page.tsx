@@ -29,9 +29,13 @@ import {
   EduRegsSection,
 } from "./history-sections";
 import { formReducer, initialFormState } from "./form-state";
+import { BounceBanner, CampaignsSection } from "./campaigns-section";
+import { clearContactBounce, fetchContactCampaigns } from "@/actions/campaigns";
+import type { ContactCampaignRow } from "@/types/campaign";
 
-/** The four views of a contact's history. */
-type HistoryTab = "transactions" | "bookings" | "races" | "education";
+/** The five views of a contact's history. */
+type HistoryTab =
+  "transactions" | "bookings" | "races" | "education" | "campaigns";
 
 type Booking = ContactBooking;
 type Membership = ContactMembership;
@@ -47,6 +51,8 @@ type LoadState = {
   memberships: Membership[];
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
+  campaigns: ContactCampaignRow[];
+  bouncedAt: string | null;
 };
 
 type LoadAction =
@@ -56,7 +62,10 @@ type LoadAction =
       memberships: Membership[];
       raceRegs: RaceReg[];
       eduRegs: EduReg[];
+      campaigns: ContactCampaignRow[];
+      bouncedAt: string | null;
     }
+  | { type: "BOUNCE_CLEARED" }
   | { type: "NOT_FOUND" };
 
 const initialLoadState: LoadState = {
@@ -66,6 +75,8 @@ const initialLoadState: LoadState = {
   memberships: [],
   raceRegs: [],
   eduRegs: [],
+  campaigns: [],
+  bouncedAt: null,
 };
 
 function loadReducer(state: LoadState, action: LoadAction): LoadState {
@@ -78,7 +89,11 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         memberships: action.memberships,
         raceRegs: action.raceRegs,
         eduRegs: action.eduRegs,
+        campaigns: action.campaigns,
+        bouncedAt: action.bouncedAt,
       };
+    case "BOUNCE_CLEARED":
+      return { ...state, bouncedAt: null };
     case "NOT_FOUND":
       return { ...state, loading: false, notFound: true };
     default:
@@ -97,8 +112,17 @@ export default function ContactDetailPage() {
   const { push, back } = useRouter();
 
   const [loadState, dispatch] = useReducer(loadReducer, initialLoadState);
-  const { loading, notFound, bookings, memberships, raceRegs, eduRegs } =
-    loadState;
+  const {
+    loading,
+    notFound,
+    bookings,
+    memberships,
+    raceRegs,
+    eduRegs,
+    campaigns,
+    bouncedAt,
+  } = loadState;
+  const [clearingBounce, setClearingBounce] = useState(false);
 
   const tHistory = useTranslations("dashboard.contacts.detail");
   const [tab, setTab] = useState<HistoryTab>("transactions");
@@ -118,6 +142,11 @@ export default function ContactDetailPage() {
       id: "education",
       label: tHistory("education.heading"),
       count: eduRegs.length,
+    },
+    {
+      id: "campaigns",
+      label: tHistory("campaigns.tab"),
+      count: campaigns.length,
     },
   ];
 
@@ -164,7 +193,17 @@ export default function ContactDetailPage() {
         newsletterSubscribed: initialNewsletter,
       });
 
-      dispatch({ type: "LOADED", bookings, memberships, raceRegs, eduRegs });
+      const campaignRows = await fetchContactCampaigns(getAccessToken(), id);
+      if (cancelled) return;
+      dispatch({
+        type: "LOADED",
+        bookings,
+        memberships,
+        raceRegs,
+        eduRegs,
+        campaigns: campaignRows,
+        bouncedAt: contact.email_bounced_at ?? null,
+      });
     }
 
     void load();
@@ -304,6 +343,23 @@ export default function ContactDetailPage() {
           </p>
         )}
 
+        {bouncedAt && (
+          <BounceBanner
+            bouncedAt={bouncedAt}
+            clearing={clearingBounce}
+            onClear={() => {
+              setClearingBounce(true);
+              void clearContactBounce(getAccessToken(), id).then((result) => {
+                setClearingBounce(false);
+                if (result.ok) {
+                  dispatch({ type: "BOUNCE_CLEARED" });
+                  notifySuccess(tToasts("bounceCleared"));
+                }
+              });
+            }}
+          />
+        )}
+
         <ContactDetailsCard
           firstName={firstName}
           lastName={lastName}
@@ -358,6 +414,9 @@ export default function ContactDetailPage() {
         )}
         {tab === "education" && (
           <EduRegsSection loading={loading} eduRegs={eduRegs} />
+        )}
+        {tab === "campaigns" && (
+          <CampaignsSection loading={loading} campaigns={campaigns} />
         )}
       </div>
 

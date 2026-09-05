@@ -96,7 +96,7 @@ export async function fetchContactDetail(
   const { data: contacts, error: contactError } = await db
     .from("contacts")
     .select(
-      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language",
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at",
     )
     .eq("id", id)
     .limit(1);

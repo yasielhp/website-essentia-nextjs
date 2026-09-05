@@ -32,6 +32,8 @@ export type ContactDetail = {
   gender: Gender | null;
   newsletter_subscribed: boolean | null;
   preferred_language: string | null;
+  /** Set by the Resend webhook on a hard bounce; cleared by staff. */
+  email_bounced_at: string | null;
 };
 
 export type ContactBooking = {
