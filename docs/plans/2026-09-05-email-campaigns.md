@@ -225,6 +225,10 @@ npx @insforge/cli@latest db query "select delivered_count, opened_count from cam
 
 Expected: `true, false, false` then `1, 1`. Clean up: `delete from campaigns where name='rpc smoke'`.
 
+**Step 3b: Lock-down (added after code review of the applied migration)**
+
+A second file `insforge/migrations/20260905b_campaigns_lock_down.sql` enables RLS on both tables (no policies: anon/authenticated see nothing, the service key bypasses RLS), revokes EXECUTE on `record_campaign_event` from PUBLIC/anon/authenticated, replaces the unique index with `(campaign_id, email)` and makes the `provider_id` index unique (partial, non-null). Later tasks must dedupe by **email** (`onConflict: "campaign_id,email"`), never by `contact_id`.
+
 **Step 4: Commit**
 
 ```bash
@@ -1199,7 +1203,7 @@ export async function dispatchCampaign(
         language: r.language,
         status: "queued",
       })),
-      { onConflict: "campaign_id,contact_id", ignoreDuplicates: true },
+      { onConflict: "campaign_id,email", ignoreDuplicates: true },
     );
     if (insertError) {
       await fail(campaignId, insertError.message);
