@@ -45,6 +45,9 @@ const LEAF_KEYS: Record<string, string> = {
   segments: "leaves.segments",
 };
 
+/** Segments that are lists of their own inside a section. */
+const SUB_LISTS = new Set(["segments"]);
+
 function crumb(map: Record<string, string>, segment: string): Breadcrumb {
   const key = map[segment];
   return key ? { key } : { label: segment };
@@ -61,12 +64,28 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
 
   if (rest.length === 0) return [sectionCrumb];
 
-  const meaningful = rest.filter((s) => !UUID_RE.test(s));
+  // A sub-list under a section — campaigns/segments — is its own crumb, so
+  // the trail reads Campañas › Segmentos › <name> and not Campañas › <name>.
+  const parents: Breadcrumb[] = [{ ...sectionCrumb, href: sectionHref }];
+  let tail = rest;
+  if (rest[0] && SUB_LISTS.has(rest[0])) {
+    parents.push({
+      key: LEAF_KEYS[rest[0]],
+      href: `${sectionHref}/${rest[0]}`,
+    });
+    tail = rest.slice(1);
+    if (tail.length === 0) {
+      const own = parents.pop()!;
+      return [...parents, { key: own.key }];
+    }
+  }
+
+  const meaningful = tail.filter((s) => !UUID_RE.test(s));
 
   if (meaningful.length === 0) {
-    return [{ ...sectionCrumb, href: sectionHref }, { key: "leaves.edit" }];
+    return [...parents, { key: "leaves.edit" }];
   }
 
   const last = meaningful[meaningful.length - 1];
-  return [{ ...sectionCrumb, href: sectionHref }, crumb(LEAF_KEYS, last)];
+  return [...parents, crumb(LEAF_KEYS, last)];
 }

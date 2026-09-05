@@ -77,15 +77,18 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     .filter(Boolean);
   const hasUUID = segments.some((s) => UUID_RE.test(s));
   const isEditPage = segments[segments.length - 1] === "edit";
+  // Everything before the last crumb stays (a section, or a section and its
+  // sub-list); the record's own name replaces the generic leaf.
+  const parents = rawCrumbs.slice(0, -1);
   const breadcrumbs =
     hasUUID && dynamicLabel
       ? isEditPage
         ? [
-            rawCrumbs[0]!,
+            ...parents,
             { label: dynamicLabel, href: pathname.replace(/\/edit$/, "") },
             { key: "leaves.edit" },
           ]
-        : [rawCrumbs[0]!, { label: dynamicLabel }]
+        : [...parents, { label: dynamicLabel }]
       : rawCrumbs;
 
   const visibleNavLinks =
