@@ -70,11 +70,10 @@ export default function SegmentsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-sand-100 border-b">
+                  <th className={TH}>{t("table.created")}</th>
                   <th className={TH}>{t("table.name")}</th>
                   <th className={TH}>{t("table.conditions")}</th>
                   <th className={`${TH} text-right`}>{t("table.people")}</th>
-                  <th className={TH}>{t("table.created")}</th>
-                  <th className={TH}>{t("table.updated")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +91,9 @@ export default function SegmentsPage() {
                       }
                       className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
                     >
+                      <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
+                        {formatMediumDate(segment.created_at, locale)}
+                      </td>
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
                         {segment.name}
                       </td>
@@ -102,12 +104,6 @@ export default function SegmentsPage() {
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
                         {segment.count}
-                      </td>
-                      <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
-                        {formatMediumDate(segment.created_at, locale)}
-                      </td>
-                      <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
-                        {formatMediumDate(segment.updated_at, locale)}
                       </td>
                     </tr>
                   );
