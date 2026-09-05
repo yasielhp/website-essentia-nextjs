@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { OptionSelect } from "@/components/ui/option-select";
 import { EmailInput } from "@/components/ui/email-input";
 import { useGenderOptions } from "@/hooks/use-gender-options";
@@ -198,42 +199,17 @@ export function ContactDetailsCard({
         {loading ? (
           <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
         ) : (
-          <button
-            type="button"
+          <ToggleRow
+            checked={newsletterSubscribed}
             disabled={saving}
-            onClick={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
-            className={[
-              "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors duration-200",
+            label={t("newsletter.label")}
+            hint={
               newsletterSubscribed
-                ? "border-petroleum-200 bg-petroleum-50"
-                : "border-sand-200 bg-sand-50",
-              saving ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-            ].join(" ")}
-          >
-            <div className="flex flex-col gap-0.5">
-              <p className="text-petroleum-700 text-sm font-medium">
-                {t("newsletter.label")}
-              </p>
-              <p className="text-petroleum-400 text-xs">
-                {newsletterSubscribed
-                  ? t("newsletter.subscribed")
-                  : t("newsletter.notSubscribed")}
-              </p>
-            </div>
-            <div
-              className={[
-                "flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors duration-200",
-                newsletterSubscribed ? "bg-petroleum-500" : "bg-sand-300",
-              ].join(" ")}
-            >
-              <div
-                className={[
-                  "size-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-                  newsletterSubscribed ? "translate-x-5" : "translate-x-0",
-                ].join(" ")}
-              />
-            </div>
-          </button>
+                ? t("newsletter.subscribed")
+                : t("newsletter.notSubscribed")
+            }
+            onToggle={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
+          />
         )}
       </div>
     </div>

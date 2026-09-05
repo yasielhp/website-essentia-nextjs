@@ -17,6 +17,8 @@ export type FormState = {
   language: string;
   gender: GenderValue;
   status: ContactStatus;
+  /** Consent the client gave in person. Off means "not asked", not "no". */
+  newsletter: boolean;
 };
 
 export type FormAction =
@@ -27,6 +29,7 @@ export type FormAction =
     }
   | { type: "SET_STATUS"; status: ContactStatus }
   | { type: "SET_GENDER"; gender: GenderValue }
+  | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_ERROR"; message: string }
   | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
@@ -43,6 +46,7 @@ export const initialFormState: FormState = {
   language: "en",
   gender: "",
   status: "lead",
+  newsletter: false,
 };
 
 export function formReducer(state: FormState, action: FormAction): FormState {
@@ -59,6 +63,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, status: action.status };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
+    case "TOGGLE_NEWSLETTER":
+      return { ...state, newsletter: !state.newsletter };
     case "SUBMIT_START":
       return { ...state, submitting: true, error: null };
     case "SUBMIT_ERROR":

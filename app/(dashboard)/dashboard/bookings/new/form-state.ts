@@ -127,6 +127,8 @@ export type FormState = {
   email: string;
   phone: string;
   staffId: string;
+  /** Consent the client gave at the desk. Off means "not asked", not "no". */
+  newsletter: boolean;
 };
 
 export type FormAction =
@@ -147,6 +149,7 @@ export type FormAction =
       value: string;
     }
   | { type: "SET_STAFF"; value: string }
+  | { type: "TOGGLE_NEWSLETTER" }
   | { type: "RESET_TIERS" };
 
 export const formInitial: FormState = {
@@ -167,6 +170,7 @@ export const formInitial: FormState = {
   email: "",
   phone: "",
   staffId: "",
+  newsletter: false,
 };
 
 export function formReducer(state: FormState, action: FormAction): FormState {
@@ -213,6 +217,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
+    case "TOGGLE_NEWSLETTER":
+      return { ...state, newsletter: !state.newsletter };
     case "SET_STAFF":
       return { ...state, staffId: action.value };
     default:

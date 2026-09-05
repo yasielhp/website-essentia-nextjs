@@ -66,6 +66,7 @@ function NewBookingPageInner() {
     email,
     phone,
     staffId,
+    newsletter,
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
@@ -254,6 +255,7 @@ function NewBookingPageInner() {
               gender={gender}
               language={language}
               notes={notes}
+              newsletter={newsletter}
               submitting={submitting}
               dispatchForm={dispatchForm}
             />

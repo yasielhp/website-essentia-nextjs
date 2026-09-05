@@ -1025,7 +1025,8 @@
         "lead": "Lead — no booking yet",
         "client": "Client — has booked",
         "member": "Member — can hold a subscription"
-      }
+      },
+      "newsletterHelp": "Only if the client asked for it."
     },
     "detail": {
       "title": "Edit Contact",

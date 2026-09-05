@@ -117,6 +117,8 @@ async function linkContact(draft: NewBookingDraft): Promise<string | null> {
       p_phone: draft.phone.trim() || null,
       p_language: draft.language,
       p_gender: toStoredGender(draft.gender),
+      // `null`, not `false`: an untouched switch must not undo an earlier yes.
+      p_newsletter: draft.newsletter ? true : null,
     },
   );
 

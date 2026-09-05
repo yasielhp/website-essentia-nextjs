@@ -1025,7 +1025,8 @@
         "lead": "Lead — aún sin reservas",
         "client": "Cliente — ya ha reservado",
         "member": "Miembro — puede tener suscripción"
-      }
+      },
+      "newsletterHelp": "Solo si el cliente lo ha pedido."
     },
     "detail": {
       "title": "Editar contacto",

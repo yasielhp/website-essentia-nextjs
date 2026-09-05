@@ -8,6 +8,7 @@ import { EmailInput } from "@/components/ui/email-input";
 import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 import { useGenderOptions } from "@/hooks/use-gender-options";
 import { useFieldError } from "@/hooks/use-field-error";
+import { ToggleRow } from "@/components/dashboard/toggle-row";
 import type { ContactStatus } from "@/types/contact";
 import type { FormAction, FormState } from "./form-state";
 
@@ -25,6 +26,7 @@ export function ContactFields({
   dispatch: Dispatch<FormAction>;
 }) {
   const t = useTranslations("dashboard.contacts.form");
+  const tNewsletter = useTranslations("dashboard.contacts.detail.newsletter");
   const genderOptions = useGenderOptions();
   const fieldError = useFieldError();
   const {
@@ -37,6 +39,7 @@ export function ContactFields({
     language,
     gender,
     status,
+    newsletter,
   } = state;
 
   return (
@@ -225,6 +228,14 @@ export function ContactFields({
             ariaLabel={t("fields.preferredLanguage")}
           />
         </div>
+
+        <ToggleRow
+          checked={newsletter}
+          disabled={submitting}
+          label={tNewsletter("label")}
+          hint={t("newsletterHelp")}
+          onToggle={() => dispatch({ type: "TOGGLE_NEWSLETTER" })}
+        />
       </div>
     </div>
   );

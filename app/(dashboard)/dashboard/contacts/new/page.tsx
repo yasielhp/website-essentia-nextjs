@@ -32,6 +32,7 @@ export default function NewContactPage() {
     language,
     gender,
     status,
+    newsletter,
   } = state;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,6 +69,14 @@ export default function NewContactPage() {
           preferred_language: language === "es" ? "es" : "en",
           gender: toStoredGender(gender),
           status,
+          // Only ever set to true: a form left untouched says nothing about
+          // a consent the client may have given before.
+          ...(newsletter
+            ? {
+                newsletter_subscribed: true,
+                newsletter_subscribed_at: new Date().toISOString(),
+              }
+            : {}),
         },
         { onConflict: "email" },
       );

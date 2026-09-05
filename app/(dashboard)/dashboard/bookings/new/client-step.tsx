@@ -6,6 +6,7 @@ import { INPUT_CLASS } from "@/constants/form-styles";
 import { EmailInput } from "@/components/ui/email-input";
 import { OptionSelect } from "@/components/ui/option-select";
 import { useGenderOptions } from "@/hooks/use-gender-options";
+import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { LANGUAGE_OPTIONS } from "@/constants/i18n";
 import type { GenderValue } from "@/constants/gender";
 import type { FormAction } from "./form-state";
@@ -24,6 +25,7 @@ export function ClientStep({
   gender,
   language,
   notes,
+  newsletter,
   submitting,
   dispatchForm,
 }: {
@@ -34,10 +36,13 @@ export function ClientStep({
   gender: GenderValue;
   language: string;
   notes: string;
+  newsletter: boolean;
   submitting: boolean;
   dispatchForm: Dispatch<FormAction>;
 }) {
   const t = useTranslations("dashboard.bookings.form");
+  const tNewsletter = useTranslations("dashboard.contacts.detail.newsletter");
+  const tContactForm = useTranslations("dashboard.contacts.form");
   const genderOptions = useGenderOptions();
 
   return (
@@ -207,6 +212,14 @@ export function ClientStep({
             className={INPUT_CLASS + " resize-none"}
           />
         </div>
+
+        <ToggleRow
+          checked={newsletter}
+          disabled={submitting}
+          label={tNewsletter("label")}
+          hint={tContactForm("newsletterHelp")}
+          onToggle={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
+        />
       </div>
     </div>
   );
