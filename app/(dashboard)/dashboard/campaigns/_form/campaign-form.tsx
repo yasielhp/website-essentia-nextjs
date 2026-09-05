@@ -9,6 +9,7 @@ import { notifySuccess } from "@/lib/feedback";
 import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
+  isCampaignNameTaken,
   saveCampaign,
   scheduleCampaign,
   sendCampaignNow,
@@ -208,9 +209,20 @@ export function CampaignForm({
     push(`/dashboard/campaigns/${id}`);
   }
 
-  function confirmName() {
+  async function confirmName() {
     if (state.name.trim() === "") {
       dispatch({ type: "SET_ERRORS", errors: { name: "nameRequired" } });
+      return;
+    }
+    dispatch({ type: "SUBMIT_START" });
+    const taken = await isCampaignNameTaken(
+      getAccessToken(),
+      state.name,
+      state.id,
+    ).catch(() => false);
+    dispatch({ type: "SUBMIT_END" });
+    if (taken) {
+      dispatch({ type: "SET_ERRORS", errors: { name: "nameTaken" } });
       return;
     }
     complete(STEP_OF.name);
@@ -312,7 +324,11 @@ export function CampaignForm({
               onEdit={() => reopen(STEP_OF.name)}
             />
           ) : (
-            <NameStep state={state} dispatch={dispatch} onDone={confirmName} />
+            <NameStep
+              state={state}
+              dispatch={dispatch}
+              onDone={() => void confirmName()}
+            />
           ))}
 
         {/* ── Step 3: audience ── */}

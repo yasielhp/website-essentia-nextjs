@@ -235,6 +235,7 @@ export function parseErrors<T extends z.ZodTypeAny>(
 const CAMPAIGN_MESSAGE_KEYS = new Set([
   "nameRequired",
   "nameTooLong",
+  "nameTaken",
   "subjectRequired",
   "subjectTooLong",
   "preheaderTooLong",

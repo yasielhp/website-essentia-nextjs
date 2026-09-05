@@ -197,6 +197,49 @@ export async function fetchCampaign(
 
 // ─── Writing ────────────────────────────────────────────────────
 
+/** Whether another campaign already carries this name, ignoring case. */
+async function nameTaken(
+  name: string,
+  exceptId: string | null,
+): Promise<boolean> {
+  let query = getAdminClient()
+    .database.from("campaigns")
+    .select("id", { count: "exact", head: true })
+    .ilike("name", name.trim());
+  if (exceptId) query = query.neq("id", exceptId);
+  const { count } = await query;
+  return (count ?? 0) > 0;
+}
+
+/**
+ * The form asks this as the admin leaves the name field, so the answer comes
+ * before anything else is written. The unique index on the table is what
+ * holds when two people race; `saveCampaign` translates that refusal too.
+ */
+export async function isCampaignNameTaken(
+  accessToken: string | null,
+  name: string,
+  exceptId: string | null,
+): Promise<boolean> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return false;
+    throw err;
+  }
+  if (name.trim() === "") return false;
+  return nameTaken(name, exceptId);
+}
+
+const UNIQUE_VIOLATION = "23505";
+
+function isNameCollision(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === UNIQUE_VIOLATION ||
+    (error?.message ?? "").includes("campaigns_unique_name")
+  );
+}
+
 export async function saveCampaign(
   accessToken: string | null,
   input: CampaignInput,
@@ -227,6 +270,10 @@ export async function saveCampaign(
   const now = new Date().toISOString();
   const row = { ...validated.data, updated_at: now };
 
+  if (await nameTaken(validated.data.name, input.id ?? null)) {
+    return { ok: false, error: "invalid", fieldErrors: { name: "nameTaken" } };
+  }
+
   if (input.id) {
     // Editing a cancelled or failed campaign brings it back as a draft; a
     // draft or a scheduled one keeps its state, the schedule included.
@@ -248,7 +295,16 @@ export async function saveCampaign(
           : {}),
       })
       .eq("id", input.id);
-    if (updateError) return { ok: false, error: message(updateError) };
+    if (updateError) {
+      if (isNameCollision(updateError)) {
+        return {
+          ok: false,
+          error: "invalid",
+          fieldErrors: { name: "nameTaken" },
+        };
+      }
+      return { ok: false, error: message(updateError) };
+    }
 
     revalidatePath(LIST_PATH);
     return { ok: true, id: input.id };
@@ -259,7 +315,16 @@ export async function saveCampaign(
     .insert({ ...row, status: "draft", created_by: caller.userId })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: message(error) };
+  if (error || !data) {
+    if (isNameCollision(error)) {
+      return {
+        ok: false,
+        error: "invalid",
+        fieldErrors: { name: "nameTaken" },
+      };
+    }
+    return { ok: false, error: message(error) };
+  }
 
   revalidatePath(LIST_PATH);
   return { ok: true, id: (data as { id: string }).id };
@@ -310,10 +375,17 @@ export async function duplicateCampaign(
   if (error || !source) return { ok: false, error: "not_found" };
 
   const original = source as Pick<CampaignRow, "name" | "audience" | "content">;
+
+  // "(copia)", then "(copia 2)", and so on: the name index refuses repeats.
+  let copyName = `${original.name} (copia)`;
+  for (let n = 2; (await nameTaken(copyName, null)) && n < 50; n += 1) {
+    copyName = `${original.name} (copia ${n})`;
+  }
+
   const { data, error: insertError } = await db
     .from("campaigns")
     .insert({
-      name: `${original.name} (copia)`,
+      name: copyName,
       audience: original.audience,
       content: original.content,
       status: "draft",

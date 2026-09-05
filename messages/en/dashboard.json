@@ -992,7 +992,8 @@
     "servicesTooMany": "Too many services selected",
     "contactIdInvalid": "One of the chosen contacts is not valid",
     "tooManyContacts": "Too many contacts chosen by hand",
-    "invalidInput": "Some of the data is not valid"
+    "invalidInput": "Some of the data is not valid",
+    "nameTaken": "A campaign with this name already exists"
   },
   "gender": {
     "unspecified": "Not specified",
