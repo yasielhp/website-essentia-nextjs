@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { sendLocaleOf } from "@/lib/schemas";
 import { templatesFor } from "@/lib/campaigns/templates";
+import { blocksToDoc, docIsEmpty } from "@/lib/campaigns/doc";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { Button } from "@/components/ui/button";
 import { IconEdit, IconPlus } from "@/components/ui/icons";
@@ -29,7 +30,7 @@ export function TemplateStep({
   const t = useTranslations("dashboard.campaigns.template");
   const locale = sendLocaleOf(state.audience);
   const current = state.content[locale];
-  const hasContent = current.blocks.length > 0 || current.subject !== "";
+  const hasContent = !docIsEmpty(current.doc) || current.subject !== "";
   const templates = templatesFor(state.kind);
 
   const [previous, setPrevious] = useState<CampaignContentSummary[] | null>(
@@ -63,10 +64,11 @@ export function TemplateStep({
   function applyTemplate(id: string) {
     const template = templates.find((item) => item.id === id);
     if (!template) return;
+    const { blocks, ...rest } = template.content[locale];
     dispatch({
       type: "SET_CONTENT_ALL",
       locale,
-      content: structuredClone(template.content[locale]),
+      content: { ...rest, doc: blocksToDoc(blocks) },
     });
     onDone();
   }

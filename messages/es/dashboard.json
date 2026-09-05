@@ -1457,7 +1457,8 @@
       },
       "subjectA": "Asunto A",
       "subjectB": "Asunto B",
-      "subjectBHint": "La mitad recibe A y la otra mitad B. El informe muestra cuál se abrió más."
+      "subjectBHint": "La mitad recibe A y la otra mitad B. El informe muestra cuál se abrió más.",
+      "bodyHint": "Escribe como en un documento. Pulsa / para un bloque (botón, imagen, separador, columnas) y @ para una variable como first_name. Selecciona texto para negrita, enlaces y colores."
     },
     "review": {
       "title": "Revisar y enviar",

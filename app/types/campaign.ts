@@ -158,13 +158,26 @@ export type ContentBlock =
 
 export type ContentBlockType = ContentBlock["type"];
 
+/**
+ * A Tiptap/Maily document node. The body of a campaign is one of these with
+ * `type: "doc"`; the editor produces it and the renderer consumes it.
+ */
+export type EmailDoc = {
+  type: string;
+  attrs?: Record<string, unknown>;
+  content?: EmailDoc[];
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
+  text?: string;
+};
+
 export type CampaignLocaleContent = {
   subject: string;
   /** A/B test only: the subject half the audience sees instead. */
   subjectB?: string;
   preheader: string;
   title: string;
-  blocks: ContentBlock[];
+  /** The body, as the Maily editor left it. Null until something is written. */
+  doc: EmailDoc | null;
 };
 
 /** The `content` jsonb column. */
@@ -231,7 +244,7 @@ export const EMPTY_LOCALE_CONTENT: CampaignLocaleContent = {
   subject: "",
   preheader: "",
   title: "",
-  blocks: [],
+  doc: null,
 };
 
 export const EMPTY_AUDIENCE: CampaignAudience = {

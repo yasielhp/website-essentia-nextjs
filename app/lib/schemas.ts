@@ -5,7 +5,9 @@ import type {
   CampaignContent,
   CampaignLocale,
   CampaignLocaleContent,
+  EmailDoc,
 } from "@/types/campaign";
+import { docIsEmpty } from "@/lib/campaigns/doc";
 
 /**
  * Message KEYS, not sentences: this form is on the bilingual public site, and
@@ -257,13 +259,6 @@ const CAMPAIGN_MESSAGE_KEYS = new Set([
 ]);
 
 /** Empty, or a well-formed `https://` URL. */
-const httpsUrl = z
-  .string()
-  .trim()
-  .pipe(
-    z.url({ protocol: /^https$/, error: "urlMustBeHttps" }).or(z.literal("")),
-  );
-
 export const campaignAudienceSchema = z.object({
   language: z.enum(["any", "en", "es"]),
   newsletter: z.boolean().nullable(),
@@ -300,59 +295,33 @@ export const segmentSchema = z.object({
  * go out in is allowed to stay empty.
  */
 /**
- * The body as a stack of blocks. Two strengths: the loose shape lets a draft
- * hold a half-typed block; the strict one, used before anything is sent,
- * refuses an empty paragraph, an image with no file or a button missing half.
+ * The body is a Maily document. The loose shape only asks for the envelope
+ * (`type: "doc"`), so a draft can hold whatever the editor produced; the
+ * strict one refuses an empty body before anything is sent.
  */
-const paragraphText = z.string().trim().max(20000, "bodyTooLong");
-const headingText = z.string().trim().max(200, "titleTooLong");
-const buttonText = z.string().trim().max(60, "ctaTextTooLong");
-const altText = z.string().trim().max(200, "titleTooLong");
-
-const looseBlockSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("paragraph"), text: paragraphText }),
-  z.object({ type: z.literal("heading"), text: headingText }),
-  z.object({ type: z.literal("image"), url: httpsUrl, alt: altText }),
-  z.object({ type: z.literal("button"), text: buttonText, url: httpsUrl }),
-  z.object({ type: z.literal("divider") }),
-]);
-
-const strictBlockSchema = z.discriminatedUnion("type", [
+const docNode: z.ZodType<EmailDoc> = z.lazy(() =>
   z.object({
-    type: z.literal("paragraph"),
-    text: paragraphText.min(1, "blockTextRequired"),
+    type: z.string(),
+    attrs: z.record(z.string(), z.unknown()).optional(),
+    content: z.array(docNode).optional(),
+    marks: z
+      .array(
+        z.object({
+          type: z.string(),
+          attrs: z.record(z.string(), z.unknown()).optional(),
+        }),
+      )
+      .optional(),
+    text: z.string().optional(),
   }),
-  z.object({
-    type: z.literal("heading"),
-    text: headingText.min(1, "blockTextRequired"),
-  }),
-  z.object({
-    type: z.literal("image"),
-    url: z
-      .string()
-      .trim()
-      .min(1, "imageUrlRequired")
-      .pipe(z.url({ protocol: /^https$/, error: "urlMustBeHttps" })),
-    alt: altText,
-  }),
-  z.object({
-    type: z.literal("button"),
-    text: buttonText.min(1, "ctaNeedsBoth"),
-    url: z
-      .string()
-      .trim()
-      .min(1, "ctaNeedsBoth")
-      .pipe(z.url({ protocol: /^https$/, error: "urlMustBeHttps" })),
-  }),
-  z.object({ type: z.literal("divider") }),
-]);
+);
 
 const localeContentShape = {
   subject: z.string().trim().max(120, "subjectTooLong"),
   subjectB: z.string().trim().max(120, "subjectTooLong").optional(),
   preheader: z.string().trim().max(150, "preheaderTooLong"),
   title: z.string().trim().max(200, "titleTooLong"),
-  blocks: z.array(looseBlockSchema).max(50, "tooManyBlocks"),
+  doc: docNode.nullable(),
 };
 
 /** A language block the campaign actually sends: subject, title and a body. */
@@ -360,10 +329,7 @@ const campaignLocaleContentSchema = z.object({
   ...localeContentShape,
   subject: localeContentShape.subject.min(1, "subjectRequired"),
   title: localeContentShape.title.min(1, "titleRequired"),
-  blocks: z
-    .array(strictBlockSchema)
-    .min(1, "bodyRequired")
-    .max(50, "tooManyBlocks"),
+  doc: docNode.nullable().refine((doc) => !docIsEmpty(doc), "bodyRequired"),
 });
 
 function isEmptyLocale(block: CampaignLocaleContent): boolean {
@@ -372,7 +338,7 @@ function isEmptyLocale(block: CampaignLocaleContent): boolean {
     !block.subjectB &&
     block.preheader === "" &&
     block.title === "" &&
-    block.blocks.length === 0
+    docIsEmpty(block.doc)
   );
 }
 

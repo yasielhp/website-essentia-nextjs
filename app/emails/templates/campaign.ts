@@ -1,26 +1,106 @@
+import { Maily } from "@maily-to/render";
 import type {
   CampaignLocale,
   CampaignLocaleContent,
-  ContentBlock,
+  EmailDoc,
 } from "@/types/campaign";
-import {
-  bodyToHtml,
-  escapeHtml,
-  renderVariables,
-} from "@/lib/campaigns/body-html";
-import { emailBase } from "./_base";
+import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
+import { emptyDoc } from "@/lib/campaigns/doc";
 
 /**
  * The email a campaign sends to one recipient.
  *
- * Unlike the booking templates, the words here are the admin's, typed into the
- * dashboard as a stack of blocks, so every field is escaped before it meets
- * the shell — paragraph text goes through `bodyToHtml`, which knows the three
- * constructs it may carry. Only the footer is ours: the reason the recipient
- * hears from us and the way out, present on every campaign whatever the admin
- * writes.
+ * The body is what the admin built in the Maily editor; this wraps it in the
+ * two things that are ours on every campaign — the logo at the top and, at
+ * the bottom, the reason the recipient hears from us and the way out — and
+ * hands the whole document to Maily's renderer, which knows how to turn it
+ * into HTML every mail client agrees on.
+ *
+ * Variables come in two forms: Maily's own variable nodes, filled by the
+ * renderer, and plain `{{first_name}}` text (what the templates and the
+ * subject carry), filled afterwards on the HTML with the value escaped.
  */
-export function campaignEmail({
+
+const LOGO_URL = "https://www.essentiawellnessclub.com/logo-email.png";
+
+const THEME = {
+  colors: {
+    heading: "#103838",
+    paragraph: "#335554",
+    horizontal: "#d7dbd9",
+    footer: "#4a6767",
+  },
+  fontSize: {
+    paragraph: "16px",
+    footer: { size: "12px", lineHeight: "18px" },
+  },
+};
+
+const FOOTER: Record<CampaignLocale, { reason: string; link: string }> = {
+  es: {
+    reason: "Recibes este email porque eres cliente de Essentia.",
+    link: "Darse de baja",
+  },
+  en: {
+    reason:
+      "You are receiving this email because you are a client of Essentia.",
+    link: "Unsubscribe",
+  },
+};
+
+/** The full document: logo, title, the admin's body, our footer. */
+export function assembleDoc({
+  content,
+  unsubscribeUrl,
+  locale,
+}: {
+  content: CampaignLocaleContent;
+  unsubscribeUrl: string;
+  locale: CampaignLocale;
+}): EmailDoc {
+  const body = content.doc ?? emptyDoc();
+  const footer = FOOTER[locale];
+  return {
+    type: "doc",
+    content: [
+      {
+        type: "logo",
+        attrs: {
+          src: LOGO_URL,
+          alt: "Essentia",
+          size: "md",
+          alignment: "center",
+        },
+      },
+      { type: "spacer", attrs: { height: 16 } },
+      ...(content.title.trim()
+        ? [
+            {
+              type: "heading",
+              attrs: { level: 1 },
+              content: [{ type: "text", text: content.title }],
+            },
+          ]
+        : []),
+      ...(body.content ?? []),
+      { type: "horizontalRule" },
+      {
+        type: "footer",
+        attrs: { textAlign: "left" },
+        content: [
+          { type: "text", text: `${footer.reason} ` },
+          {
+            type: "text",
+            text: footer.link,
+            marks: [{ type: "link", attrs: { href: unsubscribeUrl } }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export async function campaignEmail({
   content,
   firstName,
   vars: extraVars,
@@ -33,86 +113,37 @@ export function campaignEmail({
   vars?: Record<string, string>;
   unsubscribeUrl: string;
   locale: CampaignLocale;
-}): { subject: string; html: string } {
+}): Promise<{ subject: string; html: string }> {
   const vars: Record<string, string> = { ...extraVars, first_name: firstName };
-  // The name is already escaped by `renderVariables`; escaping the text first
-  // and filling the token afterwards is what keeps the two from stacking.
-  const title = renderVariables(escapeHtml(content.title), vars);
-  const preheader = renderVariables(
-    escapeHtml(content.preheader || content.title),
-    vars,
-  );
 
-  const body = `
-        <h1 style="margin:0 0 20px;font-size:26px;font-weight:600;color:#103838;line-height:1.3;">${title}</h1>
-        ${content.blocks.map((block) => renderBlock(block, vars)).join("\n")}
-        ${footer(unsubscribeUrl, locale)}
-      `;
+  const maily = new Maily(
+    assembleDoc({ content, unsubscribeUrl, locale }) as never,
+  );
+  maily.setTheme(THEME as never);
+  maily.setVariableValues(vars);
+  maily.setShouldReplaceVariableValues(true);
+  const rendered = await maily.render();
+
+  // The renderer escapes what it renders, so a plain-text token is filled
+  // with an escaped value; the subject is plain text and takes the raw one.
+  const html = renderVariables(rendered, vars);
+  const preheader = renderVariables(content.preheader, vars, {
+    escape: false,
+  });
 
   return {
     subject: renderVariables(content.subject, vars, { escape: false }),
-    html: emailBase({ locale, preheader, body }),
+    html: preheader ? withPreheader(html, preheader) : html,
   };
 }
 
-/** One block, as email HTML. Unknown shapes render nothing rather than throw. */
-export function renderBlock(
-  block: ContentBlock,
-  vars: Record<string, string>,
-): string {
-  switch (block.type) {
-    case "paragraph":
-      return renderVariables(bodyToHtml(block.text), vars);
-    case "heading":
-      return `<h2 style="margin:24px 0 12px;font-size:20px;font-weight:600;color:#103838;line-height:1.3;">${renderVariables(escapeHtml(block.text), vars)}</h2>`;
-    case "image":
-      return image(block.url, block.alt);
-    case "button":
-      return button(block.text, block.url);
-    case "divider":
-      return `<hr style="border:0;border-top:1px solid #d7dbd9;margin:24px 0;" />`;
-    default:
-      return "";
-  }
-}
-
-function image(url: string, alt: string): string {
-  if (!url) return "";
-  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="496" style="display:block;width:100%;max-width:496px;height:auto;border:0;border-radius:12px;margin:0 0 24px;" />`;
-}
-
-// A label without a link, or a link without a label, is a half-filled form,
-// not a button; the email simply goes out without one.
-function button(text: string, url: string): string {
-  if (!text || !url) return "";
-  return `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;">
-          <tr>
-            <td align="center">
-              <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
-                 style="display:inline-block;padding:14px 32px;background-color:#103838;color:#f0ede6;text-decoration:none;border-radius:999px;font-size:15px;font-weight:500;letter-spacing:0.02em;">
-                ${escapeHtml(text)}
-              </a>
-            </td>
-          </tr>
-        </table>`;
-}
-
-function footer(unsubscribeUrl: string, locale: CampaignLocale): string {
-  const copy =
-    locale === "es"
-      ? {
-          reason: "Recibes este email porque eres cliente de Essentia.",
-          link: "Darse de baja",
-        }
-      : {
-          reason:
-            "You are receiving this email because you are a client of Essentia.",
-          link: "Unsubscribe",
-        };
-  return `
-        <p style="margin:32px 0 0;font-size:12px;color:#4a6767;line-height:1.6;">
-          ${copy.reason}
-          <a href="${escapeHtml(unsubscribeUrl)}" style="color:#335554;text-decoration:underline;">${copy.link}</a>
-        </p>`;
+/** Inbox apps show the first text they find; this puts the preheader there. */
+function withPreheader(html: string, preheader: string): string {
+  const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader)}</div>`;
+  const at = html.indexOf("<body");
+  if (at === -1) return html;
+  const close = html.indexOf(">", at);
+  return close === -1
+    ? html
+    : html.slice(0, close + 1) + hidden + html.slice(close + 1);
 }

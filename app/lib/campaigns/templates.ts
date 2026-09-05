@@ -1,7 +1,7 @@
 import type {
   CampaignKind,
   CampaignLocale,
-  CampaignLocaleContent,
+  ContentBlock,
 } from "@/types/campaign";
 
 /**
@@ -12,11 +12,19 @@ import type {
  * Kept as data rather than in the database so a template cannot be broken
  * from the dashboard, and so the copy travels with the code that renders it.
  */
+/** A template's copy, in the simple block form that reads well in code. */
+export type TemplateContent = {
+  subject: string;
+  preheader: string;
+  title: string;
+  blocks: ContentBlock[];
+};
+
 export type CampaignTemplate = {
   id: string;
   /** The kinds this template fits best; shown first for them, available to all. */
   kinds: CampaignKind[];
-  content: Record<CampaignLocale, CampaignLocaleContent>;
+  content: Record<CampaignLocale, TemplateContent>;
 };
 
 const BOOKING_URL = {

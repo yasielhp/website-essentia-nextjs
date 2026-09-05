@@ -131,33 +131,35 @@ export async function sendQueued(
 
   for (let start = 0; start < rows.length; start += CHUNK) {
     const chunk = rows.slice(start, start + CHUNK);
-    const emails = chunk.map((row) => {
-      const contact = one(row.contacts);
-      const token = contact?.unsubscribe_token ?? "";
-      const unsubscribeUrl = `${appUrl}${row.language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
-      const block = content[row.language];
-      const { subject, html } = campaignEmail({
-        content:
-          row.variant === "b" && block.subjectB
-            ? { ...block, subject: block.subjectB }
-            : block,
-        firstName: contact?.first_name ?? "",
-        vars: row.vars ?? undefined,
-        unsubscribeUrl,
-        locale: row.language,
-      });
-      return {
-        to: row.email,
-        subject,
-        html,
-        blindCopy: false,
-        tags: { campaign_id: campaign.id },
-        headers: {
-          "List-Unsubscribe": `<${unsubscribeUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
-      };
-    });
+    const emails = await Promise.all(
+      chunk.map(async (row) => {
+        const contact = one(row.contacts);
+        const token = contact?.unsubscribe_token ?? "";
+        const unsubscribeUrl = `${appUrl}${row.language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
+        const block = content[row.language];
+        const { subject, html } = await campaignEmail({
+          content:
+            row.variant === "b" && block.subjectB
+              ? { ...block, subject: block.subjectB }
+              : block,
+          firstName: contact?.first_name ?? "",
+          vars: row.vars ?? undefined,
+          unsubscribeUrl,
+          locale: row.language,
+        });
+        return {
+          to: row.email,
+          subject,
+          html,
+          blindCopy: false,
+          tags: { campaign_id: campaign.id },
+          headers: {
+            "List-Unsubscribe": `<${unsubscribeUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
+        };
+      }),
+    );
 
     // `sendEmailBatch` already paces its own chunks; each call here is one
     // chunk, so the pacing between calls is ours to keep.

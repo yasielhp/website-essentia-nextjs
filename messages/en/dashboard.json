@@ -1457,7 +1457,8 @@
       },
       "subjectA": "Subject A",
       "subjectB": "Subject B",
-      "subjectBHint": "Half the audience gets A, half gets B. The report shows which one was opened more."
+      "subjectBHint": "Half the audience gets A, half gets B. The report shows which one was opened more.",
+      "bodyHint": "Write as in a document. Type / for a block — button, image, divider, columns — and @ for a variable such as first_name. Select text for bold, links and colours."
     },
     "review": {
       "title": "Review and send",

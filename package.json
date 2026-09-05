@@ -19,6 +19,8 @@
     "@c15t/nextjs": "^2.2.0",
     "@c15t/scripts": "^2.2.0",
     "@insforge/sdk": "1.5.2",
+    "@maily-to/core": "0.3.7",
+    "@maily-to/render": "0.2.3",
     "@tailwindcss/typography": "0.5.20",
     "@uiw/react-md-editor": "4.1.1",
     "cuelume": "^0.2.2",

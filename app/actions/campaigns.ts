@@ -16,6 +16,7 @@ import {
   validateCampaignDraft,
 } from "@/lib/schemas";
 import { loadCandidates, resolveAudience } from "@/lib/campaigns/audience";
+import { docIsEmpty } from "@/lib/campaigns/doc";
 import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { sendEmail } from "@/emails/send";
@@ -303,11 +304,10 @@ export async function listCampaignContents(
     .order("updated_at", { ascending: false })
     .limit(50);
   if (error) return [];
-  return ((data ?? []) as CampaignContentSummary[]).filter((row) => {
-    const es = row.content?.es;
-    const en = row.content?.en;
-    return Boolean(es?.blocks?.length || en?.blocks?.length);
-  });
+  return ((data ?? []) as CampaignContentSummary[]).filter(
+    (row) =>
+      !docIsEmpty(row.content?.es?.doc) || !docIsEmpty(row.content?.en?.doc),
+  );
 }
 
 // ─── Segments ───────────────────────────────────────────────────
@@ -731,31 +731,30 @@ export async function renderCampaignPreview(
     return authFailure(err);
   }
 
-  const { html } = campaignEmail({
-    content: withDefaults(content),
-    firstName: locale === "es" ? "Ana" : "Anna",
-    unsubscribeUrl: "#",
-    locale,
-  });
-  return { html };
+  try {
+    const { html } = await campaignEmail({
+      content: withDefaults(content),
+      firstName: locale === "es" ? "Ana" : "Anna",
+      unsubscribeUrl: "#",
+      locale,
+    });
+    return { html };
+  } catch (err) {
+    console.error("[campaigns] preview render failed:", err);
+    return { ok: false, error: "generic" };
+  }
 }
 
 function withDefaults(
   content: Partial<CampaignLocaleContent> | undefined,
 ): CampaignLocaleContent {
-  const out: CampaignLocaleContent = { ...EMPTY_LOCALE_CONTENT, blocks: [] };
-  for (const key of ["subject", "preheader", "title"] as const) {
+  const out: CampaignLocaleContent = { ...EMPTY_LOCALE_CONTENT, doc: null };
+  for (const key of ["subject", "subjectB", "preheader", "title"] as const) {
     const value = content?.[key];
     if (typeof value === "string") out[key] = value;
   }
-  // Only blocks the template knows how to draw; anything else is dropped
-  // rather than risk a preview that throws on a half-typed block.
-  out.blocks = Array.isArray(content?.blocks)
-    ? content.blocks.filter(
-        (block): block is CampaignLocaleContent["blocks"][number] =>
-          typeof block === "object" && block !== null && "type" in block,
-      )
-    : [];
+  const doc = content?.doc;
+  out.doc = doc && typeof doc === "object" && doc.type === "doc" ? doc : null;
   return out;
 }
 
@@ -780,7 +779,7 @@ export async function sendTestCampaign(
   if (!caller.email) return { ok: false, error: "no_email" };
 
   for (const locale of requiredLocales(audience)) {
-    const { subject, html } = campaignEmail({
+    const { subject, html } = await campaignEmail({
       content: withDefaults(content[locale]),
       firstName: locale === "es" ? "Ana" : "Anna",
       unsubscribeUrl: "#",

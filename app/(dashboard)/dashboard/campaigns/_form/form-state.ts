@@ -6,7 +6,7 @@ import {
   type CampaignLocale,
   type CampaignLocaleContent,
   type CampaignRow,
-  type ContentBlock,
+  type EmailDoc,
   type SegmentConditions,
   type CampaignKind,
   type CampaignTrigger,
@@ -72,7 +72,7 @@ export type FormAction =
   | {
       type: "SET_CONTENT";
       locale: CampaignLocale;
-      field: Exclude<keyof CampaignLocaleContent, "blocks">;
+      field: Exclude<keyof CampaignLocaleContent, "doc">;
       value: string;
     }
   | {
@@ -80,20 +80,7 @@ export type FormAction =
       locale: CampaignLocale;
       content: CampaignLocaleContent;
     }
-  | { type: "ADD_BLOCK"; locale: CampaignLocale; block: ContentBlock }
-  | {
-      type: "UPDATE_BLOCK";
-      locale: CampaignLocale;
-      index: number;
-      block: ContentBlock;
-    }
-  | {
-      type: "MOVE_BLOCK";
-      locale: CampaignLocale;
-      index: number;
-      direction: -1 | 1;
-    }
-  | { type: "REMOVE_BLOCK"; locale: CampaignLocale; index: number }
+  | { type: "SET_DOC"; locale: CampaignLocale; doc: EmailDoc }
   | { type: "SET_LOCALE"; locale: CampaignLocale }
   | { type: "GO"; step: Step }
   | { type: "SET_ERRORS"; errors: Record<string, string> }
@@ -239,32 +226,15 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         content: { ...state.content, [action.locale]: action.content },
         fieldErrors: without(state.fieldErrors, `content.${action.locale}`),
       };
-    case "ADD_BLOCK":
-    case "UPDATE_BLOCK":
-    case "MOVE_BLOCK":
-    case "REMOVE_BLOCK": {
-      const blocks = [...state.content[action.locale].blocks];
-      if (action.type === "ADD_BLOCK") blocks.push(action.block);
-      if (action.type === "UPDATE_BLOCK") blocks[action.index] = action.block;
-      if (action.type === "REMOVE_BLOCK") blocks.splice(action.index, 1);
-      if (action.type === "MOVE_BLOCK") {
-        const target = action.index + action.direction;
-        if (target < 0 || target >= blocks.length) return state;
-        const [moved] = blocks.splice(action.index, 1);
-        blocks.splice(target, 0, moved!);
-      }
+    case "SET_DOC":
       return {
         ...state,
         content: {
           ...state.content,
-          [action.locale]: { ...state.content[action.locale], blocks },
+          [action.locale]: { ...state.content[action.locale], doc: action.doc },
         },
-        fieldErrors: without(
-          state.fieldErrors,
-          `content.${action.locale}.blocks`,
-        ),
+        fieldErrors: without(state.fieldErrors, `content.${action.locale}.doc`),
       };
-    }
     case "SET_LOCALE":
       return { ...state, activeLocale: action.locale };
     case "GO":
