@@ -1559,7 +1559,7 @@ Add to both files (Spanish shown; write the English equivalent in `en`):
 - `nav.campaigns`: "Campañas" / "Campaigns"
 - `breadcrumbs.sections.campaigns`: same
 - `breadcrumbs.leaves.new` already exists ("New"/"Nueva"); check `getBreadcrumbs` in `app/(dashboard)` or `utils` handles `/dashboard/campaigns/new` and `/dashboard/campaigns/<uuid>` generically (the shell already does UUID detection).
-- `validation.*`: `nameRequired`, `subjectRequired`, `subjectTooLong`, `preheaderTooLong`, `titleRequired`, `bodyRequired`, `urlMustBeHttps`, `ctaNeedsBoth`
+- `validation.*` (final list from Task 2; add any that already exist only if missing): `nameRequired`, `nameTooLong`, `subjectRequired`, `subjectTooLong`, `preheaderTooLong`, `titleRequired`, `titleTooLong`, `bodyRequired`, `bodyTooLong`, `ctaTextTooLong`, `urlMustBeHttps`, `ctaNeedsBoth`, `daysOutOfRange`, `servicesTooMany`, `contactIdInvalid`, `tooManyContacts`, `invalidInput`. Array issues carry the index (`audience.manualIds.0`), so the form matches on the `audience.manualIds.` prefix.
 - A new `campaigns` block:
 
 ```json
