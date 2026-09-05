@@ -631,3 +631,37 @@ export async function clearContactBounce(
   if (error) return { ok: false, error: message(error) };
   return { ok: true };
 }
+
+/** The names behind a saved campaign's manual picks, for the editor's chips. */
+export async function fetchContactsByIds(
+  accessToken: string | null,
+  ids: string[],
+): Promise<ContactSearchHit[]> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return [];
+    throw err;
+  }
+  if (ids.length === 0) return [];
+
+  const { data, error } = await getAdminClient()
+    .database.from("contacts")
+    .select("id, first_name, last_name, email, preferred_language")
+    .in("id", ids.slice(0, 5000));
+  if (error) return [];
+
+  type Row = {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    preferred_language: string | null;
+  };
+  return ((data ?? []) as Row[]).map((row) => ({
+    id: row.id,
+    name: [row.first_name, row.last_name].filter(Boolean).join(" "),
+    email: row.email ?? "",
+    language: row.preferred_language === "es" ? "es" : "en",
+  }));
+}
