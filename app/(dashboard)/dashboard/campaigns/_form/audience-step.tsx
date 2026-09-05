@@ -443,16 +443,25 @@ export function AudienceStep({
                 }}
               />
             </div>
-            {selected && (
+            <div className="flex gap-2">
+              {selected && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={submitting}
+                  onClick={openEdit}
+                >
+                  {tSeg("edit")}
+                </Button>
+              )}
               <Button
-                variant="outline"
                 size="md"
-                disabled={submitting}
-                onClick={openEdit}
+                disabled={submitting || counting || !reach || reach.count === 0}
+                onClick={onDone}
               >
-                {tSeg("edit")}
+                {t("confirm")}
               </Button>
-            )}
+            </div>
           </div>
         )}
 
@@ -527,18 +536,6 @@ export function AudienceStep({
           </p>
         )}
       </section>
-
-      <div className="flex justify-end">
-        <Button
-          size="md"
-          disabled={
-            submitting || editing || counting || !reach || reach.count === 0
-          }
-          onClick={onDone}
-        >
-          {t("confirm")}
-        </Button>
-      </div>
     </div>
   );
 }
