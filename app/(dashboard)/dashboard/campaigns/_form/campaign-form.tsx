@@ -272,16 +272,9 @@ export function CampaignForm({
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-3">
-          <h1 className="font-display text-petroleum-700 text-3xl">
-            {state.id ? t("form.editTitle") : t("form.newTitle")}
-          </h1>
-          {state.name.trim() && state.step > STEP_OF.name && (
-            <span className="text-petroleum-400 truncate text-sm">
-              {state.name}
-            </span>
-          )}
-        </div>
+        <h1 className="font-display text-petroleum-700 text-3xl">
+          {state.id ? t("form.editTitle") : t("form.newTitle")}
+        </h1>
         <div className="hidden items-center gap-3 sm:flex">
           <Button variant="outline" size="md" href="/dashboard/campaigns">
             {tCommon("cancel")}
