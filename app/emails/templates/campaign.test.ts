@@ -52,7 +52,8 @@ describe("renderBodyFragment", () => {
     expect(fragment.startsWith("<table")).toBe(true);
     expect(fragment).not.toContain("<html");
     expect(fragment).not.toContain("<body");
-    expect(fragment).not.toContain("<!--");
+    expect(fragment).not.toContain("<!--$");
+    expect(fragment).not.toContain("<!--html-->");
     expect(fragment).not.toContain("<style");
   });
 

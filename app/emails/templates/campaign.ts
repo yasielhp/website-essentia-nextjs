@@ -68,7 +68,9 @@ export async function renderBodyFragment(
   const close = page.lastIndexOf("</body>");
   const inner =
     open === -1 || close === -1 ? page : page.slice(open + 1, close);
-  return inner.replace(/<!--[^>]*-->/g, "").trim();
+  // Only React's stream markers go; Outlook's `<!--[if mso]>` blocks stay,
+  // they are how the buttons keep their padding there.
+  return inner.replace(/<!--\/?\$-->|<!--(?:html|head|body)-->/g, "").trim();
 }
 
 export async function campaignEmail({
