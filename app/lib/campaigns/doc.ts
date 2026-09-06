@@ -109,7 +109,9 @@ export function blocksToDoc(blocks: ContentBlock[]): EmailDoc {
             attrs: {
               src: block.url,
               alt: block.alt,
-              width: "100%",
+              // A number: Maily sizes the image in pixels and a percentage
+              // comes out as "NaNpx". The card is 560 wide with 32 of padding.
+              width: 496,
               alignment: "center",
             },
           });

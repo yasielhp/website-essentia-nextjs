@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { CampaignLocaleContent } from "@/types/campaign";
-import { assembleDoc, campaignEmail } from "./campaign";
+import { campaignEmail, renderBodyFragment } from "./campaign";
 
 const content = (
   over: Partial<CampaignLocaleContent> = {},
@@ -44,29 +44,21 @@ const render = (over: Partial<CampaignLocaleContent> = {}, firstName = "Ana") =>
     locale: "es",
   });
 
-describe("assembleDoc", () => {
-  test("wraps the body between the logo and the footer", () => {
-    const doc = assembleDoc({
-      content: content(),
-      unsubscribeUrl: "https://x.test/u",
-      locale: "es",
+describe("renderBodyFragment", () => {
+  test("is a fragment: no document, no stream markers, inline styles only", async () => {
+    const fragment = await renderBodyFragment(content().doc, {
+      first_name: "",
     });
-    const types = doc.content?.map((n) => n.type);
-    expect(types?.[0]).toBe("section");
-    expect(doc.content?.[0]?.content?.[0]?.type).toBe("logo");
-    expect(doc.content?.[0]?.attrs?.backgroundColor).toBe("#103838");
-    expect(types).toContain("heading");
-    expect(types).toContain("paragraph");
-    expect(types?.at(-1)).toBe("footer");
+    expect(fragment.startsWith("<table")).toBe(true);
+    expect(fragment).not.toContain("<html");
+    expect(fragment).not.toContain("<body");
+    expect(fragment).not.toContain("<!--");
+    expect(fragment).not.toContain("<style");
   });
 
-  test("skips the title node when the title is blank", () => {
-    const doc = assembleDoc({
-      content: content({ title: "  " }),
-      unsubscribeUrl: "https://x.test/u",
-      locale: "en",
-    });
-    expect(doc.content?.some((n) => n.type === "heading")).toBe(false);
+  test("renders an empty document to an (almost) empty fragment", async () => {
+    const fragment = await renderBodyFragment(null, {});
+    expect(fragment).not.toContain("<p");
   });
 });
 
@@ -75,14 +67,18 @@ describe("campaignEmail", () => {
     expect((await render({}, "Ana & Co")).subject).toBe("Hola Ana & Co");
   });
 
-  test("renders a full email document", async () => {
+  test("uses the house shell: sand page, dark header with the logo, address", async () => {
     const { html } = await render();
-    expect(html.startsWith("<!DOCTYPE")).toBe(true);
-    expect(html).toContain("<body");
+    expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(html).toContain("background-color:#f5f2ed");
+    expect(html).toContain("background-color:#103838;padding:24px 32px");
+    expect(html).toContain("logo-email.png");
+    expect(html).toContain("Baobab Suites, Costa Adeje, Tenerife");
   });
 
-  test("fills plain-text variables in the body, escaped", async () => {
+  test("fills plain-text variables in title and body, escaped", async () => {
     const { html } = await render({}, "<b>Ana</b>");
+    expect(html).toContain("Novedades para &lt;b&gt;Ana&lt;/b&gt;</h1>");
     expect(html).toContain("para &lt;b&gt;Ana&lt;/b&gt;.");
     expect(html).not.toContain("{{first_name}}");
     expect(html).not.toContain("<b>Ana</b>");
@@ -90,10 +86,9 @@ describe("campaignEmail", () => {
 
   test("keeps bold, button href and label as the renderer escapes them", async () => {
     const { html } = await render();
-    expect(html).toContain("fuerza");
+    expect(html).toContain("<strong>fuerza</strong>");
     expect(html).toMatch(/href="https:\/\/a\.test\/\?a=1&amp;b=2"/);
     expect(html).toContain("Reservar &lt;ya&gt;");
-    expect(html).toContain("#103838");
   });
 
   test("footer copy and unsubscribe link follow the locale", async () => {
@@ -101,6 +96,7 @@ describe("campaignEmail", () => {
     expect(es).toContain("Recibes este email porque eres cliente de Essentia.");
     expect(es).toContain('href="https://x.test/u?token=abc"');
     expect(es).toContain("Darse de baja");
+    expect(es).toContain('lang="es"');
 
     const en = (
       await campaignEmail({
@@ -115,20 +111,21 @@ describe("campaignEmail", () => {
     );
     expect(en).toContain("Unsubscribe");
     expect(en).not.toContain("Darse de baja");
+    expect(en).toContain('lang="en"');
   });
 
-  test("a preheader is planted hidden at the top of the body", async () => {
-    const { html } = await render({ preheader: "Resumen <x> {{first_name}}" });
-    expect(html).toContain(
-      '<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Resumen &lt;x&gt; Ana</div>',
+  test("the preheader is the hidden first text, falling back to the title", async () => {
+    expect(
+      (await render({ preheader: "Resumen <x> {{first_name}}" })).html,
+    ).toContain('mso-hide:all;">Resumen &lt;x&gt; Ana</div>');
+    expect((await render()).html).toContain(
+      'mso-hide:all;">Novedades para Ana</div>',
     );
   });
 
-  test("an empty body still renders logo, title, address and footer", async () => {
+  test("an empty body still renders shell, title and footer", async () => {
     const { html } = await render({ doc: null });
-    expect(html).toContain("logo-email.png");
-    expect(html).toContain("Novedades para Ana");
-    expect(html).toContain("Baobab Suites, Costa Adeje, Tenerife");
+    expect(html).toContain("Novedades para Ana</h1>");
     expect(html).toContain("Darse de baja");
   });
 });
