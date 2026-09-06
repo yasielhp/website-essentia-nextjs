@@ -104,14 +104,17 @@ export async function campaignEmail({
 
   const body = `
         ${title ? `<h1 style="margin:0 0 20px;font-size:26px;font-weight:600;color:#103838;line-height:1.3;">${title}</h1>` : ""}
-        ${fragment}
-        <p style="margin:32px 0 0;font-size:12px;color:#4a6767;line-height:1.6;">
-          ${footer.reason}
-          <a href="${escapeHtml(unsubscribeUrl)}" style="color:#335554;text-decoration:underline;">${footer.link}</a>
-        </p>`;
+        ${fragment}`;
+
+  // Under the address, in the footer every Essentia email already has.
+  const footerExtra = `
+              <p style="margin:12px 0 0;font-size:12px;color:#4a6767;line-height:1.6;">
+                ${footer.reason}
+                <a href="${escapeHtml(unsubscribeUrl)}" style="color:#335554;text-decoration:underline;">${footer.link}</a>
+              </p>`;
 
   return {
     subject: renderVariables(content.subject, vars, { escape: false }),
-    html: emailBase({ locale, preheader, body }),
+    html: emailBase({ locale, preheader, body, footerExtra }),
   };
 }

@@ -95,6 +95,10 @@ describe("campaignEmail", () => {
   test("footer copy and unsubscribe link follow the locale", async () => {
     const es = (await render()).html;
     expect(es).toContain("Recibes este email porque eres cliente de Essentia.");
+    // Under the address, not above it.
+    expect(es.indexOf("Baobab Suites")).toBeLessThan(
+      es.indexOf("Recibes este email"),
+    );
     expect(es).toContain('href="https://x.test/u?token=abc"');
     expect(es).toContain("Darse de baja");
     expect(es).toContain('lang="es"');

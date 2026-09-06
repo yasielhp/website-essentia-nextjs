@@ -3,10 +3,13 @@ export function emailBase({
   preheader,
   body,
   locale = "en",
+  footerExtra = "",
 }: {
   preheader: string;
   body: string;
   locale?: "en" | "es";
+  /** HTML set under the address — a campaign's unsubscribe line, say. */
+  footerExtra?: string;
 }): string {
   return `<!DOCTYPE html>
 <html lang="${locale}">
@@ -43,7 +46,7 @@ export function emailBase({
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;">
                 Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
                 Baobab Suites, Costa Adeje, Tenerife
-              </p>
+              </p>${footerExtra}
             </td>
           </tr>
 
