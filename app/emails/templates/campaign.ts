@@ -48,7 +48,17 @@ const FOOTER: Record<CampaignLocale, { reason: string; link: string }> = {
   },
 };
 
-/** The full document: logo, title, the admin's body, our footer. */
+/** The house lines under every email, whatever the campaign says. */
+const ADDRESS = [
+  "Essentia — Longevity Center & Social Wellness Club, Tenerife",
+  "Baobab Suites, Costa Adeje, Tenerife",
+];
+
+/**
+ * The full document: the dark band with the logo that every Essentia email
+ * opens with, the title, the admin's body, and the footer with the centre's
+ * name and address and the way out.
+ */
 export function assembleDoc({
   content,
   unsubscribeUrl,
@@ -64,15 +74,30 @@ export function assembleDoc({
     type: "doc",
     content: [
       {
-        type: "logo",
+        type: "section",
         attrs: {
-          src: LOGO_URL,
-          alt: "Essentia",
-          size: "md",
-          alignment: "center",
+          backgroundColor: "#103838",
+          borderRadius: 16,
+          borderWidth: 0,
+          paddingTop: 24,
+          paddingBottom: 24,
+          paddingLeft: 32,
+          paddingRight: 32,
+          marginBottom: 24,
+          align: "center",
         },
+        content: [
+          {
+            type: "logo",
+            attrs: {
+              src: LOGO_URL,
+              alt: "Essentia",
+              size: "md",
+              alignment: "center",
+            },
+          },
+        ],
       },
-      { type: "spacer", attrs: { height: 16 } },
       ...(content.title.trim()
         ? [
             {
@@ -88,6 +113,11 @@ export function assembleDoc({
         type: "footer",
         attrs: { textAlign: "left" },
         content: [
+          { type: "text", text: ADDRESS[0]! },
+          { type: "hardBreak" },
+          { type: "text", text: ADDRESS[1]! },
+          { type: "hardBreak" },
+          { type: "hardBreak" },
           { type: "text", text: `${footer.reason} ` },
           {
             type: "text",

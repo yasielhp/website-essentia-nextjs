@@ -52,7 +52,9 @@ describe("assembleDoc", () => {
       locale: "es",
     });
     const types = doc.content?.map((n) => n.type);
-    expect(types?.[0]).toBe("logo");
+    expect(types?.[0]).toBe("section");
+    expect(doc.content?.[0]?.content?.[0]?.type).toBe("logo");
+    expect(doc.content?.[0]?.attrs?.backgroundColor).toBe("#103838");
     expect(types).toContain("heading");
     expect(types).toContain("paragraph");
     expect(types?.at(-1)).toBe("footer");
@@ -122,10 +124,11 @@ describe("campaignEmail", () => {
     );
   });
 
-  test("an empty body still renders logo, title and footer", async () => {
+  test("an empty body still renders logo, title, address and footer", async () => {
     const { html } = await render({ doc: null });
     expect(html).toContain("logo-email.png");
     expect(html).toContain("Novedades para Ana");
+    expect(html).toContain("Baobab Suites, Costa Adeje, Tenerife");
     expect(html).toContain("Darse de baja");
   });
 });
