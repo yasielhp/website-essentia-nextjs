@@ -108,7 +108,7 @@ export async function campaignEmail({
 
   // Under the address, in the footer every Essentia email already has.
   const footerExtra = `
-              <p style="margin:12px 0 0;font-size:12px;color:#4a6767;line-height:1.6;">
+              <p style="margin:12px 0 0;font-size:12px;color:#4a6767;line-height:1.6;text-align:center;">
                 ${footer.reason}
                 <a href="${escapeHtml(unsubscribeUrl)}" style="color:#335554;text-decoration:underline;">${footer.link}</a>
               </p>`;

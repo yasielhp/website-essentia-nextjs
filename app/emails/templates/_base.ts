@@ -42,8 +42,8 @@ export function emailBase({
 
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 32px;border-top:1px solid #d7dbd9;">
-              <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;">
+            <td style="padding:20px 32px;border-top:1px solid #d7dbd9;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;text-align:center;">
                 Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
                 Baobab Suites, Costa Adeje, Tenerife
               </p>${footerExtra}
