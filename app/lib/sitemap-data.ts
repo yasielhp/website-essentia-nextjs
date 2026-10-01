@@ -131,12 +131,8 @@ const allStaticRoutes = [
     priority: 0.7,
     changeFrequency: "monthly",
   },
-  {
-    path: "/booking",
-    esPath: "/reserva",
-    priority: 0.9,
-    changeFrequency: "weekly",
-  },
+  // `/booking` is left out on purpose: it redirects to contact while online
+  // booking is paused, and a redirect has no business in a sitemap.
   // Untranslated in `i18n/routing.ts`, so both locales share the path. They are
   // indexable and `llms.txt` lists them, so leaving them out only meant the
   // sitemap disagreed with the site.

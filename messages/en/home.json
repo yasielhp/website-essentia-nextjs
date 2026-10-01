@@ -97,8 +97,8 @@
     "cta": "Discover Essentia",
     "stats": {
       "totalSpace": {
-        "value": "Baobab Suites",
-        "label": "Location"
+        "value": "Coming soon",
+        "label": "New location"
       },
       "floors": {
         "value": "3",
@@ -106,7 +106,7 @@
       },
       "location": {
         "value": "Tenerife",
-        "label": "Costa Adeje, Spain"
+        "label": "Canary Islands, Spain"
       }
     }
   },

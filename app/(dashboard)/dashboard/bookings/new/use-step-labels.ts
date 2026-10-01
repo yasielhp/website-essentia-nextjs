@@ -11,7 +11,7 @@ import type {
  * A finished step in one line.
  *
  * Once a step is answered it folds into a summary, and what that summary says
- * is not the same as what the step asked: "Baobab Suites" becomes the
+ * is not the same as what the step asked: "Habitación" becomes the
  * reservation and room actually typed, and a date and hour become one phrase.
  */
 export function useStepLabels({

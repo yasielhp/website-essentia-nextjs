@@ -1,6 +1,6 @@
 # Essentia Wellness Club — Complete Reference
 
-> Essentia is a longevity center and social wellness club located at C. Roques del Salmor, 5, 38679 Costa Adeje, Tenerife, Canary Islands, Spain. It integrates regenerative medicine, evidence-based wellness protocols, and an exclusive community under one roof. All services are bookable online at https://www.essentiawellnessclub.com/booking. Available in English and Spanish.
+> Essentia is a longevity center and social wellness club in Tenerife, Canary Islands, Spain. It integrates regenerative medicine, evidence-based wellness protocols, and an exclusive community. The club is between premises: there is no street address at the moment, and online booking is paused — appointments are arranged by email or phone. Available in English and Spanish.
 
 ---
 
@@ -17,15 +17,14 @@
 
 ## Contact & Location
 
-- **Address:** C. Roques del Salmor, 5, 38679 Costa Adeje, Tenerife, Canary Islands, Spain
+- **Address:** none at the moment — the club is between premises. Tenerife, Canary Islands, Spain.
 - **Website:** https://www.essentiawellnessclub.com
 - **Email:** info@essentiawellnessclub.com
 - **Phone:** +34 634 09 12 95
-- **Booking URL:** https://www.essentiawellnessclub.com/booking
+- **Booking:** by email or phone; online booking is paused
 - **Instagram:** https://www.instagram.com/essentiamassage
 - **Facebook:** https://www.facebook.com/essentia
 - **Booking hours:** 8:00 AM – 7:30 PM (30-minute slots)
-- **Map:** https://maps.app.goo.gl/63DC95GEfWDydgrg8
 
 ---
 
@@ -92,7 +91,7 @@
 
 ### Manual Therapies
 - **URL:** https://www.essentiawellnessclub.com/wellness/manual-therapies
-- **Description:** 10 precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. Available at-centre or in-suite at Baobab Suites.
+- **Description:** 10 precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. The place for each session is agreed when the appointment is confirmed.
 
 #### ESPIRA
 - Express neck and shoulder ritual. Deep gliding manoeuvres with essential oils.
@@ -239,11 +238,10 @@ Full ecosystem access with a dedicated health advisor and founding member status
 
 ## Booking Information
 
-- **Booking URL:** https://www.essentiawellnessclub.com/booking
+- **Booking:** by email or phone; online booking is paused while the club moves premises
 - **Hours:** 8:00 AM – 7:30 PM, 30-minute appointment slots
 - **Payment:** Redsys (Santander TPV) — major credit and debit cards
 - **Languages:** English and Spanish
-- **Location options:** At the centre (Baobab Suites) or in-suite (for eligible manual therapies)
 - **Introductory visits:** Available for prospective members — includes a guided tour and a complimentary session
 
 ---

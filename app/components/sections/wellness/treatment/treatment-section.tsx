@@ -93,6 +93,7 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
 
 function ManualTherapiesSection() {
   const t = useTranslations("wellness.treatments");
+  const tCommon = useTranslations("common");
 
   const manualServices = manualTherapyTreatments;
 
@@ -138,10 +139,10 @@ function ManualTherapiesSection() {
                   <Button
                     variant="solid"
                     size="sm"
-                    href={`/booking?service=manual-therapies&treatment=${service.id}`}
+                    disabled
                     className="w-full md:w-auto"
                   >
-                    {t("bookSession")}
+                    {tCommon("comingSoon")}
                   </Button>
                   <Button
                     variant="outline"
@@ -182,6 +183,7 @@ function ManualTherapiesSection() {
  */
 function IvProtocolsSection() {
   const t = useTranslations("medicine.iv");
+  const tCommon = useTranslations("common");
 
   return (
     <section id="protocols" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -225,10 +227,10 @@ function IvProtocolsSection() {
                   <Button
                     variant="solid"
                     size="sm"
-                    href={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
+                    disabled
                     className="w-full md:w-auto"
                   >
-                    {t("book")}
+                    {tCommon("comingSoon")}
                   </Button>
                   <Button
                     variant="outline"
@@ -264,6 +266,7 @@ function IvProtocolsSection() {
 
 function FacialTreatmentsSection() {
   const t = useTranslations("wellness.treatments");
+  const tCommon = useTranslations("common");
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -303,10 +306,10 @@ function FacialTreatmentsSection() {
                   <Button
                     variant="solid"
                     size="sm"
-                    href={`/booking?service=facial-therapies&treatment=${facial.id}`}
+                    disabled
                     className="w-full md:w-auto"
                   >
-                    {t("bookSession")}
+                    {tCommon("comingSoon")}
                   </Button>
                   <Button
                     variant="outline"

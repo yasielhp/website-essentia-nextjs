@@ -433,7 +433,7 @@ function MobileMenu({
         )}
       </Accordion.Group>
       <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
-        {contact.address}
+        {contact.email}
       </p>
     </div>
   );
@@ -797,8 +797,10 @@ export const Header = () => {
               )}
             </div>
           ) : (
-            <Button variant="solid" size="md" href="/booking">
-              {tCommon("booking")}
+            /* Online booking is off while the studio is between premises;
+               the button stays so the header keeps its shape. */
+            <Button variant="solid" size="md" disabled>
+              {tCommon("comingSoon")}
             </Button>
           )}
           <HamburgerButton

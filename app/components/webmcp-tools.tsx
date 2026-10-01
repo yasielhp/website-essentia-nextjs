@@ -15,15 +15,16 @@ import { registerWebMcpTools } from "@/lib/webmcp";
  * Both are read-only. Nothing here books, pays, or writes: a booking carries a
  * name, an email and a phone number, and an agent should not be filing those
  * on someone's behalf without them seeing the form. The agent can find out
- * what Essentia offers and when it is free, then hand the person the booking
- * page — which is the same page a visitor uses.
+ * what Essentia offers and when it is free, then hand the person the contact
+ * page: online booking is paused while the studio is between premises, so an
+ * appointment is arranged by email or phone.
  */
 
 type BusyInterval = { start: string; end: string };
 
-/** The localized booking path, as declared in `i18n/routing.ts`. */
-function bookingUrl(locale: string) {
-  return locale === "es" ? "/es/reserva" : "/booking";
+/** The localized contact path, as declared in `i18n/routing.ts`. */
+function contactUrl(locale: string) {
+  return locale === "es" ? "/es/contacto" : "/contact";
 }
 
 export function WebMcpTools({ locale }: { locale: string }) {
@@ -55,7 +56,7 @@ export function WebMcpTools({ locale }: { locale: string }) {
                 priceSuite: treatment.priceSuite,
               })),
             ],
-            bookingUrl: bookingUrl(locale),
+            contactUrl: contactUrl(locale),
           };
         },
       },
@@ -141,11 +142,11 @@ export function WebMcpTools({ locale }: { locale: string }) {
               date,
               durationMinutes: duration,
               availableTimes: times,
-              bookingUrl: bookingUrl(locale),
+              contactUrl: contactUrl(locale),
               note:
                 times.length === 0
                   ? "Nothing free that day. Try another date."
-                  : "Booking is finished by the visitor on the booking page.",
+                  : "Online booking is paused: the visitor asks for the slot by email or phone.",
             };
           } catch {
             return {

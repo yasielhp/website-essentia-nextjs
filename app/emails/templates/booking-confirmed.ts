@@ -35,7 +35,6 @@ export function bookingConfirmedEmail({
           time,
           service,
           duration,
-          location: "Baobab Suites, Costa Adeje, Tenerife",
         }),
         locale,
       )
@@ -55,17 +54,6 @@ export function bookingConfirmedEmail({
         </p>
 
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
-
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-          <tr>
-            <td>
-              <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Ubicación</p>
-              <p style="margin:0;font-size:15px;color:#103838;line-height:1.5;">
-                Baobab Suites<br />Costa Adeje, Tenerife
-              </p>
-            </td>
-          </tr>
-        </table>
 
         ${calBtn}
         ${cancelBlock}
@@ -90,17 +78,6 @@ export function bookingConfirmedEmail({
       </p>
 
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
-
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-        <tr>
-          <td>
-            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">Location</p>
-            <p style="margin:0;font-size:15px;color:#103838;line-height:1.5;">
-              Baobab Suites<br />Costa Adeje, Tenerife
-            </p>
-          </td>
-        </tr>
-      </table>
 
       ${calBtn}
       ${cancelBlock}

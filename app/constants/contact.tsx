@@ -7,7 +7,6 @@ import { IconFacebook, IconInstagram } from "@/components/ui/icons";
 export const OPENING_HOURS = { opens: "08:00", closes: "17:00" };
 
 export const contact = {
-  address: "C. Roques del Salmor, 5, 38679 Costa Adeje, Tenerife, España",
   phone: "+34 634 09 12 95",
   email: "info@essentiawellnessclub.com",
   domain: "www.essentiawellnessclub.com",

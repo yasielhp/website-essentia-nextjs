@@ -381,7 +381,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
           { type: "image", url: "", alt: "" },
           {
             type: "paragraph",
-            text: "**Qué**: nombre del encuentro.\n**Cuándo**: día y hora.\n**Dónde**: Essentia, Baobab Suites, Costa Adeje.",
+            text: "**Qué**: nombre del encuentro.\n**Cuándo**: día y hora.\n**Dónde**: te lo confirmamos al reservar tu plaza.",
           },
           {
             type: "paragraph",
@@ -398,7 +398,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
           { type: "image", url: "", alt: "" },
           {
             type: "paragraph",
-            text: "**What**: name of the gathering.\n**When**: day and time.\n**Where**: Essentia, Baobab Suites, Costa Adeje.",
+            text: "**What**: name of the gathering.\n**When**: day and time.\n**Where**: we confirm it when you book your place.",
           },
           {
             type: "paragraph",

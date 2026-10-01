@@ -71,10 +71,7 @@ function buildSchemaOrg(locale: string) {
         },
         address: {
           "@type": "PostalAddress",
-          streetAddress: "C. Roques del Salmor, 5",
-          addressLocality: "Costa Adeje",
           addressRegion: "Santa Cruz de Tenerife",
-          postalCode: "38679",
           addressCountry: "ES",
         },
         contactPoint: {
@@ -104,16 +101,8 @@ function buildSchemaOrg(locale: string) {
         email: contact.email,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "C. Roques del Salmor, 5",
-          addressLocality: "Costa Adeje",
           addressRegion: "Santa Cruz de Tenerife",
-          postalCode: "38679",
           addressCountry: "ES",
-        },
-        geo: {
-          "@type": "GeoCoordinates",
-          latitude: "28.0863",
-          longitude: "-16.7307",
         },
         openingHoursSpecification: [
           {

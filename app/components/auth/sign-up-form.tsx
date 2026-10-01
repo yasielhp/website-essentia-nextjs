@@ -127,7 +127,7 @@ export default function SignUpForm() {
       // The tokens stay on the server now, so a live account is the absence of
       // a verification step rather than an access token in the response.
       await createProfile(user.id, name, email, newsletter);
-      push("/booking");
+      push("/account");
       refresh();
     }
   };
@@ -148,7 +148,7 @@ export default function SignUpForm() {
 
     if (user) {
       await createProfile(user.id, name, email, newsletter);
-      push("/booking");
+      push("/account");
       refresh();
     }
   };

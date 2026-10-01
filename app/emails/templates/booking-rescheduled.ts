@@ -35,7 +35,6 @@ export function bookingRescheduledEmail({
           time,
           service,
           duration,
-          location: "Baobab Suites, Costa Adeje, Tenerife",
         }),
         locale,
       )

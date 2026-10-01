@@ -79,7 +79,6 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
       />
       <ServiceDetailView
         service={service}
-        bookingHref={`/booking?service=manual-therapies&treatment=${service.id}`}
         backHref="/wellness/manual-therapies#treatments"
       />
     </>

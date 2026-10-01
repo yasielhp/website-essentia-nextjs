@@ -246,11 +246,12 @@
       "locations": {
         "selectPrompt": "Select a location",
         "centro": {
-          "label": "At the center"
+          "label": "At the center",
+          "description": "At our wellness space"
         },
         "habitacion": {
           "label": "Room",
-          "description": "Baobab Suites room"
+          "description": "The guest's hotel room"
         },
         "domicilio": {
           "label": "Home visit",

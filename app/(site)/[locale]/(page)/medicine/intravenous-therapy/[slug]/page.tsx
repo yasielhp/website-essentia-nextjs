@@ -75,7 +75,6 @@ export default async function IvProtocolPage({ params }: Props) {
       />
       <ServiceDetailView
         service={protocol}
-        bookingHref={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
         backHref="/medicine/intravenous-therapy#protocols"
       />
     </>

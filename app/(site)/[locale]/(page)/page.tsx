@@ -5,7 +5,6 @@ import Hero from "@components/sections/home/hero";
 import BrandStatement from "@components/sections/home/brand-statement";
 import ServicesOverview from "@components/sections/home/services-overview";
 import Testimonials from "@components/sections/home/testimonials";
-import TheSpace from "@components/sections/home/the-space";
 import CommunitySection from "@components/sections/home/community-section";
 import AboutTeaser from "@components/sections/home/about-teaser";
 
@@ -51,7 +50,9 @@ export default async function Home({
       <ServicesOverview />
       {/* TODO: re-add <MembershipTeaser /> when memberships go live */}
       <Testimonials />
-      <TheSpace />
+      {/* TODO: re-add <TheSpace /> when the new premises open — the section
+          describes a building, and there is none to describe right now. Its
+          copy is still in home.theSpace. */}
       <AboutTeaser />
       <CommunitySection />
     </>

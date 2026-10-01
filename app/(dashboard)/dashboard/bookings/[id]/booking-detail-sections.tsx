@@ -737,9 +737,7 @@ export function LocationCard({ booking }: { booking: BookingDetail }) {
                   </Field>
                 </div>
               )}
-            <p className="text-petroleum-400 text-sm">
-              Baobab Suites, Costa Adeje, Tenerife
-            </p>
+            <p className="text-petroleum-400 text-sm">Essentia Wellness Club</p>
           </>
         )}
       </div>

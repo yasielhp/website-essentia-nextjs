@@ -173,18 +173,10 @@ export const Footer = () => {
       {/* Contact */}
       <section className="border-petroleum-500 flex w-full items-center justify-between border-t p-5 text-sm">
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-between gap-3 md:flex-row">
-          {/*Contact Address*/}
-          <div className="border-petroleum-500 flex w-full max-w-72 text-center md:max-w-full md:border-r md:text-left">
-            <a
-              href="https://maps.app.goo.gl/63DC95GEfWDydgrg8"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {contact.address}
-            </a>
-          </div>
+          {/* No street address while the studio is between premises: the
+              email and the phone are the only ways in. */}
           {/*Contact Email and Phone*/}
-          <div className="border-petroleum-500 flex w-full flex-col items-center text-center md:border-r">
+          <div className="flex w-full flex-col items-center text-center md:items-start md:text-left">
             {/* Two lines of small text stacked with no gap: the padding is
                 what gives each one a tap target a thumb can hit. */}
             <AnimatedLink

@@ -246,11 +246,12 @@
       "locations": {
         "selectPrompt": "Selecciona una ubicación",
         "centro": {
-          "label": "En el centro"
+          "label": "En el centro",
+          "description": "En nuestro espacio de bienestar"
         },
         "habitacion": {
           "label": "Habitación",
-          "description": "Habitación de Baobab Suites"
+          "description": "Habitación del hotel donde se aloja"
         },
         "domicilio": {
           "label": "A domicilio",

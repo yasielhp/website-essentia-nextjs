@@ -70,7 +70,7 @@ export function bookingLocation(booking: CalendarBooking): string | null {
       parsed?.reservationNumber ? `Reserva ${parsed.reservationNumber}` : null,
       parsed?.roomNumber ? `Habitación ${parsed.roomNumber}` : null,
     ].filter(Boolean);
-    return ["Baobab Suites", ...parts].join(" · ");
+    return ["Habitación", ...parts].join(" · ");
   }
 
   if (booking.location === "domicilio") {

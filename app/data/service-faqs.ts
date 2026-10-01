@@ -119,7 +119,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Where will my treatment take place?",
       answer:
-        "For now, sessions happen only at our wellness space in Baobab Suites, Costa Adeje. Home visits will come later; the external diary is closed at the moment so we can look after the experience inside the centre.",
+        "We are between premises at the moment, so there is no address to give yet. Write to us and we agree the place for your session when we confirm the appointment.",
     },
     {
       question: "Are there situations where I should not have a massage?",
@@ -162,7 +162,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Where will my treatment take place?",
       answer:
-        "At our wellness space in Baobab Suites, Costa Adeje, or in your room if you are staying there. Home visits outside the complex are not available for now.",
+        "We are between premises at the moment, so there is no address to give yet. Write to us and we agree the place for your session when we confirm the appointment.",
     },
     {
       question: "Are there situations where I should not have a facial?",

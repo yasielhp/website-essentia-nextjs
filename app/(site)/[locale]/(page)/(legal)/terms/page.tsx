@@ -16,8 +16,8 @@ export async function generateMetadata({
         : "Terms & Conditions | Essentia",
     },
     description: isEs
-      ? "Lee los términos y condiciones de Essentia para membresías, reservas y uso de nuestros servicios de longevidad y bienestar en Costa Adeje, Tenerife."
-      : "Read Essentia's terms and conditions for membership, bookings, and use of our longevity and wellness services in Costa Adeje, Tenerife.",
+      ? "Lee los términos y condiciones de Essentia para membresías, reservas y uso de nuestros servicios de longevidad y bienestar en Tenerife."
+      : "Read Essentia's terms and conditions for membership, bookings, and use of our longevity and wellness services in Tenerife.",
     alternates: {
       canonical: isEs ? "/es/terms" : "/terms",
       languages: {

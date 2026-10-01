@@ -68,13 +68,15 @@ describe("campaignEmail", () => {
     expect((await render({}, "Ana & Co")).subject).toBe("Hola Ana & Co");
   });
 
-  test("uses the house shell: sand page, dark header with the logo, address", async () => {
+  test("uses the house shell: sand page, dark header with the logo, footer", async () => {
     const { html } = await render();
     expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
     expect(html).toContain("background-color:#f5f2ed");
     expect(html).toContain("background-color:#103838;padding:24px 32px");
     expect(html).toContain("logo-email.png");
-    expect(html).toContain("Baobab Suites, Costa Adeje, Tenerife");
+    expect(html).toContain(
+      "Longevity Center &amp; Social Wellness Club, Tenerife",
+    );
   });
 
   test("fills plain-text variables in title and body, escaped", async () => {
@@ -95,8 +97,8 @@ describe("campaignEmail", () => {
   test("footer copy and unsubscribe link follow the locale", async () => {
     const es = (await render()).html;
     expect(es).toContain("Recibes este email porque eres cliente de Essentia.");
-    // Under the address, not above it.
-    expect(es.indexOf("Baobab Suites")).toBeLessThan(
+    // Under the house line, not above it.
+    expect(es.indexOf("Social Wellness Club, Tenerife")).toBeLessThan(
       es.indexOf("Recibes este email"),
     );
     expect(es).toContain('href="https://x.test/u?token=abc"');

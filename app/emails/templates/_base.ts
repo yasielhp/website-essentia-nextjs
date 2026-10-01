@@ -44,8 +44,7 @@ export function emailBase({
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #d7dbd9;text-align:center;">
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;text-align:center;">
-                Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
-                Baobab Suites, Costa Adeje, Tenerife
+                Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife
               </p>${footerExtra}
             </td>
           </tr>
@@ -74,7 +73,8 @@ export function googleCalendarUrl({
   time: string;
   service: string;
   duration?: string | null;
-  location: string;
+  /** Omitted while the studio is between premises. */
+  location?: string;
 }): string {
   const [y, mo, d] = dateIso.split("-");
   const [hh, mm] = time.split(":");
@@ -100,7 +100,7 @@ export function googleCalendarUrl({
     dates: `${startStr}/${endStr}`,
     details:
       "Essentia Wellness Club · essentiawellnessclub.com · +34 634 09 12 95",
-    location,
+    ...(location ? { location } : {}),
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;

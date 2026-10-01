@@ -147,7 +147,8 @@ export function CancelContent() {
                   {working ? t("confirm.working") : t("confirm.action")}
                 </Button>
               )}
-              <Button variant="outline" size="md" href="/booking">
+              {/* Booking is paused, so "book again" points at contact. */}
+              <Button variant="outline" size="md" href="/contact">
                 {screen === "confirm" ? t("keep") : t("bookAgain")}
               </Button>
             </div>

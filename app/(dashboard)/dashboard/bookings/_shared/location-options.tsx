@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Building2, Home, BedDouble } from "lucide-react";
-import { contact } from "@/constants/contact";
 
 /**
  * Where a booking takes place, and how somebody picks it.
@@ -58,8 +57,9 @@ const LOCATION_ICONS: Record<
 };
 
 export /**
- * The wording comes from `dashboard.bookings.form.locations`; only the centre's
- * description is a real-world address, so it keeps coming from `contact`.
+ * Every bit of the wording comes from `dashboard.bookings.form.locations`. The
+ * centre's description used to be the street address from `contact`; while the
+ * studio is between premises there is no address to print.
  */
 function useLocationOptions(): LocationOption[] {
   const t = useTranslations("dashboard.bookings.form.locations");
@@ -67,7 +67,7 @@ function useLocationOptions(): LocationOption[] {
     {
       id: "centro",
       label: t("centro.label"),
-      description: contact.address,
+      description: t("centro.description"),
       Icon: LOCATION_ICONS.centro,
     },
     {
