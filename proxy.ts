@@ -36,5 +36,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|opengraph-image|twitter-image|.*\\..*).*)"],
+  // `monitoring` is the Sentry tunnel (`tunnelRoute` in next.config.ts). It has
+  // no entry in `routing.pathnames`, so next-intl would answer 404 and every
+  // client-side error report would be lost.
+  matcher: ["/((?!_next|monitoring|opengraph-image|twitter-image|.*\\..*).*)"],
 };

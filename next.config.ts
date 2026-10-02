@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -56,4 +57,37 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withSentryConfig(withNextIntl(nextConfig), {
+  org: "yasiel",
+
+  project: "essentia",
+
+  // Read from the environment: `.env.sentry-build-plugin` locally (gitignored),
+  // a Vercel environment variable in CI. Without it the build still succeeds
+  // and production stack traces arrive minified.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Build logs only in CI; a local build stays quiet.
+  silent: !process.env.CI,
+
+  // Uploads a wider set of source maps, so a stack trace from the browser
+  // points at our code rather than at a minified chunk. Costs build time.
+  widenClientFileUpload: true,
+
+  // Client reports go through our own origin, so an ad blocker cannot drop
+  // them. The route is excluded from the matcher in `proxy.ts` — next-intl has
+  // no pathname for it and would answer 404.
+  tunnelRoute: "/monitoring",
+
+  webpack: {
+    // Off on purpose: our Vercel crons are App Router route handlers
+    // (`app/api/cron/*`), which this does not instrument. Cron monitors, if we
+    // want them, have to be declared in Sentry by hand.
+    automaticVercelMonitors: false,
+
+    treeshake: {
+      // Drops Sentry's own debug logging from the client bundle.
+      removeDebugLogging: true,
+    },
+  },
+});

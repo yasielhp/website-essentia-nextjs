@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import * as Sentry from "@sentry/nextjs";
 import styles from "./global-error.module.css";
 
 type GlobalErrorProps = {
@@ -18,6 +19,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   );
 
   useEffect(() => {
+    // global-error sits above the error boundaries Sentry instruments on its
+    // own, so this is the only place a root error gets reported from.
+    Sentry.captureException(error);
     console.error(error);
   }, [error]);
 
