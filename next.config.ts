@@ -62,6 +62,10 @@ export default withSentryConfig(withNextIntl(nextConfig), {
 
   project: "essentia",
 
+  // Stamps our own bundles so `thirdPartyErrorFilterIntegration` in
+  // instrumentation-client.ts can tell our frames from an extension's.
+  applicationKey: "essentia-web",
+
   // Read from the environment: `.env.sentry-build-plugin` locally (gitignored),
   // a Vercel environment variable in CI. Without it the build still succeeds
   // and production stack traces arrive minified.
