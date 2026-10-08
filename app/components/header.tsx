@@ -752,7 +752,7 @@ export const Header = () => {
   }, [openMobileMenu]);
 
   return (
-    <header className="text-petroleum-500 fixed top-0 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl bg-white md:mt-16 md:rounded-2xl">
+    <header className="text-petroleum-500 fixed top-12 right-0 left-0 z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center rounded-b-2xl bg-white md:top-0 md:mt-16 md:rounded-2xl">
       {/* Barra principal: logo, nav desktop, acciones */}
       <section
         className={`flex w-full items-center justify-between px-5 py-4 md:px-6 ${activeMenu ? "border-sand-100 border-b" : ""}`}
