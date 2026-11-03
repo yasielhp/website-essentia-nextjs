@@ -87,9 +87,13 @@ function ServicesContent({
 
   return (
     <div>
-      <h2 className="font-display text-petroleum-700 mb-4 text-xl">
-        {t("heading")}
-      </h2>
+      {/* As tall as the bonuses header, whose button is h-10: the two headings
+          then sit the same distance under the tabs. */}
+      <div className="mb-4 flex h-10 items-center">
+        <h2 className="font-display text-petroleum-700 text-xl">
+          {t("heading")}
+        </h2>
+      </div>
       <div className="flex flex-col gap-2">
         {/* The calendar colour tints the row, so a tier is recognisable here the
           same way it is on the calendar. Kept faint: the text still has to
@@ -200,7 +204,9 @@ export function BookingsSettings() {
     return (
       <div className="flex flex-col gap-4">
         {/* Same shape as the loaded page: one list of rows. */}
-        <div className="bg-sand-100 h-7 w-48 animate-pulse rounded" />
+        <div className="flex h-10 items-center">
+          <div className="bg-sand-100 h-7 w-48 animate-pulse rounded" />
+        </div>
         <div className="flex flex-col gap-2">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
