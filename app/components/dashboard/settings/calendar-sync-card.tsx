@@ -40,10 +40,7 @@ export function CalendarSyncCard() {
   }
 
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-        {t("title")}
-      </h2>
+    <div>
       <p className="text-petroleum-400 mb-4 text-sm leading-relaxed">
         {t("description")}
       </p>

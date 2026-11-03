@@ -1345,9 +1345,11 @@
     "tabs": {
       "bookings": "Bookings",
       "subscriptions": "Subscriptions",
-      "calendar": "Google Calendar",
-      "payments": "Payments",
-      "bonuses": "Vouchers"
+      "calendar": "Google Calendar"
+    },
+    "sections": {
+      "sessionTypes": "Session types",
+      "payments": "Payments"
     },
     "staff": {
       "noStaff": "No staff on the system yet.",
