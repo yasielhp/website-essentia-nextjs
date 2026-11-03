@@ -30,6 +30,7 @@ function Surface({
   height,
   ariaLabel,
   disabled = false,
+  onBeforeStroke,
   onStroke,
   onClear,
   className = "",
@@ -39,6 +40,8 @@ function Surface({
   height: number;
   ariaLabel: string;
   disabled?: boolean;
+  /** Called as a stroke begins, before anything is drawn. */
+  onBeforeStroke?: () => void;
   onStroke: (canvas: HTMLCanvasElement) => void;
   onClear: () => void;
   className?: string;
@@ -90,6 +93,7 @@ function Surface({
 
   function start(e: React.PointerEvent<HTMLCanvasElement>) {
     if (disabled) return;
+    onBeforeStroke?.();
     const ctx = e.currentTarget.getContext("2d");
     if (!ctx) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -135,15 +139,24 @@ function Surface({
   );
 }
 
+type Drawable = HTMLCanvasElement | HTMLImageElement;
+
+function sizeOf(d: Drawable) {
+  return d instanceof HTMLImageElement
+    ? { w: d.naturalWidth, h: d.naturalHeight }
+    : { w: d.width, h: d.height };
+}
+
 /** Draws `from` into `into`, as large as fits and centred, keeping its shape. */
-function drawContained(from: HTMLCanvasElement, into: HTMLCanvasElement) {
+function drawContained(from: Drawable, into: HTMLCanvasElement) {
   const ctx = into.getContext("2d");
-  if (!ctx || from.width === 0 || from.height === 0) return;
+  const { w: fw, h: fh } = sizeOf(from);
+  if (!ctx || fw === 0 || fh === 0) return;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const scale = Math.min(into.width / from.width, into.height / from.height);
-  const w = from.width * scale;
-  const h = from.height * scale;
+  const scale = Math.min(into.width / fw, into.height / fh);
+  const w = fw * scale;
+  const h = fh * scale;
   ctx.drawImage(from, (into.width - w) / 2, (into.height - h) / 2, w, h);
   ctx.restore();
 }
@@ -168,6 +181,8 @@ export function SignaturePad({
   expandLabel,
   doneLabel,
   closeLabel,
+  initialImage,
+  onInitialCleared,
   disabled = false,
 }: {
   onChange: (dataUrl: string | null) => void;
@@ -178,11 +193,36 @@ export function SignaturePad({
   expandLabel?: string;
   doneLabel?: string;
   closeLabel?: string;
+  /**
+   * A signature already on file, shown inside the box as if it had just been
+   * drawn. It is not reported through `onChange`: the form keeps it as it is
+   * until the box is erased or drawn on, and `onInitialCleared` says when.
+   */
+  initialImage?: string | null;
+  onInitialCleared?: () => void;
   disabled?: boolean;
 }) {
   const inline = useRef<SurfaceHandle>(null);
   const [hasInk, setHasInk] = useState(false);
+  const [showingInitial, setShowingInitial] = useState(Boolean(initialImage));
   const [full, setFull] = useState(false);
+
+  // Paint the signature on file once, when the box mounts.
+  useEffect(() => {
+    if (!initialImage) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = inline.current?.canvas();
+      if (!cancelled && canvas) drawContained(img, canvas);
+    };
+    img.src = initialImage;
+    return () => {
+      cancelled = true;
+    };
+    // Only the first image: a later one would wipe what is being drawn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function reportInline(canvas: HTMLCanvasElement) {
     setHasInk(true);
@@ -192,6 +232,10 @@ export function SignaturePad({
   function clearInline() {
     setHasInk(false);
     onChange(null);
+    if (showingInitial) {
+      setShowingInitial(false);
+      onInitialCleared?.();
+    }
   }
 
   return (
@@ -202,6 +246,11 @@ export function SignaturePad({
         height={HEIGHT}
         ariaLabel={ariaLabel}
         disabled={disabled}
+        // Drawing on top of the signature on file would merge the two, so the
+        // first stroke starts from a clean box.
+        onBeforeStroke={() => {
+          if (showingInitial) inline.current?.clear();
+        }}
         onStroke={reportInline}
         onClear={clearInline}
         className="border-sand-200 w-full rounded-xl border"
@@ -221,7 +270,7 @@ export function SignaturePad({
       <button
         type="button"
         onClick={() => inline.current?.clear()}
-        disabled={disabled || !hasInk}
+        disabled={disabled || (!hasInk && !showingInitial)}
         aria-label={clearLabel}
         title={clearLabel}
         className={`${ICON_BUTTON} absolute top-2 right-2`}
