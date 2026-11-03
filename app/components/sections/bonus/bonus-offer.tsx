@@ -1,29 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { bonusCheckoutHref, type BonusFamily } from "@/lib/bonuses/routes";
 import { Button } from "@/components/ui/button";
-import { fetchPublicBonusPlans } from "@/actions/bonuses-public";
 import { formatPrice, type SupportedLocale } from "@/utils/format";
 import type { PublicBonusPlan } from "@/types/bonus";
 
 /**
  * The bonuses on sale for a treatment, on the page of that treatment.
  *
- * It renders nothing at all unless the treatment's session type is active and
- * has at least one active bonus: a page without bonuses must look exactly as it
- * did before. The plans are read when the page opens rather than baked into
- * the static page, so switching a plan on or off in the dashboard shows
- * immediately.
+ * It renders nothing at all when there are none: a page without bonuses must
+ * look exactly as it did before.
  */
 export function BonusOffer({
-  tierLabel,
+  plans,
   family,
   slug,
 }: {
-  /** The treatment's title, which is its session type's label. */
-  tierLabel: string;
+  /** The active bonuses of the treatment, read once by the page. */
+  plans: PublicBonusPlan[];
   /** Which kind of treatment page this is; it decides where a bonus is paid. */
   family: BonusFamily;
   /** The treatment's slug, the middle of its payment URL. */
@@ -31,19 +26,6 @@ export function BonusOffer({
 }) {
   const t = useTranslations("bonus.offer");
   const locale = useLocale() as SupportedLocale;
-  const [plans, setPlans] = useState<PublicBonusPlan[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchPublicBonusPlans(tierLabel)
-      .then((rows) => {
-        if (!cancelled) setPlans(rows);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [tierLabel]);
 
   if (plans.length === 0) return null;
 

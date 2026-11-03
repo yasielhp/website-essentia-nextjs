@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { BonusOffer } from "@/components/sections/bonus/bonus-offer";
+import { useBonusPlans } from "@/components/sections/bonus/use-bonus-plans";
 import type { BonusFamily } from "@/lib/bonuses/routes";
 import type {
   FacialTreatment,
@@ -31,8 +32,13 @@ type DetailProps = {
 
 // ─── Hero ─────────────────────────────────────────────────────
 
-function ServiceHero({ service, bookingHref }: DetailProps) {
+function ServiceHero({
+  service,
+  bookingHref,
+  hasBonuses,
+}: DetailProps & { hasBonuses: boolean }) {
   const t = useTranslations("wellness.treatments.serviceDetail");
+  const tBonus = useTranslations("bonus.offer");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,7 +95,11 @@ function ServiceHero({ service, bookingHref }: DetailProps) {
             variant="outline-white"
             size="md"
             onClick={() => {
-              const el = document.getElementById("details");
+              // Treatments with bonuses point the second button at them; the
+              // rest keep it on the details.
+              const el = document.getElementById(
+                hasBonuses ? "bonuses" : "details",
+              );
               if (el) {
                 const top =
                   el.getBoundingClientRect().top + window.scrollY - 80;
@@ -97,7 +107,7 @@ function ServiceHero({ service, bookingHref }: DetailProps) {
               }
             }}
           >
-            {t("learnMore")}
+            {hasBonuses ? tBonus("heading") : t("learnMore")}
           </Button>
         </div>
       </div>
@@ -198,25 +208,24 @@ export function ServiceDetailView({
   backHref,
   bonusFamily,
 }: DetailProps) {
+  // One read feeds the hero's button and the offer at the bottom.
+  const plans = useBonusPlans(service.title, Boolean(bonusFamily));
   return (
     <>
       <ServiceHero
         service={service}
         bookingHref={bookingHref}
         backHref={backHref}
+        hasBonuses={plans.length > 0}
       />
       <ServiceDetails
         service={service}
         bookingHref={bookingHref}
         backHref={backHref}
       />
-      {/* Single session or a bonus; nothing at all if the treatment has none. */}
+      {/* The bonuses; nothing at all if the treatment has none. */}
       {bonusFamily && (
-        <BonusOffer
-          tierLabel={service.title}
-          family={bonusFamily}
-          slug={service.id}
-        />
+        <BonusOffer plans={plans} family={bonusFamily} slug={service.id} />
       )}
       <ServiceCta
         service={service}
