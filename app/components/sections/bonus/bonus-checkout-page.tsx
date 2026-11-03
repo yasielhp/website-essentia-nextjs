@@ -35,9 +35,10 @@ export async function BonusCheckoutPage({
   const t = await getTranslations({ locale, namespace: "bonus.form" });
 
   return (
-    <section className="bg-sand-50 flex min-h-dvh flex-col items-center px-5 pt-32 pb-24 md:pt-44">
-      <div className="w-full max-w-xl">
-        <h1 className="font-display text-petroleum-700 mb-6 text-3xl md:text-4xl">
+    // The same frame as the booking page, so the two flows read as one.
+    <section className="bg-sand-50 md:min-h-dvh">
+      <div className="mx-auto max-w-4xl px-5 pt-32 pb-24 md:pt-48">
+        <h1 className="font-display text-petroleum-700 mb-8 text-4xl md:text-5xl">
           {t("title")}
         </h1>
         <BonusCheckoutStepper
