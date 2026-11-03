@@ -19,7 +19,6 @@ import type {
   ContactRaceReg,
   ContactEduReg,
 } from "@/types/contact";
-import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { DeleteDialog } from "./delete-dialog";
 import { ContactDetailsCard } from "./contact-details-card";
 import {
@@ -39,8 +38,8 @@ import { ConsentSection } from "./consent-section";
 import { fetchContactConsent } from "@/actions/consent";
 import type { ContactConsent } from "@/types/consent";
 
-/** The views of a contact's file; the first is where it opens. */
-type HistoryTab =
+/** The sections of a contact's file, top to bottom. */
+type Section =
   | "details"
   | "consent"
   | "bonuses"
@@ -129,7 +128,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 
 // ─── Shared helpers ───────────────────────────────────────────
 
-const HISTORY_TABS: HistoryTab[] = [
+const SECTIONS: Section[] = [
   "details",
   "consent",
   "bonuses",
@@ -139,6 +138,44 @@ const HISTORY_TABS: HistoryTab[] = [
   "education",
   "campaigns",
 ];
+
+/**
+ * One section of the file. With `emptyText` it collapses to a single line, the
+ * title on the left and what is missing on the right; without, it is a card
+ * with its title and the section inside.
+ */
+function SectionCard({
+  id,
+  title,
+  emptyText = null,
+  children,
+}: {
+  id: Section;
+  title: string;
+  emptyText?: string | null;
+  children: React.ReactNode;
+}) {
+  if (emptyText) {
+    return (
+      <section
+        id={`section-${id}`}
+        className="border-sand-200 flex scroll-mt-20 items-center justify-between gap-4 rounded-2xl border bg-white px-6 py-4"
+      >
+        <h2 className="font-display text-petroleum-700 text-xl">{title}</h2>
+        <p className="text-petroleum-300 text-sm">{emptyText}</p>
+      </section>
+    );
+  }
+  return (
+    <section
+      id={`section-${id}`}
+      className="border-sand-200 scroll-mt-20 rounded-2xl border bg-white p-6"
+    >
+      <h2 className="font-display text-petroleum-700 mb-5 text-xl">{title}</h2>
+      {children}
+    </section>
+  );
+}
 
 function ContactDetailPageInner() {
   const tToasts = useTranslations("dashboard.toasts");
@@ -161,47 +198,17 @@ function ContactDetailPageInner() {
   } = loadState;
   const [clearingBounce, setClearingBounce] = useState(false);
 
-  const tHistory = useTranslations("dashboard.contacts.detail");
-  // `?tab=` opens the file on a given tab: finishing a booking started from
-  // "Redeem" returns to the Bonuses tab.
-  const requestedTab = useSearchParams().get("tab");
-  const [tab, setTab] = useState<HistoryTab>(
-    HISTORY_TABS.find((id) => id === requestedTab) ?? "details",
-  );
-  const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
-    { id: "details", label: tHistory("details.heading"), count: 0 },
-    {
-      id: "consent",
-      label: tHistory("consent.heading"),
-      count: 0,
-    },
-    {
-      id: "bookings",
-      label: tHistory("bookings.heading"),
-      count: 0,
-    },
-    {
-      id: "bonuses",
-      label: tHistory("bonuses.heading"),
-      count: 0,
-    },
-    {
-      id: "transactions",
-      label: tHistory("transactions.heading"),
-      count: 0,
-    },
-    {
-      id: "campaigns",
-      label: tHistory("campaigns.tab"),
-      count: campaigns.length,
-    },
-    { id: "races", label: tHistory("races.heading"), count: raceRegs.length },
-    {
-      id: "education",
-      label: tHistory("education.heading"),
-      count: eduRegs.length,
-    },
-  ];
+  // `?tab=` names a section to bring into view: finishing a booking started
+  // from "Redeem" returns to the Bonuses card.
+  const requestedSection = useSearchParams().get("tab");
+  useEffect(() => {
+    if (loading) return;
+    const section = SECTIONS.find((s) => s === requestedSection);
+    if (!section) return;
+    document
+      .getElementById(`section-${section}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [loading, requestedSection]);
 
   const [form, dispatchForm] = useReducer(formReducer, initialFormState);
   const {
@@ -386,18 +393,6 @@ function ContactDetailPageInner() {
               <IconTrash />
               {t("delete")}
             </Button>
-            {/* Outside the form, so it names it: Save works from any tab. */}
-            <Button
-              type="submit"
-              form="contact-form"
-              variant="solid"
-              size="md"
-              disabled={saving || loading}
-              className="gap-1.5"
-            >
-              <IconCheckmark />
-              {saving ? t("saving") : t("save")}
-            </Button>
           </div>
         </div>
 
@@ -427,56 +422,50 @@ function ContactDetailPageInner() {
         )}
       </div>
 
-      {/* One card, many views. Stacked, the lists pushed the form far up the
-          page and most of them are empty for most contacts. */}
-      <div className="border-sand-200 rounded-2xl border bg-white p-6">
-        <div className="border-sand-100 -mx-6 -mt-6 mb-6 flex gap-1 overflow-x-auto border-b px-4 py-3">
-          {historyTabs.map(({ id, label, count }) => (
-            <TabButton key={id} active={tab === id} onClick={() => setTab(id)}>
-              <span className="whitespace-nowrap">
-                {label}
-                {count > 0 && (
-                  <span
-                    className={`ml-1.5 text-xs ${
-                      tab === id ? "text-white/70" : "text-petroleum-300"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </span>
-            </TabButton>
-          ))}
-        </div>
+      {/* One card per section, stacked: what the desk checks at every visit
+          (details, consent, bonuses, bookings) is in view without a click.
+          The sections nobody has anything in shrink to a single line. */}
+      <div className="flex flex-col gap-6">
+        <SectionCard id="details" title={t("details.heading")}>
+          <form
+            id="contact-form"
+            onSubmit={(e) => void handleSave(e)}
+            noValidate
+          >
+            <ContactDetailsCard
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              phone={phone}
+              language={language}
+              birthdate={birthdate}
+              gender={gender}
+              newsletterSubscribed={newsletterSubscribed}
+              fieldErrors={fieldErrors}
+              loading={loading}
+              saving={saving}
+              dispatchForm={dispatchForm}
+            />
+            <div className="mt-6 flex justify-end">
+              <Button
+                type="submit"
+                variant="solid"
+                size="lg"
+                disabled={saving || loading}
+                className="gap-1.5"
+              >
+                <IconCheckmark />
+                {saving ? t("saving") : t("save")}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
 
-        {/* Always mounted, only hidden: the Save button in the header submits
-            it by id, and has to work from whichever tab is open. */}
-        <form
-          id="contact-form"
-          onSubmit={(e) => void handleSave(e)}
-          noValidate
-          className={tab === "details" ? undefined : "hidden"}
-        >
-          <ContactDetailsCard
-            firstName={firstName}
-            lastName={lastName}
-            email={email}
-            phone={phone}
-            language={language}
-            birthdate={birthdate}
-            gender={gender}
-            newsletterSubscribed={newsletterSubscribed}
-            fieldErrors={fieldErrors}
-            loading={loading}
-            saving={saving}
-            dispatchForm={dispatchForm}
-          />
-        </form>
-
-        {tab === "consent" && (
+        <SectionCard id="consent" title={t("consent.heading")}>
           <ConsentSection loading={loading} consent={consent} contactId={id} />
-        )}
-        {tab === "bonuses" && (
+        </SectionCard>
+
+        <SectionCard id="bonuses" title={t("bonuses.heading")}>
           <BonusesSection
             loading={loading}
             bonuses={bonuses}
@@ -487,8 +476,17 @@ function ContactDetailPageInner() {
               )
             }
           />
-        )}
-        {tab === "transactions" && (
+        </SectionCard>
+
+        <SectionCard id="bookings" title={t("bookings.heading")}>
+          <BookingsSection
+            loading={loading}
+            bookings={bookings}
+            contactId={id}
+          />
+        </SectionCard>
+
+        <SectionCard id="transactions" title={t("transactions.heading")}>
           <TransactionsSection
             loading={loading}
             bookings={bookings}
@@ -497,23 +495,37 @@ function ContactDetailPageInner() {
             eduRegs={eduRegs}
             bonuses={bonuses}
           />
-        )}
-        {tab === "bookings" && (
-          <BookingsSection
-            loading={loading}
-            bookings={bookings}
-            contactId={id}
-          />
-        )}
-        {tab === "races" && (
-          <RaceRegsSection loading={loading} raceRegs={raceRegs} />
-        )}
-        {tab === "education" && (
-          <EduRegsSection loading={loading} eduRegs={eduRegs} />
-        )}
-        {tab === "campaigns" && (
+        </SectionCard>
+
+        <SectionCard
+          id="campaigns"
+          title={t("campaigns.tab")}
+          emptyText={
+            !loading && campaigns.length === 0 ? t("campaigns.empty") : null
+          }
+        >
           <CampaignsSection loading={loading} campaigns={campaigns} />
-        )}
+        </SectionCard>
+
+        <SectionCard
+          id="races"
+          title={t("races.heading")}
+          emptyText={
+            !loading && raceRegs.length === 0 ? t("races.empty") : null
+          }
+        >
+          <RaceRegsSection loading={loading} raceRegs={raceRegs} />
+        </SectionCard>
+
+        <SectionCard
+          id="education"
+          title={t("education.heading")}
+          emptyText={
+            !loading && eduRegs.length === 0 ? t("education.empty") : null
+          }
+        >
+          <EduRegsSection loading={loading} eduRegs={eduRegs} />
+        </SectionCard>
       </div>
 
       {deleteOpen && (
