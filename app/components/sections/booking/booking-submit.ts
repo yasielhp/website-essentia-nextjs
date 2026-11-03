@@ -275,26 +275,6 @@ export async function confirmBooking({
     }
   }
 
-  // "Received" reaches the client and the centre as soon as the booking exists,
-  // without waiting: an email is not worth delaying the payment screen for.
-  if (resolvedBookingId && details.email && dateStr) {
-    notifyBooking(getAccessToken(), {
-      bookingId: resolvedBookingId,
-      event: "received",
-      clientName: `${details.firstName} ${details.lastName}`.trim(),
-      clientEmail: details.email,
-      clientPhone: details.phone || null,
-      service: service.title,
-      serviceId: service.id,
-      sessionType: draft.tierLabel,
-      amountDueEur: null,
-      date: dateStr,
-      time: timeStr ?? "",
-      duration: draft.duration ?? null,
-      locale: locale as "en" | "es",
-    }).catch(() => {});
-  }
-
   const res = await fetch("/api/checkout/booking-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -312,8 +292,30 @@ export async function confirmBooking({
   });
 
   // The booking is already saved. If the payment session cannot be opened the
-  // visitor is not sent back into the form — the centre chases the money.
+  // visitor is not sent back into the form; the unpaid booking is released by
+  // the expiry cron if nobody completes it.
   if (!res.ok) return { kind: "unpaid" };
+
+  // "Received" reaches the client once the payment is open, without waiting:
+  // an email is not worth delaying the payment screen for. The centre is told
+  // separately, when the money arrives.
+  if (resolvedBookingId && details.email && dateStr) {
+    notifyBooking(getAccessToken(), {
+      bookingId: resolvedBookingId,
+      event: "received",
+      clientName: `${details.firstName} ${details.lastName}`.trim(),
+      clientEmail: details.email,
+      clientPhone: details.phone || null,
+      service: service.title,
+      serviceId: service.id,
+      sessionType: draft.tierLabel,
+      amountDueEur: null,
+      date: dateStr,
+      time: timeStr ?? "",
+      duration: draft.duration ?? null,
+      locale: locale as "en" | "es",
+    }).catch(() => {});
+  }
 
   return { kind: "redsys", formData: (await res.json()) as RedsysFormData };
 }

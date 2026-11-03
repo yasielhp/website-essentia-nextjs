@@ -4,6 +4,8 @@ import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
 import { formatLongDate, formatPrice } from "@/utils/format";
+import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
+import { notifyStaffOfPaidBooking } from "@/lib/bookings/notify-staff-paid";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
 
 /**
@@ -31,7 +33,7 @@ export async function handleBookingPaid(
       // handed an id and an amount, and the row knows which Redsys order paid
       // it. That column is still called `stripe_session_id` for historical
       // reasons.
-      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, stripe_session_id, contact_id",
+      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, stripe_session_id, contact_id, staff_id",
     )
     .eq("id", bookingId)
     .single();
@@ -57,6 +59,12 @@ export async function handleBookingPaid(
       .limit(1);
     if ((already ?? []).length > 0) return;
   }
+
+  // The first money to arrive is what turns the request into a session someone
+  // has to be there for; a second payment on the same booking is not news.
+  const firstPayment =
+    booking.payment_status !== "deposit_paid" &&
+    booking.payment_status !== "paid";
 
   const received =
     Number.isFinite(amountCents) && amountCents > 0 ? amountCents / 100 : 0;
@@ -92,6 +100,17 @@ export async function handleBookingPaid(
   // The booking has just become one somebody has to be there for, so it goes
   // on the calendars now rather than at the next quarter past the hour.
   await pushBookingToCalendars(bookingId);
+
+  if (firstPayment) {
+    await notifyStaffOfPaidBooking(bookingId);
+    if (booking.staff_id) {
+      await notifyStaffOnWhatsApp({
+        bookingId,
+        staffId: booking.staff_id as string,
+        event: "assigned",
+      });
+    }
+  }
 
   // Sync contact record for paid web bookings
   try {

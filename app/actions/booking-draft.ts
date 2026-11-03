@@ -2,7 +2,6 @@
 
 import { getAdminClient } from "@/lib/insforge-admin";
 import { AuthError, requireRole, type AuthContext } from "@/lib/auth-guard";
-import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import {
   recordBookingEvent,
@@ -221,9 +220,8 @@ export async function updateDraftBookingDetails(
 }
 
 /** Promotes a draft booking to `pending`. */
-// Anonymous by design. The write is scoped to `status = 'draft'`, and the
-// WhatsApp below only goes out on the actual draft → pending transition, so a
-// replay cannot ring the professional twice.
+// Anonymous by design. The write is scoped to `status = 'draft'` and only the
+// actual draft → pending transition records anything, so a replay is a no-op.
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function confirmDraftBooking(
   bookingId: string,
@@ -238,22 +236,16 @@ export async function confirmDraftBooking(
 
   const db = getAdminClient().database;
 
-  // Read the state first, and leave if this booking is no longer a draft.
-  //
-  // The update below is already scoped to `status = 'draft'`, so a second call
-  // cannot rewrite a confirmed booking — but the WhatsApp that follows is a
-  // message to a real phone, and this action is public and unauthenticated by
-  // design. Sending it without checking would let anyone holding a booking id
-  // ring the same professional as often as they liked.
+  // Read the state first, and leave if this booking is no longer a draft, so a
+  // replay of this public action records nothing a second time.
   const { data: before } = await db
     .from("bookings")
-    .select("status, staff_id, service_title")
+    .select("status, service_title")
     .eq("id", bookingId)
     .maybeSingle();
 
   const row = before as {
     status: string | null;
-    staff_id: string | null;
     service_title: string | null;
   } | null;
   if (row?.status !== "draft") return;
@@ -287,16 +279,9 @@ export async function confirmDraftBooking(
     ),
   });
 
-  // Only now does the visitor's choice become a session someone has to be
-  // there for, and only now are the date and time settled — so this, and not
-  // the moment the professional was picked, is when the WhatsApp goes out.
-  if (row.staff_id) {
-    await notifyStaffOnWhatsApp({
-      bookingId,
-      staffId: row.staff_id,
-      event: "assigned",
-    });
-  }
+  // The professional is not told here. A web booking has not been paid yet,
+  // and one abandoned on the payment page is cancelled by the expiry cron; the
+  // WhatsApp goes out from `handleBookingPaid` once the money is in.
 }
 
 /**

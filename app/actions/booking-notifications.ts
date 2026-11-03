@@ -316,8 +316,10 @@ export async function notifyBooking(
     );
   }
 
-  // ── Staff notification (on new bookings, whether pending or confirmed) ───
-  if ((event === "received" || event === "confirmed") && serviceId) {
+  // ── Staff notification ───────────────────────────────────────────
+  // Not on `received`: a web booking exists before its payment does, and staff
+  // are told by `notifyStaffOfPaidBooking` once the money is in.
+  if (event === "confirmed" && serviceId) {
     const staffEmail = await getStaffEmail(serviceId).catch(() => null);
     if (staffEmail) {
       await sendAndRecord({
