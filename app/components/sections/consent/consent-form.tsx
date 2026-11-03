@@ -139,11 +139,11 @@ export function ConsentForm(props: Props) {
             const detail = (answers[`${field.id}Detail`] as string) ?? "";
             return (
               <fieldset key={field.id} className="flex flex-col gap-2 py-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <legend className="text-petroleum-700 float-left w-full text-sm sm:w-auto sm:flex-1">
+                <div className="flex flex-col gap-2">
+                  <legend className="text-petroleum-700 float-left w-full text-sm">
                     {t(`fields.${field.id}`)}
                   </legend>
-                  <div className="w-full sm:w-44 sm:shrink-0">
+                  <div className="w-full">
                     <OptionSelect<"yes" | "no" | "">
                       ariaLabel={t(`fields.${field.id}`)}
                       placeholder={t("select")}
