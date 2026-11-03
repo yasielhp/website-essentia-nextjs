@@ -551,7 +551,13 @@ export const consentSchema = z.object({
   healthDataConsent: z.literal(true), // RGPD: tratamiento de datos de salud
   imageConsent: z.boolean(), // opcional e independiente
   signedName: z.string().trim().min(2).max(120),
-  signaturePng: z.string().startsWith("data:image/png;base64,").max(400_000),
+  // Absent only when a signed consent is being corrected and keeps its
+  // signature; the server decides, and refuses it for a first signing.
+  signaturePng: z
+    .string()
+    .startsWith("data:image/png;base64,")
+    .max(400_000)
+    .optional(),
 });
 
 export type ConsentInput = z.infer<typeof consentSchema>;

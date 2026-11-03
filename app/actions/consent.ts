@@ -6,6 +6,7 @@ import { sendEmail } from "@/emails/send";
 import { consentRequestEmail } from "@/emails/templates/consent-request";
 import { consentSchema, type ConsentInput } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
+import { signatureSource } from "@/lib/consent/signature";
 import {
   appendHistory,
   consentState,
@@ -28,7 +29,8 @@ type SaveResult = { error: string | null };
 type Validated = {
   input: ConsentInput;
   answers: Record<string, boolean | string>;
-  bytes: Buffer;
+  /** The drawn signature, or null when the submission carries none. */
+  bytes: Buffer | null;
 };
 
 /** Everything that can be checked without touching the database. */
@@ -41,6 +43,9 @@ function validateSubmission(
 
   const answers = sanitizeAnswers(input.data);
   if (missingRequired(answers).length > 0) return { error: "incomplete" };
+
+  // Whether a signature must be there is decided later, against the row.
+  if (!input.signaturePng) return { ok: { input, answers, bytes: null } };
 
   const bytes = Buffer.from(
     input.signaturePng.slice("data:image/png;base64,".length),
@@ -95,6 +100,8 @@ async function fillMissingContactDetails(
  * moves the signed state into `history` and writes the new one together,
  * conditioned on the version it read, so there is never a moment with no
  * signature, nothing earlier is lost, and the earlier file stays in the bucket.
+ * A correction may draw no new signature: the one on record is kept and
+ * nothing is uploaded. A first signing always needs one.
  */
 async function sealConsent(
   consentId: string,
@@ -120,13 +127,24 @@ async function sealConsent(
   if (mode === "first" && row.signed_at) return { error: "alreadySigned" };
   if (mode === "replace" && !row.signed_at) return { error: "invalid" };
 
-  const path = `${contactId}/${Date.now()}.png`;
-  const { error: uploadError } = await admin.storage
-    .from("consents")
-    .upload(path, new Blob([new Uint8Array(bytes)], { type: "image/png" }));
-  if (uploadError) {
-    console.error("[consent] signature upload failed:", uploadError);
-    return { error: "generic" };
+  const source = signatureSource(
+    mode,
+    bytes !== null,
+    row.signed_at ? row.signature_path : null,
+  );
+  if (source.use === "none") return { error: "incomplete" };
+
+  let path = row.signature_path as string;
+  const uploaded = source.use === "new" && bytes !== null;
+  if (uploaded) {
+    path = `${contactId}/${Date.now()}.png`;
+    const { error: uploadError } = await admin.storage
+      .from("consents")
+      .upload(path, new Blob([new Uint8Array(bytes)], { type: "image/png" }));
+    if (uploadError) {
+      console.error("[consent] signature upload failed:", uploadError);
+      return { error: "generic" };
+    }
   }
 
   const now = new Date().toISOString();
@@ -163,7 +181,8 @@ async function sealConsent(
 
   if (error || ((written ?? []) as unknown[]).length === 0) {
     // Lost the race, or the write failed: do not leave an orphan signature.
-    await admin.storage.from("consents").remove(path);
+    // A kept signature is the record's own file and is never removed.
+    if (uploaded) await admin.storage.from("consents").remove(path);
     return {
       error: error
         ? "generic"

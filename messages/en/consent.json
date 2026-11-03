@@ -57,7 +57,7 @@
   "signature": "Client's signature",
   "clear": "Clear signature",
   "signerFallback": "Client",
-  "submit": "Sign and send",
+  "submit": "Submit",
   "submitting": "Sending…",
   "done": {
     "title": "Thank you",
@@ -74,5 +74,10 @@
     "conflict": "The consent changed while you were editing it. Reload the file and try again."
   },
   "select": "Select",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "signatureKept": "The current signature is kept; draw a new one only if you want to change it.",
+  "signatureKeptAlt": "Current signature",
+  "signatureExpand": "Enlarge to sign",
+  "signatureDone": "Done",
+  "signatureClose": "Close"
 }

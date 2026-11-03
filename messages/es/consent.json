@@ -57,7 +57,7 @@
   "signature": "Firma de la clienta",
   "clear": "Borrar firma",
   "signerFallback": "Cliente",
-  "submit": "Firmar y enviar",
+  "submit": "Enviar",
   "submitting": "Enviando…",
   "done": {
     "title": "Gracias",
@@ -74,5 +74,10 @@
     "conflict": "El consentimiento ha cambiado mientras lo editabas. Recarga la ficha e inténtalo de nuevo."
   },
   "select": "Seleccionar",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "signatureKept": "Se conserva la firma actual; dibuja una nueva solo si quieres cambiarla.",
+  "signatureKeptAlt": "Firma actual",
+  "signatureExpand": "Ampliar para firmar",
+  "signatureDone": "Listo",
+  "signatureClose": "Cerrar"
 }

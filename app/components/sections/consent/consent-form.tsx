@@ -11,6 +11,7 @@ import { INPUT_CLASS } from "@/constants/form-styles";
 import { getAccessToken } from "@/lib/client-session";
 import { submitConsent, submitConsentAsStaff } from "@/actions/consent";
 import { CONSENT_FIELDS } from "@/lib/consent/fields";
+import { canSubmitConsent } from "@/lib/consent/signature";
 import type { ConsentInput } from "@/lib/schemas";
 
 /** Who is signing, as the page read it from their contact. */
@@ -21,11 +22,17 @@ export type ConsentSubject = {
   birthdate: string | null;
 };
 
-/** Earlier answers to start from; the signature is never part of it. */
+/**
+ * Earlier answers to start from. The signature comes along only to be shown:
+ * when a signed consent is corrected it stays on record unless a new one is
+ * drawn, and it is never pre-drawn on the canvas.
+ */
 export type ConsentInitial = {
   answers: Record<string, boolean | string>;
   imageConsent: boolean;
   healthDataConsent: boolean;
+  /** The signature on record, as a data URL, when there is one to keep. */
+  signatureDataUrl?: string | null;
 };
 
 type Props =
@@ -96,7 +103,20 @@ export function ConsentForm(props: Props) {
 
   const booleans = CONSENT_FIELDS.filter((f) => f.kind === "boolean");
   const allAnswered = booleans.every((f) => typeof answers[f.id] === "boolean");
-  const complete = allAnswered && treatment && healthData && signature !== null;
+  // What it takes to send, by mode. Always: the 13 answers and the treatment and
+  // health-data switches. A first signing, and the public link, also need a
+  // drawn signature; correcting a signed consent does not, because the one on
+  // record is kept unless a new one is drawn.
+  const replacing = props.mode === "staff" && Boolean(props.replace);
+  const keptSignature = replacing ? (initial?.signatureDataUrl ?? null) : null;
+  const complete = canSubmitConsent({
+    allAnswered,
+    treatmentAccepted: treatment,
+    healthDataAccepted: healthData,
+    drewSignature: signature !== null,
+    replacing,
+    hasPreviousSignature: keptSignature !== null,
+  });
 
   const signerName =
     subject.name?.trim() || subject.email?.trim() || t("signerFallback");
@@ -106,7 +126,7 @@ export function ConsentForm(props: Props) {
   }
 
   async function handleSubmit() {
-    if (!complete || !signature) return;
+    if (!complete) return;
     setSubmitting(true);
     setError(null);
 
@@ -117,7 +137,7 @@ export function ConsentForm(props: Props) {
       imageConsent: image,
       // The name is not asked again: it is the one already on the contact.
       signedName: signerName,
-      signaturePng: signature,
+      ...(signature ? { signaturePng: signature } : {}),
     };
 
     const result =
@@ -283,10 +303,24 @@ export function ConsentForm(props: Props) {
       <section className={card}>
         <div className="flex flex-col gap-1.5">
           <span className={label}>{t("signature")}</span>
+          {keptSignature && signature === null && (
+            <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={keptSignature}
+                alt={t("signatureKeptAlt")}
+                className="border-sand-200 h-24 w-auto self-start rounded-xl border bg-white p-2"
+              />
+              <p className="text-petroleum-400 text-xs">{t("signatureKept")}</p>
+            </div>
+          )}
           <SignaturePad
             onChange={setSignature}
             clearLabel={t("clear")}
             ariaLabel={t("signature")}
+            expandLabel={t("signatureExpand")}
+            doneLabel={t("signatureDone")}
+            closeLabel={t("signatureClose")}
             disabled={submitting}
           />
         </div>

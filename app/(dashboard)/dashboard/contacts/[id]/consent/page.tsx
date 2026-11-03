@@ -161,6 +161,7 @@ export default function ContactConsentPage() {
               answers: state.consent.answers,
               imageConsent: state.consent.imageConsent,
               healthDataConsent: state.consent.healthDataConsent,
+              signatureDataUrl: state.consent.signatureDataUrl,
             }}
             onSigned={() => {
               setEditing(false);
