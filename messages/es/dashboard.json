@@ -1009,7 +1009,16 @@
       "editBooking": "Editar",
       "viewContact": "Ver ficha del cliente",
       "client": "Cliente",
-      "notes": "Notas"
+      "notes": "Notas",
+      "category": "Categoría",
+      "service": "Servicio",
+      "date": "Fecha",
+      "time": "Hora",
+      "duration": "Duración",
+      "staff": "Profesional",
+      "location": "Ubicación",
+      "price": "Precio",
+      "unassigned": "Sin asignar"
     }
   },
   "roles": {

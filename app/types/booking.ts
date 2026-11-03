@@ -101,6 +101,10 @@ export type BookingPeek = {
   phone: string | null;
   contact_id: string | null;
   staff_id: string | null;
+  /** Resolved on the server from `staff_id`; null when nobody is assigned. */
+  staff_name: string | null;
+  location: string | null;
+  location_address: string | null;
   notes: string | null;
   service_tiers: { label: string | null; color: string | null } | null;
 };

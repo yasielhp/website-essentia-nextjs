@@ -1009,7 +1009,16 @@
       "editBooking": "Edit",
       "viewContact": "View contact",
       "client": "Client",
-      "notes": "Notes"
+      "notes": "Notes",
+      "category": "Category",
+      "service": "Service",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "staff": "Therapist",
+      "location": "Location",
+      "price": "Price",
+      "unassigned": "Unassigned"
     }
   },
   "roles": {

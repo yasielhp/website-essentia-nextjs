@@ -162,6 +162,26 @@ function SheetBody({
   );
 }
 
+/** A label with its value under it; renders nothing when there is no value. */
+function Field({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string | null | undefined;
+  detail?: string | null;
+}) {
+  if (!value) return null;
+  return (
+    <div>
+      <dt className="text-petroleum-400 text-xs">{label}</dt>
+      <dd className="text-petroleum-700 mt-0.5 text-sm font-medium">{value}</dd>
+      {detail && <dd className="text-petroleum-500 text-xs">{detail}</dd>}
+    </div>
+  );
+}
+
 function SheetContent({
   b,
   locale,
@@ -175,6 +195,7 @@ function SheetContent({
 }) {
   const t = useTranslations("dashboard.calendar.sheet");
   const tPay = useTranslations("dashboard.bookings.detail.payment");
+  const tLocations = useTranslations("dashboard.bookings.locations");
 
   const name = [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
   const pay = effectivePayment(b);
@@ -195,18 +216,33 @@ function SheetContent({
             : undefined
         }
       >
-        <p className="text-petroleum-700 font-medium">
-          {b.service_tiers?.label ?? b.service_title ?? "—"}
-        </p>
-        {b.service_tiers?.label && b.service_title && (
-          <p className="text-petroleum-400 mt-0.5 text-sm">{b.service_title}</p>
-        )}
-        <p className="text-petroleum-500 mt-3 text-sm">
-          {b.date ? formatBookingDate(b.date, locale) : "—"}
-          {b.time ? ` · ${b.time}` : ""}
-          {b.duration ? ` · ${b.duration}` : ""}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
+          <Field label={t("category")} value={b.service_title} />
+          <Field label={t("service")} value={b.service_tiers?.label} />
+          <Field
+            label={t("date")}
+            value={b.date ? formatBookingDate(b.date, locale) : null}
+          />
+          <Field label={t("time")} value={b.time} />
+          <Field label={t("duration")} value={b.duration} />
+          <Field label={t("staff")} value={b.staff_name ?? t("unassigned")} />
+          <Field
+            label={t("location")}
+            value={
+              b.location && tLocations.has(b.location)
+                ? tLocations(b.location)
+                : b.location
+            }
+            detail={b.location_address}
+          />
+          <Field
+            label={t("price")}
+            value={
+              b.price_eur != null ? formatPrice(b.price_eur, locale) : null
+            }
+          />
+        </dl>
+        <div className="border-sand-200/70 mt-5 flex flex-wrap items-center gap-2 border-t pt-4">
           <span className="text-petroleum-700 inline-flex items-center gap-1.5 text-sm">
             <span
               className={`size-2 rounded-full ${STATUS_DOT[b.status ?? ""] ?? "bg-petroleum-400"}`}

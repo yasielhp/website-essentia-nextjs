@@ -27,11 +27,31 @@ export async function fetchBookingPeek(
   let query = getAdminClient()
     .database.from("bookings")
     .select(
-      "id, service_title, date, time, duration, status, payment_status, payment_mode, price_eur, amount_paid_eur, first_name, last_name, email, phone, contact_id, staff_id, notes, service_tiers(label, color)",
+      "id, service_title, date, time, duration, status, payment_status, payment_mode, price_eur, amount_paid_eur, first_name, last_name, email, phone, contact_id, staff_id, location, location_address, notes, service_tiers(label, color)",
     )
     .eq("id", bookingId);
   if (auth.role === "partner") query = query.eq("partner_id", auth.userId);
 
   const { data } = await query.maybeSingle();
-  return (data as BookingPeek | null) ?? null;
+  if (!data) return null;
+  const row = data as Omit<BookingPeek, "staff_name">;
+
+  let staffName: string | null = null;
+  if (row.staff_id) {
+    const { data: profile } = await getAdminClient()
+      .database.from("profiles")
+      .select("first_name, last_name, full_name")
+      .eq("id", row.staff_id)
+      .maybeSingle();
+    const p = profile as {
+      first_name: string | null;
+      last_name: string | null;
+      full_name: string | null;
+    } | null;
+    staffName =
+      p?.full_name?.trim() ||
+      [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim() ||
+      null;
+  }
+  return { ...row, staff_name: staffName };
 }
