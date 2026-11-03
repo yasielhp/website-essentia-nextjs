@@ -1320,6 +1320,7 @@
       "connect": "Conectar Google Calendar"
     },
     "services": {
+      "edit": "Editar",
       "addTier": "Añadir tipo",
       "noTiers": "Todavía no hay tipos. Añade uno para activar este servicio en reservas.",
       "columns": {

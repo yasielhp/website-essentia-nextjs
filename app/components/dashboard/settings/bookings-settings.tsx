@@ -9,6 +9,7 @@ import { bookableServices } from "@/data/services-data";
 import type { ColorSettings } from "@/utils/color-settings";
 import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
+import { Button } from "@/components/ui/button";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -91,23 +92,33 @@ function ServicesContent({
           read on top of it. The rest — prices, duration, who performs it — is
           in the modal this opens. */}
       {rows.map(({ serviceId, tier }) => (
-        <button
+        <div
           key={tier.id}
-          type="button"
-          onClick={() => onEditTier(serviceId, tier)}
           style={{
             backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
             borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
           }}
-          className="hover:ring-petroleum-300 flex items-center gap-3 rounded-2xl border p-3 text-left transition-shadow hover:ring-2"
+          className="flex items-center gap-4 rounded-2xl border p-3"
         >
-          <TierThumbnail
-            imageUrl={tier.image_url}
-            color={tier.color}
-            label={tier.label}
-            className="size-12 shrink-0"
-            sizes="48px"
-          />
+          <div className="relative shrink-0">
+            <TierThumbnail
+              imageUrl={tier.image_url}
+              color={tier.color}
+              label={tier.label}
+              className="size-16"
+              sizes="64px"
+            />
+            {/* On the image, so the state is read before the name. */}
+            <span
+              className={`absolute top-1 left-1 rounded-full px-2 py-0.5 text-[11px] leading-none font-medium shadow-sm ${
+                tier.active
+                  ? "bg-green-100 text-green-700"
+                  : "text-petroleum-400 bg-white/90"
+              }`}
+            >
+              {tier.active ? tTiers("active") : tTiers("off")}
+            </span>
+          </div>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-petroleum-700 truncate text-sm font-medium">
               {tier.label ?? "—"}
@@ -116,16 +127,14 @@ function ServicesContent({
               {tServices(serviceId)}
             </span>
           </span>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-              tier.active
-                ? "bg-green-100 text-green-700"
-                : "text-petroleum-400 bg-white/70"
-            }`}
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => onEditTier(serviceId, tier)}
           >
-            {tier.active ? tTiers("active") : tTiers("off")}
-          </span>
-        </button>
+            {t("edit")}
+          </Button>
+        </div>
       ))}
     </div>
   );
@@ -190,14 +199,14 @@ export function BookingsSettings() {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="border-sand-200 flex items-center gap-3 rounded-2xl border bg-white p-3"
+              className="border-sand-200 flex items-center gap-4 rounded-2xl border bg-white p-3"
             >
-              <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+              <div className="bg-sand-100 size-16 shrink-0 animate-pulse rounded-xl" />
               <div className="flex flex-1 flex-col gap-1.5">
                 <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
                 <div className="bg-sand-100 h-3 w-28 animate-pulse rounded" />
               </div>
-              <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
+              <div className="bg-sand-100 h-10 w-24 animate-pulse rounded-full" />
             </div>
           ))}
         </div>
