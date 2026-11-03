@@ -14,9 +14,9 @@ import {
   usableBonus,
   type BonusRow,
 } from "@/lib/bonuses/balance";
+import { bonusExpiry, bonusToday } from "@/lib/bonuses/expiry";
 import { bonusLabelEs } from "@/lib/bonuses/label";
 import { bonusPlanSchema } from "@/lib/schemas";
-import { TIME_ZONE } from "@/utils/format";
 import type {
   BonusBooking,
   BonusPaidMethod,
@@ -26,19 +26,6 @@ import type {
 } from "@/types/bonus";
 
 const PAID_METHODS: BonusPaidMethod[] = ["cash", "card", "transfer", "other"];
-
-/** Today as the centre reads it (`YYYY-MM-DD`), not as the server's clock does. */
-function today(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(
-    new Date(),
-  );
-}
-
-/** `date` plus `days`, both `YYYY-MM-DD`; UTC arithmetic so no DST drift. */
-function addDays(date: string, days: number): string {
-  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-}
 
 async function authorize(
   accessToken: string | null,
@@ -248,7 +235,7 @@ export async function grantContactBonus(
   } | null;
   if (!plan || !plan.active) return { error: "plan_unavailable" };
 
-  const purchasedAt = today();
+  const purchasedAt = bonusToday();
   const { error } = await db.from("contact_bonuses").insert([
     {
       contact_id: input.contactId,
@@ -258,7 +245,7 @@ export async function grantContactBonus(
       price_eur: Number(plan.price_eur),
       paid_method: input.paidMethod,
       purchased_at: purchasedAt,
-      expires_at: addDays(purchasedAt, plan.validity_days),
+      expires_at: bonusExpiry(purchasedAt, plan.validity_days),
       notes: input.notes?.trim() || null,
       created_by: actor.userId,
     },
@@ -316,7 +303,7 @@ export async function assignBookingBonus(
     rows.filter((r) => r.id === input.bonusId),
     uses,
     booking.tier_id,
-    today(),
+    bonusToday(),
   );
   const chosen = bonuses.find((b) => b.id === input.bonusId);
   if (!usable || !chosen) return { error: "not_usable" };

@@ -11,6 +11,7 @@ import {
 } from "@/data/services-data";
 import type { DetailsState } from "@/types";
 import { insforge } from "@/lib/insforge";
+import { treatmentForTier } from "@/lib/treatments/match";
 import { getPublicPaymentSettings } from "@/actions/payment-settings";
 import {
   DEFAULT_PAYMENT_SETTINGS,
@@ -33,9 +34,10 @@ import {
  * The two meet on the title, which is what the tier label is set to.
  */
 function treatmentByLabel(label: string | null) {
-  if (!label) return null;
-  const all = [...manualTherapyTreatments, ...facialTreatments];
-  return all.find((t) => t.title.toLowerCase() === label.toLowerCase()) ?? null;
+  return treatmentForTier(
+    [...manualTherapyTreatments, ...facialTreatments],
+    label,
+  );
 }
 
 export function ConfirmStep({
