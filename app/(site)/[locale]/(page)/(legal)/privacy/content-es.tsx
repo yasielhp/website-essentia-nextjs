@@ -12,7 +12,7 @@ export function PrivacyES() {
     <>
       <h1>Política de Privacidad</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Última actualización: mayo 2026
+        Última actualización: noviembre 2026
       </p>
 
       <p>
@@ -54,14 +54,23 @@ export function PrivacyES() {
           número de teléfono, dirección postal.
         </li>
         <li>
-          <strong>Datos de salud:</strong> información sanitaria relevante que
-          usted facilite voluntariamente antes de utilizar determinados
-          servicios de bienestar (tratados como datos de categoría especial con
-          consentimiento explícito).
+          <strong>Datos de salud:</strong> la información sanitaria que usted
+          facilita en nuestro consentimiento informado antes de utilizar
+          determinados servicios de bienestar, junto con su firma, que se recoge
+          por medios electrónicos (tratados como datos de categoría especial con
+          su consentimiento explícito).
+        </li>
+        <li>
+          <strong>Datos de imagen:</strong> fotografías del área tratada para
+          documentar su evolución, únicamente con su autorización expresa e
+          independiente y sin difusión pública.
         </li>
         <li>
           <strong>Datos de reservas y transacciones:</strong> reservas de
-          sesiones, detalles de membresía y registros de pagos.
+          sesiones, pagos anticipados y señales, bonos de sesiones adquiridos y
+          su consumo, detalles de membresía y registros de pagos. Los pagos con
+          tarjeta los tramita la pasarela Redsys; no almacenamos el número de su
+          tarjeta.
         </li>
         <li>
           <strong>Datos de comunicaciones:</strong> mensajes enviados a través
@@ -97,9 +106,18 @@ export function PrivacyES() {
 
       <h2>4. Cómo utilizamos sus datos</h2>
       <ul>
-        <li>Para tramitar membresías, reservas y pagos.</li>
+        <li>Para tramitar membresías, reservas, bonos y pagos.</li>
         <li>
           Para comunicar actualizaciones del servicio y confirmaciones de citas.
+        </li>
+        <li>
+          Para valorar la adecuación y la seguridad del tratamiento a partir de
+          su consentimiento informado.
+        </li>
+        <li>
+          Para enviarle, tras su primera sesión, indicaciones de cuidado
+          posterior y una invitación a valorar nuestro servicio (interés
+          legítimo; puede oponerse en cualquier momento).
         </li>
         <li>
           Para enviar boletines y ofertas promocionales (con su consentimiento).
@@ -113,19 +131,31 @@ export function PrivacyES() {
         Conservamos los datos personales únicamente durante el tiempo necesario
         para los fines descritos anteriormente. Los registros de membresía y
         reservas se conservan durante un mínimo de cinco años para cumplir las
-        obligaciones fiscales. Los datos de comunicaciones se conservan durante
-        dos años. Los datos de marketing se conservan hasta que usted retire su
-        consentimiento.
+        obligaciones fiscales. Los consentimientos informados firmados se
+        conservan durante cinco años desde su última sesión, incluidas las
+        versiones anteriores cuando se actualizan, como prueba del
+        consentimiento prestado. Los datos de comunicaciones se conservan
+        durante dos años. Los datos de marketing se conservan hasta que usted
+        retire su consentimiento.
       </p>
 
       <h2>6. Comunicación de datos</h2>
       <p>No vendemos sus datos personales. Podemos compartir sus datos con:</p>
       <ul>
         <li>
-          <strong>Proveedores de servicios:</strong> procesadores de pagos,
-          plataformas de reservas y proveedores de servicios de correo
-          electrónico que actúan como encargados del tratamiento en virtud de
-          acuerdos vinculantes.
+          <strong>Proveedores de servicios</strong> que actúan como encargados
+          del tratamiento en virtud de acuerdos vinculantes: Redsys y Banco
+          Santander (pagos con tarjeta), Resend (envío de correos electrónicos),
+          Google (calendario de nuestro personal), Meta (notificaciones por
+          WhatsApp a nuestro personal), Insforge y Vercel (alojamiento y base de
+          datos) y Sentry (supervisión de errores técnicos).
+        </li>
+        <li>
+          <strong>Asistentes de inteligencia artificial</strong> (OpenAI /
+          ChatGPT y Anthropic / Claude), únicamente cuando nuestro personal los
+          conecta a nuestro sistema de gestión para consultar reservas, datos de
+          contacto o preparar contenidos. Estos asistentes no reciben en ningún
+          caso sus respuestas de salud, su firma ni sus datos de pago.
         </li>
         <li>
           <strong>Autoridades legales:</strong> cuando así lo exija la ley o una

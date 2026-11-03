@@ -10,7 +10,7 @@ export function TermsEN() {
     <>
       <h1>Terms &amp; Conditions</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Last updated: May 2026
+        Last updated: November 2026
       </p>
 
       <p>
@@ -25,9 +25,10 @@ export function TermsEN() {
       <p>
         Essentia offers a curated range of longevity and wellness services
         including but not limited to contrast therapy, red light therapy,
-        hyperbaric chambers, intravenous therapy, manual therapies, breathing
-        sessions, and medical consultations. Service availability may vary
-        depending on your membership tier and booking schedule.
+        hyperbaric chambers, intravenous therapy, manual therapies and lymphatic
+        drainage, facial therapies, session vouchers, breathing sessions, and
+        medical consultations. Service availability may vary depending on your
+        membership tier and booking schedule.
       </p>
 
       <h2>2. Membership</h2>
@@ -62,17 +63,52 @@ export function TermsEN() {
       </p>
 
       <h2>3. Bookings</h2>
-      <h3>3.1 Reservations</h3>
+      <h3>3.1 Reservations and Advance Payment</h3>
       <p>
         Certain services and facilities require advance booking. Bookings can be
         made through our website or by contacting us directly.
       </p>
+      <p>
+        Bookings made through the website require a payment at the time of
+        booking: you may pay a deposit, at the percentage shown during the
+        booking process, or the full price of the session, to which the discount
+        displayed at that time may apply. Any outstanding balance is paid at the
+        centre on the day of the session. A booking is confirmed only once the
+        payment has been registered; if the payment is not completed within 30
+        minutes, the reserved time is released automatically. For bookings made
+        by phone or in person, Essentia may likewise require a deposit.
+      </p>
       <h3>3.2 Cancellation and No-Show Policy</h3>
       <p>
         Bookings may be cancelled or rescheduled up to 24 hours before the
-        scheduled time at no charge. Cancellations within 24 hours or no-shows
+        scheduled time at no charge; in that case any amount paid in advance is
+        kept as a credit towards a new appointment. Cancellations within 24
+        hours or no-shows forfeit the amount paid in advance and, failing that,
         may be charged at the full session rate or deducted from an available
-        session allowance.
+        session allowance. This is without prejudice to your rights under
+        consumer law.
+      </p>
+      <h3>3.3 Payments</h3>
+      <p>
+        Online payments are processed through Redsys, the secure payment gateway
+        of Banco Santander, by credit or debit card. Essentia does not store
+        your card details. All prices are in euros and include applicable taxes.
+        You will receive a confirmation of each payment by email.
+      </p>
+      <h3>3.4 Session Vouchers</h3>
+      <p>
+        Essentia offers multi-session vouchers for certain treatments. Each
+        voucher states the treatment it is for, the number of sessions it
+        includes, its price and its validity period, counted from the date of
+        purchase. Vouchers are paid in full in advance, are personal and
+        non-transferable, and may be bought at the centre or through the
+        website. Sessions not used by the end of the validity period are
+        forfeited. Each session booked against a voucher is deducted from it; a
+        session cancelled with less than 24 hours&apos; notice, or not attended,
+        counts as used, as set out in section 3.2. If you buy a voucher at a
+        distance you have 14 calendar days to withdraw from the purchase
+        provided no session has been used; otherwise vouchers are non-refundable
+        except where required by applicable law.
       </p>
 
       <h2>4. Health and Safety</h2>
@@ -82,6 +118,16 @@ export function TermsEN() {
         contraindications relevant to your intended use of our services.
         Essentia reserves the right to decline service to any member whose
         participation may pose a health or safety risk.
+      </p>
+      <p>
+        Before your first session you must complete and sign our informed
+        consent, which includes a health questionnaire. You can do so from the
+        link we email you when your booking is confirmed, or at the centre. The
+        signature is collected electronically and has the same validity as a
+        handwritten one. You undertake to keep that information up to date and
+        to tell us of any relevant change before later sessions. Permission to
+        photograph the treated area is optional and separate, and may be
+        withdrawn at any time.
       </p>
       <p>
         You use all facilities at your own risk. Essentia is not liable for any
@@ -118,8 +164,8 @@ export function TermsEN() {
       <p>
         To the fullest extent permitted by law, Essentia&apos;s total liability
         to you for any claim arising out of or in connection with these Terms
-        shall not exceed the total membership fees paid by you in the three
-        months preceding the event giving rise to the claim.
+        shall not exceed the total membership fees, bookings and vouchers paid
+        by you in the three months preceding the event giving rise to the claim.
       </p>
 
       <h2>8. Changes to Terms</h2>

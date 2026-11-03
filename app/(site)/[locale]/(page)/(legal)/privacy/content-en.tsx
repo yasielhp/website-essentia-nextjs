@@ -12,7 +12,7 @@ export function PrivacyEN() {
     <>
       <h1>Privacy Policy</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Last updated: May 2026
+        Last updated: November 2026
       </p>
 
       <p>
@@ -51,13 +51,21 @@ export function PrivacyEN() {
           address.
         </li>
         <li>
-          <strong>Health data:</strong> relevant health information you
-          voluntarily provide prior to using certain wellness services (treated
-          as special category data with explicit consent).
+          <strong>Health data:</strong> the health information you give in our
+          informed consent before using certain wellness services, together with
+          your signature, which is collected electronically (treated as special
+          category data with your explicit consent).
+        </li>
+        <li>
+          <strong>Image data:</strong> photographs of the treated area to
+          document its progress, only with your express and separate permission
+          and never for public use.
         </li>
         <li>
           <strong>Booking and transaction data:</strong> session bookings,
-          membership details, payment records.
+          advance payments and deposits, session vouchers bought and used,
+          membership details and payment records. Card payments are handled by
+          the Redsys gateway; we do not store your card number.
         </li>
         <li>
           <strong>Communications data:</strong> messages sent via our contact
@@ -91,8 +99,17 @@ export function PrivacyEN() {
 
       <h2>4. How We Use Your Data</h2>
       <ul>
-        <li>To process memberships, bookings, and payments.</li>
+        <li>To process memberships, bookings, vouchers and payments.</li>
         <li>To communicate service updates and appointment confirmations.</li>
+        <li>
+          To assess the suitability and safety of a treatment from your informed
+          consent.
+        </li>
+        <li>
+          To send you, after your first session, aftercare instructions and an
+          invitation to review our service (legitimate interest; you may object
+          at any time).
+        </li>
         <li>To send newsletters and promotional offers (with your consent).</li>
         <li>To improve our website experience and services.</li>
         <li>To comply with legal and regulatory obligations.</li>
@@ -102,17 +119,29 @@ export function PrivacyEN() {
       <p>
         We retain personal data only for as long as necessary for the purposes
         described above. Membership and booking records are kept for a minimum
-        of five years to meet tax obligations. Communications data is retained
-        for two years. Marketing data is retained until you withdraw consent.
+        of five years to meet tax obligations. Signed informed consents are kept
+        for five years from your last session, including earlier versions when
+        they are updated, as a record of the consent given. Communications data
+        is retained for two years. Marketing data is retained until you withdraw
+        consent.
       </p>
 
       <h2>6. Data Sharing</h2>
       <p>We do not sell your personal data. We may share your data with:</p>
       <ul>
         <li>
-          <strong>Service providers:</strong> payment processors, booking
-          platforms, and email service providers acting as data processors under
-          binding agreements.
+          <strong>Service providers</strong> acting as data processors under
+          binding agreements: Redsys and Banco Santander (card payments), Resend
+          (email delivery), Google (our staff&apos;s calendar), Meta (WhatsApp
+          notifications to our staff), Insforge and Vercel (hosting and
+          database) and Sentry (technical error monitoring).
+        </li>
+        <li>
+          <strong>AI assistants</strong> (OpenAI / ChatGPT and Anthropic /
+          Claude), only when our staff connect them to our management system to
+          look up bookings or contact details or to prepare content. These
+          assistants never receive your health answers, your signature or your
+          payment details.
         </li>
         <li>
           <strong>Legal authorities:</strong> where required by law or court

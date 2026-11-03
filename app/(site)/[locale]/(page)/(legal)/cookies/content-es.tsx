@@ -10,7 +10,7 @@ export function CookiesES() {
     <>
       <h1>Política de Cookies</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Última actualización: mayo 2026
+        Última actualización: noviembre 2026
       </p>
 
       <p>
@@ -93,6 +93,25 @@ export function CookiesES() {
               <td>Gestión de sesión de usuario</td>
               <td>Sesión</td>
               <td>Estrictamente necesaria</td>
+            </tr>
+            <tr>
+              <td>
+                <code>insforge_access_token</code>,{" "}
+                <code>insforge_refresh_token</code>
+              </td>
+              <td>Essentia</td>
+              <td>Mantiene la sesión iniciada en su cuenta o en el panel</td>
+              <td>Sesión / hasta cerrar sesión</td>
+              <td>Estrictamente necesaria</td>
+            </tr>
+            <tr>
+              <td>
+                <code>NEXT_LOCALE</code>
+              </td>
+              <td>Essentia</td>
+              <td>Recuerda el idioma elegido</td>
+              <td>1 año</td>
+              <td>Funcional</td>
             </tr>
             <tr>
               <td>

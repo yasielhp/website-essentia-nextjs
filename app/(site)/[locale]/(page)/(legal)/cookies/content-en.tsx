@@ -10,7 +10,7 @@ export function CookiesEN() {
     <>
       <h1>Cookie Policy</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Last updated: May 2026
+        Last updated: November 2026
       </p>
 
       <p>
@@ -88,6 +88,25 @@ export function CookiesEN() {
               <td>User session management</td>
               <td>Session</td>
               <td>Strictly necessary</td>
+            </tr>
+            <tr>
+              <td>
+                <code>insforge_access_token</code>,{" "}
+                <code>insforge_refresh_token</code>
+              </td>
+              <td>Essentia</td>
+              <td>Keeps you signed in to your account or the dashboard</td>
+              <td>Session / until you sign out</td>
+              <td>Strictly necessary</td>
+            </tr>
+            <tr>
+              <td>
+                <code>NEXT_LOCALE</code>
+              </td>
+              <td>Essentia</td>
+              <td>Remembers the language you chose</td>
+              <td>1 year</td>
+              <td>Functional</td>
             </tr>
             <tr>
               <td>

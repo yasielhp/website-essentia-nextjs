@@ -40,7 +40,7 @@ export default async function LegalNoticePage({
       <>
         <h1>Aviso Legal</h1>
         <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-          Última actualización: mayo 2026
+          Última actualización: noviembre 2026
         </p>
 
         <p>
@@ -154,7 +154,7 @@ export default async function LegalNoticePage({
     <>
       <h1>Legal Notice</h1>
       <p className="text-petroleum-400 mt-1 mb-8 text-xs tracking-widest uppercase">
-        Last updated: May 2026
+        Last updated: November 2026
       </p>
 
       <p>
