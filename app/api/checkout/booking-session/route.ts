@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
+import { chargeForMode, type PaymentMode } from "@/lib/payments/amounts";
+import { readPaymentSettings } from "@/lib/settings/app-settings";
 
 type CheckoutBody = {
   bookingId: string;
@@ -12,14 +14,16 @@ type CheckoutBody = {
   date?: string;
   time?: string;
   phone?: string;
+  paymentMode?: PaymentMode;
 };
 
 /**
  * Creates a Redsys checkout for a booking.
  *
- * The amount is resolved from `service_tiers` on the server and never from the
- * request body. Trusting a client-supplied `amountEur` allowed paying an
- * arbitrary amount — one cent — for any service.
+ * The amount is resolved from `service_tiers` and `app_settings.payments` on
+ * the server and never from the request body; the body only says whether the
+ * client wants to pay the deposit or everything. Trusting a client-supplied
+ * `amountEur` allowed paying an arbitrary amount — one cent — for any service.
  */
 export async function POST(req: NextRequest) {
   const provider = getRedsysProvider();
@@ -37,8 +41,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { bookingId, tierId, email, name, description, date, time, phone } =
-    body;
+  const {
+    bookingId,
+    tierId,
+    email,
+    name,
+    description,
+    date,
+    time,
+    phone,
+    paymentMode,
+  } = body;
 
   if (!bookingId || !tierId) {
     return NextResponse.json(
@@ -94,17 +107,25 @@ export async function POST(req: NextRequest) {
 
   // Paying online means the web price, which already carries whatever
   // discount the dashboard set against the centre price.
-  const priceEur = Number(tier.price_eur ?? tier.price_center_eur ?? 0);
-  if (!Number.isFinite(priceEur) || priceEur <= 0) {
+  const listPriceEur = Number(tier.price_eur ?? tier.price_center_eur ?? 0);
+  if (!Number.isFinite(listPriceEur) || listPriceEur <= 0) {
     return NextResponse.json(
       { error: "Tier has no price configured" },
       { status: 400 },
     );
   }
 
+  const mode: PaymentMode = paymentMode === "full" ? "full" : "deposit";
+  const settings = await readPaymentSettings();
+  const { chargeEur, finalPriceEur } = chargeForMode(
+    listPriceEur,
+    mode,
+    settings,
+  );
+
   const appUrl = getAppUrl();
   const formData = provider.buildFormData({
-    amount: Math.round(priceEur * 100), // Redsys expects cents
+    amount: Math.round(chargeEur * 100), // Redsys expects cents
     currency: "978", // EUR
     description: description || "Booking",
     successUrl:
@@ -124,7 +145,11 @@ export async function POST(req: NextRequest) {
   // renaming it needs a migration, so it stays as-is for now.
   await db
     .from("bookings")
-    .update({ stripe_session_id: formData.orderId })
+    .update({
+      stripe_session_id: formData.orderId,
+      payment_mode: mode,
+      price_eur: finalPriceEur,
+    })
     .eq("id", bookingId);
 
   return NextResponse.json(formData);
