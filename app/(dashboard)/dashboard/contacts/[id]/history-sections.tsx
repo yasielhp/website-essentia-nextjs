@@ -69,6 +69,7 @@ type TransactionRow = {
 
 function bookingStatus(b: Booking): string {
   if (b.payment_status === "paid") return "completed";
+  if (b.payment_status === "deposit_paid") return "deposit_paid";
   // A cancelled appointment is not a pending charge, whatever the payment row
   // still says.
   if (b.status === "cancelled") return "cancelled";
@@ -80,6 +81,7 @@ const TX_STATUS_STYLES: Record<string, string> = {
   paid: "bg-green-50 text-green-700",
   active: "bg-green-50 text-green-700",
   confirmed: "bg-green-50 text-green-700",
+  deposit_paid: "bg-amber-50 text-amber-700",
   failed: "bg-red-50 text-red-700",
   refunded: "bg-red-50 text-red-700",
   cancelled: "bg-red-50 text-red-700",
@@ -139,16 +141,17 @@ export function TransactionsSection({
     })),
   ].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 
-  const paidTotal = bookings
-    .filter((b) => b.payment_status === "paid")
-    .reduce((sum, b) => sum + (b.price_eur ?? 0), 0);
+  const paidTotal = bookings.reduce(
+    (sum, b) => sum + Number(b.amount_paid_eur ?? 0),
+    0,
+  );
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-end">
         {!loading && paidTotal > 0 && (
           <span className="text-petroleum-400 text-xs">
-            Paid to date{" "}
+            {t("paidToDate")}{" "}
             <span className="text-petroleum-700 font-medium">
               {formatPrice(paidTotal, locale)}
             </span>

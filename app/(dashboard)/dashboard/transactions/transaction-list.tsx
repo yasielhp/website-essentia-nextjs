@@ -25,6 +25,7 @@ const STATUS_CLS: Record<string, string> = {
   confirmed: "bg-green-50 text-green-700",
   active: "bg-green-50 text-green-700",
   pending: "bg-yellow-50 text-yellow-700",
+  deposit_paid: "bg-amber-50 text-amber-700",
   failed: "bg-red-50 text-red-600",
   cancelled: "bg-red-50 text-red-600",
   expired: "bg-red-50 text-red-600",
@@ -90,8 +91,16 @@ function formatTime(value: string | null, fmt: Formatters): string {
   return fmt.time.format(d);
 }
 
-function formatAmount(value: number | null, fmt: Formatters): string {
+function formatAmount(
+  value: number | null,
+  fmt: Formatters,
+  listValue?: number | null,
+): string {
   if (value === null || Number.isNaN(value)) return "—";
+  // A deposit shows what came in against what the booking is worth.
+  if (listValue != null && listValue !== value) {
+    return `${fmt.amount.format(value)} / ${fmt.amount.format(listValue)}`;
+  }
   return fmt.amount.format(value);
 }
 
@@ -190,7 +199,7 @@ export function TransactionList({
                     )}
                     {row.amount !== null && (
                       <span className="text-petroleum-700 text-xs font-medium">
-                        {formatAmount(row.amount, fmt)}
+                        {formatAmount(row.amount, fmt, row.listAmount)}
                       </span>
                     )}
                   </div>
@@ -331,7 +340,7 @@ export function TransactionList({
                           })()}
                         </td>
                         <td className="text-petroleum-700 px-5 py-4 text-right font-medium">
-                          {formatAmount(row.amount, fmt)}
+                          {formatAmount(row.amount, fmt, row.listAmount)}
                         </td>
                       </tr>
                     );

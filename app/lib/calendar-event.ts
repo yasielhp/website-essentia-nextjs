@@ -1,4 +1,5 @@
 import { getAppUrl } from "@/lib/env";
+import { amountOwed } from "@/lib/payments/amounts";
 
 /**
  * What a booking looks like on a calendar.
@@ -28,6 +29,7 @@ export type CalendarBooking = {
   notes?: string | null;
   price_eur?: number | null;
   payment_status?: string | null;
+  amount_paid_eur?: number | string | null;
   status?: string | null;
   staff_name?: string | null;
 };
@@ -87,10 +89,20 @@ export function bookingLocation(booking: CalendarBooking): string | null {
 
 const PAYMENT_LABELS: Record<string, string> = {
   paid: "Pagado",
+  deposit_paid: "Depósito pagado",
   pending: "Pendiente de pago",
   failed: "Pago fallido",
   refunded: "Reembolsado",
 };
+
+/** ` (pagado X € · pendiente Y €)` once money has been recorded, else nothing. */
+function paymentAmounts(booking: CalendarBooking): string {
+  if (booking.amount_paid_eur == null) return "";
+  const paid = Number(booking.amount_paid_eur);
+  if (!(paid > 0)) return "";
+  const owed = amountOwed(Number(booking.price_eur ?? 0), paid);
+  return ` (pagado ${paid} € · pendiente ${owed} €)`;
+}
 
 export function bookingDescription(booking: CalendarBooking): string {
   const lines: (string | null)[] = [
@@ -104,7 +116,7 @@ export function bookingDescription(booking: CalendarBooking): string {
     bookingLocation(booking) ? `Ubicación: ${bookingLocation(booking)}` : null,
     booking.price_eur != null ? `Precio: ${booking.price_eur} €` : null,
     booking.payment_status
-      ? `Pago: ${PAYMENT_LABELS[booking.payment_status] ?? booking.payment_status}`
+      ? `Pago: ${PAYMENT_LABELS[booking.payment_status] ?? booking.payment_status}${paymentAmounts(booking)}`
       : null,
     booking.status ? `Estado: ${booking.status}` : null,
     // Last, and on its own lines: notes are prose and everything above is a
@@ -118,4 +130,4 @@ export function bookingDescription(booking: CalendarBooking): string {
 
 /** The fields `bookingDescription` reads, for a `select()`. */
 export const CALENDAR_BOOKING_FIELDS =
-  "id, service_title, first_name, last_name, email, phone, date, time, duration, location, location_address, notes, price_eur, payment_status, status, service_tiers(label)";
+  "id, service_title, first_name, last_name, email, phone, date, time, duration, location, location_address, notes, price_eur, payment_status, amount_paid_eur, status, service_tiers(label)";

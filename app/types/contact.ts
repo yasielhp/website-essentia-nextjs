@@ -49,6 +49,7 @@ export type ContactBooking = {
   status: string | null;
   payment_status: string | null;
   price_eur: number | null;
+  amount_paid_eur?: number | null;
   created_by_role: string | null;
   created_at: string | null;
 };

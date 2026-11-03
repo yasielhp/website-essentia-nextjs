@@ -492,7 +492,8 @@
       "revenue": "Ingresos",
       "completed": "Completadas",
       "pending": "Pendientes",
-      "total": "Total"
+      "total": "Total",
+      "owed": "Pendiente de cobro"
     },
     "types": {
       "booking": "Reserva",

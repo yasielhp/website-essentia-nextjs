@@ -492,7 +492,8 @@
       "revenue": "Revenue",
       "completed": "Completed",
       "pending": "Pending",
-      "total": "Total"
+      "total": "Total",
+      "owed": "Left to collect"
     },
     "types": {
       "booking": "Booking",

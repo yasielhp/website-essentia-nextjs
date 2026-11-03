@@ -11,6 +11,7 @@ import { IconFilter } from "@/components/ui/icons";
 import { localDateStr } from "@/utils/format";
 import { TransactionList } from "./transaction-list";
 import type { UnifiedRow } from "./types";
+import { amountOwed } from "@/lib/payments/amounts";
 
 // ─── Source row types ─────────────────────────────────────────
 
@@ -26,6 +27,8 @@ type BookingRow = {
   status: string | null;
   payment_status: string | null;
   price_eur: number | null;
+  amount_paid_eur: number | string | null;
+  payment_mode: string | null;
   created_at: string | null;
 };
 
@@ -58,6 +61,47 @@ type EducationRegistrationRow = {
 };
 
 // ─── Unified row ──────────────────────────────────────────────
+
+/**
+ * What a booking is worth in the ledger, and its payment state.
+ *
+ * Rows with a `payment_mode` were booked after deposits existed, so the money
+ * is `amount_paid_eur`. Older rows (136 confirmed bookings whose payment_status
+ * is still `pending`) keep the old reading — confirmed and not failed or
+ * refunded counts as completed at its price — or the history of income would
+ * fall to almost nothing.
+ */
+function bookingMoney(
+  r: BookingRow,
+): Pick<UnifiedRow, "amount" | "listAmount" | "owed" | "status"> {
+  if (r.payment_mode === null) {
+    return {
+      amount: r.price_eur,
+      status:
+        r.payment_status === "paid" ||
+        (r.status === "confirmed" &&
+          r.payment_status !== "failed" &&
+          r.payment_status !== "refunded")
+          ? "completed"
+          : (r.payment_status ?? r.status),
+    };
+  }
+  const paid = Number(r.amount_paid_eur ?? 0);
+  const status =
+    r.payment_status === "paid"
+      ? "completed"
+      : r.payment_status === "deposit_paid"
+        ? "deposit_paid"
+        : r.payment_status === "failed" || r.payment_status === "refunded"
+          ? r.payment_status
+          : "pending";
+  return {
+    amount: paid,
+    listAmount: r.price_eur,
+    owed: r.status === "cancelled" ? 0 : amountOwed(r.price_eur, paid),
+    status,
+  };
+}
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -346,6 +390,9 @@ function FilterModal({
                 {t("transactions.status.completed")}
               </option>
               <option value="active">{t("transactions.status.active")}</option>
+              <option value="deposit_paid">
+                {t("transactions.status.deposit_paid")}
+              </option>
               <option value="pending">
                 {t("transactions.status.pending")}
               </option>
@@ -457,7 +504,7 @@ export default function TransactionsPage() {
           insforge.database
             .from("bookings")
             .select(
-              "id, service_title, duration, first_name, last_name, email, created_by_role, date, status, payment_status, price_eur, created_at",
+              "id, service_title, duration, first_name, last_name, email, created_by_role, date, status, payment_status, price_eur, amount_paid_eur, payment_mode, created_at",
             )
             .order("created_at", { ascending: false })
             .limit(100),
@@ -498,14 +545,7 @@ export default function TransactionsPage() {
           clientEmail: r.email ?? null,
           reservedBy: r.created_by_role ?? null,
           date: r.date,
-          amount: r.price_eur,
-          status:
-            r.payment_status === "paid" ||
-            (r.status === "confirmed" &&
-              r.payment_status !== "failed" &&
-              r.payment_status !== "refunded")
-              ? "completed"
-              : (r.payment_status ?? r.status),
+          ...bookingMoney(r),
           created_at: r.created_at,
         });
       }
@@ -601,11 +641,15 @@ export default function TransactionsPage() {
     const completed = filteredRows.filter(
       (r) => r.status === "completed",
     ).length;
-    const pending = filteredRows.filter((r) => r.status === "pending").length;
     const revenue = filteredRows
-      .filter((r) => r.status === "completed" && r.amount !== null)
+      .filter(
+        (r) =>
+          (r.status === "completed" || r.status === "deposit_paid") &&
+          r.amount !== null,
+      )
       .reduce((sum, r) => sum + (r.amount ?? 0), 0);
-    return { completed, pending, revenue, total: filteredRows.length };
+    const owed = filteredRows.reduce((sum, r) => sum + (r.owed ?? 0), 0);
+    return { completed, owed, revenue, total: filteredRows.length };
   }, [filteredRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
@@ -662,11 +706,22 @@ export default function TransactionsPage() {
           value={stats.completed}
           loading={loading}
         />
-        <StatCard
-          label={t("transactions.stats.pending")}
-          value={stats.pending}
-          loading={loading}
-        />
+        <div className="border-sand-200 rounded-2xl border bg-white p-6">
+          <p className="text-petroleum-400 text-sm">
+            {t("transactions.stats.owed")}
+          </p>
+          {loading ? (
+            <div className="bg-sand-100 mt-2 h-8 w-24 animate-pulse rounded-lg" />
+          ) : (
+            <p className="font-display text-petroleum-700 mt-1 text-3xl">
+              {numberFormatter(locale, {
+                style: "currency",
+                currency: "EUR",
+                maximumFractionDigits: 0,
+              }).format(stats.owed)}
+            </p>
+          )}
+        </div>
         <StatCard
           label={t("transactions.stats.total")}
           value={stats.total}
