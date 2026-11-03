@@ -49,7 +49,7 @@ export function BonusesSection({
         </span>
         <Button
           variant="solid"
-          size="sm"
+          size="lg"
           onClick={() => setGranting(true)}
           disabled={loading}
         >

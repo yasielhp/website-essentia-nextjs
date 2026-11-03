@@ -51,12 +51,12 @@ export function ConsentSection({
     return (
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="solid" size="md" href={page}>
+          <Button variant="solid" size="lg" href={page}>
             {t("sign")}
           </Button>
           <Button
             variant="outline"
-            size="md"
+            size="lg"
             onClick={() => void send()}
             disabled={sending}
           >
@@ -80,7 +80,7 @@ export function ConsentSection({
       <p className="text-petroleum-700 text-sm font-medium">
         {t("signed", { date: shortDate(consent.signedAt) })}
       </p>
-      <Button variant="solid" size="md" href={page}>
+      <Button variant="solid" size="lg" href={page}>
         {t("view")}
       </Button>
     </div>

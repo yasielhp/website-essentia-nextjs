@@ -245,7 +245,7 @@ function BookingsSection({
         </span>
         <Button
           variant="solid"
-          size="sm"
+          size="lg"
           href={`/dashboard/bookings/new?contact=${contactId}`}
         >
           {tSection("new")}
