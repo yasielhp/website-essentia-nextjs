@@ -53,7 +53,9 @@ export async function recordCounterPayment(
   const status = paymentStatusAfter(paid, price);
   const owed = amountOwed(price, paid);
 
-  const { error } = await db
+  // Conditioned on the amount read above: a double click, or two people at
+  // the desk at once, must not add the same money twice.
+  const { data: applied, error } = await db
     .from("bookings")
     .update({
       amount_paid_eur: paid,
@@ -65,8 +67,11 @@ export async function recordCounterPayment(
           }
         : {}),
     })
-    .eq("id", input.bookingId);
+    .eq("id", input.bookingId)
+    .eq("amount_paid_eur", Number(row.amount_paid_eur ?? 0))
+    .select("id");
   if (error) return { error: error.message };
+  if (((applied ?? []) as unknown[]).length === 0) return { error: "conflict" };
 
   await recordBookingEvent({
     bookingId: input.bookingId,

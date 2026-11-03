@@ -66,16 +66,25 @@ export async function POST(req: NextRequest) {
   // could pair an expensive booking with the cheapest tier in the catalogue.
   const { data: bookingRow } = await db
     .from("bookings")
-    .select("id, service_id")
+    .select("id, service_id, status")
     .eq("id", bookingId)
     .maybeSingle();
 
   const booking = bookingRow as {
     id: string;
     service_id: string | null;
+    status: string | null;
   } | null;
   if (!booking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
+  // An unpaid booking is released after thirty minutes; a client who comes
+  // back to the bank after that must not pay for a slot that is gone.
+  if (booking.status === "cancelled") {
+    return NextResponse.json(
+      { error: "Booking is no longer open" },
+      { status: 409 },
+    );
   }
 
   const { data: tierRow } = await db

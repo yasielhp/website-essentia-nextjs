@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
+import { holdsSlot } from "@/lib/bookings/holds-slot";
 import { getScheduledStartTimes } from "@/utils/calendar-helpers";
 import { parseDurationMinutes } from "@/utils/format";
 import type { WeeklySchedule } from "@/types/schedule";
@@ -22,6 +23,8 @@ type BookingRow = {
   date: string | null;
   time: string | null;
   duration: string | null;
+  status: string | null;
+  created_at: string | null;
 };
 
 const toMinutes = (hhmm: string) => {
@@ -85,7 +88,7 @@ export async function fetchAvailability({
       .eq("role", "staff"),
     db
       .from("bookings")
-      .select("staff_id, date, time, duration")
+      .select("staff_id, date, time, duration, status, created_at")
       .in("staff_id", ids)
       .gte("date", from)
       .lte("date", to)
@@ -102,8 +105,11 @@ export async function fetchAvailability({
     busy.set(key, [...(busy.get(key) ?? []), range]);
   };
 
+  const readAt = new Date();
   for (const b of (bookings ?? []) as BookingRow[]) {
     if (!b.staff_id || !b.date || !b.time) continue;
+    // A draft abandoned at the date step must not hold the hour for ever.
+    if (!holdsSlot(b, readAt)) continue;
     const start = toMinutes(b.time);
     addBusy(b.staff_id, b.date.slice(0, 10), {
       start,

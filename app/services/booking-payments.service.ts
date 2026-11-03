@@ -75,14 +75,19 @@ export async function handleBookingPaid(
   const paymentStatus = paymentStatusAfter(paidEur, priceEur);
   const owedEur = amountOwed(priceEur, paidEur);
 
-  await adminClient.database
+  // Conditioned on the amount read above: two notifications arriving together
+  // both pass the event check, and only one of them may add the money.
+  const { data: applied } = await adminClient.database
     .from("bookings")
     .update({
       payment_status: paymentStatus,
       amount_paid_eur: paidEur,
       status: "confirmed",
     })
-    .eq("id", bookingId);
+    .eq("id", bookingId)
+    .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
+    .select("id");
+  if (((applied ?? []) as unknown[]).length === 0) return;
 
   await recordBookingEvent({
     bookingId,
