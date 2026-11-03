@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
-/** Asks before asking the client to sign again, and says what happens to the old signature. */
+/** Asks before emailing the client to update or sign again, and says what happens to the old signature. */
 export function ResendConsentDialog({
   busy,
   onConfirm,
@@ -27,7 +27,8 @@ export function ResendConsentDialog({
           <h3 className="font-display text-petroleum-700 text-xl">
             {t("title")}
           </h3>
-          <p className="text-petroleum-400 text-sm">{t("body")}</p>
+          <p className="text-petroleum-700 text-sm">{t("body")}</p>
+          <p className="text-petroleum-400 mt-1 text-xs">{t("note")}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Button

@@ -1202,9 +1202,10 @@
         "edit": "Edit",
         "resendSigned": "Resend",
         "resendDialog": {
-          "title": "Ask for a new signature",
-          "body": "The client will be emailed a link to sign again. Until they do, the consent will show as pending. The current signature is kept in the history and will be replaced when they sign again.",
-          "confirm": "Send link",
+          "title": "Resend consent",
+          "body": "Are you sure you want to email the client so they can update or sign the consent?",
+          "note": "The current signature is kept in the history, and the consent will show as pending until they sign again.",
+          "confirm": "Yes, resend",
           "sending": "Sending…"
         },
         "view": "View consent",

@@ -1202,9 +1202,10 @@
         "edit": "Editar",
         "resendSigned": "Reenviar",
         "resendDialog": {
-          "title": "Pedir una nueva firma",
-          "body": "Se enviará a la clienta un enlace para firmar de nuevo. Hasta que firme, el consentimiento figurará como pendiente. La firma actual se conserva en el historial y se sustituirá cuando firme otra vez.",
-          "confirm": "Enviar enlace",
+          "title": "Reenviar consentimiento",
+          "body": "¿Está seguro de que desea reenviar al cliente un correo para que actualice o firme el consentimiento?",
+          "note": "La firma actual se conserva en el historial y hasta que firme de nuevo figurará como pendiente.",
+          "confirm": "Sí, reenviar",
           "sending": "Enviando…"
         },
         "view": "Ver consentimiento",
