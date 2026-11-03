@@ -1,13 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  SignaturePad,
-  type SignaturePadHandle,
-} from "@/components/ui/signature-pad";
+import { SignaturePad } from "@/components/ui/signature-pad";
 import { OptionSelect } from "@/components/ui/option-select";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -61,7 +58,6 @@ export function ConsentForm(props: Props) {
   const [treatment, setTreatment] = useState(false);
   const [healthData, setHealthData] = useState(false);
   const [image, setImage] = useState(false);
-  const padRef = useRef<SignaturePadHandle>(null);
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -252,8 +248,8 @@ export function ConsentForm(props: Props) {
         <div className="flex flex-col gap-1.5">
           <span className={label}>{t("signature")}</span>
           <SignaturePad
-            ref={padRef}
             onChange={setSignature}
+            clearLabel={t("clear")}
             ariaLabel={t("signature")}
             disabled={submitting}
           />
@@ -264,16 +260,6 @@ export function ConsentForm(props: Props) {
             {error}
           </p>
         )}
-
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => padRef.current?.clear()}
-          disabled={signature === null || submitting}
-          className="w-full"
-        >
-          {t("clear")}
-        </Button>
 
         <Button
           variant="solid"

@@ -1,9 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
-
-/** What a form can ask of the pad: wipe it, from a button of its own. */
-export type SignaturePadHandle = { clear: () => void };
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Eraser } from "lucide-react";
 
 const WIDTH = 600;
 const HEIGHT = 200;
@@ -17,23 +15,25 @@ const HEIGHT = 200;
  * crisp on a phone, and `touch-action: none` keeps the page from scrolling
  * under the finger while somebody signs.
  *
- * It has no button of its own to start over: the form places one wherever it
- * suits, and calls `clear` through the ref.
+ * An eraser sits in the top-right corner of the box to start over; it stays
+ * disabled while there is nothing to erase.
  */
 export function SignaturePad({
   onChange,
+  clearLabel,
   ariaLabel,
   disabled = false,
-  ref,
 }: {
   onChange: (dataUrl: string | null) => void;
+  /** Accessible name of the eraser, which has no visible text. */
+  clearLabel: string;
   ariaLabel: string;
   disabled?: boolean;
-  ref?: React.Ref<SignaturePadHandle>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const inked = useRef(false);
+  const [hasInk, setHasInk] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,7 +88,10 @@ export function SignaturePad({
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    if (inked.current) onChange(e.currentTarget.toDataURL("image/png"));
+    if (inked.current) {
+      setHasInk(true);
+      onChange(e.currentTarget.toDataURL("image/png"));
+    }
   }
 
   function clear() {
@@ -100,13 +103,12 @@ export function SignaturePad({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     inked.current = false;
+    setHasInk(false);
     onChange(null);
   }
 
-  useImperativeHandle(ref, () => ({ clear }));
-
   return (
-    <div className="flex flex-col gap-2">
+    <div className="relative">
       <canvas
         ref={canvasRef}
         role="img"
@@ -118,6 +120,16 @@ export function SignaturePad({
         style={{ touchAction: "none", aspectRatio: `${WIDTH} / ${HEIGHT}` }}
         className="border-sand-200 w-full cursor-crosshair rounded-xl border bg-white"
       />
+      <button
+        type="button"
+        onClick={clear}
+        disabled={disabled || !hasInk}
+        aria-label={clearLabel}
+        title={clearLabel}
+        className="text-petroleum-400 hover:bg-sand-100 hover:text-petroleum-700 absolute top-2 right-2 flex size-8 items-center justify-center rounded-full transition-colors disabled:pointer-events-none disabled:opacity-40"
+      >
+        <Eraser size={16} />
+      </button>
     </div>
   );
 }
