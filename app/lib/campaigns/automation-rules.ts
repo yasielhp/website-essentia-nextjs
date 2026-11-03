@@ -85,6 +85,22 @@ export function dueRecipients({
         }));
     }
 
+    // Once in a lifetime, N hours after the end of the first confirmed visit.
+    // Older first visits are left alone: switching the campaign on must not
+    // write to everyone who ever came.
+    case "first_visit": {
+      const delayMs = (trigger.hours ?? 0) * 3_600_000;
+      return recipients
+        .filter((r) => {
+          if (!r.firstVisitEndsAt) return false;
+          const ends = Date.parse(r.firstVisitEndsAt);
+          return (
+            ends >= Date.parse(activatedAt) && ends + delayMs <= now.getTime()
+          );
+        })
+        .map((recipient) => ({ recipient, cycle: "" }));
+    }
+
     case "birthday":
       return recipients
         .filter((r) => r.birthdate && monthDay(r.birthdate) === monthDay(today))

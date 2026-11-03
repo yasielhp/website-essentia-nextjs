@@ -131,3 +131,80 @@ describe("dueRecipients", () => {
     ).toEqual([]);
   });
 });
+
+describe("first_visit", () => {
+  const now = new Date("2026-12-10T17:30:00Z");
+  const activatedAt = "2026-12-01T00:00:00Z";
+  const visitor = (over: Partial<Recipient> = {}): Recipient =>
+    r({
+      id: "c1",
+      confirmedBookingsCount: 1,
+      firstVisitEndsAt: "2026-12-10T14:00:00Z",
+      ...over,
+    });
+
+  it("fires once the first visit ended at least `hours` ago", () => {
+    const due = dueRecipients({
+      trigger: { event: "first_visit", hours: 3 },
+      recipients: [visitor()],
+      activatedAt,
+      now,
+    });
+    expect(cycles(due)).toEqual(["c1:"]);
+  });
+
+  it("fires exactly when the delay elapses", () => {
+    const due = dueRecipients({
+      trigger: { event: "first_visit", hours: 3 },
+      recipients: [visitor({ firstVisitEndsAt: "2026-12-10T14:30:00Z" })],
+      activatedAt,
+      now,
+    });
+    expect(cycles(due)).toEqual(["c1:"]);
+  });
+
+  it("waits while the delay has not elapsed", () => {
+    expect(
+      dueRecipients({
+        trigger: { event: "first_visit", hours: 4 },
+        recipients: [visitor()],
+        activatedAt,
+        now,
+      }),
+    ).toEqual([]);
+  });
+
+  it("treats a missing delay as zero hours", () => {
+    const due = dueRecipients({
+      trigger: { event: "first_visit" },
+      recipients: [visitor()],
+      activatedAt,
+      now,
+    });
+    expect(cycles(due)).toEqual(["c1:"]);
+  });
+
+  it("ignores clients whose first visit predates the campaign", () => {
+    expect(
+      dueRecipients({
+        trigger: { event: "first_visit", hours: 0 },
+        recipients: [visitor({ firstVisitEndsAt: "2026-11-20T10:00:00Z" })],
+        activatedAt,
+        now,
+      }),
+    ).toEqual([]);
+  });
+
+  it("ignores contacts with no confirmed visit", () => {
+    expect(
+      dueRecipients({
+        trigger: { event: "first_visit", hours: 0 },
+        recipients: [
+          visitor({ firstVisitEndsAt: null, confirmedBookingsCount: 0 }),
+        ],
+        activatedAt,
+        now,
+      }),
+    ).toEqual([]);
+  });
+});
