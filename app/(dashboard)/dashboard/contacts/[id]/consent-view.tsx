@@ -30,6 +30,7 @@ export function ConsentView({ consent }: { consent: ContactConsent }) {
       <Line
         label={t("signedLabel")}
         value={consent.signedAt ? shortDate(consent.signedAt) : "—"}
+        noRule
       />
       {answered.map((field) => {
         const isYes = consent.answers[field.id] === true;
@@ -67,24 +68,26 @@ export function ConsentView({ consent }: { consent: ContactConsent }) {
   );
 }
 
-/** One point of the consent. The rule is above, so every line has one. */
+/** One point of the consent. The rule is above, so every line has one — but the first, which has nothing above it. */
 function Line({
   label,
   note,
   value,
   flagged = false,
+  noRule = false,
 }: {
   label: string;
   /** Free text the client added to a yes: which operation, since when. */
   note?: string;
   value: string;
   flagged?: boolean;
+  noRule?: boolean;
 }) {
   return (
     <div
-      className={`border-sand-100 flex items-start justify-between gap-6 border-t px-2 py-3 text-sm ${
-        flagged ? "bg-amber-50" : ""
-      }`}
+      className={`border-sand-100 flex items-start justify-between gap-6 px-2 py-3 text-sm ${
+        noRule ? "" : "border-t"
+      } ${flagged ? "bg-amber-50" : ""}`}
     >
       <div className="min-w-0">
         <p className="text-petroleum-700">{label}</p>
