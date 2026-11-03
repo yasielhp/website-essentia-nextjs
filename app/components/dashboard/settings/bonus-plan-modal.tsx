@@ -40,7 +40,6 @@ export function BonusPlanModal({
   const [price, setPrice] = useState(String(plan?.priceEur ?? ""));
   const [validity, setValidity] = useState(String(plan?.validityDays ?? 180));
   const [active, setActive] = useState(plan?.active ?? true);
-  const [sellOnline, setSellOnline] = useState(plan?.sellOnline ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -63,7 +62,6 @@ export function BonusPlanModal({
       priceEur: Number(price.replace(",", ".")),
       validityDays: Number(validity),
       active,
-      sellOnline,
     });
     setSaving(false);
     if (result.error) {
@@ -141,17 +139,13 @@ export function BonusPlanModal({
             ))}
           </div>
 
+          {/* The switch is also the shop window: an active plan is offered
+              on the website, on the page of its session type. */}
           <ToggleRow
             checked={active}
             onToggle={() => setActive((v) => !v)}
             label={t("active")}
-            disabled={saving}
-          />
-          <ToggleRow
-            checked={sellOnline}
-            onToggle={() => setSellOnline((v) => !v)}
-            label={t("sellOnline")}
-            hint={t("sellOnlineHint")}
+            hint={t("activeHint")}
             disabled={saving}
           />
 

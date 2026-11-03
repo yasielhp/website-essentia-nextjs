@@ -535,7 +535,6 @@ export const bonusPlanSchema = z.object({
   priceEur: z.number().min(0),
   validityDays: z.number().int().min(1).max(1095),
   active: z.boolean(),
-  sellOnline: z.boolean(),
 });
 
 /**

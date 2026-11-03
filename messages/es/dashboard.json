@@ -1378,14 +1378,12 @@
       "price": "Precio (€)",
       "validity": "Validez (días)",
       "active": "Activo",
-      "sellOnline": "Vender en la web",
-      "sellOnlineHint": "Todavía no hay venta pública de bonos; queda preparado.",
       "save": "Guardar",
       "error": "No se ha podido guardar el bono.",
       "validityDays": "Válido {n} días",
-      "online": "venta en la web",
       "edit": "Editar",
-      "duplicate": "Ya existe un bono con ese tipo de sesión y ese número de sesiones."
+      "duplicate": "Ya existe un bono con ese tipo de sesión y ese número de sesiones.",
+      "activeHint": "Si está activo, se muestra en la web en la página de este servicio."
     }
   },
   "services": {

@@ -46,7 +46,6 @@ type PlanRowDb = {
   price_eur: number | string;
   validity_days: number;
   active: boolean;
-  sell_online: boolean;
   service_tiers: {
     label: string | null;
     color: string | null;
@@ -66,7 +65,7 @@ export async function fetchBonusPlans(
   const { data } = await getAdminClient()
     .database.from("bonus_plans")
     .select(
-      "id, tier_id, sessions, price_eur, validity_days, active, sell_online, service_tiers(label, color, image_url)",
+      "id, tier_id, sessions, price_eur, validity_days, active, service_tiers(label, color, image_url)",
     )
     .order("created_at", { ascending: true });
 
@@ -80,7 +79,6 @@ export async function fetchBonusPlans(
     priceEur: Number(r.price_eur),
     validityDays: r.validity_days,
     active: r.active,
-    sellOnline: r.sell_online,
   }));
 }
 
@@ -102,7 +100,6 @@ export async function upsertBonusPlan(
     price_eur: v.priceEur,
     validity_days: v.validityDays,
     active: v.active,
-    sell_online: v.sellOnline,
   };
   const db = getAdminClient().database;
   const { error } = v.id

@@ -1378,14 +1378,12 @@
       "price": "Price (€)",
       "validity": "Validity (days)",
       "active": "Active",
-      "sellOnline": "Sell on the website",
-      "sellOnlineHint": "There is no public voucher sale yet; this prepares it.",
       "save": "Save",
       "error": "The voucher could not be saved.",
       "validityDays": "Valid {n} days",
-      "online": "sold online",
       "edit": "Edit",
-      "duplicate": "A voucher with that session type and number of sessions already exists."
+      "duplicate": "A voucher with that session type and number of sessions already exists.",
+      "activeHint": "When active, it is shown on the website, on this service's page."
     }
   },
   "services": {

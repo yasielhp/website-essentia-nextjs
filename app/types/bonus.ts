@@ -14,7 +14,6 @@ export type BonusPlan = {
   priceEur: number;
   validityDays: number;
   active: boolean;
-  sellOnline: boolean;
 };
 
 /** A booking that drew a session from a bonus. */
