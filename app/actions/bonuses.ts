@@ -317,6 +317,27 @@ export async function assignBookingBonus(
     .is("bonus_id", null);
   if (error) return { error: (error as { message?: string }).message ?? "db" };
 
+  // The sessions are counted, not reserved: two bookings assigned to the last
+  // session at the same moment both pass the check above. Count again now
+  // that this one is written, and give it back if the bonus went over.
+  const { count } = await db
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("bonus_id", usable.id)
+    .in("status", ["pending", "confirmed", "completed"]);
+  if ((count ?? 0) > chosen.sessionsTotal) {
+    await db
+      .from("bookings")
+      .update({
+        bonus_id: null,
+        payment_mode: "none",
+        payment_status: "pending",
+      })
+      .eq("id", input.bookingId)
+      .eq("bonus_id", usable.id);
+    return { error: "not_usable" };
+  }
+
   await recordBookingEvent({
     bookingId: input.bookingId,
     channel: "system",
