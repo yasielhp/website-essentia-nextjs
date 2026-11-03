@@ -114,16 +114,7 @@ function SheetBody({
           </button>
         </div>
 
-        {state.kind === "loading" && (
-          <div className="space-y-3 p-6">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="bg-sand-200 h-5 animate-pulse rounded-lg"
-              />
-            ))}
-          </div>
-        )}
+        {state.kind === "loading" && <SheetSkeleton />}
 
         {state.kind === "missing" && (
           <p className="text-petroleum-400 p-6 text-sm">{t("notFound")}</p>
@@ -172,6 +163,61 @@ function placeDetail(
     }
   }
   return locationDetail(b.location, b.location_address, roomLabel);
+}
+
+function Bar({ className }: { className: string }) {
+  return (
+    <div className={`bg-sand-200 animate-pulse rounded-md ${className}`} />
+  );
+}
+
+/** A label over a value: the shape of `Field`, before there is anything to say. */
+function FieldSkeleton({ wide }: { wide?: boolean }) {
+  return (
+    <div className="space-y-2">
+      <Bar className="h-3 w-14" />
+      <Bar className={`h-4 ${wide ? "w-32" : "w-20"}`} />
+    </div>
+  );
+}
+
+/** The sheet's own layout, so nothing jumps when the booking arrives. */
+function SheetSkeleton() {
+  return (
+    <div
+      className="flex flex-1 flex-col gap-4 p-6"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="border-sand-200 rounded-2xl border bg-white p-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+          <FieldSkeleton wide />
+          <FieldSkeleton />
+          <FieldSkeleton wide />
+          <FieldSkeleton />
+          <FieldSkeleton />
+          <FieldSkeleton wide />
+          <FieldSkeleton wide />
+          <FieldSkeleton />
+        </div>
+        <div className="border-sand-200 mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t pt-4">
+          <FieldSkeleton />
+          <FieldSkeleton />
+        </div>
+        <Bar className="mt-4 h-9 w-full rounded-full" />
+      </div>
+
+      <div className="border-sand-200 rounded-2xl border bg-white p-5">
+        <div className="space-y-2">
+          <Bar className="h-3 w-14" />
+          <Bar className="h-5 w-40" />
+          <Bar className="h-4 w-32" />
+          <Bar className="h-4 w-44" />
+        </div>
+        <Bar className="mt-4 h-9 w-full rounded-full" />
+      </div>
+    </div>
+  );
 }
 
 /** `2026-10-15` as `15/10/2026`, day first in both languages: no US ambiguity. */
