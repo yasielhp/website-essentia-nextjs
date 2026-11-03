@@ -204,7 +204,7 @@ export function ServiceDetailView({
         backHref={backHref}
       />
       {/* Single session or a bonus; nothing at all if the treatment has none. */}
-      <BonusOffer tierLabel={service.title} bookingHref={bookingHref} />
+      <BonusOffer tierLabel={service.title} />
       <ServiceCta
         service={service}
         bookingHref={bookingHref}

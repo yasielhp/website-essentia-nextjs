@@ -1,22 +1,12 @@
 {
   "offer": {
-    "heading": "¿Una sesión o un bono?",
-    "single": {
-      "title": "Sesión suelta",
-      "body": "Reserva una sesión cuando te venga bien.",
-      "cta": "Reservar sesión"
-    },
-    "bonus": {
-      "title": "Bono",
-      "body": "Compra varias sesiones de una vez y úsalas mientras el bono esté vigente.",
-      "cta": "Ver bonos"
-    },
-    "listHeading": "Bonos disponibles",
+    "heading": "Bonos",
     "sessions": "{sessions, plural, one {# sesión} other {# sesiones}}",
     "total": "Total {price}",
     "perSession": "{price} por sesión",
     "validity": "Válido {days} días desde la compra",
-    "buy": "Comprar bono"
+    "buy": "Comprar bono",
+    "intro": "Compra varias sesiones de una vez y úsalas mientras el bono esté vigente."
   },
   "form": {
     "title": "Comprar bono",

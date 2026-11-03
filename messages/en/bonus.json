@@ -1,22 +1,12 @@
 {
   "offer": {
-    "heading": "A single session or a voucher?",
-    "single": {
-      "title": "Single session",
-      "body": "Book one session whenever it suits you.",
-      "cta": "Book a session"
-    },
-    "bonus": {
-      "title": "Voucher",
-      "body": "Buy several sessions at once and use them while the voucher is valid.",
-      "cta": "See vouchers"
-    },
-    "listHeading": "Available vouchers",
+    "heading": "Vouchers",
     "sessions": "{sessions, plural, one {# session} other {# sessions}}",
     "total": "Total {price}",
     "perSession": "{price} per session",
     "validity": "Valid for {days} days from purchase",
-    "buy": "Buy voucher"
+    "buy": "Buy voucher",
+    "intro": "Buy several sessions at once and use them while the voucher is valid."
   },
   "form": {
     "title": "Buy a voucher",
