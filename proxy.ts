@@ -11,7 +11,7 @@ const intlMiddleware = createMiddleware(routing);
  * them and answered 404 — which is what every "My account" link in the header,
  * and the redirect after signing in, had been getting.
  */
-const NON_LOCALE = /^\/(dashboard|account|api)(\/|$)/;
+const NON_LOCALE = /^\/(dashboard|account|api|oauth)(\/|$)/;
 
 export async function proxy(request: NextRequest) {
   const response = NON_LOCALE.test(request.nextUrl.pathname)

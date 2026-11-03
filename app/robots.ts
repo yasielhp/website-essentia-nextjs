@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/dashboard/",
+          "/oauth/",
           "/account/",
           "/api/",
           "/booking/requested",

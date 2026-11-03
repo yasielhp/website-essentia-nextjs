@@ -1,0 +1,21 @@
+{
+  "invalid": {
+    "title": "This request is not valid",
+    "body": "The application that sent you here is not registered, or its address does not match. Go back to the application and try connecting again."
+  },
+  "signIn": {
+    "title": "Sign in to Essentia",
+    "body": "«{client}» wants to connect to Essentia. Sign in with your usual account to continue."
+  },
+  "consent": {
+    "title": "Connect an application",
+    "body": "<strong>«{client}»</strong> wants to connect to Essentia as <strong>{email}</strong>.",
+    "canRead": "See the services and the availability of Essentia.",
+    "canDraft": "Create blog drafts. Nothing is ever published without a person doing it from the dashboard.",
+    "allow": "Allow",
+    "allowing": "Connecting…",
+    "cancel": "Cancel",
+    "forbidden": "Your account cannot connect applications. Only administrators and staff can.",
+    "failed": "The connection could not be completed. Go back to the application and try again."
+  }
+}

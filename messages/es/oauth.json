@@ -1,0 +1,21 @@
+{
+  "invalid": {
+    "title": "Esta solicitud no es válida",
+    "body": "La aplicación que te ha enviado aquí no está registrada, o su dirección no coincide. Vuelve a la aplicación e inténtalo de nuevo."
+  },
+  "signIn": {
+    "title": "Inicia sesión en Essentia",
+    "body": "«{client}» quiere conectarse a Essentia. Inicia sesión con tu cuenta de siempre para continuar."
+  },
+  "consent": {
+    "title": "Conectar una aplicación",
+    "body": "<strong>«{client}»</strong> quiere conectarse a Essentia como <strong>{email}</strong>.",
+    "canRead": "Ver los servicios y la disponibilidad de Essentia.",
+    "canDraft": "Crear borradores del blog. Nada se publica nunca sin que una persona lo haga desde el panel.",
+    "allow": "Permitir",
+    "allowing": "Conectando…",
+    "cancel": "Cancelar",
+    "forbidden": "Tu cuenta no puede conectar aplicaciones. Solo pueden administradores y personal.",
+    "failed": "No se ha podido completar la conexión. Vuelve a la aplicación e inténtalo de nuevo."
+  }
+}

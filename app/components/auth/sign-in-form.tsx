@@ -13,7 +13,15 @@ import { PasswordInput } from "@components/ui/input";
 import { useAuth } from "@/components/auth-provider";
 import { EmailInput } from "@/components/ui/email-input";
 
-export default function SignInForm() {
+export default function SignInForm({
+  onSignedIn,
+}: {
+  /**
+   * Called instead of going to the dashboard or the account once signed in —
+   * for the screens that sign somebody in as a step towards something else.
+   */
+  onSignedIn?: () => void;
+}) {
   const t = useTranslations("auth.signIn");
   const router = useRouter();
   const { push } = router;
@@ -63,6 +71,10 @@ export default function SignInForm() {
 
     if (user) {
       await refreshUser();
+      if (onSignedIn) {
+        onSignedIn();
+        return;
+      }
 
       const toDashboard =
         role === "admin" || role === "staff" || role === "partner";
