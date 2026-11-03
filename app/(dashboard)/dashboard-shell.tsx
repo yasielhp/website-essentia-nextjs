@@ -76,17 +76,28 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     .split("/")
     .filter(Boolean);
   const hasUUID = segments.some((s) => UUID_RE.test(s));
-  const isEditPage = segments[segments.length - 1] === "edit";
+  // A page under a record — `.../<id>/edit`, `.../<id>/consent` — keeps the
+  // record's name as a crumb that leads back to it, and ends on its own name.
+  const lastSegment = segments[segments.length - 1];
+  const leafKey =
+    lastSegment === "edit"
+      ? "leaves.edit"
+      : lastSegment === "consent"
+        ? "leaves.consent"
+        : null;
   // Everything before the last crumb stays (a section, or a section and its
   // sub-list); the record's own name replaces the generic leaf.
   const parents = rawCrumbs.slice(0, -1);
   const breadcrumbs =
     hasUUID && dynamicLabel
-      ? isEditPage
+      ? leafKey
         ? [
             ...parents,
-            { label: dynamicLabel, href: pathname.replace(/\/edit$/, "") },
-            { key: "leaves.edit" },
+            {
+              label: dynamicLabel,
+              href: pathname.replace(new RegExp(`/${lastSegment}$`), ""),
+            },
+            { key: leafKey },
           ]
         : [...parents, { label: dynamicLabel }]
       : rawCrumbs;

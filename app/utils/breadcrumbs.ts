@@ -37,6 +37,7 @@ const LEAF_KEYS: Record<string, string> = {
   new: "leaves.new",
   partner: "leaves.partner",
   edit: "leaves.edit",
+  consent: "leaves.consent",
   registrations: "leaves.registrations",
   checkin: "leaves.checkin",
   enrollees: "leaves.enrollees",

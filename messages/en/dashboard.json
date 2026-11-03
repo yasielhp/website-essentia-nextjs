@@ -41,7 +41,8 @@
       "enrollees": "Enrollees",
       "categories": "Categories",
       "staff": "Staff",
-      "segments": "Segments"
+      "segments": "Segments",
+      "consent": "Consent"
     }
   },
   "userMenu": {
@@ -1210,7 +1211,10 @@
           "body": "The client will be emailed a link to sign again. Until they do, the consent will show as pending. The current signature is kept in the history and will be replaced when they sign again.",
           "confirm": "Send link",
           "sending": "Sending…"
-        }
+        },
+        "view": "View consent",
+        "actions": "Actions",
+        "backToContact": "Back to the file"
       },
       "bonuses": {
         "total": "{count, plural, one {# voucher} other {# vouchers}}",

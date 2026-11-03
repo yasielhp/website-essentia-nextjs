@@ -41,7 +41,8 @@
       "enrollees": "Inscritos",
       "categories": "Categorías",
       "staff": "Personal",
-      "segments": "Segmentos"
+      "segments": "Segmentos",
+      "consent": "Consentimiento"
     }
   },
   "userMenu": {
@@ -1210,7 +1211,10 @@
           "body": "Se enviará a la clienta un enlace para firmar de nuevo. Hasta que firme, el consentimiento figurará como pendiente. La firma actual se conserva en el historial y se sustituirá cuando firme otra vez.",
           "confirm": "Enviar enlace",
           "sending": "Enviando…"
-        }
+        },
+        "view": "Ver consentimiento",
+        "actions": "Acciones",
+        "backToContact": "Volver a la ficha"
       },
       "bonuses": {
         "total": "{count, plural, one {# bono} other {# bonos}}",
