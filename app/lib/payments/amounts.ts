@@ -64,3 +64,43 @@ export function amountOwed(
   const owed = toCents(priceEur ?? 0) - toCents(paidEur ?? 0);
   return owed > 0 ? fromCents(owed) : 0;
 }
+
+/**
+ * What a booking's payment looks like to the people reading it.
+ *
+ * Rows with a `payment_mode` were booked after deposits existed: the columns
+ * are the truth. Older rows (`payment_mode` null) never recorded a payment, so
+ * a confirmed one that did not fail or get refunded is read as settled at its
+ * price — the same reading the transactions page has always used. Without it
+ * the sheet and the detail page showed "pending" for bookings the ledger
+ * counted as paid.
+ */
+export function effectivePayment(b: {
+  status: string | null;
+  payment_status: string | null;
+  payment_mode: string | null;
+  price_eur: number | string | null;
+  amount_paid_eur: number | string | null;
+}): { status: string; paidEur: number; owedEur: number } {
+  const price = b.price_eur == null ? 0 : Number(b.price_eur);
+  const paid = Number(b.amount_paid_eur ?? 0);
+
+  if (b.payment_mode === null) {
+    const settled =
+      b.payment_status === "paid" ||
+      ((b.status === "confirmed" || b.status === "completed") &&
+        b.payment_status !== "failed" &&
+        b.payment_status !== "refunded");
+    return settled
+      ? { status: "paid", paidEur: price, owedEur: 0 }
+      : { status: b.payment_status ?? "pending", paidEur: paid, owedEur: 0 };
+  }
+  if (b.payment_mode === "bonus" || b.status === "cancelled") {
+    return { status: b.payment_status ?? "pending", paidEur: paid, owedEur: 0 };
+  }
+  return {
+    status: b.payment_status ?? "pending",
+    paidEur: paid,
+    owedEur: amountOwed(price, paid),
+  };
+}

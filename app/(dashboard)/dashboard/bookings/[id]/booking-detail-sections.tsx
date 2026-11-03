@@ -12,7 +12,7 @@ import {
   localDateStr,
   type SupportedLocale,
 } from "@/utils/format";
-import { amountOwed } from "@/lib/payments/amounts";
+import { effectivePayment } from "@/lib/payments/amounts";
 import { usableBonus } from "@/lib/bonuses/balance";
 import { getAccessToken } from "@/lib/client-session";
 import { assignBookingBonus, clearBookingBonus } from "@/actions/bonuses";
@@ -134,9 +134,8 @@ export function MetaStrip({
   const source = sourceKey(booking.created_by_role);
   // A bonus session was paid when the bonus was bought: nothing is owed on it.
   const onBonus = booking.payment_mode === "bonus";
-  const owed = onBonus
-    ? 0
-    : amountOwed(booking.price_eur, booking.amount_paid_eur);
+  const pay = effectivePayment(booking);
+  const owed = pay.owedEur;
   const canSettle = owed > 0 && booking.status !== "cancelled";
   const drawnBonus = onBonus
     ? bonuses.find((b) => b.id === booking.bonus_id)
@@ -192,13 +191,10 @@ export function MetaStrip({
         <p className="text-petroleum-400 text-xs">{t("meta.payment")}</p>
         <span
           className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            paymentBadgeClasses[booking.payment_status ?? ""] ??
-            "bg-sand-100 text-petroleum-500"
+            paymentBadgeClasses[pay.status] ?? "bg-sand-100 text-petroleum-500"
           }`}
         >
-          {booking.payment_status && tPayment.has(booking.payment_status)
-            ? tPayment(booking.payment_status)
-            : (booking.payment_status ?? "—")}
+          {tPayment.has(pay.status) ? tPayment(pay.status) : pay.status}
         </span>
         {/* Rows from before deposits carry no mode and have nothing to add. */}
         {booking.payment_mode && !onBonus && (
@@ -207,8 +203,8 @@ export function MetaStrip({
               {tPay("mode." + booking.payment_mode)}
             </p>
             <p className="text-petroleum-700 text-xs">
-              {tPay("paid")} {formatPrice(booking.amount_paid_eur ?? 0, locale)}{" "}
-              · {tPay("owed")} {formatPrice(owed, locale)}
+              {tPay("paid")} {formatPrice(pay.paidEur, locale)} · {tPay("owed")}{" "}
+              {formatPrice(owed, locale)}
             </p>
           </>
         )}

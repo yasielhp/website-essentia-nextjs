@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { IconX } from "@/components/ui/icons";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchBookingPeek } from "@/actions/booking-peek";
-import { amountOwed } from "@/lib/payments/amounts";
+import { effectivePayment } from "@/lib/payments/amounts";
 import {
   formatBookingDate,
   formatPrice,
@@ -151,9 +151,9 @@ function SheetBody({
                 : (state.b.status ?? "—")
             }
             paymentLabel={
-              state.b.payment_status && tPayment.has(state.b.payment_status)
-                ? tPayment(state.b.payment_status)
-                : (state.b.payment_status ?? "—")
+              tPayment.has(effectivePayment(state.b).status)
+                ? tPayment(effectivePayment(state.b).status)
+                : effectivePayment(state.b).status
             }
           />
         )}
@@ -177,9 +177,9 @@ function SheetContent({
   const tPay = useTranslations("dashboard.bookings.detail.payment");
 
   const name = [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
-  const onBonus = b.payment_mode === "bonus";
-  const owed = onBonus ? 0 : amountOwed(b.price_eur, b.amount_paid_eur);
-  const hasMoney = !onBonus && (Number(b.amount_paid_eur ?? 0) > 0 || owed > 0);
+  const pay = effectivePayment(b);
+  const owed = pay.owedEur;
+  const hasMoney = pay.paidEur > 0 || owed > 0;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">
@@ -215,8 +215,7 @@ function SheetContent({
           </span>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              PAYMENT_BADGE[b.payment_status ?? ""] ??
-              "bg-sand-200 text-petroleum-500"
+              PAYMENT_BADGE[pay.status] ?? "bg-sand-200 text-petroleum-500"
             }`}
           >
             {paymentLabel}
@@ -224,8 +223,8 @@ function SheetContent({
         </div>
         {hasMoney && (
           <p className="text-petroleum-700 mt-3 text-xs">
-            {tPay("paid")} {formatPrice(b.amount_paid_eur ?? 0, locale)} ·{" "}
-            {tPay("owed")} {formatPrice(owed, locale)}
+            {tPay("paid")} {formatPrice(pay.paidEur, locale)} · {tPay("owed")}{" "}
+            {formatPrice(owed, locale)}
           </p>
         )}
         <div className="border-sand-100 mt-4 flex gap-2 border-t pt-4">
