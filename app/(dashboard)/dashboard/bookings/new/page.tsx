@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useReducer, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { useRole } from "@/context/role-context";
@@ -32,6 +32,7 @@ import { usableBonus } from "@/lib/bonuses/balance";
 import { localDateStr } from "@/utils/format";
 import { PaymentFields } from "../_shared/payment-fields";
 import { resolvePrice } from "./form-state";
+import { safeDashboardPath } from "@/lib/navigation/safe-dashboard-path";
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -79,7 +80,8 @@ function NewBookingPageInner() {
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((tier) => tier.id === tierId) ?? null;
 
-  const { tierStaff, contactBonuses } = useNewBookingData({
+  const searchParams = useSearchParams();
+  const { tierStaff, contactBonuses, redeemBonus } = useNewBookingData({
     serviceId,
     tierId,
     dispatchAsync,
@@ -112,19 +114,28 @@ function NewBookingPageInner() {
   // The bonus a session could be drawn from, if the contact holds one for this
   // session type. Offered on by default; the desk can turn it off.
   const offeredBonus = tierId
-    ? usableBonus(
-        contactBonuses.map((b) => ({
-          id: b.id,
-          tierId: b.tierId,
-          sessionsTotal: b.sessionsTotal,
-          expiresAt: b.expiresAt,
-        })),
-        contactBonuses.flatMap((b) =>
-          b.bookings.map((u) => ({ bonusId: b.id, status: u.status ?? "" })),
-        ),
-        tierId,
-        localDateStr(new Date()),
-      )
+    ? // The bonus being redeemed, while its own session type is the one chosen;
+      // otherwise whichever of the contact's bonuses fits first.
+      redeemBonus && redeemBonus.tierId === tierId
+      ? {
+          id: redeemBonus.id,
+          tierId: redeemBonus.tierId,
+          sessionsTotal: redeemBonus.sessionsTotal,
+          expiresAt: redeemBonus.expiresAt,
+        }
+      : usableBonus(
+          contactBonuses.map((b) => ({
+            id: b.id,
+            tierId: b.tierId,
+            sessionsTotal: b.sessionsTotal,
+            expiresAt: b.expiresAt,
+          })),
+          contactBonuses.flatMap((b) =>
+            b.bookings.map((u) => ({ bonusId: b.id, status: u.status ?? "" })),
+          ),
+          tierId,
+          localDateStr(new Date()),
+        )
     : null;
   const offeredDetail = offeredBonus
     ? contactBonuses.find((b) => b.id === offeredBonus.id)
@@ -190,10 +201,19 @@ function NewBookingPageInner() {
 
     notifySuccess(tToasts("bookingCreated"));
     // A bonus that could not be applied is retried from the booking's own page.
+    // Otherwise back to where the booking was started from: an explicit
+    // `returnTo` inside the dashboard, or the contact's Bonuses tab when it
+    // was started by redeeming one.
+    const contactParam = searchParams.get("contact");
+    const returnTo =
+      safeDashboardPath(searchParams.get("returnTo")) ??
+      (redeemBonus && contactParam
+        ? `/dashboard/contacts/${encodeURIComponent(contactParam)}?tab=bonuses`
+        : null);
     push(
       result.bonusFailed
         ? `/dashboard/bookings/${result.bookingId}`
-        : "/dashboard/bookings",
+        : (returnTo ?? "/dashboard/bookings"),
     );
   }
 

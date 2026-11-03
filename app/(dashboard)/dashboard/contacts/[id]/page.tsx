@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { Button } from "@/components/ui/button";
@@ -129,7 +129,18 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 
 // ─── Shared helpers ───────────────────────────────────────────
 
-export default function ContactDetailPage() {
+const HISTORY_TABS: HistoryTab[] = [
+  "details",
+  "consent",
+  "bonuses",
+  "bookings",
+  "transactions",
+  "races",
+  "education",
+  "campaigns",
+];
+
+function ContactDetailPageInner() {
   const tToasts = useTranslations("dashboard.toasts");
   const t = useTranslations("dashboard.contacts.detail");
   const { id } = useParams<{ id: string }>();
@@ -151,7 +162,12 @@ export default function ContactDetailPage() {
   const [clearingBounce, setClearingBounce] = useState(false);
 
   const tHistory = useTranslations("dashboard.contacts.detail");
-  const [tab, setTab] = useState<HistoryTab>("details");
+  // `?tab=` opens the file on a given tab: finishing a booking started from
+  // "Redeem" returns to the Bonuses tab.
+  const requestedTab = useSearchParams().get("tab");
+  const [tab, setTab] = useState<HistoryTab>(
+    HISTORY_TABS.find((id) => id === requestedTab) ?? "details",
+  );
   const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
     { id: "details", label: tHistory("details.heading"), count: 0 },
     {
@@ -508,5 +524,13 @@ export default function ContactDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ContactDetailPage() {
+  return (
+    <Suspense>
+      <ContactDetailPageInner />
+    </Suspense>
   );
 }

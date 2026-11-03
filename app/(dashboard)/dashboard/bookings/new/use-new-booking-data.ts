@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type Dispatch } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch } from "react";
 import { useSearchParams } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { fetchBookableServices } from "@/services/bookable-services.client";
@@ -8,6 +8,8 @@ import { getAccessToken } from "@/lib/client-session";
 import { fetchContactDetail } from "@/actions/contacts";
 import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
+import { usableBonus } from "@/lib/bonuses/balance";
+import { localDateStr } from "@/utils/format";
 import { GENDER_UNSPECIFIED } from "@/constants/gender";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import type { AsyncAction, FormAction, Tier } from "./form-state";
@@ -17,7 +19,8 @@ import type { AsyncAction, FormAction, Tier } from "./form-state";
  *
  * Three requests in one direction — services, then a service's session types,
  * then a type's people — plus the day and hour a deep link may already carry,
- * because the dashboard calendar sends you here from an empty slot.
+ * because the dashboard calendar sends you here from an empty slot, and the
+ * contact and bonus ("Redeem" on a contact's file) it may be told to start from.
  */
 export function useNewBookingData({
   serviceId,
@@ -35,6 +38,10 @@ export function useNewBookingData({
   const searchParams = useSearchParams();
   const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
   const [contactBonuses, setContactBonuses] = useState<ContactBonus[]>([]);
+  // The session type a redeemed bonus is for, waiting for its service's types
+  // to load so it can be chosen among them.
+  const pendingTierId = useRef<string | null>(null);
+  const appliedBonusId = useRef<string | null>(null);
 
   // A slot clicked on the dashboard calendar arrives as ?date=&time=.
   useEffect(() => {
@@ -92,6 +99,52 @@ export function useNewBookingData({
     };
   }, [contactParam]);
 
+  // `?bonus=` is only believed if the bonus is this contact's, has not expired
+  // and still has a session to give; anything else is ignored, so a stale or
+  // tampered link just opens an ordinary new booking.
+  const bonusParam = searchParams.get("bonus");
+  const redeemBonus = useMemo(() => {
+    if (!bonusParam) return null;
+    const bonus = contactBonuses.find((b) => b.id === bonusParam);
+    if (!bonus) return null;
+    const usable = usableBonus(
+      [
+        {
+          id: bonus.id,
+          tierId: bonus.tierId,
+          sessionsTotal: bonus.sessionsTotal,
+          expiresAt: bonus.expiresAt,
+        },
+      ],
+      bonus.bookings.map((u) => ({
+        bonusId: bonus.id,
+        status: u.status ?? "",
+      })),
+      bonus.tierId,
+      localDateStr(new Date()),
+    );
+    return usable ? bonus : null;
+  }, [bonusParam, contactBonuses]);
+
+  // Redeeming starts the booking with the bonus's service and session type
+  // already chosen, once, when the bonus is known.
+  useEffect(() => {
+    if (!redeemBonus || appliedBonusId.current === redeemBonus.id) return;
+    appliedBonusId.current = redeemBonus.id;
+    void insforge.database
+      .from("service_tiers")
+      .select("service_id")
+      .eq("id", redeemBonus.tierId)
+      .limit(1)
+      .then(({ data }) => {
+        const service = (data as { service_id: string | null }[] | null)?.[0]
+          ?.service_id;
+        if (!service) return;
+        pendingTierId.current = redeemBonus.tierId;
+        dispatchForm({ type: "SET_SERVICE", id: service });
+      });
+  }, [redeemBonus, dispatchForm]);
+
   // The same list the public booking flow offers.
   useEffect(() => {
     async function load() {
@@ -142,6 +195,14 @@ export function useNewBookingData({
 
       const rows = (data as Tier[] | null) ?? [];
       dispatchAsync({ type: "TIERS_LOADED", payload: rows });
+      // A redeemed bonus has already chosen its session type.
+      const wanted = pendingTierId.current;
+      pendingTierId.current = null;
+      const redeemed = wanted ? rows.find((r) => r.id === wanted) : undefined;
+      if (redeemed) {
+        dispatchForm({ type: "SET_TIER", id: redeemed.id });
+        return;
+      }
       // One type is no choice at all, so it is made.
       if (rows.length === 1 && rows[0]) {
         dispatchForm({ type: "SET_TIER", id: rows[0].id });
@@ -154,5 +215,5 @@ export function useNewBookingData({
     };
   }, [serviceId, dispatchAsync, dispatchForm]);
 
-  return { tierStaff, contactBonuses };
+  return { tierStaff, contactBonuses, redeemBonus };
 }
