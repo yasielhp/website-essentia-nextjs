@@ -1660,6 +1660,8 @@
         "birthday": "Birthday",
         "win-back": "We miss you",
         "after-visit": "After the visit",
+        "first-visit-care": "Aftercare after the first visit",
+        "first-visit-review": "Review request after the first visit",
         "blog-post": "New blog post",
         "event": "Event invitation"
       },
@@ -1671,6 +1673,8 @@
         "birthday": "A yearly greeting with a gift.",
         "win-back": "For clients who have not been in for a while.",
         "after-visit": "A check-in a few days after a session.",
+        "first-visit-care": "Instructions and breathing video, right after a new client's first session.",
+        "first-visit-review": "Thanks and a button to leave a Google review.",
         "blog-post": "Title, excerpt and link of the latest post, filled in automatically.",
         "event": "Save the date, details and a confirm button."
       }
