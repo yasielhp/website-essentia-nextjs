@@ -1119,7 +1119,7 @@
         "birthdate": "Fecha de nacimiento"
       },
       "transactions": {
-        "total": "{count, plural, one {# transacción} other {# transacciones}}",
+        "total": "Total de {count, plural, one {# transacción} other {# transacciones}}",
         "heading": "Transacciones",
         "paidToDate": "Pagado hasta la fecha",
         "empty": "Todavía no hay transacciones.",
@@ -1132,7 +1132,7 @@
         }
       },
       "bookings": {
-        "total": "{count, plural, one {# reserva} other {# reservas}}",
+        "total": "Total de {count, plural, one {# reserva} other {# reservas}}",
         "heading": "Reservas",
         "empty": "Todavía no hay reservas.",
         "columns": {
@@ -1213,7 +1213,7 @@
         "send": "Enviar"
       },
       "bonuses": {
-        "total": "{count, plural, one {# bono} other {# bonos}}",
+        "total": "Total de {count, plural, one {# bono} other {# bonos}}",
         "heading": "Bonos",
         "add": "Añadir bono",
         "empty": "Sin bonos",
