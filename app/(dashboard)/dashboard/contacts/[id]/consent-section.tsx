@@ -50,10 +50,15 @@ export function ConsentSection({
   if (!consent?.signedAt) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-petroleum-400 text-sm">
+          {consent ? t("pending") : t("unsigned")}
+        </p>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="solid" size="lg" href={page}>
-            {t("sign")}
-          </Button>
+          {notice && (
+            <span className="text-petroleum-400 text-xs" role="status">
+              {notice}
+            </span>
+          )}
           <Button
             variant="outline"
             size="lg"
@@ -62,15 +67,10 @@ export function ConsentSection({
           >
             {sending ? t("sending") : t("send")}
           </Button>
-          {notice && (
-            <span className="text-petroleum-400 text-xs" role="status">
-              {notice}
-            </span>
-          )}
+          <Button variant="solid" size="lg" href={page}>
+            {t("sign")}
+          </Button>
         </div>
-        <p className="text-petroleum-400 text-sm">
-          {consent ? t("pending") : t("unsigned")}
-        </p>
       </div>
     );
   }
