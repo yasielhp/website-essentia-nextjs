@@ -1,80 +1,119 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NextLink from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { INPUT_CLASS } from "@/constants/form-styles";
-import { Link } from "../../../../i18n/navigation";
-import { isValidPhone } from "@/utils/contact";
-import { formatPrice, type SupportedLocale } from "@/utils/format";
+import { Check } from "lucide-react";
+import { Checkbox } from "@components/ui/input";
+import { EmailInput } from "@/components/ui/email-input";
+import { StepNavigation } from "@/components/ui/step-navigation";
+import {
+  Field,
+  inputClass,
+  inputErr,
+  inputOk,
+} from "@/components/sections/booking/steps/field";
+import { StepIndicator } from "@/components/sections/booking/steps/step-indicator";
 import {
   PaymentOverlay,
   type RedsysFormData,
 } from "@/components/sections/booking/steps/payment-overlay";
+import { useValidationMessage } from "@/hooks/use-validation-message";
+import {
+  bonusConsentSchema,
+  bonusDetailsSchema,
+  parseErrors,
+} from "@/lib/schemas";
+import {
+  readBuyer,
+  writeBuyer,
+  type BuyerDraft,
+} from "@/lib/bonuses/buyer-storage";
+import { bonusCheckoutHref, type BonusFamily } from "@/lib/bonuses/routes";
+import { formatPrice, type SupportedLocale } from "@/utils/format";
 import type { PublicBonusPlan } from "@/types/bonus";
 
-type FieldKey = "firstName" | "lastName" | "email" | "phone" | "consent";
+type Errors = Partial<Record<keyof BuyerDraft | "consent", string>>;
 
-const FIELDS: {
-  key: Exclude<FieldKey, "consent">;
-  type: string;
-  auto: string;
-}[] = [
-  { key: "firstName", type: "text", auto: "given-name" },
-  { key: "lastName", type: "text", auto: "family-name" },
-  { key: "email", type: "email", auto: "email" },
-  { key: "phone", type: "tel", auto: "tel" },
-];
+const STEP_IDS = ["plan", "details", "confirm"] as const;
 
 /**
- * The page where a bonus is paid for: what is being bought, who is buying, an
- * acceptance of the terms, and the way to the bank.
+ * Buying a bonus, one step at a time, the way a booking is made: pick the
+ * bonus, say who you are, confirm and pay.
  *
- * The plan's id is all that goes to the server about what is being bought; the
- * price shown here is only a courtesy, the server charges the one it reads from
- * its own table.
+ * It arrives on the second step with the bonus from the URL already chosen —
+ * the step is resolved, and "back" reopens it. Changing the bonus rewrites the
+ * URL in place (the browser's own history API, so nothing reloads) so a refresh
+ * keeps the choice. Who the buyer is survives a reload in the browser; nothing
+ * about the payment does. The server charges the plan's own price, whatever
+ * this page shows.
  */
 export function BonusCheckout({
-  plan,
-  backHref,
+  plans,
+  initialPlanId,
+  family,
+  slug,
 }: {
-  plan: PublicBonusPlan;
-  /** The treatment page this one belongs to; where "Back" goes. */
-  backHref: string;
+  /** The bonuses on sale for this treatment. */
+  plans: PublicBonusPlan[];
+  initialPlanId: string;
+  family: BonusFamily;
+  slug: string;
 }) {
-  const t = useTranslations("bonus.form");
+  const t = useTranslations("bonus");
   const tOffer = useTranslations("bonus.offer");
+  const tNav = useTranslations("booking.nav");
+  const tDetails = useTranslations("booking.detailsStep");
   const locale = useLocale() as SupportedLocale;
+  const validationMessage = useValidationMessage();
 
-  const [values, setValues] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
+  const [step, setStep] = useState(1);
+  const [planId, setPlanId] = useState(initialPlanId);
+  // Read once, on the first render: this component only ever runs in the
+  // browser (see `BonusCheckoutStepper`), so storage is there.
+  const [buyer, setBuyer] = useState<BuyerDraft>(readBuyer);
   const [consent, setConsent] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
 
-  function validate(): Partial<Record<FieldKey, string>> {
-    const next: Partial<Record<FieldKey, string>> = {};
-    if (!values.firstName.trim()) next.firstName = t("errors.firstName");
-    if (!values.lastName.trim()) next.lastName = t("errors.lastName");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-      next.email = t("errors.email");
-    }
-    if (!isValidPhone(values.phone)) next.phone = t("errors.phone");
-    if (!consent) next.consent = t("errors.consent");
-    return next;
+  useEffect(() => {
+    writeBuyer(buyer);
+  }, [buyer]);
+
+  const plan = plans.find((p) => p.id === planId) ?? plans[0]!;
+  const currentStepId = STEP_IDS[step]!;
+  const steps = STEP_IDS.map((id) => ({ id, label: t(`steps.${id}`) }));
+  const isLastStep = step === STEP_IDS.length - 1;
+  const nextLabel = steps[step + 1]?.label;
+
+  function choosePlan(id: string) {
+    setPlanId(id);
+    // Same page, new bonus: the address follows without a reload.
+    window.history.replaceState(
+      null,
+      "",
+      bonusCheckoutHref(locale, family, slug, id),
+    );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const found = validate();
+  function setField(key: keyof BuyerDraft, value: string) {
+    setBuyer((b) => ({ ...b, [key]: value }));
+    setErrors((e) => ({ ...e, [key]: undefined }));
+  }
+
+  function next() {
+    if (currentStepId === "details") {
+      const found = parseErrors(bonusDetailsSchema, buyer);
+      setErrors(found);
+      if (Object.keys(found).length > 0) return;
+    }
+    setStep((s) => s + 1);
+  }
+
+  async function pay() {
+    const found = parseErrors(bonusConsentSchema, { consent });
     setErrors(found);
     setGeneralError(null);
     if (Object.keys(found).length > 0) return;
@@ -86,10 +125,10 @@ export function BonusCheckout({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: plan.id,
-          firstName: values.firstName.trim(),
-          lastName: values.lastName.trim(),
-          email: values.email.trim(),
-          phone: values.phone.trim(),
+          firstName: buyer.firstName.trim(),
+          lastName: buyer.lastName.trim(),
+          email: buyer.email.trim(),
+          phone: buyer.phone.trim(),
           consent: true,
           locale,
         }),
@@ -97,127 +136,249 @@ export function BonusCheckout({
       if (!res.ok) throw new Error("checkout failed");
       setRedsysForm((await res.json()) as RedsysFormData);
     } catch {
-      setGeneralError(t("errors.generic"));
+      setGeneralError(t("form.errors.generic"));
       setSubmitting(false);
     }
   }
 
   return (
-    <>
-      <NextLink
-        href={backHref}
-        className="text-petroleum-400 hover:text-petroleum-700 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
-      >
-        <ArrowLeft size={16} aria-hidden />
-        {t("back")}
-      </NextLink>
+    <div className="flex flex-col gap-4">
+      <StepIndicator current={step} steps={steps} />
 
-      <h1 className="font-display text-petroleum-700 mb-6 text-3xl md:text-4xl">
-        {t("title")}
-      </h1>
-
-      <div className="border-sand-200 mb-6 flex flex-col gap-3 rounded-2xl border bg-white p-6">
-        <div>
-          <p className="font-display text-petroleum-700 text-2xl">
-            {tOffer("sessions", { sessions: plan.sessions })}
-          </p>
-          <p className="text-petroleum-400 text-sm">{plan.tierLabel}</p>
-        </div>
-        <div className="border-sand-100 flex flex-col gap-1 border-t pt-3">
+      {currentStepId === "plan" && (
+        <div className="flex flex-col gap-3">
           <p className="text-petroleum-700 text-sm font-medium">
-            {tOffer("total", { price: formatPrice(plan.priceEur, locale) })}
+            {t("planStep.heading")}
           </p>
-          <p className="text-petroleum-500 text-sm">
-            {tOffer("perSession", {
-              price: formatPrice(plan.priceEur / plan.sessions, locale),
+          <ul className="flex flex-col gap-3">
+            {plans.map((p) => {
+              const selected = p.id === plan.id;
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => choosePlan(p.id)}
+                    aria-pressed={selected}
+                    className={`flex w-full items-start justify-between gap-4 rounded-2xl border p-5 text-left transition-colors ${
+                      selected
+                        ? "border-petroleum-700 bg-sand-50"
+                        : "border-sand-200 hover:border-sand-500 bg-white"
+                    }`}
+                  >
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-display text-petroleum-700 text-2xl">
+                        {tOffer("sessions", { sessions: p.sessions })}
+                      </span>
+                      <span className="text-petroleum-500 text-sm">
+                        {tOffer("perSession", {
+                          price: formatPrice(p.priceEur / p.sessions, locale),
+                        })}
+                      </span>
+                      <span className="text-petroleum-400 text-xs">
+                        {tOffer("validity", { days: p.validityDays })}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-petroleum-700 text-sm font-medium">
+                        {formatPrice(p.priceEur, locale)}
+                      </span>
+                      {selected && (
+                        <Check
+                          size={16}
+                          className="text-petroleum-700"
+                          aria-hidden
+                        />
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
             })}
-          </p>
-          <p className="text-petroleum-400 text-xs">
-            {tOffer("validity", { days: plan.validityDays })}
-          </p>
+          </ul>
         </div>
-      </div>
+      )}
 
-      <form
-        onSubmit={(e) => void handleSubmit(e)}
-        noValidate
-        className="border-sand-200 flex flex-col gap-4 rounded-2xl border bg-white p-6"
-      >
-        {FIELDS.map(({ key, type, auto }) => (
-          <div key={key} className="flex flex-col gap-1.5">
-            <label
-              htmlFor={`bonus-${key}`}
-              className="text-petroleum-500 text-xs font-medium"
+      {currentStepId === "details" && (
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <Field
+              label={tDetails("firstName")}
+              id="first-name"
+              required
+              error={errors.firstName}
             >
-              {t(key)}
-            </label>
-            <input
-              id={`bonus-${key}`}
-              type={type}
-              autoComplete={auto}
-              value={values[key]}
-              maxLength={key === "email" ? 160 : 80}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, [key]: e.target.value }))
-              }
-              disabled={submitting}
-              aria-invalid={Boolean(errors[key])}
-              className={INPUT_CLASS}
+              <input
+                id="first-name"
+                type="text"
+                autoComplete="given-name"
+                placeholder={tDetails("firstNamePlaceholder")}
+                maxLength={80}
+                value={buyer.firstName}
+                onChange={(e) => setField("firstName", e.target.value)}
+                className={`${inputClass} ${errors.firstName ? inputErr : inputOk}`}
+              />
+            </Field>
+            <Field
+              label={tDetails("lastName")}
+              id="last-name"
+              required
+              error={errors.lastName}
+            >
+              <input
+                id="last-name"
+                type="text"
+                autoComplete="family-name"
+                placeholder={tDetails("lastNamePlaceholder")}
+                maxLength={80}
+                value={buyer.lastName}
+                onChange={(e) => setField("lastName", e.target.value)}
+                className={`${inputClass} ${errors.lastName ? inputErr : inputOk}`}
+              />
+            </Field>
+          </div>
+          <Field
+            label={tDetails("email")}
+            id="email"
+            required
+            error={errors.email}
+          >
+            <EmailInput
+              id="email"
+              placeholder={tDetails("emailPlaceholder")}
+              maxLength={160}
+              value={buyer.email}
+              onChange={(value) => setField("email", value)}
+              hasError={!!errors.email}
+              className={`${inputClass} ${errors.email ? inputErr : inputOk}`}
             />
-            {errors[key] && (
-              <p className="text-xs text-red-600">{errors[key]}</p>
+          </Field>
+          <Field
+            label={tDetails("phone")}
+            id="phone"
+            required
+            error={errors.phone}
+          >
+            <input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder={tDetails("phonePlaceholder")}
+              maxLength={30}
+              value={buyer.phone}
+              onChange={(e) => setField("phone", e.target.value)}
+              className={`${inputClass} ${errors.phone ? inputErr : inputOk}`}
+            />
+          </Field>
+        </div>
+      )}
+
+      {currentStepId === "confirm" && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 rounded-2xl bg-white p-6">
+            <div>
+              <p className="text-petroleum-400 text-xs tracking-wider uppercase">
+                {plan.tierLabel}
+              </p>
+              <p className="font-display text-petroleum-700 text-2xl">
+                {tOffer("sessions", { sessions: plan.sessions })}
+              </p>
+            </div>
+            <div className="border-sand-100 flex flex-col gap-2 border-t pt-4 text-sm">
+              <div className="flex items-baseline justify-between">
+                <span className="text-petroleum-400">
+                  {t("confirmStep.perSession")}
+                </span>
+                <span className="text-petroleum-700">
+                  {formatPrice(plan.priceEur / plan.sessions, locale)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-petroleum-400">
+                  {t("confirmStep.validity")}
+                </span>
+                <span className="text-petroleum-700">
+                  {t("confirmStep.validityDays", { days: plan.validityDays })}
+                </span>
+              </div>
+              <div className="border-sand-100 flex items-baseline justify-between border-t pt-2">
+                <span className="text-petroleum-700 font-medium">
+                  {t("confirmStep.total")}
+                </span>
+                <span className="font-display text-petroleum-700 text-xl">
+                  {formatPrice(plan.priceEur, locale)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Checkbox
+              name="consent"
+              checked={consent}
+              onChange={(e) => {
+                setConsent(e.target.checked);
+                setErrors((prev) => ({ ...prev, consent: undefined }));
+              }}
+              label={
+                <span className="text-petroleum-400 text-sm">
+                  {tDetails("consentPrefix")}{" "}
+                  <NextLink
+                    href="/terms"
+                    className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                    target="_blank"
+                  >
+                    {tDetails("terms")}
+                  </NextLink>{" "}
+                  {tDetails("consentAnd")}{" "}
+                  <NextLink
+                    href="/privacy"
+                    className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                    target="_blank"
+                  >
+                    {tDetails("privacyPolicy")}
+                  </NextLink>
+                  {tDetails("consentSuffix")}
+                </span>
+              }
+            />
+            {errors.consent && (
+              <p className="text-xs text-red-500">
+                {validationMessage(errors.consent)}
+              </p>
             )}
           </div>
-        ))}
 
-        <div className="flex flex-col gap-1.5">
-          <label className="flex cursor-pointer items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              disabled={submitting}
-              className="accent-petroleum-700 mt-0.5 size-4"
-            />
-            <span className="text-petroleum-700">
-              {t.rich("terms", {
-                link: (chunks) => (
-                  <Link
-                    href="/terms"
-                    target="_blank"
-                    className="text-petroleum-500 underline"
-                  >
-                    {chunks}
-                  </Link>
-                ),
-              })}
-            </span>
-          </label>
-          {errors.consent && (
-            <p className="text-xs text-red-600">{errors.consent}</p>
+          <p className="text-petroleum-400 text-xs leading-relaxed">
+            {t("form.pay", { price: formatPrice(plan.priceEur, locale) })}
+          </p>
+
+          {generalError && (
+            <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
+              {generalError}
+            </p>
           )}
         </div>
+      )}
 
-        <p className="text-petroleum-400 text-xs leading-relaxed">
-          {t("pay", { price: formatPrice(plan.priceEur, locale) })}
-        </p>
-
-        {generalError && (
-          <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">
-            {generalError}
-          </p>
-        )}
-
-        <Button
-          type="submit"
-          variant="solid"
-          size="lg"
-          disabled={submitting}
-          className="w-full"
-        >
-          {submitting ? t("submitting") : t("submit")}
-        </Button>
-      </form>
+      <StepNavigation
+        step={step}
+        isLastStep={isLastStep}
+        loading={submitting}
+        checking={false}
+        canProceed
+        onBack={() => setStep((s) => s - 1)}
+        onNext={next}
+        onConfirm={() => void pay()}
+        labels={{
+          back: tNav("back"),
+          next: nextLabel
+            ? tNav("nextWithLabel", { label: nextLabel })
+            : tNav("nextStep"),
+          checking: tNav("checking"),
+          confirm: t("form.submit"),
+          confirming: t("form.submitting"),
+        }}
+      />
 
       {redsysForm && (
         <PaymentOverlay
@@ -228,6 +389,6 @@ export function BonusCheckout({
           }}
         />
       )}
-    </>
+    </div>
   );
 }

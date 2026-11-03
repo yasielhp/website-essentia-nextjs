@@ -6,7 +6,7 @@ import {
   BonusCheckoutPage,
   bonusCheckoutMetadata,
 } from "@/components/sections/bonus/bonus-checkout-page";
-import { bonusCheckoutHref, treatmentHref } from "@/lib/bonuses/routes";
+import { bonusCheckoutHref } from "@/lib/bonuses/routes";
 
 type Props = {
   params: Promise<{ locale: string; slug: string; planId: string }>;
@@ -34,13 +34,11 @@ export default async function ManualTherapyBonusCheckoutPage({
 
   return (
     <BonusCheckoutPage
+      locale={locale}
+      family="manual-therapies"
+      slug={slug}
       treatmentTitle={treatment.title}
       planId={planId}
-      backHref={treatmentHref(
-        locale === "es" ? "es" : "en",
-        "manual-therapies",
-        slug,
-      )}
     />
   );
 }

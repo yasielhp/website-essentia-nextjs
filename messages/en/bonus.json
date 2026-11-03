@@ -10,29 +10,32 @@
   },
   "form": {
     "title": "Buy a voucher",
-    "firstName": "First name",
-    "lastName": "Last name",
-    "email": "Email",
-    "phone": "Phone",
-    "terms": "I have read and accept the <link>terms</link>.",
     "pay": "You will pay {price} now by card, with no discounts or deferred payments.",
     "submit": "Pay",
     "submitting": "One moment…",
     "errors": {
-      "firstName": "Enter your first name.",
-      "lastName": "Enter your last name.",
-      "email": "Check the email address.",
-      "phone": "Check the phone number.",
-      "consent": "You must accept the terms.",
       "generic": "We could not start the payment. Please try again."
     },
-    "pageTitle": "Buy a voucher | Essentia",
-    "back": "Back"
+    "pageTitle": "Buy a voucher | Essentia"
   },
   "confirmation": {
     "title": "Payment received | Essentia",
     "heading": "Thank you for your purchase",
     "body": "We are confirming your voucher. In a few minutes you will receive an email with all the details.",
     "cta": "Back to home"
+  },
+  "steps": {
+    "plan": "Voucher",
+    "details": "Your details",
+    "confirm": "Confirm"
+  },
+  "planStep": {
+    "heading": "Which voucher would you like?"
+  },
+  "confirmStep": {
+    "perSession": "Price per session",
+    "validity": "Validity",
+    "validityDays": "{days} days from purchase",
+    "total": "Total to pay"
   }
 }

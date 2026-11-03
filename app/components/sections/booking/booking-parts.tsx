@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
+import { StepNavigation } from "@components/ui/step-navigation";
 import { ServiceStep } from "./steps/service-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
@@ -71,44 +72,25 @@ export function BookingNavigation({
 }: BookingNavigationProps) {
   const t = useTranslations("booking.nav");
   return (
-    <div className="flex w-full items-center justify-center gap-3">
-      {step > 0 && (
-        <Button
-          variant="outline"
-          size="md"
-          onClick={onBack}
-          disabled={loading}
-          className="flex-1 sm:flex-none"
-        >
-          {t("back")}
-        </Button>
-      )}
-      {!isLastStep ? (
-        <Button
-          variant="solid"
-          size="md"
-          onClick={onNext}
-          disabled={!canProceed || checking}
-          className="flex-1 sm:flex-none"
-        >
-          {checking
-            ? t("checking")
-            : nextStepLabel
-              ? t("nextWithLabel", { label: nextStepLabel })
-              : t("nextStep")}
-        </Button>
-      ) : (
-        <Button
-          variant="solid"
-          size="md"
-          onClick={onConfirm}
-          disabled={loading}
-          className="flex-1 sm:flex-none"
-        >
-          {loading ? t("submitting") : t("requestBooking")}
-        </Button>
-      )}
-    </div>
+    <StepNavigation
+      step={step}
+      isLastStep={isLastStep}
+      loading={loading}
+      checking={checking}
+      canProceed={canProceed}
+      onBack={onBack}
+      onNext={onNext}
+      onConfirm={onConfirm}
+      labels={{
+        back: t("back"),
+        next: nextStepLabel
+          ? t("nextWithLabel", { label: nextStepLabel })
+          : t("nextStep"),
+        checking: t("checking"),
+        confirm: t("requestBooking"),
+        confirming: t("submitting"),
+      }}
+    />
   );
 }
 

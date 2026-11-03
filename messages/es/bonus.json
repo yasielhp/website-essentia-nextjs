@@ -10,29 +10,32 @@
   },
   "form": {
     "title": "Comprar bono",
-    "firstName": "Nombre",
-    "lastName": "Apellidos",
-    "email": "Correo electrónico",
-    "phone": "Teléfono",
-    "terms": "He leído y acepto las <link>condiciones</link>.",
     "pay": "Pagarás {price} ahora con tarjeta, sin descuentos ni pagos aplazados.",
     "submit": "Pagar",
     "submitting": "Un momento…",
     "errors": {
-      "firstName": "Escribe tu nombre.",
-      "lastName": "Escribe tus apellidos.",
-      "email": "Revisa el correo electrónico.",
-      "phone": "Revisa el teléfono.",
-      "consent": "Debes aceptar las condiciones.",
       "generic": "No hemos podido iniciar el pago. Inténtalo de nuevo."
     },
-    "pageTitle": "Comprar bono | Essentia",
-    "back": "Volver"
+    "pageTitle": "Comprar bono | Essentia"
   },
   "confirmation": {
     "title": "Pago recibido | Essentia",
     "heading": "Gracias por tu compra",
     "body": "Estamos confirmando tu bono. En unos minutos recibirás un correo con todos los detalles.",
     "cta": "Volver al inicio"
+  },
+  "steps": {
+    "plan": "Bono",
+    "details": "Tus datos",
+    "confirm": "Confirmar"
+  },
+  "planStep": {
+    "heading": "¿Qué bono quieres?"
+  },
+  "confirmStep": {
+    "perSession": "Precio por sesión",
+    "validity": "Validez",
+    "validityDays": "{days} días desde la compra",
+    "total": "Total a pagar"
   }
 }

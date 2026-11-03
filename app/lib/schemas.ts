@@ -117,6 +117,17 @@ export const bookingDetailsSchema = z.object({
   consent: z.literal(true, { error: "consentRequired" }),
 });
 
+/** The first step of buying a bonus: who is buying, checked as a booking's client is. */
+export const bonusDetailsSchema = bookingDetailsSchema.pick({
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+});
+
+/** The last step: the acceptance of the terms, worded and checked as in a booking. */
+export const bonusConsentSchema = bookingDetailsSchema.pick({ consent: true });
+
 // ─── Dashboard people forms ───────────────────────────────────
 //
 // The user and contact screens used to validate with a bare

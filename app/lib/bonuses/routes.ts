@@ -15,24 +15,6 @@ export type BonusFamily = "manual-therapies";
 
 type Locale = "en" | "es";
 
-/** The localized path of a treatment's own page. */
-export function treatmentHref(
-  locale: Locale,
-  family: BonusFamily,
-  slug: string,
-): string {
-  switch (family) {
-    case "manual-therapies":
-      return getPathname({
-        locale,
-        href: {
-          pathname: "/wellness/manual-therapies/[slug]",
-          params: { slug },
-        },
-      });
-  }
-}
-
 /** The localized path of the payment page for one plan of one treatment. */
 export function bonusCheckoutHref(
   locale: Locale,
