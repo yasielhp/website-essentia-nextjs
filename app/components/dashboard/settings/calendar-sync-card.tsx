@@ -13,6 +13,9 @@ import { syncAllCalendars } from "@/services/calendar.client";
  * of them had fallen behind — a booking taken while a token was expired simply
  * never appeared. This walks all of them.
  *
+ * Lives in the administrator's account, under their Google Calendar
+ * connection, since that is where the calendars are managed.
+ *
  * Repeating it is free: only bookings whose row carries no `google_event_id`
  * are sent, so a second run finds nothing to do.
  */
@@ -40,10 +43,10 @@ export function CalendarSyncCard() {
   }
 
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
+    <div>
+      <h3 className="text-petroleum-500 mb-1 text-sm font-semibold">
         {t("title")}
-      </h2>
+      </h3>
       <p className="text-petroleum-400 mb-4 text-sm leading-relaxed">
         {t("description")}
       </p>

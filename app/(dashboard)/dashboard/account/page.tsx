@@ -10,6 +10,7 @@ import { ProfileForm } from "./profile-form";
 import { ScheduleSection } from "./schedule-section";
 import { initialState, reducer } from "./state";
 import { useRole } from "@/context/role-context";
+import { CalendarSyncCard } from "@/components/dashboard/settings/calendar-sync-card";
 import { insforge } from "@/lib/insforge";
 import { ImageUpload } from "@/components/ui/image-upload";
 import {
@@ -110,7 +111,13 @@ function CalendarServiceRow({
   );
 }
 
-function GoogleCalendarSection({ userId }: { userId: string }) {
+function GoogleCalendarSection({
+  userId,
+  showSyncAll,
+}: {
+  userId: string;
+  showSyncAll: boolean;
+}) {
   const t = useTranslations("dashboard.account");
   const searchParams = useSearchParams();
   const [services, setServices] = useState<ServiceCalConfig[]>([]);
@@ -180,6 +187,12 @@ function GoogleCalendarSection({ userId }: { userId: string }) {
               justConnectedServiceId={justConnectedServiceId}
             />
           ))}
+        </div>
+      )}
+      {/* Administrators also push every booking that never reached a calendar. */}
+      {showSyncAll && (
+        <div className="border-sand-100 mt-6 border-t pt-6">
+          <CalendarSyncCard />
         </div>
       )}
     </div>
@@ -315,7 +328,10 @@ export default function DashboardAccountPage() {
             <Suspense fallback={null}>
               {/* The boundary is what keeps `useSearchParams` inside this
                   section from opting the whole page out of prerendering. */}
-              <GoogleCalendarSection userId={user.id} />
+              <GoogleCalendarSection
+                userId={user.id}
+                showSyncAll={role === "admin"}
+              />
             </Suspense>
           )}
 

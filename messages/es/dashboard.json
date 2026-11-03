@@ -1348,10 +1348,9 @@
     "title": "Ajustes",
     "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
     "tabs": {
-      "bookings": "Reservas",
+      "bookings": "Sesiones",
       "subscriptions": "Suscripciones",
-      "calendar": "Google Calendar",
-      "payments": "Pagos",
+      "payments": "Pagos de reserva",
       "bonuses": "Bonos"
     },
     "staff": {

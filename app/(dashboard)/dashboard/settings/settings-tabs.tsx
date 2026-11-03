@@ -7,17 +7,14 @@ import { BookingsSettings } from "@/components/dashboard/settings/bookings-setti
 import { SubscriptionsSettings } from "@/components/dashboard/settings/subscriptions-settings";
 import { BonusPlansSettings } from "@/components/dashboard/settings/bonus-plans-settings";
 import { PaymentsSettings } from "@/components/dashboard/settings/payments-settings";
-import { CalendarSyncCard } from "@/components/dashboard/settings/calendar-sync-card";
 
-type SettingsTab =
-  "bookings" | "subscriptions" | "bonuses" | "payments" | "calendar";
+type SettingsTab = "bookings" | "subscriptions" | "bonuses" | "payments";
 
 const TABS: SettingsTab[] = [
   "bookings",
   "bonuses",
   "subscriptions",
   "payments",
-  "calendar",
 ];
 
 /**
@@ -47,7 +44,6 @@ export function SettingsTabs() {
         {tab === "subscriptions" && <SubscriptionsSettings />}
         {tab === "bonuses" && <BonusPlansSettings />}
         {tab === "payments" && <PaymentsSettings />}
-        {tab === "calendar" && <CalendarSyncCard />}
       </div>
     </div>
   );

@@ -1348,10 +1348,9 @@
     "title": "Settings",
     "colorHint": "The colour is stored in this browser, so it does not change what your colleagues see.",
     "tabs": {
-      "bookings": "Bookings",
+      "bookings": "Sessions",
       "subscriptions": "Subscriptions",
-      "calendar": "Google Calendar",
-      "payments": "Payments",
+      "payments": "Booking payments",
       "bonuses": "Vouchers"
     },
     "staff": {
