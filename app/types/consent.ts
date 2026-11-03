@@ -1,6 +1,9 @@
-/** A contact's signed consent, as the dashboard reads it. */
+/**
+ * A contact's consent, as the dashboard reads it. `signedAt` is null when it was
+ * reopened for a new signature: the answers are still there to pre-fill from.
+ */
 export type ContactConsent = {
-  signedAt: string;
+  signedAt: string | null;
   signedName: string | null;
   imageConsent: boolean;
   healthDataConsent: boolean;

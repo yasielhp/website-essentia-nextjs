@@ -70,7 +70,9 @@
     "invalid": "Revisa los datos e inténtalo de nuevo.",
     "tooLarge": "La firma es demasiado grande. Bórrala y vuelve a firmar.",
     "alreadySigned": "Este consentimiento ya está firmado.",
-    "generic": "No hemos podido guardar el consentimiento. Inténtalo de nuevo."
+    "generic": "No hemos podido guardar el consentimiento. Inténtalo de nuevo.",
+    "conflict": "El consentimiento ha cambiado mientras lo editabas. Recarga la ficha e inténtalo de nuevo."
   },
-  "select": "Seleccionar"
+  "select": "Seleccionar",
+  "cancel": "Cancelar"
 }

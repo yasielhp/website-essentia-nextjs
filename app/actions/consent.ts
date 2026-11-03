@@ -4,8 +4,14 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { consentRequestEmail } from "@/emails/templates/consent-request";
-import { consentSchema } from "@/lib/schemas";
+import { consentSchema, type ConsentInput } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
+import {
+  appendHistory,
+  consentState,
+  historyEntryFrom,
+  type ConsentSnapshot,
+} from "@/lib/consent/history";
 import type { ContactConsent } from "@/types/consent";
 import {
   buildConsentUrl,
@@ -19,21 +25,16 @@ const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
 
 type SaveResult = { error: string | null };
 
-/**
- * Validates a submission, stores the signature in the private bucket and seals
- * the consent row. Shared by the public form and the desk.
- *
- * `consentId` is already resolved by the caller (from a secret token, or from a
- * staff member's authenticated request); nothing here reads anything but that
- * one row. The final update is conditioned on `signed_at IS NULL`, so the first
- * signature stands even if two requests race.
- */
-async function sealConsent(
-  consentId: string,
-  contactId: string,
+type Validated = {
+  input: ConsentInput;
+  answers: Record<string, boolean | string>;
+  bytes: Buffer;
+};
+
+/** Everything that can be checked without touching the database. */
+function validateSubmission(
   rawInput: unknown,
-  filledByRole: string,
-): Promise<SaveResult> {
+): { error: string } | { ok: Validated } {
   const parsed = consentSchema.safeParse(rawInput);
   if (!parsed.success) return { error: "invalid" };
   const input = parsed.data;
@@ -48,69 +49,137 @@ async function sealConsent(
   if (bytes.length > MAX_PNG_BYTES) return { error: "tooLarge" };
   if (!PNG_MAGIC.every((b, i) => bytes[i] === b)) return { error: "invalid" };
 
+  return { ok: { input, answers, bytes } };
+}
+
+const SNAPSHOT_FIELDS =
+  "id, signed_at, signed_name, data, image_consent, health_data_consent, signature_path, filled_by_role, version, history";
+
+type ConsentRow = ConsentSnapshot & { id: string; history: unknown };
+
+/** The form asks for what the contact is missing; it never overwrites what the centre has. */
+async function fillMissingContactDetails(
+  contactId: string,
+  input: ConsentInput,
+): Promise<void> {
+  if (!input.birthdate && !input.phone) return;
+  const db = getAdminClient().database;
+  const { data: contact } = await db
+    .from("contacts")
+    .select("birthdate, phone")
+    .eq("id", contactId)
+    .maybeSingle();
+  const c = contact as {
+    birthdate: string | null;
+    phone: string | null;
+  } | null;
+  const patch: Record<string, string> = {};
+  if (input.birthdate && !c?.birthdate) patch.birthdate = input.birthdate;
+  if (input.phone && !c?.phone) patch.phone = input.phone.trim();
+  if (Object.keys(patch).length > 0) {
+    await db.from("contacts").update(patch).eq("id", contactId);
+  }
+}
+
+/**
+ * Validates a submission, stores the signature in the private bucket and seals
+ * the consent row. Shared by the public form and the desk.
+ *
+ * `consentId` is already resolved by the caller (from a secret token, or from a
+ * staff member's authenticated request); nothing here reads anything but that
+ * one row.
+ *
+ * Two modes. `first` seals a row that is not signed: the update is conditioned
+ * on `signed_at IS NULL`, so the first signature stands even if two requests
+ * race. `replace` is for a desk correcting a signed consent: one update that
+ * moves the signed state into `history` and writes the new one together,
+ * conditioned on the version it read, so there is never a moment with no
+ * signature, nothing earlier is lost, and the earlier file stays in the bucket.
+ */
+async function sealConsent(
+  consentId: string,
+  contactId: string,
+  rawInput: unknown,
+  filledByRole: string,
+  mode: "first" | "replace" = "first",
+): Promise<SaveResult> {
+  const checked = validateSubmission(rawInput);
+  if ("error" in checked) return { error: checked.error };
+  const { input, answers, bytes } = checked.ok;
+
   const admin = getAdminClient();
   const db = admin.database;
 
   const { data: existing } = await db
     .from("contact_consents")
-    .select("signed_at")
+    .select(SNAPSHOT_FIELDS)
     .eq("id", consentId)
     .maybeSingle();
-  if (!existing) return { error: "invalid" };
-  if ((existing as { signed_at: string | null }).signed_at) {
-    return { error: "alreadySigned" };
-  }
+  const row = existing as ConsentRow | null;
+  if (!row) return { error: "invalid" };
+  if (mode === "first" && row.signed_at) return { error: "alreadySigned" };
+  if (mode === "replace" && !row.signed_at) return { error: "invalid" };
 
   const path = `${contactId}/${Date.now()}.png`;
   const { error: uploadError } = await admin.storage
     .from("consents")
-    .upload(path, new Blob([bytes], { type: "image/png" }));
+    .upload(path, new Blob([new Uint8Array(bytes)], { type: "image/png" }));
   if (uploadError) {
     console.error("[consent] signature upload failed:", uploadError);
     return { error: "generic" };
   }
 
-  const { data: sealed, error } = await db
-    .from("contact_consents")
-    .update({
-      data: answers,
-      image_consent: input.imageConsent,
-      health_data_consent: input.healthDataConsent,
-      signature_path: path,
-      signed_at: new Date().toISOString(),
-      signed_name: input.signedName,
-      filled_by_role: filledByRole,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", consentId)
-    .is("signed_at", null)
-    .select("id");
-  if (error || ((sealed ?? []) as unknown[]).length === 0) {
+  const now = new Date().toISOString();
+  const sealed = {
+    data: answers,
+    image_consent: input.imageConsent,
+    health_data_consent: input.healthDataConsent,
+    signature_path: path,
+    signed_at: now,
+    signed_name: input.signedName,
+    filled_by_role: filledByRole,
+    updated_at: now,
+  };
+
+  const entry = mode === "replace" ? historyEntryFrom(row) : null;
+  const update =
+    mode === "replace" && entry
+      ? db
+          .from("contact_consents")
+          .update({
+            ...sealed,
+            history: appendHistory(row.history, entry),
+            version: row.version + 1,
+          })
+          .eq("id", consentId)
+          .eq("version", row.version)
+          .not("signed_at", "is", null)
+      : db
+          .from("contact_consents")
+          .update(sealed)
+          .eq("id", consentId)
+          .is("signed_at", null);
+  const { data: written, error } = await update.select("id");
+
+  if (error || ((written ?? []) as unknown[]).length === 0) {
     // Lost the race, or the write failed: do not leave an orphan signature.
     await admin.storage.from("consents").remove(path);
-    return { error: error ? "generic" : "alreadySigned" };
+    return {
+      error: error
+        ? "generic"
+        : mode === "replace"
+          ? "conflict"
+          : "alreadySigned",
+    };
+  }
+  if (mode === "replace") {
+    console.info("[consent] replaced a signed consent", {
+      contactId,
+      version: row.version + 1,
+    });
   }
 
-  // The form asks for what the contact is missing; it never overwrites what
-  // the centre already has.
-  if (input.birthdate || input.phone) {
-    const { data: contact } = await db
-      .from("contacts")
-      .select("birthdate, phone")
-      .eq("id", contactId)
-      .maybeSingle();
-    const c = contact as {
-      birthdate: string | null;
-      phone: string | null;
-    } | null;
-    const patch: Record<string, string> = {};
-    if (input.birthdate && !c?.birthdate) patch.birthdate = input.birthdate;
-    if (input.phone && !c?.phone) patch.phone = input.phone.trim();
-    if (Object.keys(patch).length > 0) {
-      await db.from("contacts").update(patch).eq("id", contactId);
-    }
-  }
-
+  await fillMissingContactDetails(contactId, input);
   return { error: null };
 }
 
@@ -136,11 +205,18 @@ export async function submitConsent(
   return sealConsent(row.id, row.contact_id, input, "client");
 }
 
-/** Somebody at the centre fills it in with the client, in the dashboard. */
+/**
+ * Somebody at the centre fills it in with the client, in the dashboard.
+ *
+ * `replace` is for correcting a consent that is already signed: the earlier
+ * signing is kept in `history` and the new one takes its place. Without it, a
+ * signed consent is refused, as it is for the public link.
+ */
 export async function submitConsentAsStaff(
   accessToken: string | null,
   contactId: string,
   input: unknown,
+  options?: { replace?: boolean },
 ): Promise<SaveResult> {
   let role: string;
   try {
@@ -158,7 +234,13 @@ export async function submitConsentAsStaff(
     .maybeSingle();
   const id = (data as { id: string } | null)?.id;
   if (!id) return { error: "generic" };
-  return sealConsent(id, contactId, input, role);
+  return sealConsent(
+    id,
+    contactId,
+    input,
+    role,
+    consent.signed && options?.replace ? "replace" : "first",
+  );
 }
 
 /**
@@ -197,8 +279,11 @@ export async function createConsentLink(
 }
 
 /**
- * A contact's signed consent, with the signature read from the private bucket.
- * Dashboard only. Null while it is unsigned.
+ * A contact's consent, with the signature read from the private bucket.
+ * Dashboard only. Null while there is nothing to show: no answers and no
+ * signature. A consent that was reopened for a new signature comes back with
+ * `signedAt: null` and its previous answers, so the desk can see — and
+ * pre-fill from — what is waiting to be signed again.
  */
 export async function fetchContactConsent(
   accessToken: string | null,
@@ -215,26 +300,16 @@ export async function fetchContactConsent(
   const admin = getAdminClient();
   const { data } = await admin.database
     .from("contact_consents")
-    .select(
-      "data, image_consent, health_data_consent, signature_path, signed_at, signed_name, filled_by_role",
-    )
+    .select(SNAPSHOT_FIELDS)
     .eq("contact_id", contactId)
     .maybeSingle();
-  const row = data as {
-    data: Record<string, boolean | string> | null;
-    image_consent: boolean;
-    health_data_consent: boolean;
-    signature_path: string | null;
-    signed_at: string | null;
-    signed_name: string | null;
-    filled_by_role: string | null;
-  } | null;
-  if (!row?.signed_at) return null;
+  const row = data as ConsentRow | null;
+  if (!row || consentState(row) === "none") return null;
 
   // The bucket is private: the file is read here with the service key and
   // handed over inline, so no link to the signature ever exists to leak.
   let signatureDataUrl: string | null = null;
-  if (row.signature_path) {
+  if (row.signed_at && row.signature_path) {
     const { data: blob } = await admin.storage
       .from("consents")
       .download(row.signature_path);
@@ -253,6 +328,104 @@ export async function fetchContactConsent(
     signatureDataUrl,
     filledByRole: row.filled_by_role,
   };
+}
+
+/**
+ * Asks a client who already signed to sign again: the signed state moves to
+ * `history` and the consent counts as not signed until they do.
+ *
+ * One update, conditioned on the version just read and on the row still being
+ * signed, so two people pressing it at once reopen it once. The answers stay
+ * (they pre-fill the next signing), the token stays (the old link works), the
+ * signature file stays in the bucket. Dashboard only.
+ */
+export async function reopenConsent(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{
+  error: "forbidden" | "not_signed" | "conflict" | "failed" | null;
+}> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: "forbidden" };
+    throw err;
+  }
+  if (!contactId) return { error: "failed" };
+
+  const db = getAdminClient().database;
+  const { data } = await db
+    .from("contact_consents")
+    .select(SNAPSHOT_FIELDS)
+    .eq("contact_id", contactId)
+    .maybeSingle();
+  const row = data as ConsentRow | null;
+  const entry = row ? historyEntryFrom(row) : null;
+  if (!row || !entry) return { error: "not_signed" };
+
+  const { data: updated, error } = await db
+    .from("contact_consents")
+    .update({
+      history: appendHistory(row.history, entry),
+      signed_at: null,
+      signature_path: null,
+      signed_name: null,
+      filled_by_role: null,
+      version: row.version + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", row.id)
+    .eq("version", row.version)
+    .not("signed_at", "is", null)
+    .select("id");
+  if (error) return { error: "failed" };
+  if (((updated ?? []) as unknown[]).length === 0) return { error: "conflict" };
+
+  // The fact, never the answers: they are health data.
+  console.info("[consent] reopened for a new signature", {
+    contactId,
+    version: row.version + 1,
+  });
+  return { error: null };
+}
+
+/**
+ * "Resend": reopens a signed consent and emails the client the link to sign it
+ * again. Checks there is an address first, so a contact with nobody to write to
+ * is not left with a consent reopened for nothing. Dashboard only.
+ */
+export async function resendConsent(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{
+  error: "forbidden" | "no_email" | "not_signed" | "conflict" | "failed" | null;
+  email?: string;
+}> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: "forbidden" };
+    throw err;
+  }
+
+  const { data } = await getAdminClient()
+    .database.from("contacts")
+    .select("email")
+    .eq("id", contactId)
+    .maybeSingle();
+  if (!(data as { email: string | null } | null)?.email) {
+    return { error: "no_email" };
+  }
+
+  const reopened = await reopenConsent(accessToken, contactId);
+  if (reopened.error) return { error: reopened.error };
+
+  const sent = await sendConsentEmail(accessToken, contactId);
+  // "signed" cannot happen right after reopening; anything else is a failure
+  // to deliver, and the consent stays reopened for the desk to resend.
+  return sent.error === null
+    ? { error: null, email: sent.email }
+    : { error: sent.error === "no_email" ? "no_email" : "failed" };
 }
 
 /**

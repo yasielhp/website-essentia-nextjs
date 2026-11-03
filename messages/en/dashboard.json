@@ -1184,7 +1184,7 @@
       },
       "consent": {
         "heading": "Consent",
-        "signed": "Signed on {date} by {name}",
+        "signed": "Signed on {date}",
         "unsigned": "Not signed",
         "resend": "Send again",
         "sending": "Sending…",
@@ -1193,11 +1193,23 @@
           "forbidden": "You do not have permission.",
           "no_email": "This contact has no email.",
           "signed": "Already signed.",
-          "failed": "Could not send."
+          "failed": "Could not send.",
+          "not_signed": "This consent is not signed.",
+          "conflict": "The consent has changed. Reload the file and try again."
         },
         "image": {
           "yes": "Allows images",
           "no": "Does not allow images"
+        },
+        "pending": "Awaiting signature",
+        "editing": "Editing the signed consent. Nothing is saved until it is signed again.",
+        "edit": "Edit",
+        "resendSigned": "Resend",
+        "resendDialog": {
+          "title": "Ask for a new signature",
+          "body": "The client will be emailed a link to sign again. Until they do, the consent will show as pending. The current signature is kept in the history and will be replaced when they sign again.",
+          "confirm": "Send link",
+          "sending": "Sending…"
         }
       },
       "bonuses": {

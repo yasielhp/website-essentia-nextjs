@@ -21,6 +21,13 @@ export type ConsentSubject = {
   birthdate: string | null;
 };
 
+/** Earlier answers to start from; the signature is never part of it. */
+export type ConsentInitial = {
+  answers: Record<string, boolean | string>;
+  imageConsent: boolean;
+  healthDataConsent: boolean;
+};
+
 type Props =
   | { mode: "client"; token: string; subject: ConsentSubject }
   | {
@@ -28,6 +35,12 @@ type Props =
       contactId: string;
       subject: ConsentSubject;
       onSigned: () => void;
+      /** Pre-fills the form, for correcting or renewing a consent. */
+      initial?: ConsentInitial;
+      /** The consent being edited is already signed: this replaces it. */
+      replace?: boolean;
+      /** Leaves the form without saving anything. */
+      onCancel?: () => void;
     };
 
 const ERROR_KEYS = [
@@ -35,6 +48,7 @@ const ERROR_KEYS = [
   "invalid",
   "tooLarge",
   "alreadySigned",
+  "conflict",
   "generic",
 ] as const;
 
@@ -52,12 +66,29 @@ const ERROR_KEYS = [
 export function ConsentForm(props: Props) {
   const t = useTranslations("consent");
   const { subject } = props;
+  // Only the desk may start from earlier answers; the public link starts blank.
+  const initial = props.mode === "staff" ? props.initial : undefined;
 
-  const [answers, setAnswers] = useState<Record<string, boolean | string>>({});
-  const [avoidZone, setAvoidZone] = useState("");
-  const [treatment, setTreatment] = useState(false);
-  const [healthData, setHealthData] = useState(false);
-  const [image, setImage] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, boolean | string>>(
+    () => {
+      if (!initial) return {};
+      const rest = { ...initial.answers };
+      delete rest.avoidZone;
+      return rest;
+    },
+  );
+  const [avoidZone, setAvoidZone] = useState(
+    typeof initial?.answers.avoidZone === "string"
+      ? initial.answers.avoidZone
+      : "",
+  );
+  // Signed before means the treatment was accepted before; the client still
+  // signs again to confirm it.
+  const [treatment, setTreatment] = useState(Boolean(initial));
+  const [healthData, setHealthData] = useState(
+    initial?.healthDataConsent ?? false,
+  );
+  const [image, setImage] = useState(initial?.imageConsent ?? false);
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +123,12 @@ export function ConsentForm(props: Props) {
     const result =
       props.mode === "client"
         ? await submitConsent(props.token, input)
-        : await submitConsentAsStaff(getAccessToken(), props.contactId, input);
+        : await submitConsentAsStaff(
+            getAccessToken(),
+            props.contactId,
+            input,
+            props.replace ? { replace: true } : undefined,
+          );
     setSubmitting(false);
 
     if (result.error) {
@@ -270,6 +306,17 @@ export function ConsentForm(props: Props) {
         >
           {submitting ? t("submitting") : t("submit")}
         </Button>
+        {props.mode === "staff" && props.onCancel && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={props.onCancel}
+            disabled={submitting}
+            className="w-full"
+          >
+            {t("cancel")}
+          </Button>
+        )}
       </section>
     </div>
   );

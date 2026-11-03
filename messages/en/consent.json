@@ -70,7 +70,9 @@
     "invalid": "Please check the details and try again.",
     "tooLarge": "The signature is too large. Clear it and sign again.",
     "alreadySigned": "This consent has already been signed.",
-    "generic": "We could not save the consent. Please try again."
+    "generic": "We could not save the consent. Please try again.",
+    "conflict": "The consent changed while you were editing it. Reload the file and try again."
   },
-  "select": "Select"
+  "select": "Select",
+  "cancel": "Cancel"
 }

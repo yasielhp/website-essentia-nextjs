@@ -1184,7 +1184,7 @@
       },
       "consent": {
         "heading": "Consentimiento",
-        "signed": "Firmado el {date} por {name}",
+        "signed": "Firmado el {date}",
         "unsigned": "Sin firmar",
         "resend": "Volver a enviar",
         "sending": "Enviando…",
@@ -1193,11 +1193,23 @@
           "forbidden": "No tienes permiso.",
           "no_email": "Este contacto no tiene email.",
           "signed": "Ya está firmado.",
-          "failed": "No se pudo enviar."
+          "failed": "No se pudo enviar.",
+          "not_signed": "Este consentimiento no está firmado.",
+          "conflict": "El consentimiento ha cambiado. Recarga la ficha e inténtalo de nuevo."
         },
         "image": {
           "yes": "Autoriza imágenes",
           "no": "No autoriza imágenes"
+        },
+        "pending": "Pendiente de firma",
+        "editing": "Editando el consentimiento firmado. No se guarda nada hasta que se firme de nuevo.",
+        "edit": "Editar",
+        "resendSigned": "Reenviar",
+        "resendDialog": {
+          "title": "Pedir una nueva firma",
+          "body": "Se enviará a la clienta un enlace para firmar de nuevo. Hasta que firme, el consentimiento figurará como pendiente. La firma actual se conserva en el historial y se sustituirá cuando firme otra vez.",
+          "confirm": "Enviar enlace",
+          "sending": "Enviando…"
         }
       },
       "bonuses": {
