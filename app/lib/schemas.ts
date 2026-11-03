@@ -556,3 +556,17 @@ export const consentSchema = z.object({
 });
 
 export type ConsentInput = z.infer<typeof consentSchema>;
+
+/**
+ * What the public bonus checkout accepts. The price is never part of it: the
+ * route reads the plan from the database.
+ */
+export const bonusCheckoutSchema = z.object({
+  planId: z.string().uuid(),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email: z.email().max(160),
+  phone: z.string().trim().min(6).max(30).refine(isValidPhone),
+  consent: z.literal(true),
+  locale: z.enum(["en", "es"]),
+});

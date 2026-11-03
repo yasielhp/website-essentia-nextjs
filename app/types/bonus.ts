@@ -51,3 +51,12 @@ export type BonusSale = {
   clientName: string | null;
   clientEmail: string | null;
 };
+
+/** What the public site may know about a plan on sale, and nothing more. */
+export type PublicBonusPlan = {
+  id: string;
+  sessions: number;
+  priceEur: number;
+  validityDays: number;
+  tierLabel: string;
+};

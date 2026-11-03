@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { handleBookingPaid } from "@/services/booking-payments.service";
+import { handleBonusPaid } from "@/services/bonus-payments.service";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 
 /** Redsys retries on any non-200 response, so both outcomes reply with 200. */
@@ -41,8 +42,30 @@ export async function POST(req: NextRequest) {
 
     const bookingId = (booking as { id: string } | null)?.id;
     if (!bookingId) {
+      // Not a booking: it may be a bonus bought on the website. Their order
+      // numbers carry a letter, so the two can never be the same order.
+      const { data: bonusOrder } = await db
+        .from("bonus_orders")
+        .select("id")
+        .eq("redsys_order", orderId)
+        .maybeSingle();
+
+      if (bonusOrder) {
+        if (event.type === "payment.succeeded") {
+          await handleBonusPaid(orderId, Number(payload.Ds_Amount));
+        } else {
+          // Only a pending order can fail; a paid one stays paid.
+          await db
+            .from("bonus_orders")
+            .update({ status: "failed" })
+            .eq("redsys_order", orderId)
+            .eq("status", "pending");
+        }
+        return redsysReply("OK");
+      }
+
       // Unknown order: acknowledge so Redsys stops retrying, but leave a trace.
-      console.error("[webhooks/redsys] no booking for order", orderId);
+      console.error("[webhooks/redsys] no booking or bonus for order", orderId);
       return redsysReply("OK");
     }
 

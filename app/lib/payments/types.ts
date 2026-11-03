@@ -5,6 +5,8 @@ export type ProviderName = "redsys";
 export type CreateCheckoutParams = {
   /** Amount in smallest currency unit (cents). */
   amount?: number;
+  /** Use this Redsys order number instead of generating one from the clock. */
+  orderId?: string;
   currency: string;
   description: string;
   successUrl: string;

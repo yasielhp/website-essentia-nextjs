@@ -42,7 +42,7 @@ export class RedsysProvider implements PaymentProvider {
     Ds_SignatureVersion: string;
     orderId: string;
   } {
-    const order = this.newOrderId();
+    const order = params.orderId ?? this.newOrderId();
     const currency = CURRENCIES["EUR"];
     const amountCents = String(params.amount ?? 0);
 
