@@ -362,17 +362,21 @@ export async function listConnections(userId: string): Promise<Connection[]> {
   }));
 }
 
-/** Revokes one of the person's connections: its access token and, with it, the refresh. */
-export async function revokeConnection(
+/**
+ * Revokes some of the person's connections: each one's access token and, with
+ * it, its refresh. Only rows that are theirs are touched, whatever ids arrive.
+ */
+export async function revokeConnections(
   userId: string,
-  connectionId: string,
-): Promise<boolean> {
+  connectionIds: string[],
+): Promise<number> {
+  if (connectionIds.length === 0) return 0;
   const { data } = await db()
     .from("oauth_tokens")
     .update({ revoked_at: new Date().toISOString() })
-    .eq("id", connectionId)
+    .in("id", connectionIds)
     .eq("user_id", userId)
     .is("revoked_at", null)
     .select("id");
-  return ((data ?? []) as unknown[]).length > 0;
+  return ((data ?? []) as unknown[]).length;
 }

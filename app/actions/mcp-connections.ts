@@ -4,7 +4,7 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { OAUTH_ROLES } from "@/lib/oauth/core";
 import {
   listConnections,
-  revokeConnection,
+  revokeConnections,
   type Connection,
 } from "@/lib/oauth/server";
 import type { UserRole } from "@/types";
@@ -24,15 +24,21 @@ export async function fetchMcpConnections(
   }
 }
 
-/** Disconnects one of the person's own assistants: its tokens stop working at once. */
-export async function revokeMcpConnection(
+/**
+ * Disconnects an assistant of the person's own: every connection they hold for
+ * it, whose tokens stop working at once. Ids that are not theirs are ignored.
+ */
+export async function revokeMcpConnections(
   accessToken: string | null,
-  connectionId: string,
+  connectionIds: string[],
 ): Promise<{ error: "forbidden" | "not_found" | null }> {
   try {
     const { userId } = await requireRole(accessToken, ROLES);
-    const revoked = await revokeConnection(userId, connectionId);
-    return { error: revoked ? null : "not_found" };
+    const revoked = await revokeConnections(
+      userId,
+      connectionIds.filter((id) => typeof id === "string").slice(0, 50),
+    );
+    return { error: revoked > 0 ? null : "not_found" };
   } catch (err) {
     if (err instanceof AuthError) return { error: "forbidden" };
     throw err;

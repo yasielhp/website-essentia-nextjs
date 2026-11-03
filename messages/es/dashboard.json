@@ -1318,13 +1318,14 @@
         ]
       },
       "connections": {
-        "title": "Conexiones activas",
-        "empty": "Todavía no has conectado ningún asistente.",
         "since": "Conectado el {date}",
         "lastUsed": "Último uso: {date}",
         "neverUsed": "Sin usar todavía",
         "disconnect": "Desconectar",
-        "disconnecting": "Desconectando…"
+        "disconnecting": "Desconectando…",
+        "connected": "Conectado",
+        "notConnected": "No conectado",
+        "others": "Otros asistentes"
       }
     }
   },
