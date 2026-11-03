@@ -271,6 +271,8 @@ export async function refreshTokens(input: {
 export type VerifiedToken = {
   clientId: string;
   userId: string;
+  /** The person's role right now, which the tools gate on. */
+  role: string;
   scopes: string[];
 };
 
@@ -323,7 +325,12 @@ export async function verifyAccessToken(
     .eq("token_hash", hash)
     .then(() => undefined);
 
-  return { clientId: row.client_id, userId: row.user_id, scopes };
+  return {
+    clientId: row.client_id,
+    userId: row.user_id,
+    role: role as string,
+    scopes,
+  };
 }
 
 // ─── Connections, for the account page ────────────────────────

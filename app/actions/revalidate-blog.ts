@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
 import { AuthError, requireRole } from "@/lib/auth-guard";
-import { BLOG_POSTS_CACHE_TAG } from "@/lib/sitemap-data";
+import { revalidateBlogPaths } from "@/lib/blog-revalidate";
 
 /**
  * Publishes a blog change to the live site straight away.
@@ -34,16 +33,5 @@ export async function revalidateBlog(
     throw err;
   }
 
-  // The listings, in both trees.
-  revalidatePath("/blog");
-  revalidatePath("/es/blog");
-
-  // The post itself, wherever it lives.
-  if (slug) {
-    revalidatePath(`/blog/${slug}`);
-    revalidatePath(`/es/blog/${slugEs || slug}`);
-  }
-
-  // The sitemaps read a cached list of published posts.
-  revalidateTag(BLOG_POSTS_CACHE_TAG, "max");
+  revalidateBlogPaths(slug, slugEs);
 }
