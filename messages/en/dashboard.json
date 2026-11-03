@@ -561,8 +561,8 @@
       "other": "Other"
     },
     "filters": {
-      "email": "Email",
-      "emailPlaceholder": "jane@example.com",
+      "email": "Name or email",
+      "emailPlaceholder": "Jane or jane@example.com",
       "role": "Role",
       "allRoles": "All"
     },

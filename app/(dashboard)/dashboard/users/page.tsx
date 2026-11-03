@@ -367,7 +367,9 @@ export default function UsersPage() {
         (r) =>
           r.role === accountRoleFilter &&
           (!emailFilter ||
-            (r.email ?? "").toLowerCase().includes(emailFilter.toLowerCase())),
+            `${r.name} ${r.email ?? ""}`
+              .toLowerCase()
+              .includes(emailFilter.toLowerCase())),
       )
     : contactStatusFilter || emailFilter
       ? contactRows
