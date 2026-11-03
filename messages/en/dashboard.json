@@ -1183,9 +1183,15 @@
         "heading": "Consent",
         "signed": "Signed on {date} by {name}",
         "unsigned": "Not signed",
-        "copyLink": "Copy link",
-        "copied": "Copied",
-        "fillHere": "Fill in here with the client",
+        "resend": "Send again",
+        "sending": "Sending…",
+        "sentTo": "Sent to {email}",
+        "sendError": {
+          "forbidden": "You do not have permission.",
+          "no_email": "This contact has no email.",
+          "signed": "Already signed.",
+          "failed": "Could not send."
+        },
         "image": {
           "yes": "Allows images",
           "no": "Does not allow images"

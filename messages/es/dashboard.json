@@ -1183,9 +1183,15 @@
         "heading": "Consentimiento",
         "signed": "Firmado el {date} por {name}",
         "unsigned": "Sin firmar",
-        "copyLink": "Copiar enlace",
-        "copied": "Copiado",
-        "fillHere": "Rellenar aquí con la clienta",
+        "resend": "Volver a enviar",
+        "sending": "Enviando…",
+        "sentTo": "Enviado a {email}",
+        "sendError": {
+          "forbidden": "No tienes permiso.",
+          "no_email": "Este contacto no tiene email.",
+          "signed": "Ya está firmado.",
+          "failed": "No se pudo enviar."
+        },
         "image": {
           "yes": "Autoriza imágenes",
           "no": "No autoriza imágenes"
