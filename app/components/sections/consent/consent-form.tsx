@@ -6,6 +6,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { OptionSelect } from "@/components/ui/option-select";
+import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { getAccessToken } from "@/lib/client-session";
 import { submitConsent, submitConsentAsStaff } from "@/actions/consent";
@@ -207,31 +208,23 @@ export function ConsentForm(props: Props) {
         <p className="text-petroleum-500 text-sm leading-relaxed">
           {t("treatment.body")}
         </p>
-        <label className="flex cursor-pointer items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={treatment}
-            onChange={(e) => setTreatment(e.target.checked)}
-            disabled={submitting}
-            className="accent-petroleum-700 mt-0.5 size-4"
-          />
-          <span className="text-petroleum-700">{t("treatment.accept")}</span>
-        </label>
+        <ToggleRow
+          checked={treatment}
+          onToggle={() => setTreatment((v) => !v)}
+          label={t("treatment.accept")}
+          disabled={submitting}
+        />
       </section>
 
       {/* Health data (GDPR) */}
       <section className={card}>
         <h2 className={heading}>{t("healthData.heading")}</h2>
-        <label className="flex cursor-pointer items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={healthData}
-            onChange={(e) => setHealthData(e.target.checked)}
-            disabled={submitting}
-            className="accent-petroleum-700 mt-0.5 size-4"
-          />
-          <span className="text-petroleum-700">{t("healthData.accept")}</span>
-        </label>
+        <ToggleRow
+          checked={healthData}
+          onToggle={() => setHealthData((v) => !v)}
+          label={t("healthData.accept")}
+          disabled={submitting}
+        />
       </section>
 
       {/* Image (optional, independent) */}
@@ -240,29 +233,16 @@ export function ConsentForm(props: Props) {
         <p className="text-petroleum-500 text-sm leading-relaxed">
           {t("image.body")}
         </p>
-        <fieldset className="flex gap-2">
-          <legend className="sr-only">{t("image.heading")}</legend>
-          {([true, false] as const).map((option) => (
-            <label
-              key={String(option)}
-              className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                image === option
-                  ? "border-petroleum-700 bg-petroleum-700 text-white"
-                  : "border-sand-200 text-petroleum-500 hover:border-sand-500"
-              }`}
-            >
-              <input
-                type="radio"
-                name="image-consent"
-                checked={image === option}
-                onChange={() => setImage(option)}
-                disabled={submitting}
-                className="sr-only"
-              />
-              {option ? t("image.yes") : t("image.no")}
-            </label>
-          ))}
-        </fieldset>
+        <OptionSelect<"yes" | "no">
+          ariaLabel={t("image.heading")}
+          disabled={submitting}
+          value={image ? "yes" : "no"}
+          options={[
+            { value: "yes", label: t("image.yes") },
+            { value: "no", label: t("image.no") },
+          ]}
+          onChange={(v) => setImage(v === "yes")}
+        />
       </section>
 
       {/* Name and signature */}
