@@ -137,7 +137,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "What facials does Essentia offer?",
       answer:
-        "We work with three rituals: Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs.",
+        "We work with four rituals: Anesis, focused on hydration, radiance and relaxation; Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs.",
     },
     {
       question: "How do I know which one to choose?",

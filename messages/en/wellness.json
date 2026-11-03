@@ -330,6 +330,25 @@
           }
         }
       },
+      "anesis": {
+        "title": "Anesis",
+        "description": "Hydrating facial and cranio-facial massage: gentle skin preparation, selected cosmetics, a mask and a delicate facial, neck and scalp massage for hydration, radiance and deep relaxation.",
+        "body": "Anesis is a facial treatment that combines a gentle preparation of the skin with cosmetic products selected for their hydrating properties, a mask and a delicate facial, cervical and cranial massage.\n\nIt is an experience designed to bring hydration, radiance and comfort to the skin, while encouraging a deep sense of relaxation and wellbeing.\n\nIt suits skin that feels dry, tired or dull, and anyone who wants to pause and let the face and mind unwind.",
+        "highlights": {
+          "0": {
+            "title": "Hydration and radiance",
+            "description": "Selected hydrating cosmetics and a mask leave the skin more comfortable, supple and luminous."
+          },
+          "1": {
+            "title": "Facial, cervical and cranial massage",
+            "description": "A delicate massage of the face, neck and scalp to release tension and deepen the experience."
+          },
+          "2": {
+            "title": "Deep relaxation",
+            "description": "A slow, enveloping ritual that favours rest and a lasting sense of wellbeing."
+          }
+        }
+      },
       "aurum": {
         "title": "Aurum",
         "description": "Regenerating facial ritual with gold leaf, premium Aurum cosmetics and Kobido-inspired technique, to nourish, revitalise and bring natural radiance back to the face.",
@@ -851,8 +870,13 @@
     "aromaNote": "All our therapies use premium oils and essences, with carefully chosen aromatherapy to lift the sensory experience and support the manual work. Where there are allergies, sensitivities or a personal preference, the aromatherapy can be adapted or left out.",
     "viewTreatment": "View treatment",
     "facialsHeading": "Our facials",
-    "facialsSubtitle": "Three rituals designed to look after the skin, support the facial structure and reveal a more natural, radiant and balanced beauty.",
+    "facialsSubtitle": "Four rituals designed to look after the skin, support the facial structure and reveal a more natural, radiant and balanced beauty.",
     "facialCards": {
+      "anesis": {
+        "title": "Anesis",
+        "meta": "50 min · €70",
+        "description": "Hydration, radiance and comfort with selected cosmetics, a mask and a delicate facial, cervical and cranial massage."
+      },
       "aurum": {
         "title": "Aurum",
         "meta": "60 min · €180",
