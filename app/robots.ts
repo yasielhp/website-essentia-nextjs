@@ -14,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           "/booking/requested",
           "/booking/confirmation",
+          "/consent/",
+          "/es/consentimiento/",
         ],
       },
       { userAgent: "GPTBot", disallow: "/" }, // OpenAI training

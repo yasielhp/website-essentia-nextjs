@@ -1,0 +1,84 @@
+{
+  "metaTitle": "Informed consent | Essentia",
+  "title": "Informed consent",
+  "intro": "Before your first session we need to know about your health.",
+  "personal": {
+    "heading": "Personal details",
+    "name": "Full name",
+    "birthdate": "Date of birth",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "health": {
+    "heading": "Health status",
+    "intro": "Please state whether you currently have, or have had, any of the following conditions. Where applicable, say which one and since when."
+  },
+  "yes": "Yes",
+  "no": "No",
+  "detailMissing": "Please add the details when the answer is yes.",
+  "fields": {
+    "surgery": "Surgery or medical procedure (including cosmetic)",
+    "surgeryDetail": "Type, area and date",
+    "thrombosis": "Thrombosis, embolism or phlebitis",
+    "thrombosisDetail": "Type and date",
+    "circulatory": "Circulatory or cardiovascular disease",
+    "circulatoryDetail": "Which one",
+    "heartKidney": "Heart failure or kidney disease",
+    "heartKidneyDetail": "Which one",
+    "cancer": "Cancer, tumour or oncology treatment",
+    "cancerDetail": "Type and date / treatment",
+    "pregnancy": "Pregnancy or postpartum",
+    "pregnancyDetail": "Weeks of pregnancy / date of birth",
+    "injury": "Recent fracture, injury or wound",
+    "injuryDetail": "Area and date",
+    "infection": "Fever, infection or acute inflammation",
+    "infectionDetail": "Which one",
+    "limbSwelling": "Sudden swelling, pain or redness in a limb",
+    "limbSwellingDetail": "Details",
+    "hypertensionDiabetes": "Uncontrolled hypertension or diabetes",
+    "hypertensionDiabetesDetail": "Details",
+    "medication": "Relevant medication (especially anticoagulants)",
+    "medicationDetail": "Which one",
+    "allergies": "Allergies, skin conditions or reaction to cosmetics",
+    "allergiesDetail": "Which one",
+    "other": "Any other relevant health condition",
+    "otherDetail": "Which one",
+    "avoidZone": "Area you would rather avoid or that needs special care",
+    "avoidZoneHint": "Optional"
+  },
+  "treatment": {
+    "heading": "Consent to treatment",
+    "body": "I declare that the information provided is correct and that I will report any relevant change before future sessions. I have been informed about the requested service, its wellness purpose, possible temporary discomfort and its limitations. I understand that it does not replace medical care and that I may ask to stop the treatment at any time. I voluntarily consent to it being carried out.",
+    "accept": "I accept the informed treatment."
+  },
+  "healthData": {
+    "heading": "Personal and health data",
+    "accept": "I expressly consent to the processing of the health data provided in order to assess the suitability and safety of the service, according to the available privacy information.",
+    "link": "Full information",
+    "controller": "Controller: Yusleidy Caridad Jiménez Pérez (Essentia Social Wellness Club), Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife · info@essentiawellnessclub.com"
+  },
+  "image": {
+    "heading": "Image consent (optional and independent)",
+    "body": "I authorise photographs of the treated area to document its progress, with no public disclosure. Any publication or promotional use will require a specific additional authorisation.",
+    "yes": "I authorise",
+    "no": "I do not authorise"
+  },
+  "signedName": "Full name",
+  "signature": "Client's signature",
+  "clear": "Clear",
+  "submit": "Sign and send",
+  "submitting": "Sending…",
+  "done": {
+    "title": "Thank you",
+    "body": "Your consent has been saved."
+  },
+  "already": "This consent has already been signed.",
+  "notFound": "This link is not valid.",
+  "errors": {
+    "incomplete": "Some answers are still missing.",
+    "invalid": "Please check the details and try again.",
+    "tooLarge": "The signature is too large. Clear it and sign again.",
+    "alreadySigned": "This consent has already been signed.",
+    "generic": "We could not save the consent. Please try again."
+  }
+}

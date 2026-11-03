@@ -15,6 +15,10 @@ export const routing = defineRouting({
     "/shop": { en: "/shop", es: "/tienda" },
     "/booking": { en: "/booking", es: "/reserva" },
     "/booking/cancel": { en: "/booking/cancel", es: "/reserva/cancelar" },
+    "/consent/[token]": {
+      en: "/consent/[token]",
+      es: "/consentimiento/[token]",
+    },
 
     // Wellness
     "/wellness": { en: "/wellness", es: "/bienestar" },

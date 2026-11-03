@@ -1,0 +1,84 @@
+{
+  "metaTitle": "Consentimiento informado | Essentia",
+  "title": "Consentimiento informado",
+  "intro": "Antes de tu primera sesión necesitamos conocer tu estado de salud.",
+  "personal": {
+    "heading": "Datos personales",
+    "name": "Nombre y apellidos",
+    "birthdate": "Fecha de nacimiento",
+    "phone": "Teléfono",
+    "email": "Correo electrónico"
+  },
+  "health": {
+    "heading": "Estado de salud",
+    "intro": "Indique si presenta actualmente o ha presentado alguna de las siguientes condiciones. Cuando corresponda, especifique cuál y desde cuándo."
+  },
+  "yes": "Sí",
+  "no": "No",
+  "detailMissing": "Indica el detalle cuando la respuesta es sí.",
+  "fields": {
+    "surgery": "Cirugía o intervención médica (incluida estética)",
+    "surgeryDetail": "Tipo, zona y fecha",
+    "thrombosis": "Trombosis, embolia o flebitis",
+    "thrombosisDetail": "Tipo y fecha",
+    "circulatory": "Enfermedad circulatoria o cardiovascular",
+    "circulatoryDetail": "Cuál",
+    "heartKidney": "Insuficiencia cardíaca o enfermedad renal",
+    "heartKidneyDetail": "Cuál",
+    "cancer": "Cáncer, tumor o tratamiento oncológico",
+    "cancerDetail": "Tipo y fecha/tratamiento",
+    "pregnancy": "Embarazo o posparto",
+    "pregnancyDetail": "Semanas de gestación / fecha del parto",
+    "injury": "Fractura, lesión o herida reciente",
+    "injuryDetail": "Zona y fecha",
+    "infection": "Fiebre, infección o inflamación aguda",
+    "infectionDetail": "Cuál",
+    "limbSwelling": "Hinchazón repentina, dolor o enrojecimiento en una extremidad",
+    "limbSwellingDetail": "Detalle",
+    "hypertensionDiabetes": "Hipertensión no controlada o diabetes",
+    "hypertensionDiabetesDetail": "Detalle",
+    "medication": "Medicación relevante (especialmente anticoagulantes)",
+    "medicationDetail": "Cuál",
+    "allergies": "Alergias, afecciones cutáneas o reacción a cosméticos",
+    "allergiesDetail": "Cuál",
+    "other": "Otra condición de salud relevante",
+    "otherDetail": "Cuál",
+    "avoidZone": "Zona que prefiera evitar o que requiera especial cuidado",
+    "avoidZoneHint": "Opcional"
+  },
+  "treatment": {
+    "heading": "Consentimiento del tratamiento",
+    "body": "Declaro que la información facilitada es correcta y comunicaré cualquier cambio relevante antes de futuras sesiones. He recibido información sobre el servicio solicitado, su finalidad de bienestar, posibles molestias transitorias y sus limitaciones. Comprendo que no sustituye la atención médica y que puedo solicitar la interrupción del tratamiento en cualquier momento. Consiento voluntariamente su realización.",
+    "accept": "Acepto el tratamiento informado."
+  },
+  "healthData": {
+    "heading": "Datos personales y de salud",
+    "accept": "Consiento expresamente el tratamiento de los datos de salud facilitados para valorar la adecuación y seguridad del servicio, según la información de privacidad disponible.",
+    "link": "Información completa",
+    "controller": "Responsable: Yusleidy Caridad Jiménez Pérez (Essentia Social Wellness Club), Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife · info@essentiawellnessclub.com"
+  },
+  "image": {
+    "heading": "Consentimiento de imagen (opcional e independiente)",
+    "body": "Autorizo fotografías del área tratada para documentar su evolución, sin difusión pública. Cualquier publicación o uso promocional requerirá una autorización específica adicional.",
+    "yes": "Sí autorizo",
+    "no": "No autorizo"
+  },
+  "signedName": "Nombre y apellidos",
+  "signature": "Firma de la clienta",
+  "clear": "Borrar",
+  "submit": "Firmar y enviar",
+  "submitting": "Enviando…",
+  "done": {
+    "title": "Gracias",
+    "body": "Tu consentimiento queda guardado."
+  },
+  "already": "Este consentimiento ya está firmado.",
+  "notFound": "Este enlace no es válido.",
+  "errors": {
+    "incomplete": "Faltan respuestas por completar.",
+    "invalid": "Revisa los datos e inténtalo de nuevo.",
+    "tooLarge": "La firma es demasiado grande. Bórrala y vuelve a firmar.",
+    "alreadySigned": "Este consentimiento ya está firmado.",
+    "generic": "No hemos podido guardar el consentimiento. Inténtalo de nuevo."
+  }
+}

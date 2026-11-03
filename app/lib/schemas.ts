@@ -555,3 +555,5 @@ export const consentSchema = z.object({
   signedName: z.string().trim().min(2).max(120),
   signaturePng: z.string().startsWith("data:image/png;base64,").max(400_000),
 });
+
+export type ConsentInput = z.infer<typeof consentSchema>;
