@@ -80,5 +80,6 @@
     "tooLarge": "La firma es demasiado grande. Bórrala y vuelve a firmar.",
     "alreadySigned": "Este consentimiento ya está firmado.",
     "generic": "No hemos podido guardar el consentimiento. Inténtalo de nuevo."
-  }
+  },
+  "select": "Seleccionar"
 }

@@ -80,5 +80,6 @@
     "tooLarge": "The signature is too large. Clear it and sign again.",
     "alreadySigned": "This consent has already been signed.",
     "generic": "We could not save the consent. Please try again."
-  }
+  },
+  "select": "Select"
 }

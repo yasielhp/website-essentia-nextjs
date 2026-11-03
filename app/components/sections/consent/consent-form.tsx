@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignaturePad } from "@/components/ui/signature-pad";
+import { OptionSelect } from "@/components/ui/option-select";
 import { Link } from "../../../../i18n/navigation";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { getAccessToken } from "@/lib/client-session";
@@ -185,30 +186,27 @@ export function ConsentForm(props: Props) {
             const detail = (answers[`${field.id}Detail`] as string) ?? "";
             return (
               <fieldset key={field.id} className="flex flex-col gap-2 py-3">
-                <legend className="text-petroleum-700 float-left w-full text-sm">
-                  {t(`fields.${field.id}`)}
-                </legend>
-                <div className="flex gap-2 pt-1">
-                  {([true, false] as const).map((option) => (
-                    <label
-                      key={String(option)}
-                      className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                        value === option
-                          ? "border-petroleum-700 bg-petroleum-700 text-white"
-                          : "border-sand-200 text-petroleum-500 hover:border-sand-500"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={field.id}
-                        checked={value === option}
-                        onChange={() => setAnswer(field.id, option)}
-                        disabled={submitting}
-                        className="sr-only"
-                      />
-                      {option ? t("yes") : t("no")}
-                    </label>
-                  ))}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <legend className="text-petroleum-700 float-left w-full text-sm sm:w-auto sm:flex-1">
+                    {t(`fields.${field.id}`)}
+                  </legend>
+                  <div className="w-full sm:w-44 sm:shrink-0">
+                    <OptionSelect<"yes" | "no" | "">
+                      ariaLabel={t(`fields.${field.id}`)}
+                      placeholder={t("select")}
+                      disabled={submitting}
+                      value={
+                        value === true ? "yes" : value === false ? "no" : ""
+                      }
+                      options={[
+                        { value: "no", label: t("no") },
+                        { value: "yes", label: t("yes") },
+                      ]}
+                      onChange={(v) => {
+                        if (v) setAnswer(field.id, v === "yes");
+                      }}
+                    />
+                  </div>
                 </div>
                 {value === true && (
                   <div className="flex flex-col gap-1">
