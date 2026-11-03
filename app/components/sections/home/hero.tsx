@@ -25,7 +25,6 @@ function videoReducer(state: VideoState, action: VideoAction): VideoState {
 
 export default function Hero() {
   const t = useTranslations("home.hero");
-  const tCommon = useTranslations("common");
   const videoRef = useRef<HTMLVideoElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -293,14 +292,13 @@ export default function Hero() {
             {t("subheadline")}
           </h1>
           <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 md:flex-row">
-            {/* Booking is off while the studio is between premises. */}
             <Button
+              href="/booking"
               variant="white"
               size="lg"
-              disabled
               className="w-full md:w-auto"
             >
-              {tCommon("comingSoon")}
+              {t("ctaBook")}
             </Button>
             <Button
               href="/about"

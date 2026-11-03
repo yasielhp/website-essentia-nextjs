@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import {
   ConsentForm,
   type ConsentSubject,
 } from "@/components/sections/consent/consent-form";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { getAccessToken } from "@/lib/client-session";
-import { createConsentLink } from "@/actions/consent";
+import { sendConsentEmail } from "@/actions/consent";
 import { CONSENT_FIELDS } from "@/lib/consent/fields";
 import { formatMediumDate } from "@/utils/format";
 import type { ContactConsent } from "@/types/consent";
@@ -35,61 +34,55 @@ export function ConsentSection({
   const t = useTranslations("dashboard.contacts.detail.consent");
   const tForm = useTranslations("consent");
   const locale = useDashboardLocale();
-  const [copied, setCopied] = useState(false);
-  const [filling, setFilling] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function copyLink() {
-    const { url } = await createConsentLink(getAccessToken(), contactId);
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // The clipboard can be refused (insecure context); show the link instead.
-      window.prompt(t("copyLink"), url);
-    }
+  async function resend() {
+    setSending(true);
+    setNotice(null);
+    const { error, email } = await sendConsentEmail(
+      getAccessToken(),
+      contactId,
+    );
+    setSending(false);
+    setNotice(
+      error === null
+        ? t("sentTo", { email: email ?? "" })
+        : t(`sendError.${error}`),
+    );
   }
 
   if (loading) {
     return <div className="bg-sand-100 h-24 animate-pulse rounded-xl" />;
   }
 
-  const copyButton = (
-    <Button variant="outline" size="sm" onClick={() => void copyLink()}>
-      {copied ? t("copied") : t("copyLink")}
-    </Button>
-  );
-
   if (!consent) {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-petroleum-400 text-sm">{t("unsigned")}</p>
-          <div className="flex gap-2">
-            {copyButton}
-            {!filling && (
-              <Button
-                variant="solid"
-                size="sm"
-                onClick={() => setFilling(true)}
-              >
-                {t("fillHere")}
-              </Button>
+          <div className="flex items-center gap-3">
+            {notice && (
+              <span className="text-petroleum-400 text-xs" role="status">
+                {notice}
+              </span>
             )}
+            <button
+              type="button"
+              onClick={() => void resend()}
+              disabled={sending}
+              className="text-petroleum-700 text-sm underline underline-offset-4 hover:no-underline disabled:opacity-50"
+            >
+              {sending ? t("sending") : t("resend")}
+            </button>
           </div>
         </div>
-        {filling && (
-          <ConsentForm
-            mode="staff"
-            contactId={contactId}
-            subject={subject}
-            onSigned={() => {
-              setFilling(false);
-              onSigned();
-            }}
-          />
-        )}
+        <ConsentForm
+          mode="staff"
+          contactId={contactId}
+          subject={subject}
+          onSigned={onSigned}
+        />
       </div>
     );
   }
@@ -109,7 +102,6 @@ export function ConsentSection({
             name: consent.signedName ?? "—",
           })}
         </p>
-        {copyButton}
       </div>
 
       <div className="overflow-x-auto">

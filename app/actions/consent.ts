@@ -2,6 +2,8 @@
 
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { sendEmail } from "@/emails/send";
+import { consentRequestEmail } from "@/emails/templates/consent-request";
 import { consentSchema } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
 import type { ContactConsent } from "@/types/consent";
@@ -251,4 +253,55 @@ export async function fetchContactConsent(
     signatureDataUrl,
     filledByRole: row.filled_by_role,
   };
+}
+
+/**
+ * Emails the client the link to fill in their consent, creating their consent
+ * row if there is none. Dashboard only. Refuses when there is nobody to write
+ * to or the consent is already signed: a second link would only confuse them.
+ */
+export async function sendConsentEmail(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{
+  error: "forbidden" | "no_email" | "signed" | "failed" | null;
+  email?: string;
+}> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { error: "forbidden" };
+    throw err;
+  }
+
+  const { data } = await getAdminClient()
+    .database.from("contacts")
+    .select("email, first_name, preferred_language")
+    .eq("id", contactId)
+    .maybeSingle();
+  const contact = data as {
+    email: string | null;
+    first_name: string | null;
+    preferred_language: string | null;
+  } | null;
+  if (!contact?.email) return { error: "no_email" };
+
+  const consent = await ensureConsent(contactId);
+  if (!consent) return { error: "failed" };
+  if (consent.signed) return { error: "signed" };
+
+  const locale = contact.preferred_language === "en" ? "en" : "es";
+  const { error } = await sendEmail({
+    to: contact.email,
+    subject:
+      locale === "es"
+        ? "Completa tu consentimiento informado · Essentia"
+        : "Complete your informed consent · Essentia",
+    html: consentRequestEmail({
+      name: contact.first_name?.trim() || "",
+      url: buildConsentUrl(consent.token, locale),
+      locale,
+    }),
+  });
+  return error ? { error: "failed" } : { error: null, email: contact.email };
 }

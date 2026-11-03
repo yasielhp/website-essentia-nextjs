@@ -16,21 +16,16 @@ type DetailService = ManualTherapyTreatment | FacialTreatment | IvProtocol;
 
 type DetailProps = {
   service: DetailService;
+  /** Where the booking buttons point — the two families differ. */
+  bookingHref: string;
   /** Back to the list this treatment belongs to. */
   backHref: string;
 };
 
-/*
- * The booking buttons used to carry a `bookingHref` into `/booking`. Online
- * booking is paused while the studio is between premises, so they render
- * disabled and the prop is gone; put both back when it returns.
- */
-
 // ─── Hero ─────────────────────────────────────────────────────
 
-function ServiceHero({ service }: DetailProps) {
+function ServiceHero({ service, bookingHref }: DetailProps) {
   const t = useTranslations("wellness.treatments.serviceDetail");
-  const tCommon = useTranslations("common");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,8 +75,8 @@ function ServiceHero({ service }: DetailProps) {
           {t(`${service.id}.description`)}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button variant="white" size="md" disabled>
-            {tCommon("comingSoon")}
+          <Button variant="white" size="md" href={bookingHref}>
+            {t("bookSession")}
           </Button>
           <Button
             variant="outline-white"
@@ -160,9 +155,8 @@ function ServiceDetails({ service }: DetailProps) {
 
 // ─── CTA ──────────────────────────────────────────────────────
 
-function ServiceCta({ service, backHref }: DetailProps) {
+function ServiceCta({ service, bookingHref, backHref }: DetailProps) {
   const t = useTranslations("wellness.treatments.serviceDetail");
-  const tCommon = useTranslations("common");
   return (
     <section className="bg-petroleum-700">
       <div className="overflow-hidden">
@@ -175,8 +169,8 @@ function ServiceCta({ service, backHref }: DetailProps) {
               {t("ctaBody", { service: t(`${service.id}.title`) })}
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <Button variant="white" size="md" disabled>
-                {tCommon("comingSoon")}
+              <Button variant="white" size="md" href={bookingHref}>
+                {t("bookSession")}
               </Button>
               <Button variant="outline-white" size="md" href={backHref}>
                 {t("viewAll")}
@@ -191,12 +185,28 @@ function ServiceCta({ service, backHref }: DetailProps) {
 
 // ─── Page view ────────────────────────────────────────────────
 
-export function ServiceDetailView({ service, backHref }: DetailProps) {
+export function ServiceDetailView({
+  service,
+  bookingHref,
+  backHref,
+}: DetailProps) {
   return (
     <>
-      <ServiceHero service={service} backHref={backHref} />
-      <ServiceDetails service={service} backHref={backHref} />
-      <ServiceCta service={service} backHref={backHref} />
+      <ServiceHero
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
+      <ServiceDetails
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
+      <ServiceCta
+        service={service}
+        bookingHref={bookingHref}
+        backHref={backHref}
+      />
     </>
   );
 }

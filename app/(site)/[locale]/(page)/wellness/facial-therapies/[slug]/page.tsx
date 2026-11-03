@@ -75,6 +75,7 @@ export default async function FacialDetailPage({ params }: Props) {
       />
       <ServiceDetailView
         service={facial}
+        bookingHref={`/booking?service=facial-therapies&treatment=${facial.id}`}
         backHref="/wellness/facial-therapies#treatments"
       />
     </>

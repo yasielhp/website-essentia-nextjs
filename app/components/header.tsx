@@ -797,10 +797,8 @@ export const Header = () => {
               )}
             </div>
           ) : (
-            /* Online booking is off while the studio is between premises;
-               the button stays so the header keeps its shape. */
-            <Button variant="solid" size="md" disabled>
-              {tCommon("comingSoon")}
+            <Button variant="solid" size="md" href="/booking">
+              {tCommon("booking")}
             </Button>
           )}
           <HamburgerButton
