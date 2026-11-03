@@ -1017,7 +1017,9 @@
       "staff": "Profesional",
       "location": "Ubicación",
       "price": "Precio",
-      "unassigned": "Sin asignar"
+      "unassigned": "Sin asignar",
+      "status": "Estado",
+      "transaction": "Transacción"
     }
   },
   "roles": {

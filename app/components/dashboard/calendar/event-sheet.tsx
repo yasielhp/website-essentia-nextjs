@@ -12,6 +12,7 @@ import {
   formatPrice,
   type SupportedLocale,
 } from "@/utils/format";
+import { locationDetail } from "@/utils/booking-display";
 import type { BookingPeek } from "@/types/booking";
 
 const PAYMENT_BADGE: Record<string, string> = {
@@ -20,12 +21,6 @@ const PAYMENT_BADGE: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   failed: "bg-red-100 text-red-600",
   refunded: "bg-sand-100 text-petroleum-500",
-};
-
-const STATUS_DOT: Record<string, string> = {
-  pending: "bg-yellow-400",
-  confirmed: "bg-green-500",
-  cancelled: "bg-red-400",
 };
 
 const LINK_CLASS =
@@ -159,6 +154,30 @@ function SheetBody({
   );
 }
 
+/**
+ * `location_address` is JSON, not prose: reservation and room numbers for a
+ * hotel booking, a street address for a home visit.
+ */
+function placeDetail(
+  b: BookingPeek,
+  roomLabel: (number: string) => string,
+): string | null {
+  if (b.location === "domicilio") {
+    try {
+      const a = JSON.parse(b.location_address ?? "") as Record<string, string>;
+      const parts = [
+        a.street,
+        a.building,
+        [a.postalCode, a.municipality].filter(Boolean).join(" "),
+      ].filter(Boolean);
+      return parts.length > 0 ? parts.join(", ") : null;
+    } catch {
+      return null;
+    }
+  }
+  return locationDetail(b.location, b.location_address, roomLabel);
+}
+
 /** A label with its value under it; renders nothing when there is no value. */
 function Field({
   label,
@@ -193,6 +212,7 @@ function SheetContent({
   const t = useTranslations("dashboard.calendar.sheet");
   const tPay = useTranslations("dashboard.bookings.detail.payment");
   const tLocations = useTranslations("dashboard.bookings.locations");
+  const tBookings = useTranslations("dashboard.bookings");
 
   const name = [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
   const pay = effectivePayment(b);
@@ -219,7 +239,7 @@ function SheetContent({
                 ? tLocations(b.location)
                 : b.location
             }
-            detail={b.location_address}
+            detail={placeDetail(b, (number) => tBookings("room", { number }))}
           />
           <Field
             label={t("price")}
@@ -228,21 +248,26 @@ function SheetContent({
             }
           />
         </dl>
-        <div className="border-sand-200/70 mt-5 flex flex-wrap items-center gap-2 border-t pt-4">
-          <span className="text-petroleum-700 inline-flex items-center gap-1.5 text-sm">
-            <span
-              className={`size-2 rounded-full ${STATUS_DOT[b.status ?? ""] ?? "bg-petroleum-400"}`}
-            />
-            {statusLabel}
-          </span>
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              PAYMENT_BADGE[pay.status] ?? "bg-sand-200 text-petroleum-500"
-            }`}
-          >
-            {paymentLabel}
-          </span>
-        </div>
+        <dl className="border-sand-200 mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t pt-4">
+          <div>
+            <dt className="text-petroleum-400 text-xs">{t("status")}</dt>
+            <dd className="text-petroleum-700 mt-0.5 text-sm font-medium">
+              {statusLabel}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-petroleum-400 text-xs">{t("transaction")}</dt>
+            <dd className="mt-0.5">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  PAYMENT_BADGE[pay.status] ?? "bg-sand-200 text-petroleum-500"
+                }`}
+              >
+                {paymentLabel}
+              </span>
+            </dd>
+          </div>
+        </dl>
         {hasMoney && (
           <p className="text-petroleum-700 mt-3 text-xs">
             {tPay("paid")} {formatPrice(pay.paidEur, locale)} · {tPay("owed")}{" "}
