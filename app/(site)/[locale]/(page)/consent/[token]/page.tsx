@@ -44,7 +44,7 @@ export default async function ConsentPage({
   const name = [subject.firstName, subject.lastName].filter(Boolean).join(" ");
 
   return (
-    <section className="bg-sand-50 flex min-h-dvh flex-col items-center px-5 py-24">
+    <section className="bg-sand-50 flex min-h-dvh flex-col items-center px-5 pt-32 pb-24 md:pt-44">
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <h1 className="font-display text-petroleum-700 text-3xl md:text-4xl">
