@@ -208,7 +208,11 @@ export default function CampaignDetailPage() {
                   t(`trigger.event.${campaign.trigger.event}`),
                   campaign.trigger.event === "after_booking"
                     ? `${campaign.trigger.days ?? 0} ${t("trigger.daysAfter")}`
-                    : null,
+                    : campaign.trigger.event === "first_visit"
+                      ? t("trigger.hoursAfterFirstVisit", {
+                          hours: campaign.trigger.hours ?? 0,
+                        })
+                      : null,
                   campaign.last_run_at
                     ? t("detail.lastRun", {
                         date: formatLongDate(campaign.last_run_at, locale),

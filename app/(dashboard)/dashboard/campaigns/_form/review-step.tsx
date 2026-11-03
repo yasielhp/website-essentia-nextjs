@@ -196,7 +196,9 @@ export function ReviewStep({
                 {trigger.event ? tTrigger(`event.${trigger.event}`) : ""}
                 {trigger.event === "after_booking"
                   ? ` (${trigger.days ?? 0} ${tTrigger("daysAfter")})`
-                  : ""}
+                  : trigger.event === "first_visit"
+                    ? ` (${tTrigger("hoursAfterFirstVisit", { hours: trigger.hours ?? 0 })})`
+                    : ""}
               </p>
               <p className="text-petroleum-400 text-xs">{t("activateHint")}</p>
             </div>

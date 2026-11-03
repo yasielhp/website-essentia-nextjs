@@ -300,7 +300,9 @@ export function CampaignForm({
     ? `${t(`trigger.event.${state.trigger.event}`)}${
         state.trigger.event === "after_booking"
           ? ` · ${state.trigger.days ?? 0} ${t("trigger.daysAfter")}`
-          : ""
+          : state.trigger.event === "first_visit"
+            ? ` · ${t("trigger.hoursAfterFirstVisit", { hours: state.trigger.hours ?? 0 })}`
+            : ""
       }`
     : "";
   const contentSummary = state.content[sendLocaleOf(state.audience)].subject;
