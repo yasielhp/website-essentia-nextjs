@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { IconWorld } from "@components/ui/icons";
 import { setPreferredLanguage } from "@/actions/preferred-language";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/constants/i18n";
 
 const labels: Record<string, string> = {
   en: "English",
@@ -28,12 +29,19 @@ export default function LanguageSelector() {
    * post that link carries the real Spanish slug, which the route pattern
    * never did.
    */
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const next = e.target.value;
 
-    // Remember the choice: on the profile when there is one to write to, in
-    // the cookie either way. Not awaited — the navigation should not wait on it.
-    void setPreferredLanguage(next);
+    // The cookie first, and in the browser: the middleware sends an unprefixed
+    // URL to whatever language the cookie names, so navigating before the
+    // cookie says "en" bounced straight back to the Spanish page. Then the
+    // profile, awaited, so the next request cannot read a stale value either.
+    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+    try {
+      await setPreferredLanguage(next);
+    } catch {
+      // The cookie is already set; the profile catches up next time.
+    }
 
     const alternate = document.querySelector<HTMLLinkElement>(
       `link[rel="alternate"][hreflang="${next}"]`,
@@ -41,7 +49,7 @@ export default function LanguageSelector() {
 
     // A page with no alternate declared falls back to the front page in the
     // chosen language rather than guessing at a translated slug.
-    router.replace(
+    router.push(
       alternate
         ? new URL(alternate.href, window.location.origin).pathname
         : next === "es"
@@ -58,7 +66,7 @@ export default function LanguageSelector() {
       <select
         aria-label={t("languageAriaLabel")}
         value={locale}
-        onChange={handleChange}
+        onChange={(e) => void handleChange(e)}
         className="cursor-pointer appearance-none bg-transparent pr-4 outline-none"
       >
         {Object.entries(labels).map(([value, label]) => (
