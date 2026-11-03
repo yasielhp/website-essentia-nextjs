@@ -179,23 +179,23 @@ export default function ContactDetailPage() {
     {
       id: "bonuses",
       label: tHistory("bonuses.heading"),
-      count: bonuses.filter((b) => b.remaining > 0).length,
+      count: 0,
     },
     {
       id: "transactions",
       label: tHistory("transactions.heading"),
       count: 0,
     },
+    {
+      id: "campaigns",
+      label: tHistory("campaigns.tab"),
+      count: campaigns.length,
+    },
     { id: "races", label: tHistory("races.heading"), count: raceRegs.length },
     {
       id: "education",
       label: tHistory("education.heading"),
       count: eduRegs.length,
-    },
-    {
-      id: "campaigns",
-      label: tHistory("campaigns.tab"),
-      count: campaigns.length,
     },
   ];
 

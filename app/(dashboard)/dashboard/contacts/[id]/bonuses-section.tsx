@@ -42,7 +42,10 @@ export function BonusesSection({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-petroleum-500 text-sm">
+          {!loading && t("total", { count: bonuses.length })}
+        </span>
         <Button
           variant="solid"
           size="sm"

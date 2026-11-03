@@ -1200,6 +1200,7 @@
         }
       },
       "bonuses": {
+        "total": "{count, plural, one {# bono} other {# bonos}}",
         "heading": "Bonos",
         "add": "Añadir bono",
         "empty": "Sin bonos",
