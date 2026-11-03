@@ -366,17 +366,15 @@ export async function writePaymentSettings(
   value: PaymentSettings,
   userId: string,
 ): Promise<void> {
-  const { error } = await getAdminClient()
-    .database.from("app_settings")
-    .upsert(
-      {
-        key: "payments",
-        value,
-        updated_at: new Date().toISOString(),
-        updated_by: userId,
-      },
-      { onConflict: "key" },
-    );
+  const { error } = await getAdminClient().database.from("app_settings").upsert(
+    {
+      key: "payments",
+      value,
+      updated_at: new Date().toISOString(),
+      updated_by: userId,
+    },
+    { onConflict: "key" },
+  );
   if (error) throw new Error(error.message);
 }
 ```
