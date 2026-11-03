@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { notifySuccess } from "@/lib/feedback";
@@ -10,7 +10,6 @@ import type { ColorSettings } from "@/utils/color-settings";
 import type { TierRow, ModalState } from "@/types/settings";
 import { TierModal } from "@/components/dashboard/settings/tier-modal";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
-import { TabButton } from "@/components/dashboard/settings/tab-button";
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -117,28 +116,19 @@ function ServicesContent({
   const tTiers = useTranslations("dashboard.settings.tiers");
   // The catalogue is fixed in code: these are the services that exist, and
   // their session types are seeded rather than added from here.
-  const [service, setService] = useState(bookableServices[0]?.id ?? "");
-
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex gap-1 overflow-x-auto">
-        {bookableServices.map(({ id }) => (
-          <TabButton
-            key={id}
-            active={service === id}
-            onClick={() => setService(id)}
-          >
-            <span className="whitespace-nowrap">{tServices(id)}</span>
-          </TabButton>
-        ))}
-      </div>
-
-      {/* One pass: only the selected service produces a panel. */}
-      {bookableServices.flatMap(({ id }) => {
-        if (id !== service) return [];
+    <div className="flex flex-col gap-6">
+      {/* One card per service, its session types inside. */}
+      {bookableServices.map(({ id }) => {
         const tiers = serviceTiers[id] ?? [];
-        return [
-          <div key={id}>
+        return (
+          <section
+            key={id}
+            className="border-sand-200 rounded-2xl border bg-white p-6"
+          >
+            <h3 className="font-display text-petroleum-700 mb-4 text-xl">
+              {tServices(id)}
+            </h3>
             {tiers.length > 0 ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {/* The calendar colour tints the whole card, so a tier is
@@ -262,8 +252,8 @@ function ServicesContent({
                 <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
               </div>
             )}
-          </div>,
-        ];
+          </section>
+        );
       })}
     </div>
   );
@@ -328,47 +318,46 @@ export function BookingsSettings() {
   if (!data.mounted) {
     return (
       <div className="flex flex-col gap-4">
-        {/* Same shape as the loaded page: service tabs, then the card grid. */}
-        <div className="flex gap-1">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-sand-100 h-9 w-28 animate-pulse rounded-full"
-            />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="border-sand-200 flex flex-col gap-3 rounded-2xl border bg-white p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
-                <div className="flex-1">
-                  <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
-                </div>
-                <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
-              </div>
-              <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
-                {[0, 1, 2, 3].map((j) => (
-                  <div key={j} className="flex justify-between gap-2">
-                    <div className="bg-sand-100 h-3 w-20 animate-pulse rounded" />
-                    <div className="bg-sand-100 h-3 w-12 animate-pulse rounded" />
+        {/* Same shape as the loaded page: a card per service, its grid inside. */}
+        {[0, 1].map((card) => (
+          <div
+            key={card}
+            className="border-sand-200 rounded-2xl border bg-white p-6"
+          >
+            <div className="bg-sand-100 mb-4 h-6 w-44 animate-pulse rounded" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="border-sand-200 flex flex-col gap-3 rounded-2xl border bg-white p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+                    <div className="flex-1">
+                      <div className="bg-sand-100 h-4 w-28 animate-pulse rounded" />
+                    </div>
+                    <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
                   </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
-                <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
-                <div className="flex gap-1.5">
-                  <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
-                  <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                  <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
+                    {[0, 1, 2, 3].map((j) => (
+                      <div key={j} className="flex justify-between gap-2">
+                        <div className="bg-sand-100 h-3 w-20 animate-pulse rounded" />
+                        <div className="bg-sand-100 h-3 w-12 animate-pulse rounded" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 border-t border-black/10 pt-3">
+                    <div className="bg-sand-100 h-3 w-24 animate-pulse rounded" />
+                    <div className="flex gap-1.5">
+                      <div className="bg-sand-100 h-5 w-20 animate-pulse rounded-full" />
+                      <div className="bg-sand-100 h-5 w-16 animate-pulse rounded-full" />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   }
