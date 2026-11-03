@@ -60,4 +60,16 @@ describe("isExpiredUnpaid", () => {
     expect(isExpiredUnpaid({ ...base, created_at: null }, now)).toBe(false);
     expect(isExpiredUnpaid({ ...base, created_at: "nope" }, now)).toBe(false);
   });
+
+  it("a declined card leaves the booking unpaid, so it expires like one never paid", () => {
+    expect(isExpiredUnpaid({ ...base, payment_status: "failed" }, now)).toBe(
+      true,
+    );
+  });
+
+  it("money in, even a deposit, keeps the slot", () => {
+    expect(
+      isExpiredUnpaid({ ...base, payment_status: "deposit_paid" }, now),
+    ).toBe(false);
+  });
 });

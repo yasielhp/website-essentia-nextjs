@@ -9,7 +9,11 @@ import {
 } from "@/actions/calendar-propagate";
 import type { UpdateBookingPayload } from "@/types/booking";
 import { localDateStr } from "@/utils/format";
-import { amountPaidOf, type PaymentValue } from "../../_shared/payment-fields";
+import {
+  amountPaidOf,
+  paymentModeFor,
+  type PaymentValue,
+} from "../../_shared/payment-fields";
 import {
   resolvePrice,
   type FormState,
@@ -236,12 +240,7 @@ function paymentPatch(
     // A booking made before deposits, or one with no payment, now has a mode.
     ...(!original?.paymentMode || original.paymentMode === "none"
       ? {
-          payment_mode:
-            status === "pending"
-              ? "none"
-              : status === "paid"
-                ? "full"
-                : "deposit",
+          payment_mode: paymentModeFor(status),
         }
       : {}),
     ...(status === "paid" && payment.method

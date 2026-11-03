@@ -201,7 +201,7 @@
     "contactNote": "Por favor, mantente atento a tu correo. Nos pondremos en contacto contigo para confirmar tu cita.",
     "contactNoteWithPhone": "Por favor, mantente atento a tu correo y al teléfono <phone>{phoneValue}</phone>. Nos pondremos en contacto contigo para confirmar tu cita.",
     "cta": "Volver al inicio",
-    "bodyUnpaid": "No hemos podido abrir el pago. Te escribimos para completarlo."
+    "bodyUnpaid": "No se ha podido iniciar el pago y la hora no ha quedado reservada. Inténtalo de nuevo o escríbenos."
   },
   "cancel": {
     "confirm": {

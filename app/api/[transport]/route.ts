@@ -301,9 +301,12 @@ const handler = createMcpHandler(
       "list_blog_drafts",
       {
         title: "List Blog Drafts",
-        description: "List the 20 most recent blog drafts.",
+        description:
+          "List the 20 most recent blog drafts. Requires the MCP API key: drafts are unpublished work.",
       },
-      async () => {
+      async (extra) => {
+        const denied = writeDenied(extra as ToolExtra);
+        if (denied) return denied;
         const { data, error } = await getAdminClient()
           .database.from("blog_posts")
           .select("id, title, slug, created_at")

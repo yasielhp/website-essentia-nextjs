@@ -26,7 +26,7 @@ export async function expireUnpaidBookings(
       "id, status, payment_status, payment_mode, created_by_role, created_at",
     )
     .eq("status", "pending")
-    .eq("payment_status", "pending")
+    .in("payment_status", ["pending", "failed"])
     .in("payment_mode", ["deposit", "full"])
     .lt("created_at", cutoff);
 
@@ -41,7 +41,7 @@ export async function expireUnpaidBookings(
       .update({ status: "cancelled" })
       .eq("id", id)
       .eq("status", "pending")
-      .eq("payment_status", "pending")
+      .in("payment_status", ["pending", "failed"])
       .select("id");
     if (((updated ?? []) as unknown[]).length === 0) continue;
 

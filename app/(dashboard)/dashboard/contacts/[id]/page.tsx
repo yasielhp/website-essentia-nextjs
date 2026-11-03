@@ -258,7 +258,7 @@ function ContactDetailPageInner() {
       const [campaignRows, bonusRows, consentRow] = await Promise.all([
         fetchContactCampaigns(getAccessToken(), id),
         fetchContactBonuses(getAccessToken(), id),
-        fetchContactConsent(getAccessToken(), id),
+        fetchContactConsent(getAccessToken(), id, { withSignature: false }),
       ]);
       if (cancelled) return;
       dispatch({

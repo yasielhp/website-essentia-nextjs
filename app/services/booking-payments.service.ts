@@ -34,7 +34,7 @@ export async function handleBookingPaid(
       // handed an id and an amount, and the row knows which Redsys order paid
       // it. That column is still called `stripe_session_id` for historical
       // reasons.
-      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, stripe_session_id, contact_id, staff_id",
+      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, status, stripe_session_id, contact_id, staff_id",
     )
     .eq("id", bookingId)
     .single();
@@ -89,6 +89,10 @@ export async function handleBookingPaid(
     .select("id");
   if (((applied ?? []) as unknown[]).length === 0) return;
 
+  // The money wins: a booking the cron released as unpaid comes back when the
+  // bank finally answers. But its hour may have been given to somebody else in
+  // between, so the entry says so and the staff notice below goes out.
+  const revived = booking.status === "cancelled";
   await recordBookingEvent({
     bookingId,
     channel: "payment",
@@ -96,9 +100,12 @@ export async function handleBookingPaid(
     // Nobody pressed anything: this arrives from Redsys' notification.
     actorRole: "system",
     summary:
-      owedEur > 0
+      (owedEur > 0
         ? `Depósito recibido · ${formatPrice(received, "es")} · pendiente ${formatPrice(owedEur, "es")}`
-        : `Pago recibido · ${formatPrice(received, "es")}`,
+        : `Pago recibido · ${formatPrice(received, "es")}`) +
+      (revived
+        ? " · la reserva había caducado: comprobar que la hora sigue libre"
+        : ""),
     providerId: orderId,
     payload: { orderId, amountEur: received, owedEur, currency: "EUR" },
   });
@@ -178,7 +185,7 @@ async function contactLocale(
   const query = client.database.from("contacts").select("preferred_language");
   const { data } = contactId
     ? await query.eq("id", contactId).maybeSingle()
-    : await query.ilike("email", email).maybeSingle();
+    : await query.eq("email", email.trim().toLowerCase()).maybeSingle();
   return (data as { preferred_language: string | null } | null)
     ?.preferred_language === "en"
     ? "en"

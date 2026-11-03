@@ -115,7 +115,7 @@ export async function pendingConsentUrl(
       const { data } = await getAdminClient()
         .database.from("contacts")
         .select("id")
-        .ilike("email", who.email)
+        .eq("email", who.email.trim().toLowerCase())
         .limit(1)
         .maybeSingle();
       contactId = (data as { id: string } | null)?.id ?? null;

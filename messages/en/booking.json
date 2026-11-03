@@ -201,7 +201,7 @@
     "contactNote": "Please keep an eye on your email. We will reach out to confirm your appointment.",
     "contactNoteWithPhone": "Please keep an eye on your email and phone <phone>{phoneValue}</phone>. We will reach out to confirm your appointment.",
     "cta": "Back to home",
-    "bodyUnpaid": "We could not open the payment. We will write to you to complete it."
+    "bodyUnpaid": "The payment could not be started and the hour is not reserved. Please try again or write to us."
   },
   "cancel": {
     "confirm": {

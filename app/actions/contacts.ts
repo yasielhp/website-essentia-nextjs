@@ -62,8 +62,12 @@ export async function fetchContacts(
   // status filter lives here: a contact on page 4 is invisible to a filter that
   // only sees page 1. PostgREST's filter grammar uses commas and parentheses,
   // and `*` would widen the pattern beyond what was typed, so all are stripped.
-  const term = search?.trim().replace(/[,()*]/g, "");
-  if (term) {
+  // One `or` per word, so "Ana García" finds a first name and a last name.
+  const terms = (search ?? "")
+    .replace(/[,()*]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  for (const term of terms) {
     query = query.or(
       `email.ilike.*${term}*,first_name.ilike.*${term}*,last_name.ilike.*${term}*`,
     );

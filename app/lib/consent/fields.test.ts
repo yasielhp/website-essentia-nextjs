@@ -45,14 +45,28 @@ describe("sanitizeAnswers", () => {
     });
   });
 
-  it("drops unknown keys and answers of the wrong type", () => {
+  it("drops unknown keys, answers of the wrong type, and a detail with no yes", () => {
     expect(
       sanitizeAnswers({ hacker: "x", surgery: "yes", cancerDetail: "x" }),
-    ).toEqual({ cancerDetail: "x" });
+    ).toEqual({});
   });
 
   it("cuts a long detail to 500 characters", () => {
     const out = sanitizeAnswers({ other: true, otherDetail: "a".repeat(900) });
     expect((out.otherDetail as string).length).toBe(500);
+  });
+});
+
+describe("sanitizeAnswers · details", () => {
+  it("keeps the detail of a yes and drops one typed beside a no", () => {
+    const clean = sanitizeAnswers({
+      surgery: true,
+      surgeryDetail: "knee, 2024",
+      cancer: false,
+      cancerDetail: "typed, then negated",
+    });
+    expect(clean.surgeryDetail).toBe("knee, 2024");
+    expect(clean.cancer).toBe(false);
+    expect("cancerDetail" in clean).toBe(false);
   });
 });

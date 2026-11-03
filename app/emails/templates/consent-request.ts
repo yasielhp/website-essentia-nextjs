@@ -1,4 +1,4 @@
-import { emailBase, consentBlock } from "./_base";
+import { emailBase, consentBlock, escapeHtml } from "./_base";
 
 /** Asks a client to fill in their informed consent, with the link to do it. */
 export function consentRequestEmail({
@@ -18,7 +18,7 @@ export function consentRequestEmail({
       : "Please complete your informed consent before your session.",
     body: `
       <h1 style="margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-        ${es ? `Hola, ${name}` : `Hello, ${name}`}
+        ${es ? `Hola, ${escapeHtml(name)}` : `Hello, ${escapeHtml(name)}`}
       </h1>
       <p style="margin:0;font-size:16px;color:#335554;line-height:1.6;">
         ${

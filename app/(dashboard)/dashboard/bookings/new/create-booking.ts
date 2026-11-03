@@ -12,7 +12,7 @@ import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
 import { toStoredGender } from "@/constants/gender";
 import { localDateStr } from "@/utils/format";
-import { amountPaidOf } from "../_shared/payment-fields";
+import { amountPaidOf, paymentModeFor } from "../_shared/payment-fields";
 import {
   resolvePrice,
   type FormState,
@@ -195,12 +195,7 @@ export async function createBooking(
       ...(contactId ? { contact_id: contactId } : {}),
       status: "confirmed",
       payment_status: paymentStatus,
-      payment_mode:
-        paymentStatus === "pending"
-          ? "none"
-          : paymentStatus === "paid"
-            ? "full"
-            : "deposit",
+      payment_mode: paymentModeFor(paymentStatus),
       amount_paid_eur: paidEur,
       ...(paymentStatus === "paid" && draft.payment.method
         ? {

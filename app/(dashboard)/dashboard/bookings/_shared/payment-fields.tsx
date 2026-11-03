@@ -46,6 +46,13 @@ export function paymentValueOf(row: {
   };
 }
 
+/** The mode a booking written at the desk gets from its payment state. */
+export function paymentModeFor(
+  status: PaymentFormStatus,
+): "none" | "full" | "deposit" {
+  return status === "pending" ? "none" : status === "paid" ? "full" : "deposit";
+}
+
 /** The euros typed, 0 when empty or unreadable. */
 export function amountPaidOf(value: PaymentValue): number {
   if (value.status === "pending") return 0;

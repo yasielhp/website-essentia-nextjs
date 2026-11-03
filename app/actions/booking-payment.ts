@@ -35,7 +35,7 @@ export async function recordCounterPayment(
   const db = getAdminClient().database;
   const { data } = await db
     .from("bookings")
-    .select("price_eur, amount_paid_eur, payment_status, payment_mode")
+    .select("price_eur, amount_paid_eur, payment_status, payment_mode, status")
     .eq("id", input.bookingId)
     .maybeSingle();
   const row = data as {
@@ -43,12 +43,18 @@ export async function recordCounterPayment(
     amount_paid_eur: number | string | null;
     payment_status: string;
     payment_mode: string | null;
+    status: string | null;
   } | null;
   if (!row) return { error: "not_found" };
+  if (row.status === "cancelled") return { error: "cancelled" };
   // Paid for when the bonus was bought; money here would count it twice.
   if (row.payment_mode === "bonus") return { error: "bonus_booking" };
 
   const price = Number(row.price_eur ?? 0);
+  // Never more than is owed: a slip of the keyboard must not inflate the ledger.
+  if (input.amountEur > amountOwed(price, Number(row.amount_paid_eur ?? 0))) {
+    return { error: "exceeds_owed" };
+  }
   const paid = Number(row.amount_paid_eur ?? 0) + input.amountEur;
   const status = paymentStatusAfter(paid, price);
   const owed = amountOwed(price, paid);

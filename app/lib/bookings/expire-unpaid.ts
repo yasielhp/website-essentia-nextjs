@@ -17,8 +17,8 @@ export type ExpirableBooking = {
 };
 
 /**
- * True for a web booking that is still `pending`, has taken no money, and is
- * older than the expiry window.
+ * True for a web booking that is still `pending`, has taken no money — the bank
+ * never answered, or refused the card — and is older than the expiry window.
  *
  * Requiring `payment_mode` keeps this away from bookings made before deposits,
  * which waited unpaid for the centre to confirm them and are not abandoned.
@@ -27,7 +27,12 @@ export type ExpirableBooking = {
  */
 export function isExpiredUnpaid(booking: ExpirableBooking, now: Date): boolean {
   if (booking.status !== "pending") return false;
-  if (booking.payment_status !== "pending") return false;
+  if (
+    booking.payment_status !== "pending" &&
+    booking.payment_status !== "failed"
+  ) {
+    return false;
+  }
   if (booking.payment_mode !== "deposit" && booking.payment_mode !== "full") {
     return false;
   }

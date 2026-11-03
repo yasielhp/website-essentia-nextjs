@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { shortDate } from "./consent-date";
+import { localDateStr } from "@/utils/format";
 import type { ContactBonus } from "@/types/bonus";
 import { GrantBonusDialog } from "./grant-bonus-dialog";
 
@@ -12,13 +13,6 @@ const STATE_CLASS: Record<"active" | "used" | "expired", string> = {
   used: "bg-sand-100 text-petroleum-500",
   expired: "bg-red-100 text-red-600",
 };
-
-/** `YYYY-MM-DD` of today in the browser's calendar, for the expiry colour. */
-function todayLocal(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 
 /**
  * The bonuses this contact bought, one line each: what it is, how many of its
@@ -40,7 +34,7 @@ export function BonusesSection({
   const t = useTranslations("dashboard.contacts.detail.bonuses");
   const tBonuses = useTranslations("dashboard.bonuses");
   const [granting, setGranting] = useState(false);
-  const today = todayLocal();
+  const today = localDateStr(new Date());
 
   return (
     <div>

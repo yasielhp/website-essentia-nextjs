@@ -41,8 +41,14 @@ export function sanitizeAnswers(
     const value = data[field.id];
     if (field.kind === "boolean") {
       if (typeof value === "boolean") clean[field.id] = value;
+      // A detail explains a yes; one typed and then negated is not kept.
       const detail = data[`${field.id}Detail`];
-      if (field.details && typeof detail === "string" && detail.trim()) {
+      if (
+        field.details &&
+        value === true &&
+        typeof detail === "string" &&
+        detail.trim()
+      ) {
         clean[`${field.id}Detail`] = detail.trim().slice(0, 500);
       }
     } else if (typeof value === "string" && value.trim()) {

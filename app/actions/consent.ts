@@ -307,6 +307,7 @@ export async function createConsentLink(
 export async function fetchContactConsent(
   accessToken: string | null,
   contactId: string,
+  options: { withSignature?: boolean } = {},
 ): Promise<ContactConsent | null> {
   try {
     await requireRole(accessToken);
@@ -327,8 +328,10 @@ export async function fetchContactConsent(
 
   // The bucket is private: the file is read here with the service key and
   // handed over inline, so no link to the signature ever exists to leak.
+  // Only where it is drawn: the contact's file says no more than the date, and
+  // the file would otherwise travel on every visit for nothing.
   let signatureDataUrl: string | null = null;
-  if (row.signed_at && row.signature_path) {
+  if (options.withSignature !== false && row.signed_at && row.signature_path) {
     const { data: blob } = await admin.storage
       .from("consents")
       .download(row.signature_path);
