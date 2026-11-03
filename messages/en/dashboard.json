@@ -1225,7 +1225,16 @@
       "testEnvironment": "Test environment",
       "production": "Production",
       "connected": "Connected",
-      "notConfigured": "Not configured"
+      "notConfigured": "Not configured",
+      "depositPercent": "Deposit when booking (%)",
+      "depositHint": "What is charged online when booking; the rest is paid at the centre.",
+      "fullDiscount": "Discount for paying 100% (%)",
+      "fullDiscountHint": "Set 0 to offer no discount.",
+      "requirePayment": "Require payment to book",
+      "requirePaymentHint": "When off, the public form books without charging.",
+      "save": "Save",
+      "saved": "Payment settings saved",
+      "error": "The settings could not be saved."
     },
     "calendar": {
       "connected": "Connected",
@@ -1262,7 +1271,8 @@
     "tabs": {
       "bookings": "Bookings",
       "subscriptions": "Subscriptions",
-      "calendar": "Google Calendar"
+      "calendar": "Google Calendar",
+      "payments": "Payments"
     },
     "staff": {
       "noStaff": "No staff on the system yet.",

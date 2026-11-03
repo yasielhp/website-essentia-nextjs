@@ -5,11 +5,17 @@ import { useTranslations } from "next-intl";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { BookingsSettings } from "@/components/dashboard/settings/bookings-settings";
 import { SubscriptionsSettings } from "@/components/dashboard/settings/subscriptions-settings";
+import { PaymentsSettings } from "@/components/dashboard/settings/payments-settings";
 import { CalendarSyncCard } from "@/components/dashboard/settings/calendar-sync-card";
 
-type SettingsTab = "bookings" | "subscriptions" | "calendar";
+type SettingsTab = "bookings" | "subscriptions" | "payments" | "calendar";
 
-const TABS: SettingsTab[] = ["bookings", "subscriptions", "calendar"];
+const TABS: SettingsTab[] = [
+  "bookings",
+  "subscriptions",
+  "payments",
+  "calendar",
+];
 
 /**
  * The tabs themselves, which are the only part of this screen that needs a
@@ -36,6 +42,7 @@ export function SettingsTabs() {
 
         {tab === "bookings" && <BookingsSettings />}
         {tab === "subscriptions" && <SubscriptionsSettings />}
+        {tab === "payments" && <PaymentsSettings />}
         {tab === "calendar" && <CalendarSyncCard />}
       </div>
     </div>

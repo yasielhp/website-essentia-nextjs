@@ -1225,7 +1225,16 @@
       "testEnvironment": "Entorno de pruebas",
       "production": "Producción",
       "connected": "Conectado",
-      "notConfigured": "No configurado"
+      "notConfigured": "No configurado",
+      "depositPercent": "Depósito al reservar (%)",
+      "depositHint": "Lo que se cobra online al reservar; el resto se paga en el centro.",
+      "fullDiscount": "Descuento por pagar el 100% (%)",
+      "fullDiscountHint": "Pon 0 para no ofrecer descuento.",
+      "requirePayment": "Exigir pago para reservar",
+      "requirePaymentHint": "Si se desactiva, el formulario público reserva sin cobrar.",
+      "save": "Guardar",
+      "saved": "Ajustes de pago guardados",
+      "error": "No se han podido guardar los ajustes."
     },
     "calendar": {
       "connected": "Conectado",
@@ -1262,7 +1271,8 @@
     "tabs": {
       "bookings": "Reservas",
       "subscriptions": "Suscripciones",
-      "calendar": "Google Calendar"
+      "calendar": "Google Calendar",
+      "payments": "Pagos"
     },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
