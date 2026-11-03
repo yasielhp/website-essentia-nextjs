@@ -26,6 +26,16 @@
 
 Ejecutar 1 → 2 → 3 → 4 → 5 → 6.
 
+## Reglas de ejecución (obligatorias)
+
+- Rama `feat/reapertura-diciembre`. **Nada de push ni deploy.** No ejecutar la Tarea 1.12.
+- Los agentes **solo escriben** los `.sql`. Las migraciones las aplica un único orquestador a la BD viva, en orden y verificando cada una (la BD es compartida y no hay staging).
+- Nadie hace `git add` de `bun.lockb` (ya está modificado de antes).
+- Puerta por tarea: `bun run format && bun run lint && bun test && bun run build` en verde.
+- Ficheros `"use server"`: no exportan tipos (memoria `server-action-type-reexport`); los tipos viven en `app/types/` o `app/lib/`. Además del build, abrir en `bun run dev` la pantalla que los importa.
+- El código de este plan es especificación, no copia y pega: comprobar que cada símbolo importado existe y completar los huecos ("copiar el cuerpo de la RPC", "como hoy", "buscar la clase del botón").
+- Ficheros calientes que tocan varias tareas (`dashboard.json`, `schemas.ts`, `types/booking.ts`, `booking-detail-sections.tsx`, `contacts/[id]/page.tsx`, `bookings/new/*`, `settings-tabs.tsx`): una tarea a la vez.
+
 ## Hechos del código que el ejecutor necesita saber
 
 - Hay **dos carpetas de migraciones**: `migrations/` (antiguas) e `insforge/migrations/` (actuales). Las nuevas van en `insforge/migrations/`. Se aplican a mano: `npx @insforge/cli@latest db query "$(cat insforge/migrations/<fichero>.sql)"` desde la raíz. Verificar después con una consulta a `information_schema.columns`.
@@ -494,8 +504,22 @@ export async function handleBookingPaid(
     return;
   }
 
-  // Redsys retries its notification; a second one must not add the money twice.
-  if (booking.payment_status === "paid") return;
+  // Redsys retries its notification. A deposit leaves the booking in
+  // `deposit_paid`, so checking the status is not enough: a retry would add the
+  // money a second time. Key on the order id instead: one `payment/paid` event
+  // per Redsys order, ever.
+  const orderIdForDedupe = (booking.stripe_session_id as string | null) ?? null;
+  if (orderIdForDedupe) {
+    const { data: already } = await adminClient.database
+      .from("booking_events")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .eq("channel", "payment")
+      .eq("event", "paid")
+      .eq("provider_id", orderIdForDedupe)
+      .limit(1);
+    if ((already ?? []).length > 0) return;
+  }
 
   const received = Number.isFinite(amountCents) && amountCents > 0 ? amountCents / 100 : 0;
   const priceEur = booking.price_eur == null ? 0 : Number(booking.price_eur);
@@ -908,8 +932,8 @@ git commit -m "feat(dashboard): record counter payments on manual bookings"
 
 - Select añade `amount_paid_eur, payment_mode`.
 - `amount` de la fila = `amount_paid_eur` (lo cobrado), y añadir `listAmount = price_eur` para mostrar "50 / 100 €" en la lista.
-- `status`: `payment_status === "paid"` → `completed`; `deposit_paid` → `deposit_paid`; `failed|refunded` → tal cual; resto → `pending`. **Deja de contar como ingreso una reserva confirmada sin pagar.**
-- Revenue = suma de `amount_paid_eur`. Tarjeta "Pendiente" = suma de `amountOwed(price_eur, amount_paid_eur)` de reservas no canceladas.
+- `status`: para filas con `payment_mode` NO nulo: `payment_status === "paid"` → `completed`; `deposit_paid` → `deposit_paid`; `failed|refunded` → tal cual; resto → `pending`. **Para filas con `payment_mode IS NULL` (histórico, 136 reservas `confirmed` con `payment_status='pending'`) se conserva la regla antigua** (confirmada y no fallida/reembolsada = `completed`, importe = `price_eur`), o el histórico de ingresos caería a casi cero.
+- Revenue = suma de `amount_paid_eur` para filas nuevas y de `price_eur` para las históricas. Los bonos vendidos (`contact_bonuses.price_eur`) se suman como ingreso en la Tarea 3.5 (añadir fila tipo `bonus` a `UnifiedRow`/`TxType`). Tarjeta "Pendiente" = suma de `amountOwed(price_eur, amount_paid_eur)` de reservas no canceladas.
 
 **Step 2: Ficha de contacto**
 
@@ -954,6 +978,24 @@ git commit -m "feat(settings): deposit and full-payment discount are editable"
 - Modify: `app/api/[transport]/route.ts:164` — **no** restaurar `create_booking` (crearía reservas sin pago).
 
 Pasos: restaurar `<BookingSection />`, volver a meter `/booking` en el sitemap, reactivar CTAs con `href`. `bun run build`. Commit `feat(site): public booking is back behind a deposit`. **Desplegar solo cuando el centro confirme el día de apertura de agenda.** Hasta entonces, mergear sin desplegar o dejar en rama `feat/reopen-booking`.
+
+## Tarea 1.13 — Reservas web sin pagar no bloquean el hueco ni avisan
+
+**Problema:** `availability.ts:92` solo excluye `cancelled`, y `confirmDraftBooking` pasa a `pending` y manda el WhatsApp al profesional **antes** de ir a Redsys. Con pago obligatorio, quien abandona en Redsys deja una `pending` sin pago que bloquea el hueco y ya avisó al staff.
+
+**Files:**
+- Modify: `app/actions/booking-draft.ts` (`confirmDraftBooking`: **no** enviar el WhatsApp `assigned` aquí para reservas web con pago; moverlo a `handleBookingPaid`)
+- Modify: `app/components/sections/booking/booking-submit.ts` (`notifyBooking(event: "received")` se llama solo tras abrir el pago; el email "received" a la clienta sigue, pero el aviso al staff por email/WhatsApp pasa a `handleBookingPaid`)
+- Modify: `app/services/booking-payments.service.ts` (tras confirmar el pago: `notifyStaffOnWhatsApp({ bookingId, staffId, event: "assigned" })` si hay `staff_id`)
+- Create: `app/lib/bookings/expire-unpaid.ts`, `app/lib/bookings/expire-unpaid.test.ts`
+- Modify: `app/api/cron/campaigns/route.ts` o crear `app/api/cron/expire-bookings/route.ts` (+ `vercel.json` cada 15 min)
+- Modify: `app/actions/availability.ts:92` (ignorar `pending` con `payment_status='pending'` creadas por web hace más de 30 min; o bien confiar en la caducidad y no tocarlo)
+
+**Regla pura (con test):** `isExpiredUnpaid({ status, payment_status, created_by_role, created_at }, now)` es `true` si `status === "pending"`, `payment_status === "pending"`, `created_by_role in ("client","anonymous")` y `created_at` hace más de 30 minutos. `expireUnpaid()` pone `status = 'cancelled'` y registra `booking_events` `system/cancelled` "Caducada: no se completó el pago". Las reservas del dashboard (`confirmed`) no se tocan nunca.
+
+**Verificación:** test de la regla; en dev crear una reserva web, no pagar, esperar a que el cron (llamado a mano con `CRON_SECRET`) la cancele y el hueco quede libre.
+
+Commit `fix(booking): an unpaid web booking neither blocks the slot nor rings the staff`.
 
 ---
 
@@ -1030,8 +1072,6 @@ y en el reducer `case "PREFILL_CLIENT": return { ...state, ...action.value };`.
 
 import { requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
-
-export type BookingPeek = { /* NO re-exportar desde aquí: definir en app/types/booking.ts */ };
 
 export async function fetchBookingPeek(accessToken: string | null, bookingId: string) {
   const { role, userId } = await requireRole(accessToken);
