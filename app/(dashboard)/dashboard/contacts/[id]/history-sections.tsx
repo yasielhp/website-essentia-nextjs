@@ -1,5 +1,6 @@
 "use client";
 
+import type { ContactBonus } from "@/types/bonus";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -94,14 +95,17 @@ export function TransactionsSection({
   memberships,
   raceRegs,
   eduRegs,
+  bonuses,
 }: {
   loading: boolean;
   bookings: Booking[];
   memberships: Membership[];
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
+  bonuses: ContactBonus[];
 }) {
   const t = useTranslations("dashboard.contacts.detail.transactions");
+  const tBonuses = useTranslations("dashboard.bonuses");
   const locale = useDashboardLocale();
   const rows: TransactionRow[] = [
     ...bookings.map((b) => ({
@@ -131,6 +135,17 @@ export function TransactionsSection({
       status: "confirmed",
       created_at: r.created_at,
     })),
+    // A bonus is money the contact paid the day they bought it; the sessions
+    // they take from it carry no amount of their own.
+    ...bonuses.map((b) => ({
+      id: b.id,
+      kind: "Bonus",
+      title: tBonuses("label", { sessions: b.sessionsTotal }),
+      date: b.purchasedAt,
+      amount: b.priceEur,
+      status: "completed",
+      created_at: b.purchasedAt,
+    })),
     ...eduRegs.map((r) => ({
       id: r.id,
       kind: "Education",
@@ -142,10 +157,9 @@ export function TransactionsSection({
     })),
   ].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 
-  const paidTotal = bookings.reduce(
-    (sum, b) => sum + Number(b.amount_paid_eur ?? 0),
-    0,
-  );
+  const paidTotal =
+    bookings.reduce((sum, b) => sum + Number(b.amount_paid_eur ?? 0), 0) +
+    bonuses.reduce((sum, b) => sum + b.priceEur, 0);
 
   return (
     <div>

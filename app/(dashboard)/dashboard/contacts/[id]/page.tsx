@@ -495,6 +495,7 @@ function ContactDetailPageInner() {
             memberships={memberships}
             raceRegs={raceRegs}
             eduRegs={eduRegs}
+            bonuses={bonuses}
           />
         )}
         {tab === "bookings" && (
