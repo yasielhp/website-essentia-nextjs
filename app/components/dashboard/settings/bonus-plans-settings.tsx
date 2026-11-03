@@ -50,12 +50,12 @@ export function BonusPlansSettings() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-petroleum-700 text-sm font-semibold">
+        <h2 className="font-display text-petroleum-700 text-xl">
           {t("heading")}
         </h2>
         <Button
           variant="solid"
-          size="sm"
+          size="md"
           onClick={() => setEditing(null)}
           disabled={loading}
         >

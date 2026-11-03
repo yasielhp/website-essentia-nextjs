@@ -1366,8 +1366,8 @@
       "failed": "Could not sync. Please try again."
     },
     "bonuses": {
-      "heading": "Vouchers",
-      "new": "New voucher",
+      "heading": "All vouchers",
+      "new": "Create voucher",
       "empty": "There are no vouchers yet.",
       "name": "Name",
       "tier": "Session type",

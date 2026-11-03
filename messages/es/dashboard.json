@@ -1366,8 +1366,8 @@
       "failed": "No se pudo sincronizar. Inténtalo de nuevo."
     },
     "bonuses": {
-      "heading": "Bonos",
-      "new": "Nuevo bono",
+      "heading": "Todos los bonos",
+      "new": "Crear bono",
       "empty": "Todavía no hay bonos.",
       "name": "Nombre",
       "tier": "Tipo de sesión",
