@@ -459,3 +459,43 @@ export async function fetchBonusSales(
         : ((r.created_by && roleById.get(r.created_by)) ?? "admin"),
   }));
 }
+
+/**
+ * Removes a bonus that was added by mistake. Only while nothing has been taken
+ * from it: a bonus with a session on a booking is money and history, and the
+ * way to undo those is on each booking. Also refused once sold online, where
+ * the client paid for it.
+ */
+export async function deleteContactBonus(
+  accessToken: string | null,
+  bonusId: string,
+): Promise<{
+  error: "forbidden" | "not_found" | "in_use" | "paid_online" | "failed" | null;
+}> {
+  const actor = await authorize(accessToken);
+  if (!actor) return { error: "forbidden" };
+
+  const db = getAdminClient().database;
+  const { data } = await db
+    .from("contact_bonuses")
+    .select("id, paid_method")
+    .eq("id", bonusId)
+    .maybeSingle();
+  const bonus = data as { id: string; paid_method: string | null } | null;
+  if (!bonus) return { error: "not_found" };
+  if (bonus.paid_method === "online") return { error: "paid_online" };
+
+  const { count } = await db
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("bonus_id", bonusId);
+  if ((count ?? 0) > 0) return { error: "in_use" };
+
+  const { error } = await db.from("contact_bonuses").delete().eq("id", bonusId);
+  if (error) return { error: "failed" };
+  console.info("[bonuses] deleted an unused bonus", {
+    bonusId,
+    by: actor.userId,
+  });
+  return { error: null };
+}

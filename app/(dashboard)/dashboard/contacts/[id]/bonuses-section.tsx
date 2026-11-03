@@ -7,6 +7,9 @@ import { shortDate } from "./consent-date";
 import { localDateStr } from "@/utils/format";
 import type { ContactBonus } from "@/types/bonus";
 import { GrantBonusDialog } from "./grant-bonus-dialog";
+import { deleteContactBonus } from "@/actions/bonuses";
+import { getAccessToken } from "@/lib/client-session";
+import { notifySuccess } from "@/lib/feedback";
 
 const STATE_CLASS: Record<"active" | "used" | "expired", string> = {
   active: "bg-green-100 text-green-700",
@@ -34,6 +37,25 @@ export function BonusesSection({
   const t = useTranslations("dashboard.contacts.detail.bonuses");
   const tBonuses = useTranslations("dashboard.bonuses");
   const [granting, setGranting] = useState(false);
+  const [removing, setRemoving] = useState<ContactBonus | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  async function remove() {
+    if (!removing) return;
+    setRemoveBusy(true);
+    setRemoveError(null);
+    const { error } = await deleteContactBonus(getAccessToken(), removing.id);
+    setRemoveBusy(false);
+    if (error) {
+      setRemoveError(t(`deleteError.${error}`));
+      return;
+    }
+    setRemoving(null);
+    notifySuccess(t("deleted"));
+    onChanged();
+  }
+
   const today = localDateStr(new Date());
 
   return (
@@ -88,18 +110,86 @@ export function BonusesSection({
                     })}
                   </p>
                 </div>
-                {canRedeem && (
-                  <Button
-                    variant="solid"
-                    size="lg"
-                    href={`/dashboard/bookings/new?contact=${contactId}&bonus=${b.id}`}
-                  >
-                    {t("redeem")}
-                  </Button>
-                )}
+                <div className="flex shrink-0 items-center gap-3">
+                  {/* Only a bonus nobody has drawn from, and not one the client
+                      paid for online: those are money, and a mistake in them
+                      is undone on the booking or by the bank. */}
+                  {b.used === 0 && b.paidMethod !== "online" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRemoveError(null);
+                        setRemoving(b);
+                      }}
+                      className="text-sm text-red-500 underline underline-offset-4 hover:text-red-600"
+                    >
+                      {t("delete")}
+                    </button>
+                  )}
+                  {canRedeem && (
+                    <Button
+                      variant="solid"
+                      size="lg"
+                      href={`/dashboard/bookings/new?contact=${contactId}&bonus=${b.id}`}
+                    >
+                      {t("redeem")}
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {removing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("deleteDialog.title")}
+            className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex flex-col gap-1">
+              <h3 className="font-display text-petroleum-700 text-xl">
+                {t("deleteDialog.title")}
+              </h3>
+              <p className="text-petroleum-400 text-sm">
+                {t("deleteDialog.body", {
+                  bonus: tBonuses("label", {
+                    sessions: removing.sessionsTotal,
+                  }),
+                })}
+              </p>
+            </div>
+            {removeError && (
+              <p className="text-sm text-red-600" role="alert">
+                {removeError}
+              </p>
+            )}
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="danger"
+                size="md"
+                onClick={() => void remove()}
+                disabled={removeBusy}
+                className="w-full"
+              >
+                {removeBusy
+                  ? t("deleteDialog.deleting")
+                  : t("deleteDialog.confirm")}
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setRemoving(null)}
+                disabled={removeBusy}
+                className="w-full"
+              >
+                {t("dialog.cancel")}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

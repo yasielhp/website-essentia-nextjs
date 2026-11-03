@@ -1213,6 +1213,21 @@
         "send": "Send"
       },
       "bonuses": {
+        "delete": "Delete",
+        "deleted": "Voucher deleted",
+        "deleteDialog": {
+          "title": "Delete voucher",
+          "body": "The {bonus} will be removed from this client and will no longer count in Transactions. This is only possible because no session has been used.",
+          "confirm": "Yes, delete",
+          "deleting": "Deleting…"
+        },
+        "deleteError": {
+          "forbidden": "You do not have permission.",
+          "not_found": "This voucher no longer exists.",
+          "in_use": "Cannot delete: it already has sessions on bookings.",
+          "paid_online": "A voucher the client paid for online cannot be deleted.",
+          "failed": "Could not delete."
+        },
         "state": {
           "active": "Active",
           "used": "Used up",

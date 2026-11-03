@@ -1213,6 +1213,21 @@
         "send": "Enviar"
       },
       "bonuses": {
+        "delete": "Eliminar",
+        "deleted": "Bono eliminado",
+        "deleteDialog": {
+          "title": "Eliminar bono",
+          "body": "Se eliminará el {bonus} de esta clienta y dejará de contar en Transacciones. Solo es posible porque no se ha usado ninguna sesión.",
+          "confirm": "Sí, eliminar",
+          "deleting": "Eliminando…"
+        },
+        "deleteError": {
+          "forbidden": "No tienes permiso.",
+          "not_found": "Este bono ya no existe.",
+          "in_use": "No se puede eliminar: ya tiene sesiones en reservas.",
+          "paid_online": "No se puede eliminar un bono pagado online por la clienta.",
+          "failed": "No se ha podido eliminar."
+        },
         "state": {
           "active": "Activo",
           "used": "Agotado",
