@@ -1187,7 +1187,6 @@
         "heading": "Consentimiento",
         "signed": "Firmado el {date}",
         "unsigned": "Sin firmar",
-        "resend": "Volver a enviar",
         "sending": "Enviando…",
         "sentTo": "Enviado a {email}",
         "sendError": {
@@ -1213,8 +1212,8 @@
           "sending": "Enviando…"
         },
         "view": "Ver consentimiento",
-        "actions": "Acciones",
-        "backToContact": "Volver a la ficha"
+        "sign": "Firmar",
+        "send": "Enviar"
       },
       "bonuses": {
         "total": "{count, plural, one {# bono} other {# bonos}}",

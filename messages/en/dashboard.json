@@ -1187,7 +1187,6 @@
         "heading": "Consent",
         "signed": "Signed on {date}",
         "unsigned": "Not signed",
-        "resend": "Send again",
         "sending": "Sending…",
         "sentTo": "Sent to {email}",
         "sendError": {
@@ -1213,8 +1212,8 @@
           "sending": "Sending…"
         },
         "view": "View consent",
-        "actions": "Actions",
-        "backToContact": "Back to the file"
+        "sign": "Sign",
+        "send": "Send"
       },
       "bonuses": {
         "total": "{count, plural, one {# voucher} other {# vouchers}}",

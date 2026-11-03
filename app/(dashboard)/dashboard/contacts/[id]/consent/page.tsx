@@ -14,7 +14,6 @@ import { notifySuccess } from "@/lib/feedback";
 import { fetchContactDetail } from "@/actions/contacts";
 import { fetchContactConsent, resendConsent } from "@/actions/consent";
 import type { ContactConsent } from "@/types/consent";
-import { ConsentActionsMenu } from "../consent-actions-menu";
 import { ConsentView } from "../consent-view";
 import { shortDate } from "../consent-date";
 import { ResendConsentDialog } from "../resend-consent-dialog";
@@ -22,22 +21,27 @@ import { ResendConsentDialog } from "../resend-consent-dialog";
 type PageState =
   | { kind: "loading" }
   | { kind: "not_found" }
-  | { kind: "ready"; subject: ConsentSubject; consent: ContactConsent };
+  | {
+      kind: "ready";
+      subject: ConsentSubject;
+      /** Null when nothing was ever filled in; unsigned when it was reopened. */
+      consent: ContactConsent | null;
+    };
 
 /**
- * A signed consent on a page of its own, with what can be done to it: correct
- * it at the desk or ask the client to sign again.
+ * A contact's informed consent on a page of its own.
  *
- * Only a signed consent lives here. One that is unsigned, or reopened and
- * waiting for a signature, has nothing to show, so the visitor is sent back to
- * the contact's file, whose Consent tab handles exactly those states.
+ * Signed: the date, the whole consent, and — in the header — "Edit" to correct
+ * it at the desk and "Resend" to ask the client to sign again. Unsigned, or
+ * reopened and waiting for a signature: the form, to fill in with the client
+ * beside you, pre-filled with the earlier answers when there are any.
  */
 export default function ContactConsentPage() {
   const t = useTranslations("dashboard.contacts.detail");
   const tConsent = useTranslations("dashboard.contacts.detail.consent");
   const tForm = useTranslations("consent");
   const { id } = useParams<{ id: string }>();
-  const { replace, back } = useRouter();
+  const { back } = useRouter();
 
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [editing, setEditing] = useState(false);
@@ -57,10 +61,6 @@ export default function ContactConsentPage() {
     }
     const { contact } = result;
     const consent = await fetchContactConsent(getAccessToken(), id);
-    if (!consent?.signedAt) {
-      replace(`/dashboard/contacts/${id}`);
-      return;
-    }
     setState({
       kind: "ready",
       consent,
@@ -71,7 +71,7 @@ export default function ContactConsentPage() {
         birthdate: contact.birthdate,
       },
     });
-  }, [id, replace]);
+  }, [id]);
 
   useEffect(() => {
     async function run() {
@@ -91,8 +91,8 @@ export default function ContactConsentPage() {
     } else {
       setNotice(tConsent(`sendError.${result.error}`));
     }
-    // Reopened even when the email failed, unless nothing was touched: the
-    // reload then finds it unsigned and takes the visitor to the contact's file.
+    // Reopened even when the email failed, unless nothing was touched; the
+    // reload then shows the form waiting for the new signature.
     if (result.error === null || result.error === "failed") await load();
   }
 
@@ -110,20 +110,46 @@ export default function ContactConsentPage() {
     );
   }
 
+  const signed = state.kind === "ready" && Boolean(state.consent?.signedAt);
+
   return (
     <div className="px-6 py-8 lg:px-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-display text-petroleum-700 text-3xl">
           {tForm("title")}
         </h1>
-        <Button variant="outline" size="md" href={`/dashboard/contacts/${id}`}>
-          {tConsent("backToContact")}
-        </Button>
+        {signed && !editing && (
+          <div className="flex items-center gap-3">
+            {notice && (
+              <span className="text-petroleum-400 text-xs" role="status">
+                {notice}
+              </span>
+            )}
+            <Button
+              variant="solid"
+              size="md"
+              onClick={() => setEditing(true)}
+              disabled={busy}
+            >
+              {tConsent("edit")}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setConfirmOpen(true)}
+              disabled={busy}
+            >
+              {tConsent("resendSigned")}
+            </Button>
+          </div>
+        )}
       </div>
 
       {state.kind === "loading" ? (
         <div className="bg-sand-100 h-40 animate-pulse rounded-2xl" />
-      ) : editing ? (
+      ) : editing && state.consent ? (
+        // Signed, and being corrected: nothing is written until it is signed
+        // again, and Cancel leaves the signed consent as it is.
         <div className="flex flex-col gap-4">
           <p className="text-petroleum-400 text-sm">{tConsent("editing")}</p>
           <ConsentForm
@@ -143,28 +169,33 @@ export default function ContactConsentPage() {
             onCancel={() => setEditing(false)}
           />
         </div>
-      ) : (
+      ) : state.consent?.signedAt ? (
         <div className="border-sand-200 flex flex-col gap-5 rounded-2xl border bg-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-petroleum-700 text-sm font-medium">
-              {tConsent("signed", {
-                date: shortDate(state.consent.signedAt as string),
-              })}
-            </p>
-            <div className="flex items-center gap-3">
-              {notice && (
-                <span className="text-petroleum-400 text-xs" role="status">
-                  {notice}
-                </span>
-              )}
-              <ConsentActionsMenu
-                disabled={busy}
-                onEdit={() => setEditing(true)}
-                onResend={() => setConfirmOpen(true)}
-              />
-            </div>
-          </div>
+          <p className="text-petroleum-700 text-sm font-medium">
+            {tConsent("signed", { date: shortDate(state.consent.signedAt) })}
+          </p>
           <ConsentView consent={state.consent} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <p className="text-petroleum-400 text-sm">
+            {state.consent ? tConsent("pending") : tConsent("unsigned")}
+          </p>
+          <ConsentForm
+            mode="staff"
+            contactId={id}
+            subject={state.subject}
+            onSigned={() => void load()}
+            initial={
+              state.consent
+                ? {
+                    answers: state.consent.answers,
+                    imageConsent: state.consent.imageConsent,
+                    healthDataConsent: state.consent.healthDataConsent,
+                  }
+                : undefined
+            }
+          />
         </div>
       )}
 
