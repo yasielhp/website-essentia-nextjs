@@ -172,14 +172,14 @@ export default function ContactDetailPage() {
       count: consent ? 1 : 0,
     },
     {
-      id: "bonuses",
-      label: tHistory("bonuses.heading"),
-      count: bonuses.filter((b) => b.remaining > 0).length,
-    },
-    {
       id: "bookings",
       label: tHistory("bookings.heading"),
       count: bookings.length,
+    },
+    {
+      id: "bonuses",
+      label: tHistory("bonuses.heading"),
+      count: bonuses.filter((b) => b.remaining > 0).length,
     },
     {
       id: "transactions",
