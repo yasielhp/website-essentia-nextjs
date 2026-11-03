@@ -1080,7 +1080,7 @@ Commit `fix(booking): an unpaid web booking neither blocks the slot nor rings th
 - Modify: `app/(dashboard)/dashboard/users/page.tsx` (`FilterModal`, etiqueta del input)
 - Modify: `messages/{en,es}/dashboard.json` → `users.filters.email` (o la clave que use el input; grep "email" en `users.filters`)
 
-**Step 1:** en `fetchContacts`, renombrar el parámetro `email` a `search` y sustituir `query.ilike("email", \`_${term}*\`)` por la técnica de `searchContactsForCampaign` (`app/actions/campaigns.ts:671`): limpiar `,()*` y `query.or(\`email.ilike.*${term}_,first_name.ilike._${term}*,last_name.ilike.*${term}_\`)`. Mantener el nombre del parámetro en las llamadas de `users/page.tsx`.
+**Step 1:** en `fetchContacts`, renombrar el parámetro `email` a `search` y sustituir `query.ilike("email", \`_${term}*\`)`por la técnica de`searchContactsForCampaign` (`app/actions/campaigns.ts:671`): limpiar `,()*`y`query.or(\`email.ilike.\*${term}_,first_name.ilike._${term}*,last_name.ilike.*${term}_\`)`. Mantener el nombre del parámetro en las llamadas de `users/page.tsx`.
 
 **Step 2:** etiqueta del campo → "Nombre o email" / "Name or email".
 
