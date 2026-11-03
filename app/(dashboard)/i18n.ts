@@ -18,10 +18,15 @@ export async function getDashboardLocale(): Promise<DashboardLocale> {
 }
 
 /**
- * Only the `dashboard` namespace — the public site's namespaces are irrelevant
- * here and would be serialised into every dashboard page for nothing.
+ * The `dashboard` namespace, plus `consent`: the contact file embeds the same
+ * informed-consent form the public page uses, and that form reads its own
+ * namespace. The rest of the public site's namespaces are irrelevant here and
+ * would be serialised into every dashboard page for nothing.
  */
 export async function getDashboardMessages(locale: DashboardLocale) {
-  const mod = await import(`../../messages/${locale}/dashboard.json`);
-  return { dashboard: mod.default };
+  const [dashboard, consent] = await Promise.all([
+    import(`../../messages/${locale}/dashboard.json`),
+    import(`../../messages/${locale}/consent.json`),
+  ]);
+  return { dashboard: dashboard.default, consent: consent.default };
 }
