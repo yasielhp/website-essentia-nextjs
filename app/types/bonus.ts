@@ -50,6 +50,12 @@ export type BonusSale = {
   createdAt: string;
   clientName: string | null;
   clientEmail: string | null;
+  /**
+   * Who sold it, in the words the transactions list uses for bookings:
+   * `anonymous` for one bought on the website, the staff member's role for
+   * one added from the dashboard.
+   */
+  soldBy: string;
 };
 
 /** What the public site may know about a plan on sale, and nothing more. */

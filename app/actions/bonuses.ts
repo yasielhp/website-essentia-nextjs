@@ -384,7 +384,7 @@ export async function fetchBonusSales(
   const { data } = await getAdminClient()
     .database.from("contact_bonuses")
     .select(
-      "id, sessions_total, price_eur, purchased_at, created_at, contacts(first_name, last_name, email)",
+      "id, sessions_total, price_eur, purchased_at, created_at, paid_method, created_by, contacts(first_name, last_name, email)",
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -395,13 +395,33 @@ export async function fetchBonusSales(
     price_eur: number | string;
     purchased_at: string;
     created_at: string;
+    paid_method: string | null;
+    created_by: string | null;
     contacts: {
       first_name: string | null;
       last_name: string | null;
       email: string | null;
     } | null;
   };
-  return ((data ?? []) as unknown as Row[]).map((r) => ({
+  const rows = (data ?? []) as unknown as Row[];
+
+  // A bonus paid online came from the website; one added by hand carries the
+  // role of whoever added it, as a booking does.
+  const creatorIds = [
+    ...new Set(rows.map((r) => r.created_by).filter(Boolean) as string[]),
+  ];
+  const roleById = new Map<string, string>();
+  if (creatorIds.length > 0) {
+    const { data: profiles } = await getAdminClient()
+      .database.from("profiles")
+      .select("id, role")
+      .in("id", creatorIds);
+    for (const p of (profiles ?? []) as { id: string; role: string | null }[]) {
+      if (p.role) roleById.set(p.id, p.role);
+    }
+  }
+
+  return rows.map((r) => ({
     id: r.id,
     sessions: r.sessions_total,
     priceEur: Number(r.price_eur),
@@ -412,5 +432,9 @@ export async function fetchBonusSales(
         .filter(Boolean)
         .join(" ") || null,
     clientEmail: r.contacts?.email ?? null,
+    soldBy:
+      r.paid_method === "online"
+        ? "anonymous"
+        : ((r.created_by && roleById.get(r.created_by)) ?? "admin"),
   }));
 }

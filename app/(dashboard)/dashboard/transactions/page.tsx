@@ -619,7 +619,7 @@ export default function TransactionsPage() {
           subtitle: null,
           client: r.clientName ?? "—",
           clientEmail: r.clientEmail,
-          reservedBy: null,
+          reservedBy: r.soldBy,
           date: r.purchasedAt,
           amount: r.priceEur,
           status: "completed",
