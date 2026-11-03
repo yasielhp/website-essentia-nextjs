@@ -1117,6 +1117,7 @@
         "birthdate": "Date of birth"
       },
       "transactions": {
+        "total": "{count, plural, one {# transaction} other {# transactions}}",
         "heading": "Transactions",
         "paidToDate": "Paid to date",
         "empty": "No transactions yet.",
@@ -1129,6 +1130,7 @@
         }
       },
       "bookings": {
+        "total": "{count, plural, one {# booking} other {# bookings}}",
         "heading": "Bookings",
         "empty": "No bookings yet.",
         "columns": {

@@ -174,7 +174,7 @@ export default function ContactDetailPage() {
     {
       id: "bookings",
       label: tHistory("bookings.heading"),
-      count: bookings.length,
+      count: 0,
     },
     {
       id: "bonuses",
@@ -184,7 +184,7 @@ export default function ContactDetailPage() {
     {
       id: "transactions",
       label: tHistory("transactions.heading"),
-      count: bookings.length + memberships.length,
+      count: 0,
     },
     { id: "races", label: tHistory("races.heading"), count: raceRegs.length },
     {

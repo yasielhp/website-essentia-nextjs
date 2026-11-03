@@ -149,7 +149,10 @@ export function TransactionsSection({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-petroleum-500 text-sm">
+          {!loading && t("total", { count: rows.length })}
+        </span>
         {!loading && paidTotal > 0 && (
           <span className="text-petroleum-400 text-xs">
             {t("paidToDate")}{" "}
@@ -236,7 +239,10 @@ function BookingsSection({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-petroleum-500 text-sm">
+          {!loading && tSection("total", { count: bookings.length })}
+        </span>
         <Button
           variant="solid"
           size="sm"
