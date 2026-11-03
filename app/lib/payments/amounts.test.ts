@@ -10,7 +10,6 @@ import {
 const settings: PaymentSettings = {
   depositPercent: 50,
   fullPaymentDiscountPercent: 5,
-  requirePayment: true,
 };
 
 describe("chargeForMode", () => {

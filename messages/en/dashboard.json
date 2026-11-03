@@ -1298,6 +1298,7 @@
       "colorTaken": "{label} already uses that colour. Pick another so the calendar stays readable."
     },
     "payments": {
+      "heading": "Booking payments",
       "subtitle": "Virtual POS · Cards, Bizum",
       "testEnvironment": "Test environment",
       "production": "Production",
@@ -1307,8 +1308,6 @@
       "depositHint": "What is charged online when booking; the rest is paid at the centre.",
       "fullDiscount": "Discount for paying 100% (%)",
       "fullDiscountHint": "Set 0 to offer no discount.",
-      "requirePayment": "Require payment to book",
-      "requirePaymentHint": "When off, the public form books without charging.",
       "save": "Save",
       "saved": "Payment settings saved",
       "error": "The settings could not be saved."
@@ -1350,7 +1349,7 @@
     "tabs": {
       "bookings": "Sessions",
       "subscriptions": "Subscriptions",
-      "payments": "Booking payments",
+      "payments": "Payments",
       "bonuses": "Vouchers"
     },
     "staff": {

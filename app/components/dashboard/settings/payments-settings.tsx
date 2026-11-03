@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
@@ -17,8 +16,9 @@ import {
 } from "@/lib/payments/amounts";
 
 /**
- * What the public booking form asks for: how much to pay now, what paying
- * everything saves, and an emergency switch for taking bookings without pay.
+ * What the public booking form asks for: how much to pay now and what paying
+ * everything saves. Paying is always required to book from the website; there
+ * is no switch for it.
  *
  * Percentages are held as typed and only parsed on save, so clearing a field
  * to type another number does not snap back to zero in between.
@@ -32,9 +32,6 @@ export function PaymentsSettings() {
   const [discount, setDiscount] = useState(
     String(DEFAULT_PAYMENT_SETTINGS.fullPaymentDiscountPercent),
   );
-  const [requirePayment, setRequirePayment] = useState(
-    DEFAULT_PAYMENT_SETTINGS.requirePayment,
-  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +41,6 @@ export function PaymentsSettings() {
       if (cancelled) return;
       setDeposit(String(s.depositPercent));
       setDiscount(String(s.fullPaymentDiscountPercent));
-      setRequirePayment(s.requirePayment);
       setLoaded(true);
     });
     return () => {
@@ -56,7 +52,6 @@ export function PaymentsSettings() {
     const value: PaymentSettings = {
       depositPercent: Number(deposit),
       fullPaymentDiscountPercent: Number(discount),
-      requirePayment,
     };
     setSaving(true);
     setError(null);
@@ -70,56 +65,58 @@ export function PaymentsSettings() {
   }
 
   return (
-    <div className="flex max-w-md flex-col gap-5">
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="deposit-percent"
-          className="text-petroleum-500 text-xs font-medium"
-        >
-          {t("depositPercent")}
-        </label>
-        <input
-          id="deposit-percent"
-          type="number"
-          min={10}
-          max={100}
-          step={1}
-          value={deposit}
-          onChange={(e) => setDeposit(e.target.value)}
-          disabled={!loaded || saving}
-          className={INPUT_CLASS}
-        />
-        <p className="text-petroleum-400 text-xs">{t("depositHint")}</p>
+    <div className="flex flex-col gap-5">
+      {/* Row height matches the other settings headers, so all of them sit
+          the same distance under the tabs. */}
+      <div className="flex h-10 items-center">
+        <h2 className="font-display text-petroleum-700 text-xl">
+          {t("heading")}
+        </h2>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="full-discount"
-          className="text-petroleum-500 text-xs font-medium"
-        >
-          {t("fullDiscount")}
-        </label>
-        <input
-          id="full-discount"
-          type="number"
-          min={0}
-          max={50}
-          step={1}
-          value={discount}
-          onChange={(e) => setDiscount(e.target.value)}
-          disabled={!loaded || saving}
-          className={INPUT_CLASS}
-        />
-        <p className="text-petroleum-400 text-xs">{t("fullDiscountHint")}</p>
-      </div>
+      <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="deposit-percent"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            {t("depositPercent")}
+          </label>
+          <input
+            id="deposit-percent"
+            type="number"
+            min={10}
+            max={100}
+            step={1}
+            value={deposit}
+            onChange={(e) => setDeposit(e.target.value)}
+            disabled={!loaded || saving}
+            className={INPUT_CLASS}
+          />
+          <p className="text-petroleum-400 text-xs">{t("depositHint")}</p>
+        </div>
 
-      <ToggleRow
-        checked={requirePayment}
-        onToggle={() => setRequirePayment((v) => !v)}
-        label={t("requirePayment")}
-        hint={t("requirePaymentHint")}
-        disabled={!loaded || saving}
-      />
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="full-discount"
+            className="text-petroleum-500 text-xs font-medium"
+          >
+            {t("fullDiscount")}
+          </label>
+          <input
+            id="full-discount"
+            type="number"
+            min={0}
+            max={50}
+            step={1}
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+            disabled={!loaded || saving}
+            className={INPUT_CLASS}
+          />
+          <p className="text-petroleum-400 text-xs">{t("fullDiscountHint")}</p>
+        </div>
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

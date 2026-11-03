@@ -14,14 +14,11 @@ export type PaymentSettings = {
   depositPercent: number;
   /** Discount on the list price when the client pays everything at booking. 0 disables it. */
   fullPaymentDiscountPercent: number;
-  /** When false the public form books without paying. Kept for an emergency switch. */
-  requirePayment: boolean;
 };
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   depositPercent: 50,
   fullPaymentDiscountPercent: 5,
-  requirePayment: true,
 };
 
 const toCents = (eur: number) => Math.round(eur * 100);

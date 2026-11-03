@@ -1298,6 +1298,7 @@
       "colorTaken": "Ese color ya lo usa {label}. Elige otro para no confundirlos en el calendario."
     },
     "payments": {
+      "heading": "Pagos de reservas",
       "subtitle": "TPV Virtual · Tarjetas, Bizum",
       "testEnvironment": "Entorno de pruebas",
       "production": "Producción",
@@ -1307,8 +1308,6 @@
       "depositHint": "Lo que se cobra online al reservar; el resto se paga en el centro.",
       "fullDiscount": "Descuento por pagar el 100% (%)",
       "fullDiscountHint": "Pon 0 para no ofrecer descuento.",
-      "requirePayment": "Exigir pago para reservar",
-      "requirePaymentHint": "Si se desactiva, el formulario público reserva sin cobrar.",
       "save": "Guardar",
       "saved": "Ajustes de pago guardados",
       "error": "No se han podido guardar los ajustes."
@@ -1350,7 +1349,7 @@
     "tabs": {
       "bookings": "Sesiones",
       "subscriptions": "Suscripciones",
-      "payments": "Pagos de reserva",
+      "payments": "Pagos",
       "bonuses": "Bonos"
     },
     "staff": {
