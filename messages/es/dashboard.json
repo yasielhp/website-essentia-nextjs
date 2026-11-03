@@ -79,7 +79,8 @@
     "english": "English",
     "spanish": "Español",
     "prevMonth": "Mes anterior",
-    "nextMonth": "Mes siguiente"
+    "nextMonth": "Mes siguiente",
+    "comingSoon": "Próximamente"
   },
   "blog": {
     "newPost": "Nueva entrada",
@@ -1146,6 +1147,15 @@
         "empty": "Todavía no ha recibido campañas.",
         "bounced": "Este email rebotó el {date}. Está excluido de las campañas hasta que se limpie.",
         "clearBounce": "Limpiar rebote"
+      },
+      "details": {
+        "heading": "Detalles"
+      },
+      "consent": {
+        "heading": "Consentimiento"
+      },
+      "bonuses": {
+        "heading": "Bonos"
       }
     }
   },

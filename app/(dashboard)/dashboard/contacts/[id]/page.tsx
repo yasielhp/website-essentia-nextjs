@@ -33,9 +33,16 @@ import { BounceBanner, CampaignsSection } from "./campaigns-section";
 import { clearContactBounce, fetchContactCampaigns } from "@/actions/campaigns";
 import type { ContactCampaignRow } from "@/types/campaign";
 
-/** The five views of a contact's history. */
+/** The views of a contact's file; the first is where it opens. */
 type HistoryTab =
-  "transactions" | "bookings" | "races" | "education" | "campaigns";
+  | "details"
+  | "consent"
+  | "bonuses"
+  | "bookings"
+  | "transactions"
+  | "races"
+  | "education"
+  | "campaigns";
 
 type Booking = ContactBooking;
 type Membership = ContactMembership;
@@ -125,17 +132,22 @@ export default function ContactDetailPage() {
   const [clearingBounce, setClearingBounce] = useState(false);
 
   const tHistory = useTranslations("dashboard.contacts.detail");
-  const [tab, setTab] = useState<HistoryTab>("transactions");
+  const tCommon = useTranslations("dashboard.common");
+  const [tab, setTab] = useState<HistoryTab>("details");
   const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
-    {
-      id: "transactions",
-      label: tHistory("transactions.heading"),
-      count: bookings.length + memberships.length,
-    },
+    { id: "details", label: tHistory("details.heading"), count: 0 },
+    // Their contents arrive with the consent and voucher work.
+    { id: "consent", label: tHistory("consent.heading"), count: 0 },
+    { id: "bonuses", label: tHistory("bonuses.heading"), count: 0 },
     {
       id: "bookings",
       label: tHistory("bookings.heading"),
       count: bookings.length,
+    },
+    {
+      id: "transactions",
+      label: tHistory("transactions.heading"),
+      count: bookings.length + memberships.length,
     },
     { id: "races", label: tHistory("races.heading"), count: raceRegs.length },
     {
@@ -310,7 +322,7 @@ export default function ContactDetailPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <form onSubmit={(e) => void handleSave(e)} noValidate>
+      <div>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-display text-petroleum-700 text-3xl">
             {t("title")}
@@ -327,8 +339,10 @@ export default function ContactDetailPage() {
               <IconTrash />
               {t("delete")}
             </Button>
+            {/* Outside the form, so it names it: Save works from any tab. */}
             <Button
               type="submit"
+              form="contact-form"
               variant="solid"
               size="md"
               disabled={saving || loading}
@@ -364,25 +378,10 @@ export default function ContactDetailPage() {
             }}
           />
         )}
+      </div>
 
-        <ContactDetailsCard
-          firstName={firstName}
-          lastName={lastName}
-          email={email}
-          phone={phone}
-          language={language}
-          birthdate={birthdate}
-          gender={gender}
-          newsletterSubscribed={newsletterSubscribed}
-          fieldErrors={fieldErrors}
-          loading={loading}
-          saving={saving}
-          dispatchForm={dispatchForm}
-        />
-      </form>
-
-      {/* One card, four views. Stacked, the four lists pushed the form far up
-          the page and most of them are empty for most contacts. */}
+      {/* One card, many views. Stacked, the lists pushed the form far up the
+          page and most of them are empty for most contacts. */}
       <div className="border-sand-200 rounded-2xl border bg-white p-6">
         <div className="border-sand-100 -mx-6 -mt-6 mb-6 flex gap-1 overflow-x-auto border-b px-4 py-3">
           {historyTabs.map(({ id, label, count }) => (
@@ -403,6 +402,36 @@ export default function ContactDetailPage() {
           ))}
         </div>
 
+        {/* Always mounted, only hidden: the Save button in the header submits
+            it by id, and has to work from whichever tab is open. */}
+        <form
+          id="contact-form"
+          onSubmit={(e) => void handleSave(e)}
+          noValidate
+          className={tab === "details" ? undefined : "hidden"}
+        >
+          <ContactDetailsCard
+            firstName={firstName}
+            lastName={lastName}
+            email={email}
+            phone={phone}
+            language={language}
+            birthdate={birthdate}
+            gender={gender}
+            newsletterSubscribed={newsletterSubscribed}
+            fieldErrors={fieldErrors}
+            loading={loading}
+            saving={saving}
+            dispatchForm={dispatchForm}
+          />
+        </form>
+
+        {tab === "consent" && (
+          <p className="text-petroleum-400 text-sm">{tCommon("comingSoon")}</p>
+        )}
+        {tab === "bonuses" && (
+          <p className="text-petroleum-400 text-sm">{tCommon("comingSoon")}</p>
+        )}
         {tab === "transactions" && (
           <TransactionsSection
             loading={loading}

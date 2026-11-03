@@ -79,7 +79,8 @@
     "english": "English",
     "spanish": "Español",
     "prevMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "comingSoon": "Coming soon"
   },
   "blog": {
     "newPost": "New post",
@@ -1146,6 +1147,15 @@
         "empty": "No campaigns received yet.",
         "bounced": "This address bounced on {date}. It is excluded from campaigns until cleared.",
         "clearBounce": "Clear bounce"
+      },
+      "details": {
+        "heading": "Details"
+      },
+      "consent": {
+        "heading": "Consent"
+      },
+      "bonuses": {
+        "heading": "Vouchers"
       }
     }
   },

@@ -50,8 +50,7 @@ export function ContactDetailsCard({
   }
 
   return (
-    <div className="border-sand-200 mb-6 rounded-2xl border bg-white p-6">
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">Details</h2>
+    <div>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
