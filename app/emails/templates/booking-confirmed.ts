@@ -4,6 +4,7 @@ import {
   googleCalendarUrl,
   calendarButton,
   cancellationLink,
+  consentBlock,
 } from "./_base";
 
 export function bookingConfirmedEmail({
@@ -15,6 +16,7 @@ export function bookingConfirmedEmail({
   duration,
   dateIso,
   cancelUrl,
+  consentUrl,
   locale = "en",
 }: {
   name: string;
@@ -26,6 +28,8 @@ export function bookingConfirmedEmail({
   dateIso?: string;
   /** Link that cancels this booking without signing in. */
   cancelUrl?: string | null;
+  /** Where a client who has not signed yet fills in their consent. */
+  consentUrl?: string | null;
   locale?: "en" | "es";
 }): string {
   const calBtn = dateIso
@@ -56,6 +60,7 @@ export function bookingConfirmedEmail({
         ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
         ${calBtn}
+        ${consentBlock(consentUrl, locale)}
         ${cancelBlock}
 
         <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
@@ -80,6 +85,7 @@ export function bookingConfirmedEmail({
       ${bookingDetailsCard({ service, sessionType, date, time, duration, locale })}
 
       ${calBtn}
+      ${consentBlock(consentUrl, locale)}
       ${cancelBlock}
 
       <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">

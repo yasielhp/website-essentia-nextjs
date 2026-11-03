@@ -1,4 +1,4 @@
-import { googleCalendarUrl, calendarButton } from "./_base";
+import { googleCalendarUrl, calendarButton, consentBlock } from "./_base";
 import { formatPrice } from "@/utils/format";
 
 export function bookingConfirmationEmail({
@@ -11,6 +11,7 @@ export function bookingConfirmationEmail({
   locale = "en",
   paidEur,
   owedEur,
+  consentUrl,
 }: {
   name: string;
   serviceName: string;
@@ -23,6 +24,8 @@ export function bookingConfirmationEmail({
   paidEur?: number;
   /** What is still owed at the centre; 0 or absent when nothing is. */
   owedEur?: number;
+  /** Where a client who has not signed yet fills in their consent. */
+  consentUrl?: string | null;
 }): string {
   const isEs = locale === "es";
 
@@ -175,6 +178,7 @@ export function bookingConfirmationEmail({
               ${hasOwed ? `<p style="margin:0 0 20px;font-size:14px;color:#335554;line-height:1.6;">${labels.owedNote}</p>` : ""}
 
               ${calBtn}
+              ${consentBlock(consentUrl, locale)}
 
               <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
                 ${labels.footer}

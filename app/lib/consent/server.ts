@@ -99,3 +99,34 @@ export async function loadConsentByToken(
     birthdate: c?.birthdate ?? null,
   };
 }
+
+/**
+ * The link to put in an email, or null when there is nothing to ask: the
+ * client already signed, the contact cannot be found, or the lookup failed.
+ * Never throws — a confirmation must go out whether or not this works.
+ */
+export async function pendingConsentUrl(
+  who: { contactId?: string | null; email?: string | null },
+  locale: "en" | "es",
+): Promise<string | null> {
+  try {
+    let contactId = who.contactId ?? null;
+    if (!contactId && who.email) {
+      const { data } = await getAdminClient()
+        .database.from("contacts")
+        .select("id")
+        .ilike("email", who.email)
+        .limit(1)
+        .maybeSingle();
+      contactId = (data as { id: string } | null)?.id ?? null;
+    }
+    if (!contactId) return null;
+
+    const consent = await ensureConsent(contactId);
+    if (!consent || consent.signed) return null;
+    return buildConsentUrl(consent.token, locale);
+  } catch (err) {
+    console.error("[consent] could not build the link:", err);
+    return null;
+  }
+}

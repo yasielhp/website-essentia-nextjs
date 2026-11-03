@@ -225,3 +225,36 @@ export function bookingDetailsCard({
     </tr>
   </table>`;
 }
+
+/**
+ * Asks a new client to sign the informed consent before their first session.
+ * Empty when there is no link, so callers can drop it in unconditionally.
+ */
+export function consentBlock(
+  url: string | null | undefined,
+  locale: "en" | "es" = "en",
+): string {
+  if (!url) return "";
+  const es = locale === "es";
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;background-color:#f5f2ed;border-radius:8px;border:1px solid #d7dbd9;">
+    <tr>
+      <td style="padding:20px 24px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">
+          ${es ? "Antes de tu primera sesión" : "Before your first session"}
+        </p>
+        <p style="margin:0 0 16px;font-size:14px;color:#335554;line-height:1.6;">
+          ${
+            es
+              ? "Rellena tu consentimiento informado. Solo lo haces una vez y nos ayuda a cuidarte mejor."
+              : "Please complete your informed consent. You only do it once and it helps us take better care of you."
+          }
+        </p>
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+           style="display:inline-block;padding:12px 28px;background-color:#103838;color:#f5f2ed;text-decoration:none;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">
+          ${es ? "Rellenar consentimiento" : "Complete consent"}
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}

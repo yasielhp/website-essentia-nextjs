@@ -9,6 +9,7 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
+import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
 import {
   recordBookingEvent,
@@ -222,6 +223,12 @@ export async function notifyBooking(
 
   const dashboardUrl = getAppUrl();
   const cancelUrl = buildCancelUrl(recipient.cancelToken, locale);
+  // Only the confirmation asks for the consent, and only of someone who has
+  // not signed it yet.
+  const consentUrl =
+    event === "confirmed"
+      ? await pendingConsentUrl({ email: recipient.email }, locale)
+      : null;
 
   // ── Client emails ──────────────────────────────────────────────
   const clientTemplates: Record<BookingNotificationEvent, () => string> = {
@@ -247,6 +254,7 @@ export async function notifyBooking(
         duration,
         dateIso: payload.date,
         cancelUrl,
+        consentUrl,
         locale,
       }),
     cancelled: () =>

@@ -6,6 +6,7 @@ import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmatio
 import { formatLongDate, formatPrice } from "@/utils/format";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { notifyStaffOfPaidBooking } from "@/lib/bookings/notify-staff-paid";
+import { pendingConsentUrl } from "@/lib/consent/server";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
 
 /**
@@ -132,6 +133,13 @@ export async function handleBookingPaid(
     booking.contact_id as string | null,
     booking.email as string,
   );
+  const consentUrl = await pendingConsentUrl(
+    {
+      contactId: booking.contact_id as string | null,
+      email: booking.email as string,
+    },
+    locale,
+  );
   const { error } = await sendEmail({
     to: booking.email as string,
     subject:
@@ -148,6 +156,7 @@ export async function handleBookingPaid(
       locale,
       paidEur: received,
       owedEur,
+      consentUrl,
     }),
   });
 
