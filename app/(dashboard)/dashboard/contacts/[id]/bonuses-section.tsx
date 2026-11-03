@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
-import { formatBookingDate, formatPrice } from "@/utils/format";
+import { shortDate } from "./consent-date";
 import type { ContactBonus } from "@/types/bonus";
 import { GrantBonusDialog } from "./grant-bonus-dialog";
 
@@ -17,8 +15,10 @@ function todayLocal(): string {
 }
 
 /**
- * The bonuses this contact bought: how many sessions are used and left, when
- * they expire, and which bookings consumed them.
+ * The bonuses this contact bought, one line each: what it is, how many of its
+ * sessions are used, when it expires, and — while there is a session left to
+ * take and the bonus has not expired — a button to redeem one, which starts a
+ * booking for this contact with the bonus ready to be used.
  */
 export function BonusesSection({
   loading,
@@ -32,12 +32,7 @@ export function BonusesSection({
   onChanged: () => void;
 }) {
   const t = useTranslations("dashboard.contacts.detail.bonuses");
-  const tMethods = useTranslations(
-    "dashboard.bookings.detail.payment.dialog.methods",
-  );
-  const tStatus = useTranslations("dashboard.bookings.status");
   const tBonuses = useTranslations("dashboard.bonuses");
-  const locale = useDashboardLocale();
   const [granting, setGranting] = useState(false);
   const today = todayLocal();
 
@@ -65,82 +60,33 @@ export function BonusesSection({
         <div className="flex flex-col gap-4">
           {bonuses.map((b) => {
             const expired = b.expiresAt < today;
-            const percent = Math.min(
-              100,
-              Math.round((b.used / b.sessionsTotal) * 100),
-            );
+            const canRedeem = b.remaining > 0 && !expired;
             return (
               <div
                 key={b.id}
-                className="border-sand-200 rounded-2xl border bg-white p-5"
+                className="border-sand-200 flex items-center justify-between gap-4 rounded-2xl border bg-white p-5"
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-petroleum-700 font-medium">
                     {tBonuses("label", { sessions: b.sessionsTotal })}
                   </p>
-                  <p className="text-petroleum-400 text-xs">
-                    {b.tierLabel ?? "—"}
+                  <p
+                    className={`mt-1 text-sm ${expired ? "text-red-600" : "text-petroleum-500"}`}
+                  >
+                    {b.used}/{b.sessionsTotal} ·{" "}
+                    {t(expired ? "expiredOn" : "expiresOn", {
+                      date: shortDate(b.expiresAt),
+                    })}
                   </p>
                 </div>
-
-                <p className="text-petroleum-700 mt-3 text-sm">
-                  {t("used", { used: b.used, total: b.sessionsTotal })} ·{" "}
-                  <span className="font-medium">
-                    {t("remaining", { n: b.remaining })}
-                  </span>
-                </p>
-                <div
-                  className="bg-sand-100 mt-2 h-2 overflow-hidden rounded-full"
-                  role="progressbar"
-                  aria-valuenow={b.used}
-                  aria-valuemin={0}
-                  aria-valuemax={b.sessionsTotal}
-                >
-                  <div
-                    className="bg-petroleum-700 h-full rounded-full"
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-
-                <p
-                  className={`mt-3 text-xs ${expired ? "text-red-600" : "text-petroleum-500"}`}
-                >
-                  {expired
-                    ? `${t("expired")} · ${formatBookingDate(b.expiresAt, locale)}`
-                    : t("expires", {
-                        date: formatBookingDate(b.expiresAt, locale),
-                      })}
-                </p>
-                <p className="text-petroleum-400 text-xs">
-                  {t("purchased", {
-                    date: formatBookingDate(b.purchasedAt, locale),
-                  })}{" "}
-                  · {formatPrice(b.priceEur, locale)}
-                  {b.paidMethod ? ` · ${tMethods(b.paidMethod)}` : ""}
-                </p>
-                {b.notes && (
-                  <p className="text-petroleum-500 mt-1 text-xs">{b.notes}</p>
-                )}
-
-                {b.bookings.length > 0 && (
-                  <ul className="border-sand-100 mt-3 space-y-1 border-t pt-3">
-                    {b.bookings.map((u) => (
-                      <li key={u.id} className="text-sm">
-                        <Link
-                          href={`/dashboard/bookings/${u.id}`}
-                          className="text-petroleum-500 hover:text-petroleum-700 underline"
-                        >
-                          {u.date ? formatBookingDate(u.date, locale) : "—"}
-                          {u.time ? ` · ${u.time}` : ""}
-                        </Link>{" "}
-                        <span className="text-petroleum-400 text-xs">
-                          {u.status && tStatus.has(u.status)
-                            ? tStatus(u.status)
-                            : (u.status ?? "")}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                {canRedeem && (
+                  <Button
+                    variant="solid"
+                    size="lg"
+                    href={`/dashboard/bookings/new?contact=${contactId}&bonus=${b.id}`}
+                  >
+                    {t("redeem")}
+                  </Button>
                 )}
               </div>
             );
