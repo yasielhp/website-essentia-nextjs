@@ -6,6 +6,7 @@ import {
   IconChevronsUpDown,
   IconEdit,
   IconLogOut,
+  IconSettings,
 } from "@/components/ui/icons";
 import { avatarInitials } from "@/utils/avatar";
 import { LocaleSwitch } from "./locale-switch";
@@ -17,6 +18,8 @@ type UserMenuProps = {
   role: string;
   onSignOut: () => void;
   onEditAccount: () => void;
+  /** Only given to administrators: settings live here, above the account. */
+  onSettings?: () => void;
 };
 
 export function UserMenu({
@@ -25,6 +28,7 @@ export function UserMenu({
   role,
   onSignOut,
   onEditAccount,
+  onSettings,
 }: UserMenuProps) {
   const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
@@ -63,6 +67,19 @@ export function UserMenu({
           </div>
           <LocaleSwitch />
           <SoundSwitch />
+          {onSettings && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onSettings();
+              }}
+              className="text-petroleum-500 hover:bg-sand-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+            >
+              <IconSettings />
+              {t("nav.settings")}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
