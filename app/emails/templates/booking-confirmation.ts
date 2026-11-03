@@ -1,4 +1,5 @@
 import { googleCalendarUrl, calendarButton } from "./_base";
+import { formatPrice } from "@/utils/format";
 
 export function bookingConfirmationEmail({
   name,
@@ -8,6 +9,8 @@ export function bookingConfirmationEmail({
   duration,
   dateIso,
   locale = "en",
+  paidEur,
+  owedEur,
 }: {
   name: string;
   serviceName: string;
@@ -16,6 +19,10 @@ export function bookingConfirmationEmail({
   duration: string;
   dateIso?: string;
   locale?: "en" | "es";
+  /** What was charged online for this booking. */
+  paidEur?: number;
+  /** What is still owed at the centre; 0 or absent when nothing is. */
+  owedEur?: number;
 }): string {
   const isEs = locale === "es";
 
@@ -30,6 +37,9 @@ export function bookingConfirmationEmail({
         date: "Fecha",
         time: "Hora",
         duration: "Duración",
+        paid: "Pagado",
+        owed: "Pendiente de pago en el centro",
+        owedNote: "El resto se abona el día de la sesión.",
         locationLabel: "Ubicación",
         locationLine1: "C/ La Noria 14",
         locationLine2: "Santa Cruz de Tenerife",
@@ -47,6 +57,9 @@ export function bookingConfirmationEmail({
         date: "Date",
         time: "Time",
         duration: "Duration",
+        paid: "Paid",
+        owed: "Due at the centre",
+        owedNote: "The balance is paid on the day of your session.",
         locationLabel: "Location",
         locationLine1: "C/ La Noria 14",
         locationLine2: "Santa Cruz de Tenerife",
@@ -54,6 +67,25 @@ export function bookingConfirmationEmail({
           "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
         footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
       };
+
+  const hasOwed = owedEur != null && owedEur > 0;
+  const rowStyle = (last: boolean) =>
+    `padding:6px 0;${last ? "" : "border-bottom:1px solid #d7dbd9;"}font-size:14px;`;
+  const paymentRows = [
+    paidEur != null && paidEur > 0
+      ? [labels.paid, formatPrice(paidEur, locale)]
+      : null,
+    hasOwed ? [labels.owed, formatPrice(owedEur, locale)] : null,
+  ].filter((row): row is string[] => row !== null);
+  const paymentHtml = paymentRows
+    .map(
+      ([label, value], i) => `
+                      <tr>
+                        <td style="${rowStyle(i === paymentRows.length - 1)}color:#4a6767;">${label}</td>
+                        <td style="${rowStyle(i === paymentRows.length - 1)}font-weight:500;color:#103838;">${value}</td>
+                      </tr>`,
+    )
+    .join("");
 
   const calBtn = dateIso
     ? calendarButton(
@@ -119,9 +151,9 @@ export function bookingConfirmationEmail({
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${time}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;font-size:14px;color:#4a6767;">${labels.duration}</td>
-                        <td style="padding:6px 0;font-size:14px;font-weight:500;color:#103838;">${duration}</td>
-                      </tr>
+                        <td style="padding:6px 0;${paymentRows.length ? "border-bottom:1px solid #d7dbd9;" : ""}font-size:14px;color:#4a6767;">${labels.duration}</td>
+                        <td style="padding:6px 0;${paymentRows.length ? "border-bottom:1px solid #d7dbd9;" : ""}font-size:14px;font-weight:500;color:#103838;">${duration}</td>
+                      </tr>${paymentHtml}
                     </table>
                   </td>
                 </tr>
@@ -139,6 +171,8 @@ export function bookingConfirmationEmail({
                   </td>
                 </tr>
               </table>
+
+              ${hasOwed ? `<p style="margin:0 0 20px;font-size:14px;color:#335554;line-height:1.6;">${labels.owedNote}</p>` : ""}
 
               ${calBtn}
 

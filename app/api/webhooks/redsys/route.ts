@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (event.type === "payment.succeeded") {
-      await handleBookingPaid(bookingId);
+      await handleBookingPaid(bookingId, Number(payload.Ds_Amount));
     } else {
       await db
         .from("bookings")
