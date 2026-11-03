@@ -88,7 +88,7 @@ function ServicesContent({
   return (
     <div>
       {/* As tall as the bonuses header, whose button is h-10: the two headings
-          then sit the same distance under the tabs. */}
+          then sit the same distance under the top of their card. */}
       <div className="mb-4 flex h-10 items-center">
         <h2 className="font-display text-petroleum-700 text-xl">
           {t("heading")}

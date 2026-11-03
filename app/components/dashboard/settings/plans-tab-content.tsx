@@ -50,7 +50,7 @@ export function PlansTabContent({
   return (
     <div>
       {/* Row height matches the other settings headers, so all of them sit
-          the same distance under the tabs. */}
+          the same distance under the top of their card. */}
       <div className="mb-4 flex h-10 items-center">
         <h2 className="font-display text-petroleum-700 text-xl">
           {t("heading")}

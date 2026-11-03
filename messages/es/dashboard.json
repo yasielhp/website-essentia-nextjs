@@ -1364,12 +1364,6 @@
     },
     "title": "Ajustes",
     "colorHint": "El color se guarda en este navegador, así que no cambia lo que ven tus compañeros.",
-    "tabs": {
-      "bookings": "Sesiones",
-      "subscriptions": "Suscripciones",
-      "payments": "Pagos",
-      "bonuses": "Bonos"
-    },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
       "noCalendar": "sin calendario",

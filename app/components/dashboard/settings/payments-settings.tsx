@@ -67,7 +67,7 @@ export function PaymentsSettings() {
   return (
     <div className="flex flex-col gap-5">
       {/* Row height matches the other settings headers, so all of them sit
-          the same distance under the tabs. */}
+          the same distance under the top of their card. */}
       <div className="flex h-10 items-center">
         <h2 className="font-display text-petroleum-700 text-xl">
           {t("heading")}

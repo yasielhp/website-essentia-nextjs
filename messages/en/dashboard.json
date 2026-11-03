@@ -1364,12 +1364,6 @@
     },
     "title": "Settings",
     "colorHint": "The colour is stored in this browser, so it does not change what your colleagues see.",
-    "tabs": {
-      "bookings": "Sessions",
-      "subscriptions": "Subscriptions",
-      "payments": "Payments",
-      "bonuses": "Vouchers"
-    },
     "staff": {
       "noStaff": "No staff on the system yet.",
       "noCalendar": "no calendar",
