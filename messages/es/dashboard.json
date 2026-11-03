@@ -1198,7 +1198,6 @@
           "conflict": "El consentimiento ha cambiado. Recarga la ficha e inténtalo de nuevo."
         },
         "pending": "Pendiente de firma",
-        "editing": "Editando el consentimiento firmado. No se guarda nada hasta que se firme de nuevo.",
         "edit": "Editar",
         "resendSigned": "Reenviar",
         "resendDialog": {

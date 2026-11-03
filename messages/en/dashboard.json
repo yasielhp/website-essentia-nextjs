@@ -1198,7 +1198,6 @@
           "conflict": "The consent has changed. Reload the file and try again."
         },
         "pending": "Awaiting signature",
-        "editing": "Editing the signed consent. Nothing is saved until it is signed again.",
         "edit": "Edit",
         "resendSigned": "Resend",
         "resendDialog": {

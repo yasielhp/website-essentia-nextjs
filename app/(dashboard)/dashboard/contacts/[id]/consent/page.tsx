@@ -148,10 +148,8 @@ export default function ContactConsentPage() {
       {state.kind === "loading" ? (
         <div className="bg-sand-100 h-40 animate-pulse rounded-2xl" />
       ) : editing && state.consent ? (
-        // Signed, and being corrected: nothing is written until it is signed
-        // again, and Cancel leaves the signed consent as it is.
+        // Signed, and being corrected: Cancel leaves the signed consent as it is.
         <div className="flex flex-col gap-4">
-          <p className="text-petroleum-400 text-sm">{tConsent("editing")}</p>
           <ConsentForm
             mode="staff"
             contactId={id}
