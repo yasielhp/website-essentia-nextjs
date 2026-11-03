@@ -2,6 +2,7 @@ import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { verifyAccessToken } from "@/lib/oauth/server";
 import type { ToolServer } from "@/lib/mcp/tool";
 import { registerBlogTools } from "./tools/blog";
+import { registerBookingTools } from "./tools/bookings";
 import { registerServiceTools } from "./tools/services";
 
 const siteUrl =
@@ -19,6 +20,7 @@ const handler = createMcpHandler(
     const tools = server as unknown as ToolServer;
     registerServiceTools(tools);
     registerBlogTools(tools);
+    registerBookingTools(tools);
   },
   {
     // `basePath` and `maxDuration` were dropped in mcp-handler 2: the handler
