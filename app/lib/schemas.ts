@@ -513,3 +513,9 @@ export function validateCampaignDraft(input: unknown): CampaignValidation {
   if (parsed.success) return { ok: true, data: parsed.data };
   return { ok: false, errors: collectIssues(parsed.error.issues) };
 }
+
+export const paymentSettingsSchema = z.object({
+  depositPercent: z.number().int().min(10).max(100),
+  fullPaymentDiscountPercent: z.number().int().min(0).max(50),
+  requirePayment: z.boolean(),
+});
