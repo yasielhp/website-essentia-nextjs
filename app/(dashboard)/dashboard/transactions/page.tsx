@@ -13,7 +13,7 @@ import { TransactionList } from "./transaction-list";
 import type { UnifiedRow } from "./types";
 import { fetchBonusSales } from "@/actions/bonuses";
 import { getAccessToken } from "@/lib/client-session";
-import { amountOwed } from "@/lib/payments/amounts";
+import { amountOwed, effectivePayment } from "@/lib/payments/amounts";
 
 // ─── Source row types ─────────────────────────────────────────
 
@@ -77,15 +77,11 @@ function bookingMoney(
   r: BookingRow,
 ): Pick<UnifiedRow, "amount" | "listAmount" | "owed" | "status"> {
   if (r.payment_mode === null) {
+    const pay = effectivePayment(r);
     return {
       amount: r.price_eur,
       status:
-        r.payment_status === "paid" ||
-        (r.status === "confirmed" &&
-          r.payment_status !== "failed" &&
-          r.payment_status !== "refunded")
-          ? "completed"
-          : (r.payment_status ?? r.status),
+        pay.status === "paid" ? "completed" : (r.payment_status ?? r.status),
     };
   }
   const paid = Number(r.amount_paid_eur ?? 0);

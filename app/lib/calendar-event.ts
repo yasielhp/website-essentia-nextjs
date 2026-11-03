@@ -1,5 +1,5 @@
 import { getAppUrl } from "@/lib/env";
-import { amountOwed } from "@/lib/payments/amounts";
+import { amountOwed, effectivePayment } from "@/lib/payments/amounts";
 
 /**
  * What a booking looks like on a calendar.
@@ -107,6 +107,14 @@ function paymentAmounts(booking: CalendarBooking): string {
 }
 
 export function bookingDescription(booking: CalendarBooking): string {
+  // The same reading as the dashboard: an old confirmed booking is settled.
+  const pay = effectivePayment({
+    status: booking.status ?? null,
+    payment_status: booking.payment_status ?? null,
+    payment_mode: booking.payment_mode ?? null,
+    price_eur: booking.price_eur ?? null,
+    amount_paid_eur: booking.amount_paid_eur ?? null,
+  });
   const lines: (string | null)[] = [
     `Cliente: ${bookingClientName(booking)}`,
     booking.phone ? `Teléfono: ${booking.phone}` : null,
@@ -118,7 +126,7 @@ export function bookingDescription(booking: CalendarBooking): string {
     bookingLocation(booking) ? `Ubicación: ${bookingLocation(booking)}` : null,
     booking.price_eur != null ? `Precio: ${booking.price_eur} €` : null,
     booking.payment_status
-      ? `Pago: ${PAYMENT_LABELS[booking.payment_status] ?? booking.payment_status}${paymentAmounts(booking)}`
+      ? `Pago: ${PAYMENT_LABELS[pay.status] ?? pay.status}${paymentAmounts(booking)}`
       : null,
     booking.status ? `Estado: ${booking.status}` : null,
     // Last, and on its own lines: notes are prose and everything above is a
