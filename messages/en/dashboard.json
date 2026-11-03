@@ -475,7 +475,8 @@
             "cash": "Cash",
             "card": "Card",
             "transfer": "Bank transfer",
-            "other": "Other"
+            "other": "Other",
+            "online": "Online (Redsys)"
           },
           "confirm": "Record payment",
           "cancel": "Cancel",

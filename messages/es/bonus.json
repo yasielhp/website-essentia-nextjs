@@ -1,0 +1,55 @@
+{
+  "offer": {
+    "heading": "¿Una sesión o un bono?",
+    "single": {
+      "title": "Sesión suelta",
+      "body": "Reserva una sesión cuando te venga bien.",
+      "cta": "Reservar sesión"
+    },
+    "bonus": {
+      "title": "Bono",
+      "body": "Compra varias sesiones de una vez y úsalas mientras el bono esté vigente.",
+      "cta": "Ver bonos"
+    },
+    "listHeading": "Bonos disponibles",
+    "sessions": "{sessions, plural, one {# sesión} other {# sesiones}}",
+    "total": "Total {price}",
+    "perSession": "{price} por sesión",
+    "validity": "Válido {days} días desde la compra",
+    "buy": "Comprar bono"
+  },
+  "form": {
+    "title": "Comprar bono",
+    "summary": "{sessions, plural, one {Bono de # sesión} other {Bono de # sesiones}} · {service}",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "terms": "He leído y acepto las <link>condiciones</link>.",
+    "pay": "Pagarás {price} ahora con tarjeta, sin descuentos ni pagos aplazados.",
+    "submit": "Pagar con tarjeta",
+    "submitting": "Un momento…",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "errors": {
+      "firstName": "Escribe tu nombre.",
+      "lastName": "Escribe tus apellidos.",
+      "email": "Revisa el correo electrónico.",
+      "phone": "Revisa el teléfono.",
+      "consent": "Debes aceptar las condiciones.",
+      "generic": "No hemos podido iniciar el pago. Inténtalo de nuevo."
+    }
+  },
+  "confirmation": {
+    "title": "Pago recibido | Essentia",
+    "heading": "Gracias por tu compra",
+    "body": "Estamos confirmando tu bono. En unos minutos recibirás un correo con todos los detalles.",
+    "cta": "Volver al inicio"
+  },
+  "cancelled": {
+    "title": "Pago no completado | Essentia",
+    "heading": "El pago no se ha completado",
+    "body": "No se ha hecho ningún cargo. Puedes volver a intentarlo cuando quieras.",
+    "cta": "Volver al inicio"
+  }
+}

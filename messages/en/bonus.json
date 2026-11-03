@@ -1,0 +1,55 @@
+{
+  "offer": {
+    "heading": "A single session or a voucher?",
+    "single": {
+      "title": "Single session",
+      "body": "Book one session whenever it suits you.",
+      "cta": "Book a session"
+    },
+    "bonus": {
+      "title": "Voucher",
+      "body": "Buy several sessions at once and use them while the voucher is valid.",
+      "cta": "See vouchers"
+    },
+    "listHeading": "Available vouchers",
+    "sessions": "{sessions, plural, one {# session} other {# sessions}}",
+    "total": "Total {price}",
+    "perSession": "{price} per session",
+    "validity": "Valid for {days} days from purchase",
+    "buy": "Buy voucher"
+  },
+  "form": {
+    "title": "Buy a voucher",
+    "summary": "{sessions, plural, one {# session voucher} other {# sessions voucher}} · {service}",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "terms": "I have read and accept the <link>terms</link>.",
+    "pay": "You will pay {price} now by card, with no discounts or deferred payments.",
+    "submit": "Pay by card",
+    "submitting": "One moment…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "errors": {
+      "firstName": "Enter your first name.",
+      "lastName": "Enter your last name.",
+      "email": "Check the email address.",
+      "phone": "Check the phone number.",
+      "consent": "You must accept the terms.",
+      "generic": "We could not start the payment. Please try again."
+    }
+  },
+  "confirmation": {
+    "title": "Payment received | Essentia",
+    "heading": "Thank you for your purchase",
+    "body": "We are confirming your voucher. In a few minutes you will receive an email with all the details.",
+    "cta": "Back to home"
+  },
+  "cancelled": {
+    "title": "Payment not completed | Essentia",
+    "heading": "The payment was not completed",
+    "body": "You have not been charged. You can try again whenever you like.",
+    "cta": "Back to home"
+  }
+}

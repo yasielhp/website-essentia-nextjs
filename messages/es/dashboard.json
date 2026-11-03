@@ -475,7 +475,8 @@
             "cash": "Efectivo",
             "card": "Tarjeta",
             "transfer": "Transferencia",
-            "other": "Otro"
+            "other": "Otro",
+            "online": "Online (Redsys)"
           },
           "confirm": "Registrar cobro",
           "cancel": "Cancelar",

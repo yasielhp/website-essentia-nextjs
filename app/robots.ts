@@ -14,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           "/booking/requested",
           "/booking/confirmation",
+          "/bonus/",
+          "/es/bonus/",
           "/consent/",
           "/es/consentimiento/",
         ],

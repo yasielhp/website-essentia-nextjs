@@ -5,6 +5,7 @@ import Image from "next/image";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
+import { BonusOffer } from "@/components/sections/bonus/bonus-offer";
 import type {
   FacialTreatment,
   IvProtocol,
@@ -202,6 +203,8 @@ export function ServiceDetailView({
         bookingHref={bookingHref}
         backHref={backHref}
       />
+      {/* Single session or a bonus; nothing at all if the treatment has none. */}
+      <BonusOffer tierLabel={service.title} bookingHref={bookingHref} />
       <ServiceCta
         service={service}
         bookingHref={bookingHref}

@@ -116,9 +116,7 @@ export function BonusesSection({
                     date: formatBookingDate(b.purchasedAt, locale),
                   })}{" "}
                   · {formatPrice(b.priceEur, locale)}
-                  {b.paidMethod && b.paidMethod !== "online"
-                    ? ` · ${tMethods(b.paidMethod)}`
-                    : ""}
+                  {b.paidMethod ? ` · ${tMethods(b.paidMethod)}` : ""}
                 </p>
                 {b.notes && (
                   <p className="text-petroleum-500 mt-1 text-xs">{b.notes}</p>

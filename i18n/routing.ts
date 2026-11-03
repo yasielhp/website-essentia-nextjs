@@ -111,6 +111,8 @@ export const routing = defineRouting({
     "/reset-password": "/reset-password",
     "/booking/confirmation": "/booking/confirmation",
     "/booking/requested": "/booking/requested",
+    "/bonus/confirmation": "/bonus/confirmation",
+    "/bonus/cancelled": "/bonus/cancelled",
     "/newsletter/unsubscribe": "/newsletter/unsubscribe",
   },
 });

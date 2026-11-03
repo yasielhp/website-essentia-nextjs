@@ -23,6 +23,7 @@ const namespaces = [
   "account",
   "reviews",
   "consent",
+  "bonus",
 ] as const;
 
 /**
