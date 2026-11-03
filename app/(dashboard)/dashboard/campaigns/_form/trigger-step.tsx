@@ -1,9 +1,10 @@
 "use client";
 
-import type { Dispatch } from "react";
+import { useEffect, useState, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { Button } from "@/components/ui/button";
+import { insforge } from "@/lib/insforge";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import type { TriggerEvent } from "@/types/campaign";
 import type { FormAction, FormState } from "./form-state";
@@ -42,6 +43,32 @@ export function TriggerStep({
     desc: t(`eventDesc.${event}`),
   }));
   const daysError = fieldErrors["trigger.days"];
+
+  // The session types a first-visit campaign can be limited to.
+  const [tiers, setTiers] = useState<{ id: string; label: string }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void insforge.database
+      .from("service_tiers")
+      .select("id, label")
+      .eq("active", true)
+      .order("label")
+      .then(({ data }) => {
+        if (cancelled) return;
+        setTiers(
+          ((data ?? []) as { id: string; label: string | null }[]).map(
+            (row) => ({ id: row.id, label: row.label ?? row.id }),
+          ),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const tierOptions: SelectOption<string>[] = [
+    { value: "", label: t("tierAny") },
+    ...tiers.map((tier) => ({ value: tier.id, label: tier.label })),
+  ];
   const hoursError = fieldErrors["trigger.hours"];
 
   return (
@@ -118,6 +145,34 @@ export function TriggerStep({
                 {fieldError.has(daysError) ? fieldError(daysError) : daysError}
               </p>
             )}
+          </div>
+        )}
+
+        {trigger.event === "first_visit" && (
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="campaign-trigger-tier"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              {t("tier")}
+            </label>
+            <OptionSelect
+              id="campaign-trigger-tier"
+              value={trigger.tierId ?? ""}
+              options={tierOptions}
+              disabled={submitting}
+              searchableFrom={12}
+              onChange={(tierId) => {
+                // "Any" is the absence of the key, not an empty string.
+                const next = { ...trigger };
+                delete next.tierId;
+                dispatch({
+                  type: "SET_TRIGGER",
+                  trigger: tierId ? { ...next, tierId } : next,
+                });
+              }}
+            />
+            <p className="text-petroleum-400 text-xs">{t("tierHint")}</p>
           </div>
         )}
 

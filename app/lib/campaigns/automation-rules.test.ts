@@ -207,4 +207,91 @@ describe("first_visit", () => {
       }),
     ).toEqual([]);
   });
+
+  describe("limited to a session type", () => {
+    const DRAINAGE = "59d57d59-7b9b-4e32-83fe-c144ec7e8a24";
+    const MASSAGE = "11111111-1111-4111-8111-111111111111";
+    const trigger = {
+      event: "first_visit" as const,
+      hours: 3,
+      tierId: DRAINAGE,
+    };
+
+    it("ignores a first visit of another type", () => {
+      expect(
+        dueRecipients({
+          trigger,
+          recipients: [
+            visitor({
+              firstVisitEndsAt: "2026-12-10T14:00:00Z",
+              firstVisitEndsAtByTier: { [MASSAGE]: "2026-12-10T14:00:00Z" },
+            }),
+          ],
+          activatedAt,
+          now,
+        }),
+      ).toEqual([]);
+    });
+
+    it("fires for the drainage even when a massage came first", () => {
+      const due = dueRecipients({
+        trigger,
+        recipients: [
+          visitor({
+            // The massage was the first visit of any kind, back in November.
+            firstVisitEndsAt: "2026-11-20T10:00:00Z",
+            firstVisitEndsAtByTier: {
+              [MASSAGE]: "2026-11-20T10:00:00Z",
+              [DRAINAGE]: "2026-12-10T14:00:00Z",
+            },
+          }),
+        ],
+        activatedAt,
+        now,
+      });
+      expect(cycles(due)).toEqual(["c1:"]);
+    });
+
+    it("still respects the delay and the activation date for that type", () => {
+      expect(
+        dueRecipients({
+          trigger: { ...trigger, hours: 4 },
+          recipients: [
+            visitor({
+              firstVisitEndsAtByTier: { [DRAINAGE]: "2026-12-10T14:00:00Z" },
+            }),
+          ],
+          activatedAt,
+          now,
+        }),
+      ).toEqual([]);
+      expect(
+        dueRecipients({
+          trigger,
+          recipients: [
+            visitor({
+              firstVisitEndsAtByTier: { [DRAINAGE]: "2026-11-20T10:00:00Z" },
+            }),
+          ],
+          activatedAt,
+          now,
+        }),
+      ).toEqual([]);
+    });
+
+    it("without a tierId keeps looking at the first visit of any type", () => {
+      const due = dueRecipients({
+        trigger: { event: "first_visit", hours: 3 },
+        recipients: [
+          visitor({
+            firstVisitEndsAt: "2026-12-10T14:00:00Z",
+            firstVisitEndsAtByTier: { [MASSAGE]: "2026-12-10T14:00:00Z" },
+          }),
+        ],
+        activatedAt,
+        now,
+      });
+      expect(cycles(due)).toEqual(["c1:"]);
+    });
+  });
 });

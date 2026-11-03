@@ -40,6 +40,11 @@ export type CampaignTrigger = {
   days?: number;
   /** `first_visit`: hours after the first confirmed visit ends (0-168). */
   hours?: number;
+  /**
+   * `first_visit`: only the first visit of this session type counts (a
+   * `service_tiers` id). Absent, the first visit of any type does.
+   */
+  tierId?: string;
 };
 
 /** The event each kind runs on when it has no choice to make. */

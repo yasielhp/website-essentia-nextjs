@@ -436,6 +436,7 @@ export const campaignTriggerSchema = z.object({
     .min(0, "hoursOutOfRange")
     .max(168, "hoursOutOfRange")
     .optional(),
+  tierId: z.string().uuid("tierInvalid").optional(),
 });
 
 export const campaignSchema = z

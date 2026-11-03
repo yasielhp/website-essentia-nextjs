@@ -44,6 +44,7 @@ type BookingRow = {
   contact_id: string | null;
   email: string | null;
   service_id: string | null;
+  tier_id: string | null;
   /** Nullable in the live table: some imported rows carry no date. */
   date: string | null;
   time: string | null;
@@ -58,6 +59,8 @@ type BookingSummary = {
   count: number;
   /** ISO end of the earliest confirmed/completed visit. */
   firstVisitEndsAt: string | null;
+  /** The same, per session type. */
+  firstVisitEndsAtByTier: Map<string, string>;
   confirmedCount: number;
 };
 
@@ -89,7 +92,9 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       .range(0, MAX_ROWS),
     db
       .from("bookings")
-      .select("contact_id, email, service_id, date, time, duration, status")
+      .select(
+        "contact_id, email, service_id, tier_id, date, time, duration, status",
+      )
       .neq("status", "cancelled")
       .range(0, MAX_ROWS),
   ]);
@@ -134,6 +139,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       services: new Set<string>(),
       count: 0,
       firstVisitEndsAt: null,
+      firstVisitEndsAtByTier: new Map<string, string>(),
       confirmedCount: 0,
     };
     // A booking without a date still proves the contact booked, and which
@@ -160,6 +166,14 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       ) {
         summary.firstVisitEndsAt = endsAt;
       }
+      // And the earliest of this session type, so a campaign for one type is
+      // not decided by what the client booked first of another.
+      if (endsAt && booking.tier_id) {
+        const earlier = summary.firstVisitEndsAtByTier.get(booking.tier_id);
+        if (earlier === undefined || endsAt < earlier) {
+          summary.firstVisitEndsAtByTier.set(booking.tier_id, endsAt);
+        }
+      }
     }
     if (booking.service_id) summary.services.add(booking.service_id);
     summary.count += 1;
@@ -185,6 +199,9 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,
       firstVisitEndsAt: bookings?.firstVisitEndsAt ?? null,
+      firstVisitEndsAtByTier: bookings
+        ? Object.fromEntries(bookings.firstVisitEndsAtByTier)
+        : {},
       confirmedBookingsCount: bookings?.confirmedCount ?? 0,
     };
   });

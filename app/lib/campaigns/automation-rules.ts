@@ -85,15 +85,20 @@ export function dueRecipients({
         }));
     }
 
-    // Once in a lifetime, N hours after the end of the first confirmed visit.
+    // Once in a lifetime, N hours after the end of the first confirmed visit —
+    // of the campaign's session type when it names one, of any otherwise.
     // Older first visits are left alone: switching the campaign on must not
     // write to everyone who ever came.
     case "first_visit": {
       const delayMs = (trigger.hours ?? 0) * 3_600_000;
+      const { tierId } = trigger;
       return recipients
         .filter((r) => {
-          if (!r.firstVisitEndsAt) return false;
-          const ends = Date.parse(r.firstVisitEndsAt);
+          const firstEnd = tierId
+            ? r.firstVisitEndsAtByTier?.[tierId]
+            : r.firstVisitEndsAt;
+          if (!firstEnd) return false;
+          const ends = Date.parse(firstEnd);
           return (
             ends >= Date.parse(activatedAt) && ends + delayMs <= now.getTime()
           );

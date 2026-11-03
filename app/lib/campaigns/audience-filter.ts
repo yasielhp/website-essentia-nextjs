@@ -32,6 +32,12 @@ export type ContactCandidate = {
   phone?: string | null;
   /** ISO instant at which the earliest confirmed/completed booking ends. */
   firstVisitEndsAt?: string | null;
+  /**
+   * The same, per session type (`tier_id`): when the earliest confirmed or
+   * completed booking of each type ends. A campaign limited to one type waits
+   * for the first visit of *that* type, not for the first visit of any.
+   */
+  firstVisitEndsAtByTier?: Record<string, string>;
   /** How many bookings are confirmed or completed. */
   confirmedBookingsCount?: number;
 };
@@ -50,6 +56,7 @@ export type Recipient = {
   phone?: string | null;
   newsletter?: boolean;
   firstVisitEndsAt?: string | null;
+  firstVisitEndsAtByTier?: Record<string, string>;
   confirmedBookingsCount?: number;
 };
 
@@ -141,6 +148,7 @@ export function filterAudience(
       phone: candidate.phone ?? null,
       newsletter: candidate.newsletter,
       firstVisitEndsAt: candidate.firstVisitEndsAt ?? null,
+      firstVisitEndsAtByTier: candidate.firstVisitEndsAtByTier ?? {},
       confirmedBookingsCount: candidate.confirmedBookingsCount ?? 0,
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is

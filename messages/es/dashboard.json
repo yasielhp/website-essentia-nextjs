@@ -1061,7 +1061,8 @@
     "blockTextRequired": "Este bloque no tiene texto",
     "imageUrlRequired": "Añade una imagen o su URL",
     "tooManyBlocks": "Demasiados bloques",
-    "subjectBRequired": "La prueba A/B necesita un segundo asunto"
+    "subjectBRequired": "La prueba A/B necesita un segundo asunto",
+    "tierInvalid": "Elige un tipo de sesión válido"
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1728,7 +1729,10 @@
         "first_booking_anniversary": "Una vez al año, a partir del segundo.",
         "new_blog_post": "Un email por entrada, con su título, resumen y enlace.",
         "first_visit": "Una sola vez, N horas después de terminar la primera sesión confirmada"
-      }
+      },
+      "tier": "Tipo de sesión",
+      "tierAny": "Cualquiera",
+      "tierHint": "Solo cuenta la primera visita de este tipo de sesión. Con \"Cualquiera\", la primera visita de cualquier tipo."
     },
     "segments": {
       "title": "Segmentos",
