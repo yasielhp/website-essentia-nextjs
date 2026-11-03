@@ -128,7 +128,7 @@ function ServicesContent({
             </span>
           </span>
           <Button
-            variant="outline"
+            variant="solid"
             size="md"
             onClick={() => onEditTier(serviceId, tier)}
           >
