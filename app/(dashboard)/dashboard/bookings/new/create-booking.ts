@@ -2,12 +2,16 @@ import { z } from "zod";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { getSessionUser } from "@/actions/auth";
-import { recordBookingCreated } from "@/actions/booking-draft";
+import {
+  recordBookingCreated,
+  recordBookingPaymentNote,
+} from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
 import { toStoredGender } from "@/constants/gender";
 import { localDateStr } from "@/utils/format";
+import { amountPaidOf } from "../_shared/payment-fields";
 import {
   resolvePrice,
   type FormState,
@@ -157,6 +161,8 @@ export async function createBooking(
 
   const bookingId = crypto.randomUUID();
   const contactId = await linkContact(draft);
+  const paidEur = amountPaidOf(draft.payment);
+  const paymentStatus = paidEur > 0 ? draft.payment.status : "pending";
 
   const { error } = await insforge.database.from("bookings").insert([
     {
@@ -178,6 +184,20 @@ export async function createBooking(
       phone: draft.phone.trim() || null,
       ...(contactId ? { contact_id: contactId } : {}),
       status: "confirmed",
+      payment_status: paymentStatus,
+      payment_mode:
+        paymentStatus === "pending"
+          ? "none"
+          : paymentStatus === "paid"
+            ? "full"
+            : "deposit",
+      amount_paid_eur: paidEur,
+      ...(paymentStatus === "paid" && draft.payment.method
+        ? {
+            balance_settled_at: new Date().toISOString(),
+            balance_settled_method: draft.payment.method,
+          }
+        : {}),
       ...(draft.role === "partner" ? { partner_id: authUserId } : {}),
       created_by_user_id: authUserId,
       ...(draft.role ? { created_by_role: draft.role } : {}),
@@ -195,6 +215,13 @@ export async function createBooking(
   // and the notifications: the history opens with the booking existing, and an
   // entry for a row the insert refused would be worse than no entry at all.
   await recordBookingCreated(getAccessToken(), bookingId);
+  if (paidEur > 0) {
+    await recordBookingPaymentNote(
+      getAccessToken(),
+      bookingId,
+      draft.payment.method,
+    );
+  }
 
   return { ok: true, bookingId };
 }

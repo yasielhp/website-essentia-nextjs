@@ -19,7 +19,8 @@ export type UpdateBookingPayload = {
   staff_id?: string | null;
   service_title: string;
   tier_id: string | null;
-  price_eur: number | null;
+  /** Omitted to keep the stored price, which may carry a web discount. */
+  price_eur?: number | null;
   duration: string | null;
   date: string | null;
   time: string | null;
@@ -31,6 +32,12 @@ export type UpdateBookingPayload = {
   email: string;
   phone: string | null;
   status: string;
+  /** Payment keys are sent only when the person changed them. */
+  payment_status?: PaymentStatus;
+  payment_mode?: BookingPaymentMode | null;
+  amount_paid_eur?: number;
+  balance_settled_at?: string | null;
+  balance_settled_method?: BalanceMethod | null;
 };
 
 /** What the public cancellation page needs, and nothing that identifies anyone else. */

@@ -12,7 +12,8 @@ import type {
   BookingEventActorRole,
   BookingEventInput,
 } from "@/lib/booking-events/types";
-import { parseIsoDate } from "@/utils/format";
+import { formatPrice, parseIsoDate } from "@/utils/format";
+import { amountOwed } from "@/lib/payments/amounts";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -353,6 +354,56 @@ export async function recordBookingCreated(
   });
 }
 
+/**
+ * Records the money already collected when a booking was taken at the desk.
+ *
+ * The amount is read from the stored row, not from the caller, so the history
+ * can only describe what was really written. It adds an entry and nothing
+ * else: adding to `amount_paid_eur` here too would count the money twice.
+ */
+export async function recordBookingPaymentNote(
+  accessToken: string | null,
+  bookingId: string,
+  method: string,
+): Promise<void> {
+  let actor: AuthContext;
+  try {
+    actor = await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return;
+    throw err;
+  }
+  if (!bookingId) return;
+
+  const { data } = await getAdminClient()
+    .database.from("bookings")
+    .select("amount_paid_eur, price_eur")
+    .eq("id", bookingId)
+    .maybeSingle();
+  const row = data as {
+    amount_paid_eur: number | string | null;
+    price_eur: number | string | null;
+  } | null;
+  const paid = Number(row?.amount_paid_eur ?? 0);
+  if (paid <= 0) return;
+
+  const owed = amountOwed(Number(row?.price_eur ?? 0), paid);
+  const label = ["cash", "card", "transfer", "other"].includes(method)
+    ? ` (${method})`
+    : "";
+  await recordBookingEvent({
+    bookingId,
+    channel: "payment",
+    event: "paid",
+    actorId: actor.userId,
+    actorRole: actor.role as BookingEventActorRole,
+    summary:
+      `Cobrado al crear · ${formatPrice(paid, "es")}${label}` +
+      (owed > 0 ? ` · pendiente ${formatPrice(owed, "es")}` : ""),
+    payload: { amountEur: paid, method: method || null, owedEur: owed },
+  });
+}
+
 /** Deletes a booking outright. Staff only. */
 export async function deleteBooking(
   accessToken: string | null,
@@ -528,9 +579,24 @@ async function recordBookingEdit(
   note("tipo de sesión", "duration", before.duration ?? null, after.duration);
   // A `numeric` column can come back as `"45.00"` where the payload writes 45,
   // and compared as they are that would report a price change on every save.
-  const priceBefore =
-    before.price_eur == null ? null : Number(before.price_eur);
-  note("precio", "price_eur", priceBefore, after.price_eur);
+  // An omitted price means "keep the one stored" (a web booking may carry a
+  // discount), which is not a change.
+  if (after.price_eur !== undefined) {
+    const priceBefore =
+      before.price_eur == null ? null : Number(before.price_eur);
+    note("precio", "price_eur", priceBefore, after.price_eur);
+  }
+  if (after.amount_paid_eur !== undefined) {
+    note(
+      "pago",
+      "amount_paid_eur",
+      Number(before.amount_paid_eur ?? 0),
+      after.amount_paid_eur,
+    );
+  }
+  if (after.payment_status !== undefined) {
+    note("pago", "payment_status", before.payment_status, after.payment_status);
+  }
   note("lugar", "location", before.location ?? null, after.location);
   note(
     "lugar",

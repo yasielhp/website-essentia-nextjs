@@ -7,7 +7,9 @@ import {
   pushBookingToCalendarsAction,
   syncBookingToCalendars,
 } from "@/actions/calendar-propagate";
+import type { UpdateBookingPayload } from "@/types/booking";
 import { localDateStr } from "@/utils/format";
+import { amountPaidOf, type PaymentValue } from "../../_shared/payment-fields";
 import {
   resolvePrice,
   type FormState,
@@ -36,6 +38,12 @@ export type BookingSnapshot = {
   serviceId: string;
   staffId: string;
   googleEventId: string | null;
+  /** To tell whether the price has to be worked out again on save. */
+  tierId: string;
+  location: string;
+  /** The payment as the form read it on load, to send it only if changed. */
+  payment: PaymentValue;
+  paymentMode: string | null;
 };
 
 /** The booking as the form now has it. */
@@ -55,6 +63,7 @@ export type BookingDraft = {
   phone: string;
   status: string;
   staffId: string;
+  payment: PaymentValue;
   service: Service | null;
   tier: Tier | null;
 };
@@ -81,6 +90,7 @@ export function toDraft(
     phone: form.phone,
     status: form.status,
     staffId: form.staffId,
+    payment: form.payment,
     service,
     tier,
   };
@@ -160,12 +170,27 @@ export async function updateBooking(
   token: string | null,
   id: string,
   draft: BookingDraft,
+  original: BookingSnapshot | null,
 ): Promise<{ error: string | null }> {
+  // The price is worked out again only when the session type or the place
+  // changed. Otherwise the stored one stands: a booking paid on the web may
+  // carry a discount that the centre price would silently undo.
+  const repriced =
+    !original ||
+    draft.tierId !== original.tierId ||
+    draft.location !== original.location;
+
   const { error } = await updateBookingByAdmin(token, id, {
     service_id: draft.serviceId,
     service_title: draft.service?.title ?? draft.serviceId,
     tier_id: draft.tierId || null,
-    price_eur: draft.tier ? resolvePrice(draft.tier, draft.location) : null,
+    ...(repriced
+      ? {
+          price_eur: draft.tier
+            ? resolvePrice(draft.tier, draft.location)
+            : null,
+        }
+      : {}),
     duration: durationOf(draft),
     date: dateOf(draft),
     time: draft.selectedTime || null,
@@ -178,9 +203,54 @@ export async function updateBooking(
     email: draft.email.trim(),
     phone: draft.phone.trim() || null,
     status: draft.status,
+    ...paymentPatch(draft.payment, original),
   });
 
   return { error: error ?? null };
+}
+
+/**
+ * The payment keys to write, or none when the person did not touch them.
+ *
+ * Sending an untouched payment would overwrite whatever Redsys or the counter
+ * recorded between loading the screen and saving it.
+ */
+function paymentPatch(
+  payment: PaymentValue,
+  original: BookingSnapshot | null,
+): Partial<UpdateBookingPayload> {
+  const before = original?.payment;
+  if (
+    before &&
+    before.status === payment.status &&
+    before.amountPaid === payment.amountPaid &&
+    before.method === payment.method
+  ) {
+    return {};
+  }
+  const paid = amountPaidOf(payment);
+  const status = paid > 0 ? payment.status : "pending";
+  return {
+    payment_status: status,
+    amount_paid_eur: paid,
+    // A booking made before deposits, or one with no payment, now has a mode.
+    ...(!original?.paymentMode || original.paymentMode === "none"
+      ? {
+          payment_mode:
+            status === "pending"
+              ? "none"
+              : status === "paid"
+                ? "full"
+                : "deposit",
+        }
+      : {}),
+    ...(status === "paid" && payment.method
+      ? {
+          balance_settled_at: new Date().toISOString(),
+          balance_settled_method: payment.method,
+        }
+      : {}),
+  };
 }
 
 /**
@@ -355,5 +425,9 @@ export async function announceBookingSaved({
     serviceId: draft.serviceId,
     staffId: draft.staffId,
     googleEventId: original.googleEventId,
+    tierId: draft.tierId,
+    location: draft.location,
+    payment: draft.payment,
+    paymentMode: original.paymentMode,
   };
 }

@@ -20,6 +20,7 @@ import {
   TierSection,
 } from "./form-sections";
 import {
+  resolvePrice,
   asyncInitial,
   asyncReducer,
   formInitial,
@@ -34,6 +35,7 @@ import {
   validateBookingDraft,
 } from "./save-booking";
 import { useLocationOptions } from "../../_shared/location-options";
+import { PaymentFields } from "../../_shared/payment-fields";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -105,6 +107,7 @@ export default function EditBookingPage() {
     phone,
     status,
     staffId,
+    payment,
   } = form;
 
   const { originalRef, tierStaff, origDate, origTime } = useBookingEditData({
@@ -162,6 +165,7 @@ export default function EditBookingPage() {
       getAccessToken(),
       id,
       draft,
+      originalRef.current,
     );
     dispatchAsync({ type: "SUBMIT_END" });
 
@@ -304,6 +308,16 @@ export default function EditBookingPage() {
             onNotesChange={(value) =>
               dispatchForm({ type: "SET_NOTES", value })
             }
+          />
+
+          {/* ── 7. Payment ── */}
+          <PaymentFields
+            value={payment}
+            priceEur={
+              selectedTier ? resolvePrice(selectedTier, location) : null
+            }
+            onChange={(value) => dispatchForm({ type: "SET_PAYMENT", value })}
+            disabled={submitting}
           />
         </div>
 

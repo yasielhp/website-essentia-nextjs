@@ -4,6 +4,7 @@ import type {
   LocationAddress,
 } from "../_shared/location-options";
 import { EMPTY_ADDRESS } from "../_shared/location-options";
+import { EMPTY_PAYMENT, type PaymentValue } from "../_shared/payment-fields";
 import { GENDER_UNSPECIFIED, type GenderValue } from "@/constants/gender";
 
 /**
@@ -129,6 +130,8 @@ export type FormState = {
   staffId: string;
   /** Consent the client gave at the desk. Off means "not asked", not "no". */
   newsletter: boolean;
+  /** Money already taken, for a booking made by phone or at the desk. */
+  payment: PaymentValue;
 };
 
 export type FormAction =
@@ -150,6 +153,7 @@ export type FormAction =
     }
   | { type: "SET_STAFF"; value: string }
   | { type: "TOGGLE_NEWSLETTER" }
+  | { type: "SET_PAYMENT"; value: PaymentValue }
   | { type: "RESET_TIERS" };
 
 export const formInitial: FormState = {
@@ -171,6 +175,7 @@ export const formInitial: FormState = {
   phone: "",
   staffId: "",
   newsletter: false,
+  payment: EMPTY_PAYMENT,
 };
 
 export function formReducer(state: FormState, action: FormAction): FormState {
@@ -221,6 +226,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, newsletter: !state.newsletter };
     case "SET_STAFF":
       return { ...state, staffId: action.value };
+    case "SET_PAYMENT":
+      return { ...state, payment: action.value };
     default:
       return state;
   }

@@ -1,5 +1,6 @@
 import type { TierPickerOption } from "@/components/ui/tier-picker";
 import { EMPTY_ADDRESS } from "../../_shared/location-options";
+import { EMPTY_PAYMENT, type PaymentValue } from "../../_shared/payment-fields";
 import type {
   DashboardLocation,
   LocationAddress,
@@ -134,6 +135,7 @@ export type FormState = {
   phone: string;
   status: string;
   staffId: string;
+  payment: PaymentValue;
 };
 
 export type FormAction =
@@ -154,6 +156,7 @@ export type FormAction =
       value: string;
     }
   | { type: "SET_STAFF"; value: string }
+  | { type: "SET_PAYMENT"; value: PaymentValue }
   | { type: "RESET_TIERS" };
 
 export const formInitial: FormState = {
@@ -173,6 +176,7 @@ export const formInitial: FormState = {
   phone: "",
   status: "pending",
   staffId: "",
+  payment: EMPTY_PAYMENT,
 };
 
 export function formReducer(state: FormState, action: FormAction): FormState {
@@ -216,6 +220,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, tierId: "" };
     case "SET_STAFF":
       return { ...state, staffId: action.value };
+    case "SET_PAYMENT":
+      return { ...state, payment: action.value };
     default:
       return state;
   }

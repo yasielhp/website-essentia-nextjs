@@ -309,6 +309,13 @@
       },
       "staff": {
         "placeholder": "Unassigned"
+      },
+      "payment": {
+        "title": "Payment",
+        "status": "Payment status",
+        "amountPaid": "Amount collected (€)",
+        "method": "Payment method",
+        "methodPlaceholder": "Choose a method"
       }
     },
     "edit": {

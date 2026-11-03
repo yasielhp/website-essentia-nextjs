@@ -27,6 +27,8 @@ import {
   formReducer,
 } from "./form-state";
 import { useLocationOptions } from "../_shared/location-options";
+import { PaymentFields } from "../_shared/payment-fields";
+import { resolvePrice } from "./form-state";
 
 // ─── Page ─────────────────────────────────────────────────────
 
@@ -67,6 +69,7 @@ function NewBookingPageInner() {
     phone,
     staffId,
     newsletter,
+    payment,
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
@@ -258,6 +261,20 @@ function NewBookingPageInner() {
               newsletter={newsletter}
               submitting={submitting}
               dispatchForm={dispatchForm}
+            />
+          )}
+
+          {/* ── Step 6: Payment ──
+              Same moment as the client: money already taken over the phone
+              or at the desk belongs to a booking that exists. */}
+          {tierId && staffId && selectedDate && selectedTime && (
+            <PaymentFields
+              value={payment}
+              priceEur={
+                selectedTier ? resolvePrice(selectedTier, location) : null
+              }
+              onChange={(value) => dispatchForm({ type: "SET_PAYMENT", value })}
+              disabled={submitting}
             />
           )}
         </div>

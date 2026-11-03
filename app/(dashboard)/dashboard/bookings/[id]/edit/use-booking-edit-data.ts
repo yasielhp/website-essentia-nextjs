@@ -7,6 +7,7 @@ import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import { EMPTY_ADDRESS } from "../../_shared/location-options";
 import type { DashboardLocation } from "../../_shared/location-options";
 import type { AsyncAction, FormAction, Tier } from "./form-state";
+import { paymentValueOf } from "../../_shared/payment-fields";
 import type { BookingSnapshot } from "./save-booking";
 
 /**
@@ -34,6 +35,11 @@ type BookingRow = {
   phone: string | null;
   status: string | null;
   google_event_id: string | null;
+  price_eur: number | string | null;
+  payment_status: string | null;
+  payment_mode: string | null;
+  amount_paid_eur: number | string | null;
+  balance_settled_method: string | null;
 };
 
 /** The stored address, whose shape depends on where the session happens. */
@@ -110,7 +116,7 @@ export function useBookingEditData({
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "service_id, tier_id, staff_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status, google_event_id",
+          "service_id, tier_id, staff_id, duration, location, location_address, notes, date, time, first_name, last_name, email, phone, status, google_event_id, price_eur, payment_status, payment_mode, amount_paid_eur, balance_settled_method",
         )
         .eq("id", id)
         .limit(1);
@@ -146,6 +152,10 @@ export function useBookingEditData({
         serviceId: b.service_id ?? "",
         staffId: b.staff_id ?? "",
         googleEventId: b.google_event_id ?? null,
+        tierId: b.tier_id ?? "",
+        location: b.location ?? "",
+        payment: paymentValueOf(b),
+        paymentMode: b.payment_mode,
       };
       setOrigDate(b.date ?? null);
       setOrigTime(b.time ?? "");
@@ -175,6 +185,7 @@ export function useBookingEditData({
           phone: b.phone ?? "",
           status: b.status ?? "pending",
           staffId: b.staff_id ?? "",
+          payment: paymentValueOf(b),
         },
       });
       dispatchAsync({ type: "BOOKING_LOADED" });

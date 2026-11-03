@@ -309,6 +309,13 @@
       },
       "staff": {
         "placeholder": "Sin asignar"
+      },
+      "payment": {
+        "title": "Pago",
+        "status": "Estado del pago",
+        "amountPaid": "Importe cobrado (€)",
+        "method": "Método de cobro",
+        "methodPlaceholder": "Elegir método"
       }
     },
     "edit": {
