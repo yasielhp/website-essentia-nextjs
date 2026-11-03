@@ -143,11 +143,14 @@ export async function fetchContactDetail(
           .ilike("email", contact.email)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    db
-      .from("memberships")
-      .select("id, plan, status, start_date, created_at")
-      .eq("contact_id", id)
-      .order("created_at", { ascending: false }),
+    // Memberships carry the person's email, not a contact id.
+    contact.email
+      ? db
+          .from("memberships")
+          .select("id, plan, status, start_date, created_at")
+          .ilike("email", contact.email)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
     db
       .from("race_registrations")
       .select("id, created_at, race_id")
