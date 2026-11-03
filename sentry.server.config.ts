@@ -7,6 +7,10 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+  // Development is noise — a stream closed by a reload, a tool poked with
+  // curl. Only production reports.
+  enabled: process.env.NODE_ENV === "production",
+
   // Everything in development, a tenth of it in production.
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
 

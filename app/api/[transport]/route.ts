@@ -3,6 +3,9 @@ import { verifyAccessToken } from "@/lib/oauth/server";
 import type { ToolServer } from "@/lib/mcp/tool";
 import { registerBlogTools } from "./tools/blog";
 import { registerBookingTools } from "./tools/bookings";
+import { registerBusinessTools } from "./tools/business";
+import { registerContactTools } from "./tools/contacts";
+import { registerFinanceTools } from "./tools/finance";
 import { registerServiceTools } from "./tools/services";
 
 const siteUrl =
@@ -21,6 +24,9 @@ const handler = createMcpHandler(
     registerServiceTools(tools);
     registerBlogTools(tools);
     registerBookingTools(tools);
+    registerContactTools(tools);
+    registerFinanceTools(tools);
+    registerBusinessTools(tools);
   },
   {
     // `basePath` and `maxDuration` were dropped in mcp-handler 2: the handler
@@ -62,4 +68,28 @@ const authedHandler = withMcpAuth(
   },
 );
 
-export { authedHandler as GET, authedHandler as POST };
+/**
+ * A body that is not JSON used to throw inside the SDK's parser and surface
+ * as an unhandled error. It is the client's mistake: answer with the
+ * JSON-RPC parse error and move on.
+ */
+async function POST(req: Request) {
+  const text = await req.clone().text();
+  if (text.length > 0) {
+    try {
+      JSON.parse(text);
+    } catch {
+      return Response.json(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32700, message: "Parse error: body is not JSON" },
+        },
+        { status: 400 },
+      );
+    }
+  }
+  return authedHandler(req);
+}
+
+export { authedHandler as GET, POST };

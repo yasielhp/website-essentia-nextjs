@@ -4,7 +4,6 @@ import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "../../../../i18n/routing";
 import { Header } from "@components/header";
-import { RelocationNotice } from "@components/relocation-notice";
 import { Footer } from "@components/footer";
 import { ScrollReset } from "@components/scroll-reset";
 
@@ -48,7 +47,6 @@ export default async function PageLayout({ children, params }: Props) {
       formats={{}}
     >
       <ScrollReset />
-      <RelocationNotice />
       <Header />
       <main>{children}</main>
       <Footer />

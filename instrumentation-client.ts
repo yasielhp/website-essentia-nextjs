@@ -3,10 +3,39 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+/**
+ * Frames that are not ours: a browser extension's script, an injected
+ * `<script>` with somebody else's debug id, or an add-in's bootstrap. An
+ * event made only of these is not a fault in this site.
+ */
+const THIRD_PARTY_FRAME =
+  /^(<script>|<anonymous>|ext:|<obscura|chrome-extension:|moz-extension:|safari-(web-)?extension:|webkit-masked-url:)/;
+
+function onlyThirdPartyFrames(event: Sentry.ErrorEvent): boolean {
+  const frames = event.exception?.values?.flatMap(
+    (value) => value.stacktrace?.frames ?? [],
+  );
+  if (!frames || frames.length === 0) return false;
+  return frames.every(
+    (frame) => !frame.filename || THIRD_PARTY_FRAME.test(frame.filename),
+  );
+}
+
 Sentry.init({
   // Public by design, but kept in the environment like every other key here so
   // a local run without it simply reports nothing.
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+
+  // Development is noise: hot reloads, aborted streams, a hydration mismatch
+  // from a half-restarted server. Only production reports.
+  enabled: process.env.NODE_ENV === "production",
+
+  // Belt and braces over the integration below, which depends on the build
+  // plugin having stamped our bundles: an extension's error reached Sentry
+  // twice in October with every frame in `<script>` and `ext:core`.
+  beforeSend(event) {
+    return onlyThirdPartyFrames(event) ? null : event;
+  },
 
   // Session Replay records the browser session. It is on for errors only: the
   // dashboard and the booking form carry client data, and a replay of a sane
