@@ -6,7 +6,8 @@ import { ServiceStep } from "./steps/service-step";
 import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
-import { ConfirmStep, type PaymentMethod } from "./steps/confirm-step";
+import { ConfirmStep } from "./steps/confirm-step";
+import type { PaymentMode } from "@/lib/payments/amounts";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
 import type { BookingAction } from "./booking-state";
@@ -129,8 +130,8 @@ export type BookingStepRendererProps = {
   dispatch: React.Dispatch<BookingAction>;
   onClearDetailError: (key: keyof DetailsState) => void;
   preselectedLabel?: string | null;
-  paymentMethod: PaymentMethod;
-  onPaymentMethodChange: (method: PaymentMethod) => void;
+  paymentMode: PaymentMode;
+  onPaymentModeChange: (method: PaymentMode) => void;
 };
 
 export function BookingStepRenderer({
@@ -151,8 +152,8 @@ export function BookingStepRenderer({
   dispatch,
   onClearDetailError,
   preselectedLabel,
-  paymentMethod,
-  onPaymentMethodChange,
+  paymentMode,
+  onPaymentModeChange,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -224,8 +225,8 @@ export function BookingStepRenderer({
           time={selectedTime}
           details={details}
           staffName={staffName}
-          paymentMethod={paymentMethod}
-          onPaymentMethodChange={onPaymentMethodChange}
+          paymentMode={paymentMode}
+          onPaymentModeChange={onPaymentModeChange}
         />
       )}
     </div>

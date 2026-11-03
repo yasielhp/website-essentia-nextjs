@@ -152,17 +152,19 @@
     "paymentNoticePrefix": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por",
     "paymentNoticeAt": "al",
     "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión.",
-    "paymentHeading": "¿Cómo prefieres pagar?",
-    "payOnline": "Pagar ahora",
-    "payOnlineNote": "Paga online y ahorra un {percent} % sobre el precio del tratamiento.",
-    "payOnSite": "Pagar en el centro",
-    "payOnSiteNote": "Reservas ahora y pagas el día de la sesión, en el centro.",
+    "paymentHeading": "¿Cómo quieres reservar?",
     "durationLabel": "Duración",
     "priceLabel": "Precio",
     "discountLabel": "Descuento",
     "totalLabel": "Total",
-    "cancellationNote": "Cancela o cambia tu cita hasta 24 horas antes sin coste; si ya has pagado online, te devolvemos el importe. Dentro de las 24 horas previas no hay reembolso.",
-    "payOnlineNoteNoDiscount": "Paga online al confirmar y tu cita queda reservada al momento."
+    "cancellationNote": "La reserva se confirma con el pago. Si necesitas cambiarla, escríbenos con 24 h de antelación.",
+    "payDeposit": "Pagar el {percent}% ahora",
+    "payDepositNote": "Pagas {now} hoy y {later} el día de la sesión.",
+    "payFull": "Pagar todo ahora",
+    "payFullDiscount": "Pagar todo ahora (−{percent}%)",
+    "payFullNote": "Pagas {now} hoy y no tienes nada pendiente.",
+    "payNowLabel": "Pagas ahora",
+    "payLaterLabel": "En el centro"
   },
   "paymentOverlay": {
     "redirecting": "Redirigiendo al pago seguro…",
@@ -191,7 +193,6 @@
   "requested": {
     "heading": "Solicitud recibida.",
     "body": "Hemos recibido tu solicitud y nos pondremos en contacto contigo en breve para confirmar tu cita.",
-    "bodyPayOnSite": "Hemos recibido tu reserva. El pago se realizará en el centro el día de tu sesión, al precio íntegro del tratamiento.",
     "detail": {
       "service": "Servicio",
       "date": "Fecha",
@@ -199,7 +200,8 @@
     },
     "contactNote": "Por favor, mantente atento a tu correo. Nos pondremos en contacto contigo para confirmar tu cita.",
     "contactNoteWithPhone": "Por favor, mantente atento a tu correo y al teléfono <phone>{phoneValue}</phone>. Nos pondremos en contacto contigo para confirmar tu cita.",
-    "cta": "Volver al inicio"
+    "cta": "Volver al inicio",
+    "bodyUnpaid": "No hemos podido abrir el pago. Te escribimos para completarlo."
   },
   "cancel": {
     "confirm": {

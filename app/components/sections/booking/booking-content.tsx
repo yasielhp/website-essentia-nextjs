@@ -13,7 +13,7 @@ import { writeStorage, clearStorage } from "@/storage/booking-storage";
 import { StepIndicator } from "./steps/step-indicator";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import type { DetailsErrors } from "./steps/details-step";
-import { type PaymentMethod } from "./steps/confirm-step";
+import type { PaymentMode } from "@/lib/payments/amounts";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -63,8 +63,8 @@ function BookingContentInner() {
   const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
-  // Paying online carries the discount; paying at the centre is full price.
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  // Everything is paid at booking: a deposit, or the whole price at a discount.
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("deposit");
   // A session type with nobody assigned cannot be performed, so the form stops
   // at the session-type step instead of walking the visitor to an empty
   // calendar and a booking nobody can honour.
@@ -159,7 +159,7 @@ function BookingContentInner() {
     date: selectedDate,
     time: selectedTime,
     details,
-    paymentMethod,
+    paymentMode,
   };
 
   const handleNextFromDetails = async () => {
@@ -218,11 +218,9 @@ function BookingContentInner() {
       return;
     }
 
-    // Both remaining outcomes land on the same page; only a booking paid at the
-    // centre says so, because that is what the wording there depends on.
-    const paid = result.kind === "on-site" ? "&payment=on-site" : "";
+    // The payment could not be opened; the booking stands and is chased.
     push(
-      `/booking/requested?service=${encodeURIComponent(selectedService.title)}${paid}`,
+      `/booking/requested?service=${encodeURIComponent(selectedService.title)}&payment=unpaid`,
     );
   };
 
@@ -250,8 +248,8 @@ function BookingContentInner() {
         }
         preselectedLabel={preselectedLabel}
         selectedTierLabel={selectedTierLabel}
-        paymentMethod={paymentMethod}
-        onPaymentMethodChange={setPaymentMethod}
+        paymentMode={paymentMode}
+        onPaymentModeChange={setPaymentMode}
       />
 
       <BookingNavigation

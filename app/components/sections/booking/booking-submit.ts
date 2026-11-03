@@ -12,7 +12,7 @@ import { updateNewsletterForUser } from "@/actions/newsletter";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
-import type { PaymentMethod } from "./steps/confirm-step";
+import type { PaymentMode } from "@/lib/payments/amounts";
 import type { RedsysFormData } from "./steps/payment-overlay";
 
 /**
@@ -36,7 +36,7 @@ type Draft = {
   date: Date | null;
   time: string | null;
   details: DetailsState;
-  paymentMethod: PaymentMethod;
+  paymentMode: PaymentMode;
 };
 
 type Viewer = { id: string } | null;
@@ -156,7 +156,7 @@ export async function saveDetailsStep({
       user?.id ? "client" : "anonymous",
       details.notes?.trim() || null,
       draft.staffId,
-      "deposit",
+      draft.paymentMode,
     );
   }
 
@@ -178,8 +178,6 @@ export async function saveDatetimeStep(
 }
 
 export type ConfirmResult =
-  /** The booking stands; the money is taken on the day. */
-  | { kind: "on-site" }
   /** Hand over to Redsys with this form. */
   | { kind: "redsys"; formData: RedsysFormData }
   /** Payment could not be started; the booking stands and is chased later. */
@@ -208,7 +206,7 @@ export async function confirmBooking({
   /** The service name as the card statement should read it. */
   paymentDescription: string;
 }): Promise<ConfirmResult> {
-  const { service, tierId, details, paymentMethod } = draft;
+  const { service, tierId, details, paymentMode } = draft;
   if (!service || !tierId) return { kind: "unpaid" };
 
   const dateStr = draft.date ? localDateStr(draft.date) : null;
@@ -236,12 +234,10 @@ export async function confirmBooking({
           service_title: service.title,
           tier_id: tierId,
           ...(draft.staffId ? { staff_id: draft.staffId } : {}),
-          // What this booking will actually be charged, which is the online
-          // price when they pay now and the centre price when they don't.
-          price_eur:
-            paymentMethod === "online"
-              ? (draft.tierPriceOnline ?? draft.tierPrice)
-              : draft.tierPrice,
+          // The web price; the checkout lowers it when they pay everything now
+          // and the settings give a discount for that.
+          price_eur: draft.tierPriceOnline ?? draft.tierPrice,
+          payment_mode: paymentMode,
           duration: draft.duration ?? "",
           location: "centro",
           ...(composedNotes ? { notes: composedNotes } : {}),
@@ -291,15 +287,13 @@ export async function confirmBooking({
       service: service.title,
       serviceId: service.id,
       sessionType: draft.tierLabel,
-      amountDueEur: paymentMethod === "on-site" ? draft.tierPrice : null,
+      amountDueEur: null,
       date: dateStr,
       time: timeStr ?? "",
       duration: draft.duration ?? null,
       locale: locale as "en" | "es",
     }).catch(() => {});
   }
-
-  if (paymentMethod === "on-site") return { kind: "on-site" };
 
   const res = await fetch("/api/checkout/booking-session", {
     method: "POST",
@@ -313,6 +307,7 @@ export async function confirmBooking({
       date: dateStr ?? undefined,
       time: timeStr ?? undefined,
       phone: details.phone || undefined,
+      paymentMode,
     }),
   });
 
