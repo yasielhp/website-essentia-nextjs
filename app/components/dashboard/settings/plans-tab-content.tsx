@@ -2,36 +2,42 @@
 
 import type { PlanRow } from "@/types/settings";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { formatPrice } from "@/utils/format";
 
-const intl = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "EUR",
-});
-
-// ─── Plan Card (column) ───────────────────────────────────────
-
-function PlanCard({ plan, onEdit }: { plan: PlanRow; onEdit: () => void }) {
+/**
+ * One membership plan: a tile with its initial in place of a picture (plans
+ * have none), its name, its monthly price, and the way into the editor — the
+ * same row the session types and the bonus plans use.
+ */
+function PlanRowItem({ plan, onEdit }: { plan: PlanRow; onEdit: () => void }) {
+  const t = useTranslations("dashboard.settings.plans");
+  const locale = useDashboardLocale();
   return (
-    <div className="border-sand-200 flex flex-col rounded-xl border bg-white p-4">
-      <button
-        type="button"
-        onClick={onEdit}
-        className="hover:bg-sand-50 flex flex-col gap-0.5 rounded-lg p-1 text-left transition-colors"
+    <div className="border-sand-200 flex items-center gap-4 rounded-2xl border bg-white p-3">
+      <div
+        aria-hidden="true"
+        className="bg-petroleum-50 text-petroleum-700 font-display flex size-16 shrink-0 items-center justify-center rounded-xl text-2xl uppercase"
       >
-        <span className="text-petroleum-700 text-sm font-semibold capitalize">
+        {plan.label.trim().charAt(0) || "—"}
+      </div>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-petroleum-700 truncate text-sm font-medium capitalize">
           {plan.label}
         </span>
-        <span className="text-petroleum-400 text-xs">
+        <span className="text-petroleum-400 truncate text-xs">
           {plan.price_monthly != null
-            ? `${intl.format(plan.price_monthly)} / mo`
-            : "No price set"}
+            ? `${formatPrice(plan.price_monthly, locale)} ${t("perMonth")}`
+            : t("noPrice")}
         </span>
-      </button>
+      </span>
+      <Button variant="solid" size="md" onClick={onEdit}>
+        {t("edit")}
+      </Button>
     </div>
   );
 }
-
-// ─── Plans Tab Content ────────────────────────────────────────
 
 export function PlansTabContent({
   plans,
@@ -42,16 +48,18 @@ export function PlansTabContent({
 }) {
   const t = useTranslations("dashboard.settings.plans");
   return (
-    <div className="border-sand-200 rounded-2xl border bg-white">
-      <div className="border-sand-100 border-b px-6 py-4">
-        <h2 className="text-petroleum-700 text-sm font-semibold">
+    <div>
+      {/* Row height matches the other settings headers, so all of them sit
+          the same distance under the tabs. */}
+      <div className="mb-4 flex h-10 items-center">
+        <h2 className="font-display text-petroleum-700 text-xl">
           {t("heading")}
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+      <div className="flex flex-col gap-2">
         {plans.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} onEdit={() => onEdit(plan)} />
+          <PlanRowItem key={plan.id} plan={plan} onEdit={() => onEdit(plan)} />
         ))}
       </div>
     </div>

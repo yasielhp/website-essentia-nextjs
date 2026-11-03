@@ -30,18 +30,22 @@ export function SubscriptionsSettings() {
   return (
     <div>
       {loading ? (
-        <div className="border-sand-200 rounded-2xl border bg-white">
-          <div className="border-sand-100 border-b px-6 py-4">
-            <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+        <div className="flex flex-col gap-4">
+          <div className="flex h-10 items-center">
+            <div className="bg-sand-100 h-7 w-48 animate-pulse rounded" />
           </div>
-          <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="border-sand-200 rounded-xl border bg-white p-4"
+                className="border-sand-200 flex items-center gap-4 rounded-2xl border bg-white p-3"
               >
-                <div className="bg-sand-100 h-4 w-24 animate-pulse rounded" />
-                <div className="bg-sand-100 mt-2 h-3 w-16 animate-pulse rounded" />
+                <div className="bg-sand-100 size-16 shrink-0 animate-pulse rounded-xl" />
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <div className="bg-sand-100 h-4 w-32 animate-pulse rounded" />
+                  <div className="bg-sand-100 h-3 w-20 animate-pulse rounded" />
+                </div>
+                <div className="bg-sand-100 h-10 w-24 animate-pulse rounded-full" />
               </div>
             ))}
           </div>

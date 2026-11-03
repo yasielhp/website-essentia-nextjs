@@ -1261,14 +1261,17 @@
   },
   "settings": {
     "plans": {
-      "heading": "Planes de membresía",
+      "heading": "Todas las suscripciones",
       "editPlan": "Editar plan",
       "name": "Nombre",
       "namePlaceholder": "p. ej. Essential",
       "monthlyPrice": "Precio mensual (€)",
       "pricePlaceholder": "199",
       "save": "Guardar",
-      "saving": "Guardando…"
+      "saving": "Guardando…",
+      "perMonth": "/ mes",
+      "noPrice": "Sin precio",
+      "edit": "Editar"
     },
     "tiers": {
       "addTier": "Añadir tipo",
