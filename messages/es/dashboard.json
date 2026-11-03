@@ -1111,7 +1111,8 @@
           "location": "Ubicación",
           "datetime": "Fecha y hora",
           "reservedBy": "Reservado por"
-        }
+        },
+        "new": "Nueva reserva"
       },
       "races": {
         "heading": "Inscripciones en carreras",

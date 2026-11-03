@@ -154,6 +154,17 @@ export type FormAction =
   | { type: "SET_STAFF"; value: string }
   | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_PAYMENT"; value: PaymentValue }
+  | {
+      type: "PREFILL_CLIENT";
+      value: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        gender: GenderValue;
+        language: "en" | "es";
+      };
+    }
   | { type: "RESET_TIERS" };
 
 export const formInitial: FormState = {
@@ -228,6 +239,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, staffId: action.value };
     case "SET_PAYMENT":
       return { ...state, payment: action.value };
+    case "PREFILL_CLIENT":
+      return { ...state, ...action.value };
     default:
       return state;
   }

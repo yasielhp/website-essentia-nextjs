@@ -442,7 +442,11 @@ export default function ContactDetailPage() {
           />
         )}
         {tab === "bookings" && (
-          <BookingsSection loading={loading} bookings={bookings} />
+          <BookingsSection
+            loading={loading}
+            bookings={bookings}
+            contactId={id}
+          />
         )}
         {tab === "races" && (
           <RaceRegsSection loading={loading} raceRegs={raceRegs} />

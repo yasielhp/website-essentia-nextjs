@@ -1111,7 +1111,8 @@
           "location": "Location",
           "datetime": "Datetime",
           "reservedBy": "Reserved by"
-        }
+        },
+        "new": "New booking"
       },
       "races": {
         "heading": "Race registrations",

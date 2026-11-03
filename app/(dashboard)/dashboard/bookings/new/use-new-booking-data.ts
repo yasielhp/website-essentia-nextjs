@@ -4,6 +4,9 @@ import { useEffect, useState, type Dispatch } from "react";
 import { useSearchParams } from "next/navigation";
 import { insforge } from "@/lib/insforge";
 import { fetchBookableServices } from "@/services/bookable-services.client";
+import { getAccessToken } from "@/lib/client-session";
+import { fetchContactDetail } from "@/actions/contacts";
+import { GENDER_UNSPECIFIED } from "@/constants/gender";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import type { AsyncAction, FormAction, Tier } from "./form-state";
 
@@ -47,6 +50,32 @@ export function useNewBookingData({
       dispatchForm({ type: "SET_TIME", value: timeParam });
     }
   }, [searchParams, dispatchForm]);
+
+  // Arriving from a contact's file (?contact=) starts the booking with who it
+  // is for already filled in; the client step shows it once reached.
+  const contactParam = searchParams.get("contact");
+  useEffect(() => {
+    if (!contactParam) return;
+    let cancelled = false;
+    void fetchContactDetail(getAccessToken(), contactParam).then((result) => {
+      if (cancelled || !result.found) return;
+      const { contact } = result;
+      dispatchForm({
+        type: "PREFILL_CLIENT",
+        value: {
+          firstName: contact.first_name ?? "",
+          lastName: contact.last_name ?? "",
+          email: contact.email ?? "",
+          phone: contact.phone ?? "",
+          gender: contact.gender ?? GENDER_UNSPECIFIED,
+          language: contact.preferred_language === "en" ? "en" : "es",
+        },
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [contactParam, dispatchForm]);
 
   // The same list the public booking flow offers.
   useEffect(() => {

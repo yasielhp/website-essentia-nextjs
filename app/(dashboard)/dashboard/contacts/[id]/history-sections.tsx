@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -222,9 +223,11 @@ export /**
 function BookingsSection({
   loading,
   bookings,
+  contactId,
 }: {
   loading: boolean;
   bookings: Booking[];
+  contactId: string;
 }) {
   const t = useTranslations("dashboard");
   const tSection = useTranslations("dashboard.contacts.detail.bookings");
@@ -233,6 +236,15 @@ function BookingsSection({
 
   return (
     <div>
+      <div className="mb-4 flex items-center justify-end">
+        <Button
+          variant="solid"
+          size="sm"
+          href={`/dashboard/bookings/new?contact=${contactId}`}
+        >
+          {tSection("new")}
+        </Button>
+      </div>
       {loading ? (
         <RowSkeleton cols={5} />
       ) : bookings.length === 0 ? (
