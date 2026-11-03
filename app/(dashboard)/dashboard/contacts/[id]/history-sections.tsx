@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ContactBonus } from "@/types/bonus";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -33,6 +34,36 @@ import type {
  * dialog and the loading reducer — some seven hundred lines, of which this is
  * the part nobody was looking for when they opened the file.
  */
+/** Rows shown before "See all": enough to see how things stand, short enough to scroll past. */
+const PREVIEW_ROWS = 5;
+
+/**
+ * The toggle under a long table. Renders nothing when everything already fits,
+ * so a short list has no button to press.
+ */
+function ShowAllToggle({
+  total,
+  expanded,
+  onToggle,
+}: {
+  total: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const t = useTranslations("dashboard.contacts.detail");
+  if (total <= PREVIEW_ROWS) return null;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="text-petroleum-500 hover:text-petroleum-700 mt-3 text-sm underline underline-offset-4"
+    >
+      {expanded ? t("showLess") : t("showAll", { count: total })}
+    </button>
+  );
+}
+
 function RowSkeleton({ cols }: { cols: number }) {
   return (
     <div className="space-y-3">
@@ -107,6 +138,7 @@ export function TransactionsSection({
   const t = useTranslations("dashboard.contacts.detail.transactions");
   const tBonuses = useTranslations("dashboard.bonuses");
   const locale = useDashboardLocale();
+  const [expanded, setExpanded] = useState(false);
   const rows: TransactionRow[] = [
     ...bookings.map((b) => ({
       id: b.id,
@@ -196,7 +228,7 @@ export function TransactionsSection({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {(expanded ? rows : rows.slice(0, PREVIEW_ROWS)).map((r) => (
                 <tr
                   key={`${r.kind}-${r.id}`}
                   className="border-sand-50 border-b last:border-0"
@@ -227,6 +259,11 @@ export function TransactionsSection({
               ))}
             </tbody>
           </table>
+          <ShowAllToggle
+            total={rows.length}
+            expanded={expanded}
+            onToggle={() => setExpanded((v) => !v)}
+          />
         </div>
       )}
     </div>
@@ -250,6 +287,7 @@ function BookingsSection({
   const tSection = useTranslations("dashboard.contacts.detail.bookings");
   const locale = useLocale();
   const { push } = useRouter();
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div>
@@ -292,71 +330,78 @@ function BookingsSection({
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b) => {
-                const detail = locationDetail(
-                  b.location,
-                  b.location_address,
-                  (number) => t("bookings.room", { number }),
-                );
-                return (
-                  <tr
-                    key={b.id}
-                    onClick={() => push(`/dashboard/bookings/${b.id}`)}
-                    className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
-                  >
-                    <td className="py-3 pr-4">
-                      <p className="text-petroleum-500">
-                        {/* The row is clickable for a mouse; this is the same
+              {(expanded ? bookings : bookings.slice(0, PREVIEW_ROWS)).map(
+                (b) => {
+                  const detail = locationDetail(
+                    b.location,
+                    b.location_address,
+                    (number) => t("bookings.room", { number }),
+                  );
+                  return (
+                    <tr
+                      key={b.id}
+                      onClick={() => push(`/dashboard/bookings/${b.id}`)}
+                      className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
+                    >
+                      <td className="py-3 pr-4">
+                        <p className="text-petroleum-500">
+                          {/* The row is clickable for a mouse; this is the same
                             destination as something a keyboard can reach. */}
-                        <Link
-                          href={`/dashboard/bookings/${b.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded outline-offset-2"
-                        >
-                          {formatCreatedDate(b.created_at, locale)}
-                        </Link>
-                      </p>
-                      <p className="text-petroleum-400 text-xs">
-                        {formatCreatedTime(b.created_at, locale)}
-                      </p>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <StatusBadge status={b.status} />
-                    </td>
-                    <td className="py-3 pr-4">
-                      <p className="text-petroleum-700 font-medium">
-                        {b.service_title ?? "—"}
-                      </p>
-                      {b.duration && (
+                          <Link
+                            href={`/dashboard/bookings/${b.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded outline-offset-2"
+                          >
+                            {formatCreatedDate(b.created_at, locale)}
+                          </Link>
+                        </p>
                         <p className="text-petroleum-400 text-xs">
-                          {b.duration}
+                          {formatCreatedTime(b.created_at, locale)}
                         </p>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <LocationBadge location={b.location} />
-                      {detail && (
-                        <p className="text-petroleum-400 mt-1 text-xs">
-                          {detail}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <StatusBadge status={b.status} />
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className="text-petroleum-700 font-medium">
+                          {b.service_title ?? "—"}
                         </p>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <p className="text-petroleum-500">
-                        {formatBookingDate(b.date, locale)}
-                      </p>
-                      {b.time && (
-                        <p className="text-petroleum-400 text-xs">{b.time}</p>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <SourceBadge role={b.created_by_role} />
-                    </td>
-                  </tr>
-                );
-              })}
+                        {b.duration && (
+                          <p className="text-petroleum-400 text-xs">
+                            {b.duration}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <LocationBadge location={b.location} />
+                        {detail && (
+                          <p className="text-petroleum-400 mt-1 text-xs">
+                            {detail}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className="text-petroleum-500">
+                          {formatBookingDate(b.date, locale)}
+                        </p>
+                        {b.time && (
+                          <p className="text-petroleum-400 text-xs">{b.time}</p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <SourceBadge role={b.created_by_role} />
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
             </tbody>
           </table>
+          <ShowAllToggle
+            total={bookings.length}
+            expanded={expanded}
+            onToggle={() => setExpanded((v) => !v)}
+          />
         </div>
       )}
     </div>

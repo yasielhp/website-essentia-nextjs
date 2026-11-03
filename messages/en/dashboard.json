@@ -1235,7 +1235,9 @@
           "noPlans": "There are no active vouchers. Create them in Settings → Vouchers.",
           "error": "The voucher could not be added."
         }
-      }
+      },
+      "showAll": "See all ({count})",
+      "showLess": "See less"
     }
   },
   "account": {

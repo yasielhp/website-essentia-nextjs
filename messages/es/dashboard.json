@@ -1235,7 +1235,9 @@
           "noPlans": "No hay bonos activos. Créalos en Ajustes → Bonos.",
           "error": "No se ha podido añadir el bono."
         }
-      }
+      },
+      "showAll": "Ver todas ({count})",
+      "showLess": "Ver menos"
     }
   },
   "account": {
