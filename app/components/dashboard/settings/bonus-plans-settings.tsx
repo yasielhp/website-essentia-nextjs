@@ -68,7 +68,7 @@ export function BonusPlansSettings() {
       ) : plans.length === 0 ? (
         <p className="text-petroleum-300 text-sm">{t("empty")}</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-3">
           {plans.map((plan) => (
             <button
               key={plan.id}
