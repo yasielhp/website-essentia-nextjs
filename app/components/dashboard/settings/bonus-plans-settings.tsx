@@ -113,11 +113,8 @@ export function BonusPlansSettings() {
                 </span>
               </div>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-petroleum-400 text-xs">
-                  {t("sessions")}
-                </span>
-                <span className="text-petroleum-700 text-base font-medium">
-                  {plan.sessions}
+                <span className="text-petroleum-700 text-sm font-medium">
+                  {t("sessions")} {plan.sessions}
                 </span>
                 <span className="text-petroleum-400 truncate text-xs">
                   {plan.tierLabel ?? "—"}
