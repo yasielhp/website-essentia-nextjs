@@ -5,14 +5,17 @@ import { useTranslations } from "next-intl";
 import { TabButton } from "@/components/dashboard/settings/tab-button";
 import { BookingsSettings } from "@/components/dashboard/settings/bookings-settings";
 import { SubscriptionsSettings } from "@/components/dashboard/settings/subscriptions-settings";
+import { BonusPlansSettings } from "@/components/dashboard/settings/bonus-plans-settings";
 import { PaymentsSettings } from "@/components/dashboard/settings/payments-settings";
 import { CalendarSyncCard } from "@/components/dashboard/settings/calendar-sync-card";
 
-type SettingsTab = "bookings" | "subscriptions" | "payments" | "calendar";
+type SettingsTab =
+  "bookings" | "subscriptions" | "bonuses" | "payments" | "calendar";
 
 const TABS: SettingsTab[] = [
   "bookings",
   "subscriptions",
+  "bonuses",
   "payments",
   "calendar",
 ];
@@ -42,6 +45,7 @@ export function SettingsTabs() {
 
         {tab === "bookings" && <BookingsSettings />}
         {tab === "subscriptions" && <SubscriptionsSettings />}
+        {tab === "bonuses" && <BonusPlansSettings />}
         {tab === "payments" && <PaymentsSettings />}
         {tab === "calendar" && <CalendarSyncCard />}
       </div>

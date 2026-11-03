@@ -1293,7 +1293,8 @@
       "bookings": "Reservas",
       "subscriptions": "Suscripciones",
       "calendar": "Google Calendar",
-      "payments": "Pagos"
+      "payments": "Pagos",
+      "bonuses": "Bonos"
     },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
@@ -1310,6 +1311,25 @@
       "done": "{synced} reservas enviadas a {calendars} calendarios.",
       "failedCount": "{n} sin enviar",
       "failed": "No se pudo sincronizar. Inténtalo de nuevo."
+    },
+    "bonuses": {
+      "heading": "Bonos",
+      "new": "Nuevo bono",
+      "empty": "Todavía no hay bonos.",
+      "name": "Nombre",
+      "tier": "Tipo de sesión",
+      "sessions": "Sesiones",
+      "price": "Precio (€)",
+      "validity": "Validez (días)",
+      "active": "Activo",
+      "sellOnline": "Vender en la web",
+      "sellOnlineHint": "Todavía no hay venta pública de bonos; queda preparado.",
+      "save": "Guardar",
+      "error": "No se ha podido guardar el bono.",
+      "sessionsCount": "{n} sesiones",
+      "validityDays": "Válido {n} días",
+      "inactive": "inactivo",
+      "online": "venta en la web"
     }
   },
   "services": {
