@@ -3,10 +3,6 @@
 import { useTranslations } from "next-intl";
 import type { CalendarEvent } from "@/types/calendar";
 import {
-  EventHoverCard,
-  useHoverAnchor,
-} from "@/components/dashboard/calendar/event-hover-card";
-import {
   toYMD,
   isPastSlot,
   sortByTime,
@@ -15,10 +11,8 @@ import {
 import { TIME_SLOTS } from "@/constants/booking";
 
 /**
- * One booking inside a time slot.
- *
- * Its own component so it can hold the hover state: the bar shows a name and
- * a treatment, and the rest of the booking appears in the card.
+ * One booking inside a time slot: a name and a treatment, and a click opens
+ * the rest of it in the side sheet.
  */
 function SlotEvent({
   event,
@@ -29,7 +23,6 @@ function SlotEvent({
   slot: string;
   onClick: () => void;
 }) {
-  const { anchor, props: hoverProps } = useHoverAnchor(!!event.tooltip);
   // Busy blocks hide someone else's client, so there is nothing to open —
   // render them as static bars.
   const Tag = event.type === "busy" ? "div" : "button";
@@ -38,9 +31,10 @@ function SlotEvent({
     <>
       <Tag
         onClick={event.type === "busy" ? undefined : onClick}
-        {...hoverProps}
         className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs ${
-          event.type === "busy" ? "" : "transition-opacity hover:opacity-75"
+          event.type === "busy"
+            ? ""
+            : "cursor-pointer transition-opacity hover:opacity-75"
         }`}
         style={{
           backgroundColor: event.color + "22",
@@ -60,7 +54,6 @@ function SlotEvent({
           )}
         </div>
       </Tag>
-      {anchor && <EventHoverCard event={event} anchor={anchor} />}
     </>
   );
 }
