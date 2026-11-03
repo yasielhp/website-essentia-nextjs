@@ -110,7 +110,7 @@ function SheetBody({
         role="dialog"
         aria-modal="true"
         aria-label={t("title")}
-        className="bg-sand-100 animate-slide-in-right flex h-full w-full max-w-md flex-col overflow-y-auto shadow-xl"
+        className="animate-slide-in-right border-sand-200 flex h-full w-full max-w-md flex-col overflow-y-auto border-l bg-white shadow-xl"
       >
         <div className="border-sand-200 flex items-center justify-between border-b px-6 py-4">
           <h2 className="font-display text-petroleum-700 text-xl">
@@ -184,7 +184,7 @@ function SheetContent({
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">
       <div
-        className="rounded-2xl bg-white p-5"
+        className="border-sand-200 rounded-2xl border bg-white p-5"
         // The session type's colour as a wash over white, so the card reads as
         // the same appointment the calendar pill showed.
         style={
@@ -240,7 +240,7 @@ function SheetContent({
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-5">
+      <div className="border-sand-200 rounded-2xl border bg-white p-5">
         <p className="text-petroleum-400 text-xs">{t("client")}</p>
         <p className="text-petroleum-700 mt-0.5 font-medium">{name}</p>
         {b.phone && <p className="text-petroleum-500 text-sm">{b.phone}</p>}
@@ -258,7 +258,7 @@ function SheetContent({
       </div>
 
       {b.notes?.trim() && (
-        <div className="rounded-2xl bg-white p-5">
+        <div className="border-sand-200 rounded-2xl border bg-white p-5">
           <p className="text-petroleum-400 text-xs">{t("notes")}</p>
           <p className="text-petroleum-700 mt-0.5 text-sm whitespace-pre-line">
             {b.notes.trim()}
