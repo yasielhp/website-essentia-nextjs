@@ -537,3 +537,21 @@ export const bonusPlanSchema = z.object({
   active: z.boolean(),
   sellOnline: z.boolean(),
 });
+
+/**
+ * What the public consent form sends. The token in the URL is the only proof of
+ * who is signing, so everything else is checked here and again on the server.
+ */
+export const consentSchema = z.object({
+  data: z.record(z.string(), z.union([z.boolean(), z.string().max(500)])),
+  birthdate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  phone: z.string().min(6).max(30).optional(),
+  treatmentAccepted: z.literal(true), // "Acepto el tratamiento informado"
+  healthDataConsent: z.literal(true), // RGPD: tratamiento de datos de salud
+  imageConsent: z.boolean(), // opcional e independiente
+  signedName: z.string().trim().min(2).max(120),
+  signaturePng: z.string().startsWith("data:image/png;base64,").max(400_000),
+});
