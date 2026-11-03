@@ -17,9 +17,21 @@ type BusyInterval = { start: string; end: string };
 
 const WRITE_SCOPE = "blog:write";
 
+type AuthInfo = { scopes: string[]; extra?: { userId?: string } };
+
+/**
+ * What the SDK hands a tool. The authorization that `withMcpAuth` verified
+ * arrives under `http.authInfo` with the SDK this project resolves
+ * (`@modelcontextprotocol/server`); older ones put it at the top. Both are
+ * read, so an upgrade cannot silently lock every connection out again.
+ */
 type ToolExtra = {
-  authInfo?: { scopes: string[]; extra?: { userId?: string } };
+  authInfo?: AuthInfo;
+  http?: { authInfo?: AuthInfo };
 };
+
+const authOf = (extra: ToolExtra): AuthInfo | undefined =>
+  extra.authInfo ?? extra.http?.authInfo;
 
 const text = (t: string, isError = false) => ({
   content: [{ type: "text" as const, text: t }],
@@ -32,7 +44,7 @@ const text = (t: string, isError = false) => ({
  * through OAuth, but a token can carry fewer scopes than its owner holds.
  */
 function writeDenied(extra: ToolExtra) {
-  return extra.authInfo?.scopes.includes(WRITE_SCOPE)
+  return authOf(extra)?.scopes.includes(WRITE_SCOPE)
     ? null
     : text(
         "Unauthorized: this connection cannot write. Reconnect the server from your assistant and allow access when asked.",
@@ -273,7 +285,7 @@ const handler = createMcpHandler(
         const denied = writeDenied(extra as ToolExtra);
         if (denied) return denied;
         // The draft belongs to the person who connected the assistant.
-        const authorId = (extra as ToolExtra).authInfo?.extra?.userId ?? null;
+        const authorId = authOf(extra as ToolExtra)?.extra?.userId ?? null;
         const { cover_image_url, ...rest } = input;
         const { data, error } = await getAdminClient()
           .database.from("blog_posts")
@@ -305,8 +317,12 @@ const handler = createMcpHandler(
         title: "List Blog Drafts",
         description:
           "List the 20 most recent blog drafts. Requires the blog:write scope: drafts are unpublished work.",
+        // An empty schema, so the SDK hands this callback `(input, extra)` like
+        // the others; without one it is called with `extra` alone, and the
+        // scope check read the wrong argument and refused everyone.
+        inputSchema: {},
       },
-      async (extra) => {
+      async (_input, extra) => {
         const denied = writeDenied(extra as ToolExtra);
         if (denied) return denied;
         const { data, error } = await getAdminClient()
