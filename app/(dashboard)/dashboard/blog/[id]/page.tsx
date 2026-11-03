@@ -1,5 +1,6 @@
 "use client";
 
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { useEffect, useReducer, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -21,7 +22,8 @@ export default function EditPostPage() {
   const { push } = useRouter();
   const [state, dispatch] = useReducer(reducer, init);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [lang, setLang] = useState<"en" | "es">("en");
+  const locale = useDashboardLocale();
+  const [lang, setLang] = useState<"en" | "es">(locale);
   const { loading, saving, deleting, confirmDelete, notFound, error } = state;
   const {
     title,

@@ -1,5 +1,7 @@
 "use client";
 
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { langTabs } from "@/lib/dashboard-lang";
 import { type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -24,6 +26,7 @@ export function PostSidebar({
   setLang: (lang: "en" | "es") => void;
 }) {
   const t = useTranslations("dashboard.blog.detail");
+  const locale = useDashboardLocale();
   const tForm = useTranslations("dashboard.blog.form");
   const tStatus = useTranslations("dashboard.blog.status");
   const tCommon = useTranslations("dashboard.common");
@@ -120,7 +123,7 @@ export function PostSidebar({
             {t("sections.seo")}
           </h2>
           <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
-            {(["en", "es"] as const).map((l) => (
+            {langTabs(locale).map((l) => (
               <button
                 key={l}
                 type="button"

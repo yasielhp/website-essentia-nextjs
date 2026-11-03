@@ -1,5 +1,6 @@
 "use client";
 
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { useState, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -43,7 +44,8 @@ export function DetailsForm({
     maxParticipants,
     access,
   } = state;
-  const [lang, setLang] = useState<"en" | "es">("en");
+  const locale = useDashboardLocale();
+  const [lang, setLang] = useState<"en" | "es">(locale);
 
   const shared = { loading, disabled: saving };
 

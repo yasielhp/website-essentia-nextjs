@@ -1,5 +1,7 @@
 "use client";
 
+import { langTabs } from "@/lib/dashboard-lang";
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
@@ -113,7 +115,8 @@ export default function BlogCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [lang, setLang] = useState<"en" | "es">("en");
+  const locale = useDashboardLocale();
+  const [lang, setLang] = useState<"en" | "es">(locale);
   const [form, dispatch] = useReducer(formReducer, EMPTY_FORM);
   const { editing, name, slug, nameEs, slugEs, error } = form;
 
@@ -226,7 +229,7 @@ export default function BlogCategoriesPage() {
               {editing ? t("editCategory") : t("newCategory")}
             </h2>
             <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
-              {(["en", "es"] as const).map((l) => (
+              {langTabs(locale).map((l) => (
                 <button
                   key={l}
                   type="button"

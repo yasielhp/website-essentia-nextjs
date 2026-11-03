@@ -1,5 +1,7 @@
 "use client";
 
+import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { langTabs } from "@/lib/dashboard-lang";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
 
@@ -190,10 +192,11 @@ export function LangToggle({
   onChange: (lang: "en" | "es") => void;
 }) {
   const tCommon = useTranslations("dashboard.common");
+  const locale = useDashboardLocale();
 
   return (
     <div className="bg-sand-100 flex gap-1 rounded-lg p-1">
-      {(["en", "es"] as const).map((l) => (
+      {langTabs(locale).map((l) => (
         <button
           key={l}
           type="button"
