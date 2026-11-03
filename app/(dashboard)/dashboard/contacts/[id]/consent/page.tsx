@@ -11,7 +11,6 @@ import { notifySuccess } from "@/lib/feedback";
 import { resendConsent } from "@/actions/consent";
 import { useConsentPage } from "../consent-data";
 import { ConsentView } from "../consent-view";
-import { shortDate } from "../consent-date";
 import { ResendConsentDialog } from "../resend-consent-dialog";
 
 /**
@@ -107,9 +106,6 @@ export default function ContactConsentPage() {
         <div className="bg-sand-100 h-40 animate-pulse rounded-2xl" />
       ) : state.consent?.signedAt ? (
         <div className="border-sand-200 flex flex-col gap-5 rounded-2xl border bg-white p-6">
-          <p className="text-petroleum-700 text-sm font-medium">
-            {tConsent("signed", { date: shortDate(state.consent.signedAt) })}
-          </p>
           <ConsentView consent={state.consent} />
         </div>
       ) : (

@@ -1,16 +1,19 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { shortDate } from "./consent-date";
 import { CONSENT_FIELDS } from "@/lib/consent/fields";
 import type { ContactConsent } from "@/types/consent";
 
 /**
- * A signed consent as the therapist reads it: one line per point, the text on
+ * A signed consent as the therapist reads it: it opens with when it was signed,
+ * then one line per point, the text on
  * the left and Yes or No on the right, with a rule above every line. A yes to
  * a health question is flagged in amber. The signature itself is not drawn
  * here; the line only says whether there is one.
  */
 export function ConsentView({ consent }: { consent: ContactConsent }) {
+  const t = useTranslations("dashboard.contacts.detail.consent");
   const tForm = useTranslations("consent");
 
   const answered = CONSENT_FIELDS.filter((f) => f.kind === "boolean");
@@ -24,6 +27,10 @@ export function ConsentView({ consent }: { consent: ContactConsent }) {
 
   return (
     <div>
+      <Line
+        label={t("signedLabel")}
+        value={consent.signedAt ? shortDate(consent.signedAt) : "—"}
+      />
       {answered.map((field) => {
         const isYes = consent.answers[field.id] === true;
         const detail = consent.answers[`${field.id}Detail`];

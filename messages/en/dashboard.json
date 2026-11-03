@@ -1184,6 +1184,7 @@
         "heading": "Details"
       },
       "consent": {
+        "signedLabel": "Signed",
         "heading": "Consent",
         "signed": "Signed on {date}",
         "unsigned": "Not signed",
