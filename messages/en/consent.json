@@ -46,9 +46,7 @@
   },
   "healthData": {
     "heading": "Personal and health data",
-    "accept": "I expressly consent to the processing of the health data provided in order to assess the suitability and safety of the service, according to the available privacy information.",
-    "link": "Full information",
-    "controller": "Controller: Yusleidy Caridad Jiménez Pérez (Essentia Social Wellness Club), Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife · info@essentiawellnessclub.com"
+    "accept": "I expressly consent to the processing of the health data provided in order to assess the suitability and safety of the service, according to the available privacy information."
   },
   "image": {
     "heading": "Image consent (optional and independent)",

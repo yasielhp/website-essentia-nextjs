@@ -6,7 +6,6 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { OptionSelect } from "@/components/ui/option-select";
-import { Link } from "../../../../i18n/navigation";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { getAccessToken } from "@/lib/client-session";
 import { submitConsent, submitConsentAsStaff } from "@/actions/consent";
@@ -233,16 +232,6 @@ export function ConsentForm(props: Props) {
           />
           <span className="text-petroleum-700">{t("healthData.accept")}</span>
         </label>
-        <p className="text-petroleum-400 text-xs leading-relaxed">
-          {t("healthData.controller")}{" "}
-          <Link
-            href="/privacy"
-            target="_blank"
-            className="text-petroleum-500 underline"
-          >
-            {t("healthData.link")}
-          </Link>
-        </p>
       </section>
 
       {/* Image (optional, independent) */}
