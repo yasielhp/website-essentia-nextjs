@@ -212,7 +212,6 @@ function SheetContent({
   const t = useTranslations("dashboard.calendar.sheet");
   const tPay = useTranslations("dashboard.bookings.detail.payment");
   const tLocations = useTranslations("dashboard.bookings.locations");
-  const tBookings = useTranslations("dashboard.bookings");
 
   const name = [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
   const pay = effectivePayment(b);
@@ -239,7 +238,7 @@ function SheetContent({
                 ? tLocations(b.location)
                 : b.location
             }
-            detail={placeDetail(b, (number) => tBookings("room", { number }))}
+            detail={placeDetail(b, (number) => number)}
           />
           <Field
             label={t("price")}
