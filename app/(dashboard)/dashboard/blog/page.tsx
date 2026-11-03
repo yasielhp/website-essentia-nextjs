@@ -15,12 +15,24 @@ import { activatable } from "@/lib/a11y";
 type Post = {
   id: string;
   title: string;
+  title_es: string | null;
   slug: string;
   status: "draft" | "published";
   published_at: string | null;
   created_at: string;
-  category: { name: string } | null;
+  category: { name: string; name_es: string | null } | null;
 };
+
+type Category = { name: string; name_es: string | null };
+
+/** What the row shows: the Spanish text when the dashboard is in Spanish and the post has one. */
+function postTitle(p: Post, locale: string): string {
+  return (locale === "es" && p.title_es?.trim()) || p.title;
+}
+function categoryName(c: Category | null, locale: string): string | null {
+  if (!c) return null;
+  return (locale === "es" && c.name_es?.trim()) || c.name;
+}
 
 const fieldCls =
   "border-sand-200 text-petroleum-500 placeholder:text-petroleum-300 w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-petroleum-300";
@@ -42,15 +54,16 @@ function FilterModal({
   onClose: () => void;
 }) {
   const t = useTranslations("dashboard");
-  const [categories, setCategories] = useState<string[]>([]);
+  const locale = useDashboardLocale();
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     void insforge.database
       .from("blog_categories")
-      .select("name")
+      .select("name, name_es")
       .order("name")
       .then(({ data }) => {
-        setCategories(((data ?? []) as { name: string }[]).map((c) => c.name));
+        setCategories((data ?? []) as Category[]);
       });
   }, []);
 
@@ -109,9 +122,11 @@ function FilterModal({
               className={fieldCls}
             >
               <option value="">{t("blog.filters.allCategories")}</option>
+              {/* The value is the English name, which is what every post
+                  carries whatever language the screen shows. */}
               {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+                <option key={c.name} value={c.name}>
+                  {categoryName(c, locale)}
                 </option>
               ))}
             </select>
@@ -141,7 +156,7 @@ export default function BlogDashboardPage() {
     const { data } = await insforge.database
       .from("blog_posts")
       .select(
-        "id, title, slug, status, published_at, created_at, category:blog_categories(name)",
+        "id, title, title_es, slug, status, published_at, created_at, category:blog_categories(name, name_es)",
       )
       .order("created_at", { ascending: false });
     return (data as Post[] | null) ?? [];
@@ -232,7 +247,7 @@ export default function BlogDashboardPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-petroleum-700 truncate font-medium">
-                  {p.title}
+                  {postTitle(p, locale)}
                 </p>
                 {p.status === "published" ? (
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
@@ -247,7 +262,7 @@ export default function BlogDashboardPage() {
                 )}
               </div>
               <p className="text-petroleum-400 mt-1 text-xs">
-                {p.category?.name ?? t("blog.noCategory")}
+                {categoryName(p.category, locale) ?? t("blog.noCategory")}
                 {" · "}
                 {p.published_at
                   ? t("blog.publishedOn", {
@@ -334,11 +349,11 @@ export default function BlogDashboardPage() {
                         onClick={(e) => e.stopPropagation()}
                         className="rounded outline-offset-2"
                       >
-                        {p.title}
+                        {postTitle(p, locale)}
                       </Link>
                     </td>
                     <td className="text-petroleum-400 px-5 py-4">
-                      {p.category?.name ?? t("common.empty")}
+                      {categoryName(p.category, locale) ?? t("common.empty")}
                     </td>
                     <td className="px-5 py-4">
                       {p.status === "published" ? (
