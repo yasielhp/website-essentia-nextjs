@@ -330,6 +330,25 @@
           }
         }
       },
+      "anesis": {
+        "title": "Anesis",
+        "description": "Facial hidratante y masaje craneofacial: preparación suave de la piel, cosméticos seleccionados, mascarilla y un delicado masaje facial, cervical y craneal para aportar hidratación, luminosidad y relajación profunda.",
+        "body": "Anesis es un tratamiento facial que combina una preparación suave de la piel con productos cosméticos seleccionados por sus propiedades hidratantes, mascarilla y un delicado masaje facial, cervical y craneal.\n\nUna experiencia diseñada para aportar hidratación, luminosidad y confort a la piel, mientras favorece una profunda sensación de relajación y bienestar.\n\nEs ideal para pieles que se sienten secas, cansadas o apagadas, y para quien desea hacer una pausa y soltar la tensión del rostro y de la mente.",
+        "highlights": {
+          "0": {
+            "title": "Hidratación y luminosidad",
+            "description": "Cosmética hidratante seleccionada y mascarilla dejan la piel más cómoda, flexible y luminosa."
+          },
+          "1": {
+            "title": "Masaje facial, cervical y craneal",
+            "description": "Un delicado masaje de rostro, cuello y cuero cabelludo para liberar tensión y profundizar la experiencia."
+          },
+          "2": {
+            "title": "Relajación profunda",
+            "description": "Un ritual lento y envolvente que favorece el descanso y una sensación duradera de bienestar."
+          }
+        }
+      },
       "aurum": {
         "title": "Aurum",
         "description": "Ritual facial regenerador con láminas de oro, cosmética premium Aurum y técnicas inspiradas en Kobido para nutrir, revitalizar y devolver luminosidad natural al rostro.",
@@ -851,8 +870,13 @@
     "aromaNote": "Todas nuestras terapias se realizan con aceites y esencias premium, e incorporan aromaterapia cuidadosamente seleccionada para elevar la experiencia sensorial y acompañar el trabajo manual. En caso de alergias, sensibilidad o preferencia personal, la aromaterapia puede adaptarse o evitarse.",
     "viewTreatment": "Ver tratamiento",
     "facialsHeading": "Nuestros faciales",
-    "facialsSubtitle": "Tres rituales diseñados para cuidar la piel, mejorar la estructura facial y revelar una belleza más natural, luminosa y equilibrada.",
+    "facialsSubtitle": "Cuatro rituales diseñados para cuidar la piel, mejorar la estructura facial y revelar una belleza más natural, luminosa y equilibrada.",
     "facialCards": {
+      "anesis": {
+        "title": "Anesis",
+        "meta": "50 min · 70 €",
+        "description": "Hidratación, luminosidad y confort con cosmética seleccionada, mascarilla y un delicado masaje facial, cervical y craneal."
+      },
       "aurum": {
         "title": "Aurum",
         "meta": "60 min · 180 €",

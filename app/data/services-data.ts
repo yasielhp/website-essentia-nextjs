@@ -262,7 +262,7 @@ export const ivProtocols: IvProtocol[] = [
   },
 ];
 
-/** The three facial rituals. No tiers in the database yet, so there are no
+/** The facial rituals. No tiers in the database yet, so there are no
  *  individual pages and no per-treatment deep link into the booking form. */
 export type FacialTreatment = {
   id: string;
@@ -279,6 +279,34 @@ export type FacialTreatment = {
 };
 
 export const facialTreatments: FacialTreatment[] = [
+  {
+    id: "anesis",
+    title: "Anesis",
+    meta: "50 min · €70",
+    description:
+      "Hydration, radiance and comfort with selected cosmetics, a mask and a delicate facial, cervical and cranial massage.",
+    // TODO: swap for anesis-1920x1080.webp / anesis-1200x675.webp once the
+    // centre sends its own photos; these are Eleva's.
+    image: "/images/wellness/facials/heroes/eleva-1920x1080.webp",
+    thumbnail: "/images/wellness/facials/cards/eleva-1200x675.webp",
+    highlights: [
+      {
+        title: "Hydration and radiance",
+        description:
+          "Selected hydrating cosmetics and a mask leave the skin more comfortable, supple and luminous.",
+      },
+      {
+        title: "Facial, cervical and cranial massage",
+        description:
+          "A delicate massage of the face, neck and scalp to release tension and deepen the experience.",
+      },
+      {
+        title: "Deep relaxation",
+        description:
+          "A slow, enveloping ritual that favours rest and a lasting sense of wellbeing.",
+      },
+    ],
+  },
   {
     id: "aurum",
     title: "Aurum",
