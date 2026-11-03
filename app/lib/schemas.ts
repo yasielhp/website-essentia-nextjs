@@ -526,3 +526,14 @@ export const paymentSettingsSchema = z.object({
   fullPaymentDiscountPercent: z.number().int().min(0).max(50),
   requirePayment: z.boolean(),
 });
+
+export const bonusPlanSchema = z.object({
+  id: z.string().uuid().optional(),
+  tierId: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+  sessions: z.number().int().min(1).max(50),
+  priceEur: z.number().min(0),
+  validityDays: z.number().int().min(1).max(1095),
+  active: z.boolean(),
+  sellOnline: z.boolean(),
+});
