@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/actions/auth";
-import { SettingsSections } from "./settings-sections";
+import { SettingsTabs } from "./settings-tabs";
 
 /**
  * Every setting in the dashboard, in one place.
@@ -22,5 +22,5 @@ export default async function SettingsPage() {
 
   if (role !== "admin") redirect("/dashboard");
 
-  return <SettingsSections />;
+  return <SettingsTabs />;
 }

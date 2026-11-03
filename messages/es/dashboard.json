@@ -1345,11 +1345,9 @@
     "tabs": {
       "bookings": "Reservas",
       "subscriptions": "Suscripciones",
-      "calendar": "Google Calendar"
-    },
-    "sections": {
-      "sessionTypes": "Tipos de sesión",
-      "payments": "Pagos"
+      "calendar": "Google Calendar",
+      "payments": "Pagos",
+      "bonuses": "Bonos"
     },
     "staff": {
       "noStaff": "No hay personal dado de alta todavía.",
