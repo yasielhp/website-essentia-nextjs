@@ -7,11 +7,7 @@ import { IconX } from "@/components/ui/icons";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchBookingPeek } from "@/actions/booking-peek";
 import { effectivePayment } from "@/lib/payments/amounts";
-import {
-  formatBookingDate,
-  formatPrice,
-  type SupportedLocale,
-} from "@/utils/format";
+import { formatPrice, type SupportedLocale } from "@/utils/format";
 import { locationDetail } from "@/utils/booking-display";
 import type { BookingPeek } from "@/types/booking";
 
@@ -178,6 +174,12 @@ function placeDetail(
   return locationDetail(b.location, b.location_address, roomLabel);
 }
 
+/** `2026-10-15` as `15/10/2026`, day first in both languages: no US ambiguity. */
+function shortDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return y && m && d ? `${d}/${m}/${y}` : iso;
+}
+
 /** A label with its value under it; renders nothing when there is no value. */
 function Field({
   label,
@@ -224,10 +226,7 @@ function SheetContent({
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
           <Field label={t("category")} value={b.service_title} />
           <Field label={t("service")} value={b.service_tiers?.label} />
-          <Field
-            label={t("date")}
-            value={b.date ? formatBookingDate(b.date, locale) : null}
-          />
+          <Field label={t("date")} value={b.date ? shortDate(b.date) : null} />
           <Field label={t("time")} value={b.time} />
           <Field label={t("duration")} value={b.duration} />
           <Field label={t("staff")} value={b.staff_name ?? t("unassigned")} />
