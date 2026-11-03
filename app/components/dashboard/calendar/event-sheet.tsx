@@ -268,10 +268,21 @@ function SheetContent({
           </div>
         </dl>
         {hasMoney && (
-          <p className="text-petroleum-700 mt-3 text-xs">
-            {tPay("paid")} {formatPrice(pay.paidEur, locale)} · {tPay("owed")}{" "}
-            {formatPrice(owed, locale)}
-          </p>
+          <dl className="mt-4 grid grid-cols-2 gap-x-4">
+            <Field
+              label={tPay("paid")}
+              value={formatPrice(pay.paidEur, locale)}
+            />
+            {/* Only when something is still to be collected. */}
+            {owed > 0 && (
+              <div>
+                <dt className="text-petroleum-400 text-xs">{tPay("owed")}</dt>
+                <dd className="mt-0.5 text-sm font-medium text-amber-700">
+                  {formatPrice(owed, locale)}
+                </dd>
+              </div>
+            )}
+          </dl>
         )}
         <div className="border-sand-100 mt-4 flex gap-2 border-t pt-4">
           <Link href={`/dashboard/bookings/${b.id}`} className={LINK_CLASS}>
