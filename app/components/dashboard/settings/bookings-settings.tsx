@@ -17,8 +17,6 @@ type DataState = {
   mounted: boolean;
   colors: ColorSettings;
   serviceTiers: Record<string, TierRow[]>;
-  /** Names of the staff assigned to each session type, keyed by tier id. */
-  tierStaff: Record<string, string[]>;
   modal: ModalState | null;
 };
 
@@ -27,10 +25,8 @@ type DataAction =
       type: "INIT_DONE";
       colors: ColorSettings;
       serviceTiers: Record<string, TierRow[]>;
-      tierStaff: Record<string, string[]>;
     }
   | { type: "SET_SERVICE_TIERS"; serviceTiers: Record<string, TierRow[]> }
-  | { type: "SET_TIER_STAFF"; tierStaff: Record<string, string[]> }
   | { type: "SET_MODAL"; modal: ModalState | null }
   | { type: "SET_COLORS"; colors: ColorSettings };
 
@@ -38,44 +34,8 @@ const initialDataState: DataState = {
   mounted: false,
   colors: DEFAULT_COLORS,
   serviceTiers: {},
-  tierStaff: {},
   modal: null,
 };
-
-/** Who performs each session type, as names ready to print. */
-async function loadTierStaff(): Promise<Record<string, string[]>> {
-  const [assigned, staff] = await Promise.all([
-    insforge.database
-      .from("staff_tiers")
-      .select("tier_id, staff_id, sort_order")
-      .order("sort_order"),
-    insforge.database
-      .from("profiles")
-      .select("id, full_name, first_name")
-      .eq("role", "staff"),
-  ]);
-
-  const names = new Map(
-    (
-      (staff.data ?? []) as {
-        id: string;
-        full_name: string | null;
-        first_name: string | null;
-      }[]
-    ).map((p) => [p.id, p.full_name ?? p.first_name ?? "—"]),
-  );
-
-  const byTier: Record<string, string[]> = {};
-  for (const row of (assigned.data ?? []) as {
-    tier_id: string;
-    staff_id: string;
-  }[]) {
-    const name = names.get(row.staff_id);
-    if (!name) continue;
-    (byTier[row.tier_id] ??= []).push(name);
-  }
-  return byTier;
-}
 
 function dataReducer(state: DataState, action: DataAction): DataState {
   switch (action.type) {
@@ -85,12 +45,9 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         mounted: true,
         colors: action.colors,
         serviceTiers: action.serviceTiers,
-        tierStaff: action.tierStaff,
       };
     case "SET_SERVICE_TIERS":
       return { ...state, serviceTiers: action.serviceTiers };
-    case "SET_TIER_STAFF":
-      return { ...state, tierStaff: action.tierStaff };
     case "SET_MODAL":
       return { ...state, modal: action.modal };
     case "SET_COLORS":
@@ -104,11 +61,9 @@ function dataReducer(state: DataState, action: DataAction): DataState {
 
 function ServicesContent({
   serviceTiers,
-  tierStaff,
   onEditTier,
 }: {
   serviceTiers: Record<string, TierRow[]>;
-  tierStaff: Record<string, string[]>;
   onEditTier: (serviceId: string, tier: TierRow) => void;
 }) {
   const t = useTranslations("dashboard.settings.services");
@@ -154,21 +109,8 @@ function ServicesContent({
                       className="size-12 shrink-0"
                       sizes="48px"
                     />
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-petroleum-700 truncate text-sm font-medium">
-                        {tier.label ?? "—"}
-                      </span>
-                      {/* Nobody assigned means nobody can be booked for it, so
-                          the empty case is spelled out rather than left blank. */}
-                      {(tierStaff[tier.id] ?? []).length > 0 ? (
-                        <span className="text-petroleum-400 truncate text-xs">
-                          {(tierStaff[tier.id] ?? []).join(", ")}
-                        </span>
-                      ) : (
-                        <span className="truncate text-xs text-red-600">
-                          {t("card.noStaff")}
-                        </span>
-                      )}
+                    <span className="text-petroleum-700 min-w-0 flex-1 truncate text-sm font-medium">
+                      {tier.label ?? "—"}
                     </span>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -216,7 +158,6 @@ export function BookingsSettings() {
         [serviceId]: (rows as TierRow[] | null) ?? [],
       },
     });
-    dispatch({ type: "SET_TIER_STAFF", tierStaff: await loadTierStaff() });
     notifySuccess(tToasts("tierSaved"));
   }
 
@@ -224,16 +165,12 @@ export function BookingsSettings() {
     async function init() {
       const colors = loadColorSettings();
 
-      // Neither reads the other, so they wait together rather than in turn.
-      const [tiersRes, tierStaff] = await Promise.all([
-        insforge.database
-          .from("service_tiers")
-          .select(
-            "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
-          )
-          .order("sort_order"),
-        loadTierStaff(),
-      ]);
+      const tiersRes = await insforge.database
+        .from("service_tiers")
+        .select(
+          "id, service_id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
+        )
+        .order("sort_order");
 
       const serviceTiers: Record<string, TierRow[]> = {};
       if (tiersRes.data) {
@@ -243,7 +180,7 @@ export function BookingsSettings() {
         }
       }
 
-      dispatch({ type: "INIT_DONE", colors, serviceTiers, tierStaff });
+      dispatch({ type: "INIT_DONE", colors, serviceTiers });
     }
     void init();
   }, []);
@@ -267,10 +204,7 @@ export function BookingsSettings() {
                   className="border-sand-200 flex items-center gap-3 rounded-2xl border bg-white p-3"
                 >
                   <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
-                  <div className="flex flex-1 flex-col gap-1.5">
-                    <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
-                    <div className="bg-sand-100 h-3 w-28 animate-pulse rounded" />
-                  </div>
+                  <div className="bg-sand-100 h-4 w-40 flex-1 animate-pulse rounded" />
                   <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
                 </div>
               ))}
@@ -285,7 +219,6 @@ export function BookingsSettings() {
     <div>
       <ServicesContent
         serviceTiers={data.serviceTiers}
-        tierStaff={data.tierStaff}
         onEditTier={(serviceId, tier) =>
           dispatch({ type: "SET_MODAL", modal: { serviceId, tier } })
         }
