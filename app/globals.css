@@ -105,10 +105,21 @@
   }
 }
 
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @theme {
   --animate-fade-in-down: fade-in-down 0.18s ease-out both;
   --animate-fade-in-up: fade-in-up 0.22s ease-out both;
   --animate-slide-up-modal: slide-up-modal 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+  --animate-slide-in-right: slide-in-right 0.28s cubic-bezier(0.16, 1, 0.3, 1)
     both;
 }
 

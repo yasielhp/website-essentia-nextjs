@@ -994,7 +994,16 @@
       "title": "Filtros",
       "apply": "Aplicar"
     },
-    "blocked": "Bloqueado"
+    "blocked": "Bloqueado",
+    "sheet": {
+      "title": "Reserva",
+      "notFound": "No se ha encontrado la reserva.",
+      "viewBooking": "Ver reserva",
+      "editBooking": "Editar",
+      "viewContact": "Ver ficha del cliente",
+      "client": "Cliente",
+      "notes": "Notas"
+    }
   },
   "roles": {
     "admin": "Administrador",

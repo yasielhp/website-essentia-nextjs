@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/components/auth-provider";
 import { useRole } from "@/context/role-context";
+import { EventSheet } from "@/components/dashboard/calendar/event-sheet";
 import { CalendarFiltersModal } from "@/components/dashboard/calendar/calendar-filters-modal";
 import { EMPTY_FILTERS, type CalendarFilters } from "@/utils/calendar-filters";
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   // hundred bookings does not have to be fetched to show three.
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sheetBookingId, setSheetBookingId] = useState<string | null>(null);
   const { staffOptions, tierOptions } = useFilterOptions();
 
   const [calNav, dispatchCalNav] = useReducer(calNavReducer, {
@@ -74,6 +76,12 @@ export default function DashboardPage() {
     // A busy block has no detail page — it exists so the slot does not read as
     // free, and the partner has no right to whatever sits behind it.
     if (event.type === "busy" || !event.href) return;
+    // A booking opens in a side sheet so the calendar stays where it is; the
+    // other kinds have their own pages.
+    if (event.type === "booking") {
+      setSheetBookingId(event.id);
+      return;
+    }
     push(event.href);
   }
 
@@ -128,6 +136,11 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <EventSheet
+        bookingId={sheetBookingId}
+        onClose={() => setSheetBookingId(null)}
+      />
 
       {filtersOpen && (
         <CalendarFiltersModal

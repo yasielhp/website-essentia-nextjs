@@ -82,3 +82,24 @@ export type Booking = {
   user_id: string | null;
   created_at: string | null;
 };
+
+/** What the calendar's side sheet shows of one booking. */
+export type BookingPeek = {
+  id: string;
+  service_title: string | null;
+  date: string | null;
+  time: string | null;
+  duration: string | null;
+  status: string | null;
+  payment_status: string | null;
+  price_eur: number | null;
+  amount_paid_eur: number | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  contact_id: string | null;
+  staff_id: string | null;
+  notes: string | null;
+  service_tiers: { label: string | null; color: string | null } | null;
+};

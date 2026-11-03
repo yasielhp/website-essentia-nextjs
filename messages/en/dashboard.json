@@ -994,7 +994,16 @@
       "title": "Filters",
       "apply": "Apply"
     },
-    "blocked": "Blocked"
+    "blocked": "Blocked",
+    "sheet": {
+      "title": "Booking",
+      "notFound": "The booking could not be found.",
+      "viewBooking": "Open booking",
+      "editBooking": "Edit",
+      "viewContact": "View contact",
+      "client": "Client",
+      "notes": "Notes"
+    }
   },
   "roles": {
     "admin": "Admin",
