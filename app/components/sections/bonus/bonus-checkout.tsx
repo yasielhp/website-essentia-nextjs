@@ -309,48 +309,43 @@ export function BonusCheckout({
                 </span>
               </div>
             </div>
+            <div className="border-sand-100 flex flex-col gap-1 border-t pt-4">
+              <Checkbox
+                name="consent"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  setErrors((prev) => ({ ...prev, consent: undefined }));
+                }}
+                label={
+                  <span className="text-petroleum-400 text-sm">
+                    {tDetails("consentPrefix")}{" "}
+                    <NextLink
+                      href="/terms"
+                      className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                      target="_blank"
+                    >
+                      {tDetails("terms")}
+                    </NextLink>{" "}
+                    {tDetails("consentAnd")}{" "}
+                    <NextLink
+                      href="/privacy"
+                      className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+                      target="_blank"
+                    >
+                      {tDetails("privacyPolicy")}
+                    </NextLink>
+                    {tDetails("consentSuffix")}
+                  </span>
+                }
+              />
+              {errors.consent && (
+                <p className="text-xs text-red-500">
+                  {validationMessage(errors.consent)}
+                </p>
+              )}
+            </div>
           </div>
-
-          <div className="flex flex-col gap-1">
-            <Checkbox
-              name="consent"
-              checked={consent}
-              onChange={(e) => {
-                setConsent(e.target.checked);
-                setErrors((prev) => ({ ...prev, consent: undefined }));
-              }}
-              label={
-                <span className="text-petroleum-400 text-sm">
-                  {tDetails("consentPrefix")}{" "}
-                  <NextLink
-                    href="/terms"
-                    className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-                    target="_blank"
-                  >
-                    {tDetails("terms")}
-                  </NextLink>{" "}
-                  {tDetails("consentAnd")}{" "}
-                  <NextLink
-                    href="/privacy"
-                    className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-                    target="_blank"
-                  >
-                    {tDetails("privacyPolicy")}
-                  </NextLink>
-                  {tDetails("consentSuffix")}
-                </span>
-              }
-            />
-            {errors.consent && (
-              <p className="text-xs text-red-500">
-                {validationMessage(errors.consent)}
-              </p>
-            )}
-          </div>
-
-          <p className="text-petroleum-400 text-xs leading-relaxed">
-            {t("form.pay", { price: formatPrice(plan.priceEur, locale) })}
-          </p>
 
           {generalError && (
             <p className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600">

@@ -10,7 +10,6 @@
   },
   "form": {
     "title": "Comprar bono",
-    "pay": "Pagarás {price} ahora con tarjeta, sin descuentos ni pagos aplazados.",
     "submit": "Pagar",
     "submitting": "Un momento…",
     "errors": {

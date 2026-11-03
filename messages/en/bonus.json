@@ -10,7 +10,6 @@
   },
   "form": {
     "title": "Buy a voucher",
-    "pay": "You will pay {price} now by card, with no discounts or deferred payments.",
     "submit": "Pay",
     "submitting": "One moment…",
     "errors": {
