@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
 import {
@@ -7,6 +6,7 @@ import {
 } from "@/data/services-data";
 import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { verifyAccessToken } from "@/lib/oauth/server";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -17,27 +17,27 @@ type BusyInterval = { start: string; end: string };
 
 const WRITE_SCOPE = "blog:write";
 
-type ToolExtra = { authInfo?: { scopes: string[] } };
+type ToolExtra = {
+  authInfo?: { scopes: string[]; extra?: { userId?: string } };
+};
 
 const text = (t: string, isError = false) => ({
   content: [{ type: "text" as const, text: t }],
   ...(isError ? { isError: true } : {}),
 });
 
-/** Write tools demand the bearer key; reads stay open. */
+/**
+ * Write tools need the `blog:write` scope, which a connection only has if the
+ * person who authorized it may write. Everyone who gets here is signed in
+ * through OAuth, but a token can carry fewer scopes than its owner holds.
+ */
 function writeDenied(extra: ToolExtra) {
   return extra.authInfo?.scopes.includes(WRITE_SCOPE)
     ? null
     : text(
-        "Unauthorized: this tool needs the header `Authorization: Bearer <MCP_API_KEY>`.",
+        "Unauthorized: this connection cannot write. Reconnect the server from your assistant and allow access when asked.",
         true,
       );
-}
-
-function keyMatches(given: string, expected: string) {
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 const slugSchema = (max: number) =>
@@ -220,7 +220,7 @@ const handler = createMcpHandler(
       {
         title: "Create Blog Category",
         description:
-          "Create a blog category. Requires the MCP API key. Slugs are lowercase-with-hyphens and unique.",
+          "Create a blog category. Requires the blog:write scope. Slugs are lowercase-with-hyphens and unique.",
         inputSchema: {
           name: z.string().trim().min(1).max(80),
           name_es: z.string().trim().min(1).max(80),
@@ -251,7 +251,7 @@ const handler = createMcpHandler(
       {
         title: "Create Blog Draft",
         description:
-          "Create a blog post as a DRAFT (never published) in English and Spanish. Requires the MCP API key. Returns the id and the dashboard URL where a person reviews, uploads the cover image (images cannot be uploaded through this tool; cover_image_url only accepts an already-hosted image) and publishes. Slugs are lowercase-with-hyphens and unique.",
+          "Create a blog post as a DRAFT (never published) in English and Spanish. Requires the blog:write scope. Returns the id and the dashboard URL where a person reviews, uploads the cover image (images cannot be uploaded through this tool; cover_image_url only accepts an already-hosted image) and publishes. Slugs are lowercase-with-hyphens and unique.",
         inputSchema: {
           title: z.string().trim().min(1).max(200),
           title_es: z.string().trim().min(1).max(200),
@@ -272,6 +272,8 @@ const handler = createMcpHandler(
       async (input, extra) => {
         const denied = writeDenied(extra as ToolExtra);
         if (denied) return denied;
+        // The draft belongs to the person who connected the assistant.
+        const authorId = (extra as ToolExtra).authInfo?.extra?.userId ?? null;
         const { cover_image_url, ...rest } = input;
         const { data, error } = await getAdminClient()
           .database.from("blog_posts")
@@ -281,7 +283,7 @@ const handler = createMcpHandler(
             seo_og_image_url: cover_image_url ?? null,
             status: "draft",
             published_at: null,
-            author_id: null,
+            author_id: authorId,
           })
           .select("id")
           .single();
@@ -302,7 +304,7 @@ const handler = createMcpHandler(
       {
         title: "List Blog Drafts",
         description:
-          "List the 20 most recent blog drafts. Requires the MCP API key: drafts are unpublished work.",
+          "List the 20 most recent blog drafts. Requires the blog:write scope: drafts are unpublished work.",
       },
       async (extra) => {
         const denied = writeDenied(extra as ToolExtra);
@@ -333,23 +335,32 @@ const handler = createMcpHandler(
   },
 );
 
-// Auth is optional at the transport: the read tools stay open to anyone.
-// A request carrying the right key gets the `blog:write` scope, which the
-// write tools check; a wrong or missing key just never gets it.
+// Every request is authenticated with an OAuth access token, which is how
+// ChatGPT and Claude connect with "Connect" and no key to copy: without one the
+// server answers 401 with a pointer to its protected-resource metadata, and the
+// client takes it from there. That includes the two read tools. An assistant
+// that cannot find a challenge never learns it should ask the person to sign
+// in, so leaving them open — `required: false` — would make the connection
+// impossible to start.
 const authedHandler = withMcpAuth(
   handler,
-  (_req, bearerToken) => {
-    const expected = process.env.MCP_API_KEY;
-    if (!expected || !bearerToken || !keyMatches(bearerToken, expected)) {
-      return undefined;
-    }
+  async (_req, bearerToken) => {
+    if (!bearerToken) return undefined;
+    const verified = await verifyAccessToken(bearerToken);
+    if (!verified) return undefined;
     return {
       token: bearerToken,
-      clientId: "mcp-api-key",
-      scopes: [WRITE_SCOPE],
+      clientId: verified.clientId,
+      scopes: verified.scopes,
+      extra: { userId: verified.userId },
     };
   },
-  { required: false },
+  {
+    required: true,
+    requiredScopes: ["mcp:read"],
+    resourceMetadataPath: "/.well-known/oauth-protected-resource/api/mcp",
+    resourceUrl: siteUrl.replace(/\/$/, ""),
+  },
 );
 
 export { authedHandler as GET, authedHandler as POST };
