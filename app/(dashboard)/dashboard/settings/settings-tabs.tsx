@@ -14,8 +14,8 @@ type SettingsTab =
 
 const TABS: SettingsTab[] = [
   "bookings",
-  "subscriptions",
   "bonuses",
+  "subscriptions",
   "payments",
   "calendar",
 ];
