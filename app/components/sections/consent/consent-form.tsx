@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignaturePad } from "@/components/ui/signature-pad";
+import {
+  SignaturePad,
+  type SignaturePadHandle,
+} from "@/components/ui/signature-pad";
 import { OptionSelect } from "@/components/ui/option-select";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { INPUT_CLASS } from "@/constants/form-styles";
@@ -58,7 +61,7 @@ export function ConsentForm(props: Props) {
   const [treatment, setTreatment] = useState(false);
   const [healthData, setHealthData] = useState(false);
   const [image, setImage] = useState(false);
-  const [signedName, setSignedName] = useState(subject.name ?? "");
+  const padRef = useRef<SignaturePadHandle>(null);
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,12 +69,10 @@ export function ConsentForm(props: Props) {
 
   const booleans = CONSENT_FIELDS.filter((f) => f.kind === "boolean");
   const allAnswered = booleans.every((f) => typeof answers[f.id] === "boolean");
-  const complete =
-    allAnswered &&
-    treatment &&
-    healthData &&
-    signedName.trim().length >= 2 &&
-    signature !== null;
+  const complete = allAnswered && treatment && healthData && signature !== null;
+
+  const signerName =
+    subject.name?.trim() || subject.email?.trim() || t("signerFallback");
 
   function setAnswer(id: string, value: boolean | string) {
     setAnswers((prev) => ({ ...prev, [id]: value }));
@@ -87,7 +88,8 @@ export function ConsentForm(props: Props) {
       treatmentAccepted: true,
       healthDataConsent: true,
       imageConsent: image,
-      signedName: signedName.trim(),
+      // The name is not asked again: it is the one already on the contact.
+      signedName: signerName,
       signaturePng: signature,
     };
 
@@ -245,28 +247,13 @@ export function ConsentForm(props: Props) {
         />
       </section>
 
-      {/* Name and signature */}
+      {/* Signature */}
       <section className={card}>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="consent-name" className={label}>
-            {t("signedName")}
-          </label>
-          <input
-            id="consent-name"
-            type="text"
-            value={signedName}
-            maxLength={120}
-            onChange={(e) => setSignedName(e.target.value)}
-            autoComplete="name"
-            disabled={submitting}
-            className={INPUT_CLASS}
-          />
-        </div>
         <div className="flex flex-col gap-1.5">
           <span className={label}>{t("signature")}</span>
           <SignaturePad
+            ref={padRef}
             onChange={setSignature}
-            clearLabel={t("clear")}
             ariaLabel={t("signature")}
             disabled={submitting}
           />
@@ -277,6 +264,16 @@ export function ConsentForm(props: Props) {
             {error}
           </p>
         )}
+
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => padRef.current?.clear()}
+          disabled={signature === null || submitting}
+          className="w-full"
+        >
+          {t("clear")}
+        </Button>
 
         <Button
           variant="solid"

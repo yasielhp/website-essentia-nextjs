@@ -54,9 +54,9 @@
     "yes": "Sí autorizo",
     "no": "No autorizo"
   },
-  "signedName": "Nombre y apellidos",
   "signature": "Firma de la clienta",
-  "clear": "Borrar",
+  "clear": "Borrar firma",
+  "signerFallback": "Cliente",
   "submit": "Firmar y enviar",
   "submitting": "Enviando…",
   "done": {

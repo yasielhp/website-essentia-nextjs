@@ -54,9 +54,9 @@
     "yes": "I authorise",
     "no": "I do not authorise"
   },
-  "signedName": "Full name",
   "signature": "Client's signature",
-  "clear": "Clear",
+  "clear": "Clear signature",
+  "signerFallback": "Client",
   "submit": "Sign and send",
   "submitting": "Sending…",
   "done": {

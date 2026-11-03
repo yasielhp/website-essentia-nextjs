@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
+
+/** What a form can ask of the pad: wipe it, from a button of its own. */
+export type SignaturePadHandle = { clear: () => void };
 
 const WIDTH = 600;
 const HEIGHT = 200;
@@ -13,17 +16,20 @@ const HEIGHT = 200;
  * canvas. The canvas is drawn at the screen's pixel density so a stroke stays
  * crisp on a phone, and `touch-action: none` keeps the page from scrolling
  * under the finger while somebody signs.
+ *
+ * It has no button of its own to start over: the form places one wherever it
+ * suits, and calls `clear` through the ref.
  */
 export function SignaturePad({
   onChange,
-  clearLabel,
   ariaLabel,
   disabled = false,
+  ref,
 }: {
   onChange: (dataUrl: string | null) => void;
-  clearLabel: string;
   ariaLabel: string;
   disabled?: boolean;
+  ref?: React.Ref<SignaturePadHandle>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
@@ -97,6 +103,8 @@ export function SignaturePad({
     onChange(null);
   }
 
+  useImperativeHandle(ref, () => ({ clear }));
+
   return (
     <div className="flex flex-col gap-2">
       <canvas
@@ -110,14 +118,6 @@ export function SignaturePad({
         style={{ touchAction: "none", aspectRatio: `${WIDTH} / ${HEIGHT}` }}
         className="border-sand-200 w-full cursor-crosshair rounded-xl border bg-white"
       />
-      <button
-        type="button"
-        onClick={clear}
-        disabled={disabled}
-        className="text-petroleum-400 hover:text-petroleum-700 w-fit text-xs underline disabled:opacity-50"
-      >
-        {clearLabel}
-      </button>
     </div>
   );
 }
