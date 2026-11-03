@@ -112,6 +112,7 @@ export function ConsentForm(props: Props) {
     props.mode === "staff" && props.replace
       ? (initial?.signatureDataUrl ?? null)
       : null;
+  const replacingSigned = props.mode === "staff" && Boolean(props.replace);
   const [keepCurrent, setKeepCurrent] = useState(recordedSignature !== null);
   const complete = canSubmitConsent({
     allAnswered,
@@ -335,7 +336,15 @@ export function ConsentForm(props: Props) {
           disabled={!complete || submitting}
           className="w-full"
         >
-          {submitting ? t("submitting") : t("submit")}
+          {/* Correcting a signed consent saves it; signing for the first time,
+              or from the public link, sends it. */}
+          {replacingSigned
+            ? submitting
+              ? t("saving")
+              : t("save")
+            : submitting
+              ? t("submitting")
+              : t("submit")}
         </Button>
         {props.mode === "staff" && props.onCancel && (
           <Button

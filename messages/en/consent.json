@@ -78,5 +78,7 @@
   "signatureKept": "Current signature kept. Erase it or draw over it to change it.",
   "signatureExpand": "Enlarge to sign",
   "signatureDone": "Done",
-  "signatureClose": "Close"
+  "signatureClose": "Close",
+  "save": "Save",
+  "saving": "Saving…"
 }

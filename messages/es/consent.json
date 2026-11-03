@@ -78,5 +78,7 @@
   "signatureKept": "Firma actual conservada. Bórrala o dibuja encima para cambiarla.",
   "signatureExpand": "Ampliar para firmar",
   "signatureDone": "Listo",
-  "signatureClose": "Cerrar"
+  "signatureClose": "Cerrar",
+  "save": "Guardar",
+  "saving": "Guardando…"
 }
