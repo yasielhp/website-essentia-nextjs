@@ -40,8 +40,10 @@ const ERROR_KEYS = [
 
 /**
  * The informed-consent form, in the order of the centre's paper document:
- * personal data, health status, consent to treatment, health-data consent
- * (GDPR), image consent, and one signature that seals all of it.
+ * health status, consent to treatment, health-data consent (GDPR), image
+ * consent, and one signature that seals all of it. The personal data the paper
+ * form opens with is not asked again: it already lives in the contact's
+ * details tab.
  *
  * Used on the public link the client opens from their email, and inside the
  * contact's file so the desk can fill it in with them. Nothing is trusted from
@@ -53,12 +55,10 @@ export function ConsentForm(props: Props) {
 
   const [answers, setAnswers] = useState<Record<string, boolean | string>>({});
   const [avoidZone, setAvoidZone] = useState("");
-  const [phone, setPhone] = useState(subject.phone ?? "");
-  const [birthdate, setBirthdate] = useState(subject.birthdate ?? "");
   const [treatment, setTreatment] = useState(false);
   const [healthData, setHealthData] = useState(false);
   const [image, setImage] = useState(false);
-  const [signedName, setSignedName] = useState("");
+  const [signedName, setSignedName] = useState(subject.name ?? "");
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +71,7 @@ export function ConsentForm(props: Props) {
     treatment &&
     healthData &&
     signedName.trim().length >= 2 &&
-    signature !== null &&
-    birthdate !== "" &&
-    phone.trim().length >= 6;
+    signature !== null;
 
   function setAnswer(id: string, value: boolean | string) {
     setAnswers((prev) => ({ ...prev, [id]: value }));
@@ -86,8 +84,6 @@ export function ConsentForm(props: Props) {
 
     const input: ConsentInput = {
       data: { ...answers, ...(avoidZone.trim() ? { avoidZone } : {}) },
-      ...(birthdate && !subject.birthdate ? { birthdate } : {}),
-      ...(phone.trim() && !subject.phone ? { phone: phone.trim() } : {}),
       treatmentAccepted: true,
       healthDataConsent: true,
       imageConsent: image,
@@ -133,49 +129,6 @@ export function ConsentForm(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Personal data */}
-      <section className={card}>
-        <h2 className={heading}>{t("personal.heading")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <span className={label}>{t("personal.name")}</span>
-            <p className="text-petroleum-700 text-sm">{subject.name || "—"}</p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className={label}>{t("personal.email")}</span>
-            <p className="text-petroleum-700 text-sm">{subject.email ?? "—"}</p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="consent-birthdate" className={label}>
-              {t("personal.birthdate")}
-            </label>
-            <input
-              id="consent-birthdate"
-              type="date"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-              readOnly={Boolean(subject.birthdate)}
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="consent-phone" className={label}>
-              {t("personal.phone")}
-            </label>
-            <input
-              id="consent-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              readOnly={Boolean(subject.phone)}
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Health status */}
       <section className={card}>
         <h2 className={heading}>{t("health.heading")}</h2>

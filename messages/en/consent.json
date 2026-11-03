@@ -2,13 +2,6 @@
   "metaTitle": "Informed consent | Essentia",
   "title": "Informed consent",
   "intro": "Before your first session we need to know about your health.",
-  "personal": {
-    "heading": "Personal details",
-    "name": "Full name",
-    "birthdate": "Date of birth",
-    "phone": "Phone",
-    "email": "Email"
-  },
   "health": {
     "heading": "Health status",
     "intro": "Please state whether you currently have, or have had, any of the following conditions. Where applicable, say which one and since when."

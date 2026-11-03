@@ -2,13 +2,6 @@
   "metaTitle": "Consentimiento informado | Essentia",
   "title": "Consentimiento informado",
   "intro": "Antes de tu primera sesión necesitamos conocer tu estado de salud.",
-  "personal": {
-    "heading": "Datos personales",
-    "name": "Nombre y apellidos",
-    "birthdate": "Fecha de nacimiento",
-    "phone": "Teléfono",
-    "email": "Correo electrónico"
-  },
   "health": {
     "heading": "Estado de salud",
     "intro": "Indique si presenta actualmente o ha presentado alguna de las siguientes condiciones. Cuando corresponda, especifique cuál y desde cuándo."
