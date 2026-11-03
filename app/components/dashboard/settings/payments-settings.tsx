@@ -74,7 +74,7 @@ export function PaymentsSettings() {
         </h2>
       </div>
 
-      <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="deposit-percent"
@@ -120,7 +120,7 @@ export function PaymentsSettings() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div>
+      <div className="flex justify-end">
         <Button
           variant="solid"
           size="md"
