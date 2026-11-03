@@ -183,18 +183,21 @@ function SheetContent({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">
-      <div className="rounded-2xl bg-white p-5">
-        <div className="flex items-center gap-2">
-          {b.service_tiers?.color && (
-            <span
-              className="size-3 shrink-0 rounded-full"
-              style={{ backgroundColor: b.service_tiers.color }}
-            />
-          )}
-          <p className="text-petroleum-700 font-medium">
-            {b.service_tiers?.label ?? b.service_title ?? "—"}
-          </p>
-        </div>
+      <div
+        className="rounded-2xl bg-white p-5"
+        // The session type's colour as a wash over white, so the card reads as
+        // the same appointment the calendar pill showed.
+        style={
+          b.service_tiers?.color
+            ? {
+                backgroundColor: `color-mix(in srgb, ${b.service_tiers.color} 14%, white)`,
+              }
+            : undefined
+        }
+      >
+        <p className="text-petroleum-700 font-medium">
+          {b.service_tiers?.label ?? b.service_title ?? "—"}
+        </p>
         {b.service_tiers?.label && b.service_title && (
           <p className="text-petroleum-400 mt-0.5 text-sm">{b.service_title}</p>
         )}
