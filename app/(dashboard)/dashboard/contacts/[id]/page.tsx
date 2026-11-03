@@ -169,7 +169,7 @@ export default function ContactDetailPage() {
     {
       id: "consent",
       label: tHistory("consent.heading"),
-      count: consent ? 1 : 0,
+      count: 0,
     },
     {
       id: "bookings",
