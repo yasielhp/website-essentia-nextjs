@@ -88,19 +88,38 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   // Everything before the last crumb stays (a section, or a section and its
   // sub-list); the record's own name replaces the generic leaf.
   const parents = rawCrumbs.slice(0, -1);
+  // `.../<id>/consent/edit` is two levels under the record: its name leads to
+  // the file, "Consent" leads to the consent, and the trail ends on "Edit".
+  const underConsent =
+    segments.length >= 2 &&
+    segments[segments.length - 1] === "edit" &&
+    segments[segments.length - 2] === "consent";
   const breadcrumbs =
-    hasUUID && dynamicLabel
-      ? leafKey
-        ? [
-            ...parents,
-            {
-              label: dynamicLabel,
-              href: pathname.replace(new RegExp(`/${lastSegment}$`), ""),
-            },
-            { key: leafKey },
-          ]
-        : [...parents, { label: dynamicLabel }]
-      : rawCrumbs;
+    hasUUID && dynamicLabel && underConsent
+      ? [
+          ...parents,
+          {
+            label: dynamicLabel,
+            href: pathname.replace(/\/consent\/edit$/, ""),
+          },
+          {
+            key: "leaves.consent",
+            href: pathname.replace(/\/edit$/, ""),
+          },
+          { key: "leaves.edit" },
+        ]
+      : hasUUID && dynamicLabel
+        ? leafKey
+          ? [
+              ...parents,
+              {
+                label: dynamicLabel,
+                href: pathname.replace(new RegExp(`/${lastSegment}$`), ""),
+              },
+              { key: leafKey },
+            ]
+          : [...parents, { label: dynamicLabel }]
+        : rawCrumbs;
 
   const visibleNavLinks =
     (role as Role) === "partner" || (role as Role) === "staff"

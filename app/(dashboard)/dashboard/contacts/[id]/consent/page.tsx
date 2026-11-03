@@ -1,38 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import {
-  ConsentForm,
-  type ConsentSubject,
-} from "@/components/sections/consent/consent-form";
+import { ConsentForm } from "@/components/sections/consent/consent-form";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
-import { fetchContactDetail } from "@/actions/contacts";
-import { fetchContactConsent, resendConsent } from "@/actions/consent";
-import type { ContactConsent } from "@/types/consent";
+import { resendConsent } from "@/actions/consent";
+import { useConsentPage } from "../consent-data";
 import { ConsentView } from "../consent-view";
 import { shortDate } from "../consent-date";
 import { ResendConsentDialog } from "../resend-consent-dialog";
 
-type PageState =
-  | { kind: "loading" }
-  | { kind: "not_found" }
-  | {
-      kind: "ready";
-      subject: ConsentSubject;
-      /** Null when nothing was ever filled in; unsigned when it was reopened. */
-      consent: ContactConsent | null;
-    };
-
 /**
  * A contact's informed consent on a page of its own.
  *
- * Signed: the date, the whole consent, and — in the header — "Edit" to correct
- * it at the desk and "Resend" to ask the client to sign again. Unsigned, or
+ * Signed: the date, the whole consent, and — in the header — "Edit", which
+ * opens the page that corrects it at the desk, and "Resend" to ask the client
+ * to sign again. Unsigned, or
  * reopened and waiting for a signature: the form, to fill in with the client
  * beside you, pre-filled with the earlier answers when there are any.
  */
@@ -41,10 +28,8 @@ export default function ContactConsentPage() {
   const tConsent = useTranslations("dashboard.contacts.detail.consent");
   const tForm = useTranslations("consent");
   const { id } = useParams<{ id: string }>();
-  const { back } = useRouter();
-
-  const [state, setState] = useState<PageState>({ kind: "loading" });
-  const [editing, setEditing] = useState(false);
+  const { back, push } = useRouter();
+  const { state, load } = useConsentPage(id);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -52,33 +37,6 @@ export default function ContactConsentPage() {
   useDynamicBreadcrumb(
     state.kind === "ready" ? state.subject.name || null : null,
   );
-
-  const load = useCallback(async () => {
-    const result = await fetchContactDetail(getAccessToken(), id);
-    if (!result.found) {
-      setState({ kind: "not_found" });
-      return;
-    }
-    const { contact } = result;
-    const consent = await fetchContactConsent(getAccessToken(), id);
-    setState({
-      kind: "ready",
-      consent,
-      subject: {
-        name: [contact.first_name, contact.last_name].filter(Boolean).join(" "),
-        email: contact.email,
-        phone: contact.phone,
-        birthdate: contact.birthdate,
-      },
-    });
-  }, [id]);
-
-  useEffect(() => {
-    async function run() {
-      await load();
-    }
-    void run();
-  }, [load]);
 
   async function reopenAndSend() {
     setBusy(true);
@@ -118,7 +76,7 @@ export default function ContactConsentPage() {
         <h1 className="font-display text-petroleum-700 text-3xl">
           {tForm("title")}
         </h1>
-        {signed && !editing && (
+        {signed && (
           <div className="flex items-center gap-3">
             {notice && (
               <span className="text-petroleum-400 text-xs" role="status">
@@ -128,7 +86,7 @@ export default function ContactConsentPage() {
             <Button
               variant="solid"
               size="md"
-              onClick={() => setEditing(true)}
+              onClick={() => push(`/dashboard/contacts/${id}/consent/edit`)}
               disabled={busy}
             >
               {tConsent("edit")}
@@ -147,27 +105,6 @@ export default function ContactConsentPage() {
 
       {state.kind === "loading" ? (
         <div className="bg-sand-100 h-40 animate-pulse rounded-2xl" />
-      ) : editing && state.consent ? (
-        // Signed, and being corrected: Cancel leaves the signed consent as it is.
-        <div className="flex flex-col gap-4">
-          <ConsentForm
-            mode="staff"
-            contactId={id}
-            subject={state.subject}
-            replace
-            initial={{
-              answers: state.consent.answers,
-              imageConsent: state.consent.imageConsent,
-              healthDataConsent: state.consent.healthDataConsent,
-              signatureDataUrl: state.consent.signatureDataUrl,
-            }}
-            onSigned={() => {
-              setEditing(false);
-              void load();
-            }}
-            onCancel={() => setEditing(false)}
-          />
-        </div>
       ) : state.consent?.signedAt ? (
         <div className="border-sand-200 flex flex-col gap-5 rounded-2xl border bg-white p-6">
           <p className="text-petroleum-700 text-sm font-medium">
