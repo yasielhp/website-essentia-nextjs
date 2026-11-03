@@ -4,6 +4,7 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { consentSchema } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
+import type { ContactConsent } from "@/types/consent";
 import {
   buildConsentUrl,
   ensureConsent,
@@ -190,5 +191,64 @@ export async function createConsentLink(
   return {
     url: buildConsentUrl(consent.token, locale),
     signed: consent.signed,
+  };
+}
+
+/**
+ * A contact's signed consent, with the signature read from the private bucket.
+ * Dashboard only. Null while it is unsigned.
+ */
+export async function fetchContactConsent(
+  accessToken: string | null,
+  contactId: string,
+): Promise<ContactConsent | null> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return null;
+    throw err;
+  }
+  if (!contactId) return null;
+
+  const admin = getAdminClient();
+  const { data } = await admin.database
+    .from("contact_consents")
+    .select(
+      "data, image_consent, health_data_consent, signature_path, signed_at, signed_name, filled_by_role",
+    )
+    .eq("contact_id", contactId)
+    .maybeSingle();
+  const row = data as {
+    data: Record<string, boolean | string> | null;
+    image_consent: boolean;
+    health_data_consent: boolean;
+    signature_path: string | null;
+    signed_at: string | null;
+    signed_name: string | null;
+    filled_by_role: string | null;
+  } | null;
+  if (!row?.signed_at) return null;
+
+  // The bucket is private: the file is read here with the service key and
+  // handed over inline, so no link to the signature ever exists to leak.
+  let signatureDataUrl: string | null = null;
+  if (row.signature_path) {
+    const { data: blob } = await admin.storage
+      .from("consents")
+      .download(row.signature_path);
+    if (blob) {
+      const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+      signatureDataUrl = `data:image/png;base64,${base64}`;
+    }
+  }
+
+  return {
+    signedAt: row.signed_at,
+    signedName: row.signed_name,
+    imageConsent: row.image_consent,
+    healthDataConsent: row.health_data_consent,
+    answers: row.data ?? {},
+    signatureDataUrl,
+    filledByRole: row.filled_by_role,
   };
 }

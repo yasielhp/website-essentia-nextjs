@@ -35,6 +35,10 @@ import type { ContactCampaignRow } from "@/types/campaign";
 import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
 import { BonusesSection } from "./bonuses-section";
+import type { ConsentSubject } from "@/components/sections/consent/consent-form";
+import { ConsentSection } from "./consent-section";
+import { fetchContactConsent } from "@/actions/consent";
+import type { ContactConsent } from "@/types/consent";
 
 /** The views of a contact's file; the first is where it opens. */
 type HistoryTab =
@@ -63,6 +67,7 @@ type LoadState = {
   eduRegs: EduReg[];
   campaigns: ContactCampaignRow[];
   bonuses: ContactBonus[];
+  consent: ContactConsent | null;
   bouncedAt: string | null;
 };
 
@@ -75,9 +80,11 @@ type LoadAction =
       eduRegs: EduReg[];
       campaigns: ContactCampaignRow[];
       bonuses: ContactBonus[];
+      consent: ContactConsent | null;
       bouncedAt: string | null;
     }
   | { type: "BONUSES_LOADED"; bonuses: ContactBonus[] }
+  | { type: "CONSENT_LOADED"; consent: ContactConsent | null }
   | { type: "BOUNCE_CLEARED" }
   | { type: "NOT_FOUND" };
 
@@ -90,6 +97,7 @@ const initialLoadState: LoadState = {
   eduRegs: [],
   campaigns: [],
   bonuses: [],
+  consent: null,
   bouncedAt: null,
 };
 
@@ -105,8 +113,11 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         eduRegs: action.eduRegs,
         campaigns: action.campaigns,
         bonuses: action.bonuses,
+        consent: action.consent,
         bouncedAt: action.bouncedAt,
       };
+    case "CONSENT_LOADED":
+      return { ...state, consent: action.consent };
     case "BONUSES_LOADED":
       return { ...state, bonuses: action.bonuses };
     case "BOUNCE_CLEARED":
@@ -138,17 +149,28 @@ export default function ContactDetailPage() {
     eduRegs,
     campaigns,
     bonuses,
+    consent,
     bouncedAt,
   } = loadState;
   const [clearingBounce, setClearingBounce] = useState(false);
+  // The contact as stored, for the consent form: the edit fields may hold
+  // changes that have not been saved yet.
+  const [consentSubject, setConsentSubject] = useState<ConsentSubject>({
+    name: "",
+    email: null,
+    phone: null,
+    birthdate: null,
+  });
 
   const tHistory = useTranslations("dashboard.contacts.detail");
-  const tCommon = useTranslations("dashboard.common");
   const [tab, setTab] = useState<HistoryTab>("details");
   const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
     { id: "details", label: tHistory("details.heading"), count: 0 },
-    // Its contents arrive with the consent work.
-    { id: "consent", label: tHistory("consent.heading"), count: 0 },
+    {
+      id: "consent",
+      label: tHistory("consent.heading"),
+      count: consent ? 1 : 0,
+    },
     {
       id: "bonuses",
       label: tHistory("bonuses.heading"),
@@ -208,6 +230,12 @@ export default function ContactDetailPage() {
       }
 
       const { contact, bookings, memberships, raceRegs, eduRegs } = result;
+      setConsentSubject({
+        name: [contact.first_name, contact.last_name].filter(Boolean).join(" "),
+        email: contact.email,
+        phone: contact.phone,
+        birthdate: contact.birthdate,
+      });
       const initialNewsletter = contact.newsletter_subscribed ?? false;
       originalNewsletter.current = initialNewsletter;
       dispatchForm({
@@ -222,9 +250,10 @@ export default function ContactDetailPage() {
         newsletterSubscribed: initialNewsletter,
       });
 
-      const [campaignRows, bonusRows] = await Promise.all([
+      const [campaignRows, bonusRows, consentRow] = await Promise.all([
         fetchContactCampaigns(getAccessToken(), id),
         fetchContactBonuses(getAccessToken(), id),
+        fetchContactConsent(getAccessToken(), id),
       ]);
       if (cancelled) return;
       dispatch({
@@ -235,6 +264,7 @@ export default function ContactDetailPage() {
         eduRegs,
         campaigns: campaignRows,
         bonuses: bonusRows,
+        consent: consentRow,
         bouncedAt: contact.email_bounced_at ?? null,
       });
     }
@@ -446,7 +476,17 @@ export default function ContactDetailPage() {
         </form>
 
         {tab === "consent" && (
-          <p className="text-petroleum-400 text-sm">{tCommon("comingSoon")}</p>
+          <ConsentSection
+            loading={loading}
+            consent={consent}
+            contactId={id}
+            subject={consentSubject}
+            onSigned={() =>
+              void fetchContactConsent(getAccessToken(), id).then((row) =>
+                dispatch({ type: "CONSENT_LOADED", consent: row }),
+              )
+            }
+          />
         )}
         {tab === "bonuses" && (
           <BonusesSection

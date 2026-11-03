@@ -1169,7 +1169,16 @@
         "heading": "Detalles"
       },
       "consent": {
-        "heading": "Consentimiento"
+        "heading": "Consentimiento",
+        "signed": "Firmado el {date} por {name}",
+        "unsigned": "Sin firmar",
+        "copyLink": "Copiar enlace",
+        "copied": "Copiado",
+        "fillHere": "Rellenar aquí con la clienta",
+        "image": {
+          "yes": "Autoriza imágenes",
+          "no": "No autoriza imágenes"
+        }
       },
       "bonuses": {
         "heading": "Bonos",

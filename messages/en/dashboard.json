@@ -1169,7 +1169,16 @@
         "heading": "Details"
       },
       "consent": {
-        "heading": "Consent"
+        "heading": "Consent",
+        "signed": "Signed on {date} by {name}",
+        "unsigned": "Not signed",
+        "copyLink": "Copy link",
+        "copied": "Copied",
+        "fillHere": "Fill in here with the client",
+        "image": {
+          "yes": "Allows images",
+          "no": "Does not allow images"
+        }
       },
       "bonuses": {
         "heading": "Vouchers",
