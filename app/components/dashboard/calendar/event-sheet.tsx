@@ -31,6 +31,9 @@ const STATUS_DOT: Record<string, string> = {
 const LINK_CLASS =
   "border-sand-200 text-petroleum-700 hover:bg-sand-50 inline-flex h-9 flex-1 items-center justify-center rounded-full border bg-white px-4 text-sm transition-colors";
 
+const EDIT_CLASS =
+  "bg-petroleum-700 hover:bg-petroleum-800 active:bg-petroleum-900 inline-flex h-9 flex-1 items-center justify-center rounded-full border border-transparent px-4 text-sm text-white transition-colors";
+
 /**
  * A booking, from the calendar, without leaving it.
  *
@@ -228,7 +231,7 @@ function SheetContent({
           </Link>
           <Link
             href={`/dashboard/bookings/${b.id}/edit`}
-            className={LINK_CLASS}
+            className={EDIT_CLASS}
           >
             {t("editBooking")}
           </Link>
