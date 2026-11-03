@@ -34,7 +34,7 @@ export async function fetchBookingPeek(
 
   const { data } = await query.maybeSingle();
   if (!data) return null;
-  const row = data as Omit<BookingPeek, "staff_name">;
+  const row = data as unknown as Omit<BookingPeek, "staff_name">;
 
   let staffName: string | null = null;
   if (row.staff_id) {
