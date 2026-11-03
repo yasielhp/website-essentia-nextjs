@@ -31,9 +31,6 @@ const STATUS_DOT: Record<string, string> = {
 const LINK_CLASS =
   "border-sand-200 text-petroleum-700 hover:bg-sand-50 inline-flex h-9 flex-1 items-center justify-center rounded-full border bg-white px-4 text-sm transition-colors";
 
-const EDIT_CLASS =
-  "bg-petroleum-700 hover:bg-petroleum-800 active:bg-petroleum-900 inline-flex h-9 flex-1 items-center justify-center rounded-full border border-transparent px-4 text-sm text-white transition-colors";
-
 /**
  * A booking, from the calendar, without leaving it.
  *
@@ -204,18 +201,7 @@ function SheetContent({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">
-      <div
-        className="border-sand-200 rounded-2xl border bg-white p-5"
-        // The session type's colour as a wash over white, so the card reads as
-        // the same appointment the calendar pill showed.
-        style={
-          b.service_tiers?.color
-            ? {
-                backgroundColor: `color-mix(in srgb, ${b.service_tiers.color} 14%, white)`,
-              }
-            : undefined
-        }
-      >
+      <div className="border-sand-200 rounded-2xl border bg-white p-5">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
           <Field label={t("category")} value={b.service_title} />
           <Field label={t("service")} value={b.service_tiers?.label} />
@@ -266,12 +252,6 @@ function SheetContent({
         <div className="border-sand-100 mt-4 flex gap-2 border-t pt-4">
           <Link href={`/dashboard/bookings/${b.id}`} className={LINK_CLASS}>
             {t("viewBooking")}
-          </Link>
-          <Link
-            href={`/dashboard/bookings/${b.id}/edit`}
-            className={EDIT_CLASS}
-          >
-            {t("editBooking")}
           </Link>
         </div>
       </div>
