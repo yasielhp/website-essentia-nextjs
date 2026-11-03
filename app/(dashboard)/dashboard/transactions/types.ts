@@ -1,5 +1,5 @@
 /** A payment, whatever it was for. */
-export type TxType = "booking" | "membership" | "race" | "education";
+export type TxType = "booking" | "membership" | "race" | "education" | "bonus";
 
 export type UnifiedRow = {
   id: string;

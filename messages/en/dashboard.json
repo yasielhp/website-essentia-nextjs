@@ -500,7 +500,8 @@
       "booking": "Booking",
       "membership": "Membership",
       "race": "Race",
-      "education": "Education"
+      "education": "Education",
+      "bonus": "Voucher"
     },
     "status": {
       "completed": "Completed",
@@ -1165,7 +1166,24 @@
         "heading": "Consent"
       },
       "bonuses": {
-        "heading": "Vouchers"
+        "heading": "Vouchers",
+        "add": "Add voucher",
+        "empty": "No vouchers",
+        "used": "{used} of {total} used",
+        "remaining": "{n} left",
+        "expires": "Expires {date}",
+        "expired": "Expired",
+        "purchased": "Bought {date}",
+        "dialog": {
+          "title": "Add voucher",
+          "plan": "Voucher",
+          "method": "Payment method",
+          "notes": "Notes",
+          "confirm": "Add voucher",
+          "cancel": "Cancel",
+          "noPlans": "There are no active vouchers. Create them in Settings → Vouchers.",
+          "error": "The voucher could not be added."
+        }
       }
     }
   },

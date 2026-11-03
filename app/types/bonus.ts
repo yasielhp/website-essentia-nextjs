@@ -40,3 +40,14 @@ export type ContactBonus = {
   remaining: number;
   bookings: BonusBooking[];
 };
+
+/** A bonus sale as the transactions ledger lists it. */
+export type BonusSale = {
+  id: string;
+  name: string;
+  priceEur: number;
+  purchasedAt: string;
+  createdAt: string;
+  clientName: string | null;
+  clientEmail: string | null;
+};

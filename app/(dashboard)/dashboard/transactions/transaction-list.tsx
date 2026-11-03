@@ -9,6 +9,7 @@ const TYPE_BADGE: Record<TxType, { cls: string }> = {
   membership: { cls: "bg-purple-50 text-purple-700" },
   race: { cls: "bg-green-50 text-green-700" },
   education: { cls: "bg-yellow-50 text-yellow-700" },
+  bonus: { cls: "bg-teal-50 text-teal-700" },
 };
 
 const SOURCE_BADGE: Record<string, { cls: string }> = {

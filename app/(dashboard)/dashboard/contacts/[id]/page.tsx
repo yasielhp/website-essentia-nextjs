@@ -32,6 +32,9 @@ import { formReducer, initialFormState } from "./form-state";
 import { BounceBanner, CampaignsSection } from "./campaigns-section";
 import { clearContactBounce, fetchContactCampaigns } from "@/actions/campaigns";
 import type { ContactCampaignRow } from "@/types/campaign";
+import { fetchContactBonuses } from "@/actions/bonuses";
+import type { ContactBonus } from "@/types/bonus";
+import { BonusesSection } from "./bonuses-section";
 
 /** The views of a contact's file; the first is where it opens. */
 type HistoryTab =
@@ -59,6 +62,7 @@ type LoadState = {
   raceRegs: RaceReg[];
   eduRegs: EduReg[];
   campaigns: ContactCampaignRow[];
+  bonuses: ContactBonus[];
   bouncedAt: string | null;
 };
 
@@ -70,8 +74,10 @@ type LoadAction =
       raceRegs: RaceReg[];
       eduRegs: EduReg[];
       campaigns: ContactCampaignRow[];
+      bonuses: ContactBonus[];
       bouncedAt: string | null;
     }
+  | { type: "BONUSES_LOADED"; bonuses: ContactBonus[] }
   | { type: "BOUNCE_CLEARED" }
   | { type: "NOT_FOUND" };
 
@@ -83,6 +89,7 @@ const initialLoadState: LoadState = {
   raceRegs: [],
   eduRegs: [],
   campaigns: [],
+  bonuses: [],
   bouncedAt: null,
 };
 
@@ -97,8 +104,11 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         raceRegs: action.raceRegs,
         eduRegs: action.eduRegs,
         campaigns: action.campaigns,
+        bonuses: action.bonuses,
         bouncedAt: action.bouncedAt,
       };
+    case "BONUSES_LOADED":
+      return { ...state, bonuses: action.bonuses };
     case "BOUNCE_CLEARED":
       return { ...state, bouncedAt: null };
     case "NOT_FOUND":
@@ -127,6 +137,7 @@ export default function ContactDetailPage() {
     raceRegs,
     eduRegs,
     campaigns,
+    bonuses,
     bouncedAt,
   } = loadState;
   const [clearingBounce, setClearingBounce] = useState(false);
@@ -136,9 +147,13 @@ export default function ContactDetailPage() {
   const [tab, setTab] = useState<HistoryTab>("details");
   const historyTabs: { id: HistoryTab; label: string; count: number }[] = [
     { id: "details", label: tHistory("details.heading"), count: 0 },
-    // Their contents arrive with the consent and voucher work.
+    // Its contents arrive with the consent work.
     { id: "consent", label: tHistory("consent.heading"), count: 0 },
-    { id: "bonuses", label: tHistory("bonuses.heading"), count: 0 },
+    {
+      id: "bonuses",
+      label: tHistory("bonuses.heading"),
+      count: bonuses.filter((b) => b.remaining > 0).length,
+    },
     {
       id: "bookings",
       label: tHistory("bookings.heading"),
@@ -207,7 +222,10 @@ export default function ContactDetailPage() {
         newsletterSubscribed: initialNewsletter,
       });
 
-      const campaignRows = await fetchContactCampaigns(getAccessToken(), id);
+      const [campaignRows, bonusRows] = await Promise.all([
+        fetchContactCampaigns(getAccessToken(), id),
+        fetchContactBonuses(getAccessToken(), id),
+      ]);
       if (cancelled) return;
       dispatch({
         type: "LOADED",
@@ -216,6 +234,7 @@ export default function ContactDetailPage() {
         raceRegs,
         eduRegs,
         campaigns: campaignRows,
+        bonuses: bonusRows,
         bouncedAt: contact.email_bounced_at ?? null,
       });
     }
@@ -430,7 +449,16 @@ export default function ContactDetailPage() {
           <p className="text-petroleum-400 text-sm">{tCommon("comingSoon")}</p>
         )}
         {tab === "bonuses" && (
-          <p className="text-petroleum-400 text-sm">{tCommon("comingSoon")}</p>
+          <BonusesSection
+            loading={loading}
+            bonuses={bonuses}
+            contactId={id}
+            onChanged={() =>
+              void fetchContactBonuses(getAccessToken(), id).then((rows) =>
+                dispatch({ type: "BONUSES_LOADED", bonuses: rows }),
+              )
+            }
+          />
         )}
         {tab === "transactions" && (
           <TransactionsSection

@@ -500,7 +500,8 @@
       "booking": "Reserva",
       "membership": "Membresía",
       "race": "Carrera",
-      "education": "Formación"
+      "education": "Formación",
+      "bonus": "Bono"
     },
     "status": {
       "completed": "Completada",
@@ -1165,7 +1166,24 @@
         "heading": "Consentimiento"
       },
       "bonuses": {
-        "heading": "Bonos"
+        "heading": "Bonos",
+        "add": "Añadir bono",
+        "empty": "Sin bonos",
+        "used": "{used} de {total} usadas",
+        "remaining": "quedan {n}",
+        "expires": "Caduca el {date}",
+        "expired": "Caducado",
+        "purchased": "Comprado el {date}",
+        "dialog": {
+          "title": "Añadir bono",
+          "plan": "Bono",
+          "method": "Método de pago",
+          "notes": "Notas",
+          "confirm": "Añadir bono",
+          "cancel": "Cancelar",
+          "noPlans": "No hay bonos activos. Créalos en Ajustes → Bonos.",
+          "error": "No se ha podido añadir el bono."
+        }
       }
     }
   },

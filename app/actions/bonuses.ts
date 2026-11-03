@@ -20,6 +20,7 @@ import type {
   BonusBooking,
   BonusPaidMethod,
   BonusPlan,
+  BonusSale,
   ContactBonus,
 } from "@/types/bonus";
 
@@ -381,4 +382,47 @@ export async function clearBookingBonus(
     payload: { bonusId: booking.bonus_id },
   });
   return { error: null };
+}
+
+/**
+ * The latest bonus sales, for the transactions ledger. A sold bonus is income
+ * on the day it is bought; the bookings that draw from it are not.
+ */
+export async function fetchBonusSales(
+  accessToken: string | null,
+): Promise<BonusSale[]> {
+  if (!(await authorize(accessToken))) return [];
+
+  const { data } = await getAdminClient()
+    .database.from("contact_bonuses")
+    .select(
+      "id, name, price_eur, purchased_at, created_at, contacts(first_name, last_name, email)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  type Row = {
+    id: string;
+    name: string;
+    price_eur: number | string;
+    purchased_at: string;
+    created_at: string;
+    contacts: {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+    } | null;
+  };
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    priceEur: Number(r.price_eur),
+    purchasedAt: r.purchased_at,
+    createdAt: r.created_at,
+    clientName:
+      [r.contacts?.first_name, r.contacts?.last_name]
+        .filter(Boolean)
+        .join(" ") || null,
+    clientEmail: r.contacts?.email ?? null,
+  }));
 }

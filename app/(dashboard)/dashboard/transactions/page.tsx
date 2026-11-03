@@ -11,6 +11,8 @@ import { IconFilter } from "@/components/ui/icons";
 import { localDateStr } from "@/utils/format";
 import { TransactionList } from "./transaction-list";
 import type { UnifiedRow } from "./types";
+import { fetchBonusSales } from "@/actions/bonuses";
+import { getAccessToken } from "@/lib/client-session";
 import { amountOwed } from "@/lib/payments/amounts";
 
 // ─── Source row types ─────────────────────────────────────────
@@ -374,6 +376,7 @@ function FilterModal({
               <option value="education">
                 {t("transactions.types.education")}
               </option>
+              <option value="bonus">{t("transactions.types.bonus")}</option>
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
@@ -499,7 +502,7 @@ export default function TransactionsPage() {
     let cancelled = false;
 
     async function load() {
-      const [bookingsRes, membersRes, racesRes, educationRes] =
+      const [bookingsRes, membersRes, racesRes, educationRes, bonusSales] =
         await Promise.all([
           insforge.database
             .from("bookings")
@@ -529,6 +532,8 @@ export default function TransactionsPage() {
             )
             .order("created_at", { ascending: false })
             .limit(100),
+          // Behind a Server Action: the bonus tables are closed to the browser.
+          fetchBonusSales(getAccessToken()),
         ]);
 
       if (cancelled) return;
@@ -599,6 +604,24 @@ export default function TransactionsPage() {
           amount: null,
           status: "confirmed",
           created_at: r.created_at,
+        });
+      }
+
+      // A bonus is income the day it is sold; the bookings that draw from it
+      // carry no amount of their own, so nothing is counted twice.
+      for (const r of bonusSales) {
+        unified.push({
+          id: r.id,
+          type: "bonus",
+          title: r.name,
+          subtitle: null,
+          client: r.clientName ?? "—",
+          clientEmail: r.clientEmail,
+          reservedBy: null,
+          date: r.purchasedAt,
+          amount: r.priceEur,
+          status: "completed",
+          created_at: r.createdAt,
         });
       }
 
