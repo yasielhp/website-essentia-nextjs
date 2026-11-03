@@ -317,6 +317,10 @@
         "amountPaid": "Amount collected (€)",
         "method": "Payment method",
         "methodPlaceholder": "Choose a method"
+      },
+      "bonus": {
+        "use": "Use voucher «{name}» ({n} left)",
+        "hint": "The booking is paid with the voucher and adds no income."
       }
     },
     "edit": {
@@ -476,7 +480,9 @@
           "confirm": "Record payment",
           "cancel": "Cancel",
           "error": "The payment could not be recorded."
-        }
+        },
+        "removeBonus": "Remove voucher",
+        "useBonus": "Use voucher ({n} left)"
       }
     },
     "paymentStatus": {

@@ -92,6 +92,7 @@ export type BookingPeek = {
   duration: string | null;
   status: string | null;
   payment_status: string | null;
+  payment_mode: BookingPaymentMode | null;
   price_eur: number | null;
   amount_paid_eur: number | null;
   first_name: string | null;

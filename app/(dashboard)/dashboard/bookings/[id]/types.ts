@@ -32,6 +32,7 @@ export type BookingDetail = {
   created_by_role: string | null;
   created_by_user_id: string | null;
   contact_id: string | null;
+  bonus_id: string | null;
 };
 
 /**

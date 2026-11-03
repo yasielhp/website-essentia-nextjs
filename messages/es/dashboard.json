@@ -317,6 +317,10 @@
         "amountPaid": "Importe cobrado (€)",
         "method": "Método de cobro",
         "methodPlaceholder": "Elegir método"
+      },
+      "bonus": {
+        "use": "Usar bono «{name}» (quedan {n})",
+        "hint": "La reserva nace pagada con el bono y no suma ingresos."
       }
     },
     "edit": {
@@ -476,7 +480,9 @@
           "confirm": "Registrar cobro",
           "cancel": "Cancelar",
           "error": "No se ha podido registrar el cobro."
-        }
+        },
+        "removeBonus": "Quitar bono",
+        "useBonus": "Usar bono (quedan {n})"
       }
     },
     "paymentStatus": {

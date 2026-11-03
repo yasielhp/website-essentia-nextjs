@@ -1,6 +1,7 @@
 "use client";
 
 import type { SupportedLocale } from "@/utils/format";
+import type { ContactBonus } from "@/types/bonus";
 import type { BookingEventRow } from "@/lib/booking-events/types";
 import type {
   BookingDetail,
@@ -35,6 +36,7 @@ export function BookingDetailBody({
   creator,
   contact,
   events,
+  bonuses,
   staffPerson,
   locale,
   onPaymentRecorded,
@@ -44,6 +46,8 @@ export function BookingDetailBody({
   /** The client's record, when the booking is linked to one. */
   contact: ClientContact | null;
   events: BookingEventRow[];
+  /** The client's bonuses, for drawing a session from one. */
+  bonuses: ContactBonus[];
   /** The professional assigned to it, if the booking has one. */
   staffPerson: StaffPerson | null;
   locale: SupportedLocale;
@@ -57,6 +61,7 @@ export function BookingDetailBody({
       <MetaStrip
         booking={booking}
         locale={locale}
+        bonuses={bonuses}
         onPaymentRecorded={onPaymentRecorded}
       />
 

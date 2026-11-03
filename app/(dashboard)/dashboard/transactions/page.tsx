@@ -100,7 +100,10 @@ function bookingMoney(
   return {
     amount: paid,
     listAmount: r.price_eur,
-    owed: r.status === "cancelled" ? 0 : amountOwed(r.price_eur, paid),
+    owed:
+      r.status === "cancelled" || r.payment_mode === "bonus"
+        ? 0
+        : amountOwed(r.price_eur, paid),
     status,
   };
 }

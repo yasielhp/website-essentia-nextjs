@@ -9,6 +9,8 @@ import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
 import { fetchBookingEvents } from "@/actions/booking-events";
+import { fetchContactBonuses } from "@/actions/bonuses";
+import type { ContactBonus } from "@/types/bonus";
 import type { BookingEventRow } from "@/lib/booking-events/types";
 import { Button } from "@/components/ui/button";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
@@ -112,6 +114,7 @@ export default function BookingDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [events, setEvents] = useState<BookingEventRow[]>([]);
+  const [bonuses, setBonuses] = useState<ContactBonus[]>([]);
   // Bumped when something on this screen changes the booking (a payment taken
   // at the counter), so the strip and the history are read again.
   const [reloadKey, setReloadKey] = useState(0);
@@ -131,7 +134,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, payment_mode, amount_paid_eur, balance_settled_at, balance_settled_method, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id, contact_id",
+          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, payment_mode, amount_paid_eur, balance_settled_at, balance_settled_method, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id, contact_id, bonus_id",
         )
         .eq("id", id)
         .limit(1);
@@ -199,6 +202,13 @@ export default function BookingDetailPage() {
         if (cancelled) return;
         contact = (cData as ClientContact[] | null)?.[0] ?? null;
       }
+
+      // The client's bonuses, to offer or show the one this session draws from.
+      const bonusRows = booking.contact_id
+        ? await fetchContactBonuses(getAccessToken(), booking.contact_id)
+        : [];
+      if (cancelled) return;
+      setBonuses(bonusRows);
 
       setState({ kind: "loaded", booking, creator, contact });
     }
@@ -306,6 +316,7 @@ export default function BookingDetailPage() {
         creator={creator}
         contact={contact}
         events={events}
+        bonuses={bonuses}
         staffPerson={staffPerson}
         locale={locale}
         onPaymentRecorded={() => setReloadKey((k) => k + 1)}

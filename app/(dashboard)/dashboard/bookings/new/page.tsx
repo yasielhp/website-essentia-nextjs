@@ -27,6 +27,9 @@ import {
   formReducer,
 } from "./form-state";
 import { useLocationOptions } from "../_shared/location-options";
+import { ToggleRow } from "@/components/dashboard/toggle-row";
+import { usableBonus } from "@/lib/bonuses/balance";
+import { localDateStr } from "@/utils/format";
 import { PaymentFields } from "../_shared/payment-fields";
 import { resolvePrice } from "./form-state";
 
@@ -70,12 +73,13 @@ function NewBookingPageInner() {
     staffId,
     newsletter,
     payment,
+    bonusOptOut,
   } = form;
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const selectedTier = tiers.find((tier) => tier.id === tierId) ?? null;
 
-  const { tierStaff } = useNewBookingData({
+  const { tierStaff, contactBonuses } = useNewBookingData({
     serviceId,
     tierId,
     dispatchAsync,
@@ -105,6 +109,28 @@ function NewBookingPageInner() {
         )
       : locationOptions;
 
+  // The bonus a session could be drawn from, if the contact holds one for this
+  // session type. Offered on by default; the desk can turn it off.
+  const offeredBonus = tierId
+    ? usableBonus(
+        contactBonuses.map((b) => ({
+          id: b.id,
+          tierId: b.tierId,
+          sessionsTotal: b.sessionsTotal,
+          expiresAt: b.expiresAt,
+        })),
+        contactBonuses.flatMap((b) =>
+          b.bookings.map((u) => ({ bonusId: b.id, status: u.status ?? "" })),
+        ),
+        tierId,
+        localDateStr(new Date()),
+      )
+    : null;
+  const offeredDetail = offeredBonus
+    ? contactBonuses.find((b) => b.id === offeredBonus.id)
+    : undefined;
+  const bonusId = offeredBonus && !bonusOptOut ? offeredBonus.id : null;
+
   const { locationLabel, datetimeLabel } = useStepLabels({
     location,
     allowedLocations,
@@ -125,6 +151,7 @@ function NewBookingPageInner() {
       service: selectedService,
       tier: selectedTier,
       role,
+      bonusId,
     };
 
     const invalid = validateNewBooking(draft, {
@@ -162,7 +189,12 @@ function NewBookingPageInner() {
     await announceNewBooking(result.bookingId, draft);
 
     notifySuccess(tToasts("bookingCreated"));
-    push("/dashboard/bookings");
+    // A bonus that could not be applied is retried from the booking's own page.
+    push(
+      result.bonusFailed
+        ? `/dashboard/bookings/${result.bookingId}`
+        : "/dashboard/bookings",
+    );
   }
 
   return (
@@ -267,7 +299,23 @@ function NewBookingPageInner() {
           {/* ── Step 6: Payment ──
               Same moment as the client: money already taken over the phone
               or at the desk belongs to a booking that exists. */}
-          {tierId && staffId && selectedDate && selectedTime && (
+          {offeredDetail &&
+            tierId &&
+            staffId &&
+            selectedDate &&
+            selectedTime && (
+              <ToggleRow
+                checked={bonusId !== null}
+                onToggle={() => dispatchForm({ type: "TOGGLE_BONUS" })}
+                label={t("bonus.use", {
+                  name: offeredDetail.name,
+                  n: offeredDetail.remaining,
+                })}
+                hint={t("bonus.hint")}
+                disabled={submitting}
+              />
+            )}
+          {!bonusId && tierId && staffId && selectedDate && selectedTime && (
             <PaymentFields
               value={payment}
               priceEur={

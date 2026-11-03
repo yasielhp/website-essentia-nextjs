@@ -35,15 +35,18 @@ export async function recordCounterPayment(
   const db = getAdminClient().database;
   const { data } = await db
     .from("bookings")
-    .select("price_eur, amount_paid_eur, payment_status")
+    .select("price_eur, amount_paid_eur, payment_status, payment_mode")
     .eq("id", input.bookingId)
     .maybeSingle();
   const row = data as {
     price_eur: number | string | null;
     amount_paid_eur: number | string | null;
     payment_status: string;
+    payment_mode: string | null;
   } | null;
   if (!row) return { error: "not_found" };
+  // Paid for when the bonus was bought; money here would count it twice.
+  if (row.payment_mode === "bonus") return { error: "bonus_booking" };
 
   const price = Number(row.price_eur ?? 0);
   const paid = Number(row.amount_paid_eur ?? 0) + input.amountEur;

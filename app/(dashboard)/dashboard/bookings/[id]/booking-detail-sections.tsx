@@ -9,9 +9,14 @@ import {
   TIME_ZONE,
   formatBookingDate,
   formatPrice,
+  localDateStr,
   type SupportedLocale,
 } from "@/utils/format";
 import { amountOwed } from "@/lib/payments/amounts";
+import { usableBonus } from "@/lib/bonuses/balance";
+import { getAccessToken } from "@/lib/client-session";
+import { assignBookingBonus, clearBookingBonus } from "@/actions/bonuses";
+import type { ContactBonus } from "@/types/bonus";
 import type {
   BookingEventActorRole,
   BookingEventChannel,
@@ -110,13 +115,16 @@ function Field({
 export function MetaStrip({
   booking,
   locale,
+  bonuses,
   onPaymentRecorded,
 }: {
   booking: BookingDetail;
   locale: SupportedLocale;
+  bonuses: ContactBonus[];
   onPaymentRecorded: () => void;
 }) {
   const [settleOpen, setSettleOpen] = useState(false);
+  const [bonusBusy, setBonusBusy] = useState(false);
   const tPay = useTranslations("dashboard.bookings.detail.payment");
   const t = useTranslations("dashboard.bookings.detail");
   const tStatus = useTranslations("dashboard.bookings.status");
@@ -124,8 +132,45 @@ export function MetaStrip({
   const tLocations = useTranslations("dashboard.bookings.locations");
   const tSources = useTranslations("dashboard.bookings.sources");
   const source = sourceKey(booking.created_by_role);
-  const owed = amountOwed(booking.price_eur, booking.amount_paid_eur);
+  // A bonus session was paid when the bonus was bought: nothing is owed on it.
+  const onBonus = booking.payment_mode === "bonus";
+  const owed = onBonus
+    ? 0
+    : amountOwed(booking.price_eur, booking.amount_paid_eur);
   const canSettle = owed > 0 && booking.status !== "cancelled";
+  const drawnBonus = onBonus
+    ? bonuses.find((b) => b.id === booking.bonus_id)
+    : undefined;
+  // A bonus can only be put on a booking that has taken no money.
+  const offeredBonus =
+    !onBonus &&
+    booking.tier_id &&
+    booking.status !== "cancelled" &&
+    Number(booking.amount_paid_eur ?? 0) === 0
+      ? usableBonus(
+          bonuses.map((b) => ({
+            id: b.id,
+            tierId: b.tierId,
+            sessionsTotal: b.sessionsTotal,
+            expiresAt: b.expiresAt,
+          })),
+          bonuses.flatMap((b) =>
+            b.bookings.map((u) => ({ bonusId: b.id, status: u.status ?? "" })),
+          ),
+          booking.tier_id,
+          localDateStr(new Date()),
+        )
+      : null;
+  const offeredDetail = offeredBonus
+    ? bonuses.find((b) => b.id === offeredBonus.id)
+    : undefined;
+
+  async function changeBonus(action: () => Promise<{ error: string | null }>) {
+    setBonusBusy(true);
+    const result = await action();
+    setBonusBusy(false);
+    if (!result.error) onPaymentRecorded();
+  }
 
   return (
     <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-5">
@@ -156,7 +201,7 @@ export function MetaStrip({
             : (booking.payment_status ?? "—")}
         </span>
         {/* Rows from before deposits carry no mode and have nothing to add. */}
-        {booking.payment_mode && (
+        {booking.payment_mode && !onBonus && (
           <>
             <p className="text-petroleum-500 text-xs">
               {tPay("mode." + booking.payment_mode)}
@@ -166,6 +211,43 @@ export function MetaStrip({
               · {tPay("owed")} {formatPrice(owed, locale)}
             </p>
           </>
+        )}
+        {onBonus && (
+          <>
+            <p className="text-petroleum-500 text-xs">
+              {tPay("mode.bonus")}
+              {drawnBonus ? ` · ${drawnBonus.name}` : ""}
+            </p>
+            <button
+              type="button"
+              disabled={bonusBusy}
+              onClick={() =>
+                void changeBonus(() =>
+                  clearBookingBonus(getAccessToken(), booking.id),
+                )
+              }
+              className="text-petroleum-500 hover:text-petroleum-700 w-fit text-xs underline disabled:opacity-50"
+            >
+              {tPay("removeBonus")}
+            </button>
+          </>
+        )}
+        {offeredDetail && (
+          <button
+            type="button"
+            disabled={bonusBusy}
+            onClick={() =>
+              void changeBonus(() =>
+                assignBookingBonus(getAccessToken(), {
+                  bookingId: booking.id,
+                  bonusId: offeredDetail.id,
+                }),
+              )
+            }
+            className="text-petroleum-500 hover:text-petroleum-700 w-fit text-xs underline disabled:opacity-50"
+          >
+            {tPay("useBonus", { n: offeredDetail.remaining })}
+          </button>
         )}
         {canSettle && (
           <button

@@ -174,8 +174,9 @@ function SheetContent({
   const tPay = useTranslations("dashboard.bookings.detail.payment");
 
   const name = [b.first_name, b.last_name].filter(Boolean).join(" ") || "—";
-  const owed = amountOwed(b.price_eur, b.amount_paid_eur);
-  const hasMoney = Number(b.amount_paid_eur ?? 0) > 0 || owed > 0;
+  const onBonus = b.payment_mode === "bonus";
+  const owed = onBonus ? 0 : amountOwed(b.price_eur, b.amount_paid_eur);
+  const hasMoney = !onBonus && (Number(b.amount_paid_eur ?? 0) > 0 || owed > 0);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">

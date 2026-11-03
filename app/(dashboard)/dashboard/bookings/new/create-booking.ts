@@ -6,6 +6,7 @@ import {
   recordBookingCreated,
   recordBookingPaymentNote,
 } from "@/actions/booking-draft";
+import { assignBookingBonus } from "@/actions/bonuses";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
@@ -31,6 +32,8 @@ import {
 
 /** The booking as the form has it, with the service and session type it names. */
 export type NewBookingDraft = FormState & {
+  /** The bonus this booking draws a session from, when the desk accepted one. */
+  bonusId: string | null;
   service: Service | null;
   tier: Tier | null;
   /** The role of whoever is filling it in; a partner's bookings are theirs. */
@@ -136,7 +139,13 @@ async function linkContact(draft: NewBookingDraft): Promise<string | null> {
 }
 
 export type CreateResult =
-  { ok: true; bookingId: string } | { ok: false; error: string };
+  | {
+      ok: true;
+      bookingId: string;
+      /** The booking exists but the bonus could not be applied to it. */
+      bonusFailed: boolean;
+    }
+  | { ok: false; error: string };
 
 /**
  * Writes the booking.
@@ -161,7 +170,8 @@ export async function createBooking(
 
   const bookingId = crypto.randomUUID();
   const contactId = await linkContact(draft);
-  const paidEur = amountPaidOf(draft.payment);
+  // A booking on a bonus takes no money at the counter.
+  const paidEur = draft.bonusId ? 0 : amountPaidOf(draft.payment);
   const paymentStatus = paidEur > 0 ? draft.payment.status : "pending";
 
   const { error } = await insforge.database.from("bookings").insert([
@@ -223,7 +233,19 @@ export async function createBooking(
     );
   }
 
-  return { ok: true, bookingId };
+  // Applied after the insert, by the action that checks the bonus is this
+  // client's, for this session type, unexpired and with a session left. If it
+  // refuses, the booking stands unpaid and the desk can retry from its page.
+  let bonusFailed = false;
+  if (draft.bonusId) {
+    const assigned = await assignBookingBonus(getAccessToken(), {
+      bookingId,
+      bonusId: draft.bonusId,
+    });
+    bonusFailed = assigned.error !== null;
+  }
+
+  return { ok: true, bookingId, bonusFailed };
 }
 
 /**

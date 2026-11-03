@@ -30,6 +30,7 @@ export type CalendarBooking = {
   price_eur?: number | null;
   payment_status?: string | null;
   amount_paid_eur?: number | string | null;
+  payment_mode?: string | null;
   status?: string | null;
   staff_name?: string | null;
 };
@@ -97,6 +98,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 /** ` (pagado X € · pendiente Y €)` once money has been recorded, else nothing. */
 function paymentAmounts(booking: CalendarBooking): string {
+  if (booking.payment_mode === "bonus") return " (con bono)";
   if (booking.amount_paid_eur == null) return "";
   const paid = Number(booking.amount_paid_eur);
   if (!(paid > 0)) return "";
@@ -130,4 +132,4 @@ export function bookingDescription(booking: CalendarBooking): string {
 
 /** The fields `bookingDescription` reads, for a `select()`. */
 export const CALENDAR_BOOKING_FIELDS =
-  "id, service_title, first_name, last_name, email, phone, date, time, duration, location, location_address, notes, price_eur, payment_status, amount_paid_eur, status, service_tiers(label)";
+  "id, service_title, first_name, last_name, email, phone, date, time, duration, location, location_address, notes, price_eur, payment_status, amount_paid_eur, payment_mode, status, service_tiers(label)";

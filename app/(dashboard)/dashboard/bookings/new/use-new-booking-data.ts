@@ -6,6 +6,8 @@ import { insforge } from "@/lib/insforge";
 import { fetchBookableServices } from "@/services/bookable-services.client";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchContactDetail } from "@/actions/contacts";
+import { fetchContactBonuses } from "@/actions/bonuses";
+import type { ContactBonus } from "@/types/bonus";
 import { GENDER_UNSPECIFIED } from "@/constants/gender";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import type { AsyncAction, FormAction, Tier } from "./form-state";
@@ -32,6 +34,7 @@ export function useNewBookingData({
 }) {
   const searchParams = useSearchParams();
   const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
+  const [contactBonuses, setContactBonuses] = useState<ContactBonus[]>([]);
 
   // A slot clicked on the dashboard calendar arrives as ?date=&time=.
   useEffect(() => {
@@ -76,6 +79,18 @@ export function useNewBookingData({
       cancelled = true;
     };
   }, [contactParam, dispatchForm]);
+
+  // And the bonuses that contact holds, so a session can be drawn from one.
+  useEffect(() => {
+    if (!contactParam) return;
+    let cancelled = false;
+    void fetchContactBonuses(getAccessToken(), contactParam).then((rows) => {
+      if (!cancelled) setContactBonuses(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [contactParam]);
 
   // The same list the public booking flow offers.
   useEffect(() => {
@@ -139,5 +154,5 @@ export function useNewBookingData({
     };
   }, [serviceId, dispatchAsync, dispatchForm]);
 
-  return { tierStaff };
+  return { tierStaff, contactBonuses };
 }

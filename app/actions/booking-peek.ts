@@ -27,7 +27,7 @@ export async function fetchBookingPeek(
   let query = getAdminClient()
     .database.from("bookings")
     .select(
-      "id, service_title, date, time, duration, status, payment_status, price_eur, amount_paid_eur, first_name, last_name, email, phone, contact_id, staff_id, notes, service_tiers(label, color)",
+      "id, service_title, date, time, duration, status, payment_status, payment_mode, price_eur, amount_paid_eur, first_name, last_name, email, phone, contact_id, staff_id, notes, service_tiers(label, color)",
     )
     .eq("id", bookingId);
   if (auth.role === "partner") query = query.eq("partner_id", auth.userId);

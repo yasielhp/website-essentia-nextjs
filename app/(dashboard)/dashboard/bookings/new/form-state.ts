@@ -132,6 +132,8 @@ export type FormState = {
   newsletter: boolean;
   /** Money already taken, for a booking made by phone or at the desk. */
   payment: PaymentValue;
+  /** The desk turned off the bonus session offered for this booking. */
+  bonusOptOut: boolean;
 };
 
 export type FormAction =
@@ -154,6 +156,7 @@ export type FormAction =
   | { type: "SET_STAFF"; value: string }
   | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_PAYMENT"; value: PaymentValue }
+  | { type: "TOGGLE_BONUS" }
   | {
       type: "PREFILL_CLIENT";
       value: {
@@ -187,6 +190,7 @@ export const formInitial: FormState = {
   staffId: "",
   newsletter: false,
   payment: EMPTY_PAYMENT,
+  bonusOptOut: false,
 };
 
 export function formReducer(state: FormState, action: FormAction): FormState {
@@ -237,6 +241,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, newsletter: !state.newsletter };
     case "SET_STAFF":
       return { ...state, staffId: action.value };
+    case "TOGGLE_BONUS":
+      return { ...state, bonusOptOut: !state.bonusOptOut };
     case "SET_PAYMENT":
       return { ...state, payment: action.value };
     case "PREFILL_CLIENT":
