@@ -593,69 +593,71 @@ export const Header = () => {
       dispatch({ type: "SET_DISPLAYED_MENU", menu: activeMenu });
   }, [activeMenu]);
 
-  // Animar apertura del dropdown
+  // One timeline for the dropdown. Opening and closing each kill whatever is
+  // still running: a pointer that leaves and comes back inside the 400 ms, or
+  // hops between menus, used to start a second animation on top of the first
+  // and leave the panel cut at whatever height the first had reached, with a
+  // stale "empty the panel" callback firing after it had reopened.
+  const menuTl = useRef<gsap.core.Timeline | null>(null);
+
+  // Open, or switch menus while open: the panel grows (or re-measures) to its
+  // content and the new items fade in.
   useEffect(() => {
-    if (!displayedMenu || !desktopMenuRef.current) return;
-
     const el = desktopMenuRef.current;
+    if (!el || !activeMenu || !displayedMenu) return;
+    if (activeMenu.href !== displayedMenu.href) return;
+
+    menuTl.current?.kill();
     const items = el.querySelectorAll("[data-desktop-item]");
-    const isAlreadyOpen = el.offsetHeight > 0;
+    gsap.killTweensOf([el, ...items]);
 
-    gsap.killTweensOf(el);
-
-    if (isAlreadyOpen) {
-      gsap.fromTo(
-        items,
-        { y: 4, opacity: 0 },
-        { y: 0, opacity: 1, stagger: 0.04, duration: 0.2, ease: "power2.out" },
-      );
-    } else {
-      gsap
-        .timeline()
-        .fromTo(
-          el,
-          { height: 0, opacity: 0 },
-          { height: "auto", opacity: 1, duration: 0.3, ease: "power3.out" },
-        )
-        .fromTo(
-          items,
-          { y: 8, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.05,
-            duration: 0.25,
-            ease: "power2.out",
-          },
-          "-=0.1",
-        );
-    }
+    const wasVisible = el.offsetHeight > 0;
+    const tl = gsap.timeline();
+    tl.to(
+      el,
+      { height: "auto", opacity: 1, duration: 0.3, ease: "power3.out" },
+      0,
+    ).fromTo(
+      items,
+      { y: wasVisible ? 4 : 8, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        stagger: wasVisible ? 0.04 : 0.05,
+        duration: wasVisible ? 0.2 : 0.25,
+        ease: "power2.out",
+      },
+      wasVisible ? 0 : 0.2,
+    );
+    menuTl.current = tl;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayedMenu?.href]);
+  }, [activeMenu?.href, displayedMenu?.href]);
 
-  // Animar cierre del dropdown
+  // Close: items out, then the panel; only when it finishes does the content
+  // go, so a reopen in the meantime — which kills this — keeps it.
   useEffect(() => {
-    if (activeMenu !== null || !desktopMenuRef.current || !displayedMenu)
-      return;
-
     const el = desktopMenuRef.current;
+    if (activeMenu !== null || !el || !displayedMenu) return;
+
+    menuTl.current?.kill();
     const items = el.querySelectorAll("[data-desktop-item]");
-    gsap.killTweensOf(el);
-    gsap
-      .timeline()
-      .to(items, {
-        y: -5,
-        opacity: 0,
-        stagger: 0.03,
-        duration: 0.15,
-        ease: "power2.in",
-      })
-      .to(
-        el,
-        { height: 0, opacity: 0, duration: 0.25, ease: "power3.in" },
-        "-=0.05",
-      )
-      .call(() => dispatch({ type: "SET_DISPLAYED_MENU", menu: null }));
+    gsap.killTweensOf([el, ...items]);
+
+    const tl = gsap.timeline({
+      onComplete: () => dispatch({ type: "SET_DISPLAYED_MENU", menu: null }),
+    });
+    tl.to(items, {
+      y: -5,
+      opacity: 0,
+      stagger: 0.03,
+      duration: 0.15,
+      ease: "power2.in",
+    }).to(
+      el,
+      { height: 0, opacity: 0, duration: 0.25, ease: "power3.in" },
+      "-=0.05",
+    );
+    menuTl.current = tl;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu]);
 
