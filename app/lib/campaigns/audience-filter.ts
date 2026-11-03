@@ -30,6 +30,10 @@ export type ContactCandidate = {
   birthdate?: string | null;
   lastName?: string | null;
   phone?: string | null;
+  /** ISO instant at which the earliest confirmed/completed booking ends. */
+  firstVisitEndsAt?: string | null;
+  /** How many bookings are confirmed or completed. */
+  confirmedBookingsCount?: number;
 };
 
 export type Recipient = {
@@ -45,6 +49,8 @@ export type Recipient = {
   lastName?: string | null;
   phone?: string | null;
   newsletter?: boolean;
+  firstVisitEndsAt?: string | null;
+  confirmedBookingsCount?: number;
 };
 
 const DAY_MS = 86_400_000;
@@ -134,6 +140,8 @@ export function filterAudience(
       lastName: candidate.lastName ?? null,
       phone: candidate.phone ?? null,
       newsletter: candidate.newsletter,
+      firstVisitEndsAt: candidate.firstVisitEndsAt ?? null,
+      confirmedBookingsCount: candidate.confirmedBookingsCount ?? 0,
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.

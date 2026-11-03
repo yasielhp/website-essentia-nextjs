@@ -1026,6 +1026,7 @@
     "urlMustBeHttps": "The link must start with https://",
     "ctaNeedsBoth": "The button needs both a text and a link",
     "daysOutOfRange": "Enter a number of days between 1 and 3650",
+    "hoursOutOfRange": "Enter a number of hours between 0 and 168",
     "servicesTooMany": "Too many services selected",
     "contactIdInvalid": "One of the chosen contacts is not valid",
     "tooManyContacts": "Too many contacts chosen by hand",
@@ -1624,6 +1625,9 @@
       "when": "Send when",
       "days": "Delay",
       "daysAfter": "days after the booking",
+      "hours": "Hours after",
+      "hoursAfter": "hours after the first visit",
+      "hoursAfterFirstVisit": "{hours} h after the first visit",
       "confirm": "Confirm trigger",
       "event": {
         "newsletter_subscribed": "Someone subscribes to the newsletter",
@@ -1631,7 +1635,8 @@
         "after_booking": "Some days after a booking",
         "birthday": "On the client's birthday",
         "first_booking_anniversary": "On the anniversary of the first booking",
-        "new_blog_post": "A new blog post is published"
+        "new_blog_post": "A new blog post is published",
+        "first_visit": "After the first visit"
       },
       "eventDesc": {
         "newsletter_subscribed": "Sent once, shortly after they sign up.",
@@ -1639,7 +1644,8 @@
         "after_booking": "Sent once per booking, the chosen number of days after it.",
         "birthday": "Once a year, to contacts with a birthdate on file.",
         "first_booking_anniversary": "Once a year, from the second year on.",
-        "new_blog_post": "One email per post, with its title, excerpt and link."
+        "new_blog_post": "One email per post, with its title, excerpt and link.",
+        "first_visit": "Once, N hours after the first confirmed session ends"
       }
     },
     "segments": {
@@ -1699,6 +1705,8 @@
         "birthday": "Birthday",
         "win-back": "We miss you",
         "after-visit": "After the visit",
+        "first-visit-care": "Aftercare after the first visit",
+        "first-visit-review": "Review request after the first visit",
         "blog-post": "New blog post",
         "event": "Event invitation"
       },
@@ -1710,6 +1718,8 @@
         "birthday": "A yearly greeting with a gift.",
         "win-back": "For clients who have not been in for a while.",
         "after-visit": "A check-in a few days after a session.",
+        "first-visit-care": "Instructions and breathing video, right after a new client's first session.",
+        "first-visit-review": "Thanks and a button to leave a Google review.",
         "blog-post": "Title, excerpt and link of the latest post, filled in automatically.",
         "event": "Save the date, details and a confirm button."
       }

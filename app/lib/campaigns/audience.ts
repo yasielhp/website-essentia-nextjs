@@ -1,5 +1,6 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import type { CampaignAudience } from "@/types/campaign";
+import { visitEndsAtIso } from "./visit-time";
 import {
   filterAudience,
   type ContactCandidate,
@@ -45,6 +46,9 @@ type BookingRow = {
   service_id: string | null;
   /** Nullable in the live table: some imported rows carry no date. */
   date: string | null;
+  time: string | null;
+  duration: string | null;
+  status: string | null;
 };
 
 type BookingSummary = {
@@ -52,6 +56,9 @@ type BookingSummary = {
   first: string | null;
   services: Set<string>;
   count: number;
+  /** ISO end of the earliest confirmed/completed visit. */
+  firstVisitEndsAt: string | null;
+  confirmedCount: number;
 };
 
 /** Rows above what the centre could plausibly hold; only a guard, not paging. */
@@ -82,7 +89,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       .range(0, MAX_ROWS),
     db
       .from("bookings")
-      .select("contact_id, email, service_id, date")
+      .select("contact_id, email, service_id, date, time, duration, status")
       .neq("status", "cancelled")
       .range(0, MAX_ROWS),
   ]);
@@ -126,6 +133,8 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       first: null,
       services: new Set<string>(),
       count: 0,
+      firstVisitEndsAt: null,
+      confirmedCount: 0,
     };
     // A booking without a date still proves the contact booked, and which
     // service, but cannot be "the last one". `date` is a Postgres date, but
@@ -135,6 +144,22 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       const day = booking.date.slice(0, 10);
       if (summary.last === null || day > summary.last) summary.last = day;
       if (summary.first === null || day < summary.first) summary.first = day;
+    }
+    // Only visits that really happened (or will) start the post-visit flow;
+    // the earliest end wins, compared as ISO strings in the same base (UTC).
+    if (booking.status === "confirmed" || booking.status === "completed") {
+      summary.confirmedCount += 1;
+      const endsAt = visitEndsAtIso(
+        booking.date,
+        booking.time,
+        booking.duration,
+      );
+      if (
+        endsAt &&
+        (summary.firstVisitEndsAt === null || endsAt < summary.firstVisitEndsAt)
+      ) {
+        summary.firstVisitEndsAt = endsAt;
+      }
     }
     if (booking.service_id) summary.services.add(booking.service_id);
     summary.count += 1;
@@ -159,6 +184,8 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
       phone: row.phone,
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,
+      firstVisitEndsAt: bookings?.firstVisitEndsAt ?? null,
+      confirmedBookingsCount: bookings?.confirmedCount ?? 0,
     };
   });
 

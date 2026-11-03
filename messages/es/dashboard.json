@@ -1026,6 +1026,7 @@
     "urlMustBeHttps": "El enlace debe empezar por https://",
     "ctaNeedsBoth": "El botón necesita texto y enlace",
     "daysOutOfRange": "Indica un número de días entre 1 y 3650",
+    "hoursOutOfRange": "Indica un número de horas entre 0 y 168",
     "servicesTooMany": "Demasiados servicios seleccionados",
     "contactIdInvalid": "Uno de los contactos elegidos no es válido",
     "tooManyContacts": "Demasiados contactos añadidos a mano",
@@ -1624,6 +1625,9 @@
       "when": "Enviar cuando",
       "days": "Retraso",
       "daysAfter": "días después de la reserva",
+      "hours": "Horas después",
+      "hoursAfter": "horas después de la primera visita",
+      "hoursAfterFirstVisit": "{hours} h después de la primera visita",
       "confirm": "Confirmar disparador",
       "event": {
         "newsletter_subscribed": "Alguien se suscribe a la newsletter",
@@ -1631,7 +1635,8 @@
         "after_booking": "Unos días después de una reserva",
         "birthday": "El día del cumpleaños del cliente",
         "first_booking_anniversary": "En el aniversario de la primera reserva",
-        "new_blog_post": "Se publica una entrada nueva en el blog"
+        "new_blog_post": "Se publica una entrada nueva en el blog",
+        "first_visit": "Tras la primera visita"
       },
       "eventDesc": {
         "newsletter_subscribed": "Se envía una vez, poco después de apuntarse.",
@@ -1639,7 +1644,8 @@
         "after_booking": "Una vez por reserva, los días elegidos después de ella.",
         "birthday": "Una vez al año, a los contactos con fecha de nacimiento.",
         "first_booking_anniversary": "Una vez al año, a partir del segundo.",
-        "new_blog_post": "Un email por entrada, con su título, resumen y enlace."
+        "new_blog_post": "Un email por entrada, con su título, resumen y enlace.",
+        "first_visit": "Una sola vez, N horas después de terminar la primera sesión confirmada"
       }
     },
     "segments": {
@@ -1699,6 +1705,8 @@
         "birthday": "Cumpleaños",
         "win-back": "Te echamos de menos",
         "after-visit": "Después de la visita",
+        "first-visit-care": "Cuidados tras la primera visita",
+        "first-visit-review": "Petición de reseña tras la primera visita",
         "blog-post": "Nueva entrada del blog",
         "event": "Invitación a evento"
       },
@@ -1710,6 +1718,8 @@
         "birthday": "Una felicitación anual con regalo.",
         "win-back": "Para clientes que llevan tiempo sin venir.",
         "after-visit": "Un seguimiento unos días después de la sesión.",
+        "first-visit-care": "Instrucciones y vídeo de respiración, nada más la primera sesión de una clienta nueva.",
+        "first-visit-review": "Agradecimiento y botón para dejar una reseña en Google.",
         "blog-post": "Título, resumen y enlace de la última entrada, rellenados solos.",
         "event": "Reserva la fecha, detalles y botón de confirmar."
       }

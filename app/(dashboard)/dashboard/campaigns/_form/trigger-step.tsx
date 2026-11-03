@@ -10,7 +10,7 @@ import type { FormAction, FormState } from "./form-state";
 
 /** The kinds whose trigger the admin chooses; the others have one event only. */
 const CHOICES: Partial<Record<FormState["kind"], TriggerEvent[]>> = {
-  automated: ["segment_entry", "after_booking"],
+  automated: ["segment_entry", "after_booking", "first_visit"],
   dateBased: ["birthday", "first_booking_anniversary"],
 };
 
@@ -42,6 +42,7 @@ export function TriggerStep({
     desc: t(`eventDesc.${event}`),
   }));
   const daysError = fieldErrors["trigger.days"];
+  const hoursError = fieldErrors["trigger.hours"];
 
   return (
     <section className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
@@ -70,6 +71,9 @@ export function TriggerStep({
                   event,
                   ...(event === "after_booking"
                     ? { days: trigger.days ?? 3 }
+                    : {}),
+                  ...(event === "first_visit"
+                    ? { hours: trigger.hours ?? 0 }
                     : {}),
                 },
               })
@@ -112,6 +116,48 @@ export function TriggerStep({
             {daysError && (
               <p className="text-xs text-red-500">
                 {fieldError.has(daysError) ? fieldError(daysError) : daysError}
+              </p>
+            )}
+          </div>
+        )}
+
+        {trigger.event === "first_visit" && (
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="campaign-trigger-hours"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              {t("hours")}
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="campaign-trigger-hours"
+                type="number"
+                min={0}
+                max={168}
+                value={trigger.hours ?? ""}
+                disabled={submitting}
+                onChange={(e) => {
+                  const hours = Number(e.target.value);
+                  dispatch({
+                    type: "SET_TRIGGER",
+                    trigger: {
+                      ...trigger,
+                      hours: Number.isFinite(hours) ? hours : 0,
+                    },
+                  });
+                }}
+                className={`${INPUT_CLASS} w-28`}
+              />
+              <span className="text-petroleum-400 text-sm">
+                {t("hoursAfter")}
+              </span>
+            </div>
+            {hoursError && (
+              <p className="text-xs text-red-500">
+                {fieldError.has(hoursError)
+                  ? fieldError(hoursError)
+                  : hoursError}
               </p>
             )}
           </div>

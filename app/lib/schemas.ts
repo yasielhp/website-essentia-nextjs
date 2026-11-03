@@ -421,6 +421,7 @@ export const campaignTriggerSchema = z.object({
       "birthday",
       "first_booking_anniversary",
       "new_blog_post",
+      "first_visit",
     ])
     .optional(),
   days: z
@@ -428,6 +429,12 @@ export const campaignTriggerSchema = z.object({
     .int("daysOutOfRange")
     .min(0, "daysOutOfRange")
     .max(365, "daysOutOfRange")
+    .optional(),
+  hours: z
+    .number()
+    .int("hoursOutOfRange")
+    .min(0, "hoursOutOfRange")
+    .max(168, "hoursOutOfRange")
     .optional(),
 });
 

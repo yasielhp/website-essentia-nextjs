@@ -32,6 +32,13 @@ const BOOKING_URL = {
   en: "https://www.essentiawellnessclub.com/booking",
 };
 
+/**
+ * Stand-ins until the centre hands over the real links. Obviously fake on
+ * purpose: replace them in the editor before activating the campaign.
+ */
+const VIDEO_URL_PLACEHOLDER = "https://essentia.example/video";
+const REVIEW_URL_PLACEHOLDER = "https://essentia.example/review";
+
 export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
   {
     id: "newsletter",
@@ -333,6 +340,124 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
             text: "Drink water, move a little every day and, if you feel like continuing, here is the link for your next appointment.",
           },
           { type: "button", text: "Book the next one", url: BOOKING_URL.en },
+        ],
+      },
+    },
+  },
+  {
+    // Sent by the `first_visit` trigger right after the first session.
+    id: "first-visit-care",
+    kinds: ["automated"],
+    content: {
+      es: {
+        subject: "Cuidados tras tu drenaje, {{first_name}}",
+        preheader: "Lo que conviene hacer en las próximas horas.",
+        title: "Cuidados tras tu drenaje",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "Gracias por tu visita, {{first_name}}. Para aprovechar el drenaje al máximo, ten en cuenta lo siguiente durante las próximas horas.",
+          },
+          { type: "heading", text: "Qué hacer" },
+          {
+            type: "paragraph",
+            text: "[PENDIENTE: instrucciones del centro] Bebe agua, evita…",
+          },
+          { type: "heading", text: "Vídeo de respiración" },
+          {
+            type: "paragraph",
+            text: "Te dejamos un vídeo corto con los ejercicios de respiración que complementan la sesión.",
+          },
+          {
+            // [PENDIENTE] URL real del vídeo que facilite el centro.
+            type: "button",
+            text: "Ver el vídeo",
+            url: VIDEO_URL_PLACEHOLDER,
+          },
+          {
+            type: "paragraph",
+            text: "Si tienes cualquier duda, responde a este email. Un abrazo del equipo de Essentia.",
+          },
+        ],
+      },
+      en: {
+        subject: "Aftercare for your drainage, {{first_name}}",
+        preheader: "What to do over the next few hours.",
+        title: "Aftercare for your drainage",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "Thank you for coming, {{first_name}}. To get the most out of your drainage, keep the following in mind over the next few hours.",
+          },
+          { type: "heading", text: "What to do" },
+          {
+            type: "paragraph",
+            text: "[PENDING: centre instructions] Drink water, avoid…",
+          },
+          { type: "heading", text: "Breathing video" },
+          {
+            type: "paragraph",
+            text: "Here is a short video with the breathing exercises that go with the session.",
+          },
+          {
+            // [PENDING] real video URL from the centre.
+            type: "button",
+            text: "Watch the video",
+            url: VIDEO_URL_PLACEHOLDER,
+          },
+          {
+            type: "paragraph",
+            text: "If you have any questions, just reply to this email. Warmly, the Essentia team.",
+          },
+        ],
+      },
+    },
+  },
+  {
+    // Sent a few hours after the first session, apart from the care email.
+    id: "first-visit-review",
+    kinds: ["automated"],
+    content: {
+      es: {
+        subject: "¿Qué tal tu sesión, {{first_name}}?",
+        preheader: "Tu opinión nos ayuda a seguir mejorando.",
+        title: "¿Qué tal tu sesión?",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "Gracias por confiar en nosotras, {{first_name}}. Esperamos que te sientas genial.",
+          },
+          {
+            type: "paragraph",
+            text: "Si tienes un minuto, cuéntanos cómo ha ido en Google. Tu reseña ayuda a que otras personas nos encuentren.",
+          },
+          {
+            // [PENDIENTE] URL de reseña de Google del centro.
+            type: "button",
+            text: "Dejar una reseña en Google",
+            url: REVIEW_URL_PLACEHOLDER,
+          },
+        ],
+      },
+      en: {
+        subject: "How was your session, {{first_name}}?",
+        preheader: "Your feedback helps us keep improving.",
+        title: "How was your session?",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "Thank you for trusting us, {{first_name}}. We hope you feel great.",
+          },
+          {
+            type: "paragraph",
+            text: "If you have a minute, tell us how it went on Google. Your review helps other people find us.",
+          },
+          {
+            // [PENDING] the centre's Google review URL.
+            type: "button",
+            text: "Leave a Google review",
+            url: REVIEW_URL_PLACEHOLDER,
+          },
         ],
       },
     },
