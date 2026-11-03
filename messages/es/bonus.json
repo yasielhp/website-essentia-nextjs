@@ -10,17 +10,14 @@
   },
   "form": {
     "title": "Comprar bono",
-    "summary": "{sessions, plural, one {Bono de # sesión} other {Bono de # sesiones}} · {service}",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "email": "Correo electrónico",
     "phone": "Teléfono",
     "terms": "He leído y acepto las <link>condiciones</link>.",
     "pay": "Pagarás {price} ahora con tarjeta, sin descuentos ni pagos aplazados.",
-    "submit": "Pagar con tarjeta",
+    "submit": "Pagar",
     "submitting": "Un momento…",
-    "cancel": "Cancelar",
-    "close": "Cerrar",
     "errors": {
       "firstName": "Escribe tu nombre.",
       "lastName": "Escribe tus apellidos.",
@@ -28,7 +25,9 @@
       "phone": "Revisa el teléfono.",
       "consent": "Debes aceptar las condiciones.",
       "generic": "No hemos podido iniciar el pago. Inténtalo de nuevo."
-    }
+    },
+    "pageTitle": "Comprar bono | Essentia",
+    "back": "Volver"
   },
   "confirmation": {
     "title": "Pago recibido | Essentia",
@@ -40,6 +39,7 @@
     "title": "Pago no completado | Essentia",
     "heading": "El pago no se ha completado",
     "body": "No se ha hecho ningún cargo. Puedes volver a intentarlo cuando quieras.",
-    "cta": "Volver al inicio"
+    "cta": "Volver al inicio",
+    "retry": "Volver a intentarlo"
   }
 }

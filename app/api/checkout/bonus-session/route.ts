@@ -111,7 +111,8 @@ export async function POST(req: NextRequest) {
     currency: "978", // EUR
     description: `${sessionsText} - ${tier.label ?? ""}`,
     successUrl: `${appUrl}${prefix}/bonus/confirmation`,
-    cancelUrl: `${appUrl}${prefix}/bonus/cancelled`,
+    // The cancelled page offers to come back to this plan's payment page.
+    cancelUrl: `${appUrl}${prefix}/bonus/cancelled?plan=${plan.id}`,
     customerEmail: input.email,
     customerName: `${input.firstName} ${input.lastName}`.trim(),
     metadata: { notifyUrl: `${appUrl}/api/webhooks/redsys` },

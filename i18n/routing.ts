@@ -113,6 +113,10 @@ export const routing = defineRouting({
     "/booking/requested": "/booking/requested",
     "/bonus/confirmation": "/bonus/confirmation",
     "/bonus/cancelled": "/bonus/cancelled",
+    "/bonus/checkout/[planId]": {
+      en: "/bonus/checkout/[planId]",
+      es: "/bonus/pago/[planId]",
+    },
     "/newsletter/unsubscribe": "/newsletter/unsubscribe",
   },
 });

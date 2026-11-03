@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { getPathname } from "../../../../i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { fetchPublicBonusPlans } from "@/actions/bonuses-public";
 import { formatPrice, type SupportedLocale } from "@/utils/format";
 import type { PublicBonusPlan } from "@/types/bonus";
-import { BonusPurchaseDialog } from "./bonus-purchase-dialog";
 
 /**
  * The bonuses on sale for a treatment, on the page of that treatment.
@@ -26,7 +26,6 @@ export function BonusOffer({
   const t = useTranslations("bonus.offer");
   const locale = useLocale() as SupportedLocale;
   const [plans, setPlans] = useState<PublicBonusPlan[]>([]);
-  const [buying, setBuying] = useState<PublicBonusPlan | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +78,14 @@ export function BonusOffer({
               <Button
                 variant="solid"
                 size="md"
-                onClick={() => setBuying(plan)}
+                // The localized path, so Spanish visitors land on /es/bonus/pago/…
+                href={getPathname({
+                  locale,
+                  href: {
+                    pathname: "/bonus/checkout/[planId]",
+                    params: { planId: plan.id },
+                  },
+                })}
                 className="mt-auto w-full"
               >
                 {t("buy")}
@@ -88,10 +94,6 @@ export function BonusOffer({
           ))}
         </ul>
       </div>
-
-      {buying && (
-        <BonusPurchaseDialog plan={buying} onClose={() => setBuying(null)} />
-      )}
     </section>
   );
 }

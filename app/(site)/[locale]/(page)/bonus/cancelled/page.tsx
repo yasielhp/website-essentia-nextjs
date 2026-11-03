@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getPathname } from "../../../../../../i18n/navigation";
+import { getPublicBonusPlan } from "@/lib/bonuses/public";
 
 export async function generateMetadata({
   params,
@@ -28,11 +30,27 @@ export async function generateMetadata({
 
 export default async function BonusCancelledPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ plan?: string }>;
 }) {
   const { locale } = await params;
+  const { plan } = await searchParams;
   setRequestLocale(locale);
+
+  // Back to the payment page of the bonus that was being bought, but only if
+  // that plan is still on sale: the id comes from a URL and is not trusted.
+  const retry = plan ? await getPublicBonusPlan(plan) : null;
+  const retryHref = retry
+    ? getPathname({
+        locale,
+        href: {
+          pathname: "/bonus/checkout/[planId]",
+          params: { planId: retry.id },
+        },
+      })
+    : null;
   const t = await getTranslations({ locale, namespace: "bonus.cancelled" });
 
   return (
@@ -47,9 +65,26 @@ export default async function BonusCancelledPage({
         <p className="text-petroleum-400 mt-3 leading-relaxed text-balance">
           {t("body")}
         </p>
-        <Button variant="solid" size="md" href="/" className="mt-8 w-full">
-          {t("cta")}
-        </Button>
+        <div className="mt-8 flex flex-col gap-3">
+          {retryHref && (
+            <Button
+              variant="solid"
+              size="md"
+              href={retryHref}
+              className="w-full"
+            >
+              {t("retry")}
+            </Button>
+          )}
+          <Button
+            variant={retryHref ? "outline" : "solid"}
+            size="md"
+            href="/"
+            className="w-full"
+          >
+            {t("cta")}
+          </Button>
+        </div>
       </div>
     </section>
   );

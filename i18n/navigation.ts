@@ -9,4 +9,4 @@ import { routing } from "./routing";
  * localized one on purpose — `next/navigation`'s does not know that `/contact`
  * is `/es/contacto`.
  */
-export const { Link, redirect } = createNavigation(routing);
+export const { Link, redirect, getPathname } = createNavigation(routing);
