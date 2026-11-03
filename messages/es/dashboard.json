@@ -1290,6 +1290,42 @@
       "save": "Guardar horario",
       "saving": "Guardando…",
       "saved": "Horario guardado"
+    },
+    "mcp": {
+      "title": "Conectar con ChatGPT o Claude",
+      "hint": "Deja que un asistente consulte los servicios y la disponibilidad de Essentia y prepare borradores del blog. No hay claves que copiar: el asistente te pedirá iniciar sesión y aprobar.",
+      "urlLabel": "Dirección del servidor MCP",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "chatgpt": {
+        "title": "ChatGPT",
+        "steps": [
+          "Abre Ajustes y entra en Conectores.",
+          "Pulsa Añadir servidor MCP.",
+          "Pega la dirección de arriba.",
+          "Pulsa Conectar.",
+          "Inicia sesión con tu usuario de Essentia y pulsa Permitir."
+        ]
+      },
+      "claude": {
+        "title": "Claude",
+        "steps": [
+          "Abre Configuración y entra en Conectores.",
+          "Pulsa Añadir servidor MCP personalizado.",
+          "Pega la dirección de arriba.",
+          "Pulsa Conectar.",
+          "Inicia sesión con tu usuario de Essentia y pulsa Permitir."
+        ]
+      },
+      "connections": {
+        "title": "Conexiones activas",
+        "empty": "Todavía no has conectado ningún asistente.",
+        "since": "Conectado el {date}",
+        "lastUsed": "Último uso: {date}",
+        "neverUsed": "Sin usar todavía",
+        "disconnect": "Desconectar",
+        "disconnecting": "Desconectando…"
+      }
     }
   },
   "settings": {

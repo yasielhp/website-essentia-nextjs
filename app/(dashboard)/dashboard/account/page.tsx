@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { PasswordSection } from "./password-section";
 import { ProfileForm } from "./profile-form";
 import { ScheduleSection } from "./schedule-section";
+import { McpSection } from "./mcp-section";
 import { initialState, reducer } from "./state";
 import { useRole } from "@/context/role-context";
 import { CalendarSyncCard } from "@/components/dashboard/settings/calendar-sync-card";
@@ -322,6 +323,8 @@ export default function DashboardAccountPage() {
             onSubmit={(e) => void handleSave(e)}
           />
 
+          <PasswordSection userId={user!.id} />
+
           {/* Staff and admins both: staff so their own bookings land on their
               calendar, admins so one calendar mirrors the whole centre. */}
           {!loading && user && (role === "staff" || role === "admin") && (
@@ -335,13 +338,17 @@ export default function DashboardAccountPage() {
             </Suspense>
           )}
 
+          {/* Letting ChatGPT or Claude use Essentia: the same two roles that can
+              sign an assistant in. */}
+          {!loading && user && (role === "staff" || role === "admin") && (
+            <McpSection />
+          )}
+
           {/* Only staff hold a schedule, and this is theirs: what it says is
               what the public is offered. */}
           {!loading && user && role === "staff" && (
             <ScheduleSection userId={user.id} />
           )}
-
-          <PasswordSection userId={user!.id} />
         </div>
 
         <div>

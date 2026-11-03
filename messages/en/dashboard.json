@@ -1290,6 +1290,42 @@
       "save": "Save schedule",
       "saving": "Saving…",
       "saved": "Schedule saved"
+    },
+    "mcp": {
+      "title": "Connect with ChatGPT or Claude",
+      "hint": "Let an assistant look up Essentia's services and availability and prepare blog drafts. There is no key to copy: the assistant will ask you to sign in and approve.",
+      "urlLabel": "MCP server address",
+      "copy": "Copy",
+      "copied": "Copied",
+      "chatgpt": {
+        "title": "ChatGPT",
+        "steps": [
+          "Open Settings and go to Connectors.",
+          "Click Add MCP server.",
+          "Paste the address above.",
+          "Click Connect.",
+          "Sign in with your Essentia user and click Allow."
+        ]
+      },
+      "claude": {
+        "title": "Claude",
+        "steps": [
+          "Open Settings and go to Connectors.",
+          "Click Add custom MCP server.",
+          "Paste the address above.",
+          "Click Connect.",
+          "Sign in with your Essentia user and click Allow."
+        ]
+      },
+      "connections": {
+        "title": "Active connections",
+        "empty": "You have not connected any assistant yet.",
+        "since": "Connected on {date}",
+        "lastUsed": "Last used: {date}",
+        "neverUsed": "Not used yet",
+        "disconnect": "Disconnect",
+        "disconnecting": "Disconnecting…"
+      }
     }
   },
   "settings": {
