@@ -8,8 +8,10 @@ import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import {
   TIME_ZONE,
   formatBookingDate,
+  formatPrice,
   type SupportedLocale,
 } from "@/utils/format";
+import { amountOwed } from "@/lib/payments/amounts";
 import type {
   BookingEventActorRole,
   BookingEventChannel,
@@ -23,6 +25,7 @@ import type {
   CreatorProfile,
   StaffPerson,
 } from "./types";
+import { SettleBalanceDialog } from "./settle-balance-dialog";
 
 /**
  * The cards a booking is made of.
@@ -35,6 +38,7 @@ import type {
  */
 
 const paymentBadgeClasses: Record<string, string> = {
+  deposit_paid: "bg-amber-100 text-amber-800",
   paid: "bg-green-100 text-green-800",
   pending: "bg-yellow-100 text-yellow-800",
   failed: "bg-red-100 text-red-600",
@@ -106,16 +110,22 @@ function Field({
 export function MetaStrip({
   booking,
   locale,
+  onPaymentRecorded,
 }: {
   booking: BookingDetail;
   locale: SupportedLocale;
+  onPaymentRecorded: () => void;
 }) {
+  const [settleOpen, setSettleOpen] = useState(false);
+  const tPay = useTranslations("dashboard.bookings.detail.payment");
   const t = useTranslations("dashboard.bookings.detail");
   const tStatus = useTranslations("dashboard.bookings.status");
   const tPayment = useTranslations("dashboard.bookings.paymentStatus");
   const tLocations = useTranslations("dashboard.bookings.locations");
   const tSources = useTranslations("dashboard.bookings.sources");
   const source = sourceKey(booking.created_by_role);
+  const owed = amountOwed(booking.price_eur, booking.amount_paid_eur);
+  const canSettle = owed > 0 && booking.status !== "cancelled";
 
   return (
     <div className="border-sand-200 mb-6 grid grid-cols-2 rounded-2xl border bg-white sm:grid-cols-5">
@@ -145,6 +155,27 @@ export function MetaStrip({
             ? tPayment(booking.payment_status)
             : (booking.payment_status ?? "—")}
         </span>
+        {/* Rows from before deposits carry no mode and have nothing to add. */}
+        {booking.payment_mode && (
+          <>
+            <p className="text-petroleum-500 text-xs">
+              {tPay("mode." + booking.payment_mode)}
+            </p>
+            <p className="text-petroleum-700 text-xs">
+              {tPay("paid")} {formatPrice(booking.amount_paid_eur ?? 0, locale)}{" "}
+              · {tPay("owed")} {formatPrice(owed, locale)}
+            </p>
+          </>
+        )}
+        {canSettle && (
+          <button
+            type="button"
+            onClick={() => setSettleOpen(true)}
+            className="text-petroleum-500 hover:text-petroleum-700 w-fit text-xs underline"
+          >
+            {tPay("settle")}
+          </button>
+        )}
       </div>
       <div className="border-sand-200 flex flex-col gap-1.5 border-l px-5 py-4">
         <p className="text-petroleum-400 text-xs">{t("meta.location")}</p>
@@ -168,6 +199,17 @@ export function MetaStrip({
           {tSources(source)}
         </span>
       </div>
+      {settleOpen && (
+        <SettleBalanceDialog
+          bookingId={booking.id}
+          owedEur={owed}
+          onClose={() => setSettleOpen(false)}
+          onRecorded={() => {
+            setSettleOpen(false);
+            onPaymentRecorded();
+          }}
+        />
+      )}
     </div>
   );
 }

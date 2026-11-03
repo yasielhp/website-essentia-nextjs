@@ -444,13 +444,39 @@
           "failed": "Fallido",
           "done": "Hecho"
         }
+      },
+      "payment": {
+        "paid": "Pagado",
+        "owed": "Pendiente",
+        "settle": "Cobrar saldo",
+        "mode": {
+          "deposit": "Depósito online",
+          "full": "Pago completo online",
+          "bonus": "Bono",
+          "none": "Sin pago"
+        },
+        "dialog": {
+          "title": "Cobrar en el centro",
+          "amount": "Importe",
+          "method": "Método",
+          "methods": {
+            "cash": "Efectivo",
+            "card": "Tarjeta",
+            "transfer": "Transferencia",
+            "other": "Otro"
+          },
+          "confirm": "Registrar cobro",
+          "cancel": "Cancelar",
+          "error": "No se ha podido registrar el cobro."
+        }
       }
     },
     "paymentStatus": {
       "paid": "Pagada",
       "pending": "Pendiente de pago",
       "failed": "Pago fallido",
-      "refunded": "Reembolsada"
+      "refunded": "Reembolsada",
+      "deposit_paid": "Depósito pagado"
     }
   },
   "transactions": {
@@ -475,7 +501,8 @@
       "expired": "Caducada",
       "failed": "Fallida",
       "refunded": "Reembolsada",
-      "unknown": "Desconocida"
+      "unknown": "Desconocida",
+      "deposit_paid": "Depósito"
     },
     "sources": {
       "admin": "Administrador",

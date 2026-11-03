@@ -3,7 +3,14 @@
 export type BookingStatus =
   "draft" | "pending" | "confirmed" | "cancelled" | "completed" | "paid";
 
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type PaymentStatus =
+  "pending" | "deposit_paid" | "paid" | "failed" | "refunded";
+
+/** How the client chose to pay; `bonus` and `none` are set from the dashboard. */
+export type BookingPaymentMode = "deposit" | "full" | "bonus" | "none";
+
+/** How money taken at the counter was handed over. */
+export type BalanceMethod = "cash" | "card" | "transfer" | "other";
 
 /** Payload accepted by the dashboard's full booking edit form. */
 export type UpdateBookingPayload = {
@@ -59,6 +66,10 @@ export type Booking = {
   phone: string | null;
   status: string | null;
   payment_status: string | null;
+  payment_mode: BookingPaymentMode | null;
+  amount_paid_eur: number | null;
+  balance_settled_at: string | null;
+  balance_settled_method: BalanceMethod | null;
   google_event_id: string | null;
   contact_id: string | null;
   user_id: string | null;

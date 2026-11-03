@@ -112,6 +112,9 @@ export default function BookingDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [events, setEvents] = useState<BookingEventRow[]>([]);
+  // Bumped when something on this screen changes the booking (a payment taken
+  // at the counter), so the strip and the history are read again.
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fullNameForCrumb =
     state.kind === "loaded"
@@ -128,7 +131,7 @@ export default function BookingDetailPage() {
       const { data } = await insforge.database
         .from("bookings")
         .select(
-          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id, contact_id",
+          "id, service_title, duration, price_eur, tier_id, staff_id, payment_status, payment_mode, amount_paid_eur, balance_settled_at, balance_settled_method, service_tiers(label, image_url, color), first_name, last_name, email, phone, date, time, status, location, location_address, notes, created_at, created_by_role, created_by_user_id, contact_id",
         )
         .eq("id", id)
         .limit(1);
@@ -204,7 +207,7 @@ export default function BookingDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   // Read through a Server Action, not the browser client: the table holds
   // staff phone numbers and client addresses.
@@ -216,7 +219,7 @@ export default function BookingDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -305,6 +308,7 @@ export default function BookingDetailPage() {
         events={events}
         staffPerson={staffPerson}
         locale={locale}
+        onPaymentRecorded={() => setReloadKey((k) => k + 1)}
       />
 
       {deleteOpen && (

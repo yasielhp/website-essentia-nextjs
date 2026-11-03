@@ -37,6 +37,7 @@ export function BookingDetailBody({
   events,
   staffPerson,
   locale,
+  onPaymentRecorded,
 }: {
   booking: BookingDetail;
   creator: CreatorProfile | null;
@@ -46,12 +47,18 @@ export function BookingDetailBody({
   /** The professional assigned to it, if the booking has one. */
   staffPerson: StaffPerson | null;
   locale: SupportedLocale;
+  /** Called after money is taken at the counter, so the screen reloads. */
+  onPaymentRecorded: () => void;
 }) {
   const notes = displayNotes(booking.notes);
 
   return (
     <>
-      <MetaStrip booking={booking} locale={locale} />
+      <MetaStrip
+        booking={booking}
+        locale={locale}
+        onPaymentRecorded={onPaymentRecorded}
+      />
 
       <div className="space-y-6">
         <ServiceCard booking={booking} staffPerson={staffPerson} />

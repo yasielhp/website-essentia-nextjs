@@ -444,13 +444,39 @@
           "failed": "Failed",
           "done": "Done"
         }
+      },
+      "payment": {
+        "paid": "Paid",
+        "owed": "Owed",
+        "settle": "Collect balance",
+        "mode": {
+          "deposit": "Online deposit",
+          "full": "Paid in full online",
+          "bonus": "Voucher",
+          "none": "No payment"
+        },
+        "dialog": {
+          "title": "Collect at the centre",
+          "amount": "Amount",
+          "method": "Method",
+          "methods": {
+            "cash": "Cash",
+            "card": "Card",
+            "transfer": "Bank transfer",
+            "other": "Other"
+          },
+          "confirm": "Record payment",
+          "cancel": "Cancel",
+          "error": "The payment could not be recorded."
+        }
       }
     },
     "paymentStatus": {
       "paid": "Paid",
       "pending": "Payment pending",
       "failed": "Payment failed",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "deposit_paid": "Deposit paid"
     }
   },
   "transactions": {
@@ -475,7 +501,8 @@
       "expired": "Expired",
       "failed": "Failed",
       "refunded": "Refunded",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "deposit_paid": "Deposit"
     },
     "sources": {
       "admin": "Admin",

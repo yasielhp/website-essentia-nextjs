@@ -1,3 +1,5 @@
+import type { BalanceMethod, BookingPaymentMode } from "@/types/booking";
+
 /** One booking as this screen reads it, and whoever made it. */
 export type BookingDetail = {
   id: string;
@@ -7,6 +9,10 @@ export type BookingDetail = {
   tier_id: string | null;
   staff_id: string | null;
   payment_status: string | null;
+  payment_mode: BookingPaymentMode | null;
+  amount_paid_eur: number | null;
+  balance_settled_at: string | null;
+  balance_settled_method: BalanceMethod | null;
   service_tiers: {
     label: string | null;
     image_url: string | null;
