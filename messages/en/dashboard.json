@@ -1320,6 +1320,7 @@
       "connect": "Connect Google Calendar"
     },
     "services": {
+      "heading": "All sessions",
       "edit": "Edit",
       "addTier": "Add tier",
       "noTiers": "No tiers yet. Add one to enable this service in bookings.",

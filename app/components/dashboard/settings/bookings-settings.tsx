@@ -86,56 +86,61 @@ function ServicesContent({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* The calendar colour tints the row, so a tier is recognisable here the
+    <div>
+      <h2 className="font-display text-petroleum-700 mb-4 text-xl">
+        {t("heading")}
+      </h2>
+      <div className="flex flex-col gap-2">
+        {/* The calendar colour tints the row, so a tier is recognisable here the
           same way it is on the calendar. Kept faint: the text still has to
           read on top of it. The rest — prices, duration, who performs it — is
           in the modal this opens. */}
-      {rows.map(({ serviceId, tier }) => (
-        <div
-          key={tier.id}
-          style={{
-            backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
-            borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
-          }}
-          className="flex items-center gap-4 rounded-2xl border p-3"
-        >
-          <div className="relative shrink-0">
-            <TierThumbnail
-              imageUrl={tier.image_url}
-              color={tier.color}
-              label={tier.label}
-              className="size-16"
-              sizes="64px"
-            />
-            {/* On the image, so the state is read before the name. */}
-            <span
-              className={`absolute top-1 left-1 rounded-full px-2 py-0.5 text-[11px] leading-none font-medium shadow-sm ${
-                tier.active
-                  ? "bg-green-100 text-green-700"
-                  : "text-petroleum-400 bg-white/90"
-              }`}
-            >
-              {tier.active ? tTiers("active") : tTiers("off")}
-            </span>
-          </div>
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-petroleum-700 truncate text-sm font-medium">
-              {tier.label ?? "—"}
-            </span>
-            <span className="text-petroleum-400 truncate text-xs">
-              {tServices(serviceId)}
-            </span>
-          </span>
-          <Button
-            variant="solid"
-            size="md"
-            onClick={() => onEditTier(serviceId, tier)}
+        {rows.map(({ serviceId, tier }) => (
+          <div
+            key={tier.id}
+            style={{
+              backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
+              borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
+            }}
+            className="flex items-center gap-4 rounded-2xl border p-3"
           >
-            {t("edit")}
-          </Button>
-        </div>
-      ))}
+            <div className="relative shrink-0">
+              <TierThumbnail
+                imageUrl={tier.image_url}
+                color={tier.color}
+                label={tier.label}
+                className="size-16"
+                sizes="64px"
+              />
+              {/* On the image, so the state is read before the name. */}
+              <span
+                className={`absolute top-1 left-1 rounded-full px-2 py-0.5 text-[11px] leading-none font-medium shadow-sm ${
+                  tier.active
+                    ? "bg-green-100 text-green-700"
+                    : "text-petroleum-400 bg-white/90"
+                }`}
+              >
+                {tier.active ? tTiers("active") : tTiers("off")}
+              </span>
+            </div>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-petroleum-700 truncate text-sm font-medium">
+                {tier.label ?? "—"}
+              </span>
+              <span className="text-petroleum-400 truncate text-xs">
+                {tServices(serviceId)}
+              </span>
+            </span>
+            <Button
+              variant="solid"
+              size="md"
+              onClick={() => onEditTier(serviceId, tier)}
+            >
+              {t("edit")}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -195,6 +200,7 @@ export function BookingsSettings() {
     return (
       <div className="flex flex-col gap-4">
         {/* Same shape as the loaded page: one list of rows. */}
+        <div className="bg-sand-100 h-7 w-48 animate-pulse rounded" />
         <div className="flex flex-col gap-2">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
