@@ -28,19 +28,18 @@ export function signatureSource(
 
 /**
  * Whether the form can be submitted. Every answer, the treatment and the
- * health-data switches are always required. The signature is required too,
- * unless the consent is being corrected and one is already on record.
+ * health-data switches are always required. So is a signature: one drawn now,
+ * or — only when a signed consent is being corrected — the one on record,
+ * which the form keeps (`keepingSignature`) until it is erased or drawn over.
  */
 export function canSubmitConsent(state: {
   allAnswered: boolean;
   treatmentAccepted: boolean;
   healthDataAccepted: boolean;
   drewSignature: boolean;
-  replacing: boolean;
-  hasPreviousSignature: boolean;
+  keepingSignature: boolean;
 }): boolean {
   if (!state.allAnswered) return false;
   if (!state.treatmentAccepted || !state.healthDataAccepted) return false;
-  if (state.drewSignature) return true;
-  return state.replacing && state.hasPreviousSignature;
+  return state.drewSignature || state.keepingSignature;
 }

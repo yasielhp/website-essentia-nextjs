@@ -105,17 +105,20 @@ export function ConsentForm(props: Props) {
   const allAnswered = booleans.every((f) => typeof answers[f.id] === "boolean");
   // What it takes to send, by mode. Always: the 13 answers and the treatment and
   // health-data switches. A first signing, and the public link, also need a
-  // drawn signature; correcting a signed consent does not, because the one on
-  // record is kept unless a new one is drawn.
-  const replacing = props.mode === "staff" && Boolean(props.replace);
-  const keptSignature = replacing ? (initial?.signatureDataUrl ?? null) : null;
+  // drawn signature. Correcting a signed consent shows the one on record inside
+  // the box and keeps it (`keepCurrent`) until it is erased or drawn over; once
+  // it is, a signature is needed like the first time.
+  const recordedSignature =
+    props.mode === "staff" && props.replace
+      ? (initial?.signatureDataUrl ?? null)
+      : null;
+  const [keepCurrent, setKeepCurrent] = useState(recordedSignature !== null);
   const complete = canSubmitConsent({
     allAnswered,
     treatmentAccepted: treatment,
     healthDataAccepted: healthData,
     drewSignature: signature !== null,
-    replacing,
-    hasPreviousSignature: keptSignature !== null,
+    keepingSignature: keepCurrent,
   });
 
   const signerName =
@@ -303,19 +306,10 @@ export function ConsentForm(props: Props) {
       <section className={card}>
         <div className="flex flex-col gap-1.5">
           <span className={label}>{t("signature")}</span>
-          {keptSignature && signature === null && (
-            <div className="flex flex-col gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={keptSignature}
-                alt={t("signatureKeptAlt")}
-                className="border-sand-200 h-24 w-auto self-start rounded-xl border bg-white p-2"
-              />
-              <p className="text-petroleum-400 text-xs">{t("signatureKept")}</p>
-            </div>
-          )}
           <SignaturePad
             onChange={setSignature}
+            initialImage={recordedSignature}
+            onInitialCleared={() => setKeepCurrent(false)}
             clearLabel={t("clear")}
             ariaLabel={t("signature")}
             expandLabel={t("signatureExpand")}
@@ -323,6 +317,9 @@ export function ConsentForm(props: Props) {
             closeLabel={t("signatureClose")}
             disabled={submitting}
           />
+          {keepCurrent && (
+            <p className="text-petroleum-400 text-xs">{t("signatureKept")}</p>
+          )}
         </div>
 
         {error && (

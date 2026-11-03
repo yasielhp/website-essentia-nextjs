@@ -33,8 +33,7 @@ describe("canSubmitConsent", () => {
     treatmentAccepted: true,
     healthDataAccepted: true,
     drewSignature: true,
-    replacing: false,
-    hasPreviousSignature: false,
+    keepingSignature: false,
   };
 
   it("needs a drawn signature the first time", () => {
@@ -42,35 +41,32 @@ describe("canSubmitConsent", () => {
     expect(canSubmitConsent({ ...ready, drewSignature: false })).toBe(false);
   });
 
-  it("does not need one when correcting a signed consent", () => {
+  it("does not need a new one while the signature on record is kept", () => {
     expect(
       canSubmitConsent({
         ...ready,
         drewSignature: false,
-        replacing: true,
-        hasPreviousSignature: true,
+        keepingSignature: true,
       }),
     ).toBe(true);
   });
 
-  it("still needs one when correcting but the earlier file cannot be used", () => {
+  it("asks for a signature again once the kept one is erased", () => {
     expect(
       canSubmitConsent({
         ...ready,
         drewSignature: false,
-        replacing: true,
-        hasPreviousSignature: false,
+        keepingSignature: false,
       }),
     ).toBe(false);
   });
 
+  it("accepts a new drawing over a kept signature", () => {
+    expect(canSubmitConsent({ ...ready, keepingSignature: true })).toBe(true);
+  });
+
   it("always needs every answer and both switches", () => {
-    const edit = {
-      ...ready,
-      drewSignature: false,
-      replacing: true,
-      hasPreviousSignature: true,
-    };
+    const edit = { ...ready, drewSignature: false, keepingSignature: true };
     expect(canSubmitConsent({ ...edit, allAnswered: false })).toBe(false);
     expect(canSubmitConsent({ ...edit, treatmentAccepted: false })).toBe(false);
     expect(canSubmitConsent({ ...edit, healthDataAccepted: false })).toBe(

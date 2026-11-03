@@ -75,8 +75,7 @@
   },
   "select": "Seleccionar",
   "cancel": "Cancelar",
-  "signatureKept": "Se conserva la firma actual; dibuja una nueva solo si quieres cambiarla.",
-  "signatureKeptAlt": "Firma actual",
+  "signatureKept": "Firma actual conservada. Bórrala o dibuja encima para cambiarla.",
   "signatureExpand": "Ampliar para firmar",
   "signatureDone": "Listo",
   "signatureClose": "Cerrar"
