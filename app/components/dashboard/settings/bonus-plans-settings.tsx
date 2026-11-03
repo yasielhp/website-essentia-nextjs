@@ -1,22 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { TierThumbnail } from "@/components/ui/tier-thumbnail";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { fetchBonusPlans } from "@/actions/bonuses";
-import { formatPrice, type SupportedLocale } from "@/utils/format";
 import type { BonusPlan } from "@/types/bonus";
 import { BonusPlanModal, type BonusTierOption } from "./bonus-plan-modal";
 
 /** The bonus templates the desk sells from a contact's file. */
 export function BonusPlansSettings() {
   const t = useTranslations("dashboard.settings.bonuses");
-  const tBonuses = useTranslations("dashboard.bonuses");
   const tTiers = useTranslations("dashboard.settings.tiers");
-  const locale = useLocale() as SupportedLocale;
   const [plans, setPlans] = useState<BonusPlan[]>([]);
   const [tiers, setTiers] = useState<BonusTierOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,16 +113,14 @@ export function BonusPlansSettings() {
                 </span>
               </div>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-petroleum-700 truncate text-sm font-medium">
-                  {tBonuses("label", { sessions: plan.sessions })}
+                <span className="text-petroleum-400 text-xs">
+                  {t("sessions")}
+                </span>
+                <span className="text-petroleum-700 text-base font-medium">
+                  {plan.sessions}
                 </span>
                 <span className="text-petroleum-400 truncate text-xs">
                   {plan.tierLabel ?? "—"}
-                </span>
-                <span className="text-petroleum-300 truncate text-xs">
-                  {formatPrice(plan.priceEur, locale)} ·{" "}
-                  {t("validityDays", { n: plan.validityDays })}
-                  {plan.sellOnline && ` · ${t("online")}`}
                 </span>
               </span>
               <Button
