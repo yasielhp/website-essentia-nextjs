@@ -4,6 +4,7 @@ import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
 import { bonusCheckoutSchema } from "@/lib/schemas";
 import { bonusOrderId, toCents } from "@/lib/bonuses/orders";
+import { bonusCheckoutHref, bonusRouteForTier } from "@/lib/bonuses/routes";
 
 /**
  * Starts the payment for a bonus bought on the public site.
@@ -66,6 +67,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bonus not available" }, { status: 404 });
   }
 
+  // A bonus is bought from its treatment's page; one whose treatment has no
+  // payment page is not for sale online, whatever the plan says.
+  const route = bonusRouteForTier(tier.label);
+  if (!route) {
+    return NextResponse.json({ error: "Bonus not available" }, { status: 404 });
+  }
+
   const priceEur = Number(plan.price_eur);
   if (!Number.isFinite(priceEur) || priceEur <= 0) {
     return NextResponse.json(
@@ -111,8 +119,9 @@ export async function POST(req: NextRequest) {
     currency: "978", // EUR
     description: `${sessionsText} - ${tier.label ?? ""}`,
     successUrl: `${appUrl}${prefix}/bonus/confirmation`,
-    // The cancelled page offers to come back to this plan's payment page.
-    cancelUrl: `${appUrl}${prefix}/bonus/cancelled?plan=${plan.id}`,
+    // Whether the client cancels or the bank refuses, they land back on this
+    // plan's payment page, ready to try again.
+    cancelUrl: `${appUrl}${bonusCheckoutHref(input.locale, route.family, route.slug, plan.id)}`,
     customerEmail: input.email,
     customerName: `${input.firstName} ${input.lastName}`.trim(),
     metadata: { notifyUrl: `${appUrl}/api/webhooks/redsys` },

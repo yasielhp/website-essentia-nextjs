@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { getPathname } from "../../../../i18n/navigation";
+import { bonusCheckoutHref, type BonusFamily } from "@/lib/bonuses/routes";
 import { Button } from "@/components/ui/button";
 import { fetchPublicBonusPlans } from "@/actions/bonuses-public";
 import { formatPrice, type SupportedLocale } from "@/utils/format";
@@ -19,9 +19,15 @@ import type { PublicBonusPlan } from "@/types/bonus";
  */
 export function BonusOffer({
   tierLabel,
+  family,
+  slug,
 }: {
   /** The treatment's title, which is its session type's label. */
   tierLabel: string;
+  /** Which kind of treatment page this is; it decides where a bonus is paid. */
+  family: BonusFamily;
+  /** The treatment's slug, the middle of its payment URL. */
+  slug: string;
 }) {
   const t = useTranslations("bonus.offer");
   const locale = useLocale() as SupportedLocale;
@@ -78,14 +84,8 @@ export function BonusOffer({
               <Button
                 variant="solid"
                 size="md"
-                // The localized path, so Spanish visitors land on /es/bonus/pago/…
-                href={getPathname({
-                  locale,
-                  href: {
-                    pathname: "/bonus/checkout/[planId]",
-                    params: { planId: plan.id },
-                  },
-                })}
+                // Localized, so Spanish visitors land on /es/bienestar/…/bonus/checkout/…
+                href={bonusCheckoutHref(locale, family, slug, plan.id)}
                 className="mt-auto w-full"
               >
                 {t("buy")}

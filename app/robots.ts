@@ -16,6 +16,8 @@ export default function robots(): MetadataRoute.Robots {
           "/booking/confirmation",
           "/bonus/",
           "/es/bonus/",
+          // The payment page of a bonus, under whichever treatment it is on.
+          "/*/bonus/checkout/",
           "/consent/",
           "/es/consentimiento/",
         ],

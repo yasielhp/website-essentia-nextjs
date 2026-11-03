@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
 import { BonusOffer } from "@/components/sections/bonus/bonus-offer";
+import type { BonusFamily } from "@/lib/bonuses/routes";
 import type {
   FacialTreatment,
   IvProtocol,
@@ -21,6 +22,11 @@ type DetailProps = {
   bookingHref: string;
   /** Back to the list this treatment belongs to. */
   backHref: string;
+  /**
+   * Set by the families whose pages can take a bonus payment; the others show
+   * no bonus offer, because there would be nowhere to pay it.
+   */
+  bonusFamily?: BonusFamily;
 };
 
 // ─── Hero ─────────────────────────────────────────────────────
@@ -190,6 +196,7 @@ export function ServiceDetailView({
   service,
   bookingHref,
   backHref,
+  bonusFamily,
 }: DetailProps) {
   return (
     <>
@@ -204,7 +211,13 @@ export function ServiceDetailView({
         backHref={backHref}
       />
       {/* Single session or a bonus; nothing at all if the treatment has none. */}
-      <BonusOffer tierLabel={service.title} />
+      {bonusFamily && (
+        <BonusOffer
+          tierLabel={service.title}
+          family={bonusFamily}
+          slug={service.id}
+        />
+      )}
       <ServiceCta
         service={service}
         bookingHref={bookingHref}

@@ -112,10 +112,10 @@ export const routing = defineRouting({
     "/booking/confirmation": "/booking/confirmation",
     "/booking/requested": "/booking/requested",
     "/bonus/confirmation": "/bonus/confirmation",
-    "/bonus/cancelled": "/bonus/cancelled",
-    "/bonus/checkout/[planId]": {
-      en: "/bonus/checkout/[planId]",
-      es: "/bonus/pago/[planId]",
+    // Where a bonus is paid for: under the treatment it belongs to.
+    "/wellness/manual-therapies/[slug]/bonus/checkout/[planId]": {
+      en: "/wellness/manual-therapies/[slug]/bonus/checkout/[planId]",
+      es: "/bienestar/terapias-manuales/[slug]/bonus/checkout/[planId]",
     },
     "/newsletter/unsubscribe": "/newsletter/unsubscribe",
   },

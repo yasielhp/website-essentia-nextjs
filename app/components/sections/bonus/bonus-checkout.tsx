@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import NextLink from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,17 @@ const FIELDS: {
  * price shown here is only a courtesy, the server charges the one it reads from
  * its own table.
  */
-export function BonusCheckout({ plan }: { plan: PublicBonusPlan }) {
+export function BonusCheckout({
+  plan,
+  backHref,
+}: {
+  plan: PublicBonusPlan;
+  /** The treatment page this one belongs to; where "Back" goes. */
+  backHref: string;
+}) {
   const t = useTranslations("bonus.form");
   const tOffer = useTranslations("bonus.offer");
   const locale = useLocale() as SupportedLocale;
-  const { back } = useRouter();
 
   const [values, setValues] = useState({
     firstName: "",
@@ -98,14 +104,13 @@ export function BonusCheckout({ plan }: { plan: PublicBonusPlan }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => back()}
+      <NextLink
+        href={backHref}
         className="text-petroleum-400 hover:text-petroleum-700 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
       >
         <ArrowLeft size={16} aria-hidden />
         {t("back")}
-      </button>
+      </NextLink>
 
       <h1 className="font-display text-petroleum-700 mb-6 text-3xl md:text-4xl">
         {t("title")}

@@ -34,12 +34,5 @@
     "heading": "Thank you for your purchase",
     "body": "We are confirming your voucher. In a few minutes you will receive an email with all the details.",
     "cta": "Back to home"
-  },
-  "cancelled": {
-    "title": "Payment not completed | Essentia",
-    "heading": "The payment was not completed",
-    "body": "You have not been charged. You can try again whenever you like.",
-    "cta": "Back to home",
-    "retry": "Try again"
   }
 }

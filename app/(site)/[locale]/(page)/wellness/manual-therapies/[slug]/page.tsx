@@ -81,6 +81,7 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
         service={service}
         bookingHref={`/booking?service=manual-therapies&treatment=${service.id}`}
         backHref="/wellness/manual-therapies#treatments"
+        bonusFamily="manual-therapies"
       />
     </>
   );

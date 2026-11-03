@@ -34,12 +34,5 @@
     "heading": "Gracias por tu compra",
     "body": "Estamos confirmando tu bono. En unos minutos recibirás un correo con todos los detalles.",
     "cta": "Volver al inicio"
-  },
-  "cancelled": {
-    "title": "Pago no completado | Essentia",
-    "heading": "El pago no se ha completado",
-    "body": "No se ha hecho ningún cargo. Puedes volver a intentarlo cuando quieras.",
-    "cta": "Volver al inicio",
-    "retry": "Volver a intentarlo"
   }
 }
