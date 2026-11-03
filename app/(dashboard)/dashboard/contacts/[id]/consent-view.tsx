@@ -5,75 +5,91 @@ import { CONSENT_FIELDS } from "@/lib/consent/fields";
 import type { ContactConsent } from "@/types/consent";
 
 /**
- * A signed consent as the therapist reads it: every answer, flagged in amber
- * where it was a yes, the zone to avoid, what was accepted, and the signature.
+ * A signed consent as the therapist reads it: one line per point, the text on
+ * the left and Yes or No on the right, with a rule above every line. A yes to
+ * a health question is flagged in amber. The signature itself is not drawn
+ * here; the line only says whether there is one.
  */
 export function ConsentView({ consent }: { consent: ContactConsent }) {
-  const t = useTranslations("dashboard.contacts.detail.consent");
   const tForm = useTranslations("consent");
 
   const answered = CONSENT_FIELDS.filter((f) => f.kind === "boolean");
   const avoidZone =
     typeof consent.answers.avoidZone === "string"
-      ? consent.answers.avoidZone
+      ? consent.answers.avoidZone.trim()
       : "";
 
+  const yes = tForm("yes");
+  const no = tForm("no");
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <tbody>
-            {answered.map((field) => {
-              const yes = consent.answers[field.id] === true;
-              const detail = consent.answers[`${field.id}Detail`];
-              return (
-                <tr
-                  key={field.id}
-                  className={`border-sand-100 border-b last:border-0 ${
-                    yes ? "bg-amber-50" : ""
-                  }`}
-                >
-                  <td className="text-petroleum-700 py-2.5 pr-4 pl-2">
-                    {tForm(`fields.${field.id}`)}
-                  </td>
-                  <td
-                    className={`w-14 py-2.5 pr-4 font-medium ${
-                      yes ? "text-amber-800" : "text-petroleum-400"
-                    }`}
-                  >
-                    {yes ? tForm("yes") : tForm("no")}
-                  </td>
-                  <td className="text-petroleum-500 py-2.5 pr-2">
-                    {typeof detail === "string" ? detail : ""}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div>
+      {answered.map((field) => {
+        const isYes = consent.answers[field.id] === true;
+        const detail = consent.answers[`${field.id}Detail`];
+        return (
+          <Line
+            key={field.id}
+            label={tForm(`fields.${field.id}`)}
+            note={typeof detail === "string" ? detail : undefined}
+            value={isYes ? yes : no}
+            flagged={isYes}
+          />
+        );
+      })}
+
+      <Line
+        label={tForm("fields.avoidZone")}
+        value={avoidZone || "—"}
+        flagged={avoidZone !== ""}
+      />
+      <Line label={tForm("treatment.accept")} value={yes} />
+      <Line
+        label={tForm("healthData.accept")}
+        value={consent.healthDataConsent ? yes : no}
+      />
+      <Line
+        label={tForm("image.heading")}
+        value={consent.imageConsent ? yes : no}
+      />
+      <Line
+        label={tForm("signature")}
+        value={consent.signatureDataUrl ? yes : no}
+      />
+    </div>
+  );
+}
+
+/** One point of the consent. The rule is above, so every line has one. */
+function Line({
+  label,
+  note,
+  value,
+  flagged = false,
+}: {
+  label: string;
+  /** Free text the client added to a yes: which operation, since when. */
+  note?: string;
+  value: string;
+  flagged?: boolean;
+}) {
+  return (
+    <div
+      className={`border-sand-100 flex items-start justify-between gap-6 border-t px-2 py-3 text-sm ${
+        flagged ? "bg-amber-50" : ""
+      }`}
+    >
+      <div className="min-w-0">
+        <p className="text-petroleum-700">{label}</p>
+        {note && <p className="text-petroleum-500 mt-0.5 text-xs">{note}</p>}
       </div>
-
-      {avoidZone && (
-        <p className="text-petroleum-700 rounded-xl bg-amber-50 px-4 py-3 text-sm">
-          <span className="font-medium">{tForm("fields.avoidZone")}: </span>
-          {avoidZone}
-        </p>
-      )}
-
-      <ul className="text-petroleum-500 space-y-1 text-sm">
-        <li>{tForm("treatment.accept")}</li>
-        {consent.healthDataConsent && <li>{tForm("healthData.accept")}</li>}
-        <li>{consent.imageConsent ? t("image.yes") : t("image.no")}</li>
-      </ul>
-
-      {consent.signatureDataUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={consent.signatureDataUrl}
-          alt={tForm("signature")}
-          className="border-sand-200 h-24 w-auto self-start rounded-xl border bg-white p-2"
-        />
-      )}
+      <p
+        className={`max-w-[50%] shrink-0 text-right font-medium ${
+          flagged ? "text-amber-800" : "text-petroleum-400"
+        }`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

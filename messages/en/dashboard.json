@@ -1197,10 +1197,6 @@
           "not_signed": "This consent is not signed.",
           "conflict": "The consent has changed. Reload the file and try again."
         },
-        "image": {
-          "yes": "Allows images",
-          "no": "Does not allow images"
-        },
         "pending": "Awaiting signature",
         "editing": "Editing the signed consent. Nothing is saved until it is signed again.",
         "edit": "Edit",
