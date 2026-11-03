@@ -29,7 +29,7 @@ const STATUS_DOT: Record<string, string> = {
 };
 
 const LINK_CLASS =
-  "border-sand-200 text-petroleum-700 hover:bg-sand-50 inline-flex h-10 items-center justify-center rounded-full border bg-white px-5 text-sm transition-colors";
+  "border-sand-200 text-petroleum-700 hover:bg-sand-50 inline-flex h-9 flex-1 items-center justify-center rounded-full border bg-white px-4 text-sm transition-colors";
 
 /**
  * A booking, from the calendar, without leaving it.
@@ -222,6 +222,17 @@ function SheetContent({
             {tPay("owed")} {formatPrice(owed, locale)}
           </p>
         )}
+        <div className="border-sand-100 mt-4 flex gap-2 border-t pt-4">
+          <Link href={`/dashboard/bookings/${b.id}`} className={LINK_CLASS}>
+            {t("viewBooking")}
+          </Link>
+          <Link
+            href={`/dashboard/bookings/${b.id}/edit`}
+            className={LINK_CLASS}
+          >
+            {t("editBooking")}
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-2xl bg-white p-5">
@@ -229,6 +240,16 @@ function SheetContent({
         <p className="text-petroleum-700 mt-0.5 font-medium">{name}</p>
         {b.phone && <p className="text-petroleum-500 text-sm">{b.phone}</p>}
         {b.email && <p className="text-petroleum-500 text-sm">{b.email}</p>}
+        {b.contact_id && (
+          <div className="border-sand-100 mt-4 flex border-t pt-4">
+            <Link
+              href={`/dashboard/contacts/${b.contact_id}`}
+              className={LINK_CLASS}
+            >
+              {t("viewContact")}
+            </Link>
+          </div>
+        )}
       </div>
 
       {b.notes?.trim() && (
@@ -239,23 +260,6 @@ function SheetContent({
           </p>
         </div>
       )}
-
-      <div className="mt-auto flex flex-col gap-2 pt-2">
-        <Link href={`/dashboard/bookings/${b.id}`} className={LINK_CLASS}>
-          {t("viewBooking")}
-        </Link>
-        <Link href={`/dashboard/bookings/${b.id}/edit`} className={LINK_CLASS}>
-          {t("editBooking")}
-        </Link>
-        {b.contact_id && (
-          <Link
-            href={`/dashboard/contacts/${b.contact_id}`}
-            className={LINK_CLASS}
-          >
-            {t("viewContact")}
-          </Link>
-        )}
-      </div>
     </div>
   );
 }
