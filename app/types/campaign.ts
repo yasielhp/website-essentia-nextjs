@@ -30,13 +30,16 @@ export type TriggerEvent =
   | "after_booking"
   | "birthday"
   | "first_booking_anniversary"
-  | "new_blog_post";
+  | "new_blog_post"
+  | "first_visit";
 
 /** The kind's settings. Flat and optional so every kind shares one column. */
 export type CampaignTrigger = {
   event?: TriggerEvent;
   /** `after_booking`: how many days after the booking the email goes out. */
   days?: number;
+  /** `first_visit`: hours after the first confirmed visit ends (0-168). */
+  hours?: number;
 };
 
 /** The event each kind runs on when it has no choice to make. */
