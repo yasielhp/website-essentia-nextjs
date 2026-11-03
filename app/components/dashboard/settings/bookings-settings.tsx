@@ -70,68 +70,63 @@ function ServicesContent({
   const tServices = useTranslations("dashboard.services");
   const tTiers = useTranslations("dashboard.settings.tiers");
   // The catalogue is fixed in code: these are the services that exist, and
-  // their session types are seeded rather than added from here.
+  // their session types are seeded rather than added from here. All of them in
+  // one list, each saying which category it belongs to.
+  const rows = bookableServices.flatMap(({ id }) =>
+    (serviceTiers[id] ?? []).map((tier) => ({ serviceId: id, tier })),
+  );
+
+  if (rows.length === 0) {
+    return (
+      <div className="border-sand-200 rounded-2xl border bg-white px-5 py-4">
+        <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* One card per service, its session types inside. */}
-      {bookableServices.map(({ id }) => {
-        const tiers = serviceTiers[id] ?? [];
-        return (
-          <section
-            key={id}
-            className="border-sand-200 rounded-2xl border bg-white p-6"
+    <div className="flex flex-col gap-2">
+      {/* The calendar colour tints the row, so a tier is recognisable here the
+          same way it is on the calendar. Kept faint: the text still has to
+          read on top of it. The rest — prices, duration, who performs it — is
+          in the modal this opens. */}
+      {rows.map(({ serviceId, tier }) => (
+        <button
+          key={tier.id}
+          type="button"
+          onClick={() => onEditTier(serviceId, tier)}
+          style={{
+            backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
+            borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
+          }}
+          className="hover:ring-petroleum-300 flex items-center gap-3 rounded-2xl border p-3 text-left transition-shadow hover:ring-2"
+        >
+          <TierThumbnail
+            imageUrl={tier.image_url}
+            color={tier.color}
+            label={tier.label}
+            className="size-12 shrink-0"
+            sizes="48px"
+          />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-petroleum-700 truncate text-sm font-medium">
+              {tier.label ?? "—"}
+            </span>
+            <span className="text-petroleum-400 truncate text-xs">
+              {tServices(serviceId)}
+            </span>
+          </span>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+              tier.active
+                ? "bg-green-100 text-green-700"
+                : "text-petroleum-400 bg-white/70"
+            }`}
           >
-            <h3 className="font-display text-petroleum-700 mb-4 text-xl">
-              {tServices(id)}
-            </h3>
-            {tiers.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {/* The calendar colour tints the row, so a tier is
-                    recognisable here the same way it is on the calendar.
-                    Kept faint: the text still has to read on top of it. The
-                    rest — prices, duration, who performs it — is in the modal
-                    this opens. */}
-                {tiers.map((tier) => (
-                  <button
-                    key={tier.id}
-                    type="button"
-                    onClick={() => onEditTier(id, tier)}
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 6%, white)`,
-                      borderColor: `color-mix(in srgb, ${tier.color ?? "#6b7280"} 40%, white)`,
-                    }}
-                    className="hover:ring-petroleum-300 flex items-center gap-3 rounded-2xl border p-3 text-left transition-shadow hover:ring-2"
-                  >
-                    <TierThumbnail
-                      imageUrl={tier.image_url}
-                      color={tier.color}
-                      label={tier.label}
-                      className="size-12 shrink-0"
-                      sizes="48px"
-                    />
-                    <span className="text-petroleum-700 min-w-0 flex-1 truncate text-sm font-medium">
-                      {tier.label ?? "—"}
-                    </span>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        tier.active
-                          ? "bg-green-100 text-green-700"
-                          : "text-petroleum-400 bg-white/70"
-                      }`}
-                    >
-                      {tier.active ? tTiers("active") : tTiers("off")}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="border-sand-200 rounded-2xl border bg-white px-5 py-4">
-                <p className="text-petroleum-300 text-sm">{t("noTiers")}</p>
-              </div>
-            )}
-          </section>
-        );
-      })}
+            {tier.active ? tTiers("active") : tTiers("off")}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -190,27 +185,22 @@ export function BookingsSettings() {
   if (!data.mounted) {
     return (
       <div className="flex flex-col gap-4">
-        {/* Same shape as the loaded page: a card per service, its rows inside. */}
-        {[0, 1].map((card) => (
-          <div
-            key={card}
-            className="border-sand-200 rounded-2xl border bg-white p-6"
-          >
-            <div className="bg-sand-100 mb-4 h-6 w-44 animate-pulse rounded" />
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="border-sand-200 flex items-center gap-3 rounded-2xl border bg-white p-3"
-                >
-                  <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
-                  <div className="bg-sand-100 h-4 w-40 flex-1 animate-pulse rounded" />
-                  <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
-                </div>
-              ))}
+        {/* Same shape as the loaded page: one list of rows. */}
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="border-sand-200 flex items-center gap-3 rounded-2xl border bg-white p-3"
+            >
+              <div className="bg-sand-100 size-12 shrink-0 animate-pulse rounded-xl" />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <div className="bg-sand-100 h-4 w-40 animate-pulse rounded" />
+                <div className="bg-sand-100 h-3 w-28 animate-pulse rounded" />
+              </div>
+              <div className="bg-sand-100 h-5 w-14 animate-pulse rounded-full" />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
