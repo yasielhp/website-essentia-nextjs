@@ -17,7 +17,7 @@ export type BonusTierOption = { id: string; label: string };
  * One bonus plan, to create or change.
  *
  * Changing a plan does not touch bonuses already sold from it: each sold bonus
- * keeps the name, sessions and price it was bought at.
+ * keeps the sessions and price it was bought at.
  */
 export function BonusPlanModal({
   plan,
@@ -33,8 +33,8 @@ export function BonusPlanModal({
 }) {
   const t = useTranslations("dashboard.settings.bonuses");
   const tCommon = useTranslations("dashboard.common");
+  const tBonuses = useTranslations("dashboard.bonuses");
 
-  const [name, setName] = useState(plan?.name ?? "");
   const [tierId, setTierId] = useState(plan?.tierId ?? tiers[0]?.id ?? "");
   const [sessions, setSessions] = useState(String(plan?.sessions ?? 5));
   const [price, setPrice] = useState(String(plan?.priceEur ?? ""));
@@ -59,7 +59,6 @@ export function BonusPlanModal({
     const result = await upsertBonusPlan(getAccessToken(), {
       ...(plan ? { id: plan.id } : {}),
       tierId,
-      name,
       sessions: Number(sessions),
       priceEur: Number(price.replace(",", ".")),
       validityDays: Number(validity),
@@ -68,7 +67,7 @@ export function BonusPlanModal({
     });
     setSaving(false);
     if (result.error) {
-      setError(t("error"));
+      setError(result.error === "duplicate" ? t("duplicate") : t("error"));
       return;
     }
     onSaved();
@@ -86,7 +85,7 @@ export function BonusPlanModal({
       <div className="border-sand-200 mx-4 w-full max-w-md rounded-2xl border bg-white shadow-xl">
         <div className="border-sand-100 flex items-center justify-between border-b px-6 py-4">
           <h3 className="text-petroleum-700 font-semibold">
-            {plan ? plan.name : t("new")}
+            {plan ? tBonuses("label", { sessions: plan.sessions }) : t("new")}
           </h3>
           <button
             type="button"
@@ -99,24 +98,6 @@ export function BonusPlanModal({
         </div>
 
         <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto px-6 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="bonus-name"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("name")}
-            </label>
-            <input
-              id="bonus-name"
-              type="text"
-              value={name}
-              maxLength={80}
-              onChange={(e) => setName(e.target.value)}
-              disabled={saving}
-              className={INPUT_CLASS}
-            />
-          </div>
-
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="bonus-tier"
@@ -190,7 +171,7 @@ export function BonusPlanModal({
             variant="solid"
             size="md"
             onClick={() => void handleSave()}
-            disabled={saving || !name.trim() || !tierId}
+            disabled={saving || !tierId}
           >
             {t("save")}
           </Button>

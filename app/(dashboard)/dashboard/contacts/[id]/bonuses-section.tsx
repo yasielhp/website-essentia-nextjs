@@ -36,6 +36,7 @@ export function BonusesSection({
     "dashboard.bookings.detail.payment.dialog.methods",
   );
   const tStatus = useTranslations("dashboard.bookings.status");
+  const tBonuses = useTranslations("dashboard.bonuses");
   const locale = useDashboardLocale();
   const [granting, setGranting] = useState(false);
   const today = todayLocal();
@@ -74,7 +75,9 @@ export function BonusesSection({
                 className="border-sand-200 rounded-2xl border bg-white p-5"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-petroleum-700 font-medium">{b.name}</p>
+                  <p className="text-petroleum-700 font-medium">
+                    {tBonuses("label", { sessions: b.sessionsTotal })}
+                  </p>
                   <p className="text-petroleum-400 text-xs">
                     {b.tierLabel ?? "—"}
                   </p>

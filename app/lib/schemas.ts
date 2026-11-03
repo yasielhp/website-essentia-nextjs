@@ -531,7 +531,6 @@ export const paymentSettingsSchema = z.object({
 export const bonusPlanSchema = z.object({
   id: z.string().uuid().optional(),
   tierId: z.string().uuid(),
-  name: z.string().trim().min(1).max(80),
   sessions: z.number().int().min(1).max(50),
   priceEur: z.number().min(0),
   validityDays: z.number().int().min(1).max(1095),

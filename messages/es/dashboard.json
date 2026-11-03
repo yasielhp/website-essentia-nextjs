@@ -319,7 +319,7 @@
         "methodPlaceholder": "Elegir método"
       },
       "bonus": {
-        "use": "Usar bono «{name}» (quedan {n})",
+        "use": "Usar el bono de {sessions, plural, one {# sesión} other {# sesiones}} (quedan {n})",
         "hint": "La reserva nace pagada con el bono y no suma ingresos."
       }
     },
@@ -1371,7 +1371,6 @@
       "heading": "Todos los bonos",
       "new": "Crear bono",
       "empty": "Todavía no hay bonos.",
-      "name": "Nombre",
       "tier": "Tipo de sesión",
       "sessions": "Sesiones",
       "price": "Precio (€)",
@@ -1381,10 +1380,10 @@
       "sellOnlineHint": "Todavía no hay venta pública de bonos; queda preparado.",
       "save": "Guardar",
       "error": "No se ha podido guardar el bono.",
-      "sessionsCount": "{n} sesiones",
       "validityDays": "Válido {n} días",
-      "inactive": "inactivo",
-      "online": "venta en la web"
+      "online": "venta en la web",
+      "edit": "Editar",
+      "duplicate": "Ya existe un bono con ese tipo de sesión y ese número de sesiones."
     }
   },
   "services": {
@@ -1822,5 +1821,8 @@
         "event": "Reserva la fecha, detalles y botón de confirmar."
       }
     }
+  },
+  "bonuses": {
+    "label": "{sessions, plural, one {Bono de # sesión} other {Bono de # sesiones}}"
   }
 }

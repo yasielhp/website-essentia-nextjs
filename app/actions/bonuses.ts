@@ -14,6 +14,7 @@ import {
   usableBonus,
   type BonusRow,
 } from "@/lib/bonuses/balance";
+import { bonusLabelEs } from "@/lib/bonuses/label";
 import { bonusPlanSchema } from "@/lib/schemas";
 import { TIME_ZONE } from "@/utils/format";
 import type {
@@ -54,13 +55,16 @@ async function authorize(
 type PlanRowDb = {
   id: string;
   tier_id: string;
-  name: string;
   sessions: number;
   price_eur: number | string;
   validity_days: number;
   active: boolean;
   sell_online: boolean;
-  service_tiers: { label: string | null } | null;
+  service_tiers: {
+    label: string | null;
+    color: string | null;
+    image_url: string | null;
+  } | null;
 };
 
 /**
@@ -75,7 +79,7 @@ export async function fetchBonusPlans(
   const { data } = await getAdminClient()
     .database.from("bonus_plans")
     .select(
-      "id, tier_id, name, sessions, price_eur, validity_days, active, sell_online, service_tiers(label)",
+      "id, tier_id, sessions, price_eur, validity_days, active, sell_online, service_tiers(label, color, image_url)",
     )
     .order("created_at", { ascending: true });
 
@@ -83,7 +87,8 @@ export async function fetchBonusPlans(
     id: r.id,
     tierId: r.tier_id,
     tierLabel: r.service_tiers?.label ?? null,
-    name: r.name,
+    tierColor: r.service_tiers?.color ?? null,
+    tierImageUrl: r.service_tiers?.image_url ?? null,
     sessions: r.sessions,
     priceEur: Number(r.price_eur),
     validityDays: r.validity_days,
@@ -106,7 +111,6 @@ export async function upsertBonusPlan(
 
   const row = {
     tier_id: v.tierId,
-    name: v.name,
     sessions: v.sessions,
     price_eur: v.priceEur,
     validity_days: v.validityDays,
@@ -117,16 +121,19 @@ export async function upsertBonusPlan(
   const { error } = v.id
     ? await db.from("bonus_plans").update(row).eq("id", v.id)
     : await db.from("bonus_plans").insert([row]);
-  return {
-    error: error ? ((error as { message?: string }).message ?? "db") : null,
-  };
+  if (!error) return { error: null };
+  // One plan per session type and number of sessions.
+  const { code, message } = error as { code?: string; message?: string };
+  if (code === "23505" || message?.includes("duplicate")) {
+    return { error: "duplicate" };
+  }
+  return { error: message ?? "db" };
 }
 
 type ContactBonusDb = {
   id: string;
   plan_id: string | null;
   tier_id: string;
-  name: string;
   sessions_total: number;
   price_eur: number | string;
   paid_method: BonusPaidMethod | null;
@@ -155,7 +162,7 @@ export async function fetchContactBonuses(
   const { data } = await db
     .from("contact_bonuses")
     .select(
-      "id, plan_id, tier_id, name, sessions_total, price_eur, paid_method, purchased_at, expires_at, notes, service_tiers(label)",
+      "id, plan_id, tier_id, sessions_total, price_eur, paid_method, purchased_at, expires_at, notes, service_tiers(label)",
     )
     .eq("contact_id", contactId)
     .order("purchased_at", { ascending: false });
@@ -195,7 +202,6 @@ export async function fetchContactBonuses(
       planId: b.plan_id,
       tierId: b.tier_id,
       tierLabel: b.service_tiers?.label ?? null,
-      name: b.name,
       sessionsTotal: b.sessions_total,
       priceEur: Number(b.price_eur),
       paidMethod: b.paid_method,
@@ -210,7 +216,7 @@ export async function fetchContactBonuses(
 }
 
 /**
- * Sells a bonus to a contact: the plan's name, sessions, price and session type
+ * Sells a bonus to a contact: the plan's sessions, price and session type
  * are copied, so editing the plan later does not rewrite what was bought.
  */
 export async function grantContactBonus(
@@ -229,13 +235,12 @@ export async function grantContactBonus(
   const db = getAdminClient().database;
   const { data: planData } = await db
     .from("bonus_plans")
-    .select("id, tier_id, name, sessions, price_eur, validity_days, active")
+    .select("id, tier_id, sessions, price_eur, validity_days, active")
     .eq("id", input.planId)
     .maybeSingle();
   const plan = planData as {
     id: string;
     tier_id: string;
-    name: string;
     sessions: number;
     price_eur: number | string;
     validity_days: number;
@@ -249,7 +254,6 @@ export async function grantContactBonus(
       contact_id: input.contactId,
       plan_id: plan.id,
       tier_id: plan.tier_id,
-      name: plan.name,
       sessions_total: plan.sessions,
       price_eur: Number(plan.price_eur),
       paid_method: input.paidMethod,
@@ -335,7 +339,7 @@ export async function assignBookingBonus(
     event: "edited",
     actorId: actor.userId,
     actorRole: actor.role as BookingEventActorRole,
-    summary: `Sesión descontada del bono «${chosen.name}» (${chosen.used + 1}/${chosen.sessionsTotal})`,
+    summary: `Sesión descontada del ${bonusLabelEs(chosen.sessionsTotal)} (${chosen.used + 1}/${chosen.sessionsTotal})`,
     payload: { bonusId: usable.id },
   });
   return { error: null };
@@ -352,12 +356,12 @@ export async function clearBookingBonus(
   const db = getAdminClient().database;
   const { data } = await db
     .from("bookings")
-    .select("bonus_id, contact_bonuses(name)")
+    .select("bonus_id, contact_bonuses(sessions_total)")
     .eq("id", bookingId)
     .maybeSingle();
   const booking = data as unknown as {
     bonus_id: string | null;
-    contact_bonuses: { name: string } | null;
+    contact_bonuses: { sessions_total: number } | null;
   } | null;
   if (!booking?.bonus_id) return { error: "not_found" };
 
@@ -378,7 +382,7 @@ export async function clearBookingBonus(
     event: "edited",
     actorId: actor.userId,
     actorRole: actor.role as BookingEventActorRole,
-    summary: `Bono «${booking.contact_bonuses?.name ?? "—"}» retirado de la reserva`,
+    summary: `Retirado el ${bonusLabelEs(booking.contact_bonuses?.sessions_total ?? 0)} de la reserva`,
     payload: { bonusId: booking.bonus_id },
   });
   return { error: null };
@@ -396,14 +400,14 @@ export async function fetchBonusSales(
   const { data } = await getAdminClient()
     .database.from("contact_bonuses")
     .select(
-      "id, name, price_eur, purchased_at, created_at, contacts(first_name, last_name, email)",
+      "id, sessions_total, price_eur, purchased_at, created_at, contacts(first_name, last_name, email)",
     )
     .order("created_at", { ascending: false })
     .limit(100);
 
   type Row = {
     id: string;
-    name: string;
+    sessions_total: number;
     price_eur: number | string;
     purchased_at: string;
     created_at: string;
@@ -415,7 +419,7 @@ export async function fetchBonusSales(
   };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     id: r.id,
-    name: r.name,
+    sessions: r.sessions_total,
     priceEur: Number(r.price_eur),
     purchasedAt: r.purchased_at,
     createdAt: r.created_at,

@@ -14,6 +14,8 @@ export type UnifiedRow = {
   amount: number | null;
   /** The agreed price when it differs from what was received (a deposit). */
   listAmount?: number | null;
+  /** A bonus sale: its session count, from which the title is derived. */
+  bonusSessions?: number;
   /** Still to collect at the centre; 0 for everything but live bookings. */
   owed?: number;
   status: string | null;

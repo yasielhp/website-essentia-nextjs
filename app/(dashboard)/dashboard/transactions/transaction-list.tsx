@@ -124,6 +124,11 @@ export function TransactionList({
 }) {
   const t = useTranslations("dashboard");
   const fmt = useMemo(() => buildFormatters(locale), [locale]);
+  // A bonus sale has no name: its title is derived from its sessions.
+  const rowTitle = (row: UnifiedRow) =>
+    row.bonusSessions !== undefined
+      ? t("bonuses.label", { sessions: row.bonusSessions })
+      : row.title;
 
   return (
     <>
@@ -161,7 +166,7 @@ export function TransactionList({
                     <StatusBadge status={row.status} />
                   </div>
                   <p className="text-petroleum-700 mt-1.5 leading-snug font-medium">
-                    {row.title}
+                    {rowTitle(row)}
                   </p>
                   {row.subtitle && (
                     <p className="text-petroleum-400 mt-0.5 text-xs">
@@ -301,7 +306,7 @@ export function TransactionList({
                         </td>
                         <td className="px-5 py-4">
                           <p className="text-petroleum-700 leading-snug font-medium">
-                            {row.title}
+                            {rowTitle(row)}
                           </p>
                           <div className="mt-1 flex items-center gap-1.5">
                             <span

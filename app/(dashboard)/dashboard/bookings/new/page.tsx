@@ -308,7 +308,7 @@ function NewBookingPageInner() {
                 checked={bonusId !== null}
                 onToggle={() => dispatchForm({ type: "TOGGLE_BONUS" })}
                 label={t("bonus.use", {
-                  name: offeredDetail.name,
+                  sessions: offeredDetail.sessionsTotal,
                   n: offeredDetail.remaining,
                 })}
                 hint={t("bonus.hint")}

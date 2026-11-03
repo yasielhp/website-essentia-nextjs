@@ -126,6 +126,7 @@ export function MetaStrip({
   const [settleOpen, setSettleOpen] = useState(false);
   const [bonusBusy, setBonusBusy] = useState(false);
   const tPay = useTranslations("dashboard.bookings.detail.payment");
+  const tBonuses = useTranslations("dashboard.bonuses");
   const t = useTranslations("dashboard.bookings.detail");
   const tStatus = useTranslations("dashboard.bookings.status");
   const tPayment = useTranslations("dashboard.bookings.paymentStatus");
@@ -211,8 +212,9 @@ export function MetaStrip({
         {onBonus && (
           <>
             <p className="text-petroleum-500 text-xs">
-              {tPay("mode.bonus")}
-              {drawnBonus ? ` · ${drawnBonus.name}` : ""}
+              {drawnBonus
+                ? tBonuses("label", { sessions: drawnBonus.sessionsTotal })
+                : tPay("mode.bonus")}
             </p>
             <button
               type="button"

@@ -319,7 +319,7 @@
         "methodPlaceholder": "Choose a method"
       },
       "bonus": {
-        "use": "Use voucher «{name}» ({n} left)",
+        "use": "Use the {sessions, plural, one {# session} other {# sessions}} voucher ({n} left)",
         "hint": "The booking is paid with the voucher and adds no income."
       }
     },
@@ -1371,7 +1371,6 @@
       "heading": "All vouchers",
       "new": "Create voucher",
       "empty": "There are no vouchers yet.",
-      "name": "Name",
       "tier": "Session type",
       "sessions": "Sessions",
       "price": "Price (€)",
@@ -1381,10 +1380,10 @@
       "sellOnlineHint": "There is no public voucher sale yet; this prepares it.",
       "save": "Save",
       "error": "The voucher could not be saved.",
-      "sessionsCount": "{n} sessions",
       "validityDays": "Valid {n} days",
-      "inactive": "inactive",
-      "online": "sold online"
+      "online": "sold online",
+      "edit": "Edit",
+      "duplicate": "A voucher with that session type and number of sessions already exists."
     }
   },
   "services": {
@@ -1822,5 +1821,8 @@
         "event": "Save the date, details and a confirm button."
       }
     }
+  },
+  "bonuses": {
+    "label": "{sessions, plural, one {# session voucher} other {# sessions voucher}}"
   }
 }

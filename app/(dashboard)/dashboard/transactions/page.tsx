@@ -612,7 +612,10 @@ export default function TransactionsPage() {
         unified.push({
           id: r.id,
           type: "bonus",
-          title: r.name,
+          // Titled from the session count where it is drawn, in the reader's
+          // language: a bonus has no name of its own.
+          title: "",
+          bonusSessions: r.sessions,
           subtitle: null,
           client: r.clientName ?? "—",
           clientEmail: r.clientEmail,

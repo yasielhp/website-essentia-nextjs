@@ -34,6 +34,7 @@ export function GrantBonusDialog({
     "dashboard.bookings.detail.payment.dialog.methods",
   );
   const tCommon = useTranslations("dashboard.common");
+  const tBonuses = useTranslations("dashboard.bonuses");
   const locale = useDashboardLocale();
 
   const [plans, setPlans] = useState<BonusPlan[] | null>(null);
@@ -123,7 +124,7 @@ export function GrantBonusDialog({
                 value={planId}
                 options={(plans ?? []).map((p) => ({
                   value: p.id,
-                  label: p.name,
+                  label: tBonuses("label", { sessions: p.sessions }),
                   desc: `${p.tierLabel ?? "—"} · ${formatPrice(p.priceEur, locale)}`,
                 }))}
                 onChange={setPlanId}

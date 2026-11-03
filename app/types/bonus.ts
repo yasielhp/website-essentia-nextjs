@@ -7,7 +7,9 @@ export type BonusPlan = {
   id: string;
   tierId: string;
   tierLabel: string | null;
-  name: string;
+  /** The session type's calendar colour and picture, for the plan's card. */
+  tierColor: string | null;
+  tierImageUrl: string | null;
   sessions: number;
   priceEur: number;
   validityDays: number;
@@ -29,7 +31,6 @@ export type ContactBonus = {
   planId: string | null;
   tierId: string;
   tierLabel: string | null;
-  name: string;
   sessionsTotal: number;
   priceEur: number;
   paidMethod: BonusPaidMethod | null;
@@ -44,7 +45,7 @@ export type ContactBonus = {
 /** A bonus sale as the transactions ledger lists it. */
 export type BonusSale = {
   id: string;
-  name: string;
+  sessions: number;
   priceEur: number;
   purchasedAt: string;
   createdAt: string;
