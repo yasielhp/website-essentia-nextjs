@@ -7,6 +7,12 @@ import { shortDate } from "./consent-date";
 import type { ContactBonus } from "@/types/bonus";
 import { GrantBonusDialog } from "./grant-bonus-dialog";
 
+const STATE_CLASS: Record<"active" | "used" | "expired", string> = {
+  active: "bg-green-100 text-green-700",
+  used: "bg-sand-100 text-petroleum-500",
+  expired: "bg-red-100 text-red-600",
+};
+
 /** `YYYY-MM-DD` of today in the browser's calendar, for the expiry colour. */
 function todayLocal(): string {
   const d = new Date();
@@ -61,12 +67,21 @@ export function BonusesSection({
           {bonuses.map((b) => {
             const expired = b.expiresAt < today;
             const canRedeem = b.remaining > 0 && !expired;
+            // What the bonus is right now. Used up wins over expired: a bonus
+            // with nothing left to take is finished whatever the date says.
+            const state =
+              b.remaining === 0 ? "used" : expired ? "expired" : "active";
             return (
               <div
                 key={b.id}
                 className="border-sand-200 flex items-center justify-between gap-4 rounded-2xl border bg-white p-5"
               >
                 <div className="min-w-0">
+                  <span
+                    className={`mb-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATE_CLASS[state]}`}
+                  >
+                    {t(`state.${state}`)}
+                  </span>
                   <p className="text-petroleum-700 font-medium">
                     {tBonuses("label", { sessions: b.sessionsTotal })}
                   </p>

@@ -1213,6 +1213,11 @@
         "send": "Send"
       },
       "bonuses": {
+        "state": {
+          "active": "Active",
+          "used": "Used up",
+          "expired": "Expired"
+        },
         "total": "Total: {count, plural, one {# voucher} other {# vouchers}}",
         "heading": "Vouchers",
         "add": "Add voucher",

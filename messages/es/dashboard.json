@@ -1213,6 +1213,11 @@
         "send": "Enviar"
       },
       "bonuses": {
+        "state": {
+          "active": "Activo",
+          "used": "Agotado",
+          "expired": "Caducado"
+        },
         "total": "Total de {count, plural, one {# bono} other {# bonos}}",
         "heading": "Bonos",
         "add": "Añadir bono",
