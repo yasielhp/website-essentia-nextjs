@@ -13,7 +13,7 @@ import { TransactionList } from "./transaction-list";
 import type { UnifiedRow } from "./types";
 import { fetchBonusSales } from "@/actions/bonuses";
 import { getAccessToken } from "@/lib/client-session";
-import { effectivePayment } from "@/lib/payments/amounts";
+import { bookingMoney, ledgerTotals } from "@/lib/payments/ledger";
 
 // ─── Source row types ─────────────────────────────────────────
 
@@ -63,43 +63,6 @@ type EducationRegistrationRow = {
 };
 
 // ─── Unified row ──────────────────────────────────────────────
-
-/**
- * What a booking is worth in the ledger, and its payment state.
- *
- * Rows with a `payment_mode` were booked after deposits existed, so the money
- * is `amount_paid_eur`. Older rows (136 confirmed bookings whose payment_status
- * is still `pending`) keep the old reading — confirmed and not failed or
- * refunded counts as completed at its price — or the history of income would
- * fall to almost nothing.
- */
-function bookingMoney(
-  r: BookingRow,
-): Pick<UnifiedRow, "amount" | "listAmount" | "owed" | "status"> {
-  if (r.payment_mode === null) {
-    const pay = effectivePayment(r);
-    return {
-      amount: r.price_eur,
-      status:
-        pay.status === "paid" ? "completed" : (r.payment_status ?? r.status),
-    };
-  }
-  const pay = effectivePayment(r);
-  const status =
-    pay.status === "paid"
-      ? "completed"
-      : pay.status === "deposit_paid" ||
-          pay.status === "failed" ||
-          pay.status === "refunded"
-        ? pay.status
-        : "pending";
-  return {
-    amount: pay.paidEur,
-    listAmount: r.price_eur,
-    owed: pay.owedEur,
-    status,
-  };
-}
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -659,20 +622,7 @@ export default function TransactionsPage() {
     });
   }, [rows, appliedFilter]);
 
-  const stats = useMemo(() => {
-    const completed = filteredRows.filter(
-      (r) => r.status === "completed",
-    ).length;
-    const revenue = filteredRows
-      .filter(
-        (r) =>
-          (r.status === "completed" || r.status === "deposit_paid") &&
-          r.amount !== null,
-      )
-      .reduce((sum, r) => sum + (r.amount ?? 0), 0);
-    const owed = filteredRows.reduce((sum, r) => sum + (r.owed ?? 0), 0);
-    return { completed, owed, revenue, total: filteredRows.length };
-  }, [filteredRows]);
+  const stats = useMemo(() => ledgerTotals(filteredRows), [filteredRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const pageRows = filteredRows.slice(
