@@ -156,7 +156,7 @@ export async function saveDetailsStep({
       user?.id ? "client" : "anonymous",
       details.notes?.trim() || null,
       draft.staffId,
-      draft.paymentMethod,
+      "deposit",
     );
   }
 

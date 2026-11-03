@@ -1,7 +1,6 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
-import { onlineDiscountPercent } from "@/lib/pricing";
 import { AuthError, requireRole, type AuthContext } from "@/lib/auth-guard";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
@@ -118,13 +117,13 @@ export async function updateDraftBookingMeta(
   createdByRole: string,
   notes: string | null,
   staffId: string | null = null,
-  paymentMethod: "online" | "on-site" = "online",
+  paymentMode: "deposit" | "full" = "deposit",
 ): Promise<void> {
   if (!bookingId) return;
 
   const db = getAdminClient().database;
 
-  // The two prices come from the tier, so editing them in the dashboard is
+  // Both prices come from the tier, so editing them in the dashboard is
   // enough — and so a tampered request cannot lower what gets recorded.
   let centrePrice: number | null = null;
   let onlinePriceEur: number | null = null;
@@ -142,16 +141,16 @@ export async function updateDraftBookingMeta(
     onlinePriceEur = tier?.price_eur ?? centrePrice;
   }
 
-  const amountEur = paymentMethod === "online" ? onlinePriceEur : centrePrice;
+  // Whatever the client picks, the booking is worth the web price; the
+  // checkout lowers it if they pay everything now and the settings give a
+  // discount for that.
+  const amountEur = onlinePriceEur;
 
   // Staff need to know at a glance whether the money is still to be collected.
-  const percent = onlineDiscountPercent(centrePrice, onlinePriceEur);
   const paymentNote =
-    paymentMethod === "on-site"
-      ? "Pago: en el centro (precio íntegro)"
-      : percent > 0
-        ? `Pago: online (−${percent}%)`
-        : "Pago: online";
+    paymentMode === "full"
+      ? "Pago: 100% online al reservar"
+      : "Pago: depósito online al reservar";
   const composedNotes =
     [paymentNote, notes].filter(Boolean).join("\n\n") || null;
 
@@ -161,6 +160,7 @@ export async function updateDraftBookingMeta(
       tier_id: tierId,
       ...(staffId ? { staff_id: staffId } : {}),
       price_eur: amountEur,
+      payment_mode: paymentMode,
       location: "centro",
       ...(composedNotes ? { notes: composedNotes } : {}),
       ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),
@@ -227,7 +227,8 @@ export async function updateDraftBookingDetails(
 export async function confirmDraftBooking(
   bookingId: string,
   tierId: string | null,
-  tierPrice: number | null,
+  /** Ignored: the price is set by `updateDraftBookingMeta` and the checkout. */
+  _tierPrice: number | null,
   duration: string,
   date: string,
   time: string,
@@ -261,7 +262,6 @@ export async function confirmDraftBooking(
     .update({
       status: "pending",
       tier_id: tierId,
-      price_eur: tierPrice,
       duration,
       location: "centro",
       date,
