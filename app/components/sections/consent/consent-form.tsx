@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignaturePad } from "@/components/ui/signature-pad";
@@ -72,7 +72,12 @@ const ERROR_KEYS = [
  */
 export function ConsentForm(props: Props) {
   const t = useTranslations("consent");
+  const locale = useLocale();
   const { subject } = props;
+  // The birthdate is asked only when the contact has none: the server fills
+  // what is missing and never overwrites what the centre already has.
+  const hasBirthdate = Boolean(subject.birthdate);
+  const [birthdate, setBirthdate] = useState(subject.birthdate ?? "");
   // Only the desk may start from earlier answers; the public link starts blank.
   const initial = props.mode === "staff" ? props.initial : undefined;
 
@@ -141,6 +146,9 @@ export function ConsentForm(props: Props) {
       imageConsent: image,
       // The name is not asked again: it is the one already on the contact.
       signedName: signerName,
+      ...(!hasBirthdate && /^\d{4}-\d{2}-\d{2}$/.test(birthdate)
+        ? { birthdate }
+        : {}),
       ...(signature ? { signaturePng: signature } : {}),
     };
 
@@ -187,6 +195,48 @@ export function ConsentForm(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Who signs: the name from the contact, and the birthdate when the
+          contact has none yet. */}
+      <section className={card}>
+        <h2 className={heading}>{t("person.heading")}</h2>
+        <div className="flex flex-col gap-1.5">
+          <span className={label}>{t("person.name")}</span>
+          <p className="text-petroleum-700 text-sm">{signerName}</p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {hasBirthdate ? (
+            <span className={label}>{t("person.birthdate")}</span>
+          ) : (
+            <label htmlFor="consent-birthdate" className={label}>
+              {t("person.birthdate")}
+            </label>
+          )}
+          {hasBirthdate ? (
+            <p className="text-petroleum-700 text-sm">
+              {new Date(`${subject.birthdate}T00:00:00`).toLocaleDateString(
+                locale,
+                { day: "numeric", month: "long", year: "numeric" },
+              )}
+            </p>
+          ) : (
+            <>
+              <input
+                id="consent-birthdate"
+                type="date"
+                value={birthdate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setBirthdate(e.target.value)}
+                disabled={submitting}
+                className={INPUT_CLASS}
+              />
+              <p className="text-petroleum-400 text-xs">
+                {t("person.birthdateHint")}
+              </p>
+            </>
+          )}
+        </div>
+      </section>
+
       {/* Health status */}
       <section className={card}>
         <h2 className={heading}>{t("health.heading")}</h2>
