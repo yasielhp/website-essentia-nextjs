@@ -4,9 +4,9 @@
     "description": "Essentia is a longevity center and social wellness club in Tenerife, combining regenerative medicine, wellness protocols, and an exclusive community."
   },
   "hero": {
-    "headline": "A space to care",
-    "headline2": "for what sustains everything:",
-    "headline3": "your body",
+    "headline": "We're opening a new space",
+    "headline2": "in Santa Cruz de Tenerife",
+    "headline3": "",
     "subheadline": "Longevity Center & Social Wellness Club in Santa Cruz de Tenerife",
     "ctaBook": "Reserve Your Visit",
     "ctaAbout": "Discover Essentia",
@@ -97,8 +97,8 @@
     "cta": "Discover Essentia",
     "stats": {
       "totalSpace": {
-        "value": "Coming soon",
-        "label": "New location"
+        "value": "Rambla de Santa Cruz, 83",
+        "label": "Location"
       },
       "floors": {
         "value": "3",
@@ -106,7 +106,7 @@
       },
       "location": {
         "value": "Tenerife",
-        "label": "Canary Islands, Spain"
+        "label": "Santa Cruz de Tenerife, Spain"
       }
     }
   },
