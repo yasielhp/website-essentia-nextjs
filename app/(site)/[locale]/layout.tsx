@@ -71,7 +71,10 @@ function buildSchemaOrg(locale: string) {
         },
         address: {
           "@type": "PostalAddress",
+          streetAddress: "Rambla de Santa Cruz, 83",
+          addressLocality: "Santa Cruz de Tenerife",
           addressRegion: "Santa Cruz de Tenerife",
+          postalCode: "38004",
           addressCountry: "ES",
         },
         contactPoint: {
@@ -101,7 +104,10 @@ function buildSchemaOrg(locale: string) {
         email: contact.email,
         address: {
           "@type": "PostalAddress",
+          streetAddress: "Rambla de Santa Cruz, 83",
+          addressLocality: "Santa Cruz de Tenerife",
           addressRegion: "Santa Cruz de Tenerife",
+          postalCode: "38004",
           addressCountry: "ES",
         },
         openingHoursSpecification: [

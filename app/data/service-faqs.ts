@@ -119,7 +119,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Where will my treatment take place?",
       answer:
-        "We are between premises at the moment, so there is no address to give yet. Write to us and we agree the place for your session when we confirm the appointment.",
+        "At our wellness space at Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife.",
     },
     {
       question: "Are there situations where I should not have a massage?",
@@ -162,7 +162,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Where will my treatment take place?",
       answer:
-        "We are between premises at the moment, so there is no address to give yet. Write to us and we agree the place for your session when we confirm the appointment.",
+        "At our wellness space at Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife.",
     },
     {
       question: "Are there situations where I should not have a facial?",

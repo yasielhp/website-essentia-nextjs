@@ -33,6 +33,7 @@
     "sendAnother": "Send another message"
   },
   "info": {
+    "location": "Location",
     "contact": "Contact",
     "followUs": "Follow us"
   }

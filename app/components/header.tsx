@@ -433,6 +433,8 @@ function MobileMenu({
         )}
       </Accordion.Group>
       <p data-menu-item className="text-sand-700 py-6 text-center text-xs">
+        {contact.address}
+        <br />
         {contact.email}
       </p>
     </div>

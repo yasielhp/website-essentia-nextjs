@@ -4,6 +4,7 @@ import {
   googleCalendarUrl,
   calendarButton,
   cancellationLink,
+  EMAIL_ADDRESS,
 } from "./_base";
 
 export function bookingRescheduledEmail({
@@ -35,6 +36,7 @@ export function bookingRescheduledEmail({
           time,
           service,
           duration,
+          location: EMAIL_ADDRESS,
         }),
         locale,
       )

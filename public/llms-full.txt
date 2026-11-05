@@ -1,6 +1,6 @@
 # Essentia Wellness Club — Complete Reference
 
-> Essentia is a longevity center and social wellness club in Tenerife, Canary Islands, Spain. It integrates regenerative medicine, evidence-based wellness protocols, and an exclusive community. The club is between premises: there is no street address at the moment, and online booking is paused — appointments are arranged by email or phone. Available in English and Spanish.
+> Essentia is a longevity center and social wellness club in Tenerife, Canary Islands, Spain. It integrates regenerative medicine, evidence-based wellness protocols, and an exclusive community. Located at Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife, Canary Islands, Spain. All services are bookable online at https://www.essentiawellnessclub.com/booking. Available in English and Spanish.
 
 ---
 
@@ -17,11 +17,12 @@
 
 ## Contact & Location
 
-- **Address:** none at the moment — the club is between premises. Tenerife, Canary Islands, Spain.
+- **Address:** Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife, Canary Islands, Spain
+- **Map:** https://www.google.com/maps/search/?api=1&query=Rambla+de+Santa+Cruz+83%2C+38004+Santa+Cruz+de+Tenerife
 - **Website:** https://www.essentiawellnessclub.com
 - **Email:** info@essentiawellnessclub.com
 - **Phone:** +34 634 09 12 95
-- **Booking:** by email or phone; online booking is paused
+- **Booking URL:** https://www.essentiawellnessclub.com/booking
 - **Instagram:** https://www.instagram.com/essentiamassage
 - **Facebook:** https://www.facebook.com/essentia
 - **Booking hours:** 8:00 AM – 7:30 PM (30-minute slots)
@@ -91,7 +92,7 @@
 
 ### Manual Therapies
 - **URL:** https://www.essentiawellnessclub.com/wellness/manual-therapies
-- **Description:** 10 precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. The place for each session is agreed when the appointment is confirmed.
+- **Description:** 10 precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. Available at the centre in Santa Cruz de Tenerife.
 
 #### ESPIRA
 - Express neck and shoulder ritual. Deep gliding manoeuvres with essential oils.
@@ -238,7 +239,8 @@ Full ecosystem access with a dedicated health advisor and founding member status
 
 ## Booking Information
 
-- **Booking:** by email or phone; online booking is paused while the club moves premises
+- **Booking URL:** https://www.essentiawellnessclub.com/booking
+- **Location:** At the centre, Rambla de Santa Cruz, 83, Santa Cruz de Tenerife
 - **Hours:** 8:00 AM – 7:30 PM, 30-minute appointment slots
 - **Payment:** Redsys (Santander TPV) — major credit and debit cards
 - **Languages:** English and Spanish

@@ -57,9 +57,9 @@ const LOCATION_ICONS: Record<
 };
 
 export /**
- * Every bit of the wording comes from `dashboard.bookings.form.locations`. The
- * centre's description used to be the street address from `contact`; while the
- * studio is between premises there is no address to print.
+ * Every bit of the wording comes from `dashboard.bookings.form.locations`,
+ * the centre's description included: it is the street address, kept in the
+ * messages so it reads the same as the rest of the form.
  */
 function useLocationOptions(): LocationOption[] {
   const t = useTranslations("dashboard.bookings.form.locations");

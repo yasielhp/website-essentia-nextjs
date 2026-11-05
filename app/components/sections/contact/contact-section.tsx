@@ -242,9 +242,19 @@ export default function ContactSection() {
 
             {/* ── Info ── */}
             <div className="flex flex-col gap-10 md:pt-2">
-              {/* No address block: the studio is between premises, so the
-                  only honest answer is the island, and that is in the copy
-                  already. */}
+              {/* Address */}
+              <div className="flex flex-col gap-2">
+                <p className="text-petroleum-400 text-xs tracking-widest uppercase">
+                  {t("info.location")}
+                </p>
+                <Link
+                  href={contact.mapsUrl}
+                  target="_blank"
+                  className="text-petroleum-700 hover:text-petroleum-500 text-sm leading-relaxed transition-colors"
+                >
+                  {contact.address}
+                </Link>
+              </div>
 
               {/* Email + Phone */}
               <div className="flex flex-col gap-2">

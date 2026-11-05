@@ -1,4 +1,8 @@
 /** Shared HTML shell for all Essentia transactional emails. */
+/** The studio's street address, as every transactional email prints it. */
+export const EMAIL_ADDRESS =
+  "Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife";
+
 export function emailBase({
   preheader,
   body,
@@ -44,7 +48,8 @@ export function emailBase({
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #d7dbd9;text-align:center;">
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;text-align:center;">
-                Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife
+                Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
+                ${EMAIL_ADDRESS}
               </p>${footerExtra}
             </td>
           </tr>
@@ -73,7 +78,7 @@ export function googleCalendarUrl({
   time: string;
   service: string;
   duration?: string | null;
-  /** Omitted while the studio is between premises. */
+  /** Street address for the invite; `EMAIL_ADDRESS` unless a session happens elsewhere. */
   location?: string;
 }): string {
   const [y, mo, d] = dateIso.split("-");
