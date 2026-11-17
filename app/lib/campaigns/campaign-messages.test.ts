@@ -373,7 +373,10 @@ describe("the screen where a segment is made", () => {
     "campaigns.segments.form.onlySelected",
     "campaigns.segments.form.selectVisible",
     "campaigns.segments.form.selectPerson",
-    "campaigns.segments.form.shown",
+    "campaigns.segments.form.count",
+    "campaigns.segments.form.countOf",
+    "campaigns.segments.form.selectedCount",
+    "campaigns.segments.form.selectAllN",
     "campaigns.segments.form.filteredEmpty",
     "campaigns.segments.form.searchEmpty",
     "campaigns.segments.form.clearFilters",
@@ -542,9 +545,10 @@ describe("the segment screen's later strings", () => {
     for (const locale of ["es", "en"] as const) {
       for (const key of [
         "campaigns.segments.form.listFull",
-        "campaigns.segments.form.bannerPage",
-        "campaigns.segments.form.bannerAll",
-        "campaigns.segments.form.bannerAllDone",
+        "campaigns.segments.form.selectAllN",
+        "campaigns.segments.form.selectedCount",
+        "campaigns.segments.form.count",
+        "campaigns.segments.form.countOf",
         "campaigns.segments.form.subscriptionAny",
         "campaigns.trigger.eventDescList.segment_entry",
       ]) {

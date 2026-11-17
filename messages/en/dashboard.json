@@ -2119,10 +2119,9 @@
         "filterSentence": "{count, plural, one {The segment includes the person who meets the filters, and anyone who meets them later.} other {The segment includes the # people who meet the filters, and anyone who meets them later.}}",
         "listSentence": "{count, plural, one {The segment includes only the person selected.} other {The segment includes only the # people selected.}}",
         "clearSelection": "Clear selection",
-        "onlySelected": "Show only selected ({count})",
+        "onlySelected": "Show only selected",
         "selectVisible": "Select the people on this page",
         "selectPerson": "Select {name}",
-        "shown": "{count, plural, one {# person shown} other {# people shown}}",
         "filteredEmpty": "Nobody meets these filters",
         "searchEmpty": "Nobody matches the search",
         "clearFilters": "Clear filters",
@@ -2134,10 +2133,11 @@
         "chipServices": "Services: {value}",
         "chipLastBooking": "Last booking: {op, select, gt {more than} other {less than}} {days} days ago",
         "listFull": "A list holds up to 2000 people",
-        "bannerPage": "The {count} on this page are selected.",
-        "bannerAll": "Select all {total} that match the filters",
-        "bannerAllDone": "All {count} people that match the filters are selected.",
-        "subscriptionAny": "Everyone"
+        "subscriptionAny": "Everyone",
+        "count": "{count, plural, one {# person} other {# people}}",
+        "countOf": "{shown} of {total, plural, one {# person} other {# people}}",
+        "selectedCount": "{count} selected",
+        "selectAllN": "Select all {total}"
       },
       "issue": {
         "unsubscribed": "Unsubscribed from email",

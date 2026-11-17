@@ -24,6 +24,7 @@ const { SegmentForm } = await import("./segment-form");
 const { SegmentPeopleTable } = await import("./people-table");
 const { FilterChips } = await import("./filter-chips");
 const { SegmentKindBadge } = await import("./kind-badge");
+const { PeopleBar } = await import("./people-bar");
 
 const wrap = (node: React.ReactNode, locale: "es" | "en" = "es") =>
   renderToStaticMarkup(
@@ -83,6 +84,17 @@ describe("the header of the screen where a segment is made", () => {
   });
   test("says nothing about who the segment includes while the people are not loaded: never a made-up zero", () => {
     expect(html).not.toContain("El segmento incluye");
+  });
+  test("says the kind of segment beside the title, with the badge the list and the detail use", () => {
+    const title = header.slice(0, header.indexOf("Filtros"));
+    expect(title).toContain("Nuevo segmento");
+    expect(title).toContain("Por filtro");
+  });
+  test("is ONE card: the name, the bar and the table, with no sentence over it and no second strip", () => {
+    expect(html.match(/<section/g)).toHaveLength(1);
+    expect(html).not.toContain("Seleccionadas las");
+    expect(html).not.toContain("Seleccionar las 163");
+    expect((html.match(/Quitar selección/g) ?? []).length).toBe(0);
   });
 });
 
@@ -242,5 +254,99 @@ describe("the sentence under the header", () => {
     expect(say("en", "listSentence", 3)).toContain(
       "only the 3 people selected",
     );
+  });
+});
+
+describe("the one bar of the table", () => {
+  const bar = (
+    over: Partial<React.ComponentProps<typeof PeopleBar>> = {},
+    locale: "es" | "en" = "es",
+  ) =>
+    wrap(
+      <PeopleBar
+        search=""
+        onSearch={() => {}}
+        ready
+        shown={163}
+        total={163}
+        selected={0}
+        canSelectAll={false}
+        full={false}
+        onlySelected={false}
+        onToggleOnly={() => {}}
+        onSelectAll={() => {}}
+        onClear={() => {}}
+        {...over}
+      />,
+      locale,
+    );
+  const times = (html: string, text: string) => html.split(text).length - 1;
+
+  test("nobody picked: the search and the count, and nothing else", () => {
+    const html = bar();
+    expect(html).toContain("Buscar por nombre, correo o teléfono");
+    expect(html).toContain("163 personas");
+    expect(html).not.toContain("Ver solo seleccionadas");
+    expect(html).not.toContain("Quitar selección");
+    expect(html).not.toContain("seleccionadas");
+  });
+  test("with a filter or a search the count says how many of how many", () => {
+    expect(bar({ shown: 32 })).toContain("32 de 163 personas");
+    expect(bar({ shown: 1, total: 1 })).toContain("1 persona");
+    expect(bar({ shown: 32 }, "en")).toContain("32 of 163 people");
+  });
+  test("while the people load no count is told, never a made-up zero", () => {
+    const html = bar({ ready: false, shown: 0, total: 0 });
+    expect(html).not.toContain("personas");
+    expect(html).toContain("Buscar");
+  });
+  test("people picked: how many, the way to pick all, the toggle and the way to clear, each once", () => {
+    const html = bar({ selected: 50, canSelectAll: true });
+    expect(times(html, "50 seleccionadas")).toBe(1);
+    expect(times(html, "Seleccionar las 163")).toBe(1);
+    expect(times(html, "Ver solo seleccionadas")).toBe(1);
+    expect(times(html, "Quitar selección")).toBe(1);
+    expect(html).not.toContain("163 personas");
+    // The toggle does not repeat the number.
+    expect(html).not.toContain("Ver solo seleccionadas (");
+    // In that order.
+    const order = [
+      "50 seleccionadas",
+      "Seleccionar las 163",
+      "Ver solo seleccionadas",
+      "Quitar selección",
+    ].map((t) => html.indexOf(t));
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+  test("the toggle says whether it is on", () => {
+    expect(bar({ selected: 3 })).toContain('aria-pressed="false"');
+    expect(bar({ selected: 3, onlySelected: true })).toContain(
+      'aria-pressed="true"',
+    );
+  });
+  test("when everyone listed is already picked there is no 'select all'", () => {
+    expect(bar({ selected: 163, canSelectAll: false })).not.toContain(
+      "Seleccionar las",
+    );
+  });
+  test("a full list says so in the bar, and offers no more", () => {
+    const html = bar({ selected: 2000, full: true, canSelectAll: false });
+    expect(html).toContain("Una lista admite hasta 2000 personas");
+    expect(html).not.toContain("Seleccionar las");
+  });
+  test("one person picked is singular, and in English", () => {
+    expect(bar({ selected: 1 })).toContain("1 seleccionada");
+    expect(bar({ selected: 50, canSelectAll: true }, "en")).toContain(
+      "50 selected",
+    );
+    expect(bar({ selected: 50, canSelectAll: true }, "en")).toContain(
+      "Select all 163",
+    );
+    expect(bar({ selected: 3 }, "en")).toContain("Show only selected");
+  });
+  test("on a phone the targets are 44 px and the controls can break into lines", () => {
+    const html = bar({ selected: 50, canSelectAll: true });
+    expect(html).toContain("min-h-11");
+    expect(html).toContain("flex-wrap");
   });
 });

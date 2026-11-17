@@ -192,35 +192,6 @@ export function selectAllShown(
   return next;
 }
 
-export type SelectionBanner =
-  /** The page is all selected and more people match: offer the rest. */
-  | { kind: "page"; count: number; total: number }
-  /** Everyone who matches is selected. */
-  | { kind: "all"; count: number }
-  | null;
-
-/**
- * The line over the table after the header checkbox has selected a page (the
- * pattern of a mail list): the page is selected, and there are more matching
- * people on other pages that one click selects too.
- */
-export function selectionBanner({
-  pageIds,
-  shownIds,
-  selected,
-}: {
-  pageIds: string[];
-  shownIds: string[];
-  selected: ReadonlySet<string>;
-}): SelectionBanner {
-  if (headerCheckState(selected, pageIds) !== "all") return null;
-  if (shownIds.length <= pageIds.length) return null;
-  const selectedShown = shownIds.filter((id) => selected.has(id)).length;
-  return selectedShown === shownIds.length
-    ? { kind: "all", count: shownIds.length }
-    : { kind: "page", count: pageIds.length, total: shownIds.length };
-}
-
 export type FilterId =
   "language" | "subscription" | "bookings" | "services" | "lastBooking";
 

@@ -28,7 +28,6 @@ import {
   removeFilter,
   segmentSentence,
   selectAllShown,
-  selectionBanner,
   toggleOne,
   toggleVisible,
   visiblePeople,
@@ -37,6 +36,8 @@ import {
 import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { UnsavedBar } from "../../../messages/email/page-parts";
 import { FilterChips } from "./filter-chips";
+import { SegmentKindBadge } from "./kind-badge";
+import { PeopleBar } from "./people-bar";
 import { SegmentFilterModal } from "./filter-modal";
 import { SegmentPeopleTable } from "./people-table";
 
@@ -137,7 +138,15 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
   );
   const shown = useMemo(
     () =>
-      visiblePeople({ people, filters, search, onlySelected, selected, now }),
+      visiblePeople({
+        people,
+        filters,
+        search,
+        // Nobody picked: there is nothing to show "only" of.
+        onlySelected: onlySelected && selected.size > 0,
+        selected,
+        now,
+      }),
     [people, filters, search, onlySelected, selected, now],
   );
   const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
@@ -163,12 +172,17 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     [people, filters, selected, now],
   );
   const sentence = segmentSentence(selectedCount, matching);
-  // After the header checkbox has taken a page: offer the rest of who matches.
-  const banner = selectionBanner({
-    pageIds: rows.map((p) => p.id),
-    shownIds: shown.map((p) => p.id),
-    selected,
-  });
+  const sentenceText =
+    sentence.key === "list"
+      ? tForm("listSentence", { count: sentence.count })
+      : tForm("filterSentence", { count: sentence.count });
+  // More people are listed than are picked, and the list has room for them.
+  const canSelectAll =
+    !listIsFull(selected) && shown.some((p) => !selected.has(p.id));
+  const clearSelection = () => {
+    setSelected(new Set());
+    setOnlySelected(false);
+  };
   const filterCount = activeFilters(filters).length;
 
   function openFilters() {
@@ -223,7 +237,7 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     loaded.status === "ready" && shown.length === 0
       ? people.length === 0
         ? tForm("noPeople")
-        : onlySelected
+        : onlySelected && selected.size > 0
           ? tForm("searchEmpty")
           : search.trim() !== "" && filterCount === 0
             ? tForm("searchEmpty")
@@ -233,9 +247,16 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
   return (
     <div className="flex flex-col gap-5 px-6 py-8 lg:px-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="font-display text-petroleum-700 min-w-0 text-3xl break-words">
-          {segment ? segment.name : t("new")}
-        </h1>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="font-display text-petroleum-700 min-w-0 text-3xl break-words">
+            {segment ? segment.name : t("new")}
+          </h1>
+          {/* What the segment is, said live as people are picked or not. */}
+          <SegmentKindBadge
+            kind={sentence.key}
+            title={loaded.status === "ready" ? sentenceText : undefined}
+          />
+        </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
           <Button
             variant={filterCount > 0 ? "soft" : "outline"}
@@ -263,8 +284,15 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
       )}
 
-      <section className="border-sand-200 rounded-2xl border bg-white p-6">
-        <div className="flex flex-col gap-1.5">
+      {/* The kind is said by the badge by the title; screen readers get the long sentence. */}
+      {loaded.status === "ready" && (
+        <p aria-live="polite" className="sr-only">
+          {sentenceText}
+        </p>
+      )}
+
+      <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
+        <div className="border-sand-100 flex flex-col gap-1.5 border-b px-5 py-4">
           <label
             htmlFor="segment-name"
             className="text-petroleum-500 text-xs font-medium"
@@ -293,120 +321,43 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
             </p>
           )}
         </div>
-      </section>
 
-      <FilterChips
-        filters={filters}
-        onRemove={(id) => changeFilters(removeFilter(filters, id))}
-        onClear={() => changeFilters(NO_FILTERS)}
-      />
+        <PeopleBar
+          search={search}
+          onSearch={(value) => {
+            setSearch(value);
+            setPage(0);
+          }}
+          ready={loaded.status === "ready"}
+          shown={shown.length}
+          total={people.length}
+          selected={selectedCount}
+          canSelectAll={canSelectAll}
+          full={listIsFull(selected)}
+          onlySelected={onlySelected}
+          onToggleOnly={() => {
+            setOnlySelected((on) => !on);
+            setPage(0);
+          }}
+          onSelectAll={() =>
+            setSelected((s) =>
+              selectAllShown(
+                s,
+                shown.map((p) => p.id),
+              ),
+            )
+          }
+          onClear={clearSelection}
+        />
 
-      {loaded.status === "ready" && (
-        <p
-          aria-live="polite"
-          className="text-petroleum-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
-        >
-          <span>
-            {sentence.key === "list"
-              ? tForm("listSentence", { count: sentence.count })
-              : tForm("filterSentence", { count: sentence.count })}
-          </span>
-          {selected.size > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelected(new Set());
-                setOnlySelected(false);
-              }}
-              className="text-petroleum-700 min-h-8 font-medium underline underline-offset-2"
-            >
-              {tForm("clearSelection")}
-            </button>
-          )}
-        </p>
-      )}
-
-      {listIsFull(selected) && (
-        <p role="status" className="text-sm font-medium text-yellow-800">
-          {tForm("listFull")}
-        </p>
-      )}
-
-      <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
-        <div className="border-sand-100 flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            placeholder={tForm("search")}
-            aria-label={tForm("search")}
-            className={`${INPUT_CLASS} sm:max-w-sm`}
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            {loaded.status === "ready" && (
-              <p className="text-petroleum-400 text-xs">
-                {tForm("shown", { count: shown.length })}
-              </p>
-            )}
-            <button
-              type="button"
-              aria-pressed={onlySelected}
-              disabled={selected.size === 0 && !onlySelected}
-              onClick={() => {
-                setOnlySelected((on) => !on);
-                setPage(0);
-              }}
-              className={`min-h-11 rounded-full border px-4 text-sm transition-colors disabled:opacity-50 ${
-                onlySelected
-                  ? "border-petroleum-700 bg-petroleum-700 text-white"
-                  : "border-sand-200 text-petroleum-700 hover:border-petroleum-400 bg-white"
-              }`}
-            >
-              {tForm("onlySelected", { count: selectedCount })}
-            </button>
+        {filterCount > 0 && (
+          <div className="border-sand-100 border-b px-5 py-3">
+            <FilterChips
+              filters={filters}
+              onRemove={(id) => changeFilters(removeFilter(filters, id))}
+              onClear={() => changeFilters(NO_FILTERS)}
+            />
           </div>
-        </div>
-
-        {banner && (
-          <p
-            aria-live="polite"
-            className="bg-sand-50 text-petroleum-700 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 text-sm"
-          >
-            <span>
-              {banner.kind === "page"
-                ? tForm("bannerPage", { count: banner.count })
-                : tForm("bannerAllDone", { count: banner.count })}
-            </span>
-            {banner.kind === "page" ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setSelected((s) =>
-                    selectAllShown(
-                      s,
-                      shown.map((p) => p.id),
-                    ),
-                  )
-                }
-                className="text-petroleum-700 min-h-8 font-medium underline underline-offset-2"
-              >
-                {tForm("bannerAll", { total: banner.total })}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setSelected(new Set());
-                setOnlySelected(false);
-              }}
-              className="text-petroleum-700 min-h-8 font-medium underline underline-offset-2"
-            >
-              {tForm("clearSelection")}
-            </button>
-          </p>
         )}
 
         {loaded.status === "loading" ? (

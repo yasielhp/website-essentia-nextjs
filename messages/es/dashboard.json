@@ -2119,10 +2119,9 @@
         "filterSentence": "{count, plural, one {El segmento incluye a la persona que cumple los filtros, y a las que los cumplan más adelante.} other {El segmento incluye a las # personas que cumplen los filtros, y a las que los cumplan más adelante.}}",
         "listSentence": "{count, plural, one {El segmento incluye solo a la persona seleccionada.} other {El segmento incluye solo a las # personas seleccionadas.}}",
         "clearSelection": "Quitar selección",
-        "onlySelected": "Ver solo seleccionadas ({count})",
+        "onlySelected": "Ver solo seleccionadas",
         "selectVisible": "Seleccionar las personas de esta página",
         "selectPerson": "Seleccionar a {name}",
-        "shown": "{count, plural, one {Se ve # persona} other {Se ven # personas}}",
         "filteredEmpty": "Nadie cumple estos filtros",
         "searchEmpty": "Nadie coincide con la búsqueda",
         "clearFilters": "Quitar filtros",
@@ -2134,10 +2133,11 @@
         "chipServices": "Servicios: {value}",
         "chipLastBooking": "Última reserva: {op, select, gt {hace más de} other {hace menos de}} {days} días",
         "listFull": "Una lista admite hasta 2000 personas",
-        "bannerPage": "Seleccionadas las {count} de esta página.",
-        "bannerAll": "Seleccionar las {total} que cumplen los filtros",
-        "bannerAllDone": "Seleccionadas las {count} personas que cumplen los filtros.",
-        "subscriptionAny": "Todos"
+        "subscriptionAny": "Todos",
+        "count": "{count, plural, one {# persona} other {# personas}}",
+        "countOf": "{shown} de {total, plural, one {# persona} other {# personas}}",
+        "selectedCount": "{count, plural, one {# seleccionada} other {# seleccionadas}}",
+        "selectAllN": "Seleccionar las {total}"
       },
       "issue": {
         "unsubscribed": "Baja de email",

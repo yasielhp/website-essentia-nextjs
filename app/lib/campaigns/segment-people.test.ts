@@ -14,7 +14,6 @@ import {
   searchMatches,
   segmentSentence,
   selectAllShown,
-  selectionBanner,
   toSegmentPerson,
   toggleOne,
   toggleVisible,
@@ -422,58 +421,11 @@ describe("a list holds two thousand people, and no more", () => {
   });
 });
 
-describe("selecting everyone who matches, not only the page", () => {
+describe("selecting everyone who is listed, not only the page", () => {
   const ids = (n: number, p = "s") =>
     Array.from({ length: n }, (_, i) => `${p}${i}`);
   const shown = ids(120);
-  const page = shown.slice(0, 50);
 
-  test("no banner until the whole page is selected", () => {
-    expect(
-      selectionBanner({ pageIds: page, shownIds: shown, selected: new Set() }),
-    ).toBeNull();
-    expect(
-      selectionBanner({
-        pageIds: page,
-        shownIds: shown,
-        selected: new Set(page.slice(1)),
-      }),
-    ).toBeNull();
-  });
-  test("a page selected, with more matching on other pages, offers the rest", () => {
-    expect(
-      selectionBanner({
-        pageIds: page,
-        shownIds: shown,
-        selected: new Set(page),
-      }),
-    ).toEqual({
-      kind: "page",
-      count: 50,
-      total: 120,
-    });
-  });
-  test("when everyone who matches is selected, it says so", () => {
-    expect(
-      selectionBanner({
-        pageIds: page,
-        shownIds: shown,
-        selected: new Set(shown),
-      }),
-    ).toEqual({
-      kind: "all",
-      count: 120,
-    });
-  });
-  test("when everyone matching fits on the page there is nothing to offer", () => {
-    expect(
-      selectionBanner({
-        pageIds: page,
-        shownIds: page,
-        selected: new Set(page),
-      }),
-    ).toBeNull();
-  });
   test("selectAllShown adds them to what was picked out of sight", () => {
     const out = selectAllShown(new Set(["hidden"]), shown);
     expect(out.size).toBe(121);
@@ -483,15 +435,5 @@ describe("selecting everyone who matches, not only the page", () => {
     const many = ids(MAX_LIST_PEOPLE + 500, "m");
     const out = selectAllShown(new Set(), many);
     expect(out.size).toBe(MAX_LIST_PEOPLE);
-    const capped = selectionBanner({
-      pageIds: many.slice(0, 50),
-      shownIds: many,
-      selected: out,
-    });
-    expect(capped).toEqual({
-      kind: "page",
-      count: 50,
-      total: MAX_LIST_PEOPLE + 500,
-    });
   });
 });
