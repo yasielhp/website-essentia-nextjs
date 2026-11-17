@@ -1,4 +1,4 @@
-import { isOptOutText } from "./optout";
+import { isOptOutText } from "./optout-words";
 
 /**
  * What a quick-reply button's text will do when the client taps it.

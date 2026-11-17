@@ -37,3 +37,25 @@ describe("optOutButtonKind", () => {
     expect(optOutButtonKind("Bájame de la lista")).toBe("looksLikeOptOut");
   });
 });
+
+describe("where the rule lives", () => {
+  test("the exact-word rule is in a file with no imports, which optout.ts re-exports unchanged", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const words = readFileSync(
+      join(import.meta.dir, "optout-words.ts"),
+      "utf8",
+    );
+    expect(words).not.toMatch(/^import /m);
+    const optout = await import("./optout");
+    const pure = await import("./optout-words");
+    expect(optout.isOptOutText).toBe(pure.isOptOutText);
+    // And the form reads the pure file, so the Meta client stays out of the browser.
+    const button = readFileSync(
+      join(import.meta.dir, "optout-button.ts"),
+      "utf8",
+    );
+    expect(button).toContain('from "./optout-words"');
+    expect(button).not.toContain('from "./optout"');
+  });
+});
