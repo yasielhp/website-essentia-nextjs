@@ -132,6 +132,88 @@ describe("dispatchCampaign: the checks come before the claim", () => {
   });
 });
 
+describe("dispatchCampaign: an automated kind is never sent in one go", () => {
+  // They are switched on and the cron runs them. Sent as a one-off send, an
+  // appointment notice would reach everybody with the consent at once, with no
+  // appointment to talk about, and an automation would skip its cycles.
+  const AUTOMATED = [
+    "automated",
+    "autoresponder",
+    "rss",
+    "dateBased",
+    "appointment",
+  ] as const;
+
+  test.each(AUTOMATED)(
+    "a draft of kind %s is locked before anything is claimed, resolved or sent",
+    async (kind) => {
+      const { mem, deps, sender } = setup(3, {
+        campaign: campaign({ status: "draft", kind }),
+      });
+      let resolved = 0;
+      const result = await dispatchCampaign(
+        "camp-1",
+        {},
+        {
+          ...deps,
+          resolveAudience: async () => {
+            resolved += 1;
+            return [];
+          },
+        },
+      );
+      expect(result).toEqual({ ok: false, error: "locked" });
+      expect(resolved).toBe(0);
+      expect(mem.campaign.status).toBe("draft");
+      expect(touchedCampaign(mem.log)).toHaveLength(0);
+      expect(mem.upserts).toHaveLength(0);
+      expect(sender.calls).toHaveLength(0);
+    },
+  );
+
+  test("also on email, and also when the campaign is scheduled: the cron calls this too", async () => {
+    for (const channel of ["email", "whatsapp"] as const) {
+      const { mem, deps } = setup(1, {
+        campaign: campaign({
+          status: "scheduled",
+          kind: "appointment",
+          channel,
+        }),
+      });
+      const result = await dispatchCampaign("camp-1", {}, deps);
+      expect(result).toEqual({ ok: false, error: "locked" });
+      expect(mem.campaign.status).toBe("scheduled");
+      // It says so on the campaign, so the list does not stay silent about it.
+      const writes = touchedCampaign(mem.log);
+      expect(writes).toHaveLength(1);
+      expect(
+        (argsOf(writes[0]!.chain, "update")?.[0] as { last_error: string })
+          .last_error,
+      ).toBe("locked");
+    }
+  });
+
+  test("a one-off send is untouched: a standard campaign goes through the checks and the claim", async () => {
+    const { mem, deps, sender } = setup(2, {
+      campaign: campaign({ status: "draft", kind: "standard" }),
+    });
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: true, sent: 2 });
+    expect(sender.calls).toHaveLength(2);
+    expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("a split email campaign still reaches the claim", async () => {
+    const { mem, deps } = setup(1, {
+      configured: false,
+      campaign: campaign({ channel: "email", kind: "split", status: "sent" }),
+    });
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    expect(result).toEqual({ ok: false, error: "not_claimable" });
+    expect(touchedCampaign(mem.log).length).toBeGreaterThan(0);
+  });
+});
+
 describe("dispatchCampaign: a blocked campaign says why", () => {
   test("a scheduled campaign blocked by missing credentials keeps its state and shows the reason", async () => {
     const { mem, deps } = setup(1, {

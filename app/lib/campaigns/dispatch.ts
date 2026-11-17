@@ -2,11 +2,12 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
-import type {
-  CampaignChannel,
-  CampaignContent,
-  CampaignLocale,
-  CampaignRow,
+import {
+  isAutomatedKind,
+  type CampaignChannel,
+  type CampaignContent,
+  type CampaignLocale,
+  type CampaignRow,
 } from "@/types/campaign";
 import { isWhatsAppConfigured } from "@/lib/whatsapp/client";
 import { resolveAudience as defaultResolveAudience } from "./audience";
@@ -91,6 +92,8 @@ export type DispatchResult =
         | "not_claimable"
         | "empty_audience"
         | "no_api_key"
+        /** An automated kind: it is switched on, never sent in one go. */
+        | "locked"
         | "whatsapp_not_configured"
         | "template_unavailable"
         | "nothing_to_retry"
@@ -356,17 +359,31 @@ async function preflight(
 ): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
-    .select("id, channel, status, audience, content")
+    .select("id, channel, kind, status, audience, content")
     .eq("id", campaignId)
     .maybeSingle();
   if (error) return { ok: false, error: "db", detail: error.message };
 
   const campaign = data as Pick<
     CampaignRow,
-    "channel" | "status" | "audience" | "content"
+    "channel" | "kind" | "status" | "audience" | "content"
   > | null;
   // No such row: the claim that follows reports it as not claimable.
   if (!campaign) return { ok: true, channel: null, status: null };
+
+  // An automated kind (an appointment notice above all) is switched on and the
+  // cron runs it; it is never sent in one go. The actions refuse it before they
+  // get here, but the cron calls this too, so the rule is held here as well. A
+  // scheduled or stuck one the cron keeps finding says so on its row.
+  if (isAutomatedKind(campaign.kind)) {
+    if (campaign.status === "scheduled" || campaign.status === "sending") {
+      await db
+        .from("campaigns")
+        .update({ last_error: "locked", updated_at: new Date().toISOString() })
+        .eq("id", campaignId);
+    }
+    return { ok: false, error: "locked" };
+  }
   if (campaign.channel !== "whatsapp") {
     return { ok: true, channel: campaign.channel, status: campaign.status };
   }

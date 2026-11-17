@@ -299,7 +299,7 @@ export async function fetchCampaign(
     db
       .from("campaign_recipients")
       .select(
-        "id, contact_id, email, phone, language, status, cycle, variant, error, sent_at, delivered_at, opened_at, clicked_at, read_at",
+        "id, contact_id, email, phone, language, status, cycle, variant, error, vars, sent_at, delivered_at, opened_at, clicked_at, read_at",
       )
       .eq("campaign_id", id)
       .order("email", { ascending: true })
@@ -1046,6 +1046,19 @@ export async function sendCampaignNow(
     return authFailure(err);
   }
 
+  // An automated kind is switched on, not sent: an appointment notice sent in
+  // one go would reach everybody with the consent at once, with no appointment
+  // to talk about. `dispatchCampaign` holds the same rule for the cron.
+  const { data: saved, error: readError } = await getAdminClient()
+    .database.from("campaigns")
+    .select("kind")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { ok: false, error: "db" };
+  if (saved && isAutomatedKind((saved as { kind: CampaignKind }).kind)) {
+    return { ok: false, error: "locked" };
+  }
+
   // The page this is called from allows 60 s; a WhatsApp send stops before
   // that and says how many rows are left for the cron to finish.
   const result = await dispatchCampaign(id, {
@@ -1075,11 +1088,15 @@ export async function scheduleCampaign(
   const db = getAdminClient().database;
   const { data: saved, error: readError } = await db
     .from("campaigns")
-    .select("channel, audience, content")
+    .select("kind, channel, audience, content")
     .eq("id", id)
     .maybeSingle();
   if (readError) return { ok: false, error: "db" };
   if (saved) {
+    // An automated kind is switched on, never scheduled.
+    if (isAutomatedKind((saved as { kind: CampaignKind }).kind)) {
+      return { ok: false, error: "locked" };
+    }
     const gate = await templateGate(
       saved as Pick<CampaignRow, "channel" | "audience" | "content">,
       db,
