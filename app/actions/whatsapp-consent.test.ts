@@ -42,6 +42,7 @@ const real = {
 };
 
 let saveBookingConsents: typeof import("@/actions/whatsapp-consent").saveBookingConsents;
+let saveBookingConsentsCore: typeof import("@/lib/whatsapp/save-booking-consents").saveBookingConsentsCore;
 
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
@@ -91,6 +92,8 @@ beforeAll(async () => {
     clientIp: async () => callerIp,
   }));
   ({ saveBookingConsents } = await import("@/actions/whatsapp-consent"));
+  ({ saveBookingConsentsCore } =
+    await import("@/lib/whatsapp/save-booking-consents"));
 });
 
 afterAll(() => {
@@ -318,8 +321,9 @@ describe("saveBookingConsents", () => {
     expect(await saveBookingConsents(null, input())).toEqual({ ok: true });
   });
 
-  // The one test that waits for the real deadline: it is what proves the
-  // action itself, as the page calls it, lets go of a database that hangs.
+  // What the action runs, with the deadline shortened: the deadline is a
+  // parameter of the core and not of the action (whose arguments come from the
+  // browser), so nothing here waits three real seconds.
   test("a database that never answers is given up on at the deadline, without throwing", async () => {
     dbHangs = true;
     const errors = console.error;
@@ -327,15 +331,24 @@ describe("saveBookingConsents", () => {
     console.error = (...args: unknown[]) => void logged.push(args);
     try {
       const startedAt = Date.now();
-      const result = await saveBookingConsents(null, input());
+      const result = await saveBookingConsentsCore(null, input(), {
+        deadlineMs: 40,
+      });
       const took = Date.now() - startedAt;
       expect(result).toEqual({ ok: false, error: "timeout" });
-      expect(took).toBeGreaterThanOrEqual(2900);
-      expect(took).toBeLessThan(4000);
+      expect(took).toBeGreaterThanOrEqual(30);
+      expect(took).toBeLessThan(1000);
       expect(logged).toHaveLength(1);
       expect(JSON.stringify(logged)).not.toContain("guest@example.com");
     } finally {
       console.error = errors;
     }
+  });
+
+  test("the action is that same core with the three-second deadline and no way to change it", async () => {
+    expect(saveBookingConsents.length).toBe(2);
+    expect(await saveBookingConsents(null, input())).toEqual(
+      await saveBookingConsentsCore(null, input()),
+    );
   });
 });
