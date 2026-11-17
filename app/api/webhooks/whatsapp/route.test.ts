@@ -23,6 +23,10 @@ const SECRET = "test-app-secret";
 let suppressionError: string | null = null;
 let contacts: unknown[] = [];
 let log: { table: string; chain: Step[] }[] = [];
+/** What `record_campaign_event` answers: not one of a campaign's, by default. */
+let rpcAnswer: { data: unknown; error: { message: string } | null };
+let rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
+let bookingEventsError: string | null = null;
 
 const real = { admin: { ...(await import("@/lib/insforge-admin")) } };
 let POST: typeof import("./route").POST;
@@ -40,6 +44,9 @@ beforeAll(async () => {
         if (table === "contacts" && !has(chain, "update")) {
           return { data: contacts, error: null };
         }
+        if (table === "booking_events" && bookingEventsError) {
+          return { data: null, error: { message: bookingEventsError } };
+        }
         return { data: [], error: null };
       });
       // Share one log across the calls the handler makes.
@@ -49,6 +56,10 @@ beforeAll(async () => {
             const builder = made.db.from(table);
             log = made.log;
             return builder;
+          },
+          rpc: async (name: string, args: Record<string, unknown>) => {
+            rpcCalls.push({ name, args });
+            return rpcAnswer;
           },
         },
       };
@@ -65,6 +76,9 @@ beforeEach(() => {
   suppressionError = null;
   contacts = [];
   log = [];
+  rpcAnswer = { data: false, error: null };
+  rpcCalls = [];
+  bookingEventsError = null;
 });
 
 function signed(body: unknown): NextRequest {
@@ -290,5 +304,93 @@ describe("the signature check", () => {
     quiet.mockRestore();
     expect(res.status).toBe(403);
     expect(suppressionWrites()).toHaveLength(0);
+  });
+});
+
+/** A payload of message states, as Meta delivers them. */
+const states = (
+  ...statuses: { id: string; status: string; timestamp?: string }[]
+) => ({
+  entry: [{ changes: [{ field: "messages", value: { statuses } }] }],
+});
+
+const bookingEventUpdates = () =>
+  log.filter((q) => q.table === "booking_events" && has(q.chain, "update"));
+
+// 2099-03-01T10:00:00Z, in Meta's seconds.
+const T_DELIVERED = "4076042400";
+const AT_DELIVERED = "2099-03-01T10:00:00.000Z";
+
+describe("message states", () => {
+  test("a state moves the booking's notice on, and nothing is logged", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(
+      signed(
+        states({ id: "wamid.1", status: "delivered", timestamp: T_DELIVERED }),
+      ),
+    );
+    const logged = loud.mock.calls.length;
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    expect(logged).toBe(0);
+    expect(rpcCalls.map((c) => c.args.p_event)).toEqual(["delivered"]);
+    const updates = bookingEventUpdates();
+    expect(updates).toHaveLength(1);
+    expect(argsOf(updates[0]!.chain, "update")?.[0]).toEqual({
+      status: "delivered",
+      delivered_at: AT_DELIVERED,
+    });
+    expect(argsOf(updates[0]!.chain, "in")).toEqual(["status", ["sent"]]);
+  });
+
+  test("a state that belonged to a campaign does not touch the booking history", async () => {
+    rpcAnswer = { data: true, error: null };
+    await POST(signed(states({ id: "wamid.1", status: "read" })));
+    expect(bookingEventUpdates()).toHaveLength(0);
+  });
+
+  test("a state the database refused is logged, not swallowed, and Meta is still answered 200", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    bookingEventsError = "connection refused";
+    const res = await POST(signed(states({ id: "wamid.1", status: "failed" })));
+    const lines = loud.mock.calls.map((call) => String(call[0]));
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    expect(lines.some((line) => line.includes("could not record status"))).toBe(
+      true,
+    );
+  });
+
+  test("one refused state does not cost the others of the payload", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    bookingEventsError = "connection refused";
+    const res = await POST(
+      signed(
+        states(
+          { id: "wamid.1", status: "delivered" },
+          { id: "wamid.2", status: "delivered" },
+          { id: "wamid.3", status: "failed" },
+        ),
+      ),
+    );
+    const logged = loud.mock.calls.length;
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    // Each one was attempted and each failure has its own line.
+    expect(bookingEventUpdates()).toHaveLength(3);
+    expect(logged).toBe(3);
+  });
+
+  test("a campaign receipt the database refused is logged and the booking history is still tried", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    rpcAnswer = { data: null, error: { message: "connection refused" } };
+    const res = await POST(
+      signed(states({ id: "wamid.1", status: "delivered" })),
+    );
+    const logged = loud.mock.calls.length;
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    expect(logged).toBe(1);
+    expect(bookingEventUpdates()).toHaveLength(1);
   });
 });

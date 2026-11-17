@@ -513,27 +513,45 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          return db
-            .from("booking_events")
-            .update({
-              status: next,
-              ...(next === "delivered" ? { delivered_at: at } : {}),
-              // Reading implies arrival, and the two callbacks are independent: a
-              // `read` that overtakes its `delivered` in a later request would
-              // otherwise leave the row claiming it was never delivered.
-              ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
-              ...(next === "failed" ? { error } : {}),
-            })
-            .eq("provider_id", providerId)
-            .in("status", PRECEDING_STATES[next]!);
+          // The SDK answers `{ error }` instead of throwing, so the error has
+          // to be read here: unread, a state the database refused vanished
+          // without a line. Caught per message, so one refusal does not cost
+          // the others of the run.
+          try {
+            const { error: writeError } = await db
+              .from("booking_events")
+              .update({
+                status: next,
+                ...(next === "delivered" ? { delivered_at: at } : {}),
+                // Reading implies arrival, and the two callbacks are independent: a
+                // `read` that overtakes its `delivered` in a later request would
+                // otherwise leave the row claiming it was never delivered.
+                ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
+                ...(next === "failed" ? { error } : {}),
+              })
+              .eq("provider_id", providerId)
+              .in("status", PRECEDING_STATES[next]!);
+            if (writeError) throw writeError;
+          } catch (err) {
+            console.error(
+              `[webhooks/whatsapp] could not record status ${next} of ${providerId}:`,
+              err,
+            );
+          }
         }),
       );
     } catch (err) {
-      // Acknowledged all the same: Meta disables a subscription that keeps
-      // erroring, and losing every future callback is worse than losing this one.
       console.error("[webhooks/whatsapp] could not record statuses:", err);
     }
   }
+
+  // Acknowledged even when a write above failed, and on purpose. Asking Meta
+  // to send the payload again would need a non-200, and this subscription also
+  // carries the STOPs: Meta gives up on an endpoint that keeps erroring, and
+  // losing every future callback (opt-outs included) is worse than losing the
+  // states of this one. A payload can also carry a STOP or a template review
+  // next to the states, and replaying those late is not harmless. The failure
+  // is logged above, per message, with the id needed to look it up.
 
   return NextResponse.json({ received: true });
 }
