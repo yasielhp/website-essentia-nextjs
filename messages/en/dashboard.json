@@ -2267,7 +2267,10 @@
         "buttonN": "Button {n}",
         "exampleN": "Example for parameter {n}",
         "useName": "Use “{name}”",
-        "nameTaken": "A template with that name and language already exists. Try another name."
+        "nameTaken": "A template with that name and language already exists. Try another name.",
+        "discardConfirm": "Discard this template without submitting it?",
+        "discardKeep": "Keep editing",
+        "discardYes": "Discard"
       },
       "fields": {
         "name": "Name",

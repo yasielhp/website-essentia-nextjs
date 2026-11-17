@@ -24,7 +24,9 @@ import {
   type WhatsAppTemplateCategory,
   type WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { useActionToast } from "./action-error";
+import { closeDecision } from "./close-decision";
 import { Modal } from "./modal";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 
@@ -280,6 +282,39 @@ function focusFirstError(form: HTMLFormElement | null) {
   });
 }
 
+/** "Discard this template?" in the footer; focus goes to keeping and back to Cancel. */
+function DiscardBar({
+  onKeep,
+  onDiscard,
+}: {
+  onKeep: () => void;
+  onDiscard: () => void;
+}) {
+  const t = useTranslations("dashboard.messages.whatsapp.form");
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, () => document.getElementById("template-cancel-button"));
+  return (
+    <div
+      ref={ref}
+      role="alertdialog"
+      aria-label={t("discardConfirm")}
+      className="flex w-full flex-wrap items-center justify-between gap-3"
+    >
+      <p className="text-petroleum-700 text-sm font-medium">
+        {t("discardConfirm")}
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onKeep}>
+          {t("discardKeep")}
+        </Button>
+        <Button variant="danger" onClick={onDiscard}>
+          {t("discardYes")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Writes a WhatsApp template and sends it to Meta for review.
  *
@@ -310,6 +345,14 @@ export function TemplateForm({
   );
   const [state, dispatch] = useReducer(reducer, initial);
   const formRef = useRef<HTMLFormElement>(null);
+  const [asking, setAsking] = useState(false);
+  const dirty = isDirty(state, initial);
+  /** Escape, the X and Cancel all come here: a template written is not lost unasked. */
+  function requestClose() {
+    const decision = closeDecision({ dirty, submitting: state.submitting });
+    if (decision === "close") onClose();
+    else if (decision === "ask") setAsking(true);
+  }
 
   const params = countParams(state.body);
   const examples = examplesFor(state);
@@ -370,9 +413,9 @@ export function TemplateForm({
   return (
     <Modal
       title={t(seed ? "form.rewriteTitle" : "form.title")}
-      onClose={onClose}
+      onClose={requestClose}
       wide
-      dirty={isDirty(state, initial)}
+      dirty={dirty}
       busy={state.submitting}
     >
       <form
@@ -743,16 +786,27 @@ export function TemplateForm({
         </div>
 
         <div className="border-sand-100 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
-          <Button variant="ghost" onClick={onClose} disabled={state.submitting}>
-            {tCommon("cancel")}
-          </Button>
-          <Button type="submit" disabled={state.submitting}>
-            {state.submitting
-              ? t("form.sending")
-              : configured
-                ? t("form.submit")
-                : t("form.saveDraft")}
-          </Button>
+          {asking ? (
+            <DiscardBar onKeep={() => setAsking(false)} onDiscard={onClose} />
+          ) : (
+            <>
+              <Button
+                id="template-cancel-button"
+                variant="ghost"
+                onClick={requestClose}
+                disabled={state.submitting}
+              >
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={state.submitting}>
+                {state.submitting
+                  ? t("form.sending")
+                  : configured
+                    ? t("form.submit")
+                    : t("form.saveDraft")}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </Modal>

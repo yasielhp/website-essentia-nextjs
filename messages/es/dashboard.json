@@ -2267,7 +2267,10 @@
         "buttonN": "Botón {n}",
         "exampleN": "Ejemplo para el parámetro {n}",
         "useName": "Usar «{name}»",
-        "nameTaken": "Ya existe una plantilla con ese nombre e idioma. Prueba con otro nombre."
+        "nameTaken": "Ya existe una plantilla con ese nombre e idioma. Prueba con otro nombre.",
+        "discardConfirm": "¿Descartar la plantilla sin enviarla?",
+        "discardKeep": "Seguir editando",
+        "discardYes": "Descartar"
       },
       "fields": {
         "name": "Nombre",
