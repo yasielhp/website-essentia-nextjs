@@ -42,6 +42,12 @@ export const BUDGET_MS = 45_000;
 /** Begins the `error` of a row whose delivery is in doubt; a retry skips it. */
 export const UNCONFIRMED_PREFIX = "[unconfirmed] ";
 
+/**
+ * Begins the `error` of a row that was not sent because its contact may no
+ * longer be messaged (or never could be). A retry leaves it alone.
+ */
+export const SKIPPED_PREFIX = "[skipped] ";
+
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
 
@@ -104,6 +110,48 @@ export function whatsappTemplateEligibility(
     return "param_count";
   }
   return null;
+}
+
+export type ConsentRow = {
+  id: string;
+  whatsapp_opted_out_at: string | null;
+  whatsapp_unreachable_at: string | null;
+  whatsapp_marketing_opted_in_at: string | null;
+};
+
+export type ConsentVerdict =
+  "no_contact" | "opted_out" | "unreachable" | "no_consent";
+
+/**
+ * Why a contact must not get a marketing message right now, or null. The same
+ * three facts the audience resolver filters on, but read again at send time:
+ * a send can resume hours after its audience was frozen, and a STOP in between
+ * must be honoured.
+ */
+export function consentVerdict(
+  contact: ConsentRow | null | undefined,
+): ConsentVerdict | null {
+  if (!contact) return "no_contact";
+  if (contact.whatsapp_opted_out_at) return "opted_out";
+  if (contact.whatsapp_unreachable_at) return "unreachable";
+  if (!contact.whatsapp_marketing_opted_in_at) return "no_consent";
+  return null;
+}
+
+/** The consent of these contacts, by id. A contact that no longer exists is simply absent. */
+async function loadConsent(
+  db: Db,
+  contactIds: string[],
+): Promise<Map<string, ConsentRow>> {
+  if (contactIds.length === 0) return new Map();
+  const { data, error } = await db
+    .from("contacts")
+    .select(
+      "id, whatsapp_opted_out_at, whatsapp_unreachable_at, whatsapp_marketing_opted_in_at",
+    )
+    .in("id", contactIds);
+  if (error) throw new Error(error.message);
+  return new Map(((data ?? []) as ConsentRow[]).map((c) => [c.id, c]));
 }
 
 /** The template a campaign points at, or null when the row is gone. Throws on a read error. */
@@ -272,11 +320,14 @@ export async function sendQueuedWhatsApp(
     }
   }
 
+  async function failRow(row: QueuedRow, error: string): Promise<RowOutcome> {
+    return (await write(row, { status: "failed", error }))
+      ? { kind: "failed", error }
+      : { kind: "unrecorded", error };
+  }
+
   async function sendOne(row: QueuedRow): Promise<RowOutcome> {
-    const fail = async (error: string): Promise<RowOutcome> =>
-      (await write(row, { status: "failed", error }))
-        ? { kind: "failed", error }
-        : { kind: "unrecorded", error };
+    const fail = (error: string) => failRow(row, error);
 
     if (!row.phone) return fail("no phone");
 
@@ -354,19 +405,44 @@ export async function sendQueuedWhatsApp(
     const batchStartedAt = now();
     const batch = rows.slice(start, start + PER_SECOND);
 
+    // Consent is read again before every batch, not trusted from the freeze.
+    let consent: Map<string, ConsentRow>;
+    try {
+      consent = await loadConsent(
+        db,
+        batch.flatMap((r) => (r.contact_id ? [r.contact_id] : [])),
+      );
+    } catch (err) {
+      lastError = `db: ${err instanceof Error ? err.message : "consent read threw"}`;
+      break;
+    }
+
     const claimed = await claim(batch);
     if (claimed.error !== null) {
       lastError = `db: ${claimed.error}`;
       break;
     }
     lost += batch.length - claimed.owned.length;
-    const outcomes = await Promise.all(claimed.owned.map(sendOne));
+    const outcomes = await Promise.all(
+      claimed.owned.map((row) => {
+        const verdict = consentVerdict(
+          row.contact_id ? consent.get(row.contact_id) : null,
+        );
+        return verdict
+          ? failRow(row, `${SKIPPED_PREFIX}${verdict}`)
+          : sendOne(row);
+      }),
+    );
 
     let deferred = false;
     for (const outcome of outcomes) {
       if (outcome.kind === "sent") sent += 1;
       else {
-        lastError = outcome.error;
+        // A skipped contact is routine, not something the admin must read in
+        // the campaign's last error.
+        if (!outcome.error.startsWith(SKIPPED_PREFIX)) {
+          lastError = outcome.error;
+        }
         if (outcome.kind === "failed") failed += 1;
         else if (outcome.kind === "unrecorded") unrecorded += 1;
         else deferred = true;

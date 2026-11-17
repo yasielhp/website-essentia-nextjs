@@ -304,4 +304,44 @@ describe("retryFailed", () => {
     );
     expect(requeue).toBeDefined();
   });
+
+  test("never requeues a failure that may have been delivered or was skipped", async () => {
+    const { mem, deps } = setup(1, { campaign: campaign({ status: "sent" }) });
+    await retryFailed("camp-1", deps);
+    const requeue = mem.log.find(
+      (q) =>
+        q.table === "campaign_recipients" &&
+        has(q.chain, "or") &&
+        (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
+          "queued",
+    );
+    const filter = String(argsOf(requeue?.chain ?? [], "or")?.[0]);
+    // A row with no error yet, or one that is neither unconfirmed nor skipped.
+    expect(filter).toBe(
+      "error.is.null,and(error.not.like.[unconfirmed]*,error.not.like.[skipped]*)",
+    );
+    expect(filter).toContain("[unconfirmed]");
+    expect(filter).toContain("[skipped]");
+  });
+
+  test("an email retry keeps requeueing every failed row", async () => {
+    // The requeue is made to fail so the test stops before anything could be
+    // mailed: only the shape of the requeue is under test.
+    const { mem, deps } = setup(1, {
+      campaign: campaign({ channel: "email", status: "sent" }),
+      failUpdate: ({ patch }) => (patch.status === "queued" ? "stop" : null),
+    });
+    expect(await retryFailed("camp-1", deps)).toMatchObject({
+      ok: false,
+      error: "db",
+    });
+    const requeue = mem.log.find(
+      (q) =>
+        q.table === "campaign_recipients" &&
+        (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
+          "queued",
+    );
+    expect(requeue).toBeDefined();
+    expect(has(requeue?.chain ?? [], "or")).toBe(false);
+  });
 });

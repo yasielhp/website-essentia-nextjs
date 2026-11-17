@@ -11,6 +11,7 @@ import type {
 import { isWhatsAppConfigured } from "@/lib/whatsapp/client";
 import { resolveAudience as defaultResolveAudience } from "./audience";
 import {
+  SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
   campaignTemplateIssue,
   loadWhatsAppTemplate,
@@ -529,10 +530,12 @@ export async function retryFailed(
     .eq("campaign_id", campaignId)
     .eq("status", "failed");
   // A WhatsApp failure marked unconfirmed may have been delivered after all:
-  // resending it could message the same person twice, so it stays failed.
+  // resending it could message the same person twice. One marked skipped was
+  // refused for lack of consent, which a retry does not change. Both stay
+  // failed.
   if (checked.channel === "whatsapp") {
     requeue = requeue.or(
-      `error.is.null,error.not.like.${UNCONFIRMED_PREFIX.trim()}*`,
+      `error.is.null,and(error.not.like.${UNCONFIRMED_PREFIX.trim()}*,error.not.like.${SKIPPED_PREFIX.trim()}*)`,
     );
   }
   const { error: requeueError } = await requeue;

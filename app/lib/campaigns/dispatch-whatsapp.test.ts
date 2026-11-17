@@ -3,7 +3,9 @@ import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import type { CampaignRow } from "@/types/campaign";
 import {
   PER_SECOND,
+  SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
+  consentVerdict,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
@@ -11,6 +13,7 @@ import {
 import {
   SOURCES,
   campaign,
+  consenting,
   fakeClock,
   fakeSend,
   memoryDb,
@@ -772,5 +775,158 @@ describe("reconcileInterrupted", () => {
   test("a failed read of the table is reported as zero, not thrown", async () => {
     const mem = memoryDb(rowsOf(1), { failUpdate: () => "down" });
     expect(await reconcileInterrupted(mem.db, "camp-1", NOW)).toBe(0);
+  });
+});
+
+describe("consentVerdict", () => {
+  const ok_ = consenting("c");
+  test("a contact with marketing consent and no block may be messaged", () => {
+    expect(consentVerdict(ok_)).toBeNull();
+  });
+  test("no contact at all", () => {
+    expect(consentVerdict(undefined)).toBe("no_contact");
+    expect(consentVerdict(null)).toBe("no_contact");
+  });
+  test("an opt-out wins over everything", () => {
+    expect(
+      consentVerdict({
+        ...ok_,
+        whatsapp_opted_out_at: "2026-11-02T00:00:00Z",
+        whatsapp_unreachable_at: "2026-11-03T00:00:00Z",
+        whatsapp_marketing_opted_in_at: null,
+      }),
+    ).toBe("opted_out");
+  });
+  test("an unreachable number comes before missing consent", () => {
+    expect(
+      consentVerdict({
+        ...ok_,
+        whatsapp_unreachable_at: "2026-11-03T00:00:00Z",
+        whatsapp_marketing_opted_in_at: null,
+      }),
+    ).toBe("unreachable");
+  });
+  test("no marketing opt-in is no consent, whatever the booking-notice consent", () => {
+    expect(
+      consentVerdict({ ...ok_, whatsapp_marketing_opted_in_at: null }),
+    ).toBe("no_consent");
+  });
+});
+
+describe("sendQueuedWhatsApp re-checks consent before every batch", () => {
+  const blocked = (id: string, over: Record<string, string | null>) => ({
+    ...consenting(id),
+    ...over,
+  });
+
+  test("a contact who opted out after the audience was frozen gets nothing", async () => {
+    const mem = memoryDb(rowsOf(3), {
+      contacts: [
+        consenting("contact-1"),
+        blocked("contact-2", { whatsapp_opted_out_at: "2026-11-17T11:00:00Z" }),
+        consenting("contact-3"),
+      ],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001", "+34600000003"]);
+    expect(mem.status("row-2")).toBe("failed");
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}opted_out`);
+    expect(result).toMatchObject({ sent: 2, failed: 1, remaining: 0 });
+  });
+
+  test("an unreachable number, a missing marketing consent and a deleted contact are skipped", async () => {
+    const rows = [row(1), row(2), row(3), row(4, { contact_id: null })];
+    const mem = memoryDb(rows, {
+      contacts: [
+        blocked("contact-1", {
+          whatsapp_unreachable_at: "2026-11-10T00:00:00Z",
+        }),
+        blocked("contact-2", { whatsapp_marketing_opted_in_at: null }),
+        // contact-3 was deleted: it is not in the table at all.
+      ],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rows, {
+      db: mem.db,
+      send,
+    });
+    expect(calls).toHaveLength(0);
+    expect(mem.error("row-1")).toBe("[skipped] unreachable");
+    expect(mem.error("row-2")).toBe("[skipped] no_consent");
+    expect(mem.error("row-3")).toBe("[skipped] no_contact");
+    expect(mem.error("row-4")).toBe("[skipped] no_contact");
+    expect(result).toMatchObject({ sent: 0, failed: 4, remaining: 0 });
+  });
+
+  test("one contacts query per batch, for that batch's contacts only", async () => {
+    const mem = memoryDb(rowsOf(25));
+    const { send } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(25), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(mem.contactReads).toHaveLength(3);
+    expect(mem.contactReads.map((ids) => ids.length)).toEqual([10, 10, 5]);
+    expect(mem.contactReads[1][0]).toBe("contact-11");
+  });
+
+  test("a consent that changes between batches is seen by the next one", async () => {
+    const mem = memoryDb(rowsOf(15), {
+      onWrite: (id, patch) => {
+        // Contact 12 says STOP while the first batch is going out.
+        if (id === "row-1" && patch.status === "sent") {
+          mem.contacts.set("contact-12", {
+            ...consenting("contact-12"),
+            whatsapp_opted_out_at: "2026-11-17T11:30:00Z",
+          });
+        }
+      },
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(15), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(calls.map((c) => c.to)).not.toContain("+34600000012");
+    expect(mem.error("row-12")).toBe("[skipped] opted_out");
+    expect(calls).toHaveLength(14);
+  });
+
+  test("when the consent read fails the batch is not sent and the rows stay queued", async () => {
+    const mem = memoryDb(rowsOf(12), { contactsError: "timeout" });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(12), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(calls).toHaveLength(0);
+    expect(result).toMatchObject({
+      sent: 0,
+      failed: 0,
+      lastError: "db: timeout",
+      remaining: 12,
+    });
+    expect([...mem.rows.values()].every((r) => r.status === "queued")).toBe(
+      true,
+    );
+  });
+
+  test("a skipped contact does not become the campaign's last error", async () => {
+    const mem = memoryDb(rowsOf(1), {
+      contacts: [blocked("contact-1", { whatsapp_opted_out_at: "x" })],
+    });
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+      db: mem.db,
+      send: fakeSend(() => ok("w")).send,
+    });
+    expect(result.failed).toBe(1);
+    expect(result.lastError).toBeNull();
   });
 });
