@@ -141,6 +141,7 @@ describe("the Emails tab strings", () => {
         "consent",
         "nothing",
         "languages",
+        "languagesReminder",
         "stop",
         "reminderFirst",
         "noButtons",

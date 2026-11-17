@@ -2271,10 +2271,10 @@
       "reminder": {
         "note": "Always sent in Spanish: a booking does not keep the client's language.",
         "switch": "Active",
-        "hintOn": "A reminder goes out before every appointment.",
-        "hintOff": "Switched off: no reminder is sent.",
-        "turnedOn": "Reminder switched on",
-        "turnedOff": "Reminder switched off"
+        "hintOn": "An email reminder goes out before every appointment.",
+        "hintOff": "Switched off: the email reminder is not sent. The WhatsApp one is independent: remove it on its own row.",
+        "turnedOn": "Email reminder switched on",
+        "turnedOff": "Email reminder switched off. The WhatsApp one is independent."
       },
       "corrupt": "The saved text is damaged and cannot be opened. Reset it to start again.",
       "variables": {
@@ -2392,8 +2392,9 @@
           "consent": "Only clients who ticked “appointment notices” and have not written STOP receive the message.",
           "nothing": "If there is no template set up for the booking's language, nothing is sent.",
           "languages": "Each language needs its own template. Every booking is sent in the language it was made in or, when that is not known, in the one on the contact's file, and a contact with no language chosen is on file as English: it is worth setting up English too.",
+          "languagesReminder": "The reminder goes out in the language on the contact's file; with no file, in Spanish. A contact with no language chosen is on file as English: it is worth setting up English too.",
           "stop": "Include in the template's text a phrase such as “Reply STOP to stop receiving these notices”.",
-          "reminderFirst": "When you save the first reminder template, bookings in the next 40-56 hours whose email reminder has not gone out yet will receive it too.",
+          "reminderFirst": "When you save the first reminder template for this language, bookings in the next 40-56 hours whose email reminder has not gone out yet will receive it too.",
           "noButtons": "Templates with a variable-link button are not offered: this send does not fill buttons."
         },
         "editor": {

@@ -150,8 +150,10 @@ export function WhatsAppMessageEditor({
       allRows.map((r) => ({
         key: r.key,
         channel: r.channel,
+        locale: r.locale,
         whatsapp_template_id: r.whatsapp_template_id,
       })),
+      locale,
     );
   const language = tEmail(`locales.${locale}`);
 
@@ -251,7 +253,15 @@ export function WhatsAppMessageEditor({
           </p>
           <p>{t("rules.consent")}</p>
           <p>{t("rules.nothing")}</p>
-          <p>{t("rules.languages")}</p>
+          {/* The reminder reads the contact's language alone; the other two
+              also know the language the booking was made in. */}
+          <p>
+            {t(
+              messageKey === "booking_reminder"
+                ? "rules.languagesReminder"
+                : "rules.languages",
+            )}
+          </p>
           <p>{t("rules.stop")}</p>
           <p>{t("rules.noButtons")}</p>
         </div>

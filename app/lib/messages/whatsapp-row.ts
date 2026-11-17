@@ -103,17 +103,27 @@ export function whatsappRowState(
 }
 
 /**
- * Whether saving a WhatsApp reminder now would be the first. The first one
- * also reaches the bookings already inside the reminder window whose email
- * reminder has not gone out, which is worth saying once.
+ * Whether saving a WhatsApp reminder in `locale` now would be the first for
+ * that language. The sender looks the row up by the contact's language, with
+ * its own saved date, so Spanish being set up says nothing about English: the
+ * first English row also reaches the bookings of English-language contacts that
+ * are already inside the reminder window and have not had their email one, and
+ * that is worth saying once per language.
  */
 export function isFirstReminderSetup(
-  rows: { key: string; channel: string; whatsapp_template_id: string | null }[],
+  rows: {
+    key: string;
+    channel: string;
+    locale: string;
+    whatsapp_template_id: string | null;
+  }[],
+  locale: string,
 ): boolean {
   return !rows.some(
     (row) =>
       row.key === "booking_reminder" &&
       row.channel === "whatsapp" &&
+      row.locale === locale &&
       row.whatsapp_template_id !== null,
   );
 }
