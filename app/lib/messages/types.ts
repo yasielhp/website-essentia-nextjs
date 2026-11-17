@@ -57,11 +57,14 @@ export type MessageDefaultEntry = {
  * translations together.
  */
 export const MESSAGE_ACTION_ERROR_KEYS = [
+  "unauthenticated",
+  "forbidden",
   "db",
   "invalid",
   "no_email",
   "no_phone",
   "email_failed",
+  "email_not_configured",
   "test_rate_limited",
   "template_unavailable",
   "whatsapp_not_configured",

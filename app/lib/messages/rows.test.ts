@@ -89,6 +89,39 @@ describe("readRows", () => {
     expect(out?.doc).toBeNull();
   });
 
+  it("a body with a raw-HTML block or an address the sanitiser refuses is corrupt, never sent to the browser as it is", () => {
+    for (const bad of [
+      { type: "htmlCodeBlock", attrs: { html: "<script>x</script>" } },
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: "x",
+            marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+          },
+        ],
+      },
+      { type: "button", attrs: { text: "Ir", url: "data:text/html,x" } },
+    ]) {
+      const [out] = readRows([row({ doc: { type: "doc", content: [bad] } })]);
+      expect(out?.corrupt).toBe(true);
+      expect(out?.doc).toBeNull();
+    }
+  });
+
+  it("a body deeper than a save would accept is corrupt", () => {
+    const nest = (depth: number) => {
+      let node: Record<string, unknown> = { type: "paragraph" };
+      for (let level = 3; level <= depth; level += 1) {
+        node = { type: "blockquote", content: [node] };
+      }
+      return { type: "doc", content: [node] };
+    };
+    expect(readRows([row({ doc: nest(30) })])[0]?.corrupt).toBeUndefined();
+    expect(readRows([row({ doc: nest(31) })])[0]?.corrupt).toBe(true);
+  });
+
   it("an empty document and a null one are fine", () => {
     for (const doc of [{ type: "doc", content: [] }, null]) {
       const [out] = readRows([row({ doc })]);

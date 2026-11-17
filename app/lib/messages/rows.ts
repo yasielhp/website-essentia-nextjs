@@ -1,4 +1,7 @@
+import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_KEYS } from "./catalog";
+import { MAX_DOC_DEPTH, docDepth } from "./doc-depth";
+import { findForbiddenNodes } from "./safe-doc";
 import type { MessageTemplateRowView } from "./types";
 
 /**
@@ -12,27 +15,30 @@ import type { MessageTemplateRowView } from "./types";
  * Pure.
  */
 
-const MAX_DEPTH = 200;
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** A node with a type and, if it has children, a list of nodes. */
-function wellFormedNode(node: unknown, depth: number): boolean {
-  if (depth > MAX_DEPTH || !isRecord(node)) return false;
-  if (typeof node.type !== "string") return false;
+function wellFormedNode(node: unknown): boolean {
+  if (!isRecord(node) || typeof node.type !== "string") return false;
   if (node.content === undefined) return true;
-  if (!Array.isArray(node.content)) return false;
-  return node.content.every((child) => wellFormedNode(child, depth + 1));
+  return Array.isArray(node.content) && node.content.every(wellFormedNode);
 }
 
+/**
+ * Whether a stored body is one this app would have saved and can show: a
+ * document of well-formed nodes, no deeper than a save allows (checked first,
+ * and without recursion, so the walk below is bounded), and nothing the
+ * sanitiser refuses (raw HTML, an address that is not https, http or mailto).
+ * What is stored is not trusted just for having come from the database.
+ */
 function wellFormedDoc(doc: unknown): boolean {
-  return (
-    isRecord(doc) &&
-    doc.type === "doc" &&
-    Array.isArray(doc.content) &&
-    doc.content.every((child) => wellFormedNode(child, 1))
-  );
+  if (docDepth(doc) > MAX_DOC_DEPTH) return false;
+  if (!isRecord(doc) || doc.type !== "doc" || !Array.isArray(doc.content)) {
+    return false;
+  }
+  if (!doc.content.every(wellFormedNode)) return false;
+  return findForbiddenNodes(doc as EmailDoc).length === 0;
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value : null);

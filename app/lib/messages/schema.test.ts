@@ -171,17 +171,13 @@ describe("validateMessageTemplate — the switch alone creates no content", () =
     });
   });
 
-  it("with some text, a title the admin cleared stays empty and a missing field is null", () => {
+  it("a field the admin emptied is cleared; a field not sent is not mentioned at all", () => {
     const out = accepted(
       email({ subject: "Hola", title: "", preheader: undefined, doc: null }),
     );
     if (out.channel !== "email") throw new Error("channel");
-    expect(out.content).toEqual({
-      subject: "Hola",
-      preheader: null,
-      title: "",
-      doc: null,
-    });
+    expect(out.content).toEqual({ subject: "Hola", title: null, doc: null });
+    expect(out.content).not.toHaveProperty("preheader");
   });
 });
 
@@ -219,13 +215,67 @@ describe("validateMessageTemplate — limits", () => {
       errorsOf(email({ doc: wrap(MAX_DOC_CHARS - overhead + 1) })),
     ).toEqual({ doc: "docTooLarge" });
   });
+});
 
-  it("a very deep document is refused, not a crash", () => {
+describe("validateMessageTemplate — depth", () => {
+  /** A body whose deepest path holds exactly `depth` nodes, root included. */
+  const nested = (depth: number): EmailDoc => {
     let node: EmailDoc = para(text("x"));
-    for (let i = 0; i < 5_000; i += 1)
+    for (let level = 4; level <= depth; level += 1) {
       node = { type: "blockquote", content: [node] };
-    const out = validateMessageTemplate(email({ doc: doc(node) }));
-    expect(out.ok).toBe(false);
+    }
+    return { type: "doc", content: [node] };
+  };
+
+  it("30 levels pass, 31 do not, whatever the state of the stack", () => {
+    expect(validateMessageTemplate(email({ doc: nested(30) })).ok).toBe(true);
+    expect(errorsOf(email({ doc: nested(31) }))).toEqual({
+      doc: "docTooDeep",
+    });
+  });
+
+  it("a document nested absurdly deep is refused as too deep, quickly and without a crash", () => {
+    expect(errorsOf(email({ doc: nested(200_000) }))).toEqual({
+      doc: "docTooDeep",
+    });
+  });
+
+  it("is judged before the shape, so nothing recurses over an unchecked body", () => {
+    // Deep AND malformed: the depth answer comes first.
+    const deepAndBad = { type: "doc", content: [nested(40)], attrs: 5 };
+    expect(errorsOf(email({ doc: deepAndBad }))).toEqual({ doc: "docTooDeep" });
+  });
+});
+
+describe("validateMessageTemplate — a body the renderer could not draw", () => {
+  const heading = (level: unknown): EmailDoc => ({
+    type: "heading",
+    attrs: { level },
+    content: [text("Título")],
+  });
+
+  it("accepts the heading levels the editor offers", () => {
+    for (const level of [1, 2, 3, "1", "2", "3"]) {
+      expect(
+        validateMessageTemplate(email({ doc: doc(heading(level)) })).ok,
+      ).toBe(true);
+    }
+    // No level at all is a level 1.
+    expect(
+      validateMessageTemplate(
+        email({ doc: doc({ type: "heading", content: [text("T")] }) }),
+      ).ok,
+    ).toBe(true);
+  });
+
+  it("refuses a heading level the renderer throws on, with the path", () => {
+    for (const level of [0, 4, 99, -1, 2.5, "h2", null, "99"]) {
+      expect(
+        errorsOf(email({ doc: doc(para(text("a")), heading(level)) })),
+      ).toEqual({
+        "doc.content.1.attrs.level": "docNotRenderable",
+      });
+    }
   });
 });
 
@@ -582,10 +632,9 @@ describe("validateMessageTemplate — WhatsApp", () => {
 
   it("ignores the email fields on a WhatsApp message", () => {
     const out = accepted(whatsapp({ subject: "x", doc: doc(para(text("y"))) }));
-    expect(toRowPayload(out, "u", "now")).toMatchObject({
-      subject: null,
-      doc: null,
-    });
+    const payload = toRowPayload(out, "u", "now");
+    expect(payload).not.toHaveProperty("subject");
+    expect(payload).not.toHaveProperty("doc");
   });
 });
 
@@ -641,10 +690,83 @@ describe("the switch is only written when it was sent", () => {
   });
 });
 
+describe("a save only touches the fields it carries", () => {
+  const payloadOf = (input: Record<string, unknown>) =>
+    toRowPayload(accepted(input), "admin-1", "now");
+  const address = { key: "booking_confirmed", channel: "email", locale: "es" };
+
+  it("saving only the subject leaves the body, the preheader and the title alone", () => {
+    const payload = payloadOf({ ...address, subject: "Solo asunto" });
+    expect(payload).toMatchObject({ subject: "Solo asunto" });
+    for (const column of ["doc", "preheader", "title"]) {
+      expect(payload).not.toHaveProperty(column);
+    }
+  });
+
+  it("saving only the body leaves the texts alone", () => {
+    const payload = payloadOf({
+      ...address,
+      doc: doc(para(text("Nuevo cuerpo"))),
+    });
+    expect(payload).toHaveProperty("doc");
+    for (const column of ["subject", "preheader", "title"]) {
+      expect(payload).not.toHaveProperty(column);
+    }
+  });
+
+  it("a null clears: `doc: null` empties the body and nothing else", () => {
+    const payload = payloadOf({ ...address, doc: null });
+    expect(payload).toHaveProperty("doc", null);
+    expect(payload).not.toHaveProperty("subject");
+  });
+
+  it("an empty text clears it too", () => {
+    const payload = payloadOf({ ...address, subject: "  ", title: "" });
+    expect(payload).toMatchObject({ subject: null, title: null });
+    expect(payload).not.toHaveProperty("doc");
+  });
+
+  it("an empty body is a cleared body", () => {
+    expect(payloadOf({ ...address, doc: doc(para()) })).toHaveProperty(
+      "doc",
+      null,
+    );
+  });
+
+  it("a WhatsApp save with only the template leaves the parameters alone, and the reverse", () => {
+    const wa = { key: "booking_reminder", channel: "whatsapp", locale: "es" };
+    const onlyTemplate = payloadOf({ ...wa, whatsappTemplateId: UUID });
+    expect(onlyTemplate).toHaveProperty("whatsapp_template_id", UUID);
+    expect(onlyTemplate).not.toHaveProperty("whatsapp_params");
+    const onlyParams = payloadOf({
+      ...wa,
+      whatsappParams: [{ kind: "field", field: "first_name" }],
+    });
+    expect(onlyParams).toHaveProperty("whatsapp_params");
+    expect(onlyParams).not.toHaveProperty("whatsapp_template_id");
+  });
+
+  it("the new-row case: with only a subject the other columns are simply not written", () => {
+    // On insert they take the table's default, NULL.
+    expect(
+      Object.keys(payloadOf({ ...address, subject: "Hola" })).sort(),
+    ).toEqual(
+      [
+        "channel",
+        "key",
+        "locale",
+        "subject",
+        "updated_at",
+        "updated_by",
+      ].sort(),
+    );
+  });
+});
+
 describe("toRowPayload", () => {
   const NOW = "2026-11-17T10:00:00.000Z";
 
-  it("an email with content writes the four fields and clears the WhatsApp columns", () => {
+  it("an email with content writes the four fields", () => {
     expect(toRowPayload(accepted(email()), "admin-1", NOW)).toEqual({
       key: "booking_confirmed",
       channel: "email",
@@ -654,8 +776,6 @@ describe("toRowPayload", () => {
       preheader: "Nos vemos pronto",
       title: "Hola {{first_name}}",
       doc: doc(para(text("Te esperamos el {{date}}."))),
-      whatsapp_template_id: null,
-      whatsapp_params: [],
       updated_by: "admin-1",
       updated_at: NOW,
     });
@@ -704,10 +824,6 @@ describe("toRowPayload", () => {
       channel: "whatsapp",
       locale: "es",
       enabled: true,
-      subject: null,
-      preheader: null,
-      title: null,
-      doc: null,
       whatsapp_template_id: UUID,
       whatsapp_params: [
         { kind: "field", field: "first_name" },

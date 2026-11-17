@@ -19,9 +19,11 @@ import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type { MessageRow } from "@/lib/messages/compose";
 import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
 import { readRows } from "@/lib/messages/rows";
+import { rehearseRender } from "@/lib/messages/rehearsal";
 import { toRowPayload, validateMessageTemplate } from "@/lib/messages/schema";
 import { buildTestEmail } from "@/lib/messages/test-email";
 import type {
+  MESSAGE_ACTION_ERROR_KEYS,
   MessageCatalogEntry,
   MessageDefaultEntry,
   MessageTemplateRowView,
@@ -33,14 +35,15 @@ const PATH = "/dashboard/messages";
 const LOCALES = ["en", "es"] as const;
 
 /**
- * `error` is always a key the dashboard translates. Nothing Postgres or the
- * mailer said reaches the browser: `detail` carries only what is safe to show
- * (eligibility codes, the names the admin typed, Meta's words about the
- * template).
+ * `error` is always one of `MESSAGE_ACTION_ERROR_KEYS`, which the dashboard
+ * translates (a test keeps the list and the translations together). Nothing
+ * Postgres, the mailer or the auth guard said reaches the browser: `detail`
+ * carries only what is safe to show (eligibility codes, the variable names the
+ * admin typed, Meta's words about the template).
  */
 type Failure = {
   ok: false;
-  error: string;
+  error: (typeof MESSAGE_ACTION_ERROR_KEYS)[number];
   detail?: string;
   fieldErrors?: Record<string, string>;
 };
@@ -50,9 +53,17 @@ async function admin(accessToken: string | null): Promise<AuthContext> {
 }
 
 function authFailure(err: unknown): Failure {
-  if (err instanceof AuthError) return { ok: false, error: err.message };
+  if (err instanceof AuthError) {
+    return {
+      ok: false,
+      error: err.status === 403 ? "forbidden" : "unauthenticated",
+    };
+  }
   throw err;
 }
+
+/** What `detail` may carry of what the admin typed: a name, not a document. */
+const DETAIL_MAX = 200;
 
 const addressSchema = z.object({
   key: z.enum(MESSAGE_KEYS),
@@ -122,14 +133,16 @@ export async function listMessageTemplates(accessToken: string | null): Promise<
 /**
  * Saves one message in one channel and language.
  *
- * Fields the input does not carry are left untouched: saving only the switch
- * (the reminder on or off) creates no content (a new row keeps its text
- * columns NULL, "the email that has always gone out", and an existing row
- * keeps the text it has), and saving a text without the switch leaves the
- * switch alone. A field that is carried as `null` or `""` is cleared. So a
- * client must send ONLY `enabled` for a toggle: sending the text fields as
- * null would wipe the admin's text. The default text is never copied into a
- * row, here or by opening the editor.
+ * Only what the input carries is written. A field that is absent is not
+ * touched: saving the switch alone leaves the text, saving a subject alone
+ * leaves the body, and a new row keeps every field it was not given NULL (the
+ * email that has always gone out); the default text is never copied into a
+ * row, here or by opening the editor. A field sent as `null` or `""` is
+ * cleared. So a client must send ONLY what the admin changed: a toggle sends
+ * only `enabled`, and sending the text fields as null would wipe them.
+ *
+ * An email body is also tried through the real renderer before it is written:
+ * one it cannot draw would be saved as the admin's and never reach a client.
  */
 export async function saveMessageTemplate(
   accessToken: string | null,
@@ -150,7 +163,9 @@ export async function saveMessageTemplate(
       error: "invalid",
       fieldErrors: parsed.fieldErrors,
       ...(parsed.unknownVariables
-        ? { detail: parsed.unknownVariables.join(", ") }
+        ? {
+            detail: parsed.unknownVariables.join(", ").slice(0, DETAIL_MAX),
+          }
         : {}),
     };
   }
@@ -165,13 +180,13 @@ export async function saveMessageTemplate(
     (write.whatsapp !== null || write.enabled === true)
   ) {
     // What a database read can add to the schema: the template must exist and
-    // be sendable in this language with exactly these parameters.
+    // be sendable in this language with exactly these parameters. What the
+    // save does not mention is what the row already has.
     const fieldErrors: Record<string, string> = {};
     try {
-      let templateId = write.whatsapp?.templateId ?? null;
-      let params: WhatsAppParamSource[] = write.whatsapp?.params ?? [];
-      if (!write.whatsapp) {
-        // Only the switch: it keeps the template the row already has.
+      let templateId = write.whatsapp?.templateId;
+      let params = write.whatsapp?.params;
+      if (templateId === undefined || params === undefined) {
         const { data, error } = await db
           .from("message_templates")
           .select("whatsapp_template_id, whatsapp_params")
@@ -184,8 +199,8 @@ export async function saveMessageTemplate(
           whatsapp_template_id: string | null;
           whatsapp_params: WhatsAppParamSource[] | null;
         } | null;
-        templateId = existing?.whatsapp_template_id ?? null;
-        params = existing?.whatsapp_params ?? [];
+        templateId ??= existing?.whatsapp_template_id ?? null;
+        params ??= existing?.whatsapp_params ?? [];
       }
       if (templateId === null) {
         fieldErrors.whatsappTemplateId = "templateRequired";
@@ -208,6 +223,15 @@ export async function saveMessageTemplate(
     }
     if (Object.keys(fieldErrors).length > 0) {
       return { ok: false, error: "invalid", fieldErrors };
+    }
+  }
+
+  // The trial render: the validator caught what it knows the renderer cannot
+  // take, this catches the rest, before anything is written.
+  if (write.channel === "email" && write.content) {
+    const trial = await rehearseRender(write.key, write.locale, write.content);
+    if (trial !== "ok") {
+      return { ok: false, error: "invalid", fieldErrors: { doc: trial } };
     }
   }
 
@@ -372,20 +396,30 @@ export async function sendTestMessage(
       return { ok: false, error: "email_failed" };
     }
 
+    // Without a Resend key `sendEmail` skips the send and says nothing wrong:
+    // a test that reports success and sends nothing would be a lie.
+    if (!process.env.RESEND_API_KEY) {
+      return { ok: false, error: "email_not_configured" };
+    }
     // Counted only here, once everything that could be refused without
     // costing a send has been.
     if (!testLimiter.take(caller.userId)) {
       return { ok: false, error: "test_rate_limited" };
     }
     log();
-    const { error } = await sendEmail({
-      to: caller.email,
-      subject: `[PRUEBA] ${built.subject}`,
-      html: built.html,
-      blindCopy: false,
-    });
-    if (error) {
-      console.error("[messages] test email failed:", error.message);
+    try {
+      const { error } = await sendEmail({
+        to: caller.email,
+        subject: `[PRUEBA] ${built.subject}`,
+        html: built.html,
+        blindCopy: false,
+      });
+      if (error) {
+        console.error("[messages] test email failed:", error.message);
+        return { ok: false, error: "email_failed" };
+      }
+    } catch (err) {
+      console.error("[messages] test email threw:", err);
       return { ok: false, error: "email_failed" };
     }
     return { ok: true, to: caller.email };

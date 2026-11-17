@@ -4,6 +4,7 @@ import { docNode, whatsappParamSchema } from "@/lib/schemas";
 import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_CATALOG, MESSAGE_KEYS, unknownVariables } from "./catalog";
+import { MAX_DOC_DEPTH, docDepth } from "./doc-depth";
 import { allowedParamFields } from "./param-fields";
 import { findForbiddenNodes } from "./safe-doc";
 
@@ -48,6 +49,8 @@ export const MESSAGE_VALIDATION_KEYS = [
   "invalidInput",
   ...KNOWN_KEYS,
   "docTooLarge",
+  "docTooDeep",
+  "docNotRenderable",
   "cannotDisable",
   "unknownVariable",
   "linkNotAllowed",
@@ -76,16 +79,21 @@ export const messageTemplateSchema = z.object({
   whatsappParams: z.array(whatsappParamSchema).max(20).optional(),
 });
 
+/**
+ * What a save says about the body of an email, field by field. A key that is
+ * absent was not sent and its column is not touched; `null` clears it.
+ */
 export type EmailContentWrite = {
-  subject: string | null;
-  preheader: string | null;
-  title: string | null;
-  doc: EmailDoc | null;
+  subject?: string | null;
+  preheader?: string | null;
+  title?: string | null;
+  doc?: EmailDoc | null;
 };
 
+/** The same for a WhatsApp message: absent is not touched, `null` clears. */
 export type WhatsAppContentWrite = {
-  templateId: string | null;
-  params: WhatsAppParamSource[];
+  templateId?: string | null;
+  params?: WhatsAppParamSource[];
 };
 
 /**
@@ -173,6 +181,31 @@ function* docStrings(node: EmailDoc, path: string): Generator<Found> {
   }
 }
 
+/** The heading levels the editor offers and `@maily-to/render` has a size for. */
+const HEADING_LEVELS = new Set(["1", "2", "3"]);
+
+/**
+ * Where the document carries an attribute value the renderer throws on, as
+ * the path to that attribute. Only what was found to throw: a heading whose
+ * `level` is not 1, 2 or 3 (the renderer looks its size up by level and
+ * fails destructuring `undefined`). Everything else the renderer does with a
+ * node is caught by the trial render the save runs before it writes.
+ *
+ * Recursive, and safe to be: the depth was capped before this is reached.
+ */
+function* unrenderableAttrs(node: EmailDoc, path: string): Generator<string> {
+  if (node.type === "heading" && node.attrs && "level" in node.attrs) {
+    const level = node.attrs.level;
+    const ok =
+      (typeof level === "number" || typeof level === "string") &&
+      HEADING_LEVELS.has(String(level));
+    if (!ok) yield `${path}.attrs.level`;
+  }
+  for (const [i, child] of (node.content ?? []).entries()) {
+    yield* unrenderableAttrs(child, `${path}.content.${i}`);
+  }
+}
+
 /** `content[2].marks[0]` (safe-doc's way) as `doc.content.2.marks.0`. */
 const dottedPath = (path: string) =>
   `doc${path === "" ? "" : "."}${path.replace(/\[(\d+)\]/g, ".$1").replace(/^\./, "")}`;
@@ -227,23 +260,21 @@ function checkEmail(
     for (const problem of findForbiddenNodes(doc)) {
       errors[dottedPath(problem.path)] ??= problem.kind;
     }
+    // Attribute values the renderer throws on, found before it is asked.
+    for (const path of unrenderableAttrs(doc, "doc")) {
+      errors[path] ??= "docNotRenderable";
+    }
   }
 
-  const subject = blank(data.subject) ? null : data.subject!;
-  const preheader = blank(data.preheader) ? null : data.preheader!;
-  const title = blank(data.title) ? null : data.title!;
-  const hasText = subject !== null || preheader !== null || title !== null;
-  if (!hasText && doc === null) {
-    return { subject: null, preheader: null, title: null, doc: null };
+  // Partial by design: a field that was not sent is not in the result, so the
+  // row keeps it. One that was sent empty (or null) is cleared.
+  const content: EmailContentWrite = {};
+  for (const field of ["subject", "preheader", "title"] as const) {
+    if (data[field] === undefined) continue;
+    content[field] = blank(data[field]) ? null : data[field]!;
   }
-  return {
-    subject,
-    // With some content, a title or preheader the admin emptied on purpose
-    // stays empty rather than falling back to the default.
-    preheader: data.preheader == null ? null : data.preheader,
-    title: data.title == null ? null : data.title,
-    doc,
-  };
+  if (data.doc !== undefined) content.doc = doc;
+  return Object.keys(content).length > 0 ? content : null;
 }
 
 function checkWhatsApp(
@@ -251,24 +282,26 @@ function checkWhatsApp(
   enabled: boolean | undefined,
   errors: Errors,
 ): WhatsAppContentWrite | null {
-  const provided =
-    data.whatsappTemplateId !== undefined || data.whatsappParams !== undefined;
-  if (!provided) return null;
-
-  const templateId = data.whatsappTemplateId ?? null;
-  // A switched-off message may carry no template: it will not be sent.
-  if (templateId === null && enabled !== false) {
-    errors.whatsappTemplateId ??= "templateRequired";
-  }
-
-  const params = data.whatsappParams ?? [];
-  const allowed = new Set<string>(allowedParamFields(data.key));
-  params.forEach((param, i) => {
-    if (param.kind === "field" && !allowed.has(param.field)) {
-      errors[`whatsappParams.${i}`] ??= "paramFieldNotOffered";
+  const content: WhatsAppContentWrite = {};
+  if (data.whatsappTemplateId !== undefined) {
+    content.templateId = data.whatsappTemplateId;
+    // A switched-off message may carry no template: it will not be sent. When
+    // the template is not mentioned at all the row keeps its own, and the
+    // action checks that one exists.
+    if (data.whatsappTemplateId === null && enabled !== false) {
+      errors.whatsappTemplateId ??= "templateRequired";
     }
-  });
-  return { templateId, params };
+  }
+  if (data.whatsappParams !== undefined) {
+    content.params = data.whatsappParams;
+    const allowed = new Set<string>(allowedParamFields(data.key));
+    data.whatsappParams.forEach((param, i) => {
+      if (param.kind === "field" && !allowed.has(param.field)) {
+        errors[`whatsappParams.${i}`] ??= "paramFieldNotOffered";
+      }
+    });
+  }
+  return Object.keys(content).length > 0 ? content : null;
 }
 
 function readIssues(error: z.ZodError): Errors {
@@ -290,6 +323,11 @@ export function validateMessageTemplate(
     return { ok: false, fieldErrors: { _: "invalidInput" } };
 
   try {
+    // Depth first, and without recursion: nothing below (the size, the shape,
+    // the walks) may run over a body nobody has bounded yet.
+    if (input.doc != null && docDepth(input.doc) > MAX_DOC_DEPTH) {
+      return { ok: false, fieldErrors: { doc: "docTooDeep" } };
+    }
     if (input.doc != null) {
       const size = JSON.stringify(input.doc)?.length ?? 0;
       if (size > MAX_DOC_CHARS) {
@@ -364,10 +402,12 @@ export function validateMessageTemplate(
 /**
  * The columns to upsert for a validated save.
  *
- * When the save carried only the switch, the content columns are left out of
- * the payload altogether: an upsert then updates just the columns it names, so
- * switching the reminder off does not wipe a text the admin wrote, and on a new
- * row they stay NULL (the legacy email), never the default text.
+ * Only what the input carried is in the payload. An upsert updates just the
+ * columns it names, so a field that was not sent keeps what the row has: the
+ * switch alone does not wipe a text, a subject alone does not wipe the body,
+ * and on a NEW row every column not named stays NULL (the legacy email), never
+ * the default text. A field sent as null or empty is in the payload as null,
+ * which is how it is cleared.
  */
 export function toRowPayload(
   write: MessageTemplateWrite,
@@ -385,24 +425,18 @@ export function toRowPayload(
     updated_at: now,
   };
   if (write.channel === "email") {
-    return write.content
-      ? {
-          ...base,
-          ...write.content,
-          whatsapp_template_id: null,
-          whatsapp_params: [],
-        }
-      : base;
+    // Only what was sent: an upsert updates just the columns it names, so the
+    // others keep what the row has (and a new row leaves them NULL).
+    return { ...base, ...write.content };
   }
-  return write.whatsapp
-    ? {
-        ...base,
-        subject: null,
-        preheader: null,
-        title: null,
-        doc: null,
-        whatsapp_template_id: write.whatsapp.templateId,
-        whatsapp_params: write.whatsapp.params,
-      }
-    : base;
+  const whatsapp = write.whatsapp;
+  return {
+    ...base,
+    ...(whatsapp?.templateId === undefined
+      ? {}
+      : { whatsapp_template_id: whatsapp.templateId }),
+    ...(whatsapp?.params === undefined
+      ? {}
+      : { whatsapp_params: whatsapp.params }),
+  };
 }

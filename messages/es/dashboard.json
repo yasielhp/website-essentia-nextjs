@@ -1102,7 +1102,9 @@
     "blockNotAllowed": "Este bloque no está permitido en un mensaje.",
     "docTooLarge": "El mensaje es demasiado largo.",
     "channelNotAllowed": "Este mensaje no se puede enviar por ese canal.",
-    "paramFieldNotOffered": "Ese dato no está disponible en este mensaje."
+    "paramFieldNotOffered": "Ese dato no está disponible en este mensaje.",
+    "docTooDeep": "El mensaje tiene demasiados niveles anidados.",
+    "docNotRenderable": "Este contenido no se puede mostrar en un email. Revisa los títulos y los bloques."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -2206,7 +2208,10 @@
         "test_rate_limited": "Has enviado demasiadas pruebas; espera un poco.",
         "template_unavailable": "La plantilla elegida no está aprobada o ya no se puede enviar.",
         "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
-        "meta": "Meta rechazó la petición."
+        "meta": "Meta rechazó la petición.",
+        "unauthenticated": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
+        "forbidden": "No tienes permiso para esta acción.",
+        "email_not_configured": "El envío de emails no está configurado en el servidor."
       }
     }
   },

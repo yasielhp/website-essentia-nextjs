@@ -1102,7 +1102,9 @@
     "blockNotAllowed": "This block is not allowed in a message.",
     "docTooLarge": "The message is too long.",
     "channelNotAllowed": "This message cannot be sent on that channel.",
-    "paramFieldNotOffered": "That detail is not available in this message."
+    "paramFieldNotOffered": "That detail is not available in this message.",
+    "docTooDeep": "The message has too many nested levels.",
+    "docNotRenderable": "This content cannot be shown in an email. Check the headings and the blocks."
   },
   "gender": {
     "unspecified": "Not specified",
@@ -2206,7 +2208,10 @@
         "test_rate_limited": "You have sent too many tests; wait a while.",
         "template_unavailable": "The chosen template is not approved or can no longer be sent.",
         "whatsapp_not_configured": "WhatsApp Business is not configured on the server.",
-        "meta": "Meta rejected the request."
+        "meta": "Meta rejected the request.",
+        "unauthenticated": "Your session has expired. Sign in again.",
+        "forbidden": "You do not have permission for this action.",
+        "email_not_configured": "Email sending is not configured on the server."
       }
     }
   },
