@@ -1,8 +1,16 @@
 "use server";
 
+import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { ADMIN_ROLES, AuthError, authenticate } from "@/lib/auth-guard";
 import { emailForUnsubscribeToken, setNewsletterState } from "@/lib/newsletter";
+
+/**
+ * An address as it reaches these doors: anything at all, because a Server
+ * Action is a public HTTP endpoint and its arguments are whatever the caller
+ * posted. Not exported: a `"use server"` module exports async functions only.
+ */
+const emailInput = z.string().trim().toLowerCase().max(160).pipe(z.email());
 
 /**
  * Doors onto the newsletter list, one per kind of caller.
@@ -27,11 +35,11 @@ import { emailForUnsubscribeToken, setNewsletterState } from "@/lib/newsletter";
 export async function subscribeToNewsletter(
   email: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const trimmed = email.trim().toLowerCase();
-  if (!trimmed || !trimmed.includes("@")) {
-    return { ok: false, error: "invalid" };
-  }
-  return setNewsletterState(trimmed, true);
+  // Parsed, not trusted to be a string: `email.trim()` on what is not one
+  // threw, and a thrown action is a 500 instead of the form's own error.
+  const parsed = emailInput.safeParse(email);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  return setNewsletterState(parsed.data, true);
 }
 
 /** What the unsubscribe page shows before asking for confirmation. */
@@ -65,6 +73,14 @@ export async function unsubscribeByToken(
  *
  * Requires the caller to be the profile owner or an administrator; without the
  * check any visitor could toggle the preference of an arbitrary user id.
+ *
+ * The ADDRESS is not the caller's to choose either. Checking the user id and
+ * then acting on the `email` argument let any signed-in client unsubscribe, or
+ * subscribe again, whoever she named. So whoever changes her own preference
+ * does it on the address her session resolves to, and the argument is ignored
+ * (the account page and the booking form send her own, so nothing changes for
+ * them). Only an administrator acting on ANOTHER user names the address, which
+ * must be one.
  */
 export async function updateNewsletterForUser(
   accessToken: string | null,
@@ -72,17 +88,25 @@ export async function updateNewsletterForUser(
   email: string,
   subscribe: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
+  let address: string;
   try {
     const caller = await authenticate(accessToken);
-    if (caller.userId !== userId && !ADMIN_ROLES.includes(caller.role)) {
+    const own = caller.userId === userId;
+    if (!own && !ADMIN_ROLES.includes(caller.role)) {
       return { ok: false, error: "Insufficient permissions" };
     }
+    const parsed = emailInput.safeParse(own ? caller.email : email);
+    if (!parsed.success) return { ok: false, error: "invalid" };
+    address = parsed.data;
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, error: err.message };
     throw err;
   }
+  if (typeof userId !== "string" || typeof subscribe !== "boolean") {
+    return { ok: false, error: "invalid" };
+  }
 
-  const resendResult = await setNewsletterState(email, subscribe);
+  const resendResult = await setNewsletterState(address, subscribe);
   if (!resendResult.ok) return resendResult;
 
   const { error: dbError } = await getAdminClient()
