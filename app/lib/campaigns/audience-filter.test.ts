@@ -590,3 +590,172 @@ describe("filterAudience — what 'subscribed' means per channel", () => {
     expect(out[0].subscriptionCycle).toBeUndefined();
   });
 });
+
+describe("filterAudience — the consent a campaign needs depends on what it is for", () => {
+  const OPTED = "2026-11-01T00:00:00Z";
+  const NOTICES = { whatsappOptedInAt: OPTED };
+  const NEWS = { whatsappMarketingOptedInAt: OPTED };
+  const person = (over: Partial<ContactCandidate> = {}) =>
+    c({ email: "", phone: "600112233", ...over });
+  const run = (
+    list: ContactCandidate[],
+    purpose: "marketing" | "appointment" | undefined,
+    aud: CampaignAudience = EMPTY_AUDIENCE,
+  ) => filterAudience(list, aud, NOW, "whatsapp", new Set(), purpose);
+
+  it("a notice about her appointment needs the consent to appointment notices", () => {
+    const onlyNotices = person(NOTICES);
+    expect(ids(run([onlyNotices], "appointment"))).toEqual([onlyNotices.id]);
+  });
+
+  it("and not the consent to news and offers, which says nothing about it", () => {
+    expect(ids(run([person(NEWS)], "appointment"))).toEqual([]);
+  });
+
+  it("a campaign of news needs the consent to news, and the notices' does not stand in", () => {
+    const onlyNews = person(NEWS);
+    expect(ids(run([onlyNews], "marketing"))).toEqual([onlyNews.id]);
+    expect(ids(run([person(NOTICES)], "marketing"))).toEqual([]);
+  });
+
+  it("marketing is what a campaign is when nothing says otherwise", () => {
+    expect(ids(run([person(NOTICES)], undefined))).toEqual([]);
+    const onlyNews = person(NEWS);
+    expect(ids(run([onlyNews], undefined))).toEqual([onlyNews.id]);
+  });
+
+  it("the rest is the same for both: an opt-out, an unreachable number, no valid phone, the STOP list", () => {
+    for (const purpose of ["marketing", "appointment"] as const) {
+      const consent = purpose === "marketing" ? NEWS : NOTICES;
+      const blocked = [
+        person({ ...consent, whatsappOptedOutAt: "2026-11-10T00:00:00Z" }),
+        person({ ...consent, whatsappUnreachableAt: "2026-11-10T00:00:00Z" }),
+        person({ ...consent, phone: null }),
+        person({ ...consent, phone: "123" }),
+      ];
+      expect(ids(run(blocked, purpose))).toEqual([]);
+      const quiet = person({ ...consent, phone: "611222333" });
+      expect(
+        ids(
+          filterAudience(
+            [quiet],
+            EMPTY_AUDIENCE,
+            NOW,
+            "whatsapp",
+            new Set(["+34611222333"]),
+            purpose,
+          ),
+        ),
+      ).toEqual([]);
+    }
+  });
+
+  it("hand-picked contacts are ignored for an appointment notice: its audience is the appointments", () => {
+    const stranger = person({ ...NOTICES, language: "en" });
+    const out = filterAudience(
+      [stranger],
+      audience({ language: "es", manualIds: [stranger.id] }),
+      NOW,
+      "whatsapp",
+      new Set(),
+      "appointment",
+    );
+    expect(ids(out)).toEqual([]);
+  });
+
+  it("but still honoured for marketing", () => {
+    const stranger = person({ ...NEWS, language: "en" });
+    const out = filterAudience(
+      [stranger],
+      audience({ language: "es", manualIds: [stranger.id] }),
+      NOW,
+      "whatsapp",
+      new Set(),
+      "marketing",
+    );
+    expect(ids(out)).toEqual([stranger.id]);
+  });
+
+  it("a notice recipient carries her appointments, and a marketing one does not", () => {
+    const appointments = [
+      {
+        id: "b1",
+        serviceId: "s",
+        status: "confirmed" as const,
+        startsAt: "2026-12-11T09:00:00.000Z",
+        endsAt: "2026-12-11T10:00:00.000Z",
+        visit: {
+          service: "X",
+          sessionType: null,
+          date: "2026-12-11",
+          time: "09:00",
+        },
+      },
+    ];
+    const withThem = person({ ...NOTICES, appointments });
+    expect(run([withThem], "appointment")[0]?.appointments).toEqual(
+      appointments,
+    );
+    expect(run([person(NEWS)], "marketing")[0]).not.toHaveProperty(
+      "appointments",
+    );
+  });
+
+  it("and its welcome date is not the notices' consent: that one is for news", () => {
+    const out = run([person({ ...NOTICES })], "appointment");
+    expect(out[0]?.subscribedAt).toBeNull();
+    expect(out[0]).not.toHaveProperty("subscriptionCycle");
+  });
+});
+
+describe("filterAudience — email does not know about purposes", () => {
+  const grid: ContactCandidate[] = [
+    c({ language: "es", newsletter: true, bookingsCount: 2 }),
+    c({ language: "en", bouncedAt: "2026-08-01T10:00:00Z" }),
+    c({ unsubscribedAt: "2026-08-02T10:00:00Z" }),
+    c({ email: "" }),
+    c({
+      whatsappMarketingOptedInAt: "2026-11-01T00:00:00Z",
+      whatsappOptedInAt: "2026-11-01T00:00:00Z",
+      phone: "600112233",
+    }),
+  ];
+
+  it("gives the same recipients whatever purpose is passed, and none passed", () => {
+    const base = filterAudience(grid, EMPTY_AUDIENCE, NOW);
+    expect(base.length).toBeGreaterThan(0);
+    for (const purpose of ["marketing", "appointment"] as const) {
+      expect(
+        filterAudience(grid, EMPTY_AUDIENCE, NOW, "email", new Set(), purpose),
+      ).toEqual(base);
+    }
+  });
+
+  it("never adds appointments to an email recipient", () => {
+    const withAppointments = c({
+      appointments: [
+        {
+          id: "b1",
+          serviceId: null,
+          status: "confirmed",
+          startsAt: "2026-12-11T09:00:00.000Z",
+          endsAt: "2026-12-11T10:00:00.000Z",
+          visit: {
+            service: "",
+            sessionType: null,
+            date: "2026-12-11",
+            time: "",
+          },
+        },
+      ],
+    });
+    const [out] = filterAudience(
+      [withAppointments],
+      EMPTY_AUDIENCE,
+      NOW,
+      "email",
+    );
+    expect(out).toBeDefined();
+    expect(out).not.toHaveProperty("appointments");
+  });
+});

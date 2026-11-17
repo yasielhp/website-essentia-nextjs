@@ -132,7 +132,18 @@ export type StoredContact = {
   whatsapp_opted_out_at: string | null;
   whatsapp_unreachable_at: string | null;
   whatsapp_marketing_opted_in_at: string | null;
+  /** Consent to notices about her own appointment. Absent in older fixtures. */
+  whatsapp_opted_in_at?: string | null;
 };
+
+/** A contact that agreed to appointment notices, and to nothing else. */
+export const noticesOnly = (id: string): StoredContact => ({
+  id,
+  whatsapp_opted_out_at: null,
+  whatsapp_unreachable_at: null,
+  whatsapp_marketing_opted_in_at: null,
+  whatsapp_opted_in_at: "2026-10-01T00:00:00Z",
+});
 
 /** A contact that may be sent a marketing message. */
 export const consenting = (id: string): StoredContact => ({

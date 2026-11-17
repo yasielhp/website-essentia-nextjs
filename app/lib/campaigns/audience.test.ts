@@ -30,14 +30,31 @@ const CONTACT = {
   newsletter_unsubscribed_at: null,
   newsletter_subscribed_at: null,
   birthdate: null,
-  whatsapp_marketing_opted_in_at: "2026-11-01T00:00:00Z",
+  whatsapp_marketing_opted_in_at: "2026-11-01T00:00:00Z" as string | null,
+  whatsapp_opted_in_at: null as string | null,
   whatsapp_opted_out_at: null,
   whatsapp_unreachable_at: null,
+};
+
+const BOOKING = {
+  id: "b-1",
+  contact_id: "c-1",
+  email: "ana@example.test",
+  service_id: "svc-1",
+  service_title: "Drenaje linfático",
+  tier_id: null,
+  date: "2026-12-11",
+  time: "09:00",
+  duration: "60 min",
+  status: "confirmed",
 };
 
 let suppressed: string[] = [];
 let suppressedError: string | null = null;
 let tablesRead: string[] = [];
+let contact: typeof CONTACT = CONTACT;
+let bookings: (typeof BOOKING)[] = [];
+let selects: Record<string, string> = {};
 
 const real = { admin: { ...(await import("@/lib/insforge-admin")) } };
 let resolveAudience: typeof import("./audience").resolveAudience;
@@ -45,9 +62,12 @@ let resolveAudience: typeof import("./audience").resolveAudience;
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
     getAdminClient: () => ({
-      database: chainDb(async (table) => {
+      database: chainDb(async (table, chain) => {
         tablesRead.push(table);
-        if (table === "contacts") return { data: [CONTACT], error: null };
+        const select = chain.find((step) => step.name === "select");
+        if (select) selects[table] = String(select.args[0]);
+        if (table === "contacts") return { data: [contact], error: null };
+        if (table === "bookings") return { data: bookings, error: null };
         if (table === "whatsapp_suppressed_phones") {
           return suppressedError
             ? { data: null, error: { message: suppressedError } }
@@ -68,6 +88,9 @@ beforeEach(() => {
   suppressed = [];
   suppressedError = null;
   tablesRead = [];
+  contact = CONTACT;
+  bookings = [];
+  selects = {};
 });
 
 const EVERYONE = EMPTY_AUDIENCE;
@@ -102,5 +125,85 @@ describe("resolveAudience and the STOP list", () => {
     const byDefault = await resolveAudience(EVERYONE, NOW);
     expect(byDefault).toHaveLength(1);
     expect(tablesRead).not.toContain("whatsapp_suppressed_phones");
+  });
+});
+
+describe("resolveAudience for an appointment notice", () => {
+  const NOTICES_ONLY = {
+    ...CONTACT,
+    whatsapp_marketing_opted_in_at: null,
+    whatsapp_opted_in_at: "2026-11-01T00:00:00Z" as string | null,
+  };
+  const appointment = { purpose: "appointment" as const, appointments: true };
+
+  test("reaches the client who agreed to appointment notices, though not to news", async () => {
+    contact = NOTICES_ONLY;
+    const out = await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(out.map((r) => r.phone)).toEqual(["+34600112233"]);
+  });
+
+  test("and leaves out the one who agreed to news only", async () => {
+    contact = { ...CONTACT, whatsapp_opted_in_at: null };
+    expect(
+      await resolveAudience(EVERYONE, NOW, "whatsapp", appointment),
+    ).toEqual([]);
+  });
+
+  test("a campaign of news is the other way round", async () => {
+    contact = NOTICES_ONLY;
+    expect(await resolveAudience(EVERYONE, NOW, "whatsapp")).toEqual([]);
+    contact = { ...CONTACT, whatsapp_opted_in_at: null };
+    expect(await resolveAudience(EVERYONE, NOW, "whatsapp")).toHaveLength(1);
+  });
+
+  test("the recipient carries her appointments, from the bookings that count", async () => {
+    contact = NOTICES_ONLY;
+    bookings = [
+      BOOKING,
+      { ...BOOKING, id: "b-2", status: "completed", date: "2026-12-12" },
+      { ...BOOKING, id: "b-3", status: "pending" },
+    ];
+    const [out] = await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(out?.appointments?.map((a) => a.id)).toEqual(["b-1", "b-2"]);
+    expect(out?.appointments?.[0]).toMatchObject({
+      serviceId: "svc-1",
+      startsAt: "2026-12-11T09:00:00.000Z",
+    });
+  });
+
+  test("a client with no bookings has an empty list, not none", async () => {
+    contact = NOTICES_ONLY;
+    const [out] = await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(out?.appointments).toEqual([]);
+  });
+
+  test("appointments are loaded only when asked for: nothing else pays for them", async () => {
+    bookings = [BOOKING];
+    const marketing = await resolveAudience(EVERYONE, NOW, "whatsapp");
+    expect(marketing[0]).not.toHaveProperty("appointments");
+    const email = await resolveAudience(EVERYONE, NOW, "email");
+    expect(email[0]).not.toHaveProperty("appointments");
+  });
+
+  test("still never reaches a number that said STOP", async () => {
+    contact = NOTICES_ONLY;
+    suppressed = ["+34600112233"];
+    expect(
+      await resolveAudience(EVERYONE, NOW, "whatsapp", appointment),
+    ).toEqual([]);
+  });
+
+  test("the contacts read asks for the appointment consent", async () => {
+    await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(selects.contacts).toContain("whatsapp_opted_in_at");
+  });
+
+  test("email is the same with or without the options", async () => {
+    bookings = [BOOKING];
+    const base = await resolveAudience(EVERYONE, NOW, "email");
+    const withOptions = await resolveAudience(EVERYONE, NOW, "email", {
+      purpose: "appointment",
+    });
+    expect(withOptions).toEqual(base);
   });
 });

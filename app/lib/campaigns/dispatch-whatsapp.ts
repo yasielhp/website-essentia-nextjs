@@ -6,7 +6,11 @@ import type {
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
 import { sendLocaleOf } from "@/lib/schemas";
-import type { CampaignRow } from "@/types/campaign";
+import {
+  consentPurposeOf,
+  type CampaignRow,
+  type ConsentPurpose,
+} from "@/types/campaign";
 import type { QueuedRow } from "./dispatch";
 import {
   HALTED_PREFIX,
@@ -130,6 +134,8 @@ export type ConsentRow = {
   whatsapp_opted_out_at: string | null;
   whatsapp_unreachable_at: string | null;
   whatsapp_marketing_opted_in_at: string | null;
+  /** Notices about her own appointment: what an appointment campaign needs. */
+  whatsapp_opted_in_at?: string | null;
 };
 
 export type ConsentVerdict =
@@ -143,15 +149,24 @@ export type ConsentVerdict =
  */
 export function consentVerdict(
   contact: ConsentRow | null | undefined,
+  /**
+   * What the campaign is for. Marketing unless it is a notice about her
+   * appointment: each needs its own consent and neither stands in for the
+   * other.
+   */
+  purpose: ConsentPurpose = "marketing",
 ): ConsentVerdict | null {
   if (!contact) return "no_contact";
   if (contact.whatsapp_opted_out_at) return "opted_out";
   if (contact.whatsapp_unreachable_at) return "unreachable";
-  if (!contact.whatsapp_marketing_opted_in_at) return "no_consent";
+  const consent =
+    purpose === "appointment"
+      ? contact.whatsapp_opted_in_at
+      : contact.whatsapp_marketing_opted_in_at;
+  if (!consent) return "no_consent";
   return null;
 }
 
-/** The consent of these contacts, by id. A contact that no longer exists is simply absent. */
 async function loadConsent(
   db: Db,
   contactIds: string[],
@@ -160,7 +175,7 @@ async function loadConsent(
   const { data, error } = await db
     .from("contacts")
     .select(
-      "id, whatsapp_opted_out_at, whatsapp_unreachable_at, whatsapp_marketing_opted_in_at",
+      "id, whatsapp_opted_out_at, whatsapp_unreachable_at, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at",
     )
     .in("id", contactIds);
   if (error) throw new Error(error.message);
@@ -291,6 +306,8 @@ export async function sendQueuedWhatsApp(
     };
   }
   const chosen = template;
+  // The consent the campaign is for, read again with every batch below.
+  const purpose = consentPurposeOf(campaign.kind);
 
   /**
    * One write to a row, tried twice with a short pause. False when both
@@ -501,8 +518,10 @@ export async function sendQueuedWhatsApp(
     const outcomes = await Promise.all(
       claimed.owned.map((row) => {
         const verdict: ConsentVerdict | null =
-          consentVerdict(row.contact_id ? consent.get(row.contact_id) : null) ??
-          (row.phone && suppressed.has(row.phone) ? "suppressed" : null);
+          consentVerdict(
+            row.contact_id ? consent.get(row.contact_id) : null,
+            purpose,
+          ) ?? (row.phone && suppressed.has(row.phone) ? "suppressed" : null);
         return verdict
           ? failRow(row, `${SKIPPED_PREFIX}${verdict}`)
           : sendOne(row);

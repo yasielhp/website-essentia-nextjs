@@ -2,6 +2,7 @@ import { sendLocaleOf } from "@/lib/schemas";
 import { toCampaignPhone } from "@/lib/whatsapp/phone";
 import type {
   CampaignAudience,
+  ConsentPurpose,
   CampaignChannel,
   CampaignLocale,
 } from "@/types/campaign";
@@ -95,6 +96,12 @@ export type ContactCandidate = {
    * covers booking notices: the two purposes are consented separately.
    */
   whatsappMarketingOptedInAt?: string | null;
+  /**
+   * Consent to WhatsApp notices about her own appointments (the booking
+   * form's box), which is what an appointment campaign needs. Not the one
+   * above, and neither stands in for the other.
+   */
+  whatsappOptedInAt?: string | null;
   /** STOP / BAJA: one opt-out that blocks both uses. */
   whatsappOptedOutAt?: string | null;
   /** Meta said the number has no WhatsApp; sending again only costs. */
@@ -170,10 +177,17 @@ function toLocale(language: string | null): CampaignLocale {
 function contactPoint(
   candidate: ContactCandidate,
   channel: CampaignChannel,
+  purpose: ConsentPurpose,
 ): string | null {
   if (channel === "whatsapp") {
+    // The consent is the one the campaign is for: a notice about her own
+    // appointment needs the box that promises it, news and offers need theirs.
+    const consent =
+      purpose === "appointment"
+        ? candidate.whatsappOptedInAt
+        : candidate.whatsappMarketingOptedInAt;
     if (
-      !candidate.whatsappMarketingOptedInAt ||
+      !consent ||
       candidate.whatsappOptedOutAt ||
       candidate.whatsappUnreachableAt
     ) {
@@ -243,13 +257,20 @@ export function filterAudience(
    * the number may belong to somebody else than the contact it sits on.
    */
   suppressedPhones: ReadonlySet<string> = new Set(),
+  /**
+   * What the campaign is for, which decides the consent it needs (WhatsApp
+   * only; email has one). A notice about her appointment also ignores
+   * hand-picked contacts: its audience is the appointments, and nobody is
+   * added to it by hand. Marketing unless said otherwise.
+   */
+  purpose: ConsentPurpose = "marketing",
 ): Recipient[] {
-  const manual = new Set(audience.manualIds);
+  const manual = new Set(purpose === "appointment" ? [] : audience.manualIds);
   const seen = new Set<string>();
   const recipients: Recipient[] = [];
 
   for (const candidate of candidates) {
-    const point = contactPoint(candidate, channel);
+    const point = contactPoint(candidate, channel, purpose);
     if (point === null) continue;
     if (channel === "whatsapp" && suppressedPhones.has(point)) continue;
     if (
@@ -266,7 +287,7 @@ export function filterAudience(
     // On WhatsApp "subscribed" is the consent to receive news there, not the
     // newsletter: a contact can have either without the other.
     const consentAt =
-      channel === "whatsapp"
+      channel === "whatsapp" && purpose === "marketing"
         ? isoOrNull(candidate.whatsappMarketingOptedInAt)
         : null;
     recipients.push({
@@ -288,7 +309,8 @@ export function filterAudience(
       lastVisit: candidate.lastVisit ?? null,
       firstVisit: candidate.firstVisit ?? null,
       firstVisitByTier: candidate.firstVisitByTier ?? {},
-      ...(candidate.appointments
+      // Only a WhatsApp notice talks about her bookings.
+      ...(channel === "whatsapp" && candidate.appointments
         ? { appointments: candidate.appointments }
         : {}),
       // A campaign written in one language is sent in that language to

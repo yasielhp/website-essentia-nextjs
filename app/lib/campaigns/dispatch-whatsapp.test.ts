@@ -20,6 +20,7 @@ import {
   fakeClock,
   fakeSend,
   memoryDb,
+  noticesOnly,
   ok,
   row,
   rowsOf,
@@ -858,6 +859,103 @@ describe("consentVerdict", () => {
     expect(
       consentVerdict({ ...ok_, whatsapp_marketing_opted_in_at: null }),
     ).toBe("no_consent");
+  });
+});
+
+describe("consentVerdict by purpose", () => {
+  const notices = noticesOnly("c");
+  const news = consenting("c");
+
+  test("an appointment notice needs the consent to appointment notices", () => {
+    expect(consentVerdict(notices, "appointment")).toBeNull();
+    expect(consentVerdict(news, "appointment")).toBe("no_consent");
+  });
+  test("marketing is the default, and the notices' consent does not stand in for it", () => {
+    expect(consentVerdict(notices)).toBe("no_consent");
+    expect(consentVerdict(notices, "marketing")).toBe("no_consent");
+    expect(consentVerdict(news, "marketing")).toBeNull();
+  });
+  test("an opt-out, an unreachable number and a missing contact stop both", () => {
+    for (const purpose of ["marketing", "appointment"] as const) {
+      const base = purpose === "marketing" ? news : notices;
+      expect(
+        consentVerdict(
+          { ...base, whatsapp_opted_out_at: "2026-11-02T00:00:00Z" },
+          purpose,
+        ),
+      ).toBe("opted_out");
+      expect(
+        consentVerdict(
+          { ...base, whatsapp_unreachable_at: "2026-11-02T00:00:00Z" },
+          purpose,
+        ),
+      ).toBe("unreachable");
+      expect(consentVerdict(null, purpose)).toBe("no_contact");
+    }
+  });
+});
+
+describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
+  const notice = () => campaign({ kind: "appointment" });
+
+  test("an appointment notice goes to a client with only the appointment consent", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [noticesOnly("contact-1"), noticesOnly("contact-2")],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(notice(), rowsOf(2), {
+      db: mem.db,
+      send,
+    });
+    expect(calls).toHaveLength(2);
+    expect(result).toMatchObject({ sent: 2, failed: 0, remaining: 0 });
+  });
+
+  test("and skips, as no consent, the one who agreed to news only", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [noticesOnly("contact-1"), consenting("contact-2")],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(notice(), rowsOf(2), { db: mem.db, send });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001"]);
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}no_consent`);
+  });
+
+  test("a campaign of news skips the one who agreed to notices only", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [consenting("contact-1"), noticesOnly("contact-2")],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(2), { db: mem.db, send });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001"]);
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}no_consent`);
+  });
+
+  test("a notice still honours an opt-out that came after the audience was frozen", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [
+        noticesOnly("contact-1"),
+        {
+          ...noticesOnly("contact-2"),
+          whatsapp_opted_out_at: "2026-11-17T11:00:00Z",
+        },
+      ],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(notice(), rowsOf(2), { db: mem.db, send });
+    expect(calls).toHaveLength(1);
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}opted_out`);
+  });
+
+  test("and the STOP list, whatever the consent", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [noticesOnly("contact-1"), noticesOnly("contact-2")],
+      suppressed: ["+34600000002"],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(notice(), rowsOf(2), { db: mem.db, send });
+    expect(calls).toHaveLength(1);
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}suppressed`);
   });
 });
 

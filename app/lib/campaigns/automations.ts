@@ -53,11 +53,17 @@ export async function runAutomation(
     await reconcileInterrupted(db, campaign.id, now.getTime());
   }
 
-  const recipients = await resolveAudience(
-    campaign.audience,
-    now,
-    campaign.channel,
-  );
+  // A notice about her appointment is resolved on its own terms: transactional
+  // consent, and each client's bookings loaded for the rules to count hours
+  // around. Every other kind is resolved exactly as it always was, with no
+  // fourth argument at all.
+  const recipients =
+    campaign.kind === "appointment"
+      ? await resolveAudience(campaign.audience, now, campaign.channel, {
+          purpose: "appointment",
+          appointments: true,
+        })
+      : await resolveAudience(campaign.audience, now, campaign.channel);
   const posts =
     campaign.trigger.event === "new_blog_post" ? await recentPosts() : [];
 
@@ -67,6 +73,8 @@ export async function runAutomation(
     activatedAt: campaign.activated_at ?? campaign.created_at,
     now,
     posts,
+    // The appointment notices filter the bookings by it, not the client.
+    services: campaign.audience.services,
   });
 
   let queued = 0;

@@ -1,7 +1,15 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { loadAllSuppressedPhones } from "@/lib/whatsapp/suppression";
-import type { CampaignAudience, CampaignChannel } from "@/types/campaign";
-import { foldVisits, type VisitBooking } from "./visits";
+import type {
+  CampaignAudience,
+  CampaignChannel,
+  ConsentPurpose,
+} from "@/types/campaign";
+import {
+  foldAppointments,
+  foldVisits,
+  type AppointmentBooking,
+} from "./visits";
 import {
   filterAudience,
   type ContactCandidate,
@@ -41,6 +49,7 @@ type ContactRow = {
   last_name: string | null;
   phone: string | null;
   whatsapp_marketing_opted_in_at: string | null;
+  whatsapp_opted_in_at: string | null;
   whatsapp_opted_out_at: string | null;
   whatsapp_unreachable_at: string | null;
 };
@@ -66,16 +75,32 @@ type BookingSummary = {
   count: number;
   confirmedCount: number;
   /** Every booking of the contact, for `foldVisits` to choose among. */
-  bookings: VisitBooking[];
+  bookings: AppointmentBooking[];
 };
 
 /** Rows above what the centre could plausibly hold; only a guard, not paging. */
 const MAX_ROWS = 9_999;
 
+/** What a campaign being resolved is for, beyond its audience conditions. */
+export type AudienceOptions = {
+  /**
+   * The consent the contacts must have (WhatsApp only). An appointment notice
+   * is transactional: the consent to notices about her own appointment, never
+   * the one to news. Marketing when absent.
+   */
+  purpose?: ConsentPurpose;
+  /**
+   * Load each contact's confirmed and completed bookings as appointments, for
+   * the notices that count hours around them. Nothing else reads them.
+   */
+  appointments?: boolean;
+};
+
 export async function resolveAudience(
   audience: CampaignAudience,
   now = new Date(),
   channel: CampaignChannel = "email",
+  options: AudienceOptions = {},
 ): Promise<Recipient[]> {
   // The numbers that wrote STOP, for WhatsApp only. A list that cannot be read
   // throws (it fails closed: an audience that cannot be filtered is not
@@ -85,11 +110,12 @@ export async function resolveAudience(
       ? await loadAllSuppressedPhones(getAdminClient().database)
       : undefined;
   return filterAudience(
-    await loadCandidates(channel),
+    await loadCandidates(channel, { appointments: options.appointments }),
     audience,
     now,
     channel,
     suppressed,
+    options.purpose,
   );
 }
 
@@ -103,6 +129,7 @@ export async function resolveAudience(
  */
 export async function loadCandidates(
   channel: CampaignChannel = "email",
+  options: Pick<AudienceOptions, "appointments"> = {},
 ): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
@@ -110,7 +137,7 @@ export async function loadCandidates(
     db
       .from("contacts")
       .select(
-        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
       )
       .not(channel === "whatsapp" ? "phone" : "email", "is", null)
       // A fixed order, so the contact kept when two share a phone (the first)
@@ -231,7 +258,16 @@ export async function loadCandidates(
       lastVisit: visits.lastVisit,
       firstVisit: visits.firstVisit,
       firstVisitByTier: visits.firstVisitByTier,
+      ...(options.appointments
+        ? {
+            appointments: foldAppointments(
+              bookings?.bookings ?? [],
+              tierLabels,
+            ),
+          }
+        : {}),
       whatsappMarketingOptedInAt: row.whatsapp_marketing_opted_in_at,
+      whatsappOptedInAt: row.whatsapp_opted_in_at,
       whatsappOptedOutAt: row.whatsapp_opted_out_at,
       whatsappUnreachableAt: row.whatsapp_unreachable_at,
     };
