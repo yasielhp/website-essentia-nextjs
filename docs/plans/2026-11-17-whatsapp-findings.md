@@ -162,3 +162,25 @@ El recordatorio fijo de WhatsApp se sustituyó por el tipo de campaña **aviso d
 **A quién afecta.** A clientas con móvil mexicano o argentino. **Para España no aplica** (el `wa_id` es `34` más el número), ni para el resto de prefijos habituales aquí. No se ha comprobado contra Meta con un número real de esos países.
 
 **Arreglo futuro.** Guardar el `wa_id` que Meta devuelve en cada envío (`contacts[].wa_id` de la respuesta de `/messages`) junto al contacto o al destinatario, y casar los STOP y la lista de bajas por ese valor en vez de por el teléfono tecleado. Requiere una columna nueva (migración) y escribirla en `sendTemplateMessage` y sus llamadores: queda para decisión del usuario.
+
+---
+
+## (xiii) Mensajes editables y avisos de reserva: lo que queda tras los arreglos de la auditoría
+
+Cuatro cosas que la auditoría de los correos editables dejó a la vista y que no se arreglaron, o solo en parte.
+
+**1. El editor de campañas ofrece "mostrar condicionalmente" y esos bloques nunca se envían.** Maily dibuja un bloque con `showIfKey` solo si existe un valor de *payload* con ese nombre, y `renderBodyFragment` (`app/emails/templates/campaign.ts`) fija `setVariableValues` pero no `payloadValues`. Un bloque de campaña marcado así se ve en el editor y no llega a nadie, sin aviso. En los mensajes transaccionales ya está resuelto (`app/lib/messages/safe-doc.ts`: se rechaza al guardar y se quita la condición al enviar); las campañas no se tocaron para no cambiar su comportamiento. Arreglo posible, a elegir: rechazarlo al guardar la campaña (lo mismo que pide el hallazgo (iv)), o pasar las variables del envío también como `payloadValues` para que la condición funcione de verdad. A 2026-11-17 ninguna campaña guardada lo usa.
+
+**2. Asuntos legacy que siguen copiados.** Los cuatro asuntos de `notifyBookingCore` viven en `app/lib/messages/legacy-subjects.ts`, y el test guardián (`app/emails/defaults/defaults.test.ts`) compara los asuntos por defecto con esas mismas funciones. Los demás siguen escritos en su remitente y COPIADOS a mano en ese test, así que cambiar uno no obliga a cambiar el asunto por defecto del editor:
+
+- `app/services/booking-payments.service.ts` (`booking_paid`)
+- `app/services/bonus-payments.service.ts` (`bonus_purchase`)
+- `app/actions/consent.ts` (`consent_request`)
+- `app/api/cron/booking-reminders/route.ts` (`booking_reminder`, solo en español)
+- `app/actions/booking-cancellation.ts:134` (segunda copia del asunto de `booking_cancelled` en español, la del enlace de cancelación de la clienta)
+
+Arreglo: mover cada uno a `legacy-subjects.ts` y hacer que el remitente y el test lo lean de ahí (el texto que sale no cambia ni un byte).
+
+**3. Qué hace Resend con un asunto vacío: no comprobado.** Un asunto personalizado que queda vacío al resolver sus variables ya no se envía vacío (`composeMessageEmail` usa el asunto por defecto y, si tampoco lo hubiera, el correo cae a `legacy`). Se dio por hecho que Resend rechaza un asunto vacío, pero no se probó contra la API, porque habría sido un envío real. Los asuntos legacy no pasan por esa limpieza: llevan el nombre del servicio tal como llega.
+
+**4. El arreglo de fondo del hallazgo (iii).** `notifyBooking("received")` es una acción pública y hoy toma del *payload* el nombre, el servicio, el tipo de sesión, la hora y la duración que las plantillas legacy imprimen sin escapar. Desde esta auditoría la acción lee su entrada con `readBookingNotification` (`app/lib/bookings/notify.ts`): en `received` quita `<`, `>` y los caracteres de control de esos cinco campos y los recorta, sin rechazar el envío, y `amountDueEur` solo pasa si es un número. Eso corta el HTML, no el texto: quien llama sigue eligiendo qué pone el correo (hasta 200 caracteres de "servicio" que llegan a la dirección guardada en la reserva, con la marca del centro). El arreglo real es que `notifyBookingCore` lea nombre, servicio, tipo, hora y duración de la FILA de la reserva (`bookings` y `service_tiers`), como ya hace con el destinatario, y que del *payload* de la acción anónima solo se use el id; y, aparte, escapar en las plantillas legacy como pide el (iii). Los eventos del equipo (`confirmed`, `cancelled`, `rescheduled`) no se limpian: van con sesión y rol.
