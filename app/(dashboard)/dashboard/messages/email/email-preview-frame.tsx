@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { previewSrcDoc } from "@/lib/messages/preview-frame";
 
 /**
  * The email, drawn by the server, in an iframe that is sandboxed with nothing
@@ -13,12 +14,15 @@ export function EmailPreviewFrame({
   html,
   subject,
   failed,
+  failure,
 }: {
   /** Null while the first one is being prepared. */
   html: string | null;
   subject: string | null;
   /** The last draft could not be drawn: what is shown is the last one that could. */
   failed: boolean;
+  /** Why it failed when the draft was not the cause, already in words. */
+  failure: string | null;
 }) {
   const t = useTranslations("dashboard.messages.email.editor.preview");
   const [width, setWidth] = useState<"mobile" | "desktop">("desktop");
@@ -59,7 +63,7 @@ export function EmailPreviewFrame({
       )}
       {failed && (
         <p role="status" className="text-xs text-yellow-800">
-          {t("failed")}
+          {failure ?? t("failed")}
         </p>
       )}
       <div className="border-sand-200 bg-sand-50 flex justify-center overflow-hidden rounded-2xl border p-3">
@@ -70,7 +74,7 @@ export function EmailPreviewFrame({
         ) : (
           <iframe
             title={t("title")}
-            srcDoc={html}
+            srcDoc={previewSrcDoc(html)}
             sandbox=""
             className="h-160 rounded-xl border-0 bg-white transition-[width]"
             style={{ width: width === "mobile" ? 375 : "100%" }}

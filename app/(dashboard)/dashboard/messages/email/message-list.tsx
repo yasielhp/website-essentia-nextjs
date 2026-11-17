@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { editableLocales } from "@/lib/messages/editor-state";
 import { MESSAGE_KEYS, type MessageKey } from "@/lib/messages/catalog";
 import type {
@@ -22,6 +23,44 @@ function hasText(row: MessageTemplateRowView | undefined): boolean {
       (row.subject ?? "").trim() ||
       (row.preheader ?? "").trim() ||
       (row.title ?? "").trim()),
+  );
+}
+
+/**
+ * "Back to the default text?" in the row's actions. It exists only while it is
+ * asked: focus goes to Cancel when it appears and back to "Reset" when it goes.
+ */
+function ResetConfirm({
+  returnTo,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  returnTo: string;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations("dashboard.messages.email");
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, () => document.getElementById(returnTo));
+  return (
+    <div
+      ref={ref}
+      role="alertdialog"
+      aria-label={t("resetConfirm")}
+      className="flex max-w-xs flex-col gap-2"
+    >
+      <p className="text-petroleum-700 text-xs">{t("resetConfirm")}</p>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" disabled={busy} onClick={onCancel}>
+          {t("resetNo")}
+        </Button>
+        <Button size="sm" variant="danger" disabled={busy} onClick={onConfirm}>
+          {t("resetYes")}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -164,7 +203,7 @@ export function MessageList({
                         {t("corrupt")}
                       </p>
                     )}
-                    {entry?.canDisable && (
+                    {entry?.canDisable && !corrupt && (
                       <div className="mt-2 flex items-start gap-3">
                         <button
                           id={switchId}
@@ -204,36 +243,15 @@ export function MessageList({
                   </td>
                   <td className="px-5 py-3.5">
                     {confirming === id ? (
-                      <div
-                        role="alertdialog"
-                        aria-label={t("resetConfirm")}
-                        className="flex max-w-xs flex-col gap-2"
-                      >
-                        <p className="text-petroleum-700 text-xs">
-                          {t("resetConfirm")}
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={busy}
-                            onClick={() => setConfirming(null)}
-                          >
-                            {t("resetNo")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            disabled={busy}
-                            onClick={() => {
-                              setConfirming(null);
-                              onReset(key, locale);
-                            }}
-                          >
-                            {t("resetYes")}
-                          </Button>
-                        </div>
-                      </div>
+                      <ResetConfirm
+                        returnTo={`reset-${key}-${locale}`}
+                        busy={busy}
+                        onCancel={() => setConfirming(null)}
+                        onConfirm={() => {
+                          setConfirming(null);
+                          onReset(key, locale);
+                        }}
+                      />
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {!corrupt && (
@@ -258,6 +276,7 @@ export function MessageList({
                         )}
                         {(custom || corrupt || off) && (
                           <Button
+                            id={`reset-${key}-${locale}`}
                             size="sm"
                             variant="ghost"
                             disabled={busy}

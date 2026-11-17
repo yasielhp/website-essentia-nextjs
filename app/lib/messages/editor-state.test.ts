@@ -4,6 +4,7 @@ import {
   changedFields,
   docErrorLines,
   editableLocales,
+  flushCurrent,
   insertAtSelection,
   isLinkVariable,
   linkButtonNode,
@@ -250,5 +251,84 @@ describe("linkButtonNode", () => {
     expect(linkButtonNode("consent_url", "en").attrs?.text).toBe(
       "Sign the consent form",
     );
+  });
+});
+
+describe("flushCurrent", () => {
+  const fields = { ...DEFAULT };
+  const typed = doc(p("Cuerpo"), p("Cierre"), p("Lo último que escribí"));
+
+  it("with nothing pending the state is already right", () => {
+    const pending = { timer: null };
+    expect(flushCurrent(fields, pending, () => typed)).toBe(fields);
+  });
+
+  it("with an update pending it takes what the editor holds right now", () => {
+    const timer = setTimeout(() => {}, 10_000);
+    const cleared: unknown[] = [];
+    const pending = { timer };
+    const out = flushCurrent(
+      fields,
+      pending,
+      () => typed,
+      (t) => {
+        cleared.push(t);
+      },
+    );
+    clearTimeout(timer);
+    expect(out.doc).toBe(typed);
+    expect(out.subject).toBe(fields.subject);
+    // The update that was about to say the same thing is cancelled.
+    expect(cleared).toEqual([timer]);
+    expect(pending.timer).toBeNull();
+  });
+
+  it("a second flush finds nothing pending: pressing twice does not redo it", () => {
+    const timer = setTimeout(() => {}, 10_000);
+    const pending = { timer };
+    const first = flushCurrent(
+      fields,
+      pending,
+      () => typed,
+      () => {},
+    );
+    clearTimeout(timer);
+    expect(
+      flushCurrent(
+        first,
+        pending,
+        () => typed,
+        () => {},
+      ),
+    ).toBe(first);
+  });
+
+  it("an editor that is not there leaves the state and the timer alone", () => {
+    const timer = setTimeout(() => {}, 10_000);
+    const pending = { timer };
+    expect(
+      flushCurrent(
+        fields,
+        pending,
+        () => null,
+        () => {},
+      ),
+    ).toBe(fields);
+    expect(pending.timer).toBe(timer);
+    clearTimeout(timer);
+  });
+
+  it("what it returns shows as a change, which is what the save and the close read", () => {
+    const timer = setTimeout(() => {}, 10_000);
+    const pending = { timer };
+    const out = flushCurrent(
+      fields,
+      pending,
+      () => typed,
+      () => {},
+    );
+    clearTimeout(timer);
+    expect(changedFields(fields, out)).toEqual({ doc: typed });
+    expect(changedFields(fields, fields)).toEqual({});
   });
 });

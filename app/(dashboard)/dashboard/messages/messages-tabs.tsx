@@ -37,7 +37,8 @@ export function MessagesTabs() {
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-controls={`messages-panel-${key}`}
+              // Only the open tab has a panel in the page.
+              aria-controls={selected ? `messages-panel-${key}` : undefined}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(key)}
               // Arrows move between tabs, as a tab list does.

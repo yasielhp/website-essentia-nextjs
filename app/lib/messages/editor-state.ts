@@ -207,3 +207,32 @@ export function linkButtonNode(
     },
   };
 }
+
+/** What a debounced editor update leaves behind: the timer, until it fires. */
+export type PendingDoc = { timer: ReturnType<typeof setTimeout> | null };
+
+/**
+ * The fields as they are right now, not as they were 300 ms ago.
+ *
+ * The body is copied from the editor into the form's state a beat after the
+ * last keystroke, so that a fast sentence is one update. A save, a close or a
+ * test pressed inside that beat would otherwise read a state that lacks the
+ * last words: they would be lost on save and the close would not notice them.
+ * Called at the moment of the action, it takes the editor's own document (and
+ * cancels the update that was about to say the same), so the action sees what
+ * is on the screen. With nothing pending, or no editor, the state is already
+ * right and is returned as it is.
+ */
+export function flushCurrent(
+  current: EmailFields,
+  pending: PendingDoc,
+  editorJson: () => EmailDoc | null | undefined,
+  clear: (timer: ReturnType<typeof setTimeout>) => void = clearTimeout,
+): EmailFields {
+  if (pending.timer === null) return current;
+  const doc = editorJson();
+  if (!doc) return current;
+  clear(pending.timer);
+  pending.timer = null;
+  return { ...current, doc };
+}
