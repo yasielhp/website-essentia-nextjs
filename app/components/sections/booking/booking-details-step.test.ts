@@ -74,10 +74,7 @@ beforeAll(async () => {
   }));
   mock.module("@/actions/whatsapp-consent", () => ({
     ...real.consent,
-    saveBookingConsents: record("saveBookingConsents", {
-      ok: true,
-      stamped: true,
-    }),
+    saveBookingConsents: record("saveBookingConsents", { ok: true }),
   }));
   ({ saveDetailsStep } = await import("./booking-submit"));
 });

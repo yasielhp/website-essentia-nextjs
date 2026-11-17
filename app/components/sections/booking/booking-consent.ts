@@ -1,7 +1,7 @@
 import type { DetailsState } from "@/types";
 import type {
   BookingConsentInput,
-  BookingConsentResult,
+  BookingConsentReply,
 } from "@/lib/whatsapp/booking-consents";
 
 /**
@@ -68,7 +68,7 @@ export type ConsentEffects = {
   saveBookingConsents: (
     accessToken: string | null,
     input: BookingConsentInput,
-  ) => Promise<BookingConsentResult>;
+  ) => Promise<BookingConsentReply>;
   log: (message: string, detail?: unknown) => void;
 };
 

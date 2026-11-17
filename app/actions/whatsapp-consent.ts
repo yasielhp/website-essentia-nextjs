@@ -2,11 +2,14 @@
 
 import { getAdminClient } from "@/lib/insforge-admin";
 import { authenticate } from "@/lib/auth-guard";
+import { clientIp } from "@/lib/auth-security";
+import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { setNewsletterState } from "@/lib/newsletter";
 import {
   answerWithin,
+  publicReply,
   writeBookingConsents,
-  type BookingConsentResult,
+  type BookingConsentReply,
 } from "@/lib/whatsapp/booking-consents";
 import {
   readOwnMarketing,
@@ -27,10 +30,31 @@ export async function fetchOwnMarketingOn(
   // Under the same deadline as the writes: it takes a turn of the page's
   // action queue too, and a read that hangs must not hold the booking up.
   return answerWithin(async () => {
-    const email = normalizeEmail((await authenticate(accessToken)).email);
+    // The address of the auth session, not the profile's: she can rewrite the
+    // second, and it would then answer for somebody else's contact.
+    const email = normalizeEmail(
+      (await authenticate(accessToken)).verifiedEmail,
+    );
     if (!email) return false;
     return readOwnMarketing(getAdminClient().database, email);
   }, false);
+}
+
+/**
+ * A brake on the one action here that anyone can call: 30 calls in ten minutes
+ * from one address, far above what a booking needs (one per press of "next").
+ * It lives in the memory of the instance (see `createRateLimiter`), so it slows
+ * a loop down and guarantees nothing. With no address to count by, as in local
+ * development, nothing is limited.
+ */
+const consentLimiter = createRateLimiter({ max: 30, windowMs: 10 * 60_000 });
+
+async function callerAddress(): Promise<string | null> {
+  try {
+    return await clientIp();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -45,22 +69,39 @@ export async function fetchOwnMarketingOn(
  * could never guarantee.
  *
  * Public on purpose, like the form it serves: a guest has no session. What
- * bounds it is `stampBookingNoticeConsent` (a contact written in the last 15
- * minutes, with no consent and no STOP yet) and that a signed-in caller's own
- * contact is found by the address of her verified session, never by anything
- * the browser sends. It never lifts a STOP and never throws: if it fails or
- * runs out of time the booking goes on and the only loss is the WhatsApp
- * notice. Bookings the team makes from the dashboard do not come through here,
- * so they record no consent.
+ * bounds it:
+ *  - `stampBookingNoticeConsent` (a contact written in the last 15 minutes,
+ *    with no consent and no STOP yet);
+ *  - a signed-in caller's own contact is found by the address of her auth
+ *    session (`verifiedEmail`), never by anything the browser sends nor by her
+ *    profile's address, which she can rewrite;
+ *  - the input is validated before anything is read;
+ *  - the answer has one shape (`publicReply`): it never says whether a consent
+ *    was stamped, which would tell a stranger that an address has a contact
+ *    that was just written;
+ *  - a brake on how often one address may call it.
+ *
+ * It never lifts a STOP and never throws: if it fails or runs out of time the
+ * booking goes on and the only loss is the WhatsApp notice. Bookings the team
+ * makes from the dashboard do not come through here, so they record no
+ * consent.
  */
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function saveBookingConsents(
   accessToken: string | null,
   input: unknown,
-): Promise<BookingConsentResult> {
+): Promise<BookingConsentReply> {
   try {
+    const address = await callerAddress();
+    if (address && !consentLimiter.take(address)) {
+      return { ok: false, error: "rate_limited" };
+    }
+
     const result = await writeBookingConsents(accessToken, input, {
-      authenticate,
+      authenticate: async (token) => {
+        const caller = await authenticate(token);
+        return { userId: caller.userId, email: caller.verifiedEmail };
+      },
       saveOwnContact: (sessionEmail, contact) =>
         recordOwnWhatsAppConsent(
           getAdminClient().database,
@@ -85,8 +126,8 @@ export async function saveBookingConsents(
         "[booking] consent writes took too long; answered without them",
       );
     }
-    return result;
+    return publicReply(result);
   } catch {
-    return { ok: false, stamped: false, error: "db" };
+    return { ok: false, error: "db" };
   }
 }

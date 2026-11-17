@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   BOOKING_CONSENT_DEADLINE_MS,
   answerWithin,
+  publicReply,
   writeBookingConsents,
   type BookingConsentEffects,
 } from "@/lib/whatsapp/booking-consents";
@@ -387,5 +388,22 @@ describe("answerWithin: a consent read under the same deadline", () => {
     expect(
       await answerWithin(() => Promise.reject(new Error("boom")), false),
     ).toBe(false);
+  });
+});
+
+describe("publicReply: what a stranger is told", () => {
+  test("whether the consent was stamped never leaves the server", () => {
+    expect(publicReply({ ok: true, stamped: true })).toEqual({ ok: true });
+    expect(publicReply({ ok: true, stamped: false })).toEqual({ ok: true });
+  });
+
+  test("an error is about the request, and is all that is added", () => {
+    expect(publicReply({ ok: false, stamped: true, error: "timeout" })).toEqual(
+      { ok: false, error: "timeout" },
+    );
+    expect(publicReply({ ok: false, stamped: false, error: "db" })).toEqual({
+      ok: false,
+      error: "db",
+    });
   });
 });

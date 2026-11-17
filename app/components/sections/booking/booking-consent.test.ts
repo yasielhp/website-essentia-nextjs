@@ -22,7 +22,7 @@ function effects(over: Partial<ConsentEffects> = {}) {
     getAccessToken: () => "token",
     saveBookingConsents: (...args) => {
       calls.push({ name: "consents", args });
-      return Promise.resolve({ ok: true, stamped: true });
+      return Promise.resolve({ ok: true });
     },
     log: (message, detail) =>
       calls.push({ name: "log", args: [message, detail] }),
@@ -138,7 +138,6 @@ describe("sendBookingConsents: every consent write of the step is one action", (
       () =>
         Promise.resolve({
           ok: false,
-          stamped: false,
           error: "timeout" as const,
         }),
       () => Promise.reject(new Error("raw database text")),
@@ -156,8 +155,7 @@ describe("sendBookingConsents: every consent write of the step is one action", (
 
   test("the log carries no name, address or phone, nor the raw error", async () => {
     for (const saveBookingConsents of [
-      () =>
-        Promise.resolve({ ok: false, stamped: false, error: "db" as const }),
+      () => Promise.resolve({ ok: false, error: "db" as const }),
       () => Promise.reject(new Error(`boom ${DETAILS.email} ${DETAILS.phone}`)),
     ]) {
       const { fx, calls } = effects({ saveBookingConsents });

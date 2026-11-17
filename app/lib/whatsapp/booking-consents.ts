@@ -85,11 +85,33 @@ export type BookingConsentResult = {
   error?: BookingConsentError;
 };
 
+/**
+ * What the PUBLIC action answers: the same shape whatever happened to the
+ * contact. `stamped` stays on the server. It says whether an address has a
+ * contact that was just written and has no consent yet, and the action is open
+ * to anyone, so answering with it would let a stranger ask that about any
+ * address. Every error here is about the request, never about the contact.
+ */
+export type BookingConsentReply = {
+  ok: boolean;
+  error?: BookingConsentError | "rate_limited";
+};
+
+export function publicReply(result: BookingConsentResult): BookingConsentReply {
+  return result.error
+    ? { ok: result.ok, error: result.error }
+    : { ok: result.ok };
+}
+
 type Outcome = { ok: boolean };
 
 /** The session check and the writes, as plain functions so tests can swap them. */
 export type BookingConsentEffects = {
-  /** Who a token belongs to. Throws when it does not verify. */
+  /**
+   * Who a token belongs to, with the address of the auth session ITSELF
+   * (`verifiedEmail` of the guard), not the one on her profile, which she can
+   * rewrite. Throws when the token does not verify.
+   */
   authenticate: (
     accessToken: string,
   ) => Promise<{ userId: string; email: string | null }>;
