@@ -120,6 +120,9 @@ export const STREAK_WINDOW_MS = 48 * 3_600_000;
  *
  * Three clients in a row refused for one of these is three clients, not a
  * broken campaign.
+ *
+ * NOT checked against Meta's current documentation: the five are listed from
+ * what is known of them. Check a code there before adding or removing one.
  */
 const RECIPIENT_CODES: ReadonlySet<number> = new Set([
   131049, 131050, 131056, 130472, 131021,
