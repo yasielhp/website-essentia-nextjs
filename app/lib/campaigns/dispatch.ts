@@ -179,7 +179,7 @@ async function claim(
  */
 export async function sendQueued(
   campaign: CampaignRow,
-  rows: QueuedRow[],
+  queued: QueuedRow[],
   whatsapp: WhatsAppDeps = {},
 ): Promise<{
   sent: number;
@@ -191,14 +191,34 @@ export async function sendQueued(
   halted?: string | null;
 }> {
   if (campaign.channel === "whatsapp") {
-    return sendQueuedWhatsApp(campaign, rows, whatsapp);
+    return sendQueuedWhatsApp(campaign, queued, whatsapp);
   }
-  const db = getAdminClient().database;
+  const db = whatsapp.db ?? getAdminClient().database;
   const content = campaign.content as CampaignContent;
   const appUrl = getAppUrl();
   let sent = 0;
   let failed = 0;
   let lastError: string | null = null;
+
+  // The table lets a row carry only a phone. On an email campaign it has
+  // nowhere to go: it fails as skipped instead of being handed to Resend.
+  const rows = queued.filter(
+    (row): row is QueuedRow & { email: string } => row.email !== null,
+  );
+  if (rows.length < queued.length) {
+    await Promise.all(
+      queued
+        .filter((row) => row.email === null)
+        .map((row) => {
+          failed += 1;
+          lastError = `${SKIPPED_PREFIX}no_email`;
+          return db
+            .from("campaign_recipients")
+            .update({ status: "failed", error: lastError })
+            .eq("id", row.id);
+        }),
+    );
+  }
 
   for (let start = 0; start < rows.length; start += CHUNK) {
     const chunk = rows.slice(start, start + CHUNK);
@@ -219,8 +239,7 @@ export async function sendQueued(
           locale: row.language,
         });
         return {
-          // An email campaign's rows always carry the address.
-          to: row.email as string,
+          to: row.email,
           subject,
           html,
           blindCopy: false,
