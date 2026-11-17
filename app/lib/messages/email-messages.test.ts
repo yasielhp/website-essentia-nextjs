@@ -4,6 +4,7 @@ import en from "../../../messages/en/dashboard.json";
 import es from "../../../messages/es/dashboard.json";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
 import { MESSAGE_ACTION_ERROR_KEYS } from "./types";
+import { WHATSAPP_MESSAGE_KEYS } from "./whatsapp-row";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -20,7 +21,13 @@ function leaves(tree: Tree, prefix = ""): Record<string, string> {
 /** What the Emails tab reads: the names, the hints and the tab's own strings. */
 function emailStrings(messages: unknown): Record<string, string> {
   const m = (messages as { messages: Tree }).messages;
+  const suppression = (
+    messages as {
+      contacts: { detail: { whatsapp: { suppression: Tree } } };
+    }
+  ).contacts.detail.whatsapp.suppression;
   return {
+    ...leaves(suppression, "contacts.detail.whatsapp.suppression"),
     ...leaves(m.keys as Tree, "messages.keys"),
     ...leaves(m.keyHints as Tree, "messages.keyHints"),
     ...leaves(m.email as Tree, "messages.email"),
@@ -92,6 +99,78 @@ describe("the Emails tab strings", () => {
   it("the fixed-blocks warning names what the admin cannot move", () => {
     expect(LOCALES.es["messages.email.editor.fixedAfter"]).toContain("siempre");
     expect(LOCALES.en["messages.email.editor.fixedAfter"]).toContain("always");
+  });
+
+  it("every WhatsApp message says when it is sent", () => {
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of WHATSAPP_MESSAGE_KEYS) {
+        expect(messages[`messages.email.whatsapp.when.${key}`]).toBeTruthy();
+      }
+    }
+  });
+
+  it("every reason a WhatsApp row can be invalid, and every state, has words", () => {
+    const issues = [
+      "template_missing",
+      "template_not_approved",
+      "template_unsupported",
+      "template_language",
+      "param_count",
+      "dynamic_url",
+    ];
+    const states = ["none", "off", "configured", "invalid", "unknown"];
+    for (const messages of Object.values(LOCALES)) {
+      for (const issue of issues) {
+        expect(messages[`messages.email.whatsapp.issue.${issue}`]).toBeTruthy();
+        // A wrong parameter count is not a reason a template is left out of
+        // the list; it is a reason the saved choice stopped being valid.
+        if (issue === "param_count") continue;
+        expect(
+          messages[`messages.email.whatsapp.editor.excluded.${issue}`],
+        ).toBeTruthy();
+      }
+      for (const state of states) {
+        expect(messages[`messages.email.whatsapp.state.${state}`]).toBeTruthy();
+      }
+    }
+  });
+
+  it("the rules the sender follows are written down in both languages", () => {
+    for (const messages of Object.values(LOCALES)) {
+      for (const rule of [
+        "consent",
+        "nothing",
+        "languages",
+        "stop",
+        "reminderFirst",
+        "noButtons",
+      ]) {
+        expect(messages[`messages.email.whatsapp.rules.${rule}`]).toBeTruthy();
+      }
+    }
+    expect(LOCALES.es["messages.email.whatsapp.rules.stop"]).toContain("BAJA");
+    expect(LOCALES.en["messages.email.whatsapp.rules.stop"]).toContain("STOP");
+    expect(LOCALES.es["messages.email.whatsapp.rules.reminderFirst"]).toContain(
+      "40-56",
+    );
+  });
+
+  it("the card's STOP-list strings exist, with the confirmation", () => {
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of [
+        "note",
+        "removeLabel",
+        "removeConfirm",
+        "removeYes",
+        "removeNo",
+        "removing",
+        "error",
+      ]) {
+        expect(
+          messages[`contacts.detail.whatsapp.suppression.${key}`],
+        ).toBeTruthy();
+      }
+    }
   });
 
   it("only the reminder is a message that can be switched off, and the tab says so once", () => {

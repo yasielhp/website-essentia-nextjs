@@ -1181,7 +1181,11 @@
           "remove": "Quitar",
           "removing": "Quitando…",
           "error": "No se pudo quitar el número de la lista de bajas.",
-          "unavailable": "No se pudo comprobar la lista de bajas de WhatsApp."
+          "unavailable": "No se pudo comprobar la lista de bajas de WhatsApp.",
+          "removeLabel": "Quitar de la lista de bajas",
+          "removeConfirm": "¿Quitar este número de la lista de bajas? Volverá a poder recibir mensajes de WhatsApp si el contacto tiene consentimiento. Hazlo solo si la persona ha pedido volver a recibirlos.",
+          "removeYes": "Sí, quitar",
+          "removeNo": "Cancelar"
         }
       },
       "newsletter": {
@@ -2350,6 +2354,79 @@
         "forbidden": "No tienes permiso para esta acción.",
         "email_not_configured": "El envío de emails no está configurado en el servidor.",
         "preview_rate_limited": "Estás pidiendo demasiadas vistas previas; espera un momento."
+      },
+      "whatsapp": {
+        "channelLabel": "WhatsApp",
+        "state": {
+          "none": "Sin configurar: no se envía nada",
+          "off": "Apagado: no se envía nada",
+          "configured": "Configurado: plantilla {name}",
+          "invalid": "Plantilla no válida: {reason}",
+          "unknown": "No se pudo comprobar la plantilla"
+        },
+        "issue": {
+          "template_missing": "ya no existe",
+          "template_not_approved": "no está aprobada",
+          "template_unsupported": "no se puede enviar desde aquí",
+          "template_language": "no está en el idioma de esta fila",
+          "param_count": "los datos no coinciden con los que pide la plantilla",
+          "dynamic_url": "tiene un botón con un enlace variable, que este envío no rellena"
+        },
+        "actions": {
+          "configure": "Configurar",
+          "edit": "Editar",
+          "remove": "Quitar",
+          "removing": "Quitando…"
+        },
+        "removeConfirm": "¿Dejar de enviar este aviso por WhatsApp? Se borra la configuración de esta fila.",
+        "removeYes": "Sí, quitar",
+        "removeNo": "Cancelar",
+        "removed": "WhatsApp quitado de este mensaje",
+        "when": {
+          "booking_confirmed": "Se envía cuando el equipo confirma la reserva.",
+          "booking_paid": "Se envía solo con el primer pago de la reserva.",
+          "booking_reminder": "Se envía una vez por reserva, de 40 a 56 horas antes de la cita."
+        },
+        "rules": {
+          "consent": "Solo reciben el mensaje las clientas que marcaron «avisos de la cita» y no han escrito BAJA.",
+          "nothing": "Si no hay plantilla configurada para el idioma de la reserva, no se envía nada.",
+          "languages": "Hace falta una plantilla para cada idioma. Cada reserva se envía en el idioma con el que se hizo o, si no consta, en el de la ficha del contacto, y un contacto sin idioma elegido figura como inglés: conviene configurar también el inglés.",
+          "stop": "Incluye en el texto de la plantilla una frase como «Responde BAJA para dejar de recibir estos avisos».",
+          "reminderFirst": "Al guardar la primera plantilla de recordatorio, las reservas de las próximas 40-56 horas cuyo recordatorio por correo todavía no salió también lo recibirán.",
+          "noButtons": "No se ofrecen las plantillas con un botón de enlace variable: este envío no rellena botones."
+        },
+        "editor": {
+          "title": "WhatsApp · «{name}» · {language}",
+          "template": "Plantilla",
+          "templatePlaceholder": "Elige una plantilla",
+          "noneTitle": "Todavía no hay ninguna plantilla que se pueda usar aquí en {language}.",
+          "create": "Crea y envía a revisión una plantilla",
+          "excludedTitle": "No se ofrecen",
+          "excluded": {
+            "template_not_approved": "{count, plural, one {# plantilla sin aprobar por Meta} other {# plantillas sin aprobar por Meta}}",
+            "template_unsupported": "{count, plural, one {# plantilla que no se puede enviar desde aquí} other {# plantillas que no se pueden enviar desde aquí}}",
+            "template_language": "{count, plural, one {# plantilla en otro idioma} other {# plantillas en otro idioma}}",
+            "template_missing": "{count, plural, one {# plantilla que ya no existe} other {# plantillas que ya no existen}}",
+            "dynamic_url": "{count, plural, one {# plantilla con un botón de enlace variable} other {# plantillas con un botón de enlace variable}}"
+          },
+          "templateStale": "La plantilla guardada ya no sirve: {reason}. Elige otra.",
+          "paramUnavailable": "Este dato no existe en este mensaje. Usa un texto fijo.",
+          "preview": "Así lo verá el cliente",
+          "previewNote": "Con una reserva de ejemplo.",
+          "save": "Guardar",
+          "saving": "Guardando…",
+          "saved": "WhatsApp configurado",
+          "unchanged": "Sin cambios que guardar",
+          "close": "Cerrar",
+          "test": "Enviarme prueba",
+          "testing": "Enviando…",
+          "testNote": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla y la configuración guardada.",
+          "saveFirst": "Guarda los cambios para enviar la prueba.",
+          "testSent": "Prueba enviada a {phone}",
+          "discardTitle": "Hay cambios sin guardar.",
+          "discardYes": "Descartar cambios",
+          "discardNo": "Seguir editando"
+        }
       }
     }
   },

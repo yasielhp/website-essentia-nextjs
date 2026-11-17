@@ -19,8 +19,10 @@ import type {
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import { useEmailActionToast } from "./action-error";
+import { useWhatsAppTemplates } from "../../campaigns/_form/use-whatsapp-templates";
 import { MessageEditor } from "./message-editor";
 import { MessageList } from "./message-list";
+import { WhatsAppMessageEditor } from "./whatsapp-message-editor";
 
 type Locale = "es" | "en";
 
@@ -65,7 +67,16 @@ export function EmailPanel() {
     key: MessageKey;
     locale: Locale;
   } | null>(null);
+  const [waEditing, setWaEditing] = useState<{
+    key: MessageKey;
+    locale: Locale;
+  } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  // The WhatsApp rows need the account's templates; the email half does not,
+  // so a failure to read them leaves those rows saying "could not be checked".
+  const waTemplates = useWhatsAppTemplates(true);
+  const templateRows =
+    waTemplates.status === "ready" ? waTemplates.templates : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -102,8 +113,9 @@ export function EmailPanel() {
     key: MessageKey,
     locale: Locale,
     action: () => Promise<void>,
+    channel: "email" | "wa" = "email",
   ) {
-    setBusyKey(`${key}:${locale}`);
+    setBusyKey(channel === "wa" ? `wa:${key}:${locale}` : `${key}:${locale}`);
     try {
       await action();
     } catch {
@@ -154,6 +166,42 @@ export function EmailPanel() {
       reload();
     });
 
+  const waTest = (key: MessageKey, locale: Locale) =>
+    run(
+      key,
+      locale,
+      async () => {
+        const result = await sendTestMessage(
+          getAccessToken(),
+          key,
+          "whatsapp",
+          locale,
+        );
+        if (!result.ok) return showError(result);
+        notifySuccess(t("whatsapp.editor.testSent", { phone: result.to }));
+      },
+      "wa",
+    );
+
+  const waRemove = (key: MessageKey, locale: Locale) =>
+    run(
+      key,
+      locale,
+      async () => {
+        // Stopping the WhatsApp notice is deleting its row.
+        const result = await resetMessageTemplate(
+          getAccessToken(),
+          key,
+          "whatsapp",
+          locale,
+        );
+        if (!result.ok) return showError(result);
+        notifySuccess(t("whatsapp.removed"));
+        reload();
+      },
+      "wa",
+    );
+
   if (state.status === "loading") {
     return <div className="bg-sand-100 h-64 animate-pulse rounded-2xl" />;
   }
@@ -195,7 +243,33 @@ export function EmailPanel() {
         onTest={(key, locale) => void test(key, locale)}
         onReset={(key, locale) => void reset(key, locale)}
         onToggle={(key, locale, enabled) => void toggle(key, locale, enabled)}
+        templates={templateRows}
+        onWaConfigure={(key, locale) => setWaEditing({ key, locale })}
+        onWaTest={(key, locale) => void waTest(key, locale)}
+        onWaRemove={(key, locale) => void waRemove(key, locale)}
       />
+      {waEditing && templateRows && (
+        <WhatsAppMessageEditor
+          messageKey={waEditing.key}
+          locale={waEditing.locale}
+          saved={
+            state.rows.find(
+              (r) =>
+                r.channel === "whatsapp" &&
+                r.key === waEditing.key &&
+                r.locale === waEditing.locale,
+            ) ?? null
+          }
+          allRows={state.rows}
+          templates={templateRows}
+          canTest={waTemplates.status === "ready" && waTemplates.configured}
+          onClose={() => setWaEditing(null)}
+          onSaved={() => {
+            setWaEditing(null);
+            reload();
+          }}
+        />
+      )}
       {editing && editor?.defaults && editor.catalog && (
         <MessageEditor
           messageKey={editing.key}

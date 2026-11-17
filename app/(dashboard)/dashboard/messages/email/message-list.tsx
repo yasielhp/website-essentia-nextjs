@@ -1,17 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
-import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { editableLocales } from "@/lib/messages/editor-state";
+import { WHATSAPP_MESSAGE_KEYS } from "@/lib/messages/whatsapp-row";
 import { MESSAGE_KEYS, type MessageKey } from "@/lib/messages/catalog";
 import type {
   MessageCatalogEntry,
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import { formatMediumDate } from "@/utils/format";
+import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
+import { ConfirmBar } from "./confirm-bar";
+import { WhatsAppRows } from "./whatsapp-rows";
 
 type Locale = "es" | "en";
 
@@ -23,44 +26,6 @@ function hasText(row: MessageTemplateRowView | undefined): boolean {
       (row.subject ?? "").trim() ||
       (row.preheader ?? "").trim() ||
       (row.title ?? "").trim()),
-  );
-}
-
-/**
- * "Back to the default text?" in the row's actions. It exists only while it is
- * asked: focus goes to Cancel when it appears and back to "Reset" when it goes.
- */
-function ResetConfirm({
-  returnTo,
-  busy,
-  onCancel,
-  onConfirm,
-}: {
-  returnTo: string;
-  busy: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const t = useTranslations("dashboard.messages.email");
-  const ref = useRef<HTMLDivElement>(null);
-  useDialogFocus(ref, () => document.getElementById(returnTo));
-  return (
-    <div
-      ref={ref}
-      role="alertdialog"
-      aria-label={t("resetConfirm")}
-      className="flex max-w-xs flex-col gap-2"
-    >
-      <p className="text-petroleum-700 text-xs">{t("resetConfirm")}</p>
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" disabled={busy} onClick={onCancel}>
-          {t("resetNo")}
-        </Button>
-        <Button size="sm" variant="danger" disabled={busy} onClick={onConfirm}>
-          {t("resetYes")}
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -80,6 +45,10 @@ export function MessageList({
   onTest,
   onReset,
   onToggle,
+  templates,
+  onWaConfigure,
+  onWaTest,
+  onWaRemove,
 }: {
   rows: MessageTemplateRowView[];
   catalog: MessageCatalogEntry[];
@@ -89,6 +58,11 @@ export function MessageList({
   onTest: (key: MessageKey, locale: Locale) => void;
   onReset: (key: MessageKey, locale: Locale) => void;
   onToggle: (key: MessageKey, locale: Locale, enabled: boolean) => void;
+  /** The account's templates, for the WhatsApp rows; null when unreadable. */
+  templates: WhatsAppTemplateRow[] | null;
+  onWaConfigure: (key: MessageKey, locale: Locale) => void;
+  onWaTest: (key: MessageKey, locale: Locale) => void;
+  onWaRemove: (key: MessageKey, locale: Locale) => void;
 }) {
   const t = useTranslations("dashboard.messages.email");
   const tKeys = useTranslations("dashboard.messages.keys");
@@ -119,7 +93,7 @@ export function MessageList({
         <tbody>
           {MESSAGE_KEYS.flatMap((key) => {
             const entry = catalog.find((c) => c.key === key);
-            return editableLocales(key).map((locale) => {
+            const localeRows = editableLocales(key).map((locale) => {
               const id = `${key}:${locale}`;
               const row = emailRows.find(
                 (r) => r.key === key && r.locale === locale,
@@ -243,7 +217,10 @@ export function MessageList({
                   </td>
                   <td className="px-5 py-3.5">
                     {confirming === id ? (
-                      <ResetConfirm
+                      <ConfirmBar
+                        message={t("resetConfirm")}
+                        yesLabel={t("resetYes")}
+                        noLabel={t("resetNo")}
                         returnTo={`reset-${key}-${locale}`}
                         busy={busy}
                         onCancel={() => setConfirming(null)}
@@ -291,6 +268,21 @@ export function MessageList({
                 </tr>
               );
             });
+            return WHATSAPP_MESSAGE_KEYS.includes(key)
+              ? [
+                  ...localeRows,
+                  <WhatsAppRows
+                    key={`wa-${key}`}
+                    messageKey={key}
+                    rows={rows}
+                    templates={templates}
+                    busyKey={busyKey}
+                    onConfigure={(locale) => onWaConfigure(key, locale)}
+                    onTest={(locale) => onWaTest(key, locale)}
+                    onRemove={(locale) => onWaRemove(key, locale)}
+                  />,
+                ]
+              : localeRows;
           })}
         </tbody>
       </table>

@@ -1181,7 +1181,11 @@
           "remove": "Remove",
           "removing": "Removing…",
           "error": "Could not remove the number from the opt-out list.",
-          "unavailable": "Could not check the WhatsApp opt-out list."
+          "unavailable": "Could not check the WhatsApp opt-out list.",
+          "removeLabel": "Remove from the STOP list",
+          "removeConfirm": "Remove this number from the STOP list? It will be able to receive WhatsApp messages again if the contact has consent. Do it only if the person asked to hear from the centre again.",
+          "removeYes": "Yes, remove",
+          "removeNo": "Cancel"
         }
       },
       "newsletter": {
@@ -2350,6 +2354,79 @@
         "forbidden": "You do not have permission for this action.",
         "email_not_configured": "Email sending is not configured on the server.",
         "preview_rate_limited": "You are asking for too many previews; wait a moment."
+      },
+      "whatsapp": {
+        "channelLabel": "WhatsApp",
+        "state": {
+          "none": "Not set up: nothing is sent",
+          "off": "Switched off: nothing is sent",
+          "configured": "Set up: template {name}",
+          "invalid": "Template not valid: {reason}",
+          "unknown": "The template could not be checked"
+        },
+        "issue": {
+          "template_missing": "it no longer exists",
+          "template_not_approved": "it is not approved",
+          "template_unsupported": "it cannot be sent from here",
+          "template_language": "it is not in this row's language",
+          "param_count": "the values do not match what the template asks for",
+          "dynamic_url": "it has a button with a variable link, which this send does not fill"
+        },
+        "actions": {
+          "configure": "Set up",
+          "edit": "Edit",
+          "remove": "Remove",
+          "removing": "Removing…"
+        },
+        "removeConfirm": "Stop sending this notice on WhatsApp? This row's setup is deleted.",
+        "removeYes": "Yes, remove",
+        "removeNo": "Cancel",
+        "removed": "WhatsApp removed from this message",
+        "when": {
+          "booking_confirmed": "Sent when the team confirms the booking.",
+          "booking_paid": "Sent only with the booking's first payment.",
+          "booking_reminder": "Sent once per booking, 40 to 56 hours before the appointment."
+        },
+        "rules": {
+          "consent": "Only clients who ticked “appointment notices” and have not written STOP receive the message.",
+          "nothing": "If there is no template set up for the booking's language, nothing is sent.",
+          "languages": "Each language needs its own template. Every booking is sent in the language it was made in or, when that is not known, in the one on the contact's file, and a contact with no language chosen is on file as English: it is worth setting up English too.",
+          "stop": "Include in the template's text a phrase such as “Reply STOP to stop receiving these notices”.",
+          "reminderFirst": "When you save the first reminder template, bookings in the next 40-56 hours whose email reminder has not gone out yet will receive it too.",
+          "noButtons": "Templates with a variable-link button are not offered: this send does not fill buttons."
+        },
+        "editor": {
+          "title": "WhatsApp · “{name}” · {language}",
+          "template": "Template",
+          "templatePlaceholder": "Choose a template",
+          "noneTitle": "There is no template yet that can be used here in {language}.",
+          "create": "Create a template and submit it for review",
+          "excludedTitle": "Not offered",
+          "excluded": {
+            "template_not_approved": "{count, plural, one {# template not approved by Meta} other {# templates not approved by Meta}}",
+            "template_unsupported": "{count, plural, one {# template that cannot be sent from here} other {# templates that cannot be sent from here}}",
+            "template_language": "{count, plural, one {# template in another language} other {# templates in another language}}",
+            "template_missing": "{count, plural, one {# template that no longer exists} other {# templates that no longer exist}}",
+            "dynamic_url": "{count, plural, one {# template with a variable-link button} other {# templates with a variable-link button}}"
+          },
+          "templateStale": "The saved template can no longer be used: {reason}. Choose another one.",
+          "paramUnavailable": "This value does not exist in this message. Use a fixed text.",
+          "preview": "How the client will see it",
+          "previewNote": "With an example booking.",
+          "save": "Save",
+          "saving": "Saving…",
+          "saved": "WhatsApp set up",
+          "unchanged": "No changes to save",
+          "close": "Close",
+          "test": "Send me a test",
+          "testing": "Sending…",
+          "testNote": "The test goes to the phone on your profile, with the template's example values and the saved setup.",
+          "saveFirst": "Save your changes to send the test.",
+          "testSent": "Test sent to {phone}",
+          "discardTitle": "You have unsaved changes.",
+          "discardYes": "Discard changes",
+          "discardNo": "Keep editing"
+        }
       }
     }
   },
