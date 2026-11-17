@@ -215,18 +215,33 @@ export async function fetchCampaignStatusCounts(
     if (err instanceof AuthError) return empty;
     throw err;
   }
-  let query = getAdminClient()
-    .database.from("campaigns")
-    .select("status")
-    .range(0, 9_999);
+  let channelFilter: CampaignChannel | null = null;
   if (channel) {
     const parsed = campaignChannelSchema.safeParse(channel);
     if (!parsed.success) return empty;
-    query = query.eq("channel", parsed.data);
+    channelFilter = parsed.data;
   }
-  const { data, error } = await query;
-  if (error) return empty;
-  return ((data ?? []) as { status: CampaignStatus }[]).reduce(
+  // The database gives a thousand rows at most: read to the end, or not at all.
+  let data: { status: CampaignStatus }[];
+  try {
+    data = await readAllPages<{ status: CampaignStatus }>(
+      "[fetchCampaignStatusCounts] campaigns",
+      (from, to) => {
+        let query = getAdminClient()
+          .database.from("campaigns")
+          .select("status")
+          .order("id", { ascending: true });
+        if (channelFilter) query = query.eq("channel", channelFilter);
+        return query.range(from, to) as unknown as PromiseLike<{
+          data: { status: CampaignStatus }[] | null;
+          error: { message: string } | null;
+        }>;
+      },
+    );
+  } catch {
+    return empty;
+  }
+  return data.reduce(
     (acc, row) => {
       acc.all += 1;
       if (row.status in acc) acc[row.status] += 1;
