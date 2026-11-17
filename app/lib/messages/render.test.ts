@@ -177,7 +177,9 @@ describe("composeMessageEmail", () => {
       fixedHtml: "",
     });
     expect(html).toContain(">ESSENTIA</span>");
-    expect(html).toContain("C/ La Noria 14, Santa Cruz de Tenerife");
+    expect(html).toContain(
+      "Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife",
+    );
     expect(html).not.toContain("logo-email.png");
     expect(html).not.toContain("display:none");
   });

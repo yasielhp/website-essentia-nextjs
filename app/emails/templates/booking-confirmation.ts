@@ -1,4 +1,9 @@
-import { googleCalendarUrl, calendarButton, consentBlock } from "./_base";
+import {
+  EMAIL_ADDRESS,
+  googleCalendarUrl,
+  calendarButton,
+  consentBlock,
+} from "./_base";
 import { formatPrice } from "@/utils/format";
 
 export function bookingConfirmationEmail({
@@ -44,11 +49,11 @@ export function bookingConfirmationEmail({
         owed: "Pendiente de pago en el centro",
         owedNote: "El resto se abona el día de la sesión.",
         locationLabel: "Ubicación",
-        locationLine1: "C/ La Noria 14",
-        locationLine2: "Santa Cruz de Tenerife",
+        locationLine1: "Rambla de Santa Cruz, 83",
+        locationLine2: "38004 Santa Cruz de Tenerife",
         footer:
           "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
-        footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
+        footerAddress: EMAIL_ADDRESS,
       }
     : {
         title: "Booking Confirmed",
@@ -64,11 +69,11 @@ export function bookingConfirmationEmail({
         owed: "Due at the centre",
         owedNote: "The balance is paid on the day of your session.",
         locationLabel: "Location",
-        locationLine1: "C/ La Noria 14",
-        locationLine2: "Santa Cruz de Tenerife",
+        locationLine1: "Rambla de Santa Cruz, 83",
+        locationLine2: "38004 Santa Cruz de Tenerife",
         footer:
           "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
-        footerAddress: "C/ La Noria 14, Santa Cruz de Tenerife",
+        footerAddress: EMAIL_ADDRESS,
       };
 
   const hasOwed = owedEur != null && owedEur > 0;
@@ -97,7 +102,7 @@ export function bookingConfirmationEmail({
           time,
           service: serviceName,
           duration,
-          location: "C/ La Noria 14, Santa Cruz de Tenerife",
+          location: EMAIL_ADDRESS,
         }),
         locale,
       )

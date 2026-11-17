@@ -1,5 +1,5 @@
 import { defaultContent } from "@/emails/defaults";
-import { emailBase } from "@/emails/templates/_base";
+import { EMAIL_ADDRESS, emailBase } from "@/emails/templates/_base";
 import { renderBodyFragment } from "@/emails/templates/campaign";
 import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
@@ -65,7 +65,6 @@ function paidShell({
   preheader: string;
   body: string;
 }): string {
-  const address = "C/ La Noria 14, Santa Cruz de Tenerife";
   return `<!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -104,7 +103,7 @@ function paidShell({
             <td style="padding:20px 32px;border-top:1px solid #d7dbd9;">
               <p style="margin:0;font-size:13px;color:#4a6767;line-height:1.5;">
                 Essentia &mdash; Longevity Center &amp; Social Wellness Club, Tenerife<br />
-                ${address}
+                ${EMAIL_ADDRESS}
               </p>
             </td>
           </tr>

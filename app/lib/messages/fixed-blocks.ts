@@ -118,11 +118,8 @@ function receivedPaymentNote(d: FixedBlocksData): string {
            </p>`;
 }
 
-const PAID_ADDRESS = "C/ La Noria 14, Santa Cruz de Tenerife";
-
 /**
- * `booking_paid`: the card carries the payment rows too, and the address is
- * the one that template prints (which is not the one the rest print).
+ * `booking_paid`: the card carries the payment rows too.
  */
 function paidBlocks(d: FixedBlocksData): string[] {
   const es = d.locale === "es";
@@ -196,11 +193,11 @@ function paidBlocks(d: FixedBlocksData): string[] {
 
   return [
     card,
-    locationBlock(d.locale, ["C/ La Noria 14", "Santa Cruz de Tenerife"]),
+    locationBlock(d.locale),
     hasOwed
       ? `<p style="margin:0 0 20px;font-size:14px;color:#335554;line-height:1.6;">${t.owedNote}</p>`
       : "",
-    calendarFor(d, PAID_ADDRESS),
+    calendarFor(d),
     consentBlock(d.consentUrl, d.locale),
   ];
 }

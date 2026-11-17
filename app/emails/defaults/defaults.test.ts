@@ -312,7 +312,7 @@ function shellPieces(key: MessageKey, locale: CampaignLocale): string[] {
   if (key === "booking_paid") {
     return [
       "ESSENTIA",
-      "Essentia — Longevity Center & Social Wellness Club, Tenerife C/ La Noria 14, Santa Cruz de Tenerife",
+      "Essentia — Longevity Center & Social Wellness Club, Tenerife Rambla de Santa Cruz, 83, 38004 Santa Cruz de Tenerife",
     ];
   }
   return [visibleText(emailBase({ locale, preheader: "", body: "" }))];
