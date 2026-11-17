@@ -67,8 +67,10 @@ describe("hostile values in the booking data", () => {
       ...c!.fixed,
       service: "Masaje & Spa",
     });
-    // `&` inside a URL is encoded by URLSearchParams, then the attribute's own
-    // `&` separators are escaped as HTML entities by the helper: no `&amp;amp;`.
+    // The `&` in the title is encoded once, by URLSearchParams (`%26`). The
+    // helper writes the URL into the href as it is, separators included, and
+    // does not escape it as HTML: so the title is not escaped a second time.
+    expect(html).toContain("?action=TEMPLATE&text=");
     expect(html).toContain("Masaje+%26+Spa");
     expect(html).not.toContain("&amp;amp;");
   });

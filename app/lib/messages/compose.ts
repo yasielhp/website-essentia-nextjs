@@ -5,6 +5,7 @@ import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
 import { OUTRO_MARKER } from "./fixed-blocks";
+import { sanitizeDoc } from "./safe-doc";
 import {
   MESSAGE_CATALOG,
   type MessageKey,
@@ -67,51 +68,6 @@ export function usableDoc(doc: unknown): EmailDoc | null {
     return null;
   }
   return docIsEmpty(candidate) ? null : candidate;
-}
-
-const SAFE_URL = /^(?:https?:|mailto:)/i;
-
-/**
- * Every link in the document leaves for `https:`, `http:` or `mailto:`, or
- * for nowhere: any other scheme (`javascript:`, `data:`, `vbscript:`…) becomes
- * `#`. The editor lets an admin type any address, and React's own filtering of
- * `javascript:` in an href is not something a mail template should lean on.
- * Variables inside a link are filled first, so `{{cancel_url}}` still works.
- */
-export function safeDoc(
-  doc: EmailDoc,
-  values: Record<string, string>,
-): EmailDoc {
-  const clean = (url: unknown): unknown => {
-    if (typeof url !== "string") return url;
-    const filled = renderVariables(url, values, { escape: false }).trim();
-    return SAFE_URL.test(filled) ? filled : "#";
-  };
-  const walk = (node: EmailDoc): EmailDoc => {
-    const next: EmailDoc = { ...node };
-    if (node.attrs) {
-      next.attrs = { ...node.attrs };
-      if (node.type === "button" && "url" in node.attrs) {
-        next.attrs.url = clean(node.attrs.url);
-      }
-      if (node.type === "image") {
-        if ("externalLink" in node.attrs) {
-          next.attrs.externalLink = clean(node.attrs.externalLink);
-        }
-        if ("src" in node.attrs) next.attrs.src = clean(node.attrs.src);
-      }
-    }
-    if (node.marks) {
-      next.marks = node.marks.map((mark) =>
-        mark.type === "link" && mark.attrs && "href" in mark.attrs
-          ? { ...mark, attrs: { ...mark.attrs, href: clean(mark.attrs.href) } }
-          : mark,
-      );
-    }
-    if (node.content) next.content = node.content.map(walk);
-    return next;
-  };
-  return walk(doc);
 }
 
 export type MessageVars = Partial<Record<MessageVariable, string>>;
@@ -228,7 +184,7 @@ export async function composeMessageEmail({
   const fragment = async (doc: EmailDoc | null): Promise<string> =>
     doc
       ? renderVariables(
-          await renderBodyFragment(safeDoc(doc, values), values),
+          await renderBodyFragment(sanitizeDoc(doc, values), values),
           values,
         )
       : "";
