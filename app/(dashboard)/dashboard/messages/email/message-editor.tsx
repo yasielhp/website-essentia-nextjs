@@ -11,7 +11,13 @@ import {
   sendTestMessage,
 } from "@/actions/message-templates";
 import Link from "next/link";
+import { useMessageDraft } from "@/hooks/use-message-draft";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import {
+  draftKey,
+  emailDraftOffer,
+  validateEmailDraft,
+} from "@/lib/messages/draft";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
 import {
@@ -36,7 +42,12 @@ import type { EmailDoc } from "@/types/campaign";
 import { useEmailActionToast } from "./action-error";
 import { EmailPreviewFrame } from "./email-preview-frame";
 import { useMessagePreview, type Problems } from "./use-message-preview";
-import { MessagePageHeader, ResetControl, UnsavedBar } from "./page-parts";
+import {
+  DraftBanner,
+  MessagePageHeader,
+  ResetControl,
+  UnsavedBar,
+} from "./page-parts";
 import { VariableChips } from "./variable-chips";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
@@ -132,6 +143,32 @@ export function MessageEditor({
   const changesKey = JSON.stringify(changes);
   const dirty = Object.keys(changes).length > 0;
   const guard = useUnsavedGuard(dirty);
+  // The body the editor is asked to show once it exists (a recovered draft).
+  const recoveredDoc = useRef<EmailDoc | null>(null);
+  const draft = useMessageDraft<EmailFields>({
+    kind: "email",
+    storageKey: draftKey("email", messageKey, locale),
+    validate: validateEmailDraft,
+    offerOf: (stored) => emailDraftOffer(stored, opened),
+    current,
+    dirty,
+    // The body reaches `current` a beat after the keystroke: the last write
+    // takes the editor's own document, so a back button inside that beat keeps it.
+    snapshot: () =>
+      flushCurrent(
+        current,
+        pendingDoc.current,
+        () => editorRef.current?.getJSON() as EmailDoc | undefined,
+      ),
+  });
+
+  function recoverDraft() {
+    const recovered = draft.take();
+    if (!recovered) return;
+    setCurrent(recovered);
+    if (editorRef.current) editorRef.current.commands.setContent(recovered.doc);
+    else recoveredDoc.current = recovered.doc;
+  }
 
   /**
    * The fields as they are this instant. The body reaches `current` a beat
@@ -372,6 +409,10 @@ export function MessageEditor({
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
       )}
 
+      {draft.offered && (
+        <DraftBanner onRecover={recoverDraft} onDiscard={draft.discard} />
+      )}
+
       {catalog.canDisable && (
         <section
           aria-label={t("reminder.switch")}
@@ -464,6 +505,10 @@ export function MessageEditor({
                 editable={!saving}
                 onCreate={(editor) => {
                   editorRef.current = editor;
+                  if (recoveredDoc.current) {
+                    editor.commands.setContent(recoveredDoc.current);
+                    recoveredDoc.current = null;
+                  }
                 }}
                 onUpdate={(editor) => {
                   if (pendingDoc.current.timer) {
@@ -566,6 +611,7 @@ export function MessageEditor({
               messageKey={messageKey}
               locale={locale}
               disabled={saving}
+              onBeforeLeave={draft.forget}
               labels={{
                 button: t("actions.reset"),
                 working: t("actions.resetting"),

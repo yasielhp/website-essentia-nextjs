@@ -2490,6 +2490,11 @@
       "page": {
         "back": "Volver a mensajes",
         "loading": "Cargando…"
+      },
+      "draft": {
+        "notice": "Hay un borrador sin guardar de antes de salir de esta página. Solo está en esta pestaña.",
+        "recover": "Recuperar borrador",
+        "discard": "Descartar"
       }
     }
   },

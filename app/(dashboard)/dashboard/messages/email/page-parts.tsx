@@ -124,6 +124,7 @@ export function ResetControl({
   locale,
   labels,
   disabled,
+  onBeforeLeave,
 }: {
   channel: "email" | "whatsapp";
   messageKey: MessageKey;
@@ -136,6 +137,8 @@ export function ResetControl({
     no: string;
   };
   disabled?: boolean;
+  /** Called once the reset worked, before the page is left. */
+  onBeforeLeave?: () => void;
 }) {
   const router = useRouter();
   const t = useTranslations("dashboard.messages.email");
@@ -162,6 +165,7 @@ export function ResetControl({
       else if (result.kept === "disabled") toast.info(t("resetKeptDisabled"));
       else if (result.removed) notifySuccess(t("resetDone"));
       else toast.info(t("resetNothing"));
+      onBeforeLeave?.();
       router.push(messageListHref());
     } catch {
       showError({ error: "generic" });
@@ -192,5 +196,33 @@ export function ResetControl({
     >
       {busy ? labels.working : labels.button}
     </Button>
+  );
+}
+
+/**
+ * A draft from before the page was left: offered, never applied by itself. The
+ * message is the text that was typed and not saved, only on this tab.
+ */
+export function DraftBanner({
+  onRecover,
+  onDiscard,
+}: {
+  onRecover: () => void;
+  onDiscard: () => void;
+}) {
+  const t = useTranslations("dashboard.messages.email.draft");
+  return (
+    <div
+      role="status"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-yellow-50 px-4 py-3"
+    >
+      <p className="text-sm font-medium text-yellow-800">{t("notice")}</p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onDiscard}>
+          {t("discard")}
+        </Button>
+        <Button onClick={onRecover}>{t("recover")}</Button>
+      </div>
+    </div>
   );
 }

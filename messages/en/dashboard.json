@@ -2490,6 +2490,11 @@
       "page": {
         "back": "Back to messages",
         "loading": "Loading…"
+      },
+      "draft": {
+        "notice": "There is an unsaved draft from before you left this page. It is only in this tab.",
+        "recover": "Recover draft",
+        "discard": "Discard"
       }
     }
   },

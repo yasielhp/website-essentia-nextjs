@@ -238,3 +238,13 @@ describe("the message pages' strings", () => {
     }
   });
 });
+
+describe("the draft banner's strings", () => {
+  it("has the notice and both answers, in both languages", () => {
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of ["notice", "recover", "discard"]) {
+        expect(messages[`messages.email.draft.${key}`]).toBeTruthy();
+      }
+    }
+  });
+});

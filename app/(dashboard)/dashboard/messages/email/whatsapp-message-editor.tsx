@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,14 @@ import {
   saveMessageTemplate,
   sendTestMessage,
 } from "@/actions/message-templates";
+import { useMessageDraft } from "@/hooks/use-message-draft";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import {
+  draftKey,
+  validateWhatsAppDraft,
+  whatsappDraftOffer,
+  type WhatsAppDraft,
+} from "@/lib/messages/draft";
 import { useFieldError } from "@/hooks/use-field-error";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
@@ -29,7 +36,12 @@ import type {
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
 import { useEmailActionToast } from "./action-error";
-import { MessagePageHeader, ResetControl, UnsavedBar } from "./page-parts";
+import {
+  DraftBanner,
+  MessagePageHeader,
+  ResetControl,
+  UnsavedBar,
+} from "./page-parts";
 
 type Locale = "es" | "en";
 
@@ -106,6 +118,26 @@ export function WhatsAppMessageEditor({
     templateId !== baseline.templateId ||
     JSON.stringify(params) !== JSON.stringify(baseline.params);
   const guard = useUnsavedGuard(dirty);
+  const currentDraft = useMemo<WhatsAppDraft>(
+    () => ({ templateId, params }),
+    [templateId, params],
+  );
+  const draft = useMessageDraft<WhatsAppDraft>({
+    kind: "whatsapp",
+    storageKey: draftKey("whatsapp", messageKey, locale),
+    validate: validateWhatsAppDraft,
+    offerOf: (stored) => whatsappDraftOffer(stored, baseline),
+    current: currentDraft,
+    dirty,
+  });
+
+  function recoverDraft() {
+    const recovered = draft.take();
+    if (!recovered) return;
+    setTemplateId(recovered.templateId);
+    setParams(recovered.params);
+    setErrors({});
+  }
   const language = tEmail(`locales.${locale}`);
 
   function pick(id: string) {
@@ -201,6 +233,10 @@ export function WhatsAppMessageEditor({
 
       {guard.pending && (
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
+      )}
+
+      {draft.offered && (
+        <DraftBanner onRecover={recoverDraft} onDiscard={draft.discard} />
       )}
 
       <div className="bg-sand-50 text-petroleum-500 flex flex-col gap-1.5 rounded-xl px-4 py-3 text-xs">
@@ -355,6 +391,7 @@ export function WhatsAppMessageEditor({
               messageKey={messageKey}
               locale={locale}
               disabled={saving}
+              onBeforeLeave={draft.forget}
               labels={{
                 button: t("actions.remove"),
                 working: t("actions.removing"),
