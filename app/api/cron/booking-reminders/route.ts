@@ -6,6 +6,7 @@ import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
 import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
 import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
+import { sendWhatsAppReminders } from "@/lib/whatsapp/reminders";
 
 /**
  * POST/GET /api/cron/booking-reminders
@@ -50,7 +51,8 @@ function formatDate(dateIso: string, locale: "en" | "es"): string {
   );
 }
 
-async function handle(request: NextRequest) {
+/** The answer for a request that may not run this cron, or null when it may. */
+function refusal(request: NextRequest): NextResponse | null {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET not set" }, { status: 500 });
@@ -62,7 +64,28 @@ async function handle(request: NextRequest) {
   if (provided !== secret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  return null;
+}
 
+async function handle(request: NextRequest) {
+  const refused = refusal(request);
+  if (refused) return refused;
+
+  const response = await remindByEmail();
+  // After the emails are done, and on its own account: the WhatsApp reminder
+  // has its own stamp, so what happened to the email changes nothing for it,
+  // and nothing it does (it never throws) changes the answer below.
+  try {
+    await sendWhatsAppReminders();
+  } catch (err) {
+    // It does not throw; this is for the day it does.
+    console.error("[cron/booking-reminders] WhatsApp reminders failed:", err);
+  }
+  return response;
+}
+
+/** The reminder emails: what this cron has always done, unchanged. */
+async function remindByEmail(): Promise<NextResponse> {
   const db = getAdminClient().database;
   const now = Date.now();
 
