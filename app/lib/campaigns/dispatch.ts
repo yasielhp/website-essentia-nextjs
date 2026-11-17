@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
@@ -16,7 +17,7 @@ import {
   INTERRUPTED_ERROR,
   RETRYABLE_FAILURE_FILTER,
   SKIPPED_PREFIX,
-  UNCONFIRMED_PREFIX,
+  START_MARGIN_MS,
   WRITE_RETRY_MS,
   campaignTemplateIssue,
   haltMessage,
@@ -28,6 +29,7 @@ import {
 import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
 import { conflictTarget, recipientRow } from "./recipient-rows";
+import { NO_ANSWER_ERROR } from "./run-markers";
 
 /**
  * Sends one campaign, or finishes sending it.
@@ -184,6 +186,27 @@ async function claim(
   return ((data as CampaignRow[] | null) ?? [])[0] ?? null;
 }
 
+/** The pause before the one retry of a chunk Resend refused. */
+const REFUSED_RETRY_MS = 2000;
+
+/** The pauses before each further try of a chunk that got no answer. */
+export const NO_ANSWER_WAITS_MS = [2000, 5000, 10_000];
+
+/**
+ * Resend's idempotency key for a chunk of a campaign: the campaign and a
+ * digest of the chunk's rows, whatever their order. The same rows of the same
+ * campaign always ask under the same key, which Resend remembers for 24 hours
+ * (and only once it has taken the request: a failed one may be asked again).
+ * 78 characters, of the 256 a key may have.
+ */
+export function chunkKey(campaignId: string, rowIds: string[]): string {
+  const digest = createHash("sha256")
+    .update([...rowIds].sort().join(","))
+    .digest("hex")
+    .slice(0, 32);
+  return `campaign-${campaignId}/${digest}`;
+}
+
 /** What a campaign says when messages left whose rows could not be written. */
 export const unrecordedMessage = (count: number): string =>
   `${count} sent without being recorded`;
@@ -275,8 +298,12 @@ async function stamp(
  * the one WhatsApp already pays: a row claimed by a process that died before
  * Resend was called is not mailed at all.
  *
- * A chunk Resend refused is tried once more; one whose fate nobody knows is
- * not, and its rows fail as `[unconfirmed]` for the same reason.
+ * Every chunk goes to Resend under an idempotency key of its own
+ * (`chunkKey`), so asking again for the same chunk cannot send it twice. A
+ * chunk Resend refused is tried once more. One whose fate nobody knows (the
+ * request got no answer) is asked again under the same key, up to three times
+ * and further apart, inside the invocation's deadline; if there is still no
+ * answer its rows fail as `[unconfirmed] no_answer`, which no retry requeues.
  *
  * A claim that cannot be made stops the send with the rest still `queued` and
  * says how many are left, so a one-off campaign stays `sending` for the cron
@@ -306,6 +333,10 @@ export async function sendQueued(
   const db = whatsapp.db ?? getAdminClient().database;
   const sleep = whatsapp.sleep ?? pause;
   const now = whatsapp.now ?? Date.now;
+  const { deadlineAt } = whatsapp;
+  /** Whether a retry `ms` from now still starts inside the invocation. */
+  const mayWait = (ms: number) =>
+    deadlineAt === undefined || now() + ms + START_MARGIN_MS <= deadlineAt;
   const content = campaign.content as CampaignContent;
   const appUrl = getAppUrl();
   let sent = 0;
@@ -387,26 +418,52 @@ export async function sendQueued(
     // `sendEmailBatch` already paces its own chunks; each call here is one
     // chunk, so the pacing between calls is ours to keep.
     if (start > 0) await pause(600);
-    let result = await sendEmailBatch(outgoing);
-    if (result.rejected && result.sent === 0) {
-      // One retry for a chunk Resend itself turned down (a 429, say): nothing
-      // of it left, so sending it again writes to nobody twice. A second
-      // failure is recorded and the run moves on.
-      await sleep(2000);
-      result = await sendEmailBatch(outgoing);
+    // The chunk goes under an idempotency key of its own, so asking Resend
+    // again for the same emails cannot send them twice: it answers what it
+    // answered the first time. That is what makes the retries below safe.
+    const options = {
+      idempotencyKey: chunkKey(
+        campaign.id,
+        owned.map((item) => item.row.id),
+      ),
+    };
+    let result = await sendEmailBatch(outgoing, options);
+    let refusedOnce = false;
+    let unanswered = 0;
+    while (result.error !== null && result.sent === 0) {
+      let wait: number;
+      if (result.rejected) {
+        // One retry for a chunk Resend itself turned down (a 429, say), as
+        // always; a second refusal is recorded and the run moves on.
+        if (refusedOnce) break;
+        refusedOnce = true;
+        wait = REFUSED_RETRY_MS;
+      } else {
+        // Nobody knows whether it left: the request got no answer (a cut of
+        // the network looks the same whether it lasted a second or an hour), a
+        // 5xx, or Resend is still busy with the first request under this key.
+        // Asked again, same key and same emails, a little later each time and
+        // never past the function's deadline.
+        const next = NO_ANSWER_WAITS_MS[unanswered];
+        if (next === undefined || !mayWait(next)) break;
+        unanswered += 1;
+        wait = next;
+      }
+      await sleep(wait);
+      result = await sendEmailBatch(outgoing, options);
     }
 
-    // A failure nobody knows the fate of (the socket dropped, a 5xx: Resend
-    // may have taken the chunk) is neither tried again nor a plain `failed`,
-    // which "retry the failed ones" would mail a second time. Its rows fail
-    // as unconfirmed, the marker no retry requeues.
+    // Still no answer after all of that: the rows are neither sent again
+    // later nor a plain `failed`, which "retry the failed ones" would mail a
+    // second time. They fail as unconfirmed, the marker no retry requeues,
+    // and the campaign's `last_error` says it.
     const at = new Date().toISOString();
     const chunkError =
       result.error === null
         ? "no id returned"
         : result.rejected
           ? result.error
-          : `${UNCONFIRMED_PREFIX}${result.error}`;
+          : `${NO_ANSWER_ERROR}: ${result.error}`;
     await Promise.all(
       owned.map(async ({ row }, index) => {
         const providerId = result.ids[index] ?? null;
@@ -771,10 +828,11 @@ export async function retryFailed(
   // write to the same person twice; one marked skipped was refused for lack of
   // consent or of an address, which a retry does not change. Both stay failed.
   //
-  // A WhatsApp campaign with nothing to send again (it failed on an empty
-  // audience, say, or every failure is one a retry must not repeat) is left as
-  // it is, instead of being reopened only to close again with nothing done.
-  // The state is checked by the reopen below; this only decides "nothing".
+  // A campaign with nothing to send again (it failed on an empty audience,
+  // say, or every failure is one a retry must not repeat) is left as it is,
+  // `last_error` and all, instead of being reopened only to close again with
+  // nothing done and its reason wiped. On both channels. The state is checked
+  // by the reopen below; this only decides "nothing".
   let retryableIds: string[] = [];
   if (checked.status === "sent" || checked.status === "failed") {
     // Read first, update by id: PostgREST rejects an `or` filter on an UPDATE
@@ -812,7 +870,7 @@ export async function retryFailed(
       return { ok: false, error: "db", detail: pending.error.message };
     }
     retryableIds = retryable.map((row) => row.id);
-    if (whatsapp && retryableIds.length === 0 && (pending.count ?? 0) === 0) {
+    if (retryableIds.length === 0 && (pending.count ?? 0) === 0) {
       return { ok: false, error: "nothing_to_retry" };
     }
   }

@@ -6,7 +6,7 @@
  * Pure and free of server imports, like `error-markers.ts`.
  */
 
-import { SKIPPED_PREFIX } from "./error-markers";
+import { SKIPPED_PREFIX, UNCONFIRMED_PREFIX } from "./error-markers";
 
 /**
  * The `error` of an appointment notice that was still in the queue when its
@@ -24,3 +24,12 @@ export const LATE_ERROR = `${SKIPPED_PREFIX}late`;
  * this.
  */
 export const RUN_FAILED_ERROR = "[run_failed]";
+
+/**
+ * Begins the `error` of an email row (and the `last_error` of its campaign)
+ * whose chunk never got an answer from Resend, not even after being asked
+ * again under the same idempotency key: nobody knows whether it left. The text
+ * after it (`: …`) is what the request failed with. An `[unconfirmed]` like the
+ * others, so a retry leaves the row alone.
+ */
+export const NO_ANSWER_ERROR = `${UNCONFIRMED_PREFIX}no_answer`;

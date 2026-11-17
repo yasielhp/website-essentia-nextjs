@@ -10,6 +10,7 @@ import {
 } from "bun:test";
 import type { Recipient } from "./audience-filter";
 import { argsOf, has } from "./fake-db";
+import { NO_ANSWER_ERROR } from "./run-markers";
 import {
   campaign,
   memoryDb,
@@ -42,7 +43,17 @@ let onSend: (emails: Email[]) => void | Promise<void>;
  * Whole-chunk failures, one per call to the mailer, before `answer` is asked:
  * `rejected` is Resend saying no (nothing left); without it, nobody knows.
  */
-let failures: { error: string; rejected: boolean }[] = [];
+let failures: {
+  error: string;
+  rejected: boolean;
+  /** Resend did take the request; it is the answer that never arrived. */
+  landed?: boolean;
+}[] = [];
+/** The idempotency key of every call to the mailer. */
+let keys: (string | undefined)[] = [];
+/** What Resend answered under each key, and how many times it delivered it. */
+let taken = new Map<string, unknown>();
+let deliveries = new Map<string, number>();
 
 const real = {
   send: { ...(await import("@/emails/send")) },
@@ -50,6 +61,7 @@ const real = {
 };
 
 let sendQueued: typeof import("./dispatch").sendQueued;
+let chunkKey: typeof import("./dispatch").chunkKey;
 let dispatchCampaign: typeof import("./dispatch").dispatchCampaign;
 let retryFailed: typeof import("./dispatch").retryFailed;
 let reconcileAllInterrupted: typeof import("./dispatch").reconcileAllInterrupted;
@@ -63,20 +75,44 @@ beforeAll(async () => {
   process.env.RESEND_API_KEY = "test-key";
   mock.module("@/emails/send", () => ({
     ...real.send,
-    sendEmailBatch: async (emails: Email[]) => {
+    sendEmailBatch: async (
+      emails: Email[],
+      options: { idempotencyKey?: string } = {},
+    ) => {
       batches.push(emails);
+      keys.push(options.idempotencyKey);
       await onSend(emails);
+      const key = options.idempotencyKey;
+      // Resend's side of an idempotency key: the first request it takes under
+      // a key is the one delivery, and its answer is what the same key gets
+      // from then on.
+      const take = () => {
+        const kept = key === undefined ? undefined : taken.get(key);
+        if (kept) return kept;
+        const ids = emails.map(answer);
+        const result = {
+          sent: ids.filter(Boolean).length,
+          ids,
+          error: null,
+          rejected: false,
+        };
+        if (key !== undefined) {
+          taken.set(key, result);
+          deliveries.set(key, (deliveries.get(key) ?? 0) + 1);
+        }
+        return result;
+      };
       const failure = failures.shift();
       if (failure) {
-        return { sent: 0, ids: emails.map(() => null), ...failure };
+        if (failure.landed) take();
+        return {
+          sent: 0,
+          ids: emails.map(() => null),
+          error: failure.error,
+          rejected: failure.rejected,
+        };
       }
-      const ids = emails.map(answer);
-      return {
-        sent: ids.filter(Boolean).length,
-        ids,
-        error: null,
-        rejected: false,
-      };
+      return take();
     },
   }));
   mock.module("@/emails/templates/campaign", () => ({
@@ -86,8 +122,13 @@ beforeAll(async () => {
       html: "<p>Hola</p>",
     }),
   }));
-  ({ sendQueued, dispatchCampaign, retryFailed, reconcileAllInterrupted } =
-    await import("./dispatch"));
+  ({
+    sendQueued,
+    chunkKey,
+    dispatchCampaign,
+    retryFailed,
+    reconcileAllInterrupted,
+  } = await import("./dispatch"));
   ({ runAutomation } = await import("./automations"));
 });
 
@@ -103,6 +144,9 @@ beforeEach(() => {
   answer = (email) => `re_${email.to}`;
   onSend = () => {};
   failures = [];
+  keys = [];
+  taken = new Map();
+  deliveries = new Map();
 });
 
 const emailCampaign = (over: Record<string, unknown> = {}) =>
@@ -348,8 +392,25 @@ describe("sendQueued on email: a chunk that fails", () => {
     expect(mem.error("row-1")).toBe("Too many requests");
   });
 
-  test("nobody knows whether it left: it is NOT sent again, and the rows fail as unconfirmed", async () => {
-    failures = [{ error: "socket hang up", rejected: false }];
+  test("the retry of a refused chunk carries the same key and the same emails", async () => {
+    failures = [{ error: "Too many requests", rejected: true }];
+    const queued = rows();
+    const mem = memoryDb(queued);
+    await sendQueued(emailCampaign(), queued, { db: mem.db, sleep: noSleep });
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]!);
+  });
+});
+
+describe("sendQueued on email: a chunk nobody knows the fate of", () => {
+  const rows = () => [mailRow(1), mailRow(2)];
+  const NO_ANSWER = "Unable to fetch data. The request could not be resolved.";
+  const cut = (landed: boolean) => ({
+    error: NO_ANSWER,
+    rejected: false,
+    landed,
+  });
+  const send = async (deadlineAt?: number) => {
     const queued = rows();
     const mem = memoryDb(queued);
     const sleeps: number[] = [];
@@ -358,34 +419,96 @@ describe("sendQueued on email: a chunk that fails", () => {
       sleep: async (ms) => {
         sleeps.push(ms);
       },
+      deadlineAt,
     });
-    // One call: a second would write to whoever the first did reach.
-    expect(batches).toHaveLength(1);
-    expect(sleeps).toEqual([]);
+    return { mem, sleeps, result };
+  };
+
+  test("every chunk goes with a key of its own: the campaign and a digest of its rows", async () => {
+    const queued = rows();
+    const mem = memoryDb(queued);
+    await sendQueued(emailCampaign(), queued, { db: mem.db });
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).toMatch(/^campaign-camp-1\/[0-9a-f]{32}$/);
+    expect(keys[0]).toBe(chunkKey("camp-1", ["row-2", "row-1"]));
+    expect(chunkKey("camp-1", ["row-1", "row-2"])).toBe(keys[0]!);
+    expect(chunkKey("camp-1", ["row-1", "row-3"])).not.toBe(keys[0]!);
+    expect(chunkKey("camp-2", ["row-1", "row-2"])).not.toBe(keys[0]!);
+    expect(
+      chunkKey(
+        "3f0c1a52-9d0e-4c57-8a55-0d2a2b6f1c11",
+        Array.from({ length: 100 }, (_, i) => `row-${i}`),
+      ).length,
+    ).toBeLessThanOrEqual(256);
+  });
+
+  test("a brief cut after Resend took it: asked again under the same key, everybody is sent, once", async () => {
+    failures = [cut(true)];
+    const { mem, sleeps, result } = await send();
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(mem.status("row-1")).toBe("sent");
+    expect(mem.rows.get("row-1")?.provider_id).toBe("re_c1@example.test");
+    expect(mem.rows.get("row-2")?.provider_id).toBe("re_c2@example.test");
+    // Two requests, one key, the same emails: one delivery.
+    expect(batches).toHaveLength(2);
+    expect(batches[1]).toEqual(batches[0]!);
+    expect(keys[1]).toBe(keys[0]!);
+    expect(deliveries.get(keys[0]!)).toBe(1);
+    expect(sleeps).toEqual([2000]);
+  });
+
+  test("a brief cut before Resend took it: the second request is the one delivery", async () => {
+    failures = [cut(false)];
+    const { mem, result } = await send();
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(mem.status("row-2")).toBe("sent");
+    expect(deliveries.get(keys[0]!)).toBe(1);
+  });
+
+  test("Resend still busy with the first request (a 409 about the key) is asked again too", async () => {
+    failures = [
+      cut(true),
+      { error: "concurrent_idempotent_requests", rejected: false },
+    ];
+    const { result, sleeps } = await send();
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(sleeps).toEqual([2000, 5000]);
+    expect(deliveries.get(keys[0]!)).toBe(1);
+  });
+
+  test("a long cut: three more tries, further apart, then the rows fail as unconfirmed with no answer", async () => {
+    failures = [cut(false), cut(false), cut(false), cut(false)];
+    const { mem, sleeps, result } = await send();
+    expect(batches).toHaveLength(4);
+    expect(new Set(keys).size).toBe(1);
+    expect(sleeps).toEqual([2000, 5000, 10_000]);
     expect(result).toEqual({
       sent: 0,
       failed: 2,
-      lastError: "[unconfirmed] socket hang up",
+      lastError: `[unconfirmed] no_answer: ${NO_ANSWER}`,
     });
     expect(mem.status("row-1")).toBe("failed");
-    expect(mem.error("row-1")).toBe("[unconfirmed] socket hang up");
-    expect(mem.error("row-2")).toBe("[unconfirmed] socket hang up");
+    expect(mem.error("row-1")).toBe(`[unconfirmed] no_answer: ${NO_ANSWER}`);
+    expect(mem.error("row-1")?.startsWith(NO_ANSWER_ERROR)).toBe(true);
   });
 
-  test("a retry that nobody knows the fate of ends unconfirmed too", async () => {
-    failures = [
-      { error: "Too many requests", rejected: true },
-      { error: "socket hang up", rejected: false },
-    ];
-    const queued = rows();
-    const mem = memoryDb(queued);
-    await sendQueued(emailCampaign(), queued, { db: mem.db, sleep: noSleep });
+  test("no try is waited for past the function's deadline", async () => {
+    failures = [cut(false), cut(false), cut(false), cut(false)];
+    // Room for the 2 s wait and its margin, not for the 5 s one.
+    const { sleeps } = await send(Date.now() + 9_000);
+    expect(sleeps).toEqual([2000]);
     expect(batches).toHaveLength(2);
-    expect(mem.error("row-1")).toBe("[unconfirmed] socket hang up");
   });
 
-  test('the unconfirmed rows are not what "retry the failed ones" sends', async () => {
-    failures = [{ error: "socket hang up", rejected: false }];
+  test("a refusal after a cut is still tried once more, as a refusal always was", async () => {
+    failures = [cut(false), { error: "Too many requests", rejected: true }];
+    const { result, sleeps } = await send();
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(sleeps).toEqual([2000, 2000]);
+  });
+
+  test('a long cut on a one-off campaign: it says so, and "retry the failed ones" touches nothing', async () => {
+    failures = [cut(false), cut(false), cut(false), cut(false)];
     const queued = rows();
     const mem = memoryDb(queued, {
       campaign: emailCampaign({ status: "draft" }),
@@ -403,11 +526,45 @@ describe("sendQueued on email: a chunk that fails", () => {
     };
     const first = await dispatchCampaign("camp-1", {}, deps);
     expect(first).toEqual({ ok: true, sent: 0, failed: 2 });
-    expect(mem.campaign.last_error).toBe("[unconfirmed] socket hang up");
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.last_error).toBe(
+      `[unconfirmed] no_answer: ${NO_ANSWER}`,
+    );
 
-    await retryFailed("camp-1", {}, deps);
-    expect(batches).toHaveLength(1);
+    const writesBefore = mem.campaignWrites.length;
+    const retried = await retryFailed("camp-1", {}, deps);
+    expect(retried).toEqual({ ok: false, error: "nothing_to_retry" });
+    // Not reopened in vain, and the reason it gave is still there.
+    expect(mem.campaignWrites).toHaveLength(writesBefore);
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.last_error).toBe(
+      `[unconfirmed] no_answer: ${NO_ANSWER}`,
+    );
+    expect(batches).toHaveLength(4);
     expect(mem.status("row-1")).toBe("failed");
+  });
+
+  test("an email retry with a plain failure among them still sends that one", async () => {
+    const queued = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(queued, {
+      campaign: emailCampaign({ status: "sent" }),
+      rows: [
+        { id: "row-1", status: "failed", error: "Too many requests" },
+        {
+          id: "row-2",
+          status: "failed",
+          error: `[unconfirmed] no_answer: ${NO_ANSWER}`,
+        },
+      ],
+    });
+    const result = await retryFailed(
+      "camp-1",
+      {},
+      { db: mem.db, whatsapp: { sleep: noSleep } },
+    );
+    expect(result).toEqual({ ok: true, sent: 1, failed: 0 });
+    expect(mailed()).toEqual(["c1@example.test"]);
+    expect(mem.status("row-2")).toBe("failed");
   });
 });
 
