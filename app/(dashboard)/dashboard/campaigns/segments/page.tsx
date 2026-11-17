@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { LoadFailed } from "@/components/dashboard/load-failed";
 import { listSegments } from "@/actions/campaigns";
 import { EMPTY_AUDIENCE, type SegmentList } from "@/types/campaign";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
@@ -30,18 +32,20 @@ export default function SegmentsPage() {
   const locale = useDashboardLocale();
   const { push } = useRouter();
   const [list, setList] = useState<SegmentList | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void listSegments(getAccessToken())
-      .catch(() => ({ everyone: 0, segments: [] }))
+      // A read that threw is a failed read, not an empty list.
+      .catch(() => ({ failed: true as const, everyone: 0, segments: [] }))
       .then((rows) => {
         if (!cancelled) setList(rows);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -58,6 +62,13 @@ export default function SegmentsPage() {
       <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
         {list === null ? (
           <TableSkeleton cols={4} />
+        ) : list.failed ? (
+          <LoadFailed
+            onRetry={() => {
+              setList(null);
+              setAttempt((n) => n + 1);
+            }}
+          />
         ) : list.segments.length === 0 ? (
           <p className="text-petroleum-400 px-5 py-16 text-center text-sm">
             {t("empty")}
@@ -93,7 +104,15 @@ export default function SegmentsPage() {
                       </td>
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
                         <span className="flex flex-wrap items-center gap-2">
-                          {segment.name}
+                          {/* The row opens it for a mouse; the name is the link a
+                              keyboard and a screen reader reach. */}
+                          <Link
+                            href={`/dashboard/campaigns/segments/${segment.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="focus-visible:ring-petroleum-500 rounded focus-visible:ring-2 focus-visible:outline-none"
+                          >
+                            {segment.name}
+                          </Link>
                           <SegmentKindBadge conditions={segment.conditions} />
                         </span>
                       </td>

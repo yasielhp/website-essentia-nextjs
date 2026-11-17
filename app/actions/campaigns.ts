@@ -404,7 +404,9 @@ export async function listSegments(
   accessToken: string | null,
   channel: CampaignChannel = "email",
 ): Promise<SegmentList> {
-  const empty: SegmentList = { everyone: 0, segments: [] };
+  // Every way out that is not the list says it failed: an empty answer would
+  // read as "no segments" or "0 people".
+  const empty: SegmentList = { failed: true, everyone: 0, segments: [] };
   try {
     await admin(accessToken);
   } catch (err) {
@@ -443,7 +445,9 @@ export async function listSegments(
     };
   } catch (err) {
     console.error("[campaigns] segment counts failed:", err);
+    // The names are here but the counts are not: a count of 0 would be a lie.
     return {
+      failed: true,
       everyone: 0,
       segments: ((data ?? []) as CampaignSegment[]).map((s) => ({
         ...s,

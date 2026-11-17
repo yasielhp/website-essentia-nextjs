@@ -412,3 +412,17 @@ describe("the screen where a segment is made", () => {
     expect(locales.es["campaigns.segments.kind.list"]).toBe("Lista manual");
   });
 });
+
+describe("a read that failed has its words", () => {
+  test("the generic line, the way to try again and the segment picker's", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "common.loadFailed",
+        "common.retry",
+        "campaigns.segment.listFailed",
+      ]) {
+        expect(locales[locale][key]).toBeTruthy();
+      }
+    }
+  });
+});

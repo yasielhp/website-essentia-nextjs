@@ -83,7 +83,9 @@
     "spanish": "Español",
     "prevMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
-    "comingSoon": "Próximamente"
+    "comingSoon": "Próximamente",
+    "loadFailed": "No se pudo cargar.",
+    "retry": "Reintentar"
   },
   "blog": {
     "newPost": "Nueva entrada",
@@ -2004,7 +2006,8 @@
       "manualHint": "Se añaden al segmento, solo para esta campaña.",
       "createOption": "+ Nuevo segmento…",
       "manage": "Gestionar segmentos",
-      "manualListHint": "Lista manual · llega a {count, plural, one {# persona} other {# personas}} (tras las exclusiones)"
+      "manualListHint": "Lista manual · llega a {count, plural, one {# persona} other {# personas}} (tras las exclusiones)",
+      "listFailed": "No se pudieron cargar los segmentos."
     },
     "trigger": {
       "title": "Disparador",

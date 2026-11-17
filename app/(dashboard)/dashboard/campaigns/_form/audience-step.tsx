@@ -265,12 +265,13 @@ function ListAudienceStep({
   const { reach, submitting, segmentId, channel } = state;
 
   const [list, setList] = useState<SegmentList | null>(null);
+  const [listAttempt, setListAttempt] = useState(0);
   const { counting, failed, retry } = useAudienceReach(state, dispatch);
 
   useEffect(() => {
     let cancelled = false;
     void listSegments(getAccessToken(), channel)
-      .catch(() => ({ everyone: 0, segments: [] }))
+      .catch(() => ({ failed: true as const, everyone: 0, segments: [] }))
       .then((rows) => {
         if (!cancelled) setList(rows);
       });
@@ -279,8 +280,10 @@ function ListAudienceStep({
     };
     // The counts are per channel: a WhatsApp campaign reaches only those who
     // consented to WhatsApp.
-  }, [channel]);
+  }, [channel, listAttempt]);
 
+  // A failed read has no segments and no counts: it is said, never shown as "0".
+  const listFailed = list?.failed === true;
   const segments = list?.segments ?? [];
   const selected = segments.find((s) => s.id === segmentId) ?? null;
 
@@ -307,11 +310,14 @@ function ListAudienceStep({
   const options: SelectOption<string>[] = [
     {
       value: "",
-      label: list ? `${tSeg("everyone")} (${list.everyone})` : tSeg("everyone"),
+      label:
+        list && !listFailed
+          ? `${tSeg("everyone")} (${list.everyone})`
+          : tSeg("everyone"),
     },
     ...segments.map((segment) => ({
       value: segment.id,
-      label: `${segment.name} (${segment.count})`,
+      label: listFailed ? segment.name : `${segment.name} (${segment.count})`,
     })),
   ];
 
@@ -351,6 +357,17 @@ function ListAudienceStep({
         </Button>
       </div>
 
+      {listFailed && (
+        <div className="mt-3">
+          <ReachFailed
+            message={tSeg("listFailed")}
+            onRetry={() => {
+              setList(null);
+              setListAttempt((n) => n + 1);
+            }}
+          />
+        </div>
+      )}
       {selected && (
         <p className="text-petroleum-400 mt-3 text-xs">
           {tSeg("selectedHint", { name: selected.name })}

@@ -107,7 +107,18 @@ export function CampaignTable({
                     >
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
                         <span className="flex flex-wrap items-center gap-2">
-                          {campaign.name}
+                          {/* The row opens it for a mouse; the name is the
+                              button a keyboard and a screen reader reach. */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpen(campaign);
+                            }}
+                            className="focus-visible:ring-petroleum-500 rounded text-left focus-visible:ring-2 focus-visible:outline-none"
+                          >
+                            {campaign.name}
+                          </button>
                           <ChannelChip channel={campaign.channel} />
                         </span>
                         <CampaignKindLine

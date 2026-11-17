@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -22,11 +23,13 @@ import type { CampaignSegment, SegmentMember } from "@/types/campaign";
 import { segmentKindOf } from "@/lib/campaigns/segment-conditions";
 import { SegmentKindBadge } from "../_form/kind-badge";
 import { Issue } from "../_form/people-table";
+import { LoadFailed } from "@/components/dashboard/load-failed";
 import { describeAudience } from "../../_form/review-step";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 
 type Loaded =
   | { kind: "loading" }
+  | { kind: "failed" }
   | { kind: "missing" }
   | {
       kind: "ready";
@@ -60,6 +63,7 @@ export default function SegmentDetailPage() {
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useDynamicBreadcrumb(loaded.kind === "ready" ? loaded.segment.name : null);
 
@@ -67,11 +71,17 @@ export default function SegmentDetailPage() {
     let cancelled = false;
     void (async () => {
       const list = await listSegments(getAccessToken()).catch(() => ({
+        failed: true as const,
         everyone: 0,
         segments: [],
       }));
       const segment = list.segments.find((s) => s.id === id);
       if (cancelled) return;
+      // A failed read is not "not found": the segment may well be there.
+      if (list.failed) {
+        setLoaded({ kind: "failed" });
+        return;
+      }
       if (!segment) {
         setLoaded({ kind: "missing" });
         return;
@@ -113,7 +123,7 @@ export default function SegmentDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   async function remove() {
     setBusy(true);
@@ -140,6 +150,16 @@ export default function SegmentDetailPage() {
       </div>
     );
   }
+  if (loaded.kind === "failed") {
+    return (
+      <LoadFailed
+        onRetry={() => {
+          setLoaded({ kind: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
+  }
   if (loaded.kind === "missing") {
     return (
       <div className="text-petroleum-400 px-6 py-20 text-center text-sm">
@@ -164,7 +184,7 @@ export default function SegmentDetailPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-petroleum-700 truncate text-3xl">
             {segment.name}
@@ -188,7 +208,7 @@ export default function SegmentDetailPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {confirmDelete ? (
             <>
               <span className="text-petroleum-500 text-xs">
@@ -267,9 +287,17 @@ export default function SegmentDetailPage() {
                     className="border-sand-50 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
                   >
                     <td className="text-petroleum-700 px-6 py-3 font-medium">
-                      {[member.first_name, member.last_name]
-                        .filter(Boolean)
-                        .join(" ") || "—"}
+                      {/* The row opens the contact for a mouse; the name is the
+                          link a keyboard and a screen reader reach. */}
+                      <Link
+                        href={`/dashboard/contacts/${member.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="focus-visible:ring-petroleum-500 rounded focus-visible:ring-2 focus-visible:outline-none"
+                      >
+                        {[member.first_name, member.last_name]
+                          .filter(Boolean)
+                          .join(" ") || "—"}
+                      </Link>
                     </td>
                     <td className="text-petroleum-500 px-6 py-3">
                       {member.email}

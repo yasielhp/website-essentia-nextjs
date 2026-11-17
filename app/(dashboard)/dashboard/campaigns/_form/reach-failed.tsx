@@ -3,15 +3,22 @@
 import { useTranslations } from "next-intl";
 
 /** The audience could not be counted: said as such, never as "nobody". */
-export function ReachFailed({ onRetry }: { onRetry: () => void }) {
+export function ReachFailed({
+  onRetry,
+  message,
+}: {
+  onRetry: () => void;
+  /** Already in words; the audience one when absent. */
+  message?: string;
+}) {
   const t = useTranslations("dashboard.campaigns.audience");
   return (
     <p role="alert" className="text-xs font-medium text-red-600">
-      {t("reachFailed")}{" "}
+      {message ?? t("reachFailed")}{" "}
       <button
         type="button"
         onClick={onRetry}
-        className="underline underline-offset-2"
+        className="inline-flex min-h-11 items-center underline underline-offset-2"
       >
         {t("reachRetry")}
       </button>

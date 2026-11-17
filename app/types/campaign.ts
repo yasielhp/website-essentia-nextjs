@@ -229,6 +229,11 @@ export type SegmentPerson = {
 
 /** What the segment picker shows: each saved segment with how many it reaches today. */
 export type SegmentList = {
+  /**
+   * The read failed (the session, the database, the counts): what is here is
+   * not the segments, and a screen must say so instead of showing "none" or "0".
+   */
+  failed?: true;
   everyone: number;
   segments: (CampaignSegment & { count: number })[];
 };

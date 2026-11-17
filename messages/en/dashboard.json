@@ -83,7 +83,9 @@
     "spanish": "Español",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "loadFailed": "It could not be loaded.",
+    "retry": "Try again"
   },
   "blog": {
     "newPost": "New post",
@@ -2004,7 +2006,8 @@
       "manualHint": "Added on top of the segment, for this campaign only.",
       "createOption": "+ New segment…",
       "manage": "Manage segments",
-      "manualListHint": "Manual list · reaches {count, plural, one {# person} other {# people}} (after exclusions)"
+      "manualListHint": "Manual list · reaches {count, plural, one {# person} other {# people}} (after exclusions)",
+      "listFailed": "The segments could not be loaded."
     },
     "trigger": {
       "title": "Trigger",

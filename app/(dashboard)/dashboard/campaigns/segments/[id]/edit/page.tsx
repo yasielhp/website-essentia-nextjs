@@ -8,9 +8,11 @@ import { CardSkeleton, HeaderSkeleton } from "@/components/dashboard/skeletons";
 import { listSegments } from "@/actions/campaigns";
 import type { CampaignSegment } from "@/types/campaign";
 import { SegmentForm } from "../../_form/segment-form";
+import { LoadFailed } from "@/components/dashboard/load-failed";
 
 type Loaded =
   | { kind: "loading" }
+  | { kind: "failed" }
   | { kind: "missing" }
   | { kind: "ready"; segment: CampaignSegment & { count: number } };
 
@@ -18,20 +20,26 @@ export default function EditSegmentPage() {
   const t = useTranslations("dashboard.campaigns.segments");
   const { id } = useParams<{ id: string }>();
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void listSegments(getAccessToken())
-      .catch(() => ({ everyone: 0, segments: [] }))
+      .catch(() => ({ failed: true as const, everyone: 0, segments: [] }))
       .then((list) => {
         if (cancelled) return;
+        // A failed read is not "not found".
+        if (list.failed) {
+          setLoaded({ kind: "failed" });
+          return;
+        }
         const segment = list.segments.find((s) => s.id === id);
         setLoaded(segment ? { kind: "ready", segment } : { kind: "missing" });
       });
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   if (loaded.kind === "loading") {
     return (
@@ -39,6 +47,16 @@ export default function EditSegmentPage() {
         <HeaderSkeleton buttons={2} />
         <CardSkeleton lines={4} />
       </div>
+    );
+  }
+  if (loaded.kind === "failed") {
+    return (
+      <LoadFailed
+        onRetry={() => {
+          setLoaded({ kind: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
   if (loaded.kind === "missing") {
