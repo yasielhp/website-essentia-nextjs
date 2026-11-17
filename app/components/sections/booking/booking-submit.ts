@@ -9,7 +9,11 @@ import {
 } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { updateNewsletterForUser } from "@/actions/newsletter";
-import { saveOwnWhatsAppConsent } from "@/actions/whatsapp-consent";
+import {
+  recordBookingNoticeConsent,
+  saveOwnWhatsAppConsent,
+} from "@/actions/whatsapp-consent";
+import { contactConsentArgs, writeBookingConsents } from "./booking-consent";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -85,17 +89,8 @@ export async function saveDetailsStep({
         p_phone: details.phone,
         p_language: locale,
         p_gender: details.gender || null,
-        // `null`, not `false`: an unticked box must not undo a yes given before.
-        p_newsletter: details.newsletter ? true : null,
-        // Two separate consents (booking notices, news and offers), each
-        // sent only when ticked. `null`, never `false`: the box is "do not
-        // touch", so unticking it later does not withdraw a consent already
-        // given. That is an accepted gap — a withdrawal is a STOP/BAJA reply
-        // or staff in the dashboard. The same call can also be made with
-        // somebody else's email, which clears their STOP, exactly as the
-        // newsletter box can re-subscribe one.
-        p_whatsapp: details.whatsapp ? true : null,
-        p_whatsapp_marketing: details.whatsappMarketing ? true : null,
+        // One box, both channels, `null` when unticked (see booking-consent.ts).
+        ...contactConsentArgs(details),
       });
 
     // Never swallow this. A failure here used to pass unnoticed and the draft
@@ -113,40 +108,20 @@ export async function saveDetailsStep({
     }
   }
 
-  // A signed-in client has no contact row to upsert here, so the preference
-  // goes through the account path. Best effort: a booking is worth more than
-  // a newsletter flag.
-  if (user && details.newsletter) {
-    void updateNewsletterForUser(
-      getAccessToken(),
-      user.id,
-      details.email,
-      true,
-    ).catch(() => undefined);
-  }
-
-  // Her WhatsApp boxes cannot go to `upsert_contact` from the browser as a
-  // guest's do, so a server action records them on the contact of her session's
-  // own address. Without this, a returning client could never be reached on
-  // WhatsApp at all. Best effort too, but a failure is logged: it is a lost
-  // consent, not a lost flag.
-  if (user && (details.whatsapp || details.whatsappMarketing)) {
-    try {
-      const saved = await saveOwnWhatsAppConsent(getAccessToken(), {
-        firstName: details.firstName,
-        lastName: details.lastName,
-        phone: details.phone,
-        language: locale === "es" ? "es" : "en",
-        appointments: details.whatsapp === true,
-        marketing: details.whatsappMarketing === true,
-      });
-      if (!saved.ok) {
-        console.error("[booking] WhatsApp consent not saved:", saved.error);
-      }
-    } catch (err) {
-      console.error("[booking] WhatsApp consent not saved:", err);
-    }
-  }
+  // What follows the contact: for a guest the notice consent, for a signed-in
+  // client her contact, her choice on news and offers, and the notice consent.
+  await writeBookingConsents({
+    user,
+    locale,
+    details,
+    effects: {
+      getAccessToken,
+      updateNewsletterForUser,
+      saveOwnWhatsAppConsent,
+      recordBookingNoticeConsent,
+      log: (message, detail) => console.error(message, detail),
+    },
+  });
 
   let draftId = bookingId;
 

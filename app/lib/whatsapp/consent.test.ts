@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-  activeWhatsAppUses,
+  NOTICE_CONSENT_WINDOW_MS,
+  isContactFresh,
+  marketingConsentActive,
+  pickNoticeEmail,
   whatsappActivationPatch,
   whatsappConsentColumn,
   whatsappConsentState,
@@ -48,25 +51,117 @@ describe("whatsappConsentState", () => {
   });
 });
 
-describe("activeWhatsAppUses", () => {
-  test("a use is active when consented and not stopped", () => {
-    expect(
-      activeWhatsAppUses({
-        whatsapp_opted_in_at: IN,
-        whatsapp_marketing_opted_in_at: null,
-        whatsapp_opted_out_at: null,
-      }),
-    ).toEqual({ appointments: true, marketing: false });
+describe("marketingConsentActive", () => {
+  const ON = {
+    newsletter_subscribed: true,
+    newsletter_unsubscribed_at: null,
+    whatsapp_marketing_opted_in_at: IN,
+    whatsapp_opted_out_at: null,
+  };
+
+  test("on only when both channels are on and nobody stopped", () => {
+    expect(marketingConsentActive(ON)).toBe(true);
   });
 
-  test("a STOP turns both off whatever was consented", () => {
+  test("with only one of the two it is not on, so the box shows unticked", () => {
     expect(
-      activeWhatsAppUses({
-        whatsapp_opted_in_at: IN,
-        whatsapp_marketing_opted_in_at: IN,
-        whatsapp_opted_out_at: OUT,
+      marketingConsentActive({ ...ON, whatsapp_marketing_opted_in_at: null }),
+    ).toBe(false);
+    expect(
+      marketingConsentActive({ ...ON, newsletter_subscribed: false }),
+    ).toBe(false);
+    expect(marketingConsentActive({ ...ON, newsletter_subscribed: null })).toBe(
+      false,
+    );
+  });
+
+  test("a WhatsApp STOP or an email unsubscribe switches it off", () => {
+    expect(marketingConsentActive({ ...ON, whatsapp_opted_out_at: OUT })).toBe(
+      false,
+    );
+    expect(
+      marketingConsentActive({ ...ON, newsletter_unsubscribed_at: OUT }),
+    ).toBe(false);
+  });
+
+  test("an empty row is not on", () => {
+    expect(marketingConsentActive({})).toBe(false);
+  });
+});
+
+describe("isContactFresh", () => {
+  const NOW = new Date("2026-11-17T12:00:00.000Z");
+  const minutesAgo = (m: number) =>
+    new Date(NOW.getTime() - m * 60_000).toISOString();
+
+  test("a contact written a minute ago is fresh", () => {
+    expect(isContactFresh({ updated_at: minutesAgo(1) }, NOW)).toBe(true);
+  });
+
+  test("the window is fifteen minutes, edge included", () => {
+    expect(isContactFresh({ updated_at: minutesAgo(15) }, NOW)).toBe(true);
+    expect(isContactFresh({ updated_at: minutesAgo(15.1) }, NOW)).toBe(false);
+    expect(NOTICE_CONSENT_WINDOW_MS).toBe(15 * 60_000);
+  });
+
+  test("created_at counts when updated_at is missing, and the newer one wins", () => {
+    expect(isContactFresh({ created_at: minutesAgo(2) }, NOW)).toBe(true);
+    expect(
+      isContactFresh(
+        { created_at: minutesAgo(2), updated_at: minutesAgo(600) },
+        NOW,
+      ),
+    ).toBe(true);
+  });
+
+  test("an old, missing or unreadable date is not fresh", () => {
+    expect(isContactFresh({ updated_at: minutesAgo(600) }, NOW)).toBe(false);
+    expect(isContactFresh({}, NOW)).toBe(false);
+    expect(isContactFresh({ updated_at: "not a date" }, NOW)).toBe(false);
+  });
+
+  test("a date in the future is not trusted", () => {
+    expect(isContactFresh({ updated_at: minutesAgo(-5) }, NOW)).toBe(false);
+  });
+});
+
+describe("pickNoticeEmail", () => {
+  test("a verified session address wins over whatever the browser sent", () => {
+    expect(
+      pickNoticeEmail({
+        hasToken: true,
+        sessionEmail: "Ana@Example.com",
+        inputEmail: "victim@example.com",
       }),
-    ).toEqual({ appointments: false, marketing: false });
+    ).toBe("ana@example.com");
+  });
+
+  test("a token whose session has no address picks nothing, never the input", () => {
+    expect(
+      pickNoticeEmail({
+        hasToken: true,
+        sessionEmail: null,
+        inputEmail: "victim@example.com",
+      }),
+    ).toBeNull();
+  });
+
+  test("a guest uses the address of the step, trimmed and lowercased", () => {
+    expect(
+      pickNoticeEmail({
+        hasToken: false,
+        sessionEmail: null,
+        inputEmail: "  Maria@Example.COM ",
+      }),
+    ).toBe("maria@example.com");
+  });
+
+  test("a guest with no usable address picks nothing", () => {
+    for (const inputEmail of ["", "   ", "not-an-email", 42, null, undefined]) {
+      expect(
+        pickNoticeEmail({ hasToken: false, sessionEmail: null, inputEmail }),
+      ).toBeNull();
+    }
   });
 });
 

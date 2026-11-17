@@ -21,7 +21,7 @@ import { allowedParamFields } from "./param-fields";
  * and the renderer are not imported).
  */
 
-/** The messages that may also go out on WhatsApp: the ones the opt-in promises. */
+/** The messages that may also go out on WhatsApp: the ones the booking line promises (confirmation and reminder). */
 export const WHATSAPP_MESSAGE_KEYS: MessageKey[] = MESSAGE_KEYS.filter(
   (key) => MESSAGE_CATALOG[key].whatsappEligible,
 );

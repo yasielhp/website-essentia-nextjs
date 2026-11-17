@@ -29,8 +29,10 @@ import type { WhatsAppSendResult, WhatsAppTemplateRow } from "./types";
  * confirmation and the reminder, on the template the admin chose for each.
  *
  * These are transactional notices, so what lets one go is the booking-notice
- * consent (`whatsapp_opted_in_at`, the checkbox that promises "the confirmation
- * and the reminder of my appointment"), never the marketing one. Nothing is
+ * consent (`whatsapp_opted_in_at`, recorded when she accepts the Terms and the
+ * Privacy Policy on the public booking form, whose line says the confirmation
+ * and the reminder of her appointment go by email and WhatsApp), never the
+ * marketing one. A booking the team makes from the dashboard records none. Nothing is
  * sent unless ALL of these hold, and when one does not, nothing is written
  * either (a history row for every booking without consent would bury the real
  * ones):

@@ -18,14 +18,14 @@ export function DetailsStep({
   errors = {},
   onChange,
   onClearError,
-  whatsappOn,
+  marketingOn = false,
 }: {
   details: DetailsState;
   errors?: DetailsErrors;
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
-  /** Uses a signed-in client already has on: shown ticked and left alone. */
-  whatsappOn?: { appointments: boolean; marketing: boolean };
+  /** A signed-in client already has news and offers on: shown ticked and left alone. */
+  marketingOn?: boolean;
 }) {
   const validationMessage = useValidationMessage();
   const t = useTranslations("booking.detailsStep");
@@ -152,7 +152,7 @@ export function DetailsStep({
               >
                 {t("privacyPolicy")}
               </Link>
-              {t("consentSuffix")}
+              {t("consentNoticeSuffix")}
             </span>
           }
         />
@@ -163,59 +163,28 @@ export function DetailsStep({
         )}
       </div>
 
-      {/* Optional, and its own box: consent to marketing is a different
-          question from accepting the terms, and the law wants it asked apart. */}
+      {/* The only optional box. Accepting the Terms and the Policy above is what
+          allows the confirmation and the reminder of the appointment, by email
+          and WhatsApp; this one is marketing, a different question that the law
+          wants asked apart, and it is ONE choice for both channels. It is never
+          ticked for the visitor, and unticking it later does not withdraw a yes
+          given before (unticked means "do not touch"): that is the unsubscribe
+          link in an email or a BAJA reply on WhatsApp. A signed-in client who
+          already has both channels on sees it ticked and locked. */}
       <Checkbox
         name="newsletter"
-        checked={details.newsletter ?? false}
+        checked={marketingOn || (details.newsletter ?? false)}
+        disabled={marketingOn}
         onChange={(e) => {
           onChange({ ...details, newsletter: e.target.checked });
         }}
         label={
           <span className="text-petroleum-400 text-sm">
             {t("newsletterOptIn")}
-          </span>
-        }
-      />
-
-      {/* Two boxes, because they are two consents: what the booking needs
-          (confirmation and reminder) and what is marketing. Neither is ticked
-          for the visitor and neither implies the other. Unticking one later
-          does not withdraw a consent already given — an unticked box means
-          "do not touch" — so a withdrawal is the STOP/BAJA reply the hint
-          names, or the centre in the dashboard. */}
-      <Checkbox
-        name="whatsapp"
-        checked={whatsappOn?.appointments || (details.whatsapp ?? false)}
-        disabled={whatsappOn?.appointments}
-        onChange={(e) => {
-          onChange({ ...details, whatsapp: e.target.checked });
-        }}
-        label={
-          <span className="text-petroleum-400 text-sm">
-            {t("whatsappOptIn")}
             <span className="mt-0.5 block text-xs">
-              {whatsappOn?.appointments
-                ? t("whatsappAlreadyOn")
-                : t("whatsappOptInHint")}
-            </span>
-          </span>
-        }
-      />
-      <Checkbox
-        name="whatsappMarketing"
-        checked={whatsappOn?.marketing || (details.whatsappMarketing ?? false)}
-        disabled={whatsappOn?.marketing}
-        onChange={(e) => {
-          onChange({ ...details, whatsappMarketing: e.target.checked });
-        }}
-        label={
-          <span className="text-petroleum-400 text-sm">
-            {t("whatsappMarketingOptIn")}
-            <span className="mt-0.5 block text-xs">
-              {whatsappOn?.marketing
-                ? t("whatsappAlreadyOn")
-                : t("whatsappMarketingOptInHint")}
+              {marketingOn
+                ? t("newsletterAlreadyOn")
+                : t("newsletterOptInHint")}
             </span>
           </span>
         }
@@ -237,6 +206,9 @@ export function DetailsStep({
             <br />
             <strong className="font-medium">{t("legalBasis")}</strong>{" "}
             {t("legalBasisValue")}
+            <br />
+            <strong className="font-medium">{t("optOut")}</strong>{" "}
+            {t("optOutValue")}
             <br />
             <strong className="font-medium">{t("rights")}</strong>{" "}
             {t("rightsValue")}{" "}

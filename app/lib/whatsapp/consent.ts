@@ -61,19 +61,67 @@ export function whatsappConsentState(
   };
 }
 
+/** What the booking form reads to decide whether "news and offers" is already on. */
+export type MarketingColumns = WhatsAppConsentColumns & {
+  newsletter_subscribed?: boolean | null;
+  newsletter_unsubscribed_at?: string | null;
+};
+
 /**
- * Which uses can be messaged right now: consent given and no STOP since.
- * What the booking form shows a signed-in client as "already on".
+ * Whether the single "news and offers by email and WhatsApp" box is already on
+ * for this contact: both channels consented, no WhatsApp STOP and no email
+ * unsubscribe. With only one of the two it is NOT on, so the box shows unticked
+ * and ticking it completes both.
  */
-export function activeWhatsAppUses(contact: WhatsAppConsentColumns): {
-  appointments: boolean;
-  marketing: boolean;
-} {
-  const state = whatsappConsentState(contact);
-  return {
-    appointments: state.appointments === "accepted",
-    marketing: state.marketing === "accepted",
+export function marketingConsentActive(contact: MarketingColumns): boolean {
+  return (
+    contact.newsletter_subscribed === true &&
+    !contact.newsletter_unsubscribed_at &&
+    whatsappConsentState(contact).marketing === "accepted"
+  );
+}
+
+/**
+ * How recently a contact must have been written for the booking form to stamp
+ * the notice consent on it. The details step has just upserted it; an older row
+ * is somebody else's, and a stranger typing an address must not be able to
+ * consent on its owner's behalf at any later time.
+ */
+export const NOTICE_CONSENT_WINDOW_MS = 15 * 60_000;
+
+/** True when the contact was created or updated inside the window, and not in the future. */
+export function isContactFresh(
+  contact: { created_at?: string | null; updated_at?: string | null },
+  now: Date,
+): boolean {
+  const stamps = [contact.created_at, contact.updated_at]
+    .map((value) => (value ? Date.parse(value) : Number.NaN))
+    .filter((ms) => Number.isFinite(ms));
+  if (stamps.length === 0) return false;
+  const age = now.getTime() - Math.max(...stamps);
+  return age >= 0 && age <= NOTICE_CONSENT_WINDOW_MS;
+}
+
+/**
+ * The address the notice consent is stamped on.
+ *
+ * With a token it is the verified session's and nothing else: if that session
+ * has no address, nothing is picked, because falling back to what the browser
+ * sent would let a signed-in caller name another person. A guest has no
+ * session, so the address of the step she just saved is the only one there is.
+ */
+export function pickNoticeEmail(input: {
+  hasToken: boolean;
+  sessionEmail: string | null;
+  inputEmail: unknown;
+}): string | null {
+  const clean = (value: unknown) => {
+    if (typeof value !== "string") return null;
+    const email = value.trim().toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
   };
+  if (input.hasToken) return clean(input.sessionEmail);
+  return clean(input.inputEmail);
 }
 
 /**
