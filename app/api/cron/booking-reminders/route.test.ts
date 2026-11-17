@@ -534,8 +534,8 @@ describe("booking reminders", () => {
       }) as never);
       quiet = spyOn(console, "error").mockImplementation(() => {});
     });
-    const done = () => {
-      const lines = quiet.mock.calls.map((c: unknown[]) =>
+    const done = (): string[] => {
+      const lines: string[] = quiet.mock.calls.map((c: unknown[]) =>
         c.map(String).join(" "),
       );
       timers.mockRestore();
