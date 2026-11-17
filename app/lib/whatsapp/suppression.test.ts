@@ -24,8 +24,34 @@ function db(
 describe("suppressionRows", () => {
   it("normalises each sender to the E.164 the table accepts, once", () => {
     expect(
-      suppressionRows(["34600112233", "+34 600 11 22 33", "600112233"]),
+      suppressionRows(["34600112233", "+34 600 11 22 33", "34 600-112-233"]),
     ).toEqual([{ phone: "+34600112233", reason: "stop" }]);
+  });
+
+  it("a sender is Meta's `from`: international already, so it never gets the Spanish prefix", () => {
+    // Andorra: country code 376 and six digits, nine in all. Read as a number
+    // typed in a form it would become +34376312345 and no send would find it.
+    expect(suppressionRows(["376312345"])).toEqual([
+      { phone: "+376312345", reason: "stop" },
+    ]);
+    // The Faroes (298) and Greenland (299) are nine digits too.
+    expect(suppressionRows(["298212345"]).map((r) => r.phone)).toEqual([
+      "+298212345",
+    ]);
+  });
+
+  it("the row a STOP writes is the one a send to that contact looks for", async () => {
+    const [row] = suppressionRows(["376312345"]);
+    const { db: client } = db((_t, chain) => ({
+      data: ((argsOf(chain, "in")?.[1] as string[]) ?? [])
+        .filter((p) => p === row!.phone)
+        .map((phone) => ({ phone })),
+    }));
+    // The contact's phone, as a form stored it.
+    expect(await isPhoneSuppressed(client, "+376 312 345")).toBe(true);
+    expect(await loadSuppressedPhones(client, ["00376 312345"])).toEqual(
+      new Set(["+376312345"]),
+    );
   });
 
   it("drops what the table's own check would refuse", () => {

@@ -24,21 +24,33 @@ type Db = ReturnType<typeof getAdminClient>["database"];
 
 export const SUPPRESSED_TABLE = "whatsapp_suppressed_phones";
 
-/** The rows to write for the senders of a STOP: E.164, valid, once each. */
+/**
+ * The rows to write for the senders of a STOP: E.164, valid, once each.
+ *
+ * A sender is Meta's `messages[].from`: the whole international number, digits
+ * only and without the `+`. It is NOT a number somebody typed in a form, so it
+ * is given the `+` before it is normalised, as `matchByPhone` does. Without it
+ * `toE164` reads nine digits as a Spanish number and adds the 34: Andorra's
+ * `376312345` was stored as `+34376312345`, a number no send ever looks for.
+ */
 export function suppressionRows(
   senders: readonly string[],
 ): { phone: string; reason: "stop" }[] {
   const phones = new Set<string>();
   for (const sender of senders) {
-    const phone = toCampaignPhone(sender);
+    if (typeof sender !== "string") continue;
+    const digits = sender.replace(/\D/g, "");
+    if (!digits) continue;
+    const phone = toCampaignPhone(`+${digits}`);
     if (phone) phones.add(phone);
   }
   return [...phones].map((phone) => ({ phone, reason: "stop" as const }));
 }
 
 /**
- * Adds the senders to the list, leaving those already there as they are.
- * Returns how many rows it sent. Throws on a database error.
+ * Adds the senders (Meta's `from`, see `suppressionRows`) to the list, leaving
+ * those already there as they are. Returns how many rows it sent. Throws on a
+ * database error.
  */
 export async function suppressPhones(
   db: Db,

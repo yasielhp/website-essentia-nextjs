@@ -135,6 +135,22 @@ describe("STOP and the phone list", () => {
     ]);
   });
 
+  test("a nine-digit international number (Andorra) is not given the Spanish prefix, in the list or in the match", async () => {
+    contacts = [
+      { id: "c-ad", phone: "+376 312 345" },
+      // A Spanish contact whose number is NOT the sender's.
+      { id: "c-es", phone: "376312345" },
+    ];
+    const res = await POST(signed(inbound("376312345", "STOP")));
+    expect(res.status).toBe(200);
+    expect(argsOf(suppressionWrites()[0]!.chain, "upsert")?.[0]).toEqual([
+      { phone: "+376312345", reason: "stop" },
+    ]);
+    const updates = optOutUpdates();
+    expect(updates).toHaveLength(1);
+    expect(argsOf(updates[0]!.chain, "in")).toEqual(["id", ["c-ad"]]);
+  });
+
   test("BAJA does the same, with the spaces and the accent people type", async () => {
     await POST(signed(inbound("34600112233", " Baja. ")));
     expect(suppressionWrites()).toHaveLength(1);
