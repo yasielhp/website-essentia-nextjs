@@ -1175,7 +1175,14 @@
         "unreachableConfirm": "¿Restablecer? Volverá a poder recibir campañas por WhatsApp.",
         "unreachableConfirmYes": "Sí, restablecer",
         "unreachableResetting": "Restableciendo…",
-        "unreachableError": "No se pudo restablecer el número."
+        "unreachableError": "No se pudo restablecer el número.",
+        "suppression": {
+          "note": "Este número se dio de baja por WhatsApp (STOP). No recibirá mensajes de ningún tipo, aunque este contacto tenga consentimiento.",
+          "remove": "Quitar",
+          "removing": "Quitando…",
+          "error": "No se pudo quitar el número de la lista de bajas.",
+          "unavailable": "No se pudo comprobar la lista de bajas de WhatsApp."
+        }
       },
       "newsletter": {
         "label": "Newsletter",

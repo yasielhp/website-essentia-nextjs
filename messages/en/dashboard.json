@@ -1175,7 +1175,14 @@
         "unreachableConfirm": "Reset it? It will be able to receive WhatsApp campaigns again.",
         "unreachableConfirmYes": "Yes, reset",
         "unreachableResetting": "Resetting…",
-        "unreachableError": "The number could not be reset."
+        "unreachableError": "The number could not be reset.",
+        "suppression": {
+          "note": "This number opted out on WhatsApp (STOP). It will receive no messages of any kind, even if this contact has consent.",
+          "remove": "Remove",
+          "removing": "Removing…",
+          "error": "Could not remove the number from the opt-out list.",
+          "unavailable": "Could not check the WhatsApp opt-out list."
+        }
       },
       "newsletter": {
         "label": "Newsletter",

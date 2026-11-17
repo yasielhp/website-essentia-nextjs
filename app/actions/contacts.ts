@@ -2,7 +2,12 @@
 
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
-import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
+import {
+  ADMIN_ROLES,
+  AuthError,
+  requireRole,
+  type AuthContext,
+} from "@/lib/auth-guard";
 import type {
   ContactBooking,
   ContactStatus,
@@ -14,6 +19,11 @@ import type {
   WhatsAppConsentColumnsRow,
   WhatsAppConsentResult,
 } from "@/types/contact";
+import { toCampaignPhone } from "@/lib/whatsapp/phone";
+import {
+  SUPPRESSED_TABLE,
+  isPhoneSuppressed,
+} from "@/lib/whatsapp/suppression";
 import {
   whatsappActivationPatch,
   whatsappConsentColumn,
@@ -398,6 +408,115 @@ export async function clearWhatsAppUnreachable(
       return { ok: false, error: "notFound" };
     }
     return { ok: true };
+  } catch {
+    return { ok: false, error: "db" };
+  }
+}
+
+// ── The STOP list ───────────────────────────────────────────────
+
+/** What the two actions below answer with when they cannot. Keys the card translates. */
+type SuppressionFailure = {
+  ok: false;
+  error: "unauthenticated" | "forbidden" | "invalid" | "notFound" | "db";
+};
+
+/**
+ * The administrator and the contact's number, read here: the number is never a
+ * parameter, so these actions can only ever act on the number the contact
+ * has. `phone` is null when the contact has none that could be written to.
+ */
+async function suppressionTarget(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{ caller: AuthContext; phone: string | null } | SuppressionFailure> {
+  let caller: AuthContext;
+  try {
+    caller = await requireRole(accessToken, ADMIN_ROLES);
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return {
+        ok: false,
+        error: err.status === 403 ? "forbidden" : "unauthenticated",
+      };
+    }
+    throw err;
+  }
+  if (!z.uuid().safeParse(contactId).success) {
+    return { ok: false, error: "invalid" };
+  }
+  try {
+    const { data, error } = await getAdminClient()
+      .database.from("contacts")
+      .select("phone")
+      .eq("id", contactId)
+      .maybeSingle();
+    if (error) return { ok: false, error: "db" };
+    if (!data) return { ok: false, error: "notFound" };
+    return {
+      caller,
+      phone: toCampaignPhone((data as { phone: string | null }).phone),
+    };
+  } catch {
+    return { ok: false, error: "db" };
+  }
+}
+
+/**
+ * Whether the contact's number is on the list of numbers that wrote STOP, for
+ * the card to say so. The list is by number, not by contact: a number may be on
+ * it with no opt-out stamped on this contact (the STOP came from a booking
+ * somebody else made with it).
+ */
+export async function fetchWhatsAppSuppression(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{ ok: true; suppressed: boolean } | SuppressionFailure> {
+  const target = await suppressionTarget(accessToken, contactId);
+  if ("ok" in target) return target;
+  if (!target.phone) return { ok: true, suppressed: false };
+  try {
+    return {
+      ok: true,
+      suppressed: await isPhoneSuppressed(
+        getAdminClient().database,
+        target.phone,
+      ),
+    };
+  } catch {
+    // The list cannot be read (its table is created by a migration).
+    return { ok: false, error: "db" };
+  }
+}
+
+/**
+ * Takes the contact's number off the STOP list, for staff who know the person
+ * asked to hear from the centre again. The ONLY way a number leaves it: no
+ * checkbox, toggle or contact upsert does. It removes the contact's own number
+ * and nothing else, and does not touch the contact's consent.
+ */
+export async function clearWhatsAppSuppression(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{ ok: true; removed: boolean } | SuppressionFailure> {
+  const target = await suppressionTarget(accessToken, contactId);
+  if ("ok" in target) return target;
+  if (!target.phone) return { ok: true, removed: false };
+  try {
+    const { data, error } = await getAdminClient()
+      .database.from(SUPPRESSED_TABLE)
+      .delete()
+      .eq("phone", target.phone)
+      .select("phone");
+    if (error) return { ok: false, error: "db" };
+    const removed = ((data ?? []) as unknown[]).length > 0;
+    // Who and which contact, never the number.
+    console.info("[contacts] whatsapp suppression cleared", {
+      admin: target.caller.userId,
+      contact: contactId,
+      removed,
+    });
+    return { ok: true, removed };
   } catch {
     return { ok: false, error: "db" };
   }
