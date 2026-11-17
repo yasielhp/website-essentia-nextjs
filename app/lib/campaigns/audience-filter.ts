@@ -51,8 +51,6 @@ export type ContactCandidate = {
    * covers booking notices: the two purposes are consented separately.
    */
   whatsappMarketingOptedInAt?: string | null;
-  /** Booking-notice consent. Carried for completeness; campaigns ignore it. */
-  whatsappOptedInAt?: string | null;
   /** STOP / BAJA: one opt-out that blocks both uses. */
   whatsappOptedOutAt?: string | null;
   /** Meta said the number has no WhatsApp; sending again only costs. */

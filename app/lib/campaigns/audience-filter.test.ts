@@ -383,18 +383,20 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(out[0].phone).toBe("+34600112233");
   });
 
+  it("hands the send an empty email, never a made-up one", () => {
+    expect(run([wa()])[0].email).toBe("");
+  });
+
   it("needs no email, which the email channel does", () => {
     const ok = wa();
     expect(ids(run([ok]))).toEqual([ok.id]);
     expect(ids(filterAudience([ok], EMPTY_AUDIENCE, NOW))).toEqual([]);
   });
 
-  it("drops a contact without marketing consent, even with the booking-notice one", () => {
-    const onlyNotices = wa({
-      whatsappMarketingOptedInAt: null,
-      whatsappOptedInAt: OPTED,
-    });
-    expect(ids(run([onlyNotices]))).toEqual([]);
+  it("drops a contact without marketing consent", () => {
+    const noConsent = wa({ whatsappMarketingOptedInAt: null });
+    const unset = wa({ whatsappMarketingOptedInAt: undefined });
+    expect(ids(run([noConsent, unset]))).toEqual([]);
   });
 
   it("drops a contact who opted out", () => {
@@ -423,9 +425,24 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(ids(run([ok]))).toEqual([ok.id]);
   });
 
+  it("leaves the phone as stored on an email recipient", () => {
+    const person = c({ phone: "600 11 22 33" });
+    expect(filterAudience([person], EMPTY_AUDIENCE, NOW)[0].phone).toBe(
+      "600 11 22 33",
+    );
+  });
+
   it("keeps the email exclusions for the email channel whatever the WhatsApp fields", () => {
     const gone = c({ whatsappOptedOutAt: "2026-11-10T00:00:00Z" });
     expect(ids(filterAudience([gone], EMPTY_AUDIENCE, NOW))).toEqual([gone.id]);
+  });
+
+  it("does not let a first contact the conditions reject block the second", () => {
+    const rejected = wa({ language: "en", phone: "600112233" });
+    const kept = wa({ language: "es", phone: "600 11 22 33" });
+    expect(ids(run([rejected, kept], audience({ language: "es" })))).toEqual([
+      kept.id,
+    ]);
   });
 
   it("collapses two contacts sharing a number, however it is written", () => {

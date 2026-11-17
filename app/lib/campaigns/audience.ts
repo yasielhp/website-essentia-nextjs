@@ -39,7 +39,6 @@ type ContactRow = {
   birthdate: string | null;
   last_name: string | null;
   phone: string | null;
-  whatsapp_opted_in_at: string | null;
   whatsapp_marketing_opted_in_at: string | null;
   whatsapp_opted_out_at: string | null;
   whatsapp_unreachable_at: string | null;
@@ -97,9 +96,13 @@ export async function loadCandidates(
     db
       .from("contacts")
       .select(
-        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
       )
       .not(channel === "whatsapp" ? "phone" : "email", "is", null)
+      // A fixed order, so the contact kept when two share a phone (the first)
+      // is the same in the preview and in the send.
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(0, MAX_ROWS),
     db
       .from("bookings")
@@ -215,7 +218,6 @@ export async function loadCandidates(
         ? Object.fromEntries(bookings.firstVisitEndsAtByTier)
         : {},
       confirmedBookingsCount: bookings?.confirmedCount ?? 0,
-      whatsappOptedInAt: row.whatsapp_opted_in_at,
       whatsappMarketingOptedInAt: row.whatsapp_marketing_opted_in_at,
       whatsappOptedOutAt: row.whatsapp_opted_out_at,
       whatsappUnreachableAt: row.whatsapp_unreachable_at,
