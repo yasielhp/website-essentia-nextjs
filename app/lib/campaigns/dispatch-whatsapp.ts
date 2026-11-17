@@ -7,6 +7,14 @@ import type {
 import { sendLocaleOf } from "@/lib/schemas";
 import type { CampaignRow } from "@/types/campaign";
 import type { QueuedRow } from "./dispatch";
+import {
+  HALTED_PREFIX,
+  INTERRUPTED_ERROR,
+  SKIPPED_PREFIX,
+  UNCONFIRMED_PREFIX,
+  haltMessage,
+  parseHalted,
+} from "./error-markers";
 import { pause } from "./pause";
 import {
   whatsappTemplateEligibility,
@@ -16,6 +24,14 @@ import { resolveParams } from "./whatsapp-params";
 
 // The rule lives in a module the browser can import; the send path keeps its name.
 export { whatsappTemplateEligibility, type TemplateIssue };
+export {
+  HALTED_PREFIX,
+  INTERRUPTED_ERROR,
+  SKIPPED_PREFIX,
+  UNCONFIRMED_PREFIX,
+  haltMessage,
+  parseHalted,
+};
 
 /**
  * Sends the queued rows of a WhatsApp campaign, one template message each.
@@ -45,15 +61,6 @@ export const PER_SECOND = 10;
  */
 export const BUDGET_MS = 45_000;
 
-/** Begins the `error` of a row whose delivery is in doubt; a retry skips it. */
-export const UNCONFIRMED_PREFIX = "[unconfirmed] ";
-
-/**
- * Begins the `error` of a row that was not sent because its contact may no
- * longer be messaged (or never could be). A retry leaves it alone.
- */
-export const SKIPPED_PREFIX = "[skipped] ";
-
 /**
  * The PostgREST `or` filter that keeps the failed rows a retry may requeue: no
  * error recorded, or one that is neither unconfirmed nor skipped.
@@ -62,25 +69,6 @@ export const RETRYABLE_FAILURE_FILTER = `error.is.null,and(error.not.like.${UNCO
 
 /** Batches in a row, all refused for one reason, after which a send stops. */
 export const HALT_AFTER_BATCHES = 3;
-
-/**
- * Begins the `last_error` of a campaign or automation stopped on repeated
- * refusals. The text after it is Meta's, as stored on the rows; the prefix is
- * stable so the dashboard can say it in the admin's language.
- */
-export const HALTED_PREFIX = "[halted] ";
-
-export const haltMessage = (error: string): string =>
-  `${HALTED_PREFIX}${error}`;
-
-/** The reason inside a `haltMessage`, or null when `lastError` is something else. */
-export function parseHalted(
-  lastError: string | null | undefined,
-): string | null {
-  return lastError?.startsWith(HALTED_PREFIX)
-    ? lastError.slice(HALTED_PREFIX.length)
-    : null;
-}
 
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
@@ -91,7 +79,6 @@ export const WRITE_RETRY_MS = 250;
  * Deliberately shorter than the campaign's own stuck window.
  */
 export const INTERRUPTED_AFTER_MS = 5 * 60_000;
-export const INTERRUPTED_ERROR = `${UNCONFIRMED_PREFIX}interrupted`;
 
 type Db = ReturnType<typeof getAdminClient>["database"];
 
