@@ -2049,8 +2049,8 @@
       "tierHint": "Only the first visit of this session type counts. With \"Any\", the first visit of any type.",
       "appointment": {
         "side": "When",
-        "before": "Before the appointment",
-        "after": "After the appointment",
+        "before": "Before",
+        "after": "After",
         "hoursBefore": "Hours before the appointment starts",
         "hoursAfter": "Hours after the appointment ends",
         "unit": "h",

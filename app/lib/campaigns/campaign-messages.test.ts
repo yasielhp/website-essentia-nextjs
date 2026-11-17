@@ -450,3 +450,18 @@ describe("the report's actions", () => {
     expect(locales.en["campaigns.detail.retrying"]).toBe("Retrying…");
   });
 });
+
+describe("the two sides of an appointment notice", () => {
+  test("are short enough to sit side by side on a phone: the group's title gives the context", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(
+        locales[locale]["campaigns.trigger.appointment.before"].length,
+      ).toBeLessThanOrEqual(10);
+      expect(
+        locales[locale]["campaigns.trigger.appointment.after"].length,
+      ).toBeLessThanOrEqual(10);
+    }
+    expect(locales.es["campaigns.trigger.appointment.before"]).toBe("Antes");
+    expect(locales.en["campaigns.trigger.appointment.after"]).toBe("After");
+  });
+});

@@ -2049,8 +2049,8 @@
       "tierHint": "Solo cuenta la primera visita de este tipo de sesión. Con \"Cualquiera\", la primera visita de cualquier tipo.",
       "appointment": {
         "side": "Cuándo",
-        "before": "Antes de la cita",
-        "after": "Después de la cita",
+        "before": "Antes",
+        "after": "Después",
         "hoursBefore": "Horas antes de que empiece la cita",
         "hoursAfter": "Horas después de que termine la cita",
         "unit": "h",
