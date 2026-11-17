@@ -2386,7 +2386,7 @@
       "resetKeptDisabled": "Restablecido. El recordatorio sigue apagado.",
       "reminder": {
         "note": "Se envía siempre en español: la reserva no guarda el idioma del cliente.",
-        "switch": "Activo",
+        "switch": "Enviar el recordatorio por correo",
         "hintOn": "Se envía un recordatorio por correo antes de cada cita.",
         "hintOff": "Apagado: no se envía el recordatorio por correo.",
         "turnedOn": "Recordatorio por correo activado",

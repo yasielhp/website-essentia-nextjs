@@ -2386,7 +2386,7 @@
       "resetKeptDisabled": "Reset. The reminder is still switched off.",
       "reminder": {
         "note": "Always sent in Spanish: a booking does not keep the client's language.",
-        "switch": "Active",
+        "switch": "Send the email reminder",
         "hintOn": "An email reminder goes out before every appointment.",
         "hintOff": "Switched off: the email reminder is not sent.",
         "turnedOn": "Email reminder switched on",

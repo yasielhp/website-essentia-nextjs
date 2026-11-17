@@ -94,6 +94,13 @@ describe("the page of the reminder", () => {
     expect(html).toContain("Para recordatorios por WhatsApp");
   });
 
+  test("the switch is the panel's own row, named by what it does", () => {
+    const html = render("booking_reminder", null);
+    expect(html).toContain("Enviar el recordatorio por correo");
+    expect(html).toContain('aria-describedby="reminder-switch-note"');
+    expect(html).toContain('id="reminder-switch-note"');
+  });
+
   test("switched off it says so, in the switch and beside the title, and Reset is offered", () => {
     const html = render("booking_reminder", { enabled: false });
     expect(html).toContain('aria-checked="false"');

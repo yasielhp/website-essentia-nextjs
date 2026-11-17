@@ -1,5 +1,6 @@
 "use client";
 
+import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
@@ -478,50 +479,24 @@ export function MessageEditor({
       )}
 
       {catalog.canDisable && (
-        <section
-          aria-label={t("reminder.switch")}
-          className="border-sand-200 flex items-start gap-3 rounded-xl border bg-white px-4 py-3"
-        >
-          <button
-            id="reminder-switch"
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            aria-describedby="reminder-switch-hint"
+        <div className="flex flex-col gap-2">
+          <ToggleRow
+            checked={enabled}
+            onToggle={() => void toggle()}
+            label={t("reminder.switch")}
+            hint={enabled ? t("reminder.hintOn") : t("reminder.hintOff")}
             disabled={switching || saving}
-            onClick={() => void toggle()}
-            className={`focus-visible:ring-petroleum-500 relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 ${
-              enabled ? "bg-petroleum-700" : "bg-sand-200"
-            }`}
-          >
-            <span
-              aria-hidden="true"
-              className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform ${
-                enabled ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-          <div>
-            <label
-              htmlFor="reminder-switch"
-              className="text-petroleum-700 text-sm font-medium"
-            >
-              {t("reminder.switch")}
-            </label>
-            <p
-              id="reminder-switch-hint"
-              className="text-petroleum-400 max-w-xl text-xs"
-            >
-              {enabled ? t("reminder.hintOn") : t("reminder.hintOff")}
-            </p>
+            describedBy="reminder-switch-note"
+          />
+          <p id="reminder-switch-note" className="px-1">
             <Link
               href={NEW_APPOINTMENT_NOTICE_HREF}
-              className="text-petroleum-700 mt-1 inline-block text-xs underline underline-offset-2"
+              className="text-petroleum-700 inline-block text-xs underline underline-offset-2"
             >
               {t("reminder.forWhatsApp")}
             </Link>
-          </div>
-        </section>
+          </p>
+        </div>
       )}
 
       <p
