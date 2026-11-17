@@ -167,4 +167,6 @@ El diseño que recoge es el que pidió el centro:
 
 Puntos que el abogado debería decidir: si aceptar los Términos y la Política basta como consentimiento de los avisos por WhatsApp o si debe ser una casilla propia (el centro decidió que basta), y el texto exacto de la base legal para los avisos de la cita; el plazo de conservación del consentimiento y de la lista de exclusión; si basta con la casilla o hace falta confirmar el número (ver hallazgo "el consentimiento por casilla no verifica la propiedad del número" en `2026-11-17-whatsapp-findings.md`); y la mención de las transferencias internacionales.
 
-**La política debe publicarse antes de activar WhatsApp con clientas:** hasta entonces, la casilla de términos ya promete los avisos por WhatsApp y la política publicada todavía no los describe.
+> **NO desplegar la página de privacidad con la cláusula nueva hasta la revisión legal.** El `DRAFT` del código es un comentario JSX que los usuarios no ven, así que el texto se publicaría tal cual. La cláusula y el desplegable del formulario están en la rama y no deben llegar a producción sin que un abogado los revise.
+
+**La política debe publicarse (ya revisada) antes de activar WhatsApp con clientas:** hasta entonces, la casilla de términos ya promete los avisos por WhatsApp y la política publicada todavía no los describe.
