@@ -11,22 +11,22 @@ import type { CampaignStatus, RecipientStatus } from "@/types/campaign";
 
 const CAMPAIGN_STYLES: Record<CampaignStatus, string> = {
   draft: "bg-sand-100 text-petroleum-500",
-  scheduled: "bg-amber-100 text-amber-800",
-  sending: "bg-blue-100 text-blue-800",
-  sent: "bg-emerald-100 text-emerald-800",
+  scheduled: "bg-yellow-100 text-yellow-800",
+  sending: "bg-blue-100 text-blue-700",
+  sent: "bg-green-100 text-green-800",
   cancelled: "bg-sand-200 text-petroleum-400",
   failed: "bg-red-100 text-red-700",
-  active: "bg-emerald-100 text-emerald-800",
-  paused: "bg-amber-100 text-amber-800",
+  active: "bg-green-100 text-green-800",
+  paused: "bg-yellow-100 text-yellow-800",
 };
 
 const RECIPIENT_STYLES: Record<RecipientStatus, string> = {
   queued: "bg-sand-100 text-petroleum-500",
-  sending: "bg-blue-100 text-blue-800",
+  sending: "bg-blue-100 text-blue-700",
   sent: "bg-sand-100 text-petroleum-500",
-  delivered: "bg-emerald-100 text-emerald-800",
-  opened: "bg-emerald-100 text-emerald-800",
-  clicked: "bg-emerald-200 text-emerald-900",
+  delivered: "bg-green-100 text-green-800",
+  opened: "bg-green-100 text-green-800",
+  clicked: "bg-green-200 text-green-800",
   bounced: "bg-red-100 text-red-700",
   complained: "bg-red-100 text-red-700",
   failed: "bg-red-100 text-red-700",

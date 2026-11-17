@@ -226,7 +226,7 @@ export function ReviewStep({
       )}
 
       {count === 0 && (
-        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="rounded-xl bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           {t("emptyAudience")}
         </p>
       )}
