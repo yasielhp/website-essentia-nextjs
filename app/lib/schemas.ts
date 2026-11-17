@@ -7,6 +7,7 @@ import type {
   CampaignKind,
   CampaignLocale,
   CampaignLocaleContent,
+  CampaignTrigger,
   EmailDoc,
   WhatsAppContent,
 } from "@/types/campaign";
@@ -272,6 +273,9 @@ const CAMPAIGN_MESSAGE_KEYS = new Set([
   "tooManyBlocks",
   "subjectBRequired",
   "daysOutOfRange",
+  "hoursOutOfRange",
+  "tierInvalid",
+  "manualNotAllowed",
   "servicesTooMany",
   "contactIdInvalid",
   "tooManyContacts",
@@ -461,6 +465,7 @@ export const campaignKindSchema = z.enum([
   "split",
   "rss",
   "dateBased",
+  "appointment",
 ]);
 
 export const campaignChannelSchema = z.enum(["email", "whatsapp"]);
@@ -475,6 +480,8 @@ export const campaignTriggerSchema = z.object({
       "first_booking_anniversary",
       "new_blog_post",
       "first_visit",
+      "before_visit",
+      "after_visit",
     ])
     .optional(),
   days: z
@@ -487,19 +494,30 @@ export const campaignTriggerSchema = z.object({
     .number()
     .int("hoursOutOfRange")
     .min(0, "hoursOutOfRange")
-    .max(168, "hoursOutOfRange")
+    // The widest of the events; each event's own bounds are `addCampaignIssues`.
+    .max(720, "hoursOutOfRange")
     .optional(),
   tierId: z.string().uuid("tierInvalid").optional(),
 });
 
 /**
  * A template has no subject to test and no link that changes per send, so the
- * A/B and RSS kinds exist only as emails. The form greys them out, but the
- * action is a public endpoint: this is where it is actually enforced, for a
- * draft as much as for a send. `kindAllowedForChannel` is the one source.
+ * A/B and RSS kinds exist only as emails; and an appointment notice goes to a
+ * client's phone about her own booking, so it exists only on WhatsApp. The form
+ * hides what a channel cannot be, but the action is a public endpoint: this is
+ * where it is actually enforced, for a draft as much as for a send.
+ * `kindAllowedForChannel` is the one source.
+ *
+ * The rest of what ties the pieces of an appointment notice together lives
+ * here too, because it reads `kind`, `trigger` and `audience` side by side.
  */
-function addKindIssue(
-  value: { kind: CampaignKind; channel: CampaignChannel },
+function addCampaignIssues(
+  value: {
+    kind: CampaignKind;
+    channel: CampaignChannel;
+    trigger: CampaignTrigger;
+    audience: { manualIds: string[] };
+  },
   ctx: z.RefinementCtx,
 ) {
   if (!kindAllowedForChannel(value.kind, value.channel)) {
@@ -507,6 +525,51 @@ function addKindIssue(
       code: "custom",
       path: ["kind"],
       message: "kindNotAllowedForChannel",
+    });
+  }
+
+  const { event, hours } = value.trigger;
+  const visitEvent = event === "before_visit" || event === "after_visit";
+  if (value.kind === "appointment") {
+    // The only two events it runs on.
+    if (!visitEvent) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["trigger", "event"],
+        message: "invalidInput",
+      });
+    }
+    // The audience is the appointments themselves: nobody is added by hand.
+    if (value.audience.manualIds.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["audience", "manualIds"],
+        message: "manualNotAllowed",
+      });
+    }
+  } else if (visitEvent) {
+    // And those two events belong to no other kind.
+    ctx.addIssue({
+      code: "custom",
+      path: ["trigger", "event"],
+      message: "invalidInput",
+    });
+  }
+
+  if (visitEvent) {
+    const max = event === "before_visit" ? 336 : 720;
+    if (hours === undefined || hours < 1 || hours > max) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["trigger", "hours"],
+        message: "hoursOutOfRange",
+      });
+    }
+  } else if (event === "first_visit" && hours !== undefined && hours > 168) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["trigger", "hours"],
+      message: "hoursOutOfRange",
     });
   }
 }
@@ -530,7 +593,7 @@ export const campaignSchema = z
     content: campaignContentSchema,
   })
   .superRefine((value, ctx) => {
-    addKindIssue(value, ctx);
+    addCampaignIssues(value, ctx);
     if (value.channel === "whatsapp") {
       // The email blocks are not sent, so nothing is asked of them. The
       // template is the one thing a WhatsApp message cannot go without.
@@ -594,7 +657,7 @@ export const campaignDraftSchema = z
     audience: campaignAudienceSchema,
     content: campaignContentSchema,
   })
-  .superRefine(addKindIssue);
+  .superRefine(addCampaignIssues);
 
 /**
  * The first issue per dotted path — `"content.es.subject"` — wins. An issue

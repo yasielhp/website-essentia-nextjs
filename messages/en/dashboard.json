@@ -1058,7 +1058,7 @@
     "urlMustBeHttps": "The link must start with https://",
     "ctaNeedsBoth": "The button needs both a text and a link",
     "daysOutOfRange": "Enter a number of days between 1 and 3650",
-    "hoursOutOfRange": "Enter a number of hours between 0 and 168",
+    "hoursOutOfRange": "Enter a whole number of hours within this notice's limit",
     "servicesTooMany": "Too many services selected",
     "contactIdInvalid": "One of the chosen contacts is not valid",
     "tooManyContacts": "Too many contacts chosen by hand",
@@ -1106,7 +1106,8 @@
     "channelNotAllowed": "This message cannot be sent on that channel.",
     "paramFieldNotOffered": "That detail is not available in this message.",
     "docTooDeep": "The message has too many nested levels.",
-    "docNotRenderable": "This content cannot be shown in an email. Check the headings and the blocks."
+    "docNotRenderable": "This content cannot be shown in an email. Check the headings and the blocks.",
+    "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts"
   },
   "gender": {
     "unspecified": "Not specified",

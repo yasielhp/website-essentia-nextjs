@@ -1058,7 +1058,7 @@
     "urlMustBeHttps": "El enlace debe empezar por https://",
     "ctaNeedsBoth": "El botón necesita texto y enlace",
     "daysOutOfRange": "Indica un número de días entre 1 y 3650",
-    "hoursOutOfRange": "Indica un número de horas entre 0 y 168",
+    "hoursOutOfRange": "Indica un número entero de horas dentro del límite de este aviso",
     "servicesTooMany": "Demasiados servicios seleccionados",
     "contactIdInvalid": "Uno de los contactos elegidos no es válido",
     "tooManyContacts": "Demasiados contactos añadidos a mano",
@@ -1106,7 +1106,8 @@
     "channelNotAllowed": "Este mensaje no se puede enviar por ese canal.",
     "paramFieldNotOffered": "Ese dato no está disponible en este mensaje.",
     "docTooDeep": "El mensaje tiene demasiados niveles anidados.",
-    "docNotRenderable": "Este contenido no se puede mostrar en un email. Revisa los títulos y los bloques."
+    "docNotRenderable": "Este contenido no se puede mostrar en un email. Revisa los títulos y los bloques.",
+    "manualNotAllowed": "Un aviso de cita se envía a quien tiene la cita: no admite contactos añadidos a mano"
   },
   "gender": {
     "unspecified": "Sin especificar",

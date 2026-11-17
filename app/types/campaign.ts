@@ -27,7 +27,18 @@ export type CampaignStatus =
  * the rest stay active and mail whoever newly qualifies.
  */
 export type CampaignKind =
-  "standard" | "automated" | "autoresponder" | "split" | "rss" | "dateBased";
+  | "standard"
+  | "automated"
+  | "autoresponder"
+  | "split"
+  | "rss"
+  | "dateBased"
+  /**
+   * WhatsApp only: a notice to a client about her own booking, N hours before
+   * it or after it. Automated, and TRANSACTIONAL: it needs the consent to
+   * appointment notices, not the one to news and offers.
+   */
+  | "appointment";
 
 export type TriggerEvent =
   | "newsletter_subscribed"
@@ -36,14 +47,22 @@ export type TriggerEvent =
   | "birthday"
   | "first_booking_anniversary"
   | "new_blog_post"
-  | "first_visit";
+  | "first_visit"
+  /** `appointment`: N hours before each confirmed booking starts. */
+  | "before_visit"
+  /** `appointment`: N hours after each booking ends. */
+  | "after_visit";
 
 /** The kind's settings. Flat and optional so every kind shares one column. */
 export type CampaignTrigger = {
   event?: TriggerEvent;
   /** `after_booking`: how many days after the booking the email goes out. */
   days?: number;
-  /** `first_visit`: hours after the first confirmed visit ends (0-168). */
+  /**
+   * `first_visit`: hours after the first confirmed visit ends (0-168).
+   * `before_visit`: hours before a booking starts (1-336).
+   * `after_visit`: hours after a booking ends (1-720).
+   */
   hours?: number;
   /**
    * `first_visit`: only the first visit of this session type counts (a
@@ -60,6 +79,7 @@ export const DEFAULT_TRIGGER: Record<CampaignKind, CampaignTrigger> = {
   automated: { event: "segment_entry" },
   dateBased: { event: "birthday" },
   rss: { event: "new_blog_post" },
+  appointment: { event: "before_visit", hours: 24 },
 };
 
 export const AUTOMATED_KINDS: CampaignKind[] = [
@@ -67,10 +87,24 @@ export const AUTOMATED_KINDS: CampaignKind[] = [
   "autoresponder",
   "rss",
   "dateBased",
+  "appointment",
 ];
 
 export function isAutomatedKind(kind: CampaignKind): boolean {
   return AUTOMATED_KINDS.includes(kind);
+}
+
+/**
+ * Which consent a WhatsApp campaign needs. A notice about the client's own
+ * appointment is transactional (the box that promises "the confirmation and
+ * the reminder of my appointment"); everything else is marketing (the box for
+ * news and offers). The two are separate consents and neither stands in for
+ * the other.
+ */
+export type ConsentPurpose = "marketing" | "appointment";
+
+export function consentPurposeOf(kind: CampaignKind): ConsentPurpose {
+  return kind === "appointment" ? "appointment" : "marketing";
 }
 
 /**

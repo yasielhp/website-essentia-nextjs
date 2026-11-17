@@ -44,6 +44,8 @@ export function kindAllowedForChannel(
   kind: CampaignKind,
   channel: CampaignChannel,
 ): boolean {
+  // A notice about the client's own booking goes to her phone and nowhere else.
+  if (kind === "appointment") return channel === "whatsapp";
   return channel === "email" || !BLOCKED_ON_WHATSAPP.has(kind);
 }
 
@@ -83,16 +85,19 @@ const VISIT_FIELDS: ReadonlySet<string> = new Set([
 
 /**
  * Whether the rule hands the message a visit to talk about. Only the booking
- * rules do (`after_booking`, `first_visit`): a one-off send, a segment entry
- * or a birthday has no visit, and a field about one is sent as a dash.
+ * rules do (`after_booking`, `first_visit`, and the appointment notice's
+ * `before_visit` and `after_visit`): a one-off send, a segment entry or a
+ * birthday has no visit, and a field about one is sent as a dash.
  */
 export function visitFieldsExist(
   kind: CampaignKind,
   trigger: CampaignTrigger,
 ): boolean {
   return (
-    kind === "automated" &&
-    (trigger.event === "after_booking" || trigger.event === "first_visit")
+    (kind === "automated" &&
+      (trigger.event === "after_booking" || trigger.event === "first_visit")) ||
+    (kind === "appointment" &&
+      (trigger.event === "before_visit" || trigger.event === "after_visit"))
   );
 }
 
