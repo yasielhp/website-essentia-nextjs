@@ -248,6 +248,42 @@ export async function fetchContactDetail(
   };
 }
 
+/**
+ * The details form of the contact page, and nothing else.
+ *
+ * STRICT on purpose: this action writes with the service key, which no policy
+ * holds back, and it used to hand the caller's object straight to `.update()`.
+ * Any dashboard role could then write any column of a contact
+ * (`whatsapp_opted_out_at: null`, a consent date, the unsubscribe token) and
+ * walk around every rule the consent actions below keep. An unknown key is a
+ * refusal of the whole save, not a key quietly dropped. The fields are exactly
+ * the ones `/dashboard/contacts/<id>` sends; a new field of that form is added
+ * here too.
+ *
+ * Not exported: a `"use server"` module exports async functions only.
+ */
+const contactDetailsInput = z.strictObject({
+  first_name: z.string().trim().min(1).max(200),
+  last_name: z.string().trim().max(200).nullable(),
+  email: z.string().trim().toLowerCase().max(160).pipe(z.email()).nullable(),
+  phone: z.string().trim().min(1).max(40).nullable(),
+  gender: z.enum(["female", "male", "other"]).nullable(),
+  preferred_language: z.enum(["en", "es"]),
+  birthdate: z.iso.date().nullable(),
+}) satisfies z.ZodType<UpdateContactPayload>;
+
+/**
+ * What the page shows when a save fails. It prints the string as it comes, so
+ * these are sentences, and never the database's: its text names columns and
+ * constraints and belongs in the server log.
+ */
+const CONTACT_SAVE_INVALID = "The contact details are not valid.";
+const CONTACT_SAVE_FAILED = "The contact could not be saved.";
+const CONTACT_EMAIL_TAKEN = "Another contact already has this email address.";
+
+/** Postgres' code for a unique constraint: here, the contact's email. */
+const UNIQUE_VIOLATION = "23505";
+
 export async function updateContact(
   accessToken: string | null,
   id: string,
@@ -260,11 +296,29 @@ export async function updateContact(
     throw err;
   }
 
-  const { error } = await getAdminClient()
-    .database.from("contacts")
-    .update(payload)
-    .eq("id", id);
-  return { error: (error as { message?: string } | null)?.message ?? null };
+  const contactId = z.uuid().safeParse(id);
+  const details = contactDetailsInput.safeParse(payload);
+  if (!contactId.success || !details.success) {
+    return { error: CONTACT_SAVE_INVALID };
+  }
+
+  try {
+    const { error } = await getAdminClient()
+      .database.from("contacts")
+      .update(details.data)
+      .eq("id", contactId.data);
+    if (!error) return { error: null };
+    console.error("[contacts] could not update the contact:", error);
+    return {
+      error:
+        (error as { code?: string }).code === UNIQUE_VIOLATION
+          ? CONTACT_EMAIL_TAKEN
+          : CONTACT_SAVE_FAILED,
+    };
+  } catch (err) {
+    console.error("[contacts] could not update the contact:", err);
+    return { error: CONTACT_SAVE_FAILED };
+  }
 }
 
 /**
