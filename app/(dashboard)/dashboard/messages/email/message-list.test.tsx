@@ -100,3 +100,67 @@ describe("the list of messages", () => {
     expect(render([row({ enabled: true })])).not.toContain("Personalizado");
   });
 });
+
+describe("the list on a phone and on a wide screen", () => {
+  const html = render([row({ enabled: false })]);
+  const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+  const cards = html.slice(html.indexOf('<ul class="divide-sand-100'));
+
+  const hrefs = (part: string) =>
+    [...part.matchAll(/href="(\/dashboard\/messages\/[^"]+)"/g)].map(
+      (m) => m[1],
+    );
+  const names = (part: string) =>
+    [...part.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]);
+
+  test("the table is for wide screens and the cards for narrow ones", () => {
+    expect(html).toContain('class="hidden md:block"');
+    expect(
+      cards.startsWith('<ul class="divide-sand-100 divide-y md:hidden"'),
+    ).toBe(true);
+  });
+
+  test("both show the same links, in the same order, each with a name of its own", () => {
+    expect(hrefs(cards)).toEqual(hrefs(table));
+    expect(hrefs(cards).length).toBeGreaterThan(10);
+    expect(names(cards)).toEqual(names(table));
+    expect(new Set(names(cards)).size).toBe(names(cards).length);
+  });
+
+  test("a card names each fact, since there is no header: language and state", () => {
+    expect(cards).toContain("Idioma:");
+    expect(cards).toContain("Estado:");
+    expect(table).not.toContain("Idioma:");
+  });
+
+  test("a card's link is across the card and at least 44 px tall", () => {
+    const links = [
+      ...cards.matchAll(/<a [^>]*class="([^"]*)"[^>]*aria-label/g),
+    ];
+    expect(links.length).toBeGreaterThan(0);
+    for (const [, cls] of links) {
+      expect(cls).toContain("h-11");
+      expect(cls).toContain("w-full");
+    }
+  });
+
+  test("the cards have no buttons or switches either", () => {
+    expect(cards).not.toContain("<button");
+    expect(cards).not.toContain('role="switch"');
+  });
+
+  test("the switched-off reminder shows its badge in both", () => {
+    expect(table).toContain("Apagado");
+    expect(cards).toContain("Apagado");
+  });
+
+  test("the long state of a WhatsApp row can wrap", () => {
+    const wa = cards.slice(cards.indexOf("Sin configurar"));
+    expect(wa.slice(0, 5)).toBe("Sin c");
+    const pill = cards.slice(
+      cards.lastIndexOf("<span", cards.indexOf("Sin configurar")),
+      cards.indexOf("Sin configurar"),
+    );
+    expect(pill).not.toContain("whitespace-nowrap");
+  });
+});
