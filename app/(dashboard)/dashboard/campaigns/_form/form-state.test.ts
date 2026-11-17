@@ -6,6 +6,7 @@ import {
   formReducer,
   initialFormState,
   nextStep,
+  reachIn,
   type FormState,
 } from "./form-state";
 
@@ -225,5 +226,27 @@ describe("nextStep", () => {
     expect(nextStep(2, "whatsapp", false)).toBe(5);
     expect(nextStep(3, "whatsapp", true)).toBe(5);
     expect(nextStep(5, "whatsapp", false)).toBe(6);
+  });
+});
+
+describe("reachIn", () => {
+  const reach = { count: 6, en: 0, es: 6 };
+  test("a segment that fixes a language sends in it, whatever sendLocale says", () => {
+    const audience = { ...EMPTY_AUDIENCE, language: "en" as const };
+    expect(reachIn(reach, audience)).toEqual({ count: 6, en: 6, es: 0 });
+  });
+  test("with nothing chosen it is Spanish, the house default", () => {
+    expect(reachIn(reach, { ...EMPTY_AUDIENCE })).toEqual({
+      count: 6,
+      en: 0,
+      es: 6,
+    });
+  });
+  test("a chosen send language wins when the segment spans both", () => {
+    const audience = { ...EMPTY_AUDIENCE, sendLocale: "en" as const };
+    expect(reachIn(reach, audience)).toEqual({ count: 6, en: 6, es: 0 });
+  });
+  test("no count is still no count", () => {
+    expect(reachIn(null, EMPTY_AUDIENCE)).toBeNull();
   });
 });

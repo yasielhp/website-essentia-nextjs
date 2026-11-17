@@ -14,6 +14,7 @@ import {
   type CampaignTrigger,
   DEFAULT_TRIGGER,
 } from "@/types/campaign";
+import { sendLocaleOf } from "@/lib/schemas";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 
 /**
@@ -160,12 +161,12 @@ export const initialFormState: FormState = {
  * version, so the breakdown is the whole count in the send language; a
  * breakdown computed under another send language would be a lie.
  */
-function reachIn(
+export function reachIn(
   reach: FormState["reach"],
   audience: CampaignAudience,
 ): FormState["reach"] {
   if (!reach) return reach;
-  const locale = audience.sendLocale ?? "es";
+  const locale = sendLocaleOf(audience);
   return {
     count: reach.count,
     en: locale === "en" ? reach.count : 0,
