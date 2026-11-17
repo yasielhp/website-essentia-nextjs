@@ -171,3 +171,5 @@ Puntos que el abogado debería decidir: si aceptar los Términos y la Política 
 > **NO desplegar la página de privacidad con la cláusula nueva hasta la revisión legal.** El `DRAFT` del código es un comentario JSX que los usuarios no ven, así que el texto se publicaría tal cual. La cláusula y el desplegable del formulario están en la rama y no deben llegar a producción sin que un abogado los revise.
 
 **La política debe publicarse (ya revisada) antes de activar WhatsApp con clientas:** hasta entonces, la casilla de términos ya promete los avisos por WhatsApp y la política publicada todavía no los describe.
+
+**Pendiente para el abogado: el apartado "Datos de comunicaciones".** El apartado 2 de la Política ("Datos de comunicaciones" en `content-es.tsx`, "Communications data" en `content-en.tsx`) no nombra los mensajes de WhatsApp ni los estados de entrega y lectura que se guardan de cada uno (enviado, entregado, leído, fallido, en el historial de la reserva y en los informes de campañas). Que decida si deben constar ahí y con qué plazo de conservación.
