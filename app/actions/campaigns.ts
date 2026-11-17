@@ -21,11 +21,12 @@ import { loadCandidates, resolveAudience } from "@/lib/campaigns/audience";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
+import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import {
-  dispatchCampaign,
-  retryFailed,
-  type DispatchResult,
-} from "@/lib/campaigns/dispatch";
+  sendOutcome,
+  type SendFailure,
+  type SendOutcome,
+} from "@/lib/campaigns/send-outcome";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import {
@@ -61,44 +62,7 @@ import {
  * values, never as thrown errors, so a screen can show them.
  */
 
-type Failure = {
-  ok: false;
-  error: string;
-  /** What a send's failure was about, when it says more (`template_unavailable`). */
-  detail?: string;
-};
-
-/**
- * What a send reports. A WhatsApp send may stop early: `remaining` rows are
- * left for the cron, `unrecorded` messages went out without their row being
- * updated, and `halted` carries the reason Meta kept refusing it.
- */
-type SendOutcome = {
-  ok: true;
-  sent: number;
-  failed: number;
-  remaining?: number;
-  unrecorded?: number;
-  halted?: string;
-};
-
-function sendOutcome(result: DispatchResult): SendOutcome | Failure {
-  if (!result.ok) {
-    return {
-      ok: false,
-      error: result.error,
-      ...(result.detail ? { detail: result.detail } : {}),
-    };
-  }
-  return {
-    ok: true,
-    sent: result.sent,
-    failed: result.failed,
-    ...(result.remaining ? { remaining: result.remaining } : {}),
-    ...(result.unrecorded ? { unrecorded: result.unrecorded } : {}),
-    ...(result.halted ? { halted: result.halted } : {}),
-  };
-}
+type Failure = SendFailure;
 
 const LIST_PATH = "/dashboard/campaigns";
 
