@@ -37,7 +37,11 @@ export function NameStep({
             autoFocus
             value={state.name}
             disabled={state.submitting}
-            placeholder={t("namePlaceholder")}
+            placeholder={t(
+              state.kind === "appointment"
+                ? "namePlaceholderAppointment"
+                : "namePlaceholder",
+            )}
             onChange={(e) =>
               dispatch({ type: "SET_NAME", value: e.target.value })
             }

@@ -1677,6 +1677,7 @@
     "form": {
       "name": "Internal name",
       "namePlaceholder": "Autumn promotion",
+      "namePlaceholderAppointment": "Reminder 48 h before",
       "next": "Next",
       "back": "Back",
       "newTitle": "New campaign",

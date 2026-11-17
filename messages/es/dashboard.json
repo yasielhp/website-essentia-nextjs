@@ -1677,6 +1677,7 @@
     "form": {
       "name": "Nombre interno",
       "namePlaceholder": "Promoción de otoño",
+      "namePlaceholderAppointment": "Recordatorio 48 h antes",
       "next": "Siguiente",
       "back": "Atrás",
       "newTitle": "Nueva campaña",
