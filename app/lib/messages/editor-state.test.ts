@@ -4,7 +4,10 @@ import {
   changedFields,
   docErrorLines,
   editableLocales,
+  insertAtSelection,
   isLinkVariable,
+  linkButtonNode,
+  variableToken,
   openingState,
   sameDoc,
 } from "./editor-state";
@@ -205,5 +208,47 @@ describe("docErrorLines", () => {
       { key: "linkNotAllowed", block: 2 },
       { key: "blockNotAllowed", block: 2 },
     ]);
+  });
+});
+
+describe("insertAtSelection", () => {
+  it("puts the variable at the caret", () => {
+    expect(insertAtSelection("Hola ", 5, 5, "{{first_name}}")).toEqual({
+      value: "Hola {{first_name}}",
+      caret: 19,
+    });
+  });
+  it("replaces what is selected", () => {
+    expect(insertAtSelection("Hola XXX!", 5, 8, "{{first_name}}").value).toBe(
+      "Hola {{first_name}}!",
+    );
+  });
+  it("with no selection it goes at the end", () => {
+    expect(insertAtSelection("Hola", null, null, "{{a}}").value).toBe(
+      "Hola{{a}}",
+    );
+  });
+  it("a selection past the text is the end of it", () => {
+    expect(insertAtSelection("Hi", 99, 99, "{{a}}").value).toBe("Hi{{a}}");
+  });
+  it("the token is double braces around the name", () => {
+    expect(variableToken("service")).toBe("{{service}}");
+  });
+});
+
+describe("linkButtonNode", () => {
+  it("is a button whose address is the variable", () => {
+    const node = linkButtonNode("cancel_url", "es");
+    expect(node.type).toBe("button");
+    expect(node.attrs).toMatchObject({
+      url: "cancel_url",
+      isUrlVariable: true,
+      text: "Cancelar mi cita",
+    });
+  });
+  it("is worded in the language of the message", () => {
+    expect(linkButtonNode("consent_url", "en").attrs?.text).toBe(
+      "Sign the consent form",
+    );
   });
 });

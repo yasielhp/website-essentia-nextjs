@@ -2197,7 +2197,135 @@
         "meta": "Meta rechazó la petición."
       }
     },
+    "keys": {
+      "booking_received": "Reserva recibida",
+      "booking_confirmed": "Reserva confirmada",
+      "booking_paid": "Pago de la reserva confirmado",
+      "booking_rescheduled": "Reserva cambiada de fecha",
+      "booking_cancelled": "Reserva cancelada",
+      "booking_reminder": "Recordatorio de la cita",
+      "consent_request": "Solicitud de consentimiento",
+      "bonus_purchase": "Compra de un bono"
+    },
+    "keyHints": {
+      "booking_received": "Cuando alguien pide una cita, antes de que el equipo la confirme.",
+      "booking_confirmed": "Cuando el equipo confirma la reserva.",
+      "booking_paid": "Cuando se cobra la reserva online.",
+      "booking_rescheduled": "Cuando la cita cambia de fecha u hora.",
+      "booking_cancelled": "Cuando se cancela la reserva.",
+      "booking_reminder": "Un aviso antes de la cita, enviado automáticamente.",
+      "consent_request": "Cuando el equipo reenvía el consentimiento informado desde la ficha del contacto.",
+      "bonus_purchase": "Cuando alguien compra un bono en la web."
+    },
     "email": {
+      "intro": "Los correos que el sistema envía solo a los clientes. Mientras nadie edite uno, sale el de siempre; al editarlo, tu versión sustituye al texto por defecto.",
+      "loadFailed": "No se pudieron cargar los mensajes.",
+      "retry": "Reintentar",
+      "columns": {
+        "message": "Mensaje",
+        "language": "Idioma",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "locales": {
+        "es": "Español",
+        "en": "Inglés"
+      },
+      "status": {
+        "default": "Por defecto",
+        "custom": "Personalizado",
+        "disabled": "Apagado",
+        "corrupt": "Dañado"
+      },
+      "savedOn": "Guardado el {date}",
+      "savedOnBy": "Guardado el {date} por {name}",
+      "actions": {
+        "edit": "Editar",
+        "test": "Enviarme prueba",
+        "testing": "Enviando…",
+        "reset": "Restablecer",
+        "resetting": "Restableciendo…"
+      },
+      "testNote": "La prueba se envía solo a tu email, con el asunto [PRUEBA], y lleva la versión guardada.",
+      "testSent": "Prueba enviada a {email}",
+      "resetConfirm": "¿Volver al texto por defecto? Se pierde tu versión.",
+      "resetYes": "Sí, restablecer",
+      "resetNo": "Cancelar",
+      "resetDone": "Mensaje restablecido",
+      "resetNothing": "No había nada que restablecer",
+      "resetKeptDisabled": "Restablecido. El recordatorio sigue apagado.",
+      "reminder": {
+        "note": "Se envía siempre en español: la reserva no guarda el idioma del cliente.",
+        "switch": "Activo",
+        "hintOn": "Se envía un recordatorio antes de cada cita.",
+        "hintOff": "Apagado: no se envía ningún recordatorio.",
+        "turnedOn": "Recordatorio activado",
+        "turnedOff": "Recordatorio apagado"
+      },
+      "corrupt": "El texto guardado está dañado y no se puede abrir. Restablécelo para empezar de nuevo.",
+      "variables": {
+        "first_name": "Nombre (completo, como lo recibe el sistema)",
+        "service": "Servicio",
+        "session_type": "Tipo de sesión",
+        "date": "Fecha",
+        "time": "Hora",
+        "duration": "Duración",
+        "amount_due": "Importe pendiente en el centro",
+        "amount_paid": "Importe pagado",
+        "sessions": "Número de sesiones",
+        "expires_on": "Válido hasta",
+        "cancel_url": "Enlace para cancelar",
+        "consent_url": "Enlace del consentimiento informado"
+      },
+      "fixed": {
+        "details_card": "Detalles de la reserva",
+        "location": "Ubicación del centro",
+        "payment_note": "Aviso de pago pendiente (solo si queda algo por pagar)",
+        "calendar_button": "Botón «Añadir al calendario»",
+        "cancel_link": "Enlace para cancelar o cambiar la cita",
+        "consent_button": "Botón para firmar el consentimiento",
+        "bonus_card": "Detalles del bono"
+      },
+      "editor": {
+        "title": "Editar «{name}» · {language}",
+        "subject": "Asunto",
+        "preheader": "Pre-encabezado",
+        "preheaderHint": "La línea que muestran las apps de correo junto al asunto.",
+        "titleField": "Título",
+        "titleHint": "El encabezado grande dentro del correo.",
+        "body": "Cuerpo",
+        "seedNotice": "Estás viendo el texto actual del correo. Si lo cambias, tu versión sustituye al texto por defecto.",
+        "customNotice": "Esta es tu versión guardada. «Restablecer» vuelve al texto por defecto.",
+        "fixedAfter": "Los bloques del sistema (detalles de la reserva, botón de calendario, enlace para cancelar o firmar, ubicación) van siempre después de tu texto y no se pueden mover ni quitar.",
+        "closingNote": "Si editas el cuerpo, el texto de cierre por defecto también pasa a ser tuyo.",
+        "emptyNote": "Dejar el cuerpo vacío vuelve al texto por defecto.",
+        "fixedTitle": "Bloques del sistema de este correo",
+        "fixedNone": "Este correo no lleva bloques del sistema.",
+        "variablesTitle": "Variables",
+        "variablesHint": "Pulsa una para insertarla donde esté el cursor; se rellena con los datos de cada cliente.",
+        "variablesLinkHint": "Los enlaces se insertan como un botón.",
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "saved": "Mensaje guardado",
+        "unchanged": "Sin cambios que guardar",
+        "saveFirst": "Guarda los cambios para enviar la prueba.",
+        "close": "Cerrar",
+        "discardTitle": "Hay cambios sin guardar.",
+        "discardYes": "Descartar cambios",
+        "discardNo": "Seguir editando",
+        "docErrorsTitle": "Hay que arreglar el cuerpo",
+        "docErrorAt": "{message} (bloque {block})",
+        "unknownVariables": "Variables que este mensaje no ofrece: {names}",
+        "preview": {
+          "title": "Así se verá el correo",
+          "note": "Con una reserva de ejemplo; los bloques del sistema se ven como los recibirá el cliente.",
+          "mobile": "Móvil",
+          "desktop": "Escritorio",
+          "loading": "Preparando la vista previa…",
+          "failed": "No se puede mostrar la vista previa hasta que se arregle lo marcado.",
+          "subject": "Asunto: {subject}"
+        }
+      },
       "errors": {
         "generic": "No se pudo completar la acción.",
         "db": "No se pudo acceder a la base de datos.",

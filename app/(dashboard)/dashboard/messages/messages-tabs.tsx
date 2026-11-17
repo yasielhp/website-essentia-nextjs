@@ -1,23 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { radioTarget } from "@/lib/radio-nav";
+import { EmailPanel } from "./email/email-panel";
 import { TemplatesPanel } from "./whatsapp/templates-panel";
 
 type TabKey = "whatsapp" | "email";
 
-/** `enabled: false` is a tab that is announced but cannot be opened yet. */
-const TABS: { key: TabKey; enabled: boolean }[] = [
-  { key: "whatsapp", enabled: true },
-  // Editable emails are a later phase; the tab is here so nobody wonders
-  // where they went.
-  { key: "email", enabled: false },
-];
+const TABS: TabKey[] = ["whatsapp", "email"];
 
 export function MessagesTabs() {
   const t = useTranslations("dashboard.messages");
-  const tCommon = useTranslations("dashboard.common");
   const [active, setActive] = useState<TabKey>("whatsapp");
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -29,34 +25,36 @@ export function MessagesTabs() {
         aria-label={t("tabsLabel")}
         className="border-sand-200 mt-6 mb-6 flex gap-1 border-b"
       >
-        {TABS.map(({ key, enabled }) => {
+        {TABS.map((key, index) => {
           const selected = active === key;
           return (
             <button
               key={key}
+              ref={(el) => {
+                tabs.current[index] = el;
+              }}
               id={`messages-tab-${key}`}
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-controls={enabled ? `messages-panel-${key}` : undefined}
-              aria-disabled={!enabled}
-              disabled={!enabled}
+              aria-controls={`messages-panel-${key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(key)}
+              // Arrows move between tabs, as a tab list does.
+              onKeyDown={(e) => {
+                const target = radioTarget(e.key, index, TABS.length);
+                if (target === null) return;
+                e.preventDefault();
+                setActive(TABS[target]);
+                tabs.current[target]?.focus();
+              }}
               className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                 selected
                   ? "border-petroleum-700 text-petroleum-700"
-                  : enabled
-                    ? "text-petroleum-400 hover:text-petroleum-700 border-transparent"
-                    : "text-petroleum-400/50 cursor-not-allowed border-transparent"
+                  : "text-petroleum-400 hover:text-petroleum-700 border-transparent"
               }`}
             >
               {t(`tabs.${key}`)}
-              {!enabled && (
-                <span className="bg-sand-100 text-petroleum-400 rounded-full px-2 py-0.5 text-[11px] font-medium">
-                  {tCommon("comingSoon")}
-                </span>
-              )}
             </button>
           );
         })}
@@ -68,6 +66,7 @@ export function MessagesTabs() {
         aria-labelledby={`messages-tab-${active}`}
       >
         {active === "whatsapp" && <TemplatesPanel />}
+        {active === "email" && <EmailPanel />}
       </div>
     </div>
   );

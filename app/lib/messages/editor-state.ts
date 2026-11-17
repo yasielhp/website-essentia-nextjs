@@ -145,3 +145,65 @@ export function docErrorLines(
   }
   return lines;
 }
+
+/** `{{name}}`, as a variable is typed into a subject, a preheader or a title. */
+export const variableToken = (name: string) => `{{${name}}}`;
+
+/**
+ * Puts `token` into `value` where the selection is (replacing what is
+ * selected), and says where the caret goes after it. A selection that is
+ * missing or out of range is the end of the text.
+ */
+export function insertAtSelection(
+  value: string,
+  start: number | null,
+  end: number | null,
+  token: string,
+): { value: string; caret: number } {
+  const from =
+    start !== null && start >= 0 && start <= value.length
+      ? start
+      : value.length;
+  const to = end !== null && end >= from && end <= value.length ? end : from;
+  return {
+    value: value.slice(0, from) + token + value.slice(to),
+    caret: from + token.length,
+  };
+}
+
+const LINK_BUTTON_TEXT: Record<"es" | "en", Record<string, string>> = {
+  es: {
+    cancel_url: "Cancelar mi cita",
+    consent_url: "Firmar el consentimiento",
+  },
+  en: {
+    cancel_url: "Cancel my appointment",
+    consent_url: "Sign the consent form",
+  },
+};
+
+/**
+ * The button a link variable is inserted as. An address cannot sit in the body
+ * as text, only behind something to press, so the variable becomes a button
+ * whose address is that variable; the sender fills it in per client. The
+ * wording follows the message's language, not the dashboard's.
+ */
+export function linkButtonNode(
+  variable: string,
+  locale: "es" | "en",
+): EmailDoc {
+  return {
+    type: "button",
+    attrs: {
+      text: LINK_BUTTON_TEXT[locale][variable] ?? variable,
+      isTextVariable: false,
+      url: variable,
+      isUrlVariable: true,
+      alignment: "left",
+      variant: "filled",
+      borderRadius: "round",
+      buttonColor: "#103838",
+      textColor: "#ffffff",
+    },
+  };
+}

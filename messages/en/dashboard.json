@@ -2197,7 +2197,135 @@
         "meta": "Meta rejected the request."
       }
     },
+    "keys": {
+      "booking_received": "Booking received",
+      "booking_confirmed": "Booking confirmed",
+      "booking_paid": "Booking payment confirmed",
+      "booking_rescheduled": "Booking rescheduled",
+      "booking_cancelled": "Booking cancelled",
+      "booking_reminder": "Appointment reminder",
+      "consent_request": "Consent request",
+      "bonus_purchase": "Voucher purchase"
+    },
+    "keyHints": {
+      "booking_received": "When someone asks for an appointment, before the team confirms it.",
+      "booking_confirmed": "When the team confirms the booking.",
+      "booking_paid": "When the booking is paid online.",
+      "booking_rescheduled": "When the appointment changes date or time.",
+      "booking_cancelled": "When the booking is cancelled.",
+      "booking_reminder": "A notice before the appointment, sent automatically.",
+      "consent_request": "When the team resends the informed consent from the contact's page.",
+      "bonus_purchase": "When someone buys a voucher on the website."
+    },
     "email": {
+      "intro": "The emails the system sends to clients on its own. Until someone edits one, the usual one goes out; once edited, your version replaces the default text.",
+      "loadFailed": "The messages could not be loaded.",
+      "retry": "Try again",
+      "columns": {
+        "message": "Message",
+        "language": "Language",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "locales": {
+        "es": "Spanish",
+        "en": "English"
+      },
+      "status": {
+        "default": "Default",
+        "custom": "Customised",
+        "disabled": "Switched off",
+        "corrupt": "Damaged"
+      },
+      "savedOn": "Saved on {date}",
+      "savedOnBy": "Saved on {date} by {name}",
+      "actions": {
+        "edit": "Edit",
+        "test": "Send me a test",
+        "testing": "Sending…",
+        "reset": "Reset",
+        "resetting": "Resetting…"
+      },
+      "testNote": "The test goes only to your email, with the subject [PRUEBA], and carries the saved version.",
+      "testSent": "Test sent to {email}",
+      "resetConfirm": "Go back to the default text? Your version is lost.",
+      "resetYes": "Yes, reset",
+      "resetNo": "Cancel",
+      "resetDone": "Message reset",
+      "resetNothing": "There was nothing to reset",
+      "resetKeptDisabled": "Reset. The reminder is still switched off.",
+      "reminder": {
+        "note": "Always sent in Spanish: a booking does not keep the client's language.",
+        "switch": "Active",
+        "hintOn": "A reminder goes out before every appointment.",
+        "hintOff": "Switched off: no reminder is sent.",
+        "turnedOn": "Reminder switched on",
+        "turnedOff": "Reminder switched off"
+      },
+      "corrupt": "The saved text is damaged and cannot be opened. Reset it to start again.",
+      "variables": {
+        "first_name": "Name (in full, as the system receives it)",
+        "service": "Service",
+        "session_type": "Session type",
+        "date": "Date",
+        "time": "Time",
+        "duration": "Duration",
+        "amount_due": "Amount still due at the centre",
+        "amount_paid": "Amount paid",
+        "sessions": "Number of sessions",
+        "expires_on": "Valid until",
+        "cancel_url": "Cancellation link",
+        "consent_url": "Informed consent link"
+      },
+      "fixed": {
+        "details_card": "Booking details",
+        "location": "The centre's address",
+        "payment_note": "Pending payment notice (only when something is still owed)",
+        "calendar_button": "“Add to calendar” button",
+        "cancel_link": "Link to cancel or change the appointment",
+        "consent_button": "Button to sign the consent",
+        "bonus_card": "Voucher details"
+      },
+      "editor": {
+        "title": "Edit “{name}” · {language}",
+        "subject": "Subject",
+        "preheader": "Preheader",
+        "preheaderHint": "The line mail apps show next to the subject.",
+        "titleField": "Title",
+        "titleHint": "The large heading inside the email.",
+        "body": "Body",
+        "seedNotice": "You are looking at the email's current text. If you change it, your version replaces the default text.",
+        "customNotice": "This is your saved version. “Reset” goes back to the default text.",
+        "fixedAfter": "The system blocks (booking details, calendar button, cancel or sign link, location) always come after your text and cannot be moved or removed.",
+        "closingNote": "If you edit the body, the default closing text becomes yours as well.",
+        "emptyNote": "Leaving the body empty goes back to the default text.",
+        "fixedTitle": "System blocks in this email",
+        "fixedNone": "This email has no system blocks.",
+        "variablesTitle": "Variables",
+        "variablesHint": "Click one to insert it where the cursor is; it is filled in with each client's data.",
+        "variablesLinkHint": "Links are inserted as a button.",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Message saved",
+        "unchanged": "No changes to save",
+        "saveFirst": "Save your changes to send the test.",
+        "close": "Close",
+        "discardTitle": "You have unsaved changes.",
+        "discardYes": "Discard changes",
+        "discardNo": "Keep editing",
+        "docErrorsTitle": "The body needs fixing",
+        "docErrorAt": "{message} (block {block})",
+        "unknownVariables": "Variables this message does not offer: {names}",
+        "preview": {
+          "title": "How the email will look",
+          "note": "With an example booking; the system blocks look as the client will receive them.",
+          "mobile": "Mobile",
+          "desktop": "Desktop",
+          "loading": "Preparing the preview…",
+          "failed": "The preview cannot be shown until what is marked is fixed.",
+          "subject": "Subject: {subject}"
+        }
+      },
       "errors": {
         "generic": "The action could not be completed.",
         "db": "The database could not be reached.",
