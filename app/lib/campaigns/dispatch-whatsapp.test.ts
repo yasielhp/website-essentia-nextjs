@@ -6,6 +6,7 @@ import {
   SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
   consentVerdict,
+  haltMessage,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
@@ -955,5 +956,111 @@ describe("sendQueuedWhatsApp re-checks consent before every batch", () => {
     });
     expect(result.failed).toBe(1);
     expect(result.lastError).toBeNull();
+  });
+});
+
+describe("sendQueuedWhatsApp stops after repeated refusals", () => {
+  const refuse = (error = "Template param mismatch", code = 132000) => ({
+    status: "failed" as const,
+    error,
+    code,
+  });
+  const run = (count: number, send: ReturnType<typeof fakeSend>["send"]) => {
+    const mem = memoryDb(rowsOf(count));
+    return {
+      mem,
+      done: sendQueuedWhatsApp(campaign(), rowsOf(count), {
+        db: mem.db,
+        send,
+        sleep: quietSleep,
+      }),
+    };
+  };
+
+  test("three batches in a row that Meta refuses for the same reason end the run", async () => {
+    const { send, calls } = fakeSend(() => refuse());
+    const { mem, done } = run(45, send);
+    const result = await done;
+    expect(calls).toHaveLength(30);
+    expect(result).toMatchObject({
+      sent: 0,
+      failed: 30,
+      remaining: 15,
+      halted: "132000: Template param mismatch",
+    });
+    // The rest was never touched.
+    expect(mem.status("row-31")).toBe("queued");
+    expect(mem.status("row-45")).toBe("queued");
+  });
+
+  test("two refused batches and then a good one do not end it", async () => {
+    const { send, calls } = fakeSend((_s, n) => (n <= 20 ? refuse() : ok("w")));
+    const { done } = run(45, send);
+    const result = await done;
+    expect(calls).toHaveLength(45);
+    expect(result).toMatchObject({ failed: 20, sent: 25, halted: null });
+  });
+
+  test("a single success inside a refused batch resets the count", async () => {
+    // Batches 1 and 3 fail whole; batch 2 has one good message.
+    const { send, calls } = fakeSend((_s, n) =>
+      n === 15 ? ok("w") : n <= 40 ? refuse() : ok("w"),
+    );
+    const { done } = run(50, send);
+    const result = await done;
+    expect(calls).toHaveLength(50);
+    expect(result.halted).toBeNull();
+  });
+
+  test("refusals for different reasons do not add up", async () => {
+    const { send, calls } = fakeSend((_s, n) =>
+      refuse(`reason ${n}`, 130000 + n),
+    );
+    const { done } = run(40, send);
+    const result = await done;
+    expect(calls).toHaveLength(40);
+    expect(result).toMatchObject({ failed: 40, halted: null });
+  });
+
+  test("a different reason in the third batch restarts the count", async () => {
+    const { send, calls } = fakeSend((_s, n) =>
+      n <= 20 ? refuse() : refuse("Another thing", 131000),
+    );
+    const { done } = run(50, send);
+    const result = await done;
+    // Batches 3, 4, 5 share the new reason: halted after batch 5.
+    expect(calls).toHaveLength(50);
+    expect(result.halted).toBe("131000: Another thing");
+  });
+
+  test("ambiguous failures never count: they say nothing about the cause", async () => {
+    const { send, calls } = fakeSend(() => ({
+      status: "failed",
+      error: "The operation timed out.",
+      ambiguous: true,
+    }));
+    const { done } = run(40, send);
+    const result = await done;
+    expect(calls).toHaveLength(40);
+    expect(result.halted).toBeNull();
+  });
+
+  test("skipped contacts and rows without a phone never count either", async () => {
+    const rows = rowsOf(40).map((r) => ({ ...r, phone: null }));
+    const mem = memoryDb(rows);
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rows, {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(calls).toHaveLength(0);
+    expect(result).toMatchObject({ failed: 40, halted: null, remaining: 0 });
+  });
+
+  test("the message the campaign records names the reason", () => {
+    expect(haltMessage("132000: Template param mismatch")).toBe(
+      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+    );
   });
 });

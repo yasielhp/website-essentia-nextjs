@@ -48,6 +48,13 @@ export const UNCONFIRMED_PREFIX = "[unconfirmed] ";
  */
 export const SKIPPED_PREFIX = "[skipped] ";
 
+/** Batches in a row, all refused for one reason, after which a send stops. */
+export const HALT_AFTER_BATCHES = 3;
+
+/** What a halted campaign shows as its last error. */
+export const haltMessage = (error: string): string =>
+  `WhatsApp rechazó ${HALT_AFTER_BATCHES} lotes seguidos: ${error}`;
+
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
 
@@ -76,6 +83,12 @@ export type WhatsAppSendOutcome = {
    */
   unrecorded: number;
   lastError: string | null;
+  /**
+   * Set when Meta refused three batches in a row for the same reason: the
+   * cause is the template or the account, not the contacts, and going on only
+   * burns the number's quality. The reason, as stored on the rows.
+   */
+  halted: string | null;
   /** Rows still `queued` when this returned. The campaign is not done while any remain. */
   remaining: number;
 };
@@ -212,11 +225,30 @@ export async function reconcileInterrupted(
 
 type RowOutcome =
   | { kind: "sent" }
-  | { kind: "failed"; error: string }
+  | {
+      kind: "failed";
+      error: string;
+      /** Meta itself said no, definitively: what the halt watches for. */
+      refused?: boolean;
+    }
   /** The answer could not be written: the row stays `sending`. */
   | { kind: "unrecorded"; error: string }
   /** Nothing was sent and the row is back in the queue. */
   | { kind: "deferred"; error: string };
+
+/**
+ * The one reason every message of a batch was refused for, or null. Only
+ * Meta's definitive refusals count: an ambiguous failure, a skipped contact or
+ * a row without a phone says nothing about the template or the account.
+ */
+function wholeBatchRefusal(outcomes: RowOutcome[]): string | null {
+  const [first] = outcomes;
+  if (first?.kind !== "failed" || !first.refused) return null;
+  const same = outcomes.every(
+    (o) => o.kind === "failed" && o.refused === true && o.error === first.error,
+  );
+  return same ? first.error : null;
+}
 
 export async function sendQueuedWhatsApp(
   campaign: CampaignRow,
@@ -239,6 +271,7 @@ export async function sendQueuedWhatsApp(
       sent: 0,
       failed: 0,
       unrecorded: 0,
+      halted: null,
       lastError: `db: ${(err as Error).message}`,
       remaining: rows.length,
     };
@@ -252,6 +285,7 @@ export async function sendQueuedWhatsApp(
       sent: 0,
       failed: 0,
       unrecorded: 0,
+      halted: null,
       lastError: `template_unavailable: ${issue ?? "template_missing"}`,
       remaining: rows.length,
     };
@@ -320,9 +354,13 @@ export async function sendQueuedWhatsApp(
     }
   }
 
-  async function failRow(row: QueuedRow, error: string): Promise<RowOutcome> {
+  async function failRow(
+    row: QueuedRow,
+    error: string,
+    refused = false,
+  ): Promise<RowOutcome> {
     return (await write(row, { status: "failed", error }))
-      ? { kind: "failed", error }
+      ? { kind: "failed", error, refused }
       : { kind: "unrecorded", error };
   }
 
@@ -392,7 +430,11 @@ export async function sendQueuedWhatsApp(
       result.code !== undefined
         ? `${result.code}: ${result.error}`
         : result.error;
-    return fail(result.ambiguous ? `${UNCONFIRMED_PREFIX}${text}` : text);
+    return failRow(
+      row,
+      result.ambiguous ? `${UNCONFIRMED_PREFIX}${text}` : text,
+      !result.ambiguous,
+    );
   }
 
   let sent = 0;
@@ -401,6 +443,9 @@ export async function sendQueuedWhatsApp(
   /** Rows another process had already claimed: theirs, not left over. */
   let lost = 0;
   let lastError: string | null = null;
+  let halted: string | null = null;
+  let refusedBatches = 0;
+  let refusedError: string | null = null;
   const overBudget = () => now() - startedAt >= budgetMs;
 
   for (let start = 0; start < rows.length; start += PER_SECOND) {
@@ -456,6 +501,22 @@ export async function sendQueuedWhatsApp(
     // Without credentials every remaining row would be skipped too.
     if (deferred) break;
 
+    // Three whole batches Meta refused for the same reason: stop here.
+    if (outcomes.length > 0) {
+      const reason = wholeBatchRefusal(outcomes);
+      if (reason === null) {
+        refusedBatches = 0;
+        refusedError = null;
+      } else {
+        refusedBatches = reason === refusedError ? refusedBatches + 1 : 1;
+        refusedError = reason;
+      }
+      if (refusedBatches >= HALT_AFTER_BATCHES) {
+        halted = refusedError;
+        break;
+      }
+    }
+
     if (start + PER_SECOND < rows.length) {
       const wait = Math.max(0, 1000 - (now() - batchStartedAt));
       // No point sleeping towards a batch the budget will not let begin.
@@ -469,6 +530,7 @@ export async function sendQueuedWhatsApp(
     failed,
     unrecorded,
     lastError,
+    halted,
     remaining: rows.length - sent - failed - unrecorded - lost,
   };
 }

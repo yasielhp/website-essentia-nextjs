@@ -14,6 +14,7 @@ import {
   SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
   campaignTemplateIssue,
+  haltMessage,
   loadWhatsAppTemplate,
   reconcileInterrupted,
   sendQueuedWhatsApp,
@@ -79,6 +80,8 @@ export type DispatchResult =
       remaining?: number;
       /** WhatsApp only: messages sent whose answer could not be written down. */
       unrecorded?: number;
+      /** WhatsApp only: why the send stopped early on repeated refusals. */
+      halted?: string;
     }
   | {
       ok: false;
@@ -185,6 +188,7 @@ export async function sendQueued(
   /** Only a WhatsApp send can stop early; an email send always finishes. */
   remaining?: number;
   unrecorded?: number;
+  halted?: string | null;
 }> {
   if (campaign.channel === "whatsapp") {
     return sendQueuedWhatsApp(campaign, rows, whatsapp);
@@ -450,11 +454,19 @@ export async function dispatchCampaign(
     return { ok: false, error: "db", detail };
   }
 
-  const { sent, failed, lastError, remaining, unrecorded } = await sendQueued(
-    campaign,
-    rows,
-    { db, ...deps.whatsapp },
-  );
+  const { sent, failed, lastError, remaining, unrecorded, halted } =
+    await sendQueued(campaign, rows, { db, ...deps.whatsapp });
+
+  // Meta refused whole batches for one reason: the campaign is failed with the
+  // reason and the rest of its queue is left alone. A retry reopens it.
+  if (halted) {
+    await refreshCounts(
+      campaignId,
+      { status: "failed", last_error: haltMessage(halted) },
+      db,
+    );
+    return { ok: true, sent, failed, remaining, unrecorded, halted };
+  }
 
   // A WhatsApp send that ran out of time (or credentials) is not finished.
   // Leaving the campaign `sending` is what lets the cron resume it: it claims
@@ -508,15 +520,20 @@ export async function retryFailed(
   // Reopen first, requeue second: if the campaign is not a finished send the
   // reopen matches nothing, and requeued rows would otherwise sit in `queued`
   // with nobody coming back for them.
-  const { data: reopened, error: reopenError } = await db
+  const reopening = db
     .from("campaigns")
     .update({
       status: "sending",
       sending_started_at: new Date(0).toISOString(),
     })
-    .eq("id", campaignId)
-    .eq("status", "sent")
-    .select("id");
+    .eq("id", campaignId);
+  // A WhatsApp send can also stop `failed` with rows still queued (Meta kept
+  // refusing it); reopening it sends those as well as the retryable failures.
+  const { data: reopened, error: reopenError } = await (
+    checked.channel === "whatsapp"
+      ? reopening.in("status", ["sent", "failed"])
+      : reopening.eq("status", "sent")
+  ).select("id");
   if (reopenError) {
     return { ok: false, error: "db", detail: reopenError.message };
   }

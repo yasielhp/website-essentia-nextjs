@@ -264,6 +264,33 @@ describe("dispatchCampaign: resuming", () => {
   });
 });
 
+describe("dispatchCampaign: repeated refusals", () => {
+  const refuse = () => ({
+    status: "failed" as const,
+    error: "Template param mismatch",
+    code: 132000,
+  });
+
+  test("a one-off campaign Meta keeps refusing is marked failed and keeps its queue", async () => {
+    const { mem, deps } = setup(45, { send: refuse });
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    expect(result).toMatchObject({
+      ok: true,
+      sent: 0,
+      failed: 30,
+      remaining: 15,
+    });
+    expect(mem.campaign.status).toBe("failed");
+    expect(mem.campaign.last_error).toBe(
+      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+    );
+    expect(mem.campaign.sent_at ?? null).toBeNull();
+    expect(
+      [...mem.rows.values()].filter((r) => r.status === "queued"),
+    ).toHaveLength(15);
+  });
+});
+
 describe("retryFailed", () => {
   test("checks the template before reopening anything", async () => {
     const { mem, deps } = setup(1, {
@@ -274,6 +301,32 @@ describe("retryFailed", () => {
     expect(result).toMatchObject({ ok: false, error: "template_unavailable" });
     expect(mem.campaign.status).toBe("sent");
     expect(touchedCampaign(mem.log)).toHaveLength(0);
+  });
+
+  test("a WhatsApp campaign that stopped on repeated refusals is retried: queue and failures", async () => {
+    const { mem, deps, sender } = setup(12, {
+      campaign: campaign({ status: "failed" }),
+      rows: Array.from({ length: 10 }, (_, i) => ({
+        id: `row-${i + 1}`,
+        status: "failed",
+        error: "132000: Template param mismatch",
+      })),
+    });
+    const result = await retryFailed("camp-1", deps);
+    // The ten requeued failures and the two rows that never left the queue.
+    expect(sender.calls).toHaveLength(12);
+    expect(result).toMatchObject({ ok: true, sent: 12 });
+    expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("an email campaign marked failed is still not retried", async () => {
+    const { deps } = setup(1, {
+      campaign: campaign({ channel: "email", status: "failed" }),
+    });
+    expect(await retryFailed("camp-1", deps)).toEqual({
+      ok: false,
+      error: "not_claimable",
+    });
   });
 
   test("a campaign that is not finished cannot be retried", async () => {

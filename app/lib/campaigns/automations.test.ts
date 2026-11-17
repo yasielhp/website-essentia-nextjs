@@ -79,4 +79,42 @@ describe("runAutomation on WhatsApp", () => {
     });
     expect(mem.status("row-1")).toBe("sending");
   });
+
+  test("an automation Meta keeps refusing is paused with the reason, not left to retry", async () => {
+    const mem = memoryDb(rowsOf(45), { campaign: automated() });
+    const sender = fakeSend(() => ({
+      status: "failed",
+      error: "Template param mismatch",
+      code: 132000,
+    }));
+    const result = await runAutomation(automated(), NOW, {
+      db: mem.db,
+      resolveAudience: async () =>
+        Array.from({ length: 45 }, (_, i) => recipient(i + 1)),
+      whatsapp: { send: sender.send, sleep: async () => {} },
+    });
+    expect(result).toMatchObject({
+      sent: 0,
+      failed: 30,
+      halted: "132000: Template param mismatch",
+    });
+    expect(mem.campaign.status).toBe("paused");
+    expect(mem.campaign.last_error).toBe(
+      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+    );
+    // The rest waits in the queue for when the admin resumes it.
+    expect(
+      [...mem.rows.values()].filter((r) => r.status === "queued"),
+    ).toHaveLength(15);
+  });
+
+  test("a healthy run keeps the campaign active", async () => {
+    const mem = memoryDb(rowsOf(2), { campaign: automated() });
+    await runAutomation(automated(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [recipient(1), recipient(2)],
+      whatsapp: { send: fakeSend(() => ok("w")).send },
+    });
+    expect(mem.campaign.status).toBe("active");
+  });
 });

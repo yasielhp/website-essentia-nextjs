@@ -3,7 +3,11 @@ type Db = ReturnType<typeof getAdminClient>["database"];
 import { getAppUrl } from "@/lib/env";
 import type { CampaignRow } from "@/types/campaign";
 import { resolveAudience as defaultResolveAudience } from "./audience";
-import { reconcileInterrupted, type WhatsAppDeps } from "./dispatch-whatsapp";
+import {
+  haltMessage,
+  reconcileInterrupted,
+  type WhatsAppDeps,
+} from "./dispatch-whatsapp";
 import { conflictTarget, recipientRow } from "./recipient-rows";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
 import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
@@ -27,7 +31,13 @@ export async function runAutomation(
   campaign: CampaignRow,
   now = new Date(),
   deps: AutomationDeps = {},
-): Promise<{ queued: number; sent: number; failed: number }> {
+): Promise<{
+  queued: number;
+  sent: number;
+  failed: number;
+  /** Why the run paused the automation, when Meta kept refusing it. */
+  halted?: string;
+}> {
   const db = deps.db ?? getAdminClient().database;
   const resolveAudience = deps.resolveAudience ?? defaultResolveAudience;
 
@@ -73,21 +83,27 @@ export async function runAutomation(
   }
 
   const rows = await loadQueued(campaign.id, db);
-  const { sent, failed, lastError } =
+  const { sent, failed, lastError, halted } =
     rows.length > 0
       ? await sendQueued(campaign, rows, { db, ...deps.whatsapp })
-      : { sent: 0, failed: 0, lastError: null };
+      : { sent: 0, failed: 0, lastError: null, halted: null };
 
+  // Meta refuses the template or the account: pause the automation with the
+  // reason so it stops hitting the number. The admin resumes it once fixed.
   await refreshCounts(
     campaign.id,
     {
       last_run_at: now.toISOString(),
-      ...(lastError ? { last_error: lastError } : {}),
+      ...(halted
+        ? { status: "paused", last_error: haltMessage(halted) }
+        : lastError
+          ? { last_error: lastError }
+          : {}),
     },
     db,
   );
 
-  return { queued, sent, failed };
+  return halted ? { queued, sent, failed, halted } : { queued, sent, failed };
 }
 
 type PostRow = {
