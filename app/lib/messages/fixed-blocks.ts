@@ -56,15 +56,14 @@ const LABEL_STYLE =
 /** The centre's address, as `booking_confirmed` and the reminder print it. */
 function locationBlock(
   locale: "en" | "es",
-  lines: [string, string] = [
-    "Rambla de Santa Cruz, 83",
-    "38004 Santa Cruz de Tenerife",
-  ],
+  /** The paid confirmation's cell carries `padding:0`; the others' do not. */
+  cellStyle?: string,
 ): string {
+  const lines = ["Rambla de Santa Cruz, 83", "38004 Santa Cruz de Tenerife"];
   return `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
           <tr>
-            <td>
+            <td${cellStyle ? ` style="${cellStyle}"` : ""}>
               <p style="${LABEL_STYLE}">${locale === "es" ? "Ubicación" : "Location"}</p>
               <p style="margin:0;font-size:15px;color:#103838;line-height:1.5;">
                 ${lines[0]}<br />${lines[1]}
@@ -91,13 +90,20 @@ function calendarFor(
   );
 }
 
+/**
+ * Every value that comes from the booking is escaped where it lands in HTML:
+ * the legacy templates print it raw, and the public booking form lets a
+ * stranger choose some of it. The links are left alone (they are built by the
+ * server and set into `href` by the helpers), and so is what feeds the
+ * calendar URL, which `URLSearchParams` already encodes.
+ */
 function detailsCard(d: FixedBlocksData): string {
   return bookingDetailsCard({
-    service: d.service,
-    sessionType: d.sessionType,
-    date: d.date,
-    time: d.time,
-    duration: d.duration,
+    service: escapeHtml(d.service),
+    sessionType: d.sessionType ? escapeHtml(d.sessionType) : d.sessionType,
+    date: escapeHtml(d.date),
+    time: escapeHtml(d.time),
+    duration: d.duration ? escapeHtml(d.duration) : d.duration,
     locale: d.locale,
   });
 }
@@ -172,19 +178,19 @@ function paidBlocks(d: FixedBlocksData): string[] {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;width:40%;">${t.service}</td>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${d.service}</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${escapeHtml(d.service)}</td>
                       </tr>
                       <tr>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">${t.date}</td>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${d.date}</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${escapeHtml(d.date)}</td>
                       </tr>
                       <tr>
                         <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;color:#4a6767;">${t.time}</td>
-                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${d.time}</td>
+                        <td style="padding:6px 0;border-bottom:1px solid #d7dbd9;font-size:14px;font-weight:500;color:#103838;">${escapeHtml(d.time)}</td>
                       </tr>
                       <tr>
                         <td style="padding:6px 0;${paymentRows.length ? "border-bottom:1px solid #d7dbd9;" : ""}font-size:14px;color:#4a6767;">${t.duration}</td>
-                        <td style="padding:6px 0;${paymentRows.length ? "border-bottom:1px solid #d7dbd9;" : ""}font-size:14px;font-weight:500;color:#103838;">${d.duration ?? ""}</td>
+                        <td style="padding:6px 0;${paymentRows.length ? "border-bottom:1px solid #d7dbd9;" : ""}font-size:14px;font-weight:500;color:#103838;">${escapeHtml(d.duration ?? "")}</td>
                       </tr>${paymentHtml}
                     </table>
                   </td>
@@ -193,7 +199,7 @@ function paidBlocks(d: FixedBlocksData): string[] {
 
   return [
     card,
-    locationBlock(d.locale),
+    locationBlock(d.locale, "padding:0;"),
     hasOwed
       ? `<p style="margin:0 0 20px;font-size:14px;color:#335554;line-height:1.6;">${t.owedNote}</p>`
       : "",
