@@ -349,14 +349,14 @@ async function preflight(
 ): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
-    .select("id, channel, audience, content")
+    .select("id, channel, status, audience, content")
     .eq("id", campaignId)
     .maybeSingle();
   if (error) return { ok: false, error: "db", detail: error.message };
 
   const campaign = data as Pick<
     CampaignRow,
-    "channel" | "audience" | "content"
+    "channel" | "status" | "audience" | "content"
   > | null;
   // No such row: the claim that follows reports it as not claimable.
   if (!campaign) return { ok: true, channel: null };
@@ -364,8 +364,28 @@ async function preflight(
     return { ok: true, channel: campaign.channel };
   }
 
+  // The state is left alone, but a scheduled or stuck campaign the cron keeps
+  // finding blocked would otherwise say nothing; a draft gets its answer from
+  // the action that called.
+  const blocked = async (
+    failure: Extract<Preflight, { ok: false }>,
+  ): Promise<Preflight> => {
+    if (campaign.status === "scheduled" || campaign.status === "sending") {
+      await db
+        .from("campaigns")
+        .update({
+          last_error: failure.detail
+            ? `${failure.error}: ${failure.detail}`
+            : failure.error,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", campaignId);
+    }
+    return failure;
+  };
+
   if (!configured()) {
-    return { ok: false, error: "whatsapp_not_configured" };
+    return blocked({ ok: false, error: "whatsapp_not_configured" });
   }
   try {
     const template = await loadWhatsAppTemplate(
@@ -373,12 +393,28 @@ async function preflight(
       campaign.content.whatsapp?.templateId,
     );
     const issue = campaignTemplateIssue(campaign, template);
-    if (issue)
-      return { ok: false, error: "template_unavailable", detail: issue };
+    if (issue) {
+      return blocked({
+        ok: false,
+        error: "template_unavailable",
+        detail: issue,
+      });
+    }
   } catch (err) {
     return { ok: false, error: "db", detail: (err as Error).message };
   }
   return { ok: true, channel: "whatsapp" };
+}
+
+/** What the cron records on a campaign it gives up on after two hours. */
+export function abandonedMessage(lastError: string | null): string {
+  if (lastError?.startsWith("template_unavailable")) {
+    return `abandoned after two hours: the WhatsApp template could not be sent (${lastError})`;
+  }
+  if (lastError === "whatsapp_not_configured") {
+    return "abandoned after two hours: WhatsApp is not configured on the server";
+  }
+  return "abandoned after two hours in sending";
 }
 
 export async function dispatchCampaign(

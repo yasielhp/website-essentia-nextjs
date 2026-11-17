@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import {
   ABANDON_AFTER_MS,
   STUCK_AFTER_MS,
+  abandonedMessage,
   dispatchCampaign,
 } from "@/lib/campaigns/dispatch";
 import { runAutomation } from "@/lib/campaigns/automations";
@@ -19,8 +20,14 @@ import type { CampaignRow } from "@/types/campaign";
  * audience here, not when it was scheduled, so a client who signed up this
  * morning is on this afternoon's send. A campaign stuck in `sending` for
  * longer than the stuck window is resumed — only its `queued` rows go out — and
- * one stuck for hours is given up on and marked failed, so the list never
- * shows "sending" forever.
+ * one that nobody has claimed for two hours is given up on and marked failed,
+ * so the list never shows "sending" forever.
+ *
+ * A WhatsApp campaign too big for one tick stops at the shared deadline and
+ * stays `sending` with its rest queued: that is how it ends up here as "stuck"
+ * and is resumed by the next tick. Each resume re-stamps the claim, so a long
+ * campaign making progress is not abandoned. Work the deadline leaves no room
+ * for (a scheduled campaign, an automation) waits for the next tick.
  *
  * Guarded by `CRON_SECRET` like the other crons: this reads client data in
  * bulk and sends mail.
@@ -74,13 +81,14 @@ async function handle(request: NextRequest) {
 
   const { data: stuck } = await db
     .from("campaigns")
-    .select("id, sending_started_at")
+    .select("id, sending_started_at, last_error")
     .eq("status", "sending")
     .lt("sending_started_at", new Date(now - STUCK_AFTER_MS).toISOString());
 
   for (const row of (stuck ?? []) as {
     id: string;
     sending_started_at: string;
+    last_error: string | null;
   }[]) {
     const age = now - new Date(row.sending_started_at).getTime();
     if (age > ABANDON_AFTER_MS) {
@@ -88,7 +96,7 @@ async function handle(request: NextRequest) {
         .from("campaigns")
         .update({
           status: "failed",
-          last_error: "abandoned after two hours in sending",
+          last_error: abandonedMessage(row.last_error),
           updated_at: new Date().toISOString(),
         })
         .eq("id", row.id);

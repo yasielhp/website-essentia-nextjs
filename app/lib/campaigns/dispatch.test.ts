@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CampaignRow } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
-import { dispatchCampaign, retryFailed } from "./dispatch";
+import { abandonedMessage, dispatchCampaign, retryFailed } from "./dispatch";
 import { INTERRUPTED_ERROR } from "./dispatch-whatsapp";
 import {
   campaign,
@@ -123,6 +123,62 @@ describe("dispatchCampaign: the checks come before the claim", () => {
       },
     );
     expect(result).toEqual({ ok: false, error: "not_claimable" });
+  });
+});
+
+describe("dispatchCampaign: a blocked campaign says why", () => {
+  test("a scheduled campaign blocked by missing credentials keeps its state and shows the reason", async () => {
+    const { mem, deps } = setup(1, {
+      configured: false,
+      campaign: campaign({ status: "scheduled" }),
+    });
+    await dispatchCampaign("camp-1", {}, deps);
+    expect(mem.campaign.status).toBe("scheduled");
+    expect(mem.campaign.last_error).toBe("whatsapp_not_configured");
+  });
+
+  test("a stuck send blocked by its template shows the reason too", async () => {
+    const { mem, deps } = setup(1, {
+      campaign: campaign({
+        status: "sending",
+        sending_started_at: "2026-01-01T00:00:00Z",
+      }),
+      template: template({ status: "PAUSED" }),
+    });
+    await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.last_error).toBe(
+      "template_unavailable: template_not_approved",
+    );
+  });
+
+  test("a draft is not written to: the action already answers the admin", async () => {
+    const { mem, deps } = setup(1, { configured: false });
+    await dispatchCampaign("camp-1", {}, deps);
+    expect(mem.campaign.last_error ?? null).toBeNull();
+  });
+});
+
+describe("abandonedMessage", () => {
+  test("the usual one", () => {
+    expect(abandonedMessage(null)).toBe("abandoned after two hours in sending");
+    expect(abandonedMessage("some error")).toBe(
+      "abandoned after two hours in sending",
+    );
+  });
+
+  test("names the template when that is what held the queue", () => {
+    expect(
+      abandonedMessage("template_unavailable: template_not_approved"),
+    ).toBe(
+      "abandoned after two hours: the WhatsApp template could not be sent (template_unavailable: template_not_approved)",
+    );
+  });
+
+  test("names missing credentials", () => {
+    expect(abandonedMessage("whatsapp_not_configured")).toBe(
+      "abandoned after two hours: WhatsApp is not configured on the server",
+    );
   });
 });
 

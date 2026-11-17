@@ -16,9 +16,13 @@ import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
  * One run of an active campaign: who newly qualifies gets queued and sent.
  *
  * SERVER ONLY, called by the cron. Idempotent by construction — the unique
- * index on (campaign_id, email, cycle) swallows a repeat, so two overlapping
- * runs cannot mail the same person twice for the same occasion. A queued row
- * left behind by a timeout is picked up by the next run.
+ * index on (campaign_id, email, cycle), or (campaign_id, phone, cycle) on
+ * WhatsApp, swallows a repeat, so two overlapping runs cannot message the same
+ * person twice for the same occasion. A queued row left behind by a timeout or
+ * the shared deadline is picked up by the next run.
+ *
+ * On WhatsApp a run first fails what a dead process left `sending`, and an
+ * automation Meta keeps refusing is paused with the reason.
  */
 /** What a run reads and calls out to; a test passes doubles. */
 export type AutomationDeps = {
