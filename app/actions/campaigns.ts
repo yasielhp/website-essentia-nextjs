@@ -11,6 +11,7 @@ import {
 import {
   campaignAudienceSchema,
   campaignChannelSchema,
+  campaignKindSchema,
   channelChangeAllowed,
   requiredLocales,
   sendLocaleOf,
@@ -57,6 +58,8 @@ import {
   type SegmentMember,
   EMPTY_AUDIENCE,
   isAutomatedKind,
+  consentPurposeOf,
+  type CampaignKind,
   type CampaignStatus,
   type ContactCampaignRow,
   type ContactSearchHit,
@@ -755,6 +758,12 @@ export async function previewAudience(
   accessToken: string | null,
   audience: CampaignAudience,
   channel: CampaignChannel = "email",
+  /**
+   * What the campaign is, when the count depends on it: a notice about her
+   * appointment is counted with the consent to appointment notices, not the one
+   * to news. Absent, or any other kind, the count is what it always was.
+   */
+  kind?: CampaignKind,
 ): Promise<AudiencePreview | Failure> {
   try {
     await admin(accessToken);
@@ -764,16 +773,20 @@ export async function previewAudience(
 
   const parsed = campaignAudienceSchema.safeParse(audience);
   const parsedChannel = campaignChannelSchema.safeParse(channel);
-  if (!parsed.success || !parsedChannel.success) {
+  const parsedKind = campaignKindSchema.optional().safeParse(kind);
+  if (!parsed.success || !parsedChannel.success || !parsedKind.success) {
     return { ok: false, error: "invalid" };
   }
 
   try {
-    const recipients = await resolveAudience(
-      parsed.data,
-      new Date(),
-      parsedChannel.data,
-    );
+    // Only an appointment notice has a purpose of its own; every other call is
+    // resolved with the same three arguments as ever.
+    const recipients =
+      parsedKind.data === "appointment"
+        ? await resolveAudience(parsed.data, new Date(), parsedChannel.data, {
+            purpose: consentPurposeOf("appointment"),
+          })
+        : await resolveAudience(parsed.data, new Date(), parsedChannel.data);
     return {
       count: recipients.length,
       byLanguage: {
