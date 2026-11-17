@@ -6,14 +6,6 @@ import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
 import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
 import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
-import {
-  REMINDER_WINDOW_END_HOURS,
-  REMINDER_WINDOW_START_HOURS,
-} from "@/lib/bookings/reminder-window";
-import {
-  reminderBudgetMs,
-  sendWhatsAppReminders,
-} from "@/lib/whatsapp/reminders";
 
 /**
  * POST/GET /api/cron/booking-reminders
@@ -29,8 +21,8 @@ import {
  * repeatedly could flood a client's inbox, so the stamp on the row is both a
  * de-duplicator and a rate limit.
  */
-const WINDOW_START_HOURS = REMINDER_WINDOW_START_HOURS;
-const WINDOW_END_HOURS = REMINDER_WINDOW_END_HOURS;
+const WINDOW_START_HOURS = 40;
+const WINDOW_END_HOURS = 56;
 
 type Row = {
   id: string;
@@ -58,8 +50,7 @@ function formatDate(dateIso: string, locale: "en" | "es"): string {
   );
 }
 
-/** The answer for a request that may not run this cron, or null when it may. */
-function refusal(request: NextRequest): NextResponse | null {
+async function handle(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET not set" }, { status: 500 });
@@ -71,40 +62,7 @@ function refusal(request: NextRequest): NextResponse | null {
   if (provided !== secret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return null;
-}
 
-/**
- * The email batch and the WhatsApp reminders share one run, and the WhatsApp
- * ones claim a booking before they send it, so the limit is declared (the
- * sibling crons do the same) instead of left to the platform's default.
- */
-// A literal: Next reads it without running the module. A test keeps it equal
-// to `CRON_MAX_MS`, which the WhatsApp budget is computed from.
-export const maxDuration = 60;
-
-async function handle(request: NextRequest) {
-  const startedAt = Date.now();
-  const refused = refusal(request);
-  if (refused) return refused;
-
-  const response = await remindByEmail();
-  // After the emails are done, and on its own account: the WhatsApp reminder
-  // has its own stamp, so what happened to the email changes nothing for it,
-  // and nothing it does (it never throws) changes the answer below.
-  try {
-    await sendWhatsAppReminders({
-      budgetMs: reminderBudgetMs(Date.now() - startedAt),
-    });
-  } catch (err) {
-    // It does not throw; this is for the day it does.
-    console.error("[cron/booking-reminders] WhatsApp reminders failed:", err);
-  }
-  return response;
-}
-
-/** The reminder emails: what this cron has always done, unchanged. */
-async function remindByEmail(): Promise<NextResponse> {
   const db = getAdminClient().database;
   const now = Date.now();
 

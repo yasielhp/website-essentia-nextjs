@@ -85,13 +85,7 @@ export function makeClientDeps(db: Db): ClientWhatsAppDeps {
   };
 }
 
-/**
- * `refused` is a failure Meta answered outright (a 4xx with its own error):
- * the message did not leave. `failed` is one that may have (a timeout, a throw)
- * or that never reached Meta, which says nothing about how Meta is feeling.
- */
-export type DeliverOutcome =
-  "none" | "lost" | "skipped" | "sent" | "failed" | "refused";
+export type DeliverOutcome = "none" | "skipped" | "sent" | "failed";
 
 const SKIP_TEXT: Record<ClientSkipReason, string> = {
   template_missing: "la plantilla elegida ya no existe",
@@ -105,17 +99,14 @@ const SKIP_TEXT: Record<ClientSkipReason, string> = {
 };
 
 /**
- * Decides, claims, sends and records, for one booking whose rows have been
- * read. Never throws.
+ * Decides, sends and records, for one booking whose rows have been read. Never
+ * throws.
  *
- * `claim` is for the reminder: it must stamp the booking with a conditional
- * update and answer whether THIS run won it. It is taken after the decision
- * and before anything is sent or written, so two overlapping runs cannot both
- * send. A booking that would get NOTHING (no consent, no number, a number that
- * said STOP, a row switched off) is not claimed and so not stamped. One whose
- * template cannot be sent IS claimed: its single `skipped` entry is written
- * once, and the booking is not looked at again every hour. One that throws
- * counts as lost: better no message than two.
+ * A booking that would get NOTHING (no consent, no number, a number that said
+ * STOP) writes nothing at all. One whose template cannot be sent writes a
+ * single `skipped` entry with the reason. These are one-off events (the
+ * confirmation, the first payment), so there is no stamp to claim: the
+ * callers fire them once per event.
  */
 export async function deliverClientWhatsApp(
   input: {
@@ -129,9 +120,6 @@ export async function deliverClientWhatsApp(
     booking: ClientBooking;
     actorId?: string | null;
     actorRole?: BookingEventActorRole | null;
-    claim?: () => Promise<boolean>;
-    /** Told about a definitive refusal, with Meta's words and code. */
-    onRefused?: (failure: { error: string; code?: number }) => void;
   },
   deps: Pick<ClientWhatsAppDeps, "send" | "record" | "isSuppressed">,
 ): Promise<DeliverOutcome> {
@@ -139,7 +127,7 @@ export async function deliverClientWhatsApp(
   if (first.kind === "none") return "none";
 
   // The STOP list, read for the number this would go to and BEFORE anything is
-  // claimed or written. One that cannot be read counts as "suppressed": better
+  // sent or written. One that cannot be read counts as "suppressed": better
   // no message than one to somebody who asked for none.
   let suppressed = true;
   try {
@@ -151,16 +139,6 @@ export async function deliverClientWhatsApp(
     ? decideClientWhatsApp({ ...input, phoneSuppressed: true })
     : first;
   if (decision.kind === "none") return "none";
-
-  if (input.claim) {
-    let won = false;
-    try {
-      won = await input.claim();
-    } catch (err) {
-      console.error("[whatsapp/client] claim failed:", err);
-    }
-    if (!won) return "lost";
-  }
 
   const entry = {
     bookingId: input.bookingId,
@@ -229,17 +207,12 @@ export async function deliverClientWhatsApp(
     payload:
       result.ambiguous || thrown ? { ...payload, ambiguous: true } : payload,
   });
-  if (result.ambiguous || thrown) return "failed";
-  input.onRefused?.({
-    error: result.error,
-    ...(result.code === undefined ? {} : { code: result.code }),
-  });
-  return "refused";
+  return "failed";
 }
 
 const MESSAGE_ROW_COLUMNS =
-  "locale, enabled, whatsapp_template_id, whatsapp_params, updated_at";
-export const CONTACT_COLUMNS =
+  "locale, enabled, whatsapp_template_id, whatsapp_params";
+const CONTACT_COLUMNS =
   "first_name, last_name, phone, preferred_language, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at";
 
 type BookingRowRead = {
@@ -261,11 +234,11 @@ const tierLabelOf = (row: Pick<BookingRowRead, "service_tiers">) =>
     : (row.service_tiers?.label ?? null);
 
 /** The columns of a booking a client message needs, for `select`. */
-export const CLIENT_BOOKING_COLUMNS =
+const CLIENT_BOOKING_COLUMNS =
   "email, contact_id, phone, first_name, last_name, service_title, date, time, service_tiers(label)";
 
 /** A booking row as the facts a message is built from, or null if it lacks a date or time. */
-export function clientBookingOf(row: BookingRowRead): ClientBooking | null {
+function clientBookingOf(row: BookingRowRead): ClientBooking | null {
   if (!row.date || !row.time) return null;
   return {
     first_name: row.first_name,
@@ -282,7 +255,7 @@ export function clientBookingOf(row: BookingRowRead): ClientBooking | null {
  * The saved WhatsApp rows of one message (both languages, in one read), or
  * null when there are none or they cannot be read.
  */
-export async function loadClientMessageRows(
+async function loadClientMessageRows(
   db: Db,
   key: MessageKey,
 ): Promise<ClientMessageRow[] | null> {
@@ -299,7 +272,7 @@ export async function loadClientMessageRows(
   return rows.length > 0 ? rows : null;
 }
 
-export async function loadClientTemplate(
+async function loadClientTemplate(
   db: Db,
   id: string | null,
 ): Promise<WhatsAppTemplateRow | null> {

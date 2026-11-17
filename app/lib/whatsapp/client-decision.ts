@@ -15,20 +15,18 @@ import type {
 
 /**
  * The decision half of the client's WhatsApp notices: over plain values, with
- * no database, no clock and no network. The effects (reads, the claim, the
+ * no database, no clock and no network. The effects (reads, the
  * send, the history) are in `notify-client.ts`, which re-exports everything
  * here, so callers keep importing from one place.
  *
  * See `notify-client.ts` for the rules this decides.
  */
 
-export type ClientWhatsAppEvent = "confirmed" | "paid" | "reminded";
+export type ClientWhatsAppEvent = "confirmed" | "paid";
 
 /** The saved `message_templates` row of a WhatsApp message, as it is read. */
 export type ClientMessageRow = {
   locale?: string | null;
-  /** When the admin last saved it. The reminder does not reach back before it. */
-  updated_at?: string | null;
   enabled: boolean | null;
   whatsapp_template_id: string | null;
   /** jsonb: whatever is stored. It is checked before it is used. */
@@ -181,10 +179,6 @@ export function decideClientWhatsApp(input: {
   const definition = MESSAGE_CATALOG[key];
   if (!definition.whatsappEligible) return { kind: "none" };
   if (!row || !row.whatsapp_template_id) return { kind: "none" };
-  // Only a message that can be switched off can be switched off: for the rest
-  // the switch is ignored, as it is for the email.
-  if (row.enabled === false && definition.canDisable) return { kind: "none" };
-
   const to = clientRecipient(contact, booking);
   if (!to) return { kind: "none" };
   if (input.phoneSuppressed) return { kind: "none" };

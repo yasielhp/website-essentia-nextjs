@@ -108,15 +108,24 @@ describe("MESSAGE_CATALOG", () => {
     }
   });
 
-  it("allows WhatsApp only on what the client opted in to hear about", () => {
+  it("allows WhatsApp only on the two instant confirmations the client opted in to hear about", () => {
     const eligible = MESSAGE_KEYS.filter(
       (k) => MESSAGE_CATALOG[k].whatsappEligible,
     );
-    expect(eligible.sort()).toEqual([
-      "booking_confirmed",
-      "booking_paid",
-      "booking_reminder",
-    ]);
+    expect(eligible.sort()).toEqual(["booking_confirmed", "booking_paid"]);
+  });
+
+  it("the reminder is not one of them: its WhatsApp version is an appointment notice, a campaign", () => {
+    expect(MESSAGE_CATALOG.booking_reminder.whatsappEligible).toBe(false);
+    // The email reminder is untouched: it can still be switched off.
+    expect(MESSAGE_CATALOG.booking_reminder.canDisable).toBe(true);
+  });
+
+  it("nothing that goes out on WhatsApp can be switched off", () => {
+    for (const key of MESSAGE_KEYS) {
+      const { whatsappEligible, canDisable } = MESSAGE_CATALOG[key];
+      expect(whatsappEligible && canDisable).toBe(false);
+    }
   });
 });
 

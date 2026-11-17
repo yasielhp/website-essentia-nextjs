@@ -7,7 +7,7 @@ import {
   mock,
   test,
 } from "bun:test";
-import { argsOf, chainDb, has, type Step } from "@/lib/campaigns/fake-db";
+import { argsOf, chainDb, has } from "@/lib/campaigns/fake-db";
 import { template } from "@/lib/campaigns/whatsapp-fixtures";
 
 /**
@@ -20,7 +20,6 @@ const UUID = "3b7c1f6e-0d9a-4b52-8c1e-5a2f9d4e7b10";
 
 let stored: unknown = null;
 let upserts: unknown[] = [];
-let log: { table: string; chain: Step[] }[] = [];
 
 const real = {
   admin: { ...(await import("@/lib/insforge-admin")) },
@@ -58,10 +57,7 @@ beforeAll(async () => {
       });
       return {
         database: {
-          from: (table: string) => {
-            log = made.log;
-            return made.db.from(table);
-          },
+          from: (table: string) => made.db.from(table),
         },
       };
     },
@@ -78,11 +74,10 @@ afterAll(() => {
 beforeEach(() => {
   stored = null;
   upserts = [];
-  log = [];
 });
 
 const input = {
-  key: "booking_reminder",
+  key: "booking_confirmed",
   channel: "whatsapp",
   locale: "es",
   enabled: true,
@@ -133,13 +128,24 @@ describe("saveMessageTemplate — a WhatsApp row", () => {
     expect(upserts).toHaveLength(0);
   });
 
-  test("a switched-off row is not judged by its template: it will not be sent", async () => {
-    stored = {
-      ...TEMPLATE,
-      buttons: [{ type: "URL", text: "Ver", url: "https://example.com/{{1}}" }],
-    };
+  test("the reminder has no WhatsApp row any more: its notice is a campaign", async () => {
+    stored = TEMPLATE;
+    const out = await save("token", { ...input, key: "booking_reminder" });
+    expect(out).toEqual({
+      ok: false,
+      error: "invalid",
+      fieldErrors: { channel: "channelNotAllowed" },
+    });
+    expect(upserts).toHaveLength(0);
+  });
+
+  test("a row on WhatsApp cannot be switched off", async () => {
+    stored = TEMPLATE;
     const out = await save("token", { ...input, enabled: false });
-    expect(out.ok).toBe(true);
-    expect(log.map((q) => q.table)).not.toContain("whatsapp_templates");
+    expect(out).toMatchObject({
+      ok: false,
+      fieldErrors: { enabled: "cannotDisable" },
+    });
+    expect(upserts).toHaveLength(0);
   });
 });

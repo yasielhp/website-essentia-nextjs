@@ -167,14 +167,12 @@ describe("decideClientWhatsApp — nothing to do", () => {
       "booking_cancelled",
       "consent_request",
       "bonus_purchase",
+      // Its WhatsApp version is an appointment notice, a campaign.
+      "booking_reminder",
     ] as const) {
       expect(decide({ key }).kind).toBe("none");
     }
-    for (const key of [
-      "booking_confirmed",
-      "booking_paid",
-      "booking_reminder",
-    ] as const) {
+    for (const key of ["booking_confirmed", "booking_paid"] as const) {
       expect(decide({ key }).kind).toBe("send");
     }
   });
@@ -189,10 +187,10 @@ describe("decideClientWhatsApp — nothing to do", () => {
     );
   });
 
-  it("a reminder switched off sends nothing; a message that cannot be switched off ignores the switch", () => {
+  it("a message that cannot be switched off ignores the switch: a paid client keeps her confirmation", () => {
     const off = { ...ROW, enabled: false };
-    expect(decide({ key: "booking_reminder", row: off }).kind).toBe("none");
     expect(decide({ key: "booking_confirmed", row: off }).kind).toBe("send");
+    expect(decide({ key: "booking_paid", row: off }).kind).toBe("send");
   });
 
   it("no contact, no opt-in, an opt-out or an unreachable number: nothing, and not a recorded skip", () => {
@@ -497,23 +495,13 @@ describe("deliverClientWhatsApp", () => {
     expect(h.recorded[0]?.summary).toContain("no se envió");
   });
 
-  it("a refusal is recorded as failed with Meta's words, and reported to the caller", async () => {
+  it("a refusal is recorded as failed with Meta's words", async () => {
     const h = harness(() => ({
       status: "failed",
       error: "Re-engagement",
       code: 131047,
     }));
-    const refusals: { error: string; code?: number }[] = [];
-    expect(
-      await deliverClientWhatsApp(
-        args({
-          onRefused: (failure: { error: string; code?: number }) =>
-            refusals.push(failure),
-        }),
-        h.deps,
-      ),
-    ).toBe("refused");
-    expect(refusals).toEqual([{ error: "Re-engagement", code: 131047 }]);
+    expect(await deliverClientWhatsApp(args(), h.deps)).toBe("failed");
     expect(h.recorded[0]).toMatchObject({
       status: "failed",
       error: "Re-engagement",
@@ -562,27 +550,15 @@ describe("deliverClientWhatsApp", () => {
     expect(h.recorded).toHaveLength(0);
   });
 
-  it("a number on the STOP list gets nothing: no claim, no send, no history", async () => {
-    let claimed = 0;
+  it("a number on the STOP list gets nothing: no send, no history", async () => {
     const h = harness();
     const deps = { ...h.deps, isSuppressed: async () => true };
-    expect(
-      await deliverClientWhatsApp(
-        args({
-          claim: async () => {
-            claimed += 1;
-            return true;
-          },
-        }),
-        deps,
-      ),
-    ).toBe("none");
-    expect(claimed).toBe(0);
+    expect(await deliverClientWhatsApp(args(), deps)).toBe("none");
     expect(h.sent).toHaveLength(0);
     expect(h.recorded).toHaveLength(0);
   });
 
-  it("the list is asked about the number the message would go to, and before the claim", async () => {
+  it("the list is asked about the number the message would go to, before anything is sent", async () => {
     const asked: string[] = [];
     const order: string[] = [];
     const h = harness();
@@ -593,23 +569,18 @@ describe("deliverClientWhatsApp", () => {
         order.push("suppression");
         return false;
       },
+      send: async (s: TemplateSend) => {
+        order.push("send");
+        return h.deps.send(s);
+      },
     };
-    await deliverClientWhatsApp(
-      args({
-        claim: async () => {
-          order.push("claim");
-          return true;
-        },
-      }),
-      deps,
-    );
+    await deliverClientWhatsApp(args(), deps);
     expect(asked).toEqual(["+34611222333"]);
-    expect(order).toEqual(["suppression", "claim"]);
+    expect(order).toEqual(["suppression", "send"]);
   });
 
   it("a list that cannot be read means nothing is sent: it fails closed", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
-    let claimed = 0;
     const h = harness();
     const deps = {
       ...h.deps,
@@ -617,19 +588,8 @@ describe("deliverClientWhatsApp", () => {
         throw new Error("relation does not exist");
       },
     };
-    expect(
-      await deliverClientWhatsApp(
-        args({
-          claim: async () => {
-            claimed += 1;
-            return true;
-          },
-        }),
-        deps,
-      ),
-    ).toBe("none");
+    expect(await deliverClientWhatsApp(args(), deps)).toBe("none");
     quiet.mockRestore();
-    expect(claimed).toBe(0);
     expect(h.sent).toHaveLength(0);
     expect(h.recorded).toHaveLength(0);
   });
@@ -647,89 +607,6 @@ describe("deliverClientWhatsApp", () => {
     await deliverClientWhatsApp(args({ contact: null }), deps);
     await deliverClientWhatsApp(args({ row: null }), deps);
     expect(asked).toBe(0);
-  });
-
-  it("with a claim, only the run that wins it sends", async () => {
-    const h = harness();
-    let free = true;
-    const claim = async () => {
-      const won = free;
-      free = false;
-      return won;
-    };
-    const both = await Promise.all([
-      deliverClientWhatsApp(args({ claim }), h.deps),
-      deliverClientWhatsApp(args({ claim }), h.deps),
-    ]);
-    expect(both.sort()).toEqual(["lost", "sent"]);
-    expect(h.sent).toHaveLength(1);
-    expect(h.recorded).toHaveLength(1);
-  });
-
-  it("the claim is taken before the send, and a lost one records nothing, not even a skip", async () => {
-    const order: string[] = [];
-    const h = harness();
-    const deps = {
-      send: async (s: TemplateSend) => {
-        order.push("send");
-        return h.deps.send(s);
-      },
-      record: h.deps.record,
-      isSuppressed: h.deps.isSuppressed,
-    };
-    await deliverClientWhatsApp(
-      args({
-        claim: async () => {
-          order.push("claim");
-          return true;
-        },
-      }),
-      deps,
-    );
-    expect(order).toEqual(["claim", "send"]);
-
-    const lost = harness();
-    expect(
-      await deliverClientWhatsApp(
-        args({
-          template: { ...TEMPLATE, status: "PAUSED" },
-          claim: async () => false,
-        }),
-        lost.deps,
-      ),
-    ).toBe("lost");
-    expect(lost.recorded).toHaveLength(0);
-  });
-
-  it("nothing to send means the claim is not even taken", async () => {
-    let claimed = 0;
-    const h = harness();
-    await deliverClientWhatsApp(
-      args({
-        contact: null,
-        claim: async () => {
-          claimed += 1;
-          return true;
-        },
-      }),
-      h.deps,
-    );
-    expect(claimed).toBe(0);
-  });
-
-  it("a claim that throws is a lost one: better no message than two", async () => {
-    const h = harness();
-    expect(
-      await deliverClientWhatsApp(
-        args({
-          claim: async () => {
-            throw new Error("db down");
-          },
-        }),
-        h.deps,
-      ),
-    ).toBe("lost");
-    expect(h.sent).toHaveLength(0);
   });
 });
 

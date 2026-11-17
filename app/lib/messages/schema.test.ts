@@ -39,7 +39,7 @@ const email = (over: Record<string, unknown> = {}) => ({
 });
 
 const whatsapp = (over: Record<string, unknown> = {}) => ({
-  key: "booking_reminder",
+  key: "booking_confirmed",
   channel: "whatsapp",
   locale: "es",
   enabled: true,
@@ -571,24 +571,23 @@ describe("validateMessageTemplate — WhatsApp", () => {
     });
   });
 
-  it("a switched-off message may carry no template", () => {
-    const out = accepted(
-      whatsapp({
-        enabled: false,
-        whatsappTemplateId: null,
-        whatsappParams: [],
-      }),
-    );
-    if (out.channel !== "whatsapp") throw new Error("channel");
-    expect(out.whatsapp).toEqual({ templateId: null, params: [] });
+  it("no message that goes out on WhatsApp can be switched off: a paid client would be left without it", () => {
+    expect(
+      errorsOf(
+        whatsapp({
+          enabled: false,
+          whatsappTemplateId: null,
+          whatsappParams: [],
+        }),
+      ),
+    ).toEqual({ enabled: "cannotDisable" });
   });
 
-  it("the switch alone brings no template and changes none", () => {
+  it("a save with none of the WhatsApp fields brings no template and changes none", () => {
     const out = accepted({
-      key: "booking_reminder",
+      key: "booking_paid",
       channel: "whatsapp",
       locale: "es",
-      enabled: false,
     });
     if (out.channel !== "whatsapp") throw new Error("channel");
     expect(out.whatsapp).toBeNull();
@@ -734,7 +733,7 @@ describe("a save only touches the fields it carries", () => {
   });
 
   it("a WhatsApp save with only the template leaves the parameters alone, and the reverse", () => {
-    const wa = { key: "booking_reminder", channel: "whatsapp", locale: "es" };
+    const wa = { key: "booking_confirmed", channel: "whatsapp", locale: "es" };
     const onlyTemplate = payloadOf({ ...wa, whatsappTemplateId: UUID });
     expect(onlyTemplate).toHaveProperty("whatsapp_template_id", UUID);
     expect(onlyTemplate).not.toHaveProperty("whatsapp_params");
@@ -820,7 +819,7 @@ describe("toRowPayload", () => {
 
   it("a WhatsApp message writes the template and the parameters, and no email text", () => {
     expect(toRowPayload(accepted(whatsapp()), "admin-1", NOW)).toEqual({
-      key: "booking_reminder",
+      key: "booking_confirmed",
       channel: "whatsapp",
       locale: "es",
       enabled: true,
@@ -834,13 +833,12 @@ describe("toRowPayload", () => {
     });
   });
 
-  it("the WhatsApp switch alone leaves the template columns out", () => {
+  it("a WhatsApp save with none of its fields leaves the template columns out", () => {
     const payload = toRowPayload(
       accepted({
-        key: "booking_reminder",
+        key: "booking_confirmed",
         channel: "whatsapp",
         locale: "es",
-        enabled: false,
       }),
       "admin-1",
       NOW,

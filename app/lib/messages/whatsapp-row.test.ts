@@ -21,11 +21,10 @@ const saved = (over: Partial<SavedWhatsAppRow> = {}): SavedWhatsAppRow => ({
 });
 
 describe("WHATSAPP_MESSAGE_KEYS", () => {
-  it("are the three the booking-notice opt-in promises", () => {
+  it("are the two instant confirmations (the reminder is an appointment notice now)", () => {
     expect([...WHATSAPP_MESSAGE_KEYS].sort()).toEqual([
       "booking_confirmed",
       "booking_paid",
-      "booking_reminder",
     ]);
   });
 });

@@ -200,7 +200,11 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["details_card", "location", "calendar_button", "cancel_link"],
     canDisable: true,
-    whatsappEligible: true,
+    // Its WhatsApp version is not a message here but an appointment notice (a
+    // campaign of that kind), which can be set several times and at any hour
+    // before or after the booking. One fixed WhatsApp reminder as well would
+    // mean two messages for one appointment.
+    whatsappEligible: false,
   },
   consent_request: {
     variables: ["first_name", "consent_url"],
