@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
-import { INPUT_CLASS } from "@/constants/form-styles";
+import { WhatsAppParamRow } from "@/components/dashboard/whatsapp-param-mapper";
 import { useFieldError } from "@/hooks/use-field-error";
 import { sendLocaleOf } from "@/lib/schemas";
 import { templateChoiceIssue } from "@/lib/campaigns/whatsapp-eligibility";
@@ -16,17 +16,11 @@ import {
   partitionTemplates,
   sampleParams,
 } from "@/lib/campaigns/whatsapp-form";
-import type {
-  WhatsAppParamField,
-  WhatsAppParamSource,
-} from "@/lib/whatsapp/types";
+import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 import type { CampaignLocale } from "@/types/campaign";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 import type { FormAction, FormState } from "./form-state";
 import type { TemplatesState } from "./use-whatsapp-templates";
-
-/** The longest a fixed text can be; the schema holds the same line. */
-const MAX_STATIC = 200;
 
 const LOCALES: CampaignLocale[] = ["es", "en"];
 
@@ -275,9 +269,12 @@ export function WhatsAppStep({
 
             <div className="flex flex-col gap-5">
               {params.map((source, index) => (
-                <ParamRow
+                <WhatsAppParamRow
                   key={index}
                   index={index}
+                  idPrefix="campaign-whatsapp-param"
+                  fields={PARAM_FIELDS}
+                  unavailableText={t("unavailable")}
                   source={source}
                   example={usable.example_params?.[index]}
                   available={
@@ -316,144 +313,6 @@ export function WhatsAppStep({
         <Button size="md" disabled={submitting || !usable} onClick={onDone}>
           {t("confirm")}
         </Button>
-      </div>
-    </div>
-  );
-}
-
-/** One `{{n}}`: a contact field or a fixed text, with what is wrong with it. */
-function ParamRow({
-  index,
-  source,
-  example,
-  available,
-  error,
-  disabled,
-  onChange,
-}: {
-  index: number;
-  source: WhatsAppParamSource;
-  example: string | undefined;
-  /** False when the chosen field has no value in this campaign. */
-  available: boolean;
-  error: string;
-  disabled: boolean;
-  onChange: (source: WhatsAppParamSource) => void;
-}) {
-  const t = useTranslations("dashboard.campaigns.form.whatsapp");
-  const tFields = useTranslations("dashboard.campaigns.form.whatsapp.fields");
-  const id = `campaign-whatsapp-param-${index}`;
-
-  const kindOptions: SelectOption<"field" | "static">[] = [
-    { value: "field", label: t("sourceField") },
-    { value: "static", label: t("sourceStatic") },
-  ];
-  const fieldOptions: SelectOption<WhatsAppParamField>[] = PARAM_FIELDS.map(
-    (field) => ({ value: field, label: tFields(field) }),
-  );
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-petroleum-700 text-sm font-medium">
-          {t("param", { n: index + 1 })}
-        </p>
-        {example && (
-          <p className="text-petroleum-400 text-xs">
-            {t("paramExample", { example })}
-          </p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor={`${id}-kind`}
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("sourceKind")}
-          </label>
-          <OptionSelect
-            id={`${id}-kind`}
-            value={source.kind}
-            options={kindOptions}
-            disabled={disabled}
-            onChange={(value) =>
-              onChange(
-                value === "field"
-                  ? { kind: "field", field: "first_name" }
-                  : { kind: "static", value: "" },
-              )
-            }
-          />
-        </div>
-
-        {source.kind === "field" ? (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={`${id}-field`}
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("fieldLabel")}
-            </label>
-            <OptionSelect
-              id={`${id}-field`}
-              value={source.field}
-              options={fieldOptions}
-              disabled={disabled}
-              onChange={(field) => onChange({ kind: "field", field })}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={`${id}-text`}
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("staticLabel")}
-            </label>
-            <input
-              id={`${id}-text`}
-              type="text"
-              value={source.value}
-              placeholder={t("staticPlaceholder")}
-              disabled={disabled}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={`${id}-note`}
-              onChange={(e) =>
-                onChange({ kind: "static", value: e.target.value })
-              }
-              className={INPUT_CLASS}
-            />
-          </div>
-        )}
-      </div>
-
-      <div id={`${id}-note`} className="flex flex-col gap-1">
-        {source.kind === "static" && (
-          <p
-            className={`text-xs ${
-              source.value.length > MAX_STATIC
-                ? "text-red-600"
-                : source.value.trim() === ""
-                  ? "text-yellow-800"
-                  : "text-petroleum-400"
-            }`}
-          >
-            {t("staticCount", { count: source.value.length })}
-            {source.value.trim() === "" && ` · ${t("staticEmpty")}`}
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="text-xs text-red-600">
-            {error}
-          </p>
-        )}
-        {!available && (
-          <p className="rounded-xl bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
-            {t("unavailable")}
-          </p>
-        )}
       </div>
     </div>
   );
