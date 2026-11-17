@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { readAllPages } from "@/lib/campaigns/paged-read";
 import {
   describeMetaFailure,
   metaFailureKind,
@@ -146,11 +147,8 @@ const STATE_RANK: Record<string, number> = {
 /** Messages whose receipts are written at the same time. */
 const STATUS_BATCH_SIZE = 10;
 
-/**
- * Ceiling for a read of contacts to match against an inbound number.
- * `range(0, n)` is inclusive, so a full page holds n + 1 rows.
- */
-const CONTACTS_MAX_ROWS = 9_999;
+/** What is read of a contact to match it against an inbound number. */
+type InboundContact = { id: string; phone: string | null };
 
 /**
  * The elements of `value` that are objects, or none when it is not an array.
@@ -409,23 +407,25 @@ export async function POST(req: NextRequest) {
       // STOP is a single opt-out that blocks both uses. At this centre's
       // volume reading them all once per payload is cheap.
       //
-      // The SDK cuts a read short without saying so, which here would mean a
-      // STOP silently ignored. The range is the same ceiling `audience.ts`
-      // uses; hitting it is logged so it is noticed long before it matters.
-      const { data, error } = await db
-        .from("contacts")
-        .select("id, phone")
-        .or(
-          "whatsapp_opted_in_at.not.is.null,whatsapp_marketing_opted_in_at.not.is.null",
-        )
-        .is("whatsapp_opted_out_at", null)
-        .range(0, CONTACTS_MAX_ROWS);
-      if (error) throw error;
-
-      const optedIn = (data ?? []) as { id: string; phone: string | null }[];
-      if (optedIn.length > CONTACTS_MAX_ROWS) {
-        console.warn("[webhooks/whatsapp] opt-out contact list hit the cap");
-      }
+      // The database answers at most a thousand rows a request, whatever
+      // range is asked for, which here meant a STOP silently ignored for the
+      // contact in position 1001. So they are read a page at a time, in the
+      // order of their id; a page that fails fails the whole read (caught
+      // below, like any other failure here), and nobody is opted out on part
+      // of the list.
+      const optedIn = await readAllPages<InboundContact>(
+        "[webhooks/whatsapp] opt-out contacts",
+        (from, to) =>
+          db
+            .from("contacts")
+            .select("id, phone")
+            .or(
+              "whatsapp_opted_in_at.not.is.null,whatsapp_marketing_opted_in_at.not.is.null",
+            )
+            .is("whatsapp_opted_out_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+      );
 
       const ids = matchOptOut([...optOutSenders], optedIn);
       if (ids.length > 0) {
@@ -459,20 +459,18 @@ export async function POST(req: NextRequest) {
 
     if (inboundSenders.size > 0) {
       // Only the flagged contacts are read, once per payload and only when
-      // something came in; there are few of them.
-      const { data, error } = await db
-        .from("contacts")
-        .select("id, phone")
-        .not("whatsapp_unreachable_at", "is", null)
-        .range(0, CONTACTS_MAX_ROWS);
-      if (error) throw error;
-
-      const flagged = (data ?? []) as { id: string; phone: string | null }[];
-      if (flagged.length > CONTACTS_MAX_ROWS) {
-        console.warn(
-          "[webhooks/whatsapp] unreachable contact list hit the cap",
-        );
-      }
+      // something came in; there are few of them. A page at a time all the
+      // same, for the reason given at the opt-outs above.
+      const flagged = await readAllPages<InboundContact>(
+        "[webhooks/whatsapp] unreachable contacts",
+        (from, to) =>
+          db
+            .from("contacts")
+            .select("id, phone")
+            .not("whatsapp_unreachable_at", "is", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+      );
 
       const ids = matchByPhone([...inboundSenders], flagged);
       if (ids.length > 0) {

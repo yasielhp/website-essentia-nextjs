@@ -27,6 +27,7 @@ let log: { table: string; chain: Step[] }[] = [];
 let rpcAnswer: { data: unknown; error: { message: string } | null };
 let rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
 let bookingEventsError: string | null = null;
+let contactsReadError: string | null = null;
 
 const real = { admin: { ...(await import("@/lib/insforge-admin")) } };
 let POST: typeof import("./route").POST;
@@ -42,7 +43,16 @@ beforeAll(async () => {
             : { data: null, error: null };
         }
         if (table === "contacts" && !has(chain, "update")) {
-          return { data: contacts, error: null };
+          if (contactsReadError) {
+            return { data: null, error: { message: contactsReadError } };
+          }
+          // Like the real database: at most a thousand rows a request,
+          // whatever range was asked for.
+          const [from, to] = (argsOf(chain, "range") ?? [0, 999]) as number[];
+          return {
+            data: contacts.slice(from!, Math.min(to!, from! + 999) + 1),
+            error: null,
+          };
         }
         if (table === "booking_events" && bookingEventsError) {
           return { data: null, error: { message: bookingEventsError } };
@@ -79,6 +89,7 @@ beforeEach(() => {
   rpcAnswer = { data: false, error: null };
   rpcCalls = [];
   bookingEventsError = null;
+  contactsReadError = null;
 });
 
 function signed(body: unknown): NextRequest {
@@ -579,5 +590,82 @@ describe("an inbound message with no number", () => {
     const count = warned.mock.calls.length;
     warned.mockRestore();
     expect(count).toBe(0);
+  });
+});
+
+describe("more than a thousand contacts", () => {
+  // The database answers at most a thousand rows a request. Read in one go,
+  // the contact in position 1001 was never seen: her STOP matched nobody.
+  const phoneAt = (n: number) => `+346${String(n).padStart(8, "0")}`;
+  const crowd = () =>
+    Array.from({ length: 2500 }, (_, i) => ({
+      id: `c-${i + 1}`,
+      phone: phoneAt(i + 1),
+    }));
+  const contactReads = () =>
+    log.filter((q) => q.table === "contacts" && !has(q.chain, "update"));
+  const clearedUnreachable = () =>
+    log.filter(
+      (q) =>
+        q.table === "contacts" &&
+        "whatsapp_unreachable_at" in
+          ((argsOf(q.chain, "update")?.[0] as object | undefined) ?? {}),
+    );
+
+  for (const position of [1001, 2500]) {
+    test(`a STOP from the contact in position ${position} of 2500 opts her out`, async () => {
+      contacts = crowd();
+      const res = await POST(
+        signed(inbound(phoneAt(position).slice(1), "STOP")),
+      );
+      expect(res.status).toBe(200);
+      const updates = optOutUpdates();
+      expect(updates).toHaveLength(1);
+      expect(argsOf(updates[0]!.chain, "in")).toEqual([
+        "id",
+        [`c-${position}`],
+      ]);
+    });
+
+    test(`a message from the contact in position ${position} of 2500 clears her unreachable mark`, async () => {
+      contacts = crowd();
+      const res = await POST(
+        signed(inbound(phoneAt(position).slice(1), "Hola")),
+      );
+      expect(res.status).toBe(200);
+      const cleared = clearedUnreachable();
+      expect(cleared).toHaveLength(1);
+      expect(argsOf(cleared[0]!.chain, "in")).toEqual([
+        "id",
+        [`c-${position}`],
+      ]);
+    });
+  }
+
+  test("each read goes page by page, in a fixed order", async () => {
+    contacts = crowd();
+    await POST(signed(inbound(phoneAt(2500).slice(1), "Hola")));
+    const reads = contactReads();
+    expect(reads.map((q) => argsOf(q.chain, "range"))).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+    ]);
+    for (const read of reads) {
+      expect(argsOf(read.chain, "order")?.[0]).toBe("id");
+    }
+  });
+
+  test("a read that fails is logged, opts nobody out on part of the list, and the number is still remembered", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    contacts = crowd();
+    contactsReadError = "connection reset";
+    const res = await POST(signed(inbound(phoneAt(2500).slice(1), "STOP")));
+    const logged = loud.mock.calls.length;
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    expect(logged).toBeGreaterThan(0);
+    expect(optOutUpdates()).toHaveLength(0);
+    expect(suppressionWrites()).toHaveLength(1);
   });
 });
