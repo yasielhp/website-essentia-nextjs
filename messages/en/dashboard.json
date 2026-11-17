@@ -1083,16 +1083,16 @@
     "headerTooLong": "The header can be 60 characters at most",
     "footerTooLong": "The footer can be 60 characters at most",
     "tooManyButtons": "A template can have up to 3 buttons",
-    "exampleRequired": "Write an example for this parameter",
-    "exampleCountMismatch": "Each parameter needs an example.",
+    "exampleRequired": "Write an example for this variable value",
+    "exampleCountMismatch": "Each variable value needs an example.",
     "buttonTextRequired": "The button needs a text",
     "buttonTextTooLong": "The button text can be 25 characters at most",
     "urlInvalid": "Enter a valid link",
     "urlTooLong": "The button link is too long.",
     "exampleTooLong": "Each example can be 200 characters, and there can be 20 examples at most.",
-    "paramMalformed": "Use only parameters shaped like '{{'1'}}', '{{'2'}}'… (from 1 to 50, no spaces).",
-    "paramGap": "Parameters must be consecutive: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
-    "paramAtEdge": "Meta does not accept a parameter at the very start or end of the text.",
+    "paramMalformed": "Use only variable values shaped like '{{'1'}}', '{{'2'}}'… (from 1 to 50, no spaces).",
+    "paramGap": "Variable values must be consecutive: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+    "paramAtEdge": "Meta does not accept a variable value at the very start or end of the text.",
     "headerNoVariables": "The header cannot contain variables.",
     "footerNoVariables": "The footer cannot contain variables.",
     "urlNoVariables": "The button link cannot contain variables.",
@@ -2223,7 +2223,7 @@
         "language": "Language",
         "category": "Category",
         "status": "Status",
-        "params": "Parameters",
+        "params": "Variable values",
         "updated": "Updated"
       },
       "languages": {
@@ -2252,8 +2252,8 @@
       "unsupported": {
         "badge": "Cannot be sent from here",
         "media_header": "It has an image, video or document header.",
-        "header_variable": "The header contains variables.",
-        "named_params": "It uses named parameters.",
+        "header_variable": "The header contains variable values.",
+        "named_params": "It uses named variable values.",
         "button_type": "It has buttons we cannot send (call, copy code…)."
       },
       "rejection": "Reason for rejection: {reason}",
@@ -2261,7 +2261,7 @@
       "useAnotherName": "Use another name",
       "lastSync": "Last synced: {date}",
       "neverSynced": "never",
-      "paramCount": "{count, plural, =0 {No parameters} one {# parameter} other {# parameters}}",
+      "paramCount": "{count, plural, =0 {No variable values} one {# variable value} other {# variable values}}",
       "detail": {
         "title": "Template {name}",
         "preview": "How it will look",
@@ -2282,7 +2282,7 @@
         "addButton": "Add button",
         "removeButton": "Remove button",
         "buttonN": "Button {n}",
-        "exampleN": "Example for parameter {n}",
+        "exampleN": "Example for value {n}",
         "useName": "Use “{name}”",
         "nameTaken": "A template with that name and language already exists. Try another name.",
         "discardConfirm": "Discard this template without submitting it?",
@@ -2300,16 +2300,16 @@
         "buttonType": "Button type",
         "buttonText": "Button text",
         "buttonUrl": "Button link",
-        "examples": "Parameter examples"
+        "examples": "Variable value examples"
       },
       "help": {
         "name": "Lowercase letters, numbers and underscores (_) only. Meta does not let you change it after submitting.",
         "category": "Marketing requires the contact's WhatsApp consent and costs more per message. Utility is for notices about something the client already asked for, such as a booking.",
-        "header": "Text only, up to 60 characters. It cannot contain '{{'n'}}' variables.",
+        "header": "Text only, up to 60 characters. It cannot contain '{{'n'}}' variable values.",
         "body": "Up to 1024 characters. Write '{{'1'}}', '{{'2'}}'… where the data should change on each send. They cannot be at the very start or end.",
-        "footer": "Up to 60 characters. It cannot contain '{{'n'}}' variables.",
-        "buttons": "Up to 3. A link must start with https:// and is fixed: it cannot contain '{{'n'}}' variables.",
-        "examples": "Meta will not review a template without an example for each parameter. Write a realistic value."
+        "footer": "Up to 60 characters. It cannot contain '{{'n'}}' variable values.",
+        "buttons": "Up to 3. A link must start with https:// and is fixed: it cannot contain '{{'n'}}' variable values.",
+        "examples": "Meta will not review a template without an example for each variable value. Write a realistic value."
       },
       "toasts": {
         "submitted": "Template submitted for review",

@@ -1083,16 +1083,16 @@
     "headerTooLong": "La cabecera admite 60 caracteres como máximo",
     "footerTooLong": "El pie admite 60 caracteres como máximo",
     "tooManyButtons": "Una plantilla admite hasta 3 botones",
-    "exampleRequired": "Escribe un ejemplo para este parámetro",
-    "exampleCountMismatch": "Falta un ejemplo por cada parámetro.",
+    "exampleRequired": "Escribe un ejemplo para este dato variable",
+    "exampleCountMismatch": "Falta un ejemplo por cada dato variable.",
     "buttonTextRequired": "El botón necesita un texto",
     "buttonTextTooLong": "El texto del botón admite 25 caracteres como máximo",
     "urlInvalid": "Introduce un enlace válido",
     "urlTooLong": "El enlace del botón es demasiado largo.",
     "exampleTooLong": "Cada ejemplo admite 200 caracteres y como mucho 20 ejemplos.",
-    "paramMalformed": "Usa solo parámetros con la forma '{{'1'}}', '{{'2'}}'… (de 1 a 50, sin espacios).",
-    "paramGap": "Los parámetros deben ir seguidos: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
-    "paramAtEdge": "Meta no acepta un parámetro al principio o al final del texto.",
+    "paramMalformed": "Usa solo datos variables con la forma '{{'1'}}', '{{'2'}}'… (de 1 a 50, sin espacios).",
+    "paramGap": "Los datos variables deben ir seguidos: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+    "paramAtEdge": "Meta no acepta un dato variable al principio o al final del texto.",
     "headerNoVariables": "La cabecera no admite variables.",
     "footerNoVariables": "El pie no admite variables.",
     "urlNoVariables": "El enlace del botón no admite variables.",
@@ -2223,7 +2223,7 @@
         "language": "Idioma",
         "category": "Categoría",
         "status": "Estado",
-        "params": "Parámetros",
+        "params": "Datos variables",
         "updated": "Actualizada"
       },
       "languages": {
@@ -2252,8 +2252,8 @@
       "unsupported": {
         "badge": "No enviable desde aquí",
         "media_header": "Tiene cabecera con imagen, vídeo o documento.",
-        "header_variable": "La cabecera lleva variables.",
-        "named_params": "Usa parámetros con nombre.",
+        "header_variable": "La cabecera lleva datos variables.",
+        "named_params": "Usa datos variables con nombre.",
         "button_type": "Tiene botones que no sabemos enviar (llamada, copiar código…)."
       },
       "rejection": "Motivo del rechazo: {reason}",
@@ -2261,7 +2261,7 @@
       "useAnotherName": "Usar otro nombre",
       "lastSync": "Última sincronización: {date}",
       "neverSynced": "nunca",
-      "paramCount": "{count, plural, =0 {Sin parámetros} one {# parámetro} other {# parámetros}}",
+      "paramCount": "{count, plural, =0 {Sin datos variables} one {# dato variable} other {# datos variables}}",
       "detail": {
         "title": "Plantilla {name}",
         "preview": "Así se verá",
@@ -2282,7 +2282,7 @@
         "addButton": "Añadir botón",
         "removeButton": "Quitar botón",
         "buttonN": "Botón {n}",
-        "exampleN": "Ejemplo para el parámetro {n}",
+        "exampleN": "Ejemplo para el dato {n}",
         "useName": "Usar «{name}»",
         "nameTaken": "Ya existe una plantilla con ese nombre e idioma. Prueba con otro nombre.",
         "discardConfirm": "¿Descartar la plantilla sin enviarla?",
@@ -2300,16 +2300,16 @@
         "buttonType": "Tipo de botón",
         "buttonText": "Texto del botón",
         "buttonUrl": "Enlace del botón",
-        "examples": "Ejemplos de los parámetros"
+        "examples": "Ejemplos de los datos variables"
       },
       "help": {
         "name": "Solo minúsculas, números y guion bajo (_). Meta no permite cambiarlo después de enviarla.",
         "category": "Marketing exige el consentimiento de WhatsApp del contacto y cuesta más por mensaje. Utilidad es para avisos sobre algo que el cliente ya pidió, como una reserva.",
-        "header": "Solo texto, hasta 60 caracteres. No admite variables '{{'n'}}'.",
+        "header": "Solo texto, hasta 60 caracteres. No admite datos variables '{{'n'}}'.",
         "body": "Hasta 1024 caracteres. Escribe '{{'1'}}', '{{'2'}}'… donde quieras que cambie el dato en cada envío. No pueden ir al principio ni al final.",
-        "footer": "Hasta 60 caracteres. No admite variables '{{'n'}}'.",
-        "buttons": "Hasta 3. Un enlace debe empezar por https:// y es fijo: no admite variables '{{'n'}}'.",
-        "examples": "Meta no revisa una plantilla sin un ejemplo por cada parámetro. Escribe un valor realista."
+        "footer": "Hasta 60 caracteres. No admite datos variables '{{'n'}}'.",
+        "buttons": "Hasta 3. Un enlace debe empezar por https:// y es fijo: no admite datos variables '{{'n'}}'.",
+        "examples": "Meta no revisa una plantilla sin un ejemplo por cada dato variable. Escribe un valor realista."
       },
       "toasts": {
         "submitted": "Plantilla enviada a revisión",
