@@ -7,6 +7,7 @@ import {
   kindAllowedForChannel,
   partitionTemplates,
   sampleParams,
+  triggerEventKey,
   unavailableParams,
   visitFieldsExist,
   WHATSAPP_MESSAGES_PER_RUN,
@@ -212,5 +213,25 @@ describe("sampleParams", () => {
 describe("WHATSAPP_MESSAGES_PER_RUN", () => {
   test("is what one run of the sender can send", () => {
     expect(WHATSAPP_MESSAGES_PER_RUN).toBe((PER_SECOND * BUDGET_MS) / 1000);
+  });
+});
+
+describe("triggerEventKey", () => {
+  test("a sign-up on WhatsApp is a consent, with its own words", () => {
+    expect(triggerEventKey("newsletter_subscribed", "whatsapp")).toBe(
+      "newsletter_subscribedWhatsApp",
+    );
+  });
+  test("every other event, and every email, keeps its key", () => {
+    expect(triggerEventKey("newsletter_subscribed", "email")).toBe(
+      "newsletter_subscribed",
+    );
+    for (const event of [
+      "segment_entry",
+      "after_booking",
+      "first_visit",
+    ] as const) {
+      expect(triggerEventKey(event, "whatsapp")).toBe(event);
+    }
   });
 });

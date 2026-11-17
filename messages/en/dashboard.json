@@ -1812,7 +1812,8 @@
       "whatsappCostLink": "See Meta's pricing",
       "whatsappPace": "About {count} messages go out per run, one run every 15 minutes. Large lists carry on by themselves.",
       "whatsappTestHint": "The test goes to the phone on your profile, with the template's example values.",
-      "whatsappNoTemplate": "You have not chosen a template yet."
+      "whatsappNoTemplate": "You have not chosen a template yet.",
+      "whatsappConsentNote": "It also fires when the team records the consent from the contact's page (for example, when the client asked for it by phone)."
     },
     "detail": {
       "sent": "Sent",
@@ -1878,6 +1879,7 @@
       "automatedDesc": "A sequence triggered by what a client does, such as booking or going quiet.",
       "autoresponder": "Auto responder",
       "autoresponderDesc": "Sent automatically to each new subscriber the moment they sign up.",
+      "autoresponderDescWhatsApp": "Sent on its own to each contact as soon as they agree to receive news on WhatsApp.",
       "split": "A/B test",
       "splitDesc": "Two subjects or two versions; the better one goes to the rest of the list.",
       "dateBased": "Date based",
@@ -1929,7 +1931,8 @@
         "birthday": "On the client's birthday",
         "first_booking_anniversary": "On the anniversary of the first booking",
         "new_blog_post": "A new blog post is published",
-        "first_visit": "After the first visit"
+        "first_visit": "After the first visit",
+        "newsletter_subscribedWhatsApp": "When they agree to receive news on WhatsApp"
       },
       "eventDesc": {
         "newsletter_subscribed": "Sent once, shortly after they sign up.",
@@ -1938,7 +1941,8 @@
         "birthday": "Once a year, to contacts with a birthdate on file.",
         "first_booking_anniversary": "Once a year, from the second year on.",
         "new_blog_post": "One email per post, with its title, excerpt and link.",
-        "first_visit": "Once, N hours after the first confirmed session ends"
+        "first_visit": "Once, N hours after the first confirmed session ends",
+        "newsletter_subscribedWhatsApp": "Sent once per consent, shortly after it is given. Someone who opts out and agrees again receives it again."
       },
       "tier": "Session type",
       "tierAny": "Any",

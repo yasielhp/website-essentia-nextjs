@@ -1812,7 +1812,8 @@
       "whatsappCostLink": "Ver los precios de Meta",
       "whatsappPace": "Se envían unos {count} mensajes por ejecución, una cada 15 minutos. Las listas grandes continúan solas.",
       "whatsappTestHint": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla.",
-      "whatsappNoTemplate": "Todavía no has elegido una plantilla."
+      "whatsappNoTemplate": "Todavía no has elegido una plantilla.",
+      "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono)."
     },
     "detail": {
       "sent": "Enviados",
@@ -1878,6 +1879,7 @@
       "automatedDesc": "Una secuencia que se dispara por lo que hace el cliente, como reservar o dejar de venir.",
       "autoresponder": "Autorespuesta",
       "autoresponderDesc": "Se envía sola a cada nuevo suscriptor en el momento de apuntarse.",
+      "autoresponderDescWhatsApp": "Se envía sola a cada contacto en el momento en que acepta recibir novedades por WhatsApp.",
       "split": "Prueba A/B",
       "splitDesc": "Dos asuntos o dos versiones; la que mejor funcione va al resto de la lista.",
       "dateBased": "Basada en fecha",
@@ -1929,7 +1931,8 @@
         "birthday": "El día del cumpleaños del cliente",
         "first_booking_anniversary": "En el aniversario de la primera reserva",
         "new_blog_post": "Se publica una entrada nueva en el blog",
-        "first_visit": "Tras la primera visita"
+        "first_visit": "Tras la primera visita",
+        "newsletter_subscribedWhatsApp": "Cuando acepta recibir novedades por WhatsApp"
       },
       "eventDesc": {
         "newsletter_subscribed": "Se envía una vez, poco después de apuntarse.",
@@ -1938,7 +1941,8 @@
         "birthday": "Una vez al año, a los contactos con fecha de nacimiento.",
         "first_booking_anniversary": "Una vez al año, a partir del segundo.",
         "new_blog_post": "Un email por entrada, con su título, resumen y enlace.",
-        "first_visit": "Una sola vez, N horas después de terminar la primera sesión confirmada"
+        "first_visit": "Una sola vez, N horas después de terminar la primera sesión confirmada",
+        "newsletter_subscribedWhatsApp": "Se envía una vez por consentimiento, poco después de darlo. Si alguien se da de baja y vuelve a aceptar, la recibe de nuevo."
       },
       "tier": "Tipo de sesión",
       "tierAny": "Cualquiera",

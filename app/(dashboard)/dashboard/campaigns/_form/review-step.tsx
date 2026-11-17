@@ -9,6 +9,7 @@ import { requiredLocales, sendLocaleOf } from "@/lib/schemas";
 import {
   WHATSAPP_MESSAGES_PER_RUN,
   sampleParams,
+  triggerEventKey,
 } from "@/lib/campaigns/whatsapp-form";
 import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
 import { TemplatePreview } from "../../messages/whatsapp/template-preview";
@@ -269,7 +270,11 @@ export function ReviewStep({
             <div className="flex flex-col gap-1">
               <p className="text-petroleum-700 text-sm font-medium">
                 {tType(kind)} ·{" "}
-                {trigger.event ? tTrigger(`event.${trigger.event}`) : ""}
+                {trigger.event
+                  ? tTrigger(
+                      `event.${triggerEventKey(trigger.event, state.channel)}`,
+                    )
+                  : ""}
                 {trigger.event === "after_booking"
                   ? ` (${trigger.days ?? 0} ${tTrigger("daysAfter")})`
                   : trigger.event === "first_visit"
@@ -277,6 +282,16 @@ export function ReviewStep({
                     : ""}
               </p>
               <p className="text-petroleum-400 text-xs">{t("activateHint")}</p>
+              {whatsapp && trigger.event === "newsletter_subscribed" && (
+                <>
+                  <p className="text-petroleum-400 text-xs">
+                    {tTrigger("eventDesc.newsletter_subscribedWhatsApp")}
+                  </p>
+                  <p className="text-petroleum-400 text-xs">
+                    {t("whatsappConsentNote")}
+                  </p>
+                </>
+              )}
             </div>
             <Button
               size="md"

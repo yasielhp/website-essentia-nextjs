@@ -147,9 +147,11 @@ export function TypeStep({
                   )}
                 </span>
                 <span className="text-petroleum-400 text-xs leading-relaxed">
-                  {kind === "standard" && state.channel === "whatsapp"
+                  {state.channel === "whatsapp" && kind === "standard"
                     ? t("standardDescWhatsApp")
-                    : t(`${kind}Desc`)}
+                    : state.channel === "whatsapp" && kind === "autoresponder"
+                      ? t("autoresponderDescWhatsApp")
+                      : t(`${kind}Desc`)}
                 </span>
                 {!fits && (
                   <span className="text-xs leading-relaxed text-yellow-800">

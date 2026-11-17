@@ -119,6 +119,19 @@ describe("the campaign form strings", () => {
     }
   });
 
+  test("the WhatsApp sign-up trigger has its label, description and help", () => {
+    for (const messages of [locales.es, locales.en]) {
+      for (const key of [
+        "campaigns.trigger.event.newsletter_subscribedWhatsApp",
+        "campaigns.trigger.eventDesc.newsletter_subscribedWhatsApp",
+        "campaigns.review.whatsappConsentNote",
+        "campaigns.type.autoresponderDescWhatsApp",
+      ]) {
+        expect(messages[key]).toBeTruthy();
+      }
+    }
+  });
+
   test("every kind WhatsApp refuses says why on its card", () => {
     const refused = (["split", "rss"] as const).filter(
       (kind) => !kindAllowedForChannel(kind, "whatsapp"),

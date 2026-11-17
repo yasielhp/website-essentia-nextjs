@@ -4,6 +4,7 @@ import type {
   CampaignKind,
   CampaignLocale,
   CampaignTrigger,
+  TriggerEvent,
 } from "@/types/campaign";
 import type {
   WhatsAppParamField,
@@ -210,4 +211,18 @@ export function sampleParams(
     },
     vars,
   );
+}
+
+/**
+ * The message key of a trigger event. On WhatsApp "someone subscribes" means
+ * "someone agrees to receive news there", which is a different sentence, so
+ * that event has a variant of its own.
+ */
+export function triggerEventKey(
+  event: TriggerEvent,
+  channel: CampaignChannel,
+): string {
+  return event === "newsletter_subscribed" && channel === "whatsapp"
+    ? "newsletter_subscribedWhatsApp"
+    : event;
 }
