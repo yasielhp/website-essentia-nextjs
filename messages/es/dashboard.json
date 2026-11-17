@@ -1659,7 +1659,8 @@
       "audience": "Segmento",
       "content": "Contenido",
       "review": "Revisar",
-      "type": "Tipo"
+      "type": "Tipo",
+      "appointmentAudience": "Servicios y clientas"
     },
     "form": {
       "name": "Nombre interno",
@@ -1726,7 +1727,9 @@
         "previewNote": "Con datos de ejemplo.",
         "confirm": "Confirmar mensaje",
         "chosen": "Plantilla elegida",
-        "appointmentCategoryHint": "Para avisos de cita lo recomendable es la categoría Utilidad: Marketing cuesta más por mensaje."
+        "appointmentCategoryHint": "Para avisos de cita lo recomendable es la categoría Utilidad: Marketing cuesta más por mensaje.",
+        "languageHintAppointment": "Las clientas de la audiencia son de los dos idiomas. Cada plantilla es de un solo idioma: elige en cuál se envía el aviso.",
+        "sentInAppointment": "Se envía en {language}, el idioma de las clientas elegido."
       }
     },
     "audience": {
@@ -1778,7 +1781,8 @@
         "reach": "{count} con avisos de la cita activados",
         "note": "Solo reciben el aviso las clientas con los avisos de la cita activados y sin baja; la cifra cuenta clientas, no citas.",
         "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp.",
-        "services": "Servicios de la cita"
+        "services": "Servicios de la cita",
+        "anyService": "Cualquier servicio"
       }
     },
     "content": {

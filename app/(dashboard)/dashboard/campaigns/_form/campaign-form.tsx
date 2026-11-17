@@ -29,6 +29,8 @@ import { TypeStep } from "./type-step";
 import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
+import { bookableServices } from "@/data/services-data";
+import { audienceRowOf } from "@/lib/campaigns/appointment-form";
 import { useAppointmentTrigger } from "../kind-line";
 import { TriggerStep, hasTriggerStep } from "./trigger-step";
 import { TemplateStep } from "./template-step";
@@ -345,13 +347,33 @@ export function CampaignForm({
     state.step >= step && (editing === null || editing >= step);
   const folded = (step: Step) => state.step > step && editing !== step;
 
+  const audienceRow = audienceRowOf({
+    kind: state.kind,
+    segmentName: state.segmentName,
+    services: state.audience.services.map(
+      (id) =>
+        bookableServices.find((service) => service.id === id)?.title ?? id,
+    ),
+    count: state.reach?.count ?? null,
+  });
   const audienceSummary =
-    state.kind === "appointment"
-      ? state.reach
-        ? t("audience.appointment.reach", { count: state.reach.count })
-        : t("audience.appointment.title")
-      : `${state.segmentName ?? t("segment.everyone")}${
-          state.reach ? ` (${state.reach.count})` : ""
+    audienceRow.value.kind === "appointment"
+      ? [
+          audienceRow.value.services.length > 0
+            ? audienceRow.value.services.join(", ")
+            : t("audience.appointment.anyService"),
+          audienceRow.value.count !== null
+            ? t("audience.appointment.reach", {
+                count: audienceRow.value.count,
+              })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : `${audienceRow.value.name ?? t("segment.everyone")}${
+          audienceRow.value.count !== null
+            ? ` (${audienceRow.value.count})`
+            : ""
         }`;
   const triggerSummary = state.trigger.event
     ? (appointmentTrigger(state.trigger) ??
@@ -438,7 +460,7 @@ export function CampaignForm({
         {visible(STEP_OF.audience) &&
           (folded(STEP_OF.audience) ? (
             <CompletedRow
-              label={t("steps.audience")}
+              label={t(`steps.${audienceRow.label}`)}
               value={audienceSummary}
               onEdit={() => reopen(STEP_OF.audience)}
             />

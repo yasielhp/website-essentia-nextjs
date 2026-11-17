@@ -4,6 +4,7 @@ import {
   appointmentHoursIssue,
   appointmentLabel,
   appointmentSentence,
+  audienceRowOf,
   appointmentShort,
   isAppointmentEvent,
   kindSwitchAllowed,
@@ -208,5 +209,56 @@ describe("kindSwitchAllowed", () => {
   });
   test("staying what it is is always allowed", () => {
     expect(kindSwitchAllowed("appointment", "appointment")).toBe(true);
+  });
+});
+
+describe("audienceRowOf", () => {
+  test("a list campaign is described by its segment, as ever", () => {
+    expect(
+      audienceRowOf({
+        kind: "automated",
+        segmentName: "Antiguas",
+        services: ["Yoga"],
+        count: 4,
+      }),
+    ).toEqual({
+      label: "audience",
+      value: { kind: "segment", name: "Antiguas", count: 4 },
+    });
+    expect(
+      audienceRowOf({
+        kind: "standard",
+        segmentName: null,
+        services: [],
+        count: null,
+      }),
+    ).toEqual({
+      label: "audience",
+      value: { kind: "segment", name: null, count: null },
+    });
+  });
+  test("an appointment notice has no segment: services and consent, whatever segment was left over", () => {
+    expect(
+      audienceRowOf({
+        kind: "appointment",
+        segmentName: "Antiguas",
+        services: ["Yoga", "Masaje"],
+        count: 3,
+      }),
+    ).toEqual({
+      label: "appointmentAudience",
+      value: { kind: "appointment", services: ["Yoga", "Masaje"], count: 3 },
+    });
+    expect(
+      audienceRowOf({
+        kind: "appointment",
+        segmentName: null,
+        services: [],
+        count: null,
+      }),
+    ).toEqual({
+      label: "appointmentAudience",
+      value: { kind: "appointment", services: [], count: null },
+    });
   });
 });

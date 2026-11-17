@@ -1659,7 +1659,8 @@
       "audience": "Segment",
       "content": "Content",
       "review": "Review",
-      "type": "Type"
+      "type": "Type",
+      "appointmentAudience": "Services and clients"
     },
     "form": {
       "name": "Internal name",
@@ -1726,7 +1727,9 @@
         "previewNote": "With example data.",
         "confirm": "Confirm message",
         "chosen": "Template chosen",
-        "appointmentCategoryHint": "For appointment notices the Utility category is the sensible one: Marketing costs more per message."
+        "appointmentCategoryHint": "For appointment notices the Utility category is the sensible one: Marketing costs more per message.",
+        "languageHintAppointment": "The clients in the audience speak both languages. Each template is in a single language: choose the one the notice is sent in.",
+        "sentInAppointment": "Sent in {language}, the clients' language you chose."
       }
     },
     "audience": {
@@ -1778,7 +1781,8 @@
         "reach": "{count} with appointment notices switched on",
         "note": "Only clients with appointment notices switched on and no opt-out receive the notice; the figure counts clients, not appointments.",
         "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on her contact page, in the WhatsApp consent.",
-        "services": "Appointment services"
+        "services": "Appointment services",
+        "anyService": "Any service"
       }
     },
     "content": {

@@ -198,6 +198,10 @@ describe("the appointment notice strings", () => {
     "campaigns.trigger.appointment.shortBefore",
     "campaigns.trigger.appointment.shortAfter",
     "campaigns.audience.appointment.title",
+    "campaigns.audience.appointment.anyService",
+    "campaigns.steps.appointmentAudience",
+    "campaigns.form.whatsapp.languageHintAppointment",
+    "campaigns.form.whatsapp.sentInAppointment",
     "campaigns.audience.appointment.services",
     "campaigns.audience.appointment.servicesHelp",
     "campaigns.audience.appointment.language",
@@ -276,5 +280,23 @@ describe("the appointment notice strings", () => {
         locales[locale]["messages.email.whatsapp.rules.languagesReminder"],
       ).toBeUndefined();
     }
+  });
+});
+
+describe("the appointment notice talks of no segment", () => {
+  test("the language texts, the folded audience row and the audience step never say segment", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "campaigns.form.whatsapp.languageHintAppointment",
+        "campaigns.form.whatsapp.sentInAppointment",
+        "campaigns.steps.appointmentAudience",
+        "campaigns.audience.appointment.languageHint",
+      ]) {
+        expect(locales[locale][key]).not.toMatch(/segment/i);
+      }
+    }
+    expect(locales.es["campaigns.steps.appointmentAudience"]).toBe(
+      "Servicios y clientas",
+    );
   });
 });

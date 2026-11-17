@@ -156,11 +156,19 @@ export function WhatsAppStep({
                 })
               }
             />
-            <p className="text-petroleum-400 text-xs">{t("languageHint")}</p>
+            <p className="text-petroleum-400 text-xs">
+              {t(
+                kind === "appointment"
+                  ? "languageHintAppointment"
+                  : "languageHint",
+              )}
+            </p>
           </div>
         ) : (
           <p className="bg-sand-50 text-petroleum-400 mb-4 rounded-xl px-4 py-3 text-xs">
-            {t("sentIn", { language: localeLabel(sendLocale) })}
+            {t(kind === "appointment" ? "sentInAppointment" : "sentIn", {
+              language: localeLabel(sendLocale),
+            })}
           </p>
         )}
 

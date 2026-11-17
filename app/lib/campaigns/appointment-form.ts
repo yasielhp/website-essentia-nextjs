@@ -128,3 +128,42 @@ export function kindSwitchAllowed(
   if (!saved || saved === next) return true;
   return saved !== "appointment" && next !== "appointment";
 }
+
+/**
+ * What the folded audience row says. A campaign over a list is described by
+ * the segment it was aimed at; an appointment notice has no segments, so it is
+ * described by what is really filtered: the services of the appointment and the
+ * clients with the appointment notices on. Pure, so a test can pin both.
+ */
+export type AudienceRow =
+  | {
+      label: "audience";
+      value: { kind: "segment"; name: string | null; count: number | null };
+    }
+  | {
+      label: "appointmentAudience";
+      value: { kind: "appointment"; services: string[]; count: number | null };
+    };
+
+export function audienceRowOf(input: {
+  kind: CampaignKind;
+  segmentName: string | null;
+  /** Titles of the chosen services; empty means every service. */
+  services: string[];
+  count: number | null;
+}): AudienceRow {
+  if (input.kind === "appointment") {
+    return {
+      label: "appointmentAudience",
+      value: {
+        kind: "appointment",
+        services: input.services,
+        count: input.count,
+      },
+    };
+  }
+  return {
+    label: "audience",
+    value: { kind: "segment", name: input.segmentName, count: input.count },
+  };
+}
