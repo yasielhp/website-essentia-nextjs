@@ -5,6 +5,7 @@ import { formatMediumDate, type SupportedLocale } from "@/utils/format";
 import { Pagination } from "@/components/dashboard/pagination";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
 import type { CampaignChannel, CampaignRow } from "@/types/campaign";
+import { campaignSentCount } from "@/lib/campaigns/report";
 import { ChannelChip } from "./channel-chip";
 import { CampaignStatusBadge } from "./status-badge";
 
@@ -27,9 +28,9 @@ export function rate(part: number, whole: number): string {
   return `${Math.round((part / whole) * 100)}%`;
 }
 
-/** Emails that actually left: the frozen audience minus the ones Resend refused. */
+/** Messages that actually left; see `campaignSentCount` for the one case that differs. */
 export function sentCount(campaign: CampaignRow): number {
-  return Math.max(0, campaign.recipients_count - campaign.failed_count);
+  return campaignSentCount(campaign);
 }
 
 function dateOf(campaign: CampaignRow): string | null {
@@ -85,7 +86,9 @@ export function CampaignTable({
                   <th className={`${TH} text-right`}>
                     {channel === "whatsapp"
                       ? t("detail.read")
-                      : t("table.opened")}
+                      : channel === "email"
+                        ? t("table.opened")
+                        : t("table.openedOrRead")}
                   </th>
                   <th className={`${TH} text-right`}>{t("table.clicked")}</th>
                   <th className={TH}>{t("table.date")}</th>

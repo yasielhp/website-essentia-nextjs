@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { haltMessage } from "./error-markers";
+import { consentVerdict } from "./dispatch-whatsapp";
 import {
   describeLastError,
   describeRecipientError,
   REPORT_NOTE_KEYS,
+  SENT_STATUSES,
+  campaignSentCount,
   reportTiles,
   sentCountOf,
   statusBreakdown,
@@ -200,5 +203,56 @@ describe("REPORT_NOTE_KEYS", () => {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }
     expect(new Set(keys).size).toBe(REPORT_NOTE_KEYS.length);
+  });
+});
+
+describe("campaignSentCount", () => {
+  const base = { recipients_count: 100, failed_count: 10 };
+
+  test("a finished or email campaign: the frozen audience minus the refused", () => {
+    expect(campaignSentCount(base)).toBe(90);
+  });
+
+  test("a WhatsApp campaign still sending uses the rows that really left", () => {
+    expect(campaignSentCount({ ...base, sent_count: 35 })).toBe(35);
+  });
+
+  test("zero rows sent is zero, not the audience", () => {
+    expect(campaignSentCount({ ...base, sent_count: 0 })).toBe(0);
+  });
+
+  test("never negative", () => {
+    expect(campaignSentCount({ recipients_count: 2, failed_count: 5 })).toBe(0);
+  });
+
+  test("the states that count are the ones sentCountOf counts", () => {
+    const rows = [...SENT_STATUSES, "queued", "sending", "failed"].map(row);
+    expect(sentCountOf(rows)).toBe(SENT_STATUSES.length);
+  });
+});
+
+describe("every reason a send can skip a row for is one the report words", () => {
+  const consenting = {
+    id: "c",
+    whatsapp_opted_out_at: null,
+    whatsapp_unreachable_at: null,
+    whatsapp_marketing_opted_in_at: "2026-11-01",
+  };
+  const verdicts = [
+    consentVerdict(null),
+    consentVerdict({ ...consenting, whatsapp_opted_out_at: "x" }),
+    consentVerdict({ ...consenting, whatsapp_unreachable_at: "x" }),
+    consentVerdict({ ...consenting, whatsapp_marketing_opted_in_at: null }),
+    // The email path writes this one.
+    "no_email",
+  ];
+
+  test("none falls through to the generic 'skipped' wording", () => {
+    expect(verdicts.length).toBe(5);
+    for (const verdict of verdicts) {
+      const note = describeRecipientError(`[skipped] ${verdict}`);
+      expect(note).toMatchObject({ kind: "note" });
+      expect(note && note.kind === "note" && note.key).not.toBe("skippedOther");
+    }
   });
 });

@@ -110,14 +110,30 @@ export function reportTiles(channel: CampaignChannel): ReportTile[] {
 }
 
 /** The states a message has left the building in. */
-const LEFT: ReadonlySet<RecipientStatus> = new Set([
+export const SENT_STATUSES: readonly RecipientStatus[] = [
   "sent",
   "delivered",
   "opened",
   "clicked",
   "bounced",
   "complained",
-]);
+];
+const LEFT: ReadonlySet<RecipientStatus> = new Set(SENT_STATUSES);
+
+/**
+ * How many messages a campaign sent, for the list. A row of the list carries
+ * `sent_count` only when it was worth counting (a WhatsApp campaign that is not
+ * finished: its `recipients_count` still includes the rows waiting); every
+ * other campaign has its audience minus the refused.
+ */
+export function campaignSentCount(campaign: {
+  recipients_count: number;
+  failed_count: number;
+  sent_count?: number;
+}): number {
+  if (campaign.sent_count !== undefined) return campaign.sent_count;
+  return Math.max(0, campaign.recipients_count - campaign.failed_count);
+}
 
 /**
  * How many messages actually went out. `recipients_count` also counts the rows

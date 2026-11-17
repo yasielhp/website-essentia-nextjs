@@ -1594,7 +1594,8 @@
       "delivered": "Entregados",
       "opened": "Abiertos",
       "clicked": "Clics",
-      "date": "Fecha"
+      "date": "Fecha",
+      "openedOrRead": "Abiertos / Leídos"
     },
     "status": {
       "draft": "Borrador",

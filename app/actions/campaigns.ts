@@ -24,6 +24,7 @@ import { docIsEmpty } from "@/lib/campaigns/doc";
 import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
+import { SENT_STATUSES } from "@/lib/campaigns/report";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
@@ -137,7 +138,41 @@ export async function listCampaigns(
     console.error("[campaigns] list failed:", error);
     return { campaigns: [], total: 0 };
   }
-  return { campaigns: (data ?? []) as CampaignRow[], total: count ?? 0 };
+  const campaigns = (data ?? []) as CampaignRow[];
+  await addSentCounts(campaigns);
+  return { campaigns, total: count ?? 0 };
+}
+
+/** The WhatsApp states in which `recipients_count` still includes rows not yet sent. */
+const UNFINISHED: CampaignStatus[] = ["sending", "failed", "paused", "active"];
+
+/**
+ * Gives each unfinished WhatsApp campaign of a page its real `sent_count`, from
+ * its rows (one small count each, for at most a page of them). Every other
+ * campaign keeps `recipients_count - failed_count`, which is right once the
+ * send is over and cheap. A count that fails leaves the row without one.
+ */
+async function addSentCounts(campaigns: CampaignRow[]): Promise<void> {
+  const open = campaigns.filter(
+    (c) => c.channel === "whatsapp" && UNFINISHED.includes(c.status),
+  );
+  if (open.length === 0) return;
+  const db = getAdminClient().database;
+  await Promise.all(
+    open.map(async (campaign) => {
+      try {
+        const { count, error } = await db
+          .from("campaign_recipients")
+          .select("id", { count: "exact" })
+          .eq("campaign_id", campaign.id)
+          .in("status", [...SENT_STATUSES])
+          .range(0, 0);
+        if (!error && count !== null) campaign.sent_count = count;
+      } catch {
+        // The list still shows the campaign, with the approximate count.
+      }
+    }),
+  );
 }
 
 /** One count per status, for the cards that double as the list's filter. */
@@ -264,6 +299,9 @@ export async function fetchCampaign(
       )
       .eq("campaign_id", id)
       .order("email", { ascending: true })
+      // WhatsApp rows have no email, so they tie on it: the phone settles the
+      // order, or the list would shuffle between two reloads.
+      .order("phone", { ascending: true })
       .range(0, 9_999),
   ]);
 

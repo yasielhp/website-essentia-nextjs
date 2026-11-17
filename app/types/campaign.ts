@@ -238,6 +238,12 @@ export type CampaignRow = {
   complained_count: number;
   failed_count: number;
   last_error: string | null;
+  /**
+   * Only on the rows `listCampaigns` returns, and only for a WhatsApp campaign
+   * that is not finished: how many messages really left, counted from its
+   * recipient rows.
+   */
+  sent_count?: number;
 };
 
 /** A frozen recipient of a sent campaign, as the webhook keeps it. */

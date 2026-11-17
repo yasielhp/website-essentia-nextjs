@@ -1594,7 +1594,8 @@
       "delivered": "Delivered",
       "opened": "Opened",
       "clicked": "Clicks",
-      "date": "Date"
+      "date": "Date",
+      "openedOrRead": "Opened / Read"
     },
     "status": {
       "draft": "Draft",
