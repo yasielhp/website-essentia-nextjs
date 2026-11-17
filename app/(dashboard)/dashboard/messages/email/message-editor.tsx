@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useMessageDraft } from "@/hooks/use-message-draft";
 import { headerActions } from "@/lib/messages/header-actions";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { NEW_APPOINTMENT_NOTICE_HREF } from "@/lib/campaigns/new-start";
 import {
   draftKey,
   emailDraftOffer,
@@ -520,7 +521,7 @@ export function MessageEditor({
               {enabled ? t("reminder.hintOn") : t("reminder.hintOff")}
             </p>
             <Link
-              href="/dashboard/campaigns/new"
+              href={NEW_APPOINTMENT_NOTICE_HREF}
               className="text-petroleum-700 mt-1 inline-block text-xs underline underline-offset-2"
             >
               {t("reminder.forWhatsApp")}

@@ -21,7 +21,11 @@ import {
   sendTestCampaign,
   sendTestWhatsAppCampaign,
 } from "@/actions/campaigns";
-import type { CampaignRow } from "@/types/campaign";
+import type {
+  CampaignChannel,
+  CampaignKind,
+  CampaignRow,
+} from "@/types/campaign";
 import { CompletedRow } from "../../bookings/new/completed-row";
 import { triggerEventKey } from "@/lib/campaigns/whatsapp-form";
 import { useSendNoticeToast } from "../send-notice-toast";
@@ -42,6 +46,7 @@ import {
   contentOf,
   firstErroredLocale,
   formReducer,
+  formStateForStart,
   initialFormState,
   nextStep,
   type FormState,
@@ -63,7 +68,10 @@ import {
  */
 export function CampaignForm({
   initial,
+  start,
 }: {
+  /** A type chosen by the link that opened the form (checked by the caller). */
+  start?: { channel: CampaignChannel; kind: CampaignKind };
   /** The campaign being edited, with the names behind its manual picks. */
   initial?: {
     campaign: CampaignRow;
@@ -88,7 +96,9 @@ export function CampaignForm({
             picked: init.picked,
             segmentName: init.segmentName,
           })
-        : initialFormState,
+        : start
+          ? formStateForStart(start)
+          : initialFormState,
   );
   const [editing, setEditing] = useState<Step | null>(null);
   const whatsapp = state.channel === "whatsapp";

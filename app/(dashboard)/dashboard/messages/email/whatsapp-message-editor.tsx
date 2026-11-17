@@ -14,6 +14,7 @@ import {
 import { useMessageDraft } from "@/hooks/use-message-draft";
 import { headerActions } from "@/lib/messages/header-actions";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { NEW_APPOINTMENT_NOTICE_HREF } from "@/lib/campaigns/new-start";
 import {
   draftKey,
   validateWhatsAppDraft,
@@ -312,7 +313,7 @@ export function WhatsAppMessageEditor({
       <p className="text-petroleum-400 text-xs">
         {t("campaignNote")}{" "}
         <Link
-          href="/dashboard/campaigns/new"
+          href={NEW_APPOINTMENT_NOTICE_HREF}
           className="text-petroleum-700 font-medium underline underline-offset-2"
         >
           {t("campaignLink")}

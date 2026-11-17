@@ -419,3 +419,23 @@ export function contentOf(state: FormState): CampaignContent {
   const { en, es } = state.content;
   return { en, es };
 }
+
+/**
+ * The form opened from a link that names a channel and a kind: both chosen, and
+ * the type step done, so it starts on the name. The pair is checked by
+ * `startFromParams` before it gets here.
+ */
+export function formStateForStart(start: {
+  channel: CampaignChannel;
+  kind: CampaignKind;
+}): FormState {
+  const withChannel = formReducer(initialFormState, {
+    type: "SET_CHANNEL",
+    channel: start.channel,
+  });
+  const withKind = formReducer(withChannel, {
+    type: "SET_KIND",
+    kind: start.kind,
+  });
+  return { ...withKind, step: STEP_OF.name };
+}

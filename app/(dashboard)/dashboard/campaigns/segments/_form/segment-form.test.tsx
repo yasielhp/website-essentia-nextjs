@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import { IntlMessageFormat } from "intl-messageformat";
@@ -16,6 +16,9 @@ mock.module("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   useParams: () => ({}),
 }));
+afterAll(() => {
+  mock.module("next/navigation", () => realNavigation);
+});
 
 const { SegmentForm } = await import("./segment-form");
 const { SegmentPeopleTable } = await import("./people-table");

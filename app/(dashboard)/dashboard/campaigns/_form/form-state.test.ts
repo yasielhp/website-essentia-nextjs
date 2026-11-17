@@ -3,6 +3,8 @@ import type { CampaignRow } from "@/types/campaign";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 import {
   AVAILABLE_KINDS,
+  formStateForStart,
+  STEP_OF,
   contentOf,
   formReducer,
   initialFormState,
@@ -414,5 +416,25 @@ describe("choosing a segment that is a hand-made list", () => {
     });
     expect(after.audience.manualIds).toEqual(["x"]);
     expect(after.audience.manualOnly).toBeUndefined();
+  });
+});
+
+describe("the form opened from a link that names the type", () => {
+  test("an appointment notice starts on WhatsApp, as that kind, on the name step", () => {
+    const state = formStateForStart({
+      channel: "whatsapp",
+      kind: "appointment",
+    });
+    expect(state.channel).toBe("whatsapp");
+    expect(state.kind).toBe("appointment");
+    expect(state.trigger).toEqual({ event: "before_visit", hours: 24 });
+    expect(state.step).toBe(STEP_OF.name);
+    expect(state.id).toBeNull();
+  });
+  test("an ordinary start is the form as a link with no type opens it, one step on", () => {
+    const state = formStateForStart({ channel: "email", kind: "standard" });
+    expect(state.channel).toBe("email");
+    expect(state.kind).toBe("standard");
+    expect(state.step).toBe(STEP_OF.name);
   });
 });

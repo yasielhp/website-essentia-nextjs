@@ -1,25 +1,38 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
 import en from "../../../../../messages/en/dashboard.json";
 
-// Bun's module mocks outlive the file: the whole of what other tests import from
-// the router is given, so they do not find an export missing.
+const calls: unknown[] = [];
+
+// Bun's module mocks outlive the file and are process-wide: the real modules are
+// kept before they are replaced and put back in `afterAll`, and what the router
+// really exports is kept (only the hooks that need a mounted app are replaced),
+// so this file runs the same alone as in the whole suite.
+const realNavigation = await import("next/navigation");
+const realActions = await import("@/actions/message-templates");
 mock.module("next/navigation", () => ({
+  ...realNavigation,
   useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
   usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
   useParams: () => ({}),
-  redirect: () => {},
-  notFound: () => {},
 }));
 mock.module("@/actions/message-templates", () => ({
-  saveMessageTemplate: async () => ({ ok: true, id: "x" }),
+  ...realActions,
+  saveMessageTemplate: async (...args: unknown[]) => {
+    calls.push(args);
+    return { ok: true, id: "x" };
+  },
   sendTestMessage: async () => ({ ok: true, to: "x" }),
   previewMessage: async () => ({ ok: false, error: "generic" }),
   resetMessageTemplate: async () => ({ ok: true, removed: true, kept: null }),
 }));
+afterAll(() => {
+  mock.module("next/navigation", () => realNavigation);
+  mock.module("@/actions/message-templates", () => realActions);
+});
 
 const { WhatsAppMessageEditor } = await import("./whatsapp-message-editor");
 
@@ -46,7 +59,9 @@ describe("the page of a message's WhatsApp notice", () => {
     const html = render("es");
     const note = "se configuran en Campañas &gt; Aviso de cita";
     expect(html.split(note)).toHaveLength(2);
-    expect(html).toContain('href="/dashboard/campaigns/new"');
+    expect(html).toContain(
+      'href="/dashboard/campaigns/new?channel=whatsapp&amp;kind=appointment"',
+    );
     expect(html).toContain("Crear un Aviso de cita");
     expect(html.indexOf(note)).toBeGreaterThan(html.indexOf("</header>"));
     expect(html.indexOf(note)).toBeLessThan(
@@ -57,6 +72,8 @@ describe("the page of a message's WhatsApp notice", () => {
   test("and in English", () => {
     const html = render("en");
     expect(html).toContain("Create an Appointment notice");
-    expect(html).toContain('href="/dashboard/campaigns/new"');
+    expect(html).toContain(
+      'href="/dashboard/campaigns/new?channel=whatsapp&amp;kind=appointment"',
+    );
   });
 });
