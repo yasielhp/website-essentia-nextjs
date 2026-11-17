@@ -123,7 +123,7 @@ export function TemplatesPanel() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <p className="text-petroleum-400 max-w-2xl text-sm">{t("intro")}</p>
-        <div className="flex shrink-0 flex-wrap gap-3">
+        <div className="flex max-w-full flex-wrap gap-3">
           <Button
             variant="outline"
             onClick={() => void handleSync()}
