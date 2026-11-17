@@ -30,8 +30,9 @@ import {
  * the shared deadline is picked up by the next run, except an appointment
  * notice whose moment has passed by then: that one is closed, not sent.
  *
- * On WhatsApp a run first fails what a dead process left `sending`, and an
- * automation Meta keeps refusing is paused with the reason.
+ * A run first fails what a dead process left `sending` (both senders claim
+ * their rows), and on WhatsApp an automation Meta keeps refusing is paused
+ * with the reason.
  */
 /** What a run reads and calls out to; a test passes doubles. */
 export type AutomationDeps = {
@@ -55,20 +56,16 @@ export async function runAutomation(
    * or the booking was cancelled or moved, while they waited in the queue.
    */
   late?: number;
-  /**
-   * Why the run paused the automation: Meta kept refusing it, or (on email) it
-   * could not record what it had sent.
-   */
+  /** Why the run paused the automation, when Meta kept refusing it. */
   halted?: string;
 }> {
   const db = deps.db ?? getAdminClient().database;
   const resolveAudience = deps.resolveAudience ?? defaultResolveAudience;
 
   // What a process that died left `sending` is failed (unconfirmed) before the
-  // run counts or sends anything, so it is neither lost nor sent twice.
-  if (campaign.channel === "whatsapp") {
-    await reconcileInterrupted(db, campaign.id, now.getTime());
-  }
+  // run counts or sends anything, so it is neither lost nor sent twice. On
+  // both channels: the email sender claims its rows too.
+  await reconcileInterrupted(db, campaign.id, now.getTime());
 
   // A notice about her appointment is resolved on its own terms: transactional
   // consent, and each client's bookings loaded for the rules to count hours
@@ -153,22 +150,19 @@ export async function runAutomation(
   // campaign's last finished rows are looked at across ticks: three in a row
   // refused for that reason is the account or the template, and it is paused
   // just the same.
-  //
-  // An email that left and whose row could not be stamped `sent` is still
-  // `queued`, and the next tick would mail that person again, and the one
-  // after: an email automation that cannot record what it sends is paused too.
-  // (A WhatsApp row in that state is left `sending` and settled as
-  // unconfirmed, so nothing sends it again.)
   const halted =
     outcome.halted ??
     (campaign.channel === "whatsapp" &&
     outcome.refusal &&
     (await refusalStreak(db, campaign.id, outcome.refusal))
       ? outcome.refusal
-      : null) ??
-    (campaign.channel !== "whatsapp" && outcome.unrecorded
-      ? unrecordedMessage(outcome.unrecorded)
       : null);
+  // A message that left and whose row could not be written is left `sending`
+  // on both channels and settled as unconfirmed, so no later tick sends it
+  // again: nothing to pause for, but it is said on the campaign.
+  const notice =
+    lastError ??
+    (outcome.unrecorded ? unrecordedMessage(outcome.unrecorded) : null);
 
   // Meta refuses the template or the account: pause the automation with the
   // reason so it stops hitting the number. The admin resumes it once fixed.
@@ -183,8 +177,8 @@ export async function runAutomation(
       last_run_at: now.toISOString(),
       ...(halted
         ? { status: "paused", last_error: haltMessage(halted) }
-        : lastError
-          ? { last_error: lastError }
+        : notice
+          ? { last_error: notice }
           : campaign.last_error === RUN_FAILED_ERROR
             ? { last_error: null }
             : {}),

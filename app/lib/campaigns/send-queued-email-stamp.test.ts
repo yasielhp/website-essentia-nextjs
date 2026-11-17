@@ -9,6 +9,7 @@ import {
   test,
 } from "bun:test";
 import type { Recipient } from "./audience-filter";
+import { argsOf, has } from "./fake-db";
 import {
   campaign,
   memoryDb,
@@ -18,17 +19,25 @@ import {
 } from "./whatsapp-fixtures";
 
 /**
- * The email sender when the row of an email that already left cannot be
- * written. The mailer and the template are replaced (nothing is sent, nothing
- * is rendered); the sender, the dispatch and the automation run are the real
- * ones.
+ * The email sender claims its rows before it mails them, and what that buys:
+ * an email that left is never mailed again, whatever happened to its row. The
+ * mailer and the template are replaced (nothing is sent, nothing is rendered);
+ * the sender, the dispatch, the retry and the automation run are the real ones.
  */
 
-type Email = { to: string };
+type Email = {
+  to: string;
+  subject: string;
+  blindCopy?: boolean;
+  tags?: Record<string, string>;
+  headers?: Record<string, string>;
+};
 
 let batches: Email[][] = [];
 /** The id Resend answers for each email, or null for one it did not take. */
 let answer: (email: Email) => string | null;
+/** Runs when the mailer is called, before it answers: a process dying there throws. */
+let onSend: (emails: Email[]) => void | Promise<void>;
 
 const real = {
   send: { ...(await import("@/emails/send")) },
@@ -37,6 +46,8 @@ const real = {
 
 let sendQueued: typeof import("./dispatch").sendQueued;
 let dispatchCampaign: typeof import("./dispatch").dispatchCampaign;
+let retryFailed: typeof import("./dispatch").retryFailed;
+let reconcileAllInterrupted: typeof import("./dispatch").reconcileAllInterrupted;
 let runAutomation: typeof import("./automations").runAutomation;
 
 const KEY = process.env.RESEND_API_KEY;
@@ -49,6 +60,7 @@ beforeAll(async () => {
     ...real.send,
     sendEmailBatch: async (emails: Email[]) => {
       batches.push(emails);
+      await onSend(emails);
       const ids = emails.map(answer);
       return {
         sent: ids.filter(Boolean).length,
@@ -59,9 +71,13 @@ beforeAll(async () => {
   }));
   mock.module("@/emails/templates/campaign", () => ({
     ...real.template,
-    campaignEmail: async () => ({ subject: "Hola", html: "<p>Hola</p>" }),
+    campaignEmail: async ({ content }: { content: { subject: string } }) => ({
+      subject: content.subject,
+      html: "<p>Hola</p>",
+    }),
   }));
-  ({ sendQueued, dispatchCampaign } = await import("./dispatch"));
+  ({ sendQueued, dispatchCampaign, retryFailed, reconcileAllInterrupted } =
+    await import("./dispatch"));
   ({ runAutomation } = await import("./automations"));
 });
 
@@ -75,6 +91,7 @@ afterAll(() => {
 beforeEach(() => {
   batches = [];
   answer = (email) => `re_${email.to}`;
+  onSend = () => {};
 });
 
 const emailCampaign = (over: Record<string, unknown> = {}) =>
@@ -102,6 +119,132 @@ const cannotStamp =
       : null;
 
 const noSleep = async () => {};
+const MINUTE = 60_000;
+const T0 = Date.parse("2026-11-17T12:00:00Z");
+/** Everybody who was mailed, across every call to the mailer. */
+const mailed = () => batches.flat().map((email) => email.to);
+
+describe("sendQueued on email claims its rows before mailing them", () => {
+  test("each row is `sending`, with its claim stamped, by the time Resend is called", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows);
+    let seen: (string | undefined)[] = [];
+    let claimedAt: (string | null | undefined)[] = [];
+    onSend = () => {
+      seen = rows.map((r) => mem.status(r.id));
+      claimedAt = rows.map((r) => mem.rows.get(r.id)?.claimed_at);
+    };
+    const result = await sendQueued(emailCampaign(), rows, {
+      db: mem.db,
+      now: () => T0,
+    });
+    expect(seen).toEqual(["sending", "sending"]);
+    expect(claimedAt).toEqual([
+      new Date(T0).toISOString(),
+      new Date(T0).toISOString(),
+    ]);
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(mem.status("row-1")).toBe("sent");
+    expect(mem.rows.get("row-1")?.provider_id).toBe("re_c1@example.test");
+  });
+
+  test("the claim is one conditional UPDATE per chunk: only rows still queued", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows);
+    await sendQueued(emailCampaign(), rows, { db: mem.db });
+    const claims = mem.log.filter(
+      (q) =>
+        q.table === "campaign_recipients" &&
+        (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
+          "sending",
+    );
+    expect(claims).toHaveLength(1);
+    const [{ chain }] = claims;
+    expect(argsOf(chain, "in")).toEqual(["id", ["row-1", "row-2"]]);
+    expect(argsOf(chain, "eq")).toEqual(["status", "queued"]);
+    expect(has(chain, "select")).toBe(true);
+  });
+
+  test("a row somebody else already took is not mailed, and is not ours to count", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, {
+      rows: [{ id: "row-1", status: "sending", claimed_at: "x" }],
+    });
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(mailed()).toEqual(["c2@example.test"]);
+    expect(result).toEqual({ sent: 1, failed: 0, lastError: null });
+    expect(mem.status("row-1")).toBe("sending");
+  });
+
+  test("two invocations at once mail each person once", async () => {
+    const rows = [1, 2, 3, 4, 5].map(mailRow);
+    const mem = memoryDb(rows);
+    const [a, b] = await Promise.all([
+      sendQueued(emailCampaign(), rows, { db: mem.db }),
+      sendQueued(emailCampaign(), rows, { db: mem.db }),
+    ]);
+    expect(mailed().sort()).toEqual(rows.map((r) => r.email as string).sort());
+    expect(a.sent + b.sent).toBe(5);
+    expect(a.failed + b.failed).toBe(0);
+  });
+
+  test("a claim that cannot be made mails nobody and leaves the queue for a resume", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, {
+      failUpdate: ({ patch }) =>
+        patch.status === "sending" ? "connection reset" : null,
+    });
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(batches).toEqual([]);
+    expect(result).toEqual({
+      sent: 0,
+      failed: 0,
+      lastError: "db: connection reset",
+      remaining: 2,
+    });
+    expect(mem.status("row-1")).toBe("queued");
+  });
+
+  test("what goes to Resend is what always went: order, subjects of an A/B test, tags, headers", async () => {
+    const rows = [
+      row(1, { email: "c1@example.test", phone: null, variant: "a" }),
+      row(2, { email: "c2@example.test", phone: null, variant: "b" }),
+      row(3, { email: "c3@example.test", phone: null, variant: "a" }),
+    ];
+    const mem = memoryDb(rows);
+    const split = emailCampaign({
+      kind: "split",
+      content: {
+        en: { subject: "Hi", preheader: "", title: "", doc: null },
+        es: {
+          subject: "Hola A",
+          subjectB: "Hola B",
+          preheader: "",
+          title: "",
+          doc: null,
+        },
+        whatsapp: { templateId: null, params: SOURCES },
+      } as never,
+    });
+    const result = await sendQueued(split, rows, { db: mem.db });
+    expect(result).toEqual({ sent: 3, failed: 0, lastError: null });
+    expect(batches).toHaveLength(1);
+    expect(batches[0]!.map((e) => [e.to, e.subject])).toEqual([
+      ["c1@example.test", "Hola A"],
+      ["c2@example.test", "Hola B"],
+      ["c3@example.test", "Hola A"],
+    ]);
+    expect(batches[0]![0]).toMatchObject({
+      blindCopy: false,
+      tags: { campaign_id: "camp-1" },
+      headers: {
+        "List-Unsubscribe":
+          "<https://app.example.test/es/newsletter/unsubscribe?token=>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    });
+  });
+});
 
 describe("sendQueued on email: the stamp of an email that already left", () => {
   test("a stamp that fails once is written on the second try", async () => {
@@ -113,11 +256,10 @@ describe("sendQueued on email: the stamp of an email that already left", () => {
     });
     expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
     expect(mem.status("row-1")).toBe("sent");
-    expect(mem.rows.get("row-1")?.provider_id).toBe("re_c1@example.test");
     expect(batches).toHaveLength(1);
   });
 
-  test("a stamp that fails twice is not a quiet success: logged, and counted apart", async () => {
+  test("a stamp that fails twice leaves the row `sending`, never back in the queue", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
     const rows = [mailRow(1), mailRow(2)];
     const mem = memoryDb(rows, { failUpdate: cannotStamp("row-1") });
@@ -133,38 +275,27 @@ describe("sendQueued on email: the stamp of an email that already left", () => {
       lastError: null,
       unrecorded: 1,
     });
-    // The email left; its row could not say so.
-    expect(mem.status("row-1")).toBe("queued");
+    expect(mem.status("row-1")).toBe("sending");
     expect(mem.status("row-2")).toBe("sent");
     expect(lines.some((l) => l.includes("row-1"))).toBe(true);
   });
 
-  test("an email Resend did not take whose row cannot be failed stays queued, and is logged", async () => {
-    const quiet = spyOn(console, "error").mockImplementation(() => {});
+  test("an email Resend did not take is failed with what Resend said", async () => {
     answer = () => null;
     const rows = [mailRow(1)];
-    const mem = memoryDb(rows, {
-      failUpdate: ({ patch }) =>
-        patch.status === "failed" ? "connection reset" : null,
-    });
-    const result = await sendQueued(emailCampaign(), rows, {
-      db: mem.db,
-      sleep: noSleep,
-    });
-    const logged = quiet.mock.calls.length;
-    quiet.mockRestore();
-    // Nothing left, so sending it again later is right; no `unrecorded`.
+    const mem = memoryDb(rows);
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
     expect(result).toEqual({
       sent: 0,
       failed: 1,
       lastError: "no id returned",
     });
-    expect(mem.status("row-1")).toBe("queued");
-    expect(logged).toBeGreaterThan(0);
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("no id returned");
   });
 });
 
-describe("an email automation that cannot record what it sent", () => {
+describe("an email automation whose stamp failed after the email left", () => {
   const automated = () =>
     emailCampaign({
       status: "active",
@@ -172,75 +303,141 @@ describe("an email automation that cannot record what it sent", () => {
       trigger: { event: "segment_entry" },
       activated_at: "2026-11-01T00:00:00Z",
     });
+  const tick = (mem: ReturnType<typeof memoryDb>, at: number) =>
+    runAutomation(automated(), new Date(at), {
+      db: mem.db,
+      resolveAudience: async () => [],
+      whatsapp: { sleep: noSleep, now: () => at },
+    });
 
-  test("is paused with the reason, so the next tick does not mail the same people again", async () => {
+  test("stays active, says so on the campaign, and no later tick mails that person again", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
     const rows = [mailRow(1), mailRow(2)];
     const mem = memoryDb(rows, {
       campaign: automated(),
       failUpdate: cannotStamp("row-1"),
     });
-    const result = await runAutomation(
-      automated(),
-      new Date("2026-11-17T12:00:00Z"),
-      {
-        db: mem.db,
-        resolveAudience: async () => [],
-        whatsapp: { sleep: noSleep },
-      },
-    );
+    const first = await tick(mem, T0);
+    expect(first).toEqual({ queued: 0, sent: 1, failed: 0 });
+    expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error).toBe("1 sent without being recorded");
+    expect(mem.status("row-1")).toBe("sending");
+
+    // The next tick, a quarter of an hour on: the row is settled as
+    // unconfirmed, and nobody is mailed.
+    await tick(mem, T0 + 15 * MINUTE);
+    await tick(mem, T0 + 30 * MINUTE);
     quiet.mockRestore();
     expect(batches).toHaveLength(1);
-    expect(mem.status("row-1")).toBe("queued");
-    expect(mem.campaign.status).toBe("paused");
-    expect(mem.campaign.last_error).toBe(
-      "[halted] 1 sent without being recorded",
-    );
-    expect(result).toMatchObject({
-      sent: 1,
-      halted: "1 sent without being recorded",
-    });
+    expect(mailed()).toEqual(["c1@example.test", "c2@example.test"]);
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
+    expect(mem.campaign.status).toBe("active");
   });
 
-  test("one whose stamps are all written stays active", async () => {
+  test("a process that dies between the claim and the answer: unconfirmed, never mailed again", async () => {
     const rows = [mailRow(1)];
     const mem = memoryDb(rows, { campaign: automated() });
-    const result = await runAutomation(
-      automated(),
-      new Date("2026-11-17T12:00:00Z"),
-      { db: mem.db, resolveAudience: async () => [] },
-    );
-    expect(result).toEqual({ queued: 0, sent: 1, failed: 0 });
+    onSend = () => {
+      throw new Error("function killed");
+    };
+    await expect(tick(mem, T0)).rejects.toThrow("function killed");
+    expect(mem.status("row-1")).toBe("sending");
+
+    onSend = () => {};
+    await tick(mem, T0 + 15 * MINUTE);
+    expect(batches).toHaveLength(1);
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
+    expect(mem.campaign.failed_count).toBe(1);
+  });
+
+  test("one whose stamps are all written goes on as before", async () => {
+    const rows = [mailRow(1)];
+    const mem = memoryDb(rows, { campaign: automated() });
+    expect(await tick(mem, T0)).toEqual({ queued: 0, sent: 1, failed: 0 });
     expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error ?? null).toBeNull();
   });
 });
 
-describe("a one-off email campaign that cannot record what it sent", () => {
-  test("finishes, and says on the campaign how many went out unrecorded", async () => {
+describe("a one-off email campaign whose stamp failed after the email left", () => {
+  const recipients: Recipient[] = [1, 2].map((n) => ({
+    id: `contact-${n}`,
+    email: `c${n}@example.test`,
+    firstName: `Nombre${n}`,
+    language: "es",
+  }));
+  const deps = (mem: ReturnType<typeof memoryDb>) => ({
+    db: mem.db,
+    resolveAudience: async () => recipients,
+    whatsapp: { sleep: noSleep },
+  });
+
+  test("finishes, says how many went out unrecorded, and a retry does not mail them again", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
+    // Resend did not take the first; the second left and its stamp failed.
+    answer = (email) =>
+      email.to === "c1@example.test" ? null : `re_${email.to}`;
     const rows = [mailRow(1), mailRow(2)];
     const mem = memoryDb(rows, {
       campaign: emailCampaign({ status: "draft" }),
       failUpdate: cannotStamp("row-2"),
     });
-    const recipients: Recipient[] = [1, 2].map((n) => ({
-      id: `contact-${n}`,
-      email: `c${n}@example.test`,
-      firstName: `Nombre${n}`,
-      language: "es",
-    }));
+    const result = await dispatchCampaign("camp-1", {}, deps(mem));
+    expect(result).toEqual({ ok: true, sent: 0, failed: 1, unrecorded: 1 });
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.status("row-2")).toBe("sending");
+
+    // The cron settles the row once its claim is five minutes old.
+    await reconcileAllInterrupted(Date.now() + 6 * MINUTE, mem.db);
+    expect(mem.error("row-2")).toBe("[unconfirmed] interrupted");
+
+    // "Retry the failed ones": the one Resend refused, and only that one.
+    answer = (email) => `re_${email.to}`;
+    const retried = await retryFailed("camp-1", {}, deps(mem));
+    quiet.mockRestore();
+    expect(retried).toEqual({ ok: true, sent: 1, failed: 0 });
+    expect(batches).toHaveLength(2);
+    expect(batches[1]!.map((e) => e.to)).toEqual(["c1@example.test"]);
+    expect(mem.status("row-1")).toBe("sent");
+    expect(mem.status("row-2")).toBe("failed");
+  });
+
+  test("a campaign whose claim failed stays `sending`, to be resumed, instead of closing with its queue", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, {
+      campaign: emailCampaign({ status: "draft" }),
+      failUpdate: ({ patch }) =>
+        patch.status === "sending" && "claimed_at" in patch
+          ? "connection reset"
+          : null,
+    });
+    const result = await dispatchCampaign("camp-1", {}, deps(mem));
+    expect(result).toMatchObject({ ok: true, sent: 0, remaining: 2 });
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.last_error).toBe("db: connection reset");
+    expect(batches).toEqual([]);
+  });
+
+  test("a resume settles what a dead process left `sending` and mails only the queue", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, {
+      campaign: emailCampaign({
+        status: "sending",
+        sending_started_at: "2026-01-01T00:00:00Z",
+      } as never),
+      rows: [
+        { id: "row-1", status: "sending", claimed_at: "2026-01-01T00:00:00Z" },
+      ],
+    });
     const result = await dispatchCampaign(
       "camp-1",
-      {},
-      {
-        db: mem.db,
-        resolveAudience: async () => recipients,
-        whatsapp: { sleep: noSleep },
-      },
+      { resume: true },
+      deps(mem),
     );
-    quiet.mockRestore();
-    expect(result).toEqual({ ok: true, sent: 1, failed: 0, unrecorded: 1 });
-    expect(mem.campaign.status).toBe("sent");
-    expect(mem.campaign.last_error).toBe("1 sent without being recorded");
+    expect(result).toEqual({ ok: true, sent: 1, failed: 0 });
+    expect(mailed()).toEqual(["c2@example.test"]);
+    expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
   });
 });

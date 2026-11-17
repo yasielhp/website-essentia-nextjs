@@ -187,6 +187,39 @@ export const unrecordedMessage = (count: number): string =>
   `${count} sent without being recorded`;
 
 /**
+ * Moves the chunk's rows `queued` -> `sending` in one conditional UPDATE and
+ * answers which ones it moved: those, and only those, are this run's to mail.
+ * A row somebody else already moved matches nothing.
+ */
+async function claimRows(
+  db: Db,
+  chunk: QueuedRow[],
+  nowMs: number,
+): Promise<{ ids: Set<string>; error: string | null }> {
+  try {
+    const { data, error } = await db
+      .from("campaign_recipients")
+      .update({ status: "sending", claimed_at: new Date(nowMs).toISOString() })
+      .in(
+        "id",
+        chunk.map((row) => row.id),
+      )
+      .eq("status", "queued")
+      .select("id");
+    if (error) return { ids: new Set(), error: error.message };
+    return {
+      ids: new Set(((data ?? []) as { id: string }[]).map((row) => row.id)),
+      error: null,
+    };
+  } catch (err) {
+    return {
+      ids: new Set(),
+      error: err instanceof Error ? err.message : "claim threw",
+    };
+  }
+}
+
+/**
  * Writes what became of an email to its row, tried twice with a short pause.
  * False when both tries failed, which is logged here: an error the SDK hands
  * back (it does not throw) used to go unread.
@@ -225,12 +258,24 @@ async function stamp(
  * A row's `variant` picks the A/B subject; its `vars` (a blog post's title
  * and link, say) join the recipient's first name in the template.
  *
- * An email Resend took whose row could not be stamped `sent` is not counted
- * as sent: it is `unrecorded`. Its row is still `queued`, so whatever sends
- * this campaign's queue again would mail that person twice; the callers say
- * so on the campaign, and an automation (whose next tick is that "whatever")
- * is paused. A row that could not be stamped `failed` also stays `queued`, but
- * nothing left for it, so being sent later is what should happen.
+ * Like the WhatsApp sender, it CLAIMS its rows before it mails them: one
+ * conditional UPDATE per chunk moves them `queued` -> `sending` and stamps
+ * `claimed_at`, and only the rows that UPDATE returned are mailed. So two
+ * invocations cannot mail the same row, and a row whose email left can never
+ * be found `queued` again, whatever happened afterwards:
+ *
+ * - Its stamp fails twice: it stays `sending` and is counted `unrecorded`,
+ *   which the callers say on the campaign.
+ * - The process dies between the claim and the stamp: it stays `sending` too.
+ *
+ * Either way the reconciliation of interrupted rows closes it five minutes
+ * later as `[unconfirmed] interrupted`, which no retry requeues. The price is
+ * the one WhatsApp already pays: a row claimed by a process that died before
+ * Resend was called is not mailed at all.
+ *
+ * A claim that cannot be made stops the send with the rest still `queued` and
+ * says how many are left, so a one-off campaign stays `sending` for the cron
+ * to resume instead of closing with a queue nobody comes back for.
  */
 export async function sendQueued(
   campaign: CampaignRow,
@@ -240,7 +285,10 @@ export async function sendQueued(
   sent: number;
   failed: number;
   lastError: string | null;
-  /** Only a WhatsApp send can stop early; an email send always finishes. */
+  /**
+   * Rows left `queued` for a later run. A WhatsApp send stops early on its
+   * time budget; an email send only when a chunk could not be claimed.
+   */
   remaining?: number;
   unrecorded?: number;
   halted?: string | null;
@@ -252,11 +300,14 @@ export async function sendQueued(
   }
   const db = whatsapp.db ?? getAdminClient().database;
   const sleep = whatsapp.sleep ?? pause;
+  const now = whatsapp.now ?? Date.now;
   const content = campaign.content as CampaignContent;
   const appUrl = getAppUrl();
   let sent = 0;
   let failed = 0;
   let unrecorded = 0;
+  /** Rows this run claimed, or found claimed by another: no longer in the queue. */
+  let taken = 0;
   let lastError: string | null = null;
 
   // The table lets a row carry only a phone. On an email campaign it has
@@ -313,21 +364,36 @@ export async function sendQueued(
       }),
     );
 
+    // Claimed after rendering (a template that throws leaves the queue as it
+    // was) and before Resend is called. A row another run took in the meantime
+    // is not in the answer and is not mailed here.
+    const claimed = await claimRows(db, chunk, now());
+    if (claimed.error !== null) {
+      lastError = `db: ${claimed.error}`;
+      break;
+    }
+    taken += chunk.length;
+    const owned = chunk.flatMap((row, index) =>
+      claimed.ids.has(row.id) ? [{ row, email: emails[index]! }] : [],
+    );
+    if (owned.length === 0) continue;
+    const outgoing = owned.map((item) => item.email);
+
     // `sendEmailBatch` already paces its own chunks; each call here is one
     // chunk, so the pacing between calls is ours to keep.
     if (start > 0) await pause(600);
-    let result = await sendEmailBatch(emails);
+    let result = await sendEmailBatch(outgoing);
     if (result.error && result.sent === 0) {
       // One retry for a whole-chunk rejection (a 429, a blip); a second
       // failure is recorded and the run moves on.
       await pause(2000);
-      result = await sendEmailBatch(emails);
+      result = await sendEmailBatch(outgoing);
     }
 
     const at = new Date().toISOString();
     const chunkError = result.error ?? "no id returned";
     await Promise.all(
-      chunk.map(async (row, index) => {
+      owned.map(async ({ row }, index) => {
         const providerId = result.ids[index] ?? null;
         if (providerId) {
           const recorded = await stamp(
@@ -347,9 +413,14 @@ export async function sendQueued(
     );
   }
 
-  return unrecorded > 0
-    ? { sent, failed, lastError, unrecorded }
-    : { sent, failed, lastError };
+  const remaining = rows.length - taken;
+  return {
+    sent,
+    failed,
+    lastError,
+    ...(unrecorded > 0 ? { unrecorded } : {}),
+    ...(remaining > 0 ? { remaining } : {}),
+  };
 }
 
 /** The rows of a campaign still waiting to go out. */
@@ -540,7 +611,8 @@ export async function dispatchCampaign(
 
   // A resume first settles what the dead process left `sending`: those rows
   // may have gone out, so they fail as unconfirmed instead of being resent.
-  if (whatsapp && resume) {
+  // On both channels: the email sender claims its rows too.
+  if (resume) {
     await reconcileInterrupted(db, campaignId, now.getTime());
   }
 
@@ -666,18 +738,21 @@ export async function retryFailed(
 
   const whatsapp = checked.channel === "whatsapp";
 
+  // Which failures a retry may send again, on both channels: a failure marked
+  // unconfirmed may have been delivered after all (an email whose row could not
+  // be stamped, a process that died after its claim) and resending it could
+  // write to the same person twice; one marked skipped was refused for lack of
+  // consent or of an address, which a retry does not change. Both stay failed.
+  //
   // A WhatsApp campaign with nothing to send again (it failed on an empty
   // audience, say, or every failure is one a retry must not repeat) is left as
   // it is, instead of being reopened only to close again with nothing done.
   // The state is checked by the reopen below; this only decides "nothing".
   let retryableIds: string[] = [];
-  if (whatsapp && (checked.status === "sent" || checked.status === "failed")) {
+  if (checked.status === "sent" || checked.status === "failed") {
     // Read first, update by id: PostgREST rejects an `or` filter on an UPDATE
     // ("column campaign_recipients.error does not exist"), but accepts it on a
-    // read. A failure marked unconfirmed may have been delivered after all and
-    // resending it could message the same person twice; one marked skipped was
-    // refused for lack of consent, which a retry does not change. Both stay
-    // failed.
+    // read.
     const [retryable, pending] = await Promise.all([
       db
         .from("campaign_recipients")
@@ -697,7 +772,7 @@ export async function retryFailed(
     retryableIds = ((retryable.data ?? []) as { id: string }[]).map(
       (row) => row.id,
     );
-    if (retryableIds.length === 0 && (pending.count ?? 0) === 0) {
+    if (whatsapp && retryableIds.length === 0 && (pending.count ?? 0) === 0) {
       return { ok: false, error: "nothing_to_retry" };
     }
   }
@@ -735,22 +810,14 @@ export async function retryFailed(
   }
 
   let requeueError: { message: string } | null = null;
-  if (whatsapp) {
-    // In chunks: the ids travel in the URL.
-    for (let i = 0; i < retryableIds.length && !requeueError; i += 100) {
-      const { error } = await db
-        .from("campaign_recipients")
-        .update({ status: "queued", error: null })
-        .in("id", retryableIds.slice(i, i + 100))
-        .eq("status", "failed");
-      requeueError = error;
-    }
-  } else {
-    ({ error: requeueError } = await db
+  // In chunks: the ids travel in the URL.
+  for (let i = 0; i < retryableIds.length && !requeueError; i += 100) {
+    const { error } = await db
       .from("campaign_recipients")
       .update({ status: "queued", error: null })
-      .eq("campaign_id", campaignId)
-      .eq("status", "failed"));
+      .in("id", retryableIds.slice(i, i + 100))
+      .eq("status", "failed");
+    requeueError = error;
   }
   if (requeueError) {
     await markFailed(campaignId, requeueError.message, db);

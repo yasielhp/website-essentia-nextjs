@@ -720,11 +720,16 @@ describe("retryFailed", () => {
     expect(mem.campaign.status).toBe("sent");
   });
 
-  test("an email retry keeps requeueing every failed row", async () => {
+  test("an email retry requeues the retryable failures by id, never the unconfirmed or skipped ones", async () => {
     // The requeue is made to fail so the test stops before anything could be
     // mailed: only the shape of the requeue is under test.
-    const { mem, deps } = setup(1, {
+    const { mem, deps } = setup(3, {
       campaign: campaign({ channel: "email", status: "sent" }),
+      rows: [
+        { id: "row-1", status: "failed", error: "rate limited" },
+        { id: "row-2", status: "failed", error: INTERRUPTED_ERROR },
+        { id: "row-3", status: "failed", error: "[skipped] no_email" },
+      ],
       failUpdate: ({ patch }) => (patch.status === "queued" ? "stop" : null),
     });
     expect(await retryFailed("camp-1", {}, deps)).toMatchObject({
@@ -737,7 +742,7 @@ describe("retryFailed", () => {
         (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
           "queued",
     );
-    expect(requeue).toBeDefined();
     expect(has(requeue?.chain ?? [], "or")).toBe(false);
+    expect(argsOf(requeue?.chain ?? [], "in")).toEqual(["id", ["row-1"]]);
   });
 });
