@@ -54,11 +54,16 @@ type Db = ReturnType<typeof getAdminClient>["database"];
 /**
  * Says on the campaign that its run threw, so the list does not show a healthy
  * `active` one that sends nothing. It stays `active` (the next tick tries
- * again) and `runAutomation` clears the mark the first time it ends well. Only
- * an `active` row is written: one paused in the meantime keeps its own reason.
+ * again) and `runAutomation` clears the mark the first time it ends well.
+ *
+ * The mark only ever fills an EMPTY `last_error`: whatever the campaign
+ * already says (a template Meta paused, what Meta answered last) is more than
+ * this can tell, and is not overwritten, neither as the tick read it nor as it
+ * is when the UPDATE lands. And only an `active` row is written: one paused in
+ * the meantime keeps its own reason.
  */
 async function markRunFailed(db: Db, campaign: CampaignRow): Promise<void> {
-  if (campaign.last_error === RUN_FAILED_ERROR) return;
+  if (campaign.last_error) return;
   try {
     const { error } = await db
       .from("campaigns")
@@ -67,7 +72,8 @@ async function markRunFailed(db: Db, campaign: CampaignRow): Promise<void> {
         updated_at: new Date().toISOString(),
       })
       .eq("id", campaign.id)
-      .eq("status", "active");
+      .eq("status", "active")
+      .is("last_error", null);
     if (error) {
       console.error("[cron/campaigns] could not mark:", campaign.id, error);
     }

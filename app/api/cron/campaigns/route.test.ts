@@ -54,7 +54,12 @@ const { db, log } = chainDb((table, chain) => {
       .every(({ args: [column, value] }) => {
         const current = row[String(column)];
         return typeof current === "string" && current < String(value);
-      });
+      }) &&
+    chain
+      .filter((step) => step.name === "is")
+      .every(
+        ({ args: [column, value] }) => (row[String(column)] ?? null) === value,
+      );
   const wantsRows = has(chain, "select");
   if (!row || !matches) return { data: wantsRows ? [] : null, error: null };
   Object.assign(row, update[0]);
@@ -283,6 +288,37 @@ describe("campaigns cron: an automation whose run throws", () => {
     quiet.mockRestore();
     expect(campaignWrites()).toHaveLength(0);
     expect(stored.get("a1")?.last_error).toBe(RUN_FAILED_ERROR);
+  });
+
+  test("a campaign that already says something else keeps it: the mark only fills an empty error", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    serve(
+      active("a1", {
+        last_error: "template_unavailable: template_not_approved",
+      }),
+    );
+    automation = async () => {
+      throw new Error("boom");
+    };
+    await run();
+    quiet.mockRestore();
+    expect(campaignWrites()).toHaveLength(0);
+    expect(stored.get("a1")?.last_error).toBe(
+      "template_unavailable: template_not_approved",
+    );
+  });
+
+  test("an error written while it ran is not overwritten either", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    serve(active("a1"));
+    // The tick read it with no error; by the time the run throws it has one.
+    stored.set("a1", { ...active("a1"), last_error: "190: Token expired" });
+    automation = async () => {
+      throw new Error("boom");
+    };
+    await run();
+    quiet.mockRestore();
+    expect(stored.get("a1")?.last_error).toBe("190: Token expired");
   });
 
   test("a campaign paused while it ran keeps the reason it was paused for", async () => {
