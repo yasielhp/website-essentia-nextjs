@@ -28,6 +28,7 @@ import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { SENT_STATUSES } from "@/lib/campaigns/report";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
 import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
+import { normalizeSegmentConditions } from "@/lib/campaigns/segment-conditions";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
@@ -419,9 +420,18 @@ export async function listSegments(
   try {
     const candidates = await loadCandidates(channel);
     const now = new Date();
-    const count = (conditions: CampaignSegment["conditions"]) =>
-      filterAudience(candidates, { ...conditions, manualIds: [] }, now, channel)
-        .length;
+    // A saved list carries its people and `manualOnly`: they are counted as the
+    // send will resolve them, exclusions included. A filter has neither key.
+    const count = (
+      conditions: Omit<CampaignAudience, "manualIds" | "sendLocale"> &
+        Partial<Pick<CampaignAudience, "manualIds">>,
+    ) =>
+      filterAudience(
+        candidates,
+        { ...conditions, manualIds: conditions.manualIds ?? [] },
+        now,
+        channel,
+      ).length;
     return {
       everyone: count(EMPTY_AUDIENCE),
       segments: ((data ?? []) as CampaignSegment[]).map((segment) => ({
@@ -465,6 +475,10 @@ export async function saveSegment(
     return { ok: false, error: nameIssue ? nameIssue.message : "invalid" };
   }
 
+  // A list is stored with the other conditions at their neutral value, a
+  // filter with no list: what is saved is what the segment is.
+  parsed.data.conditions = normalizeSegmentConditions(parsed.data.conditions);
+
   const db = getAdminClient().database;
   let taken = db
     .from("campaign_segments")
@@ -505,9 +519,15 @@ export async function listSegmentMembers(
     if (err instanceof AuthError) return [];
     throw err;
   }
+  // A saved list keeps its people: they are listed as the send would resolve
+  // them, so one who unsubscribed or was deleted is not shown as reachable.
+  const given =
+    typeof conditions === "object" && conditions
+      ? (conditions as { manualIds?: unknown })
+      : {};
   const parsed = campaignAudienceSchema.safeParse({
-    ...(typeof conditions === "object" && conditions ? conditions : {}),
-    manualIds: [],
+    ...given,
+    manualIds: Array.isArray(given.manualIds) ? given.manualIds : [],
   });
   if (!parsed.success) return [];
 

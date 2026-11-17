@@ -270,7 +270,12 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         // the send language stay with the campaign.
         audience: {
           ...action.conditions,
-          manualIds: state.audience.manualIds,
+          // A hand-made list brings its people and `manualOnly` along; a filter
+          // leaves the campaign's own hand-picked extras alone and is not one.
+          manualIds: action.conditions.manualOnly
+            ? (action.conditions.manualIds ?? [])
+            : state.audience.manualIds,
+          manualOnly: action.conditions.manualOnly === true ? true : undefined,
           sendLocale:
             action.conditions.language !== "any"
               ? action.conditions.language

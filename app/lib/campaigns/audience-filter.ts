@@ -266,6 +266,9 @@ export function filterAudience(
   purpose: ConsentPurpose = "marketing",
 ): Recipient[] {
   const manual = new Set(purpose === "appointment" ? [] : audience.manualIds);
+  // A hand-made list is those people and nobody else; the conditions are only
+  // how they were found.
+  const manualOnly = audience.manualOnly === true;
   const seen = new Set<string>();
   const recipients: Recipient[] = [];
 
@@ -274,8 +277,10 @@ export function filterAudience(
     if (point === null) continue;
     if (channel === "whatsapp" && suppressedPhones.has(point)) continue;
     if (
-      !manual.has(candidate.id) &&
-      !matchesConditions(candidate, audience, now)
+      manualOnly
+        ? !manual.has(candidate.id)
+        : !manual.has(candidate.id) &&
+          !matchesConditions(candidate, audience, now)
     ) {
       continue;
     }

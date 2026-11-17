@@ -353,3 +353,66 @@ describe("the appointment notice kind", () => {
     expect(initialFormState.savedKind).toBeNull();
   });
 });
+
+describe("choosing a segment that is a hand-made list", () => {
+  const ID = "6f1c2a3e-1111-4222-8333-444455556661";
+  const list = {
+    language: "any" as const,
+    newsletter: null,
+    services: [],
+    lastBooking: null,
+    neverBooked: false,
+    hasBooked: false,
+    manualIds: [ID],
+    manualOnly: true as const,
+  };
+  const filter = {
+    ...list,
+    language: "es" as const,
+    manualIds: undefined,
+    manualOnly: undefined,
+  };
+
+  test("the campaign copies the people and that it is a list", () => {
+    const after = formReducer(initialFormState, {
+      type: "SET_SEGMENT",
+      id: "seg",
+      name: "Mis clientas",
+      conditions: list,
+    });
+    expect(after.audience.manualIds).toEqual([ID]);
+    expect(after.audience.manualOnly).toBe(true);
+  });
+
+  test("going back to a filter, or to everyone, is no longer a list and drops the people", () => {
+    const chosen = formReducer(initialFormState, {
+      type: "SET_SEGMENT",
+      id: "seg",
+      name: "Mis clientas",
+      conditions: list,
+    });
+    const back = formReducer(chosen, {
+      type: "SET_SEGMENT",
+      id: null,
+      name: null,
+      conditions: filter,
+    });
+    expect(back.audience.manualOnly).toBeUndefined();
+    expect(back.audience.language).toBe("es");
+  });
+
+  test("a filter leaves the campaign's own hand-picked contacts alone, as it did", () => {
+    const withPicks = {
+      ...initialFormState,
+      audience: { ...initialFormState.audience, manualIds: ["x"] },
+    };
+    const after = formReducer(withPicks, {
+      type: "SET_SEGMENT",
+      id: "seg",
+      name: "Filtro",
+      conditions: filter,
+    });
+    expect(after.audience.manualIds).toEqual(["x"]);
+    expect(after.audience.manualOnly).toBeUndefined();
+  });
+});

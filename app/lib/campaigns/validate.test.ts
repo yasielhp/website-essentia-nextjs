@@ -357,3 +357,45 @@ describe("the kinds a channel allows", () => {
     }
   });
 });
+
+describe("a campaign over a hand-made list", () => {
+  const ID = "6f1c2a3e-1111-4222-8333-444455556661";
+  const list = { ...audience, manualIds: [ID], manualOnly: true };
+
+  test("an email campaign may be aimed at a list", () => {
+    expect(validateCampaign({ ...campaign, audience: list }).ok).toBe(true);
+  });
+  test("a list with nobody in it is refused: it would reach nobody", () => {
+    const out = validateCampaign({
+      ...campaign,
+      audience: { ...audience, manualOnly: true },
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.errors["audience.manualIds"]).toBe("invalidInput");
+  });
+  test("an appointment notice takes no list, however it is spelled", () => {
+    const base = {
+      name: "Aviso",
+      channel: "whatsapp" as const,
+      kind: "appointment" as const,
+      trigger: { event: "before_visit" as const, hours: 24 },
+      content: {
+        en: empty,
+        es: empty,
+        whatsapp: {
+          templateId: "6f1c2a3e-1111-4222-8333-444455556666",
+          params: [],
+        },
+      },
+    };
+    expect(validateCampaign({ ...base, audience }).ok).toBe(true);
+    const out = validateCampaign({ ...base, audience: list });
+    expect(out.ok).toBe(false);
+    if (!out.ok)
+      expect(out.errors["audience.manualIds"]).toBe("manualNotAllowed");
+    expect(
+      validateCampaign({ ...base, audience: { ...audience, manualOnly: true } })
+        .ok,
+    ).toBe(false);
+  });
+});

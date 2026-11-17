@@ -149,14 +149,30 @@ export type CampaignAudience = {
   sendLocale?: CampaignLocale;
   /** Contacts added by hand, unioned with the filter result. */
   manualIds: string[];
+  /**
+   * A hand-made list: the audience is `manualIds` and nobody else, whatever the
+   * conditions say (they are only how the people were found). The fixed
+   * exclusions (no address, unsubscribed, bounced; consent, STOP, unreachable
+   * and the STOP list on WhatsApp) apply to the list as to everyone.
+   */
+  manualOnly?: boolean;
 };
 
 /** One language's version of the email. Every field empty = not sent in it. */
 /** The conditions half of an audience: what a saved segment stores. */
 export type SegmentConditions = Omit<
   CampaignAudience,
-  "manualIds" | "sendLocale"
->;
+  "manualIds" | "manualOnly" | "sendLocale"
+> & {
+  /**
+   * A segment is of one of two kinds. Without these two it is a saved FILTER
+   * (dynamic: whoever meets the conditions, today or later). With a list it is
+   * a hand-made LIST (fixed: only the people picked, whether or not they meet
+   * any condition; the conditions are stored at their neutral value).
+   */
+  manualIds?: string[];
+  manualOnly?: true;
+};
 
 /** A named set of conditions, kept for the next campaign. */
 export type CampaignSegment = {

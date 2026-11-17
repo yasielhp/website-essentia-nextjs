@@ -305,12 +305,41 @@ export const campaignAudienceSchema = z.object({
   hasBooked: z.boolean().optional(),
   sendLocale: z.enum(["en", "es"]).optional(),
   manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
+  manualOnly: z.boolean().optional(),
 }) satisfies z.ZodType<CampaignAudience>;
 
-/** What a saved segment holds: the audience without the hand-picked extras. */
-export const segmentConditionsSchema = campaignAudienceSchema.omit({
-  manualIds: true,
-});
+/**
+ * What a saved segment holds: the conditions, and, for a hand-made list, the
+ * people (`manualIds`, uuids without repeats, up to 2000) with `manualOnly`.
+ * One without the other is neither kind of segment and is refused.
+ */
+export const segmentConditionsSchema = campaignAudienceSchema
+  .omit({ manualIds: true, manualOnly: true })
+  .extend({
+    manualIds: z
+      .array(z.uuid("contactIdInvalid"))
+      .max(2000, "tooManyContacts")
+      .optional(),
+    manualOnly: z.literal(true).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const ids = value.manualIds ?? [];
+    if (new Set(ids).size !== ids.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["manualIds"],
+        message: "contactIdInvalid",
+      });
+    }
+    // A list is people and manualOnly together; either alone is neither kind.
+    if ((value.manualOnly === true) !== ids.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["manualIds"],
+        message: "invalidInput",
+      });
+    }
+  });
 
 export const segmentSchema = z.object({
   name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
@@ -517,10 +546,19 @@ function addCampaignIssues(
     kind: CampaignKind;
     channel: CampaignChannel;
     trigger: CampaignTrigger;
-    audience: { manualIds: string[] };
+    audience: { manualIds: string[]; manualOnly?: boolean };
   },
   ctx: z.RefinementCtx,
 ) {
+  // A hand-made list with nobody in it would reach nobody, not everybody.
+  if (value.audience.manualOnly && value.audience.manualIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["audience", "manualIds"],
+      message: "invalidInput",
+    });
+  }
+
   if (!kindAllowedForChannel(value.kind, value.channel)) {
     ctx.addIssue({
       code: "custom",
@@ -541,7 +579,7 @@ function addCampaignIssues(
       });
     }
     // The audience is the appointments themselves: nobody is added by hand.
-    if (value.audience.manualIds.length > 0) {
+    if (value.audience.manualIds.length > 0 || value.audience.manualOnly) {
       ctx.addIssue({
         code: "custom",
         path: ["audience", "manualIds"],
