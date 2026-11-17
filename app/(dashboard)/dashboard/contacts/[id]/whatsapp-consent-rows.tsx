@@ -264,7 +264,6 @@ export function WhatsAppConsentRows({
         );
       })}
 
-      <p className="text-petroleum-400 px-1 text-xs">{t("savesNow")}</p>
       {failed && (
         <p role="alert" className="px-1 text-xs text-red-500">
           {t("error")}

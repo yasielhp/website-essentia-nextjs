@@ -1160,7 +1160,6 @@
         "accepted": "Accepts since {date}",
         "none": "No consent",
         "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind, even if old consent dates are still stored, until one of the two uses is turned on.",
-        "savesNow": "Changes save immediately, without pressing Save.",
         "error": "Could not save the WhatsApp consent.",
         "dialog": {
           "title": "Turn on WhatsApp",

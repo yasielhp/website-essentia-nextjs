@@ -1160,7 +1160,6 @@
         "accepted": "Acepta desde {date}",
         "none": "Sin consentimiento",
         "optedOutNote": "Se dio de baja (STOP) el {date}. No recibirá mensajes de ningún tipo, aunque conserve fechas de consentimiento antiguas, hasta que se active uno de los dos usos.",
-        "savesNow": "Los cambios se guardan al instante, sin pulsar Guardar.",
         "error": "No se pudo guardar el consentimiento de WhatsApp.",
         "dialog": {
           "title": "Activar WhatsApp",
