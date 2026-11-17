@@ -130,10 +130,10 @@ Se crean desde **Mensajes → WhatsApp** (el panel las envía a Meta y las sincr
 
 ### Piloto con uno o dos contactos propios
 
-1. Crear (o usar) dos contactos con teléfonos del equipo, ambos con la casilla de avisos de la cita y la de novedades marcadas (ficha del contacto o formulario de reserva).
+1. Crear (o usar) dos contactos con teléfonos del equipo mediante el formulario público de reserva: aceptar los Términos y la Política (eso da el consentimiento de los avisos de la cita) y marcar la casilla opcional de novedades y ofertas (correo y WhatsApp a la vez). Una reserva creada desde el dashboard NO registra consentimiento: habría que activarlo en la ficha.
 2. **Enviar prueba** desde el editor del mensaje y desde el paso de revisión de una campaña: el mensaje va al teléfono del perfil de quien pulsa, no a otro. Comprobar que llega, con los parámetros bien rellenados.
-3. Hacer una **reserva real de prueba** con el teléfono de un contacto del piloto y la casilla de avisos marcada, y confirmarla desde el dashboard (o pagarla): llega el correo y, si hay fila de WhatsApp, el WhatsApp; la reserva muestra en su historial el estado `sent`, luego `delivered`, luego `read`.
-4. **STOP.** Desde ese teléfono responder `BAJA` (o `STOP`). Comprobar que: la ficha del contacto muestra la baja y el número en la lista de exclusión; una nueva reserva con ese número y las casillas marcadas **no** vuelve a recibir WhatsApp; una campaña de prueba lo deja fuera (`[skipped]` o fuera de la audiencia). Solo una administradora puede quitar el número, desde la ficha.
+3. Hacer una **reserva real de prueba** con el teléfono de un contacto del piloto desde el formulario público (aceptando los Términos y la Política), y confirmarla desde el dashboard (o pagarla): llega el correo y, si hay fila de WhatsApp, el WhatsApp; la reserva muestra en su historial el estado `sent`, luego `delivered`, luego `read`.
+4. **STOP.** Desde ese teléfono responder `BAJA` (o `STOP`). Comprobar que: la ficha del contacto muestra la baja y el número en la lista de exclusión; una nueva reserva con ese número, aceptando los Términos, **no** reactiva los avisos de la cita ni vuelve a recibir WhatsApp; una campaña de prueba lo deja fuera (`[skipped]` o fuera de la audiencia). Solo una administradora puede quitar el número, desde la ficha.
 5. **Reintento.** Provocar un fallo (p. ej. un contacto cuyo número no tenga WhatsApp) y usar la acción de reintentar las fallidas de la campaña: **no** debe reenviar las filas que digan `[unconfirmed]` (pudieron llegar) ni `[skipped]` (se omitieron por falta de consentimiento); solo las demás. Un número sin WhatsApp (error 131026 de Meta) queda marcado como no alcanzable y se excluye de las campañas siguientes.
 6. Campaña de prueba de 2 destinatarias: comprobar que la audiencia, el recuento y el informe (enviado, entregado, leído) coinciden con lo recibido.
 
@@ -154,23 +154,17 @@ Se crean desde **Mensajes → WhatsApp** (el panel las envía a Meta y las sincr
 
 La política actual (`app/(site)/[locale]/(page)/(legal)/privacy/content-es.tsx` y `content-en.tsx`) solo menciona WhatsApp en el apartado 6 de comunicación de datos, para **el personal** ("Meta (notificaciones por WhatsApp a nuestro personal)"). No describe el WhatsApp a clientas: ni las finalidades, ni la base legal, ni cómo darse de baja. **Falta contenido y no está escrito en el sitio.**
 
-Borrador de cláusula, solo como punto de partida. **REVISAR POR UN ABOGADO antes de publicarla**; no se ha añadido a ninguna página.
+**Estado.** La cláusula ya está **escrita en la política** (`privacy/content-es.tsx` y `content-en.tsx`, dentro del apartado 4, con un comentario `DRAFT` en el código) y en el desplegable "Información sobre protección de datos" del formulario de reserva (`messages/*/booking.json`, `detailsStep.purposeValue`, `legalBasisValue`, `optOutValue`). Está **en la rama, sin publicar**, y es un **borrador que debe REVISAR UN ABOGADO antes de publicarla**. No se tocaron los Términos y condiciones (son un documento contractual): la casilla de consentimiento los cita junto a la política, y el abogado dirá si deben mencionar los avisos por WhatsApp.
+
+El diseño que recoge es el que pidió el centro:
 
 > **REVISAR POR UN ABOGADO**
 >
-> **Comunicaciones por WhatsApp.** Si marca la casilla correspondiente al reservar o desde su cuenta, trataremos su número de teléfono para enviarle mensajes de WhatsApp con dos finalidades distintas e independientes:
->
-> 1. **Avisos de su cita**: la confirmación y el recordatorio de las citas que reserve. Base jurídica: su consentimiento y la ejecución del servicio que ha contratado.
-> 2. **Novedades y ofertas de Essentia.** Base jurídica: su consentimiento.
->
-> Cada finalidad se activa con su propia casilla, que no viene marcada. Puede darse de baja en cualquier momento respondiendo **BAJA** (o **STOP**) a cualquiera de nuestros mensajes, lo que detiene ambas finalidades, o escribiéndonos a info@essentiawellnessclub.com. Si responde BAJA, guardaremos su número en una lista de exclusión para no volver a escribirle, aunque otra persona lo introduzca después en un formulario.
->
-> Los mensajes se envían a través de Meta Platforms Ireland Limited (WhatsApp Business Platform), que actúa como encargado del tratamiento, y pueden implicar transferencias internacionales de datos. Conservamos su consentimiento y su número mientras no se dé de baja, y la lista de exclusión mientras sea necesaria para respetar su decisión. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad según el apartado 7.
+> - Al reservar, **aceptar los Términos y la Política** permite enviar por **correo y WhatsApp** la confirmación y el recordatorio de la cita (finalidad: gestionar la reserva; base: ejecución del servicio reservado).
+> - Las **novedades y ofertas** (por correo y por WhatsApp, una sola casilla opcional, sin marcar por defecto) se basan en el consentimiento y no condicionan la reserva.
+> - **Baja:** respondiendo BAJA o STOP a un WhatsApp (detiene todos los mensajes de WhatsApp), con el enlace de los correos o escribiendo al centro. Un STOP guarda el número en una lista de exclusión que ningún formulario levanta.
+> - Datos: teléfono y correo. Encargado: Meta Platforms Ireland Limited (WhatsApp Business Platform), con posibles transferencias internacionales.
 
-Borrador en inglés, para la versión en inglés de la política (también **REVISAR POR UN ABOGADO**):
+Puntos que el abogado debería decidir: si aceptar los Términos y la Política basta como consentimiento de los avisos por WhatsApp o si debe ser una casilla propia (el centro decidió que basta), y el texto exacto de la base legal para los avisos de la cita; el plazo de conservación del consentimiento y de la lista de exclusión; si basta con la casilla o hace falta confirmar el número (ver hallazgo "el consentimiento por casilla no verifica la propiedad del número" en `2026-11-17-whatsapp-findings.md`); y la mención de las transferencias internacionales.
 
-> **WhatsApp communications.** If you tick the relevant box when booking or from your account, we will use your phone number to send you WhatsApp messages for two separate purposes: (1) notices about your appointments (confirmation and reminder), on the basis of your consent and the performance of the service you have booked; and (2) news and offers from Essentia, on the basis of your consent. Each purpose has its own box, unticked by default. You can opt out at any time by replying **STOP** (or **BAJA**) to any of our messages, which stops both purposes, or by writing to info@essentiawellnessclub.com. If you reply STOP we keep your number on a suppression list so that we do not write to it again, even if somebody else later enters it in a form. Messages are sent through Meta Platforms Ireland Limited (WhatsApp Business Platform), acting as a processor, and may involve international data transfers.
-
-Puntos que el abogado debería decidir: el texto exacto de la base legal para los avisos de la cita; el plazo de conservación del consentimiento y de la lista de exclusión; si basta con la casilla o hace falta confirmar el número (ver hallazgo "el consentimiento por casilla no verifica la propiedad del número" en `2026-11-17-whatsapp-findings.md`); y la mención de las transferencias internacionales.
-
-Hasta que se publique, conviene que las casillas de WhatsApp de los formularios queden visibles solo cuando la política esté actualizada.
+**La política debe publicarse antes de activar WhatsApp con clientas:** hasta entonces, la casilla de términos ya promete los avisos por WhatsApp y la política publicada todavía no los describe.
