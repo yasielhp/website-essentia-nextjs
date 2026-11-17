@@ -25,6 +25,8 @@ export type AutomationDeps = {
   db?: Db;
   resolveAudience?: typeof defaultResolveAudience;
   whatsapp?: WhatsAppDeps;
+  /** Epoch ms by which the caller's whole invocation must be over. */
+  deadlineAt?: number;
 };
 
 export async function runAutomation(
@@ -85,7 +87,11 @@ export async function runAutomation(
   const rows = await loadQueued(campaign.id, db);
   const { sent, failed, lastError, halted } =
     rows.length > 0
-      ? await sendQueued(campaign, rows, { db, ...deps.whatsapp })
+      ? await sendQueued(campaign, rows, {
+          db,
+          deadlineAt: deps.deadlineAt,
+          ...deps.whatsapp,
+        })
       : { sent: 0, failed: 0, lastError: null, halted: null };
 
   // Meta refuses the template or the account: pause the automation with the

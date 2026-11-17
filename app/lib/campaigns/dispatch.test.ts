@@ -264,6 +264,31 @@ describe("dispatchCampaign: resuming", () => {
   });
 });
 
+describe("dispatchCampaign: a deadline from its caller", () => {
+  test("a deadline already close leaves the campaign sending with its queue intact", async () => {
+    const { mem, deps, clock, sender } = setup(25);
+    const result = await dispatchCampaign(
+      "camp-1",
+      { deadlineAt: clock.now() + 1000 },
+      deps,
+    );
+    expect(sender.calls).toHaveLength(0);
+    expect(result).toMatchObject({ ok: true, sent: 0, remaining: 25 });
+    expect(mem.campaign.status).toBe("sending");
+  });
+
+  test("with room it sends and finishes as before", async () => {
+    const { mem, deps, clock } = setup(3);
+    const result = await dispatchCampaign(
+      "camp-1",
+      { deadlineAt: clock.now() + 50_000 },
+      deps,
+    );
+    expect(result).toMatchObject({ ok: true, sent: 3 });
+    expect(mem.campaign.status).toBe("sent");
+  });
+});
+
 describe("dispatchCampaign: repeated refusals", () => {
   const refuse = () => ({
     status: "failed" as const,
@@ -297,7 +322,7 @@ describe("retryFailed", () => {
       campaign: campaign({ status: "sent" }),
       template: template({ status: "REJECTED" }),
     });
-    const result = await retryFailed("camp-1", deps);
+    const result = await retryFailed("camp-1", {}, deps);
     expect(result).toMatchObject({ ok: false, error: "template_unavailable" });
     expect(mem.campaign.status).toBe("sent");
     expect(touchedCampaign(mem.log)).toHaveLength(0);
@@ -312,7 +337,7 @@ describe("retryFailed", () => {
         error: "132000: Template param mismatch",
       })),
     });
-    const result = await retryFailed("camp-1", deps);
+    const result = await retryFailed("camp-1", {}, deps);
     // The ten requeued failures and the two rows that never left the queue.
     expect(sender.calls).toHaveLength(12);
     expect(result).toMatchObject({ ok: true, sent: 12 });
@@ -323,7 +348,7 @@ describe("retryFailed", () => {
     const { deps } = setup(1, {
       campaign: campaign({ channel: "email", status: "failed" }),
     });
-    expect(await retryFailed("camp-1", deps)).toEqual({
+    expect(await retryFailed("camp-1", {}, deps)).toEqual({
       ok: false,
       error: "not_claimable",
     });
@@ -331,7 +356,7 @@ describe("retryFailed", () => {
 
   test("a campaign that is not finished cannot be retried", async () => {
     const { deps } = setup(1, { campaign: campaign({ status: "sending" }) });
-    expect(await retryFailed("camp-1", deps)).toEqual({
+    expect(await retryFailed("camp-1", {}, deps)).toEqual({
       ok: false,
       error: "not_claimable",
     });
@@ -342,7 +367,7 @@ describe("retryFailed", () => {
       campaign: campaign({ status: "sent" }),
       rows: [{ id: "row-1", status: "failed", error: "Meta said no" }],
     });
-    const result = await retryFailed("camp-1", deps);
+    const result = await retryFailed("camp-1", {}, deps);
     expect(result).toMatchObject({ ok: true, sent: 2 });
     expect(sender.calls).toHaveLength(2);
     expect(mem.campaign.status).toBe("sent");
@@ -360,7 +385,7 @@ describe("retryFailed", () => {
 
   test("never requeues a failure that may have been delivered or was skipped", async () => {
     const { mem, deps } = setup(1, { campaign: campaign({ status: "sent" }) });
-    await retryFailed("camp-1", deps);
+    await retryFailed("camp-1", {}, deps);
     const requeue = mem.log.find(
       (q) =>
         q.table === "campaign_recipients" &&
@@ -384,7 +409,7 @@ describe("retryFailed", () => {
       campaign: campaign({ channel: "email", status: "sent" }),
       failUpdate: ({ patch }) => (patch.status === "queued" ? "stop" : null),
     });
-    expect(await retryFailed("camp-1", deps)).toMatchObject({
+    expect(await retryFailed("camp-1", {}, deps)).toMatchObject({
       ok: false,
       error: "db",
     });

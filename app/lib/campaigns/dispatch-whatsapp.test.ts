@@ -4,6 +4,7 @@ import type { CampaignRow } from "@/types/campaign";
 import {
   PER_SECOND,
   SKIPPED_PREFIX,
+  START_MARGIN_MS,
   UNCONFIRMED_PREFIX,
   consentVerdict,
   haltMessage,
@@ -1062,5 +1063,80 @@ describe("sendQueuedWhatsApp stops after repeated refusals", () => {
     expect(haltMessage("132000: Template param mismatch")).toBe(
       "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
     );
+  });
+});
+
+describe("sendQueuedWhatsApp and a deadline shared with other work", () => {
+  const T0 = 1_000_000;
+  const run = (
+    count: number,
+    clock: ReturnType<typeof fakeClock>,
+    deadlineAt: number | undefined,
+    startedSends?: number[],
+  ) => {
+    const mem = memoryDb(rowsOf(count));
+    const send = async () => {
+      startedSends?.push(clock.now());
+      return ok("w");
+    };
+    return sendQueuedWhatsApp(campaign(), rowsOf(count), {
+      db: mem.db,
+      send,
+      now: clock.now,
+      sleep: clock.sleep,
+      deadlineAt,
+    });
+  };
+
+  test("no batch starts when less than the safety margin is left", async () => {
+    const clock = fakeClock(T0);
+    const result = await run(30, clock, T0 + START_MARGIN_MS - 1);
+    expect(result).toMatchObject({ sent: 0, remaining: 30 });
+  });
+
+  test("a batch may start exactly at the margin", async () => {
+    const clock = fakeClock(T0);
+    const result = await run(30, clock, T0 + START_MARGIN_MS);
+    expect(result.sent).toBe(10);
+  });
+
+  test("it works up to the deadline, not up to its own budget", async () => {
+    const clock = fakeClock(T0);
+    // Batches begin at +0, +1 s, +2 s; at +3 s only 0.5 s would be left.
+    const result = await run(100, clock, T0 + 3500);
+    expect(result).toMatchObject({ sent: 30, remaining: 70 });
+  });
+
+  test("the budget is the smaller of 45 s and what the deadline leaves", async () => {
+    const far = fakeClock(T0);
+    const farResult = await run(1000, far, T0 + 10 * 60_000);
+    expect(far.now() - T0).toBeLessThan(46_000);
+    expect(farResult.remaining).toBeGreaterThan(0);
+
+    const near = fakeClock(T0);
+    await run(1000, near, T0 + 20_000);
+    expect(near.now() - T0).toBeLessThanOrEqual(20_000);
+  });
+
+  test("two sends in one invocation never start a message past the deadline", async () => {
+    const clock = fakeClock(T0);
+    const deadlineAt = T0 + 50_000;
+    const started: number[] = [];
+    const first = await run(1000, clock, deadlineAt, started);
+    const second = await run(1000, clock, deadlineAt, started);
+    expect(first.sent).toBeGreaterThan(0);
+    // The first took the whole 45 s budget; the second got what was left.
+    expect(second.sent).toBeLessThan(first.sent);
+    expect(Math.max(...started)).toBeLessThanOrEqual(
+      deadlineAt - START_MARGIN_MS,
+    );
+    expect(clock.now()).toBeLessThanOrEqual(deadlineAt);
+    expect(second.remaining).toBeGreaterThan(0);
+  });
+
+  test("a send that begins after the deadline sends nothing at all", async () => {
+    const clock = fakeClock(T0 + 60_000);
+    const result = await run(20, clock, T0 + 50_000);
+    expect(result).toMatchObject({ sent: 0, remaining: 20 });
   });
 });

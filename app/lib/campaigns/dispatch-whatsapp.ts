@@ -64,6 +64,12 @@ export const INTERRUPTED_ERROR = `${UNCONFIRMED_PREFIX}interrupted`;
 
 type Db = ReturnType<typeof getAdminClient>["database"];
 
+/**
+ * No batch starts with less than this left before the deadline: it has to
+ * send, write its rows and let the caller close up inside the time it has.
+ */
+export const START_MARGIN_MS = 1500;
+
 export type WhatsAppDeps = {
   db?: Db;
   send?: (send: TemplateSend) => Promise<WhatsAppSendResult>;
@@ -71,6 +77,11 @@ export type WhatsAppDeps = {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   budgetMs?: number;
+  /**
+   * Epoch milliseconds by which the whole invocation must be over, shared with
+   * whatever else the caller does. Absent, only the budget limits the send.
+   */
+  deadlineAt?: number;
 };
 
 export type WhatsAppSendOutcome = {
@@ -446,10 +457,14 @@ export async function sendQueuedWhatsApp(
   let halted: string | null = null;
   let refusedBatches = 0;
   let refusedError: string | null = null;
-  const overBudget = () => now() - startedAt >= budgetMs;
+  const deadlineAt = deps.deadlineAt;
+  /** Whether a batch beginning at `t` is still inside the budget and the deadline. */
+  const mayStartAt = (t: number) =>
+    t - startedAt < budgetMs &&
+    (deadlineAt === undefined || t + START_MARGIN_MS <= deadlineAt);
 
   for (let start = 0; start < rows.length; start += PER_SECOND) {
-    if (overBudget()) break;
+    if (!mayStartAt(now())) break;
     const batchStartedAt = now();
     const batch = rows.slice(start, start + PER_SECOND);
 
@@ -520,7 +535,7 @@ export async function sendQueuedWhatsApp(
     if (start + PER_SECOND < rows.length) {
       const wait = Math.max(0, 1000 - (now() - batchStartedAt));
       // No point sleeping towards a batch the budget will not let begin.
-      if (now() - startedAt + wait >= budgetMs) break;
+      if (!mayStartAt(now() + wait)) break;
       if (wait > 0) await sleep(wait);
     }
   }

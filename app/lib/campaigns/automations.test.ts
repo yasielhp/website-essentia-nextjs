@@ -117,4 +117,18 @@ describe("runAutomation on WhatsApp", () => {
     });
     expect(mem.campaign.status).toBe("active");
   });
+
+  test("a run that has no time left sends nothing and keeps its queue", async () => {
+    const mem = memoryDb(rowsOf(2), { campaign: automated() });
+    const sender = fakeSend(() => ok("w"));
+    const result = await runAutomation(automated(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [recipient(1), recipient(2)],
+      whatsapp: { send: sender.send, now: () => 1_000_000 },
+      deadlineAt: 1_000_500,
+    });
+    expect(sender.calls).toHaveLength(0);
+    expect(result).toMatchObject({ queued: 2, sent: 0, failed: 0 });
+    expect(mem.status("row-1")).toBe("queued");
+  });
 });

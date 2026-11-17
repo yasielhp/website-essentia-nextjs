@@ -6,6 +6,7 @@ import {
   dispatchCampaign,
 } from "@/lib/campaigns/dispatch";
 import { runAutomation } from "@/lib/campaigns/automations";
+import { deadlineFrom, outOfTime } from "@/lib/campaigns/deadline";
 import type { CampaignRow } from "@/types/campaign";
 
 /**
@@ -25,7 +26,11 @@ import type { CampaignRow } from "@/types/campaign";
  * bulk and sends mail.
  */
 
-// Fifty chunks of a hundred, paced at two a second, is around half a minute.
+// One tick does all of its work inside this. Email goes out in chunks of a
+// hundred paced at two a second; WhatsApp at ten a second. Everything WhatsApp
+// shares one deadline (`deadlineFrom`, 50 s), so two campaigns in a tick cannot
+// push the function past the 60 s it is allowed: what does not fit stays
+// queued and the next tick finishes it.
 export const maxDuration = 60;
 
 async function handle(request: NextRequest) {
@@ -43,6 +48,7 @@ async function handle(request: NextRequest) {
 
   const db = getAdminClient().database;
   const now = Date.now();
+  const deadlineAt = deadlineFrom(now);
   const results: Record<string, unknown> = {};
 
   const { data: due, error: dueError } = await db
@@ -58,7 +64,12 @@ async function handle(request: NextRequest) {
   // One at a time: each dispatch paces its own chunks, and two campaigns
   // sending at once would share Resend's rate limit rather than the clock.
   for (const row of (due ?? []) as { id: string }[]) {
-    results[row.id] = await dispatchCampaign(row.id);
+    // Out of time: it stays `scheduled` and the next tick takes it.
+    if (outOfTime(deadlineAt)) {
+      results[row.id] = { deferred: "out of time" };
+      continue;
+    }
+    results[row.id] = await dispatchCampaign(row.id, { deadlineAt });
   }
 
   const { data: stuck } = await db
@@ -82,8 +93,13 @@ async function handle(request: NextRequest) {
         })
         .eq("id", row.id);
       results[row.id] = { abandoned: true };
+    } else if (outOfTime(deadlineAt)) {
+      results[row.id] = { deferred: "out of time" };
     } else {
-      results[row.id] = await dispatchCampaign(row.id, { resume: true });
+      results[row.id] = await dispatchCampaign(row.id, {
+        resume: true,
+        deadlineAt,
+      });
     }
   }
 
@@ -94,8 +110,14 @@ async function handle(request: NextRequest) {
     .select("*")
     .eq("status", "active");
   for (const campaign of (active ?? []) as CampaignRow[]) {
+    if (outOfTime(deadlineAt)) {
+      results[campaign.id] = { deferred: "out of time" };
+      continue;
+    }
     try {
-      results[campaign.id] = await runAutomation(campaign);
+      results[campaign.id] = await runAutomation(campaign, new Date(), {
+        deadlineAt,
+      });
     } catch (err) {
       console.error("[cron/campaigns] automation failed:", campaign.id, err);
       results[campaign.id] = { error: (err as Error).message };

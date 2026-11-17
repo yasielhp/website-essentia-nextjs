@@ -20,7 +20,12 @@ import {
 import { loadCandidates, resolveAudience } from "@/lib/campaigns/audience";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { filterAudience } from "@/lib/campaigns/audience-filter";
-import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
+import { deadlineFrom } from "@/lib/campaigns/deadline";
+import {
+  dispatchCampaign,
+  retryFailed,
+  type DispatchResult,
+} from "@/lib/campaigns/dispatch";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import {
@@ -56,7 +61,44 @@ import {
  * values, never as thrown errors, so a screen can show them.
  */
 
-type Failure = { ok: false; error: string };
+type Failure = {
+  ok: false;
+  error: string;
+  /** What a send's failure was about, when it says more (`template_unavailable`). */
+  detail?: string;
+};
+
+/**
+ * What a send reports. A WhatsApp send may stop early: `remaining` rows are
+ * left for the cron, `unrecorded` messages went out without their row being
+ * updated, and `halted` carries the reason Meta kept refusing it.
+ */
+type SendOutcome = {
+  ok: true;
+  sent: number;
+  failed: number;
+  remaining?: number;
+  unrecorded?: number;
+  halted?: string;
+};
+
+function sendOutcome(result: DispatchResult): SendOutcome | Failure {
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.error,
+      ...(result.detail ? { detail: result.detail } : {}),
+    };
+  }
+  return {
+    ok: true,
+    sent: result.sent,
+    failed: result.failed,
+    ...(result.remaining ? { remaining: result.remaining } : {}),
+    ...(result.unrecorded ? { unrecorded: result.unrecorded } : {}),
+    ...(result.halted ? { halted: result.halted } : {}),
+  };
+}
 
 const LIST_PATH = "/dashboard/campaigns";
 
@@ -827,17 +869,20 @@ export async function sendTestCampaign(
 export async function sendCampaignNow(
   accessToken: string | null,
   id: string,
-): Promise<{ ok: true; sent: number; failed: number } | Failure> {
+): Promise<SendOutcome | Failure> {
   try {
     await admin(accessToken);
   } catch (err) {
     return authFailure(err);
   }
 
-  const result = await dispatchCampaign(id);
+  // The page this is called from allows 60 s; a WhatsApp send stops before
+  // that and says how many rows are left for the cron to finish.
+  const result = await dispatchCampaign(id, {
+    deadlineAt: deadlineFrom(Date.now()),
+  });
   revalidatePath(LIST_PATH);
-  if (!result.ok) return { ok: false, error: result.error };
-  return { ok: true, sent: result.sent, failed: result.failed };
+  return sendOutcome(result);
 }
 
 export async function scheduleCampaign(
@@ -987,17 +1032,18 @@ export async function cancelCampaign(
 export async function retryFailedRecipients(
   accessToken: string | null,
   id: string,
-): Promise<{ ok: true; sent: number; failed: number } | Failure> {
+): Promise<SendOutcome | Failure> {
   try {
     await admin(accessToken);
   } catch (err) {
     return authFailure(err);
   }
 
-  const result = await retryFailed(id);
+  const result = await retryFailed(id, {
+    deadlineAt: deadlineFrom(Date.now()),
+  });
   revalidatePath(LIST_PATH);
-  if (!result.ok) return { ok: false, error: result.error };
-  return { ok: true, sent: result.sent, failed: result.failed };
+  return sendOutcome(result);
 }
 
 // ─── Contacts ───────────────────────────────────────────────────

@@ -383,7 +383,12 @@ async function preflight(
 
 export async function dispatchCampaign(
   campaignId: string,
-  opts: { resume?: boolean; preflighted?: boolean } = {},
+  opts: {
+    resume?: boolean;
+    preflighted?: boolean;
+    /** Epoch ms by which the caller's whole invocation must be over. */
+    deadlineAt?: number;
+  } = {},
   deps: DispatchDeps = {},
 ): Promise<DispatchResult> {
   const db = deps.db ?? getAdminClient().database;
@@ -474,7 +479,11 @@ export async function dispatchCampaign(
   }
 
   const { sent, failed, lastError, remaining, unrecorded, halted } =
-    await sendQueued(campaign, rows, { db, ...deps.whatsapp });
+    await sendQueued(campaign, rows, {
+      db,
+      deadlineAt: opts.deadlineAt,
+      ...deps.whatsapp,
+    });
 
   // Meta refused whole batches for one reason: the campaign is failed with the
   // reason and the rest of its queue is left alone. A retry reopens it.
@@ -523,6 +532,7 @@ export async function dispatchCampaign(
  */
 export async function retryFailed(
   campaignId: string,
+  opts: { deadlineAt?: number } = {},
   deps: DispatchDeps = {},
 ): Promise<DispatchResult> {
   const db = deps.db ?? getAdminClient().database;
@@ -582,7 +592,7 @@ export async function retryFailed(
 
   return dispatchCampaign(
     campaignId,
-    { resume: true, preflighted: true },
+    { resume: true, preflighted: true, deadlineAt: opts.deadlineAt },
     deps,
   );
 }
