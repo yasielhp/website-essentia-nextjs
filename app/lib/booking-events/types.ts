@@ -28,6 +28,7 @@ export type BookingEventName =
   | "edited"
   | "deleted"
   | "paid"
+  | "reminded"
   | "failed"
   | "synced"
   | "removed";

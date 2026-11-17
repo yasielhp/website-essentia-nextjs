@@ -437,7 +437,8 @@
           "paid": "Pagada",
           "failed": "Fallido",
           "synced": "Sincronizada",
-          "removed": "Evento retirado"
+          "removed": "Evento retirado",
+          "reminded": "Recordatorio"
         },
         "roles": {
           "admin": "Administrador",

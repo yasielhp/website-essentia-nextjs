@@ -437,7 +437,8 @@
           "paid": "Paid",
           "failed": "Failed",
           "synced": "Synced",
-          "removed": "Event removed"
+          "removed": "Event removed",
+          "reminded": "Reminder"
         },
         "roles": {
           "admin": "Admin",
