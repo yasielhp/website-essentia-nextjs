@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch } from "react";
+import { useRef, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconCalendar,
@@ -11,6 +11,7 @@ import {
   IconWorld,
 } from "@/components/ui/icons";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
+import { radioTarget } from "@/lib/radio-nav";
 import type { CampaignChannel, CampaignKind } from "@/types/campaign";
 import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
 
@@ -47,6 +48,16 @@ export function TypeStep({
   // A saved campaign keeps its channel: its recipients and report only mean
   // something in one.
   const channelLocked = state.id !== null;
+  const radios = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /** Arrows move the choice and the focus together, as a radio group does. */
+  function onChannelKey(e: React.KeyboardEvent, index: number) {
+    const target = radioTarget(e.key, index, CHANNELS.length);
+    if (target === null) return;
+    e.preventDefault();
+    dispatch({ type: "SET_CHANNEL", channel: CHANNELS[target] });
+    radios.current[target]?.focus();
+  }
 
   return (
     <section className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
@@ -59,14 +70,20 @@ export function TypeStep({
         aria-describedby="campaign-channel-note"
         className="bg-sand-100 mb-2 inline-flex rounded-full p-1"
       >
-        {CHANNELS.map((channel) => {
+        {CHANNELS.map((channel, index) => {
           const active = state.channel === channel;
           return (
             <button
               key={channel}
+              ref={(el) => {
+                radios.current[index] = el;
+              }}
               type="button"
               role="radio"
               aria-checked={active}
+              // Only the chosen one is in the tab order; the arrows reach the rest.
+              tabIndex={active ? 0 : -1}
+              onKeyDown={(e) => onChannelKey(e, index)}
               disabled={channelLocked || state.submitting}
               onClick={() => dispatch({ type: "SET_CHANNEL", channel })}
               className={[
