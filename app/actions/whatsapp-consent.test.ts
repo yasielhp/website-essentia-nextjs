@@ -43,6 +43,7 @@ const real = {
 
 let saveBookingConsents: typeof import("@/actions/whatsapp-consent").saveBookingConsents;
 let saveBookingConsentsCore: typeof import("@/lib/whatsapp/save-booking-consents").saveBookingConsentsCore;
+let fetchOwnMarketingOn: typeof import("@/actions/whatsapp-consent").fetchOwnMarketingOn;
 
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
@@ -67,7 +68,9 @@ beforeAll(async () => {
   }));
   mock.module("@/lib/auth-guard", () => ({
     ...real.guard,
-    authenticate: async () => {
+    authenticate: async (token: string | null) => {
+      if (!token)
+        throw new real.guard.AuthError("Authentication required", 401);
       if (!sessionValid)
         throw new real.guard.AuthError("Invalid or expired session", 401);
       // `email` is the profile's, which she can rewrite; `verifiedEmail` is
@@ -91,7 +94,8 @@ beforeAll(async () => {
     ...real.security,
     clientIp: async () => callerIp,
   }));
-  ({ saveBookingConsents } = await import("@/actions/whatsapp-consent"));
+  ({ saveBookingConsents, fetchOwnMarketingOn } =
+    await import("@/actions/whatsapp-consent"));
   ({ saveBookingConsentsCore } =
     await import("@/lib/whatsapp/save-booking-consents"));
 });
@@ -350,5 +354,47 @@ describe("saveBookingConsents", () => {
     expect(await saveBookingConsents(null, input())).toEqual(
       await saveBookingConsentsCore(null, input()),
     );
+  });
+});
+
+describe("fetchOwnMarketingOn", () => {
+  const marketingOn = {
+    newsletter_subscribed: true,
+    newsletter_unsubscribed_at: null,
+    whatsapp_marketing_opted_in_at: "2026-11-01T10:00:00.000Z",
+  };
+
+  test("answers for the contact of the address she signed in with", async () => {
+    rows[1] = contact("session@example.com", marketingOn);
+    expect(await fetchOwnMarketingOn("token")).toBe(true);
+    rows[1] = contact("session@example.com");
+    expect(await fetchOwnMarketingOn("token")).toBe(false);
+  });
+
+  test("a profile address she rewrote to somebody else's does not make it answer for that person", async () => {
+    // guest@ has news and offers on; she, signed in as session@, does not.
+    rows[0] = contact("guest@example.com", marketingOn);
+    profileEmail = "guest@example.com";
+    expect(await fetchOwnMarketingOn("token")).toBe(false);
+    // And her own answer does not depend on what the profile says either.
+    rows[1] = contact("session@example.com", marketingOn);
+    profileEmail = "nobody@example.com";
+    expect(await fetchOwnMarketingOn("token")).toBe(true);
+  });
+
+  test("no token, a token that does not verify or a session with no address is 'not on', never an error", async () => {
+    rows[1] = contact("session@example.com", marketingOn);
+    expect(await fetchOwnMarketingOn(null)).toBe(false);
+    sessionValid = false;
+    expect(await fetchOwnMarketingOn("stale")).toBe(false);
+    sessionValid = true;
+    sessionEmail = null;
+    expect(await fetchOwnMarketingOn("token")).toBe(false);
+  });
+
+  test("a database that fails is 'not on'", async () => {
+    rows[1] = contact("session@example.com", marketingOn);
+    dbFails = true;
+    expect(await fetchOwnMarketingOn("token")).toBe(false);
   });
 });
