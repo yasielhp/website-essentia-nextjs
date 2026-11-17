@@ -27,13 +27,25 @@ export type BookingStorage = {
   staffName: string | null;
   details: DetailsState;
   /**
-   * The draft this visit started on the server, and when. Kept so that a
-   * reload goes on with the SAME draft: a second one would leave the first
-   * behind holding the hour she had picked, and she would find her own hour
-   * taken. Optional, so a booking saved before this existed still reads.
+   * The draft this visit started on the server, when, and for which address.
+   * Kept so that a reload goes on with the SAME draft: a second one would
+   * leave the first behind holding the hour she had picked, and she would find
+   * her own hour taken. Optional, so a booking saved before this existed still
+   * reads.
    */
-  draft?: { bookingId: string; startedAt: number } | null;
+  draft?: SavedDraft | null;
 };
+
+export type SavedDraft = {
+  bookingId: string;
+  startedAt: number;
+  /** The address the draft was last saved with, trimmed and lowercased. */
+  email: string;
+};
+
+/** An address as two of them are compared: trimmed and lowercased. */
+export const draftEmail = (email: string | null | undefined): string =>
+  email?.trim().toLowerCase() ?? "";
 
 /**
  * The draft a restored booking goes on with, or null.
@@ -46,15 +58,45 @@ export type BookingStorage = {
 export function resumableDraft(
   saved: Partial<BookingStorage>,
   now: number = Date.now(),
-): { bookingId: string; startedAt: number } | null {
+): SavedDraft | null {
   const draft: unknown = saved.draft;
   if (!draft || typeof draft !== "object") return null;
-  const { bookingId, startedAt } = draft as Record<string, unknown>;
+  const { bookingId, startedAt, email } = draft as Record<string, unknown>;
   if (typeof bookingId !== "string" || bookingId === "") return null;
   if (typeof startedAt !== "number" || !Number.isFinite(startedAt)) return null;
+  // Without the address it was made for, nobody can be told it is theirs.
+  if (typeof email !== "string" || draftEmail(email) === "") return null;
   const age = now - startedAt;
   if (age < 0 || age > DRAFT_HOLD_MS) return null;
-  return { bookingId, startedAt };
+  return { bookingId, startedAt, email: draftEmail(email) };
+}
+
+/**
+ * The draft this save is written into, or null for a new one.
+ *
+ * A draft STARTED IN THIS VISIT is hers to rewrite, whatever she changes, a
+ * corrected address included: a second draft would leave the first behind
+ * holding her hour. A draft FOUND IN STORAGE (`restoredFor` is the address it
+ * was made for) is only gone on with for that same address. With another one
+ * in the form this is somebody else at the same device, and rewriting the row
+ * would hand her whatever the first person's draft was linked to: the server
+ * only overwrites a draft's contact and account when it is given new ones.
+ */
+export function draftToReuse({
+  bookingId,
+  restoredFor,
+  email,
+}: {
+  bookingId: string | null;
+  /** The address a draft found in storage was made for; null once it is this visit's. */
+  restoredFor: string | null;
+  /** The address in the form now. */
+  email: string;
+}): string | null {
+  if (!bookingId) return null;
+  if (restoredFor === null) return bookingId;
+  const typed = draftEmail(email);
+  return typed !== "" && typed === draftEmail(restoredFor) ? bookingId : null;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import {
+  draftToReuse,
   readStorage,
   resumableDraft,
   writeStorage,
@@ -89,21 +90,23 @@ describe("readStorage", () => {
 describe("resumableDraft: the draft a restored booking goes on with", () => {
   const NOW = Date.parse("2026-11-17T12:00:00.000Z");
   const minutes = (m: number) => m * 60_000;
+  const EMAIL = "ana@example.com";
   const withDraft = (draft: BookingStorage["draft"]) =>
     writeStorage({ ...SAVED, draft });
 
   test("a draft started a moment ago is the one to go on with", () => {
-    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(5) });
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(5), email: EMAIL });
     expect(resumableDraft(readStorage(), NOW)).toEqual({
       bookingId: "b-1",
       startedAt: NOW - minutes(5),
+      email: EMAIL,
     });
   });
 
   test("one older than the hour a draft holds its time is forgotten: it holds nothing any more", () => {
-    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(61) });
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(61), email: EMAIL });
     expect(resumableDraft(readStorage(), NOW)).toBeNull();
-    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(60) });
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(60), email: EMAIL });
     expect(resumableDraft(readStorage(), NOW)).not.toBeNull();
   });
 
@@ -111,10 +114,23 @@ describe("resumableDraft: the draft a restored booking goes on with", () => {
     expect(resumableDraft(readStorage(), NOW)).toBeNull();
     writeStorage(SAVED);
     expect(resumableDraft(readStorage(), NOW)).toBeNull();
-    withDraft({ bookingId: "b-1", startedAt: NOW + minutes(5) });
+    withDraft({ bookingId: "b-1", startedAt: NOW + minutes(5), email: EMAIL });
     expect(resumableDraft(readStorage(), NOW)).toBeNull();
-    withDraft({ bookingId: "", startedAt: NOW });
+    withDraft({ bookingId: "", startedAt: NOW, email: EMAIL });
     expect(resumableDraft(readStorage(), NOW)).toBeNull();
+  });
+
+  test("a draft saved without the address it was made for is not picked up", () => {
+    for (const email of [undefined, "", 42]) {
+      store.set(
+        "essentia_booking:v1",
+        JSON.stringify({
+          step: 1,
+          draft: { bookingId: "b-1", startedAt: NOW, email },
+        }),
+      );
+      expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    }
   });
 
   test("what is in storage is not trusted to have the right shape", () => {
@@ -128,5 +144,55 @@ describe("resumableDraft: the draft a restored booking goes on with", () => {
       store.set("essentia_booking:v1", JSON.stringify({ step: 1, draft }));
       expect(resumableDraft(readStorage(), NOW)).toBeNull();
     }
+  });
+});
+
+describe("draftToReuse: whose draft a save may be written into", () => {
+  test("a draft found in storage is only gone on with for the address it was made for", () => {
+    expect(
+      draftToReuse({
+        bookingId: "b-1",
+        restoredFor: "ana@example.com",
+        email: "  Ana@Example.com ",
+      }),
+    ).toBe("b-1");
+  });
+
+  test("with another address in the form it is somebody else's booking: a new draft", () => {
+    // A shared device: the second person would inherit the first one's draft,
+    // and with it the contact it was linked to.
+    expect(
+      draftToReuse({
+        bookingId: "b-1",
+        restoredFor: "ana@example.com",
+        email: "marta@example.com",
+      }),
+    ).toBeNull();
+    expect(
+      draftToReuse({
+        bookingId: "b-1",
+        restoredFor: "ana@example.com",
+        email: "",
+      }),
+    ).toBeNull();
+  });
+
+  test("a draft started in this visit is hers to rewrite, a corrected address included", () => {
+    expect(
+      draftToReuse({
+        bookingId: "b-1",
+        restoredFor: null,
+        email: "ana.fixed@example.com",
+      }),
+    ).toBe("b-1");
+  });
+
+  test("no draft, nothing to reuse", () => {
+    expect(
+      draftToReuse({ bookingId: null, restoredFor: null, email: "a@b.co" }),
+    ).toBeNull();
+    expect(
+      draftToReuse({ bookingId: null, restoredFor: "a@b.co", email: "a@b.co" }),
+    ).toBeNull();
   });
 });

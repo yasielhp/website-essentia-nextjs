@@ -18,6 +18,8 @@ import {
 import { buildSteps } from "@/utils/calendar-helpers";
 import {
   clearStorage,
+  draftEmail,
+  draftToReuse,
   readStorage,
   resumableDraft,
   writeStorage,
@@ -48,6 +50,14 @@ type BookingLocalState = {
   bookingId: string | null;
   /** When this visit's draft was started; saved with it (see `resumableDraft`). */
   draftStartedAt: number | null;
+  /** The address the draft was last saved with; saved with it too. */
+  draftSavedFor: string | null;
+  /**
+   * The address a draft FOUND IN STORAGE was made for, until this visit saves
+   * it once. While it is set the draft is only reused for that address
+   * (`draftToReuse`).
+   */
+  draftRestoredFor: string | null;
   memberBlocker: boolean;
   checking: boolean;
 };
@@ -56,6 +66,8 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   contactId: null,
   bookingId: null,
   draftStartedAt: null,
+  draftSavedFor: null,
+  draftRestoredFor: null,
   memberBlocker: false,
   checking: false,
 };
@@ -72,6 +84,8 @@ function initLocalState(): BookingLocalState {
     ...INITIAL_LOCAL_STATE,
     bookingId: draft?.bookingId ?? null,
     draftStartedAt: draft?.startedAt ?? null,
+    draftSavedFor: draft?.email ?? null,
+    draftRestoredFor: draft?.email ?? null,
   };
 }
 
@@ -107,8 +121,15 @@ function BookingContentInner() {
   // list queues behind the consent writes of the step before, so without this
   // "next" would be open for seconds on an hour nobody has checked.
   const [datetimeVerified, setDatetimeVerified] = useState(false);
-  const { contactId, bookingId, draftStartedAt, memberBlocker, checking } =
-    local;
+  const {
+    contactId,
+    bookingId,
+    draftStartedAt,
+    draftSavedFor,
+    draftRestoredFor,
+    memberBlocker,
+    checking,
+  } = local;
 
   // Whether a signed-in client already has news and offers on for both
   // channels, so her box shows ticked rather than asking again. A guest has
@@ -168,8 +189,8 @@ function BookingContentInner() {
       selectedTime,
       details,
       draft:
-        bookingId && draftStartedAt
-          ? { bookingId, startedAt: draftStartedAt }
+        bookingId && draftStartedAt && draftSavedFor
+          ? { bookingId, startedAt: draftStartedAt, email: draftSavedFor }
           : null,
     });
   }, [
@@ -187,6 +208,7 @@ function BookingContentInner() {
     details,
     bookingId,
     draftStartedAt,
+    draftSavedFor,
   ]);
 
   const rawSteps = buildSteps();
@@ -257,12 +279,21 @@ function BookingContentInner() {
     setDetailErrors({});
     updateLocal({ checking: true });
 
+    // The draft this save goes into: the one this visit started, or the one
+    // found in storage if it was made for this same address. Somebody else at
+    // the same device gets a draft of her own.
+    const reusedId = draftToReuse({
+      bookingId,
+      restoredFor: draftRestoredFor,
+      email: details.email,
+    });
+
     const result = await saveDetailsStep({
       user: user ? { id: user.id, email: user.email } : null,
       locale,
       draft,
       contactId,
-      bookingId,
+      bookingId: reusedId,
       asGuest,
     });
 
@@ -281,6 +312,9 @@ function BookingContentInner() {
         : result.bookingId === bookingId && draftStartedAt
           ? draftStartedAt
           : Date.now(),
+      draftSavedFor: result.bookingId ? draftEmail(details.email) : null,
+      // Saved once in this visit, it is this visit's from here on.
+      draftRestoredFor: null,
     });
     dispatch({ type: "SET_STEP", step: step + 1 });
   };
