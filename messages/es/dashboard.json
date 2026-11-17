@@ -2050,7 +2050,8 @@
         "rules": "Una vez por cita. Solo a las citas confirmadas (antes) o confirmadas y completadas (después), y solo a las citas cuyo aviso llegue después de activar la campaña: no se avisa de citas pasadas ni de las que ya están dentro del plazo.",
         "delay": "El aviso puede salir con hasta 15 minutos de retraso respecto a la hora indicada.",
         "shortBefore": "{hours} h antes de la cita",
-        "shortAfter": "{hours} h después de la cita"
+        "shortAfter": "{hours} h después de la cita",
+        "grace": "Las citas que se confirman cuando ya pasó ese momento no reciben el aviso (más de {minutes} minutos de margen si es antes de la cita, {hours, plural, one {# hora} other {# horas}} si es después). Si el aviso no puede salir a tiempo, por ejemplo porque el sistema estuvo parado, se pierde en lugar de enviarse tarde. Reprogramar una cita no repite el aviso."
       }
     },
     "segments": {

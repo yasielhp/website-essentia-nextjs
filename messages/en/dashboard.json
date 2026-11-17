@@ -2050,7 +2050,8 @@
         "rules": "Once per appointment. Only for confirmed appointments (before) or confirmed and completed ones (after), and only for appointments whose notice falls after the campaign is switched on: past appointments, and ones already inside the window, are not notified.",
         "delay": "The notice can go out up to 15 minutes later than the time indicated.",
         "shortBefore": "{hours} h before the appointment",
-        "shortAfter": "{hours} h after the appointment"
+        "shortAfter": "{hours} h after the appointment",
+        "grace": "Appointments confirmed after that moment has passed do not get the notice (more than {minutes} minutes late if it is before the appointment, {hours, plural, one {# hour} other {# hours}} if it is after). If the notice cannot go out on time, for example because the system was down, it is lost rather than sent late. Rescheduling an appointment does not repeat the notice."
       }
     },
     "segments": {

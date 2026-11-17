@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import {
   APPOINTMENT_HOURS,
+  appointmentGrace,
   appointmentHoursIssue,
   appointmentSentence,
   isAppointmentEvent,
@@ -41,6 +42,7 @@ export function AppointmentWhen({
     ? trigger.event
     : "before_visit";
   const limits = APPOINTMENT_HOURS[event];
+  const grace = appointmentGrace();
   const radios = useRef<(HTMLButtonElement | null)[]>([]);
 
   const localIssue = appointmentHoursIssue(event, trigger.hours);
@@ -180,7 +182,8 @@ export function AppointmentWhen({
                 ? t("sentenceInvalid", { min: limits.min, max: limits.max })
                 : tValidation.has(serverError)
                   ? tValidation(serverError)
-                  : serverError}
+                  : // A key this screen does not know is never shown raw.
+                    tValidation("invalidInput")}
             </p>
           )}
         </div>
@@ -195,6 +198,7 @@ export function AppointmentWhen({
           </p>
           <p className="text-petroleum-500 text-xs">{t("rules")}</p>
           <p className="text-petroleum-500 text-xs">{t("delay")}</p>
+          <p className="text-petroleum-500 text-xs">{t("grace", grace)}</p>
         </div>
 
         <div className="flex justify-end">

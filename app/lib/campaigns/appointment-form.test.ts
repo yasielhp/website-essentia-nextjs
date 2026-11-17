@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   APPOINTMENT_HOURS,
   appointmentHoursIssue,
+  appointmentGrace,
   appointmentLabel,
   appointmentSentence,
   audienceRowOf,
@@ -11,6 +12,10 @@ import {
   withAppointmentEvent,
 } from "./appointment-form";
 import { validateCampaign } from "@/lib/schemas";
+import { IntlMessageFormat } from "intl-messageformat";
+import { GRACE_AFTER_MS, GRACE_BEFORE_MS } from "./automation-rules";
+import es from "../../../messages/es/dashboard.json";
+import en from "../../../messages/en/dashboard.json";
 
 describe("isAppointmentEvent", () => {
   test("only the two events of an appointment notice", () => {
@@ -260,5 +265,29 @@ describe("audienceRowOf", () => {
       label: "appointmentAudience",
       value: { kind: "appointment", services: [], count: null },
     });
+  });
+});
+
+describe("appointmentGrace: the warning says what the engine does", () => {
+  test("is the engine's own bounds", () => {
+    const grace = appointmentGrace();
+    expect(grace.minutes * 60_000).toBe(GRACE_BEFORE_MS);
+    expect(grace.hours * 3_600_000).toBe(GRACE_AFTER_MS);
+  });
+  test("both languages name those very numbers", () => {
+    const { minutes, hours } = appointmentGrace();
+    for (const [locale, messages] of [
+      ["es", es],
+      ["en", en],
+    ] as const) {
+      const text = new IntlMessageFormat(
+        messages.campaigns.trigger.appointment.grace,
+        locale,
+      ).format({ minutes, hours }) as string;
+      expect(text).toContain(String(minutes));
+      expect(text).toMatch(new RegExp(`\\b${hours} (horas|hours)`));
+      // The three things it promises about: late bookings, a missed notice, a reschedule.
+      expect(text.length).toBeGreaterThan(150);
+    }
   });
 });

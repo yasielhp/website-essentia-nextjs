@@ -1,4 +1,5 @@
 import type { CampaignKind, CampaignTrigger } from "@/types/campaign";
+import { GRACE_AFTER_MS, GRACE_BEFORE_MS } from "./automation-rules";
 
 /**
  * What the appointment-notice screens decide, over plain values: the limits of
@@ -165,5 +166,17 @@ export function audienceRowOf(input: {
   return {
     label: "audience",
     value: { kind: "segment", name: input.segmentName, count: input.count },
+  };
+}
+
+/**
+ * How late a notice can still go out, in the units the screen says them in. It
+ * is read from the engine's own constants, so the sentence that warns the admin
+ * cannot drift from what the engine does: a test pins the two together.
+ */
+export function appointmentGrace(): { minutes: number; hours: number } {
+  return {
+    minutes: GRACE_BEFORE_MS / 60_000,
+    hours: GRACE_AFTER_MS / 3_600_000,
   };
 }
