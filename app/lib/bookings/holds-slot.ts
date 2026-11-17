@@ -26,3 +26,33 @@ export function holdsSlot(booking: SlotHolder, now: Date): boolean {
   if (Number.isNaN(created)) return false;
   return now.getTime() - created <= DRAFT_HOLD_MS;
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A booking id as the public form may hand it in: a uuid, or nothing. */
+export function asDraftId(value: unknown): string | null {
+  return typeof value === "string" && UUID.test(value)
+    ? value.toLowerCase()
+    : null;
+}
+
+/**
+ * Whether this row is the visitor's own form in progress, which must not take
+ * her hour away from HER: she picked it, went on, came back to the calendar,
+ * and would otherwise find it gone.
+ *
+ * Only a DRAFT is ever let through. The id comes from the browser, and one
+ * that names a real booking (pending, confirmed, anything else) frees nothing:
+ * knowing or guessing somebody's booking id must not show their hour as free.
+ */
+export function isOwnDraft(
+  booking: { id: string | null; status: string | null },
+  ownDraftId: string | null,
+): boolean {
+  return (
+    ownDraftId !== null &&
+    booking.id !== null &&
+    booking.id.toLowerCase() === ownDraftId &&
+    booking.status === "draft"
+  );
+}

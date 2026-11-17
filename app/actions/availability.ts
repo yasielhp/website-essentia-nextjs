@@ -1,7 +1,7 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
-import { holdsSlot } from "@/lib/bookings/holds-slot";
+import { asDraftId, holdsSlot, isOwnDraft } from "@/lib/bookings/holds-slot";
 import { getScheduledStartTimes } from "@/utils/calendar-helpers";
 import { parseDurationMinutes } from "@/utils/format";
 import type { WeeklySchedule } from "@/types/schedule";
@@ -19,6 +19,7 @@ type StaffRow = {
 };
 
 type BookingRow = {
+  id: string | null;
   staff_id: string | null;
   date: string | null;
   time: string | null;
@@ -51,6 +52,12 @@ const toKey = (d: Date) =>
  * A slot survives when at least one assigned person is both working and free,
  * so the union — not the intersection — is what gets returned. `staffId`
  * narrows it to one person once the visitor has picked.
+ *
+ * `excludeDraftId` is the public form's own draft: the hour that visitor has
+ * already picked is held by her draft, and without this she would come back to
+ * the calendar and find her own hour taken. It only ever lets a DRAFT through
+ * (`isOwnDraft`), so an id that names somebody's real booking frees nothing.
+ * Nobody else passes it, and without it nothing changes.
  */
 export async function fetchAvailability({
   tierId,
@@ -58,6 +65,7 @@ export async function fetchAvailability({
   from,
   to,
   durationMinutes,
+  excludeDraftId,
 }: {
   tierId: string;
   staffId?: string | null;
@@ -65,8 +73,12 @@ export async function fetchAvailability({
   from: string;
   to: string;
   durationMinutes: number;
+  /** The caller's own draft booking, whose hour is still hers. */
+  excludeDraftId?: string | null;
 }): Promise<Availability> {
   if (!tierId || !from || !to) return {};
+  // From the browser: a uuid or nothing.
+  const ownDraftId = asDraftId(excludeDraftId);
 
   const db = getAdminClient().database;
 
@@ -88,7 +100,7 @@ export async function fetchAvailability({
       .eq("role", "staff"),
     db
       .from("bookings")
-      .select("staff_id, date, time, duration, status, created_at")
+      .select("id, staff_id, date, time, duration, status, created_at")
       .in("staff_id", ids)
       .gte("date", from)
       .lte("date", to)
@@ -110,6 +122,8 @@ export async function fetchAvailability({
     if (!b.staff_id || !b.date || !b.time) continue;
     // A draft abandoned at the date step must not hold the hour for ever.
     if (!holdsSlot(b, readAt)) continue;
+    // Her own form in progress does not take her hour away from her.
+    if (isOwnDraft(b, ownDraftId)) continue;
     const start = toMinutes(b.time);
     addBusy(b.staff_id, b.date.slice(0, 10), {
       start,
