@@ -9,6 +9,7 @@ import {
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
 import { conflictTarget, recipientRow } from "./recipient-rows";
+import { RUN_FAILED_ERROR } from "./run-markers";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
 import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
 
@@ -108,6 +109,11 @@ export async function runAutomation(
 
   // Meta refuses the template or the account: pause the automation with the
   // reason so it stops hitting the number. The admin resumes it once fixed.
+  //
+  // A run that got this far with no error of its own also takes back the mark
+  // the cron left when an earlier run threw. Any other `last_error` is not
+  // this run's to clear: a template still paused says so on a tick with
+  // nothing queued too.
   await refreshCounts(
     campaign.id,
     {
@@ -116,7 +122,9 @@ export async function runAutomation(
         ? { status: "paused", last_error: haltMessage(halted) }
         : lastError
           ? { last_error: lastError }
-          : {}),
+          : campaign.last_error === RUN_FAILED_ERROR
+            ? { last_error: null }
+            : {}),
     },
     db,
   );

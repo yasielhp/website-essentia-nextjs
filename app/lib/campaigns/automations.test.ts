@@ -3,7 +3,15 @@ import { EMPTY_AUDIENCE } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import { runAutomation } from "./automations";
 import { INTERRUPTED_ERROR } from "./dispatch-whatsapp";
-import { campaign, fakeSend, memoryDb, ok, rowsOf } from "./whatsapp-fixtures";
+import { RUN_FAILED_ERROR } from "./run-markers";
+import {
+  campaign,
+  fakeSend,
+  memoryDb,
+  ok,
+  rowsOf,
+  template,
+} from "./whatsapp-fixtures";
 
 const NOW = new Date("2026-11-17T12:00:00Z");
 
@@ -117,6 +125,58 @@ describe("runAutomation on WhatsApp", () => {
       whatsapp: { send: fakeSend(() => ok("w")).send },
     });
     expect(mem.campaign.status).toBe("active");
+  });
+
+  test("a run that ends well clears the mark the cron left when an earlier run threw", async () => {
+    const marked = () => ({ ...automated(), last_error: RUN_FAILED_ERROR });
+    const mem = memoryDb(rowsOf(2), { campaign: marked() });
+    await runAutomation(marked(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [recipient(1), recipient(2)],
+      whatsapp: { send: fakeSend(() => ok("w")).send },
+    });
+    expect(mem.campaign.last_error).toBeNull();
+  });
+
+  test("a run with nothing to do clears that mark too: it ran", async () => {
+    const marked = () => ({ ...automated(), last_error: RUN_FAILED_ERROR });
+    const mem = memoryDb(rowsOf(0), { campaign: marked() });
+    await runAutomation(marked(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [],
+    });
+    expect(mem.campaign.last_error).toBeNull();
+  });
+
+  test("any other error on the campaign is not the run's to clear", async () => {
+    const waiting = () => ({
+      ...automated(),
+      last_error: "template_unavailable: template_not_approved",
+    });
+    const mem = memoryDb(rowsOf(0), { campaign: waiting() });
+    await runAutomation(waiting(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [],
+    });
+    expect(mem.campaign.last_error).toBe(
+      "template_unavailable: template_not_approved",
+    );
+  });
+
+  test("a run that ends with an error of its own replaces the mark with it", async () => {
+    const marked = () => ({ ...automated(), last_error: RUN_FAILED_ERROR });
+    const mem = memoryDb(rowsOf(1), {
+      campaign: marked(),
+      template: template({ status: "PAUSED" }),
+    });
+    await runAutomation(marked(), NOW, {
+      db: mem.db,
+      resolveAudience: async () => [recipient(1)],
+      whatsapp: { send: fakeSend(() => ok("w")).send },
+    });
+    expect(mem.campaign.last_error).toBe(
+      "template_unavailable: template_not_approved",
+    );
   });
 
   test("a run that has no time left sends nothing and keeps its queue", async () => {

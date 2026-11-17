@@ -10,6 +10,7 @@ import {
 import { runAutomation } from "@/lib/campaigns/automations";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { orderJobs, runJobs } from "@/lib/campaigns/cron-plan";
+import { RUN_FAILED_ERROR } from "@/lib/campaigns/run-markers";
 import type { CampaignRow } from "@/types/campaign";
 
 /**
@@ -33,6 +34,10 @@ import type { CampaignRow } from "@/types/campaign";
  * appointment notices, which expire, are run before everything else
  * (`orderJobs`).
  *
+ * An automation whose run throws is marked on its row (`RUN_FAILED_ERROR`) and
+ * left `active`; a read of this route that fails is answered with a 500 that
+ * names it, after doing what the other reads allowed.
+ *
  * Guarded by `CRON_SECRET` like the other crons: this reads client data in
  * bulk and sends mail.
  */
@@ -43,6 +48,33 @@ import type { CampaignRow } from "@/types/campaign";
 // push the function past the 60 s it is allowed: what does not fit stays
 // queued and the next tick finishes it.
 export const maxDuration = 60;
+
+type Db = ReturnType<typeof getAdminClient>["database"];
+
+/**
+ * Says on the campaign that its run threw, so the list does not show a healthy
+ * `active` one that sends nothing. It stays `active` (the next tick tries
+ * again) and `runAutomation` clears the mark the first time it ends well. Only
+ * an `active` row is written: one paused in the meantime keeps its own reason.
+ */
+async function markRunFailed(db: Db, campaign: CampaignRow): Promise<void> {
+  if (campaign.last_error === RUN_FAILED_ERROR) return;
+  try {
+    const { error } = await db
+      .from("campaigns")
+      .update({
+        last_error: RUN_FAILED_ERROR,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", campaign.id)
+      .eq("status", "active");
+    if (error) {
+      console.error("[cron/campaigns] could not mark:", campaign.id, error);
+    }
+  } catch (err) {
+    console.error("[cron/campaigns] could not mark:", campaign.id, err);
+  }
+}
 
 async function handle(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -82,11 +114,20 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  const { data: stuck } = await db
+  // A read that fails below does not stop the tick: what the other reads
+  // found is still done. But it is not a quiet tick either: it is logged,
+  // named in the answer, and the answer is a 500.
+  const errors: Record<string, string> = {};
+
+  const { data: stuck, error: stuckError } = await db
     .from("campaigns")
     .select("id, sending_started_at, last_error")
     .eq("status", "sending")
     .lt("sending_started_at", new Date(now - STUCK_AFTER_MS).toISOString());
+  if (stuckError) {
+    console.error("[cron/campaigns] stuck query failed:", stuckError);
+    errors.stuck = "query failed";
+  }
   const stuckRows = (stuck ?? []) as {
     id: string;
     sending_started_at: string;
@@ -95,10 +136,14 @@ async function handle(request: NextRequest) {
 
   // Automated campaigns: every active one is evaluated on every run. A rule
   // that owes nobody today costs one read; one that does mails them now.
-  const { data: active } = await db
+  const { data: active, error: activeError } = await db
     .from("campaigns")
     .select("*")
     .eq("status", "active");
+  if (activeError) {
+    console.error("[cron/campaigns] active query failed:", activeError);
+    errors.active = "query failed";
+  }
   const activeRows = (active ?? []) as CampaignRow[];
 
   const jobs = orderJobs({
@@ -159,6 +204,7 @@ async function handle(request: NextRequest) {
           return await runAutomation(campaign, new Date(), { deadlineAt });
         } catch (err) {
           console.error("[cron/campaigns] automation failed:", job.id, err);
+          await markRunFailed(db, campaign);
           return { error: (err as Error).message };
         }
       }
@@ -166,6 +212,9 @@ async function handle(request: NextRequest) {
   });
   Object.assign(results, done);
 
+  if (Object.keys(errors).length > 0) {
+    return NextResponse.json({ ok: false, errors, results }, { status: 500 });
+  }
   return NextResponse.json({ ok: true, results });
 }
 
