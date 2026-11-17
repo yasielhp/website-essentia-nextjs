@@ -98,4 +98,27 @@ describe("whatsappTemplateSchema", () => {
       "templateLanguageInvalid",
     ]);
   });
+
+  test("a variable in the header is headerNoVariables", () => {
+    expect(messages({ ...valid, headerText: "Hola {{1}}" })).toEqual([
+      "headerNoVariables",
+    ]);
+  });
+
+  test("a variable in the footer is footerNoVariables", () => {
+    expect(messages({ ...valid, footerText: "Gracias {{1}}" })).toEqual([
+      "footerNoVariables",
+    ]);
+  });
+
+  test("a variable in a button URL is urlNoVariables", () => {
+    const buttons = [
+      {
+        type: "URL" as const,
+        text: "Ver",
+        url: "https://essentia.es/cita/{{1}}",
+      },
+    ];
+    expect(messages({ ...valid, buttons })).toEqual(["urlNoVariables"]);
+  });
 });

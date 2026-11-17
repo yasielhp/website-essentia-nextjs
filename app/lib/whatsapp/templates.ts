@@ -12,6 +12,8 @@
  * slip through to Meta.
  */
 
+import type { WhatsAppTemplateUnsupportedReason } from "@/lib/whatsapp/types";
+
 const MAX_PARAM = 50;
 
 /**
@@ -87,4 +89,37 @@ export function renderPreview(body: string, values: string[]): string {
     const value = values[n - 1];
     return value === undefined || value === "" ? whole : value;
   });
+}
+
+/** The parts of a template that decide whether our client can send it. */
+export type TemplateSupportInput = {
+  /** `TEXT`, `IMAGE`, `VIDEO`… or null when there is no header. */
+  headerFormat: string | null;
+  headerText: string | null;
+  body: string;
+  /** The types of the buttons we cannot represent: neither URL nor quick reply. */
+  unsupportedButtons: string[];
+};
+
+/**
+ * Null when `sendTemplateMessage` can send this template, otherwise why not.
+ *
+ * Our client fills the body placeholders and the URL button suffixes, and
+ * nothing else. A media header needs a file at send time, a header variable
+ * needs a value, a named parameter is not `{{n}}`, and the other button kinds
+ * carry data we never collect: Meta would refuse each of those sends. The first
+ * reason that applies wins.
+ */
+export function templateSupport(
+  template: TemplateSupportInput,
+): WhatsAppTemplateUnsupportedReason | null {
+  if (template.headerFormat !== null && template.headerFormat !== "TEXT") {
+    return "media_header";
+  }
+  if (template.headerText?.includes("{{")) return "header_variable";
+  if (paramIssues(template.body).includes("paramMalformed")) {
+    return "named_params";
+  }
+  if (template.unsupportedButtons.length > 0) return "button_type";
+  return null;
 }

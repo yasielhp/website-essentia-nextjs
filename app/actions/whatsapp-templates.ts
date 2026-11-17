@@ -13,7 +13,7 @@ import {
   isTemplateApiConfigured,
   listRemoteTemplates,
 } from "@/lib/whatsapp/client";
-import { countParams } from "@/lib/whatsapp/templates";
+import { countParams, templateSupport } from "@/lib/whatsapp/templates";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import {
   whatsappTemplateSchema,
@@ -25,9 +25,14 @@ const PATH = "/dashboard/messages";
 /** The only categories the dashboard knows how to show and send. */
 const KNOWN_CATEGORIES = ["MARKETING", "UTILITY"];
 
+/**
+ * `error` is always a key the UI translates. Whatever Meta or the network said
+ * travels in `detail`, which the UI shows as it came.
+ */
 type Failure = {
   ok: false;
   error: string;
+  detail?: string;
   fieldErrors?: Record<string, string>;
 };
 
@@ -40,8 +45,13 @@ function authFailure(err: unknown): Failure {
   throw err;
 }
 
-function reason(err: unknown): string {
-  return err instanceof Error ? err.message : "unknown";
+/** A failure that came from Meta or the network, not from our own checks. */
+function metaFailure(err: unknown): Failure {
+  return {
+    ok: false,
+    error: "meta",
+    detail: err instanceof Error ? err.message : "unknown",
+  };
 }
 
 export async function listWhatsAppTemplates(
@@ -62,6 +72,7 @@ export async function listWhatsAppTemplates(
     if (error) return { ok: false, error: "db" };
     return {
       ok: true,
+      // The SDK types rows as `any`; the table's columns are the row type.
       templates: (data ?? []) as WhatsAppTemplateRow[],
       configured: isTemplateApiConfigured(),
     };
@@ -77,7 +88,9 @@ export async function listWhatsAppTemplates(
  * template the admin wrote here keeps its author and its date. A template in a
  * category the dashboard cannot send (AUTHENTICATION, say) is skipped rather
  * than stored as MARKETING, which would put it behind the wrong consent rule;
- * `skipped` says how many.
+ * `skipped` says how many. A template our client cannot send (a media header,
+ * a named parameter…) is stored with its `unsupported_reason`, so the admin
+ * sees it marked instead of finding it missing.
  */
 export async function syncWhatsAppTemplates(
   accessToken: string | null,
@@ -95,7 +108,7 @@ export async function syncWhatsAppTemplates(
   try {
     remote = await listRemoteTemplates();
   } catch (err) {
-    return { ok: false, error: reason(err) };
+    return metaFailure(err);
   }
 
   const known = remote.filter((t) => KNOWN_CATEGORIES.includes(t.category));
@@ -113,6 +126,7 @@ export async function syncWhatsAppTemplates(
           language: t.language,
           category: t.category,
           status: t.status,
+          header_format: t.headerFormat,
           header_text: t.headerText,
           body: t.body,
           footer_text: t.footerText,
@@ -120,6 +134,7 @@ export async function syncWhatsAppTemplates(
           param_count: countParams(t.body),
           example_params: t.exampleParams,
           rejection_reason: t.rejectionReason,
+          unsupported_reason: templateSupport(t),
           synced_at: now,
           updated_at: now,
         })),
@@ -163,6 +178,7 @@ export async function createWhatsAppTemplate(
   const value = parsed.data;
   const db = getAdminClient().database;
 
+  let isNew = true;
   try {
     const { data: existing, error: lookupError } = await db
       .from("whatsapp_templates")
@@ -174,6 +190,7 @@ export async function createWhatsAppTemplate(
     if (existing && (existing as { status: string }).status !== "draft") {
       return { ok: false, error: "templateExists" };
     }
+    isNew = !existing;
   } catch {
     return { ok: false, error: "db" };
   }
@@ -195,7 +212,7 @@ export async function createWhatsAppTemplate(
       metaId = created.id;
       status = created.status;
     } catch (err) {
-      return { ok: false, error: reason(err) };
+      return metaFailure(err);
     }
   }
 
@@ -216,7 +233,10 @@ export async function createWhatsAppTemplate(
           buttons: value.buttons,
           param_count: countParams(value.body),
           example_params: value.exampleParams,
-          created_by: caller.userId,
+          header_format: value.headerText ? "TEXT" : null,
+          unsupported_reason: null,
+          // Editing someone else's draft does not make it yours.
+          ...(isNew ? { created_by: caller.userId } : {}),
           updated_at: now,
         },
         { onConflict: "name,language" },

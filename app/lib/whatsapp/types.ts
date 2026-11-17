@@ -32,8 +32,28 @@ export type WhatsAppSendResult =
   | { status: "skipped" }
   | { status: "failed"; error: string };
 
+/**
+ * `draft` is ours; the rest are Meta's, stored exactly as it sends them.
+ * Only `APPROVED` can be sent.
+ */
 export type WhatsAppTemplateStatus =
-  "draft" | "PENDING" | "APPROVED" | "REJECTED" | "PAUSED" | "DISABLED";
+  | "draft"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "PAUSED"
+  | "DISABLED"
+  | "IN_APPEAL"
+  | "PENDING_DELETION"
+  | "DELETED"
+  | "LIMIT_EXCEEDED"
+  | "ARCHIVED"
+  | "LOCKED"
+  | "FLAGGED";
+
+/** Why a synced template cannot be sent from the dashboard; see `templateSupport`. */
+export type WhatsAppTemplateUnsupportedReason =
+  "media_header" | "header_variable" | "named_params" | "button_type";
 
 export type WhatsAppTemplateCategory = "MARKETING" | "UTILITY";
 
@@ -48,6 +68,7 @@ export type WhatsAppTemplateRow = {
   language: string;
   category: WhatsAppTemplateCategory;
   status: WhatsAppTemplateStatus;
+  header_format: string | null;
   header_text: string | null;
   body: string;
   footer_text: string | null;
@@ -55,6 +76,8 @@ export type WhatsAppTemplateRow = {
   param_count: number;
   example_params: string[];
   rejection_reason: string | null;
+  /** Null when we can send it. The picker must also require `APPROVED`. */
+  unsupported_reason: WhatsAppTemplateUnsupportedReason | null;
   synced_at: string | null;
   created_by: string | null;
   created_at: string;

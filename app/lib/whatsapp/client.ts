@@ -1,4 +1,7 @@
-import type { WhatsAppSendResult } from "@/lib/whatsapp/types";
+import type {
+  WhatsAppSendResult,
+  WhatsAppTemplateButton,
+} from "@/lib/whatsapp/types";
 
 /**
  * The only place that talks to the Meta WhatsApp Cloud API.
@@ -343,13 +346,39 @@ export type RemoteTemplate = {
   language: string;
   category: string;
   status: string;
+  /** `TEXT`, `IMAGE`… or null when the template has no header. */
+  headerFormat: string | null;
   headerText: string | null;
   body: string;
   footerText: string | null;
-  buttons: { type: string; text: string; url?: string }[];
+  /** Only the kinds we can send: URL and quick reply, in our own shape. */
+  buttons: WhatsAppTemplateButton[];
+  /** The types of the buttons left out of `buttons` (PHONE_NUMBER, COPY_CODE…). */
+  unsupportedButtons: string[];
   exampleParams: string[];
   rejectionReason: string | null;
 };
+
+/**
+ * Meta's buttons narrowed to the two shapes we store. Anything else, and a URL
+ * button that arrives without a URL, is reported by type instead of stored.
+ */
+function normalizeButtons(
+  raw: { type: string; text: string; url?: string }[],
+): Pick<RemoteTemplate, "buttons" | "unsupportedButtons"> {
+  const buttons: WhatsAppTemplateButton[] = [];
+  const unsupportedButtons: string[] = [];
+  for (const b of raw) {
+    if (b.type === "URL" && typeof b.url === "string" && b.url) {
+      buttons.push({ type: "URL", text: b.text, url: b.url });
+    } else if (b.type === "QUICK_REPLY") {
+      buttons.push({ type: "QUICK_REPLY", text: b.text });
+    } else {
+      unsupportedButtons.push(b.type);
+    }
+  }
+  return { buttons, unsupportedButtons };
+}
 
 function flattenTemplate(t: MetaTemplate): RemoteTemplate {
   const components = t.components ?? [];
@@ -364,10 +393,11 @@ function flattenTemplate(t: MetaTemplate): RemoteTemplate {
     language: t.language,
     category: t.category,
     status: t.status,
+    headerFormat: header ? (header.format ?? null) : null,
     headerText: header?.format === "TEXT" ? (header.text ?? null) : null,
     body: body?.text ?? "",
     footerText: find("FOOTER")?.text ?? null,
-    buttons: find("BUTTONS")?.buttons ?? [],
+    ...normalizeButtons(find("BUTTONS")?.buttons ?? []),
     exampleParams: body?.example?.body_text?.[0] ?? [],
     rejectionReason: t.rejected_reason ?? null,
   };

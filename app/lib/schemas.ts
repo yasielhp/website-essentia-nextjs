@@ -539,7 +539,9 @@ export function validateCampaignDraft(input: unknown): CampaignValidation {
 // Messages are keys under `dashboard.validation.*`. Meta's naming rule for
 // templates is lowercase letters, digits and underscores, up to 512 chars; the
 // body may run to 1024 and placeholders must be 1..n consecutive and not at an
-// edge. Every message below is a key, never prose, so the form can translate it.
+// edge. Header, footer and button URL take no variables: Meta wants an example
+// for a header or URL one, forbids them in a footer, and the form asks for none.
+// Every message below is a key, never prose, so the form can translate it.
 export const whatsappTemplateSchema = z
   .object({
     name: z
@@ -550,13 +552,23 @@ export const whatsappTemplateSchema = z
       .regex(/^[a-z0-9_]+$/, "templateNameFormat"),
     language: z.enum(["es", "en"], "templateLanguageInvalid"),
     category: z.enum(["MARKETING", "UTILITY"], "templateCategoryInvalid"),
-    headerText: z.string().trim().max(60, "headerTooLong").optional(),
+    headerText: z
+      .string()
+      .trim()
+      .max(60, "headerTooLong")
+      .refine((v) => !v.includes("{{"), "headerNoVariables")
+      .optional(),
     body: z
       .string()
       .trim()
       .min(1, "templateBodyRequired")
       .max(1024, "templateBodyTooLong"),
-    footerText: z.string().trim().max(60, "footerTooLong").optional(),
+    footerText: z
+      .string()
+      .trim()
+      .max(60, "footerTooLong")
+      .refine((v) => !v.includes("{{"), "footerNoVariables")
+      .optional(),
     buttons: z
       .array(
         z.discriminatedUnion("type", [
@@ -571,7 +583,8 @@ export const whatsappTemplateSchema = z
               .string()
               .trim()
               .url("urlInvalid")
-              .startsWith("https://", "urlMustBeHttps"),
+              .startsWith("https://", "urlMustBeHttps")
+              .refine((v) => !v.includes("{{"), "urlNoVariables"),
           }),
           z.object({
             type: z.literal("QUICK_REPLY"),

@@ -416,6 +416,70 @@ describe("listRemoteTemplates", () => {
       });
     }));
 
+  test("keeps URL and quick-reply buttons in our shape and reports the rest", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([
+        json({
+          data: [
+            {
+              ...remote("1"),
+              components: [
+                { type: "HEADER", format: "IMAGE" },
+                { type: "BODY", text: "Hola {{1}}" },
+                {
+                  type: "BUTTONS",
+                  buttons: [
+                    { type: "URL", text: "Ver", url: "https://essentia.es/a" },
+                    { type: "QUICK_REPLY", text: "Gracias" },
+                    {
+                      type: "PHONE_NUMBER",
+                      text: "Llamar",
+                      phone_number: "+34",
+                    },
+                    { type: "COPY_CODE", text: "Copiar" },
+                    { type: "URL", text: "Sin url" },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      ]);
+      const [t] = await listRemoteTemplates();
+      expect(t.buttons).toEqual([
+        { type: "URL", text: "Ver", url: "https://essentia.es/a" },
+        { type: "QUICK_REPLY", text: "Gracias" },
+      ]);
+      expect(t.unsupportedButtons).toEqual([
+        "PHONE_NUMBER",
+        "COPY_CODE",
+        "URL",
+      ]);
+      expect(t.headerFormat).toBe("IMAGE");
+      expect(t.headerText).toBeNull();
+    }));
+
+  test("a text header reports its format and text", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([
+        json({
+          data: [
+            {
+              ...remote("1"),
+              components: [
+                { type: "HEADER", format: "TEXT", text: "Tu cita" },
+                { type: "BODY", text: "Hola" },
+              ],
+            },
+          ],
+        }),
+      ]);
+      const [t] = await listRemoteTemplates();
+      expect(t.headerFormat).toBe("TEXT");
+      expect(t.headerText).toBe("Tu cita");
+      expect(t.unsupportedButtons).toEqual([]);
+    }));
+
   test("refuses a next page on another host and never sends the token there", () =>
     withEnv(CONFIGURED, async () => {
       const calls = mockFetch([
@@ -493,7 +557,12 @@ describe("listRemoteTemplates", () => {
       ]);
       const list = await listRemoteTemplates();
       expect(list).toHaveLength(1);
-      expect(list[0]).toMatchObject({ metaId: "9", body: "", buttons: [] });
+      expect(list[0]).toMatchObject({
+        metaId: "9",
+        body: "",
+        buttons: [],
+        headerFormat: null,
+      });
     }));
 
   test("explains an API error with Meta's most specific message", () =>

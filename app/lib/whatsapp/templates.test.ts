@@ -3,6 +3,7 @@ import {
   countParams,
   paramIssues,
   renderPreview,
+  templateSupport,
 } from "@/lib/whatsapp/templates";
 
 describe("countParams", () => {
@@ -116,5 +117,64 @@ describe("renderPreview", () => {
     expect(renderPreview("a {{0}} {{ 1 }} {{abc}} b", ["x"])).toBe(
       "a {{0}} {{ 1 }} {{abc}} b",
     );
+  });
+});
+
+describe("templateSupport", () => {
+  const base = {
+    headerFormat: null,
+    headerText: null,
+    body: "Hola {{1}}, gracias por venir.",
+    unsupportedButtons: [],
+  };
+
+  test("a plain template can be sent", () => {
+    expect(templateSupport(base)).toBeNull();
+  });
+
+  test("a text header and URL/quick-reply buttons can be sent", () => {
+    expect(
+      templateSupport({ ...base, headerFormat: "TEXT", headerText: "Tu cita" }),
+    ).toBeNull();
+  });
+
+  test.each(["IMAGE", "VIDEO", "DOCUMENT", "LOCATION"])(
+    "a %s header is media_header",
+    (headerFormat) => {
+      expect(templateSupport({ ...base, headerFormat })).toBe("media_header");
+    },
+  );
+
+  test("a text header with a variable is header_variable", () => {
+    expect(
+      templateSupport({
+        ...base,
+        headerFormat: "TEXT",
+        headerText: "Hola {{1}}",
+      }),
+    ).toBe("header_variable");
+  });
+
+  test("named parameters in the body are named_params", () => {
+    expect(
+      templateSupport({ ...base, body: "Hola {{first_name}}, bienvenido." }),
+    ).toBe("named_params");
+  });
+
+  test("a button that is neither URL nor quick reply is button_type", () => {
+    expect(
+      templateSupport({ ...base, unsupportedButtons: ["PHONE_NUMBER"] }),
+    ).toBe("button_type");
+  });
+
+  test("the first reason wins: media before variables before buttons", () => {
+    expect(
+      templateSupport({
+        headerFormat: "IMAGE",
+        headerText: null,
+        body: "Hola {{nombre}}",
+        unsupportedButtons: ["COPY_CODE"],
+      }),
+    ).toBe("media_header");
   });
 });
