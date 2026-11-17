@@ -2003,6 +2003,8 @@ git commit -am "feat(messages): message_templates table and the catalogue of edi
 
 ### Task 18: Defaults en código + renderizador común
 
+> **Corrección (ejecución): sin fila editada sale el correo de siempre, byte a byte.** `renderMessageEmail` devuelve `{ kind: "legacy" }` si no hay fila (el llamador usa la función actual sin cambios), `{ kind: "custom", subject, html }` si la hay, y `{ kind: "skip" }` solo para `booking_reminder` con `enabled = false`; cualquier fallo de lectura o de render cae a `legacy`. Un correo personalizado se compone con el MISMO `emailBase()` que los legacy (no con el envoltorio de `campaignEmail`), con el cuerpo Maily más los bloques fijos. Los defaults de `app/emails/defaults/` sirven para abrir el editor, no para enviar, y un test guardián comprueba que no pierden ni una frase del correo legacy. Las funciones legacy no se borran. No se unifican formatos de fecha ni se arreglan aquí el idioma del formulario de edición ni el doble `booking_paid` (hallazgos en `docs/plans/2026-11-17-message-inventory.md`).
+
 Cada template actual se parte en dos: el **cuerpo por defecto** como documento Maily (lo que el admin podrá editar) y los **bloques fijos** que añade el código. Se renderiza con `campaignEmail()`, ampliado.
 
 **Files:**
