@@ -5,13 +5,25 @@ import { outOfTime } from "./deadline";
  * invocation's time runs out. Pure, so the order and the cut-off are tested
  * without a database.
  *
- * Priority: scheduled campaigns first (somebody is waiting for them at a set
- * hour), then the ones a previous tick left half done, then the automations.
+ * Priority: the appointment notices first, because they are the only work
+ * that expires (a notice more than 45 minutes late is lost, and a big one-off
+ * campaign can use up the whole tick several ticks in a row); the ones before
+ * a visit ahead of the ones after it, whose margin is hours. Then scheduled
+ * campaigns (somebody is waiting for them at a set hour), then the ones a
+ * previous tick left half done, then the other automations.
  */
 
 export type CronJob = {
   kind: "scheduled" | "resume" | "abandon" | "automation";
   id: string;
+};
+
+/** An active campaign, with what the order needs to know about it. */
+export type AutomationJob = {
+  id: string;
+  kind?: string;
+  /** Its trigger's event. */
+  event?: string;
 };
 
 export type Deferred = { deferred: "out of time" };
@@ -20,15 +32,24 @@ export function orderJobs(input: {
   scheduled: string[];
   /** `abandon` is for a send nobody has claimed in two hours. */
   stuck: { id: string; abandon: boolean }[];
-  automations: string[];
+  automations: AutomationJob[];
 }): CronJob[] {
+  const automation = ({ id }: AutomationJob): CronJob => ({
+    kind: "automation",
+    id,
+  });
+  const notices = input.automations.filter((a) => a.kind === "appointment");
   return [
+    ...notices.filter((a) => a.event === "before_visit").map(automation),
+    ...notices.filter((a) => a.event !== "before_visit").map(automation),
     ...input.scheduled.map((id): CronJob => ({ kind: "scheduled", id })),
     ...input.stuck.map((s): CronJob => ({
       kind: s.abandon ? "abandon" : "resume",
       id: s.id,
     })),
-    ...input.automations.map((id): CronJob => ({ kind: "automation", id })),
+    ...input.automations
+      .filter((a) => a.kind !== "appointment")
+      .map(automation),
   ];
 }
 

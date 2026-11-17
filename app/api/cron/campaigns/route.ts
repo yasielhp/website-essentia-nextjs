@@ -29,7 +29,9 @@ import type { CampaignRow } from "@/types/campaign";
  * stays `sending` with its rest queued: that is how it ends up here as "stuck"
  * and is resumed by the next tick. Each resume re-stamps the claim, so a long
  * campaign making progress is not abandoned. Work the deadline leaves no room
- * for (a scheduled campaign, an automation) waits for the next tick.
+ * for (a scheduled campaign, an automation) waits for the next tick; the
+ * appointment notices, which expire, are run before everything else
+ * (`orderJobs`).
  *
  * Guarded by `CRON_SECRET` like the other crons: this reads client data in
  * bulk and sends mail.
@@ -106,7 +108,11 @@ async function handle(request: NextRequest) {
       abandon:
         now - new Date(row.sending_started_at).getTime() > ABANDON_AFTER_MS,
     })),
-    automations: activeRows.map((campaign) => campaign.id),
+    automations: activeRows.map((campaign) => ({
+      id: campaign.id,
+      kind: campaign.kind,
+      event: campaign.trigger?.event,
+    })),
   });
 
   // One at a time: each dispatch paces its own chunks, and two campaigns

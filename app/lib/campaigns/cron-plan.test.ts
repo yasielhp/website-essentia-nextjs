@@ -8,7 +8,7 @@ const jobs: CronJob[] = orderJobs({
     { id: "r1", abandon: false },
     { id: "x1", abandon: true },
   ],
-  automations: ["a1", "a2"],
+  automations: [{ id: "a1" }, { id: "a2" }],
 });
 
 describe("orderJobs", () => {
@@ -21,6 +21,60 @@ describe("orderJobs", () => {
       "automation:a1",
       "automation:a2",
     ]);
+  });
+
+  test("appointment notices go before everything else, the ones before a visit first", () => {
+    const ordered = orderJobs({
+      scheduled: ["s1"],
+      stuck: [
+        { id: "r1", abandon: false },
+        { id: "x1", abandon: true },
+      ],
+      automations: [
+        { id: "a1", kind: "automated", event: "segment_entry" },
+        { id: "after-1", kind: "appointment", event: "after_visit" },
+        { id: "before-1", kind: "appointment", event: "before_visit" },
+        { id: "a2", kind: "dateBased", event: "birthday" },
+        { id: "before-2", kind: "appointment", event: "before_visit" },
+        { id: "after-2", kind: "appointment", event: "after_visit" },
+      ],
+    });
+    expect(ordered.map((j) => `${j.kind}:${j.id}`)).toEqual([
+      "automation:before-1",
+      "automation:before-2",
+      "automation:after-1",
+      "automation:after-2",
+      "scheduled:s1",
+      "resume:r1",
+      "abandon:x1",
+      "automation:a1",
+      "automation:a2",
+    ]);
+  });
+
+  test("a big one-off send that eats the tick does not starve the notices", async () => {
+    let t = 1_000_000;
+    const ran: string[] = [];
+    const out = await runJobs(
+      orderJobs({
+        scheduled: ["big"],
+        stuck: [],
+        automations: [
+          { id: "welcome", kind: "automated", event: "segment_entry" },
+          { id: "reminder", kind: "appointment", event: "before_visit" },
+        ],
+      }),
+      1_000_000 + 50_000,
+      async (job) => {
+        ran.push(job.id);
+        // The one-off campaign uses the whole tick; a notice takes a second.
+        t += job.id === "big" ? 50_000 : 1_000;
+        return "ran";
+      },
+      () => t,
+    );
+    expect(ran).toEqual(["reminder", "big"]);
+    expect(out.welcome).toEqual({ deferred: "out of time" });
   });
 
   test("nothing to do is no jobs", () => {
