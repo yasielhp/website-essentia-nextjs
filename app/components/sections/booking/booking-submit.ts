@@ -111,22 +111,6 @@ export async function saveDetailsStep({
     }
   }
 
-  // What follows the contact: for a guest the notice consent, for a signed-in
-  // client her contact, her choice on news and offers, and the notice consent.
-  // With a deadline: none of it may hold the booking up.
-  await writeBookingConsentsWithin({
-    user,
-    locale,
-    details,
-    effects: {
-      getAccessToken,
-      updateNewsletterForUser,
-      saveOwnWhatsAppConsent,
-      recordBookingNoticeConsent,
-      log: (message, detail) => console.error(message, detail),
-    },
-  });
-
   let draftId = bookingId;
 
   if (draftId) {
@@ -171,6 +155,29 @@ export async function saveDetailsStep({
       draft.paymentMode,
     );
   }
+
+  // What follows the contact: for a guest the notice consent, for a signed-in
+  // client her contact, her choice on news and offers, and the notice consent.
+  //
+  // It goes LAST and is not awaited, on purpose. Next runs a page's server
+  // actions one at a time, in the order they were called: an action that is slow
+  // or never answers holds up every action queued behind it, whatever deadline
+  // this code puts on its own wait. Called last, it can only delay what comes
+  // after the step (the calendar's availability), never the draft above or the
+  // step itself, and the client moves on at once. The only cost of a lost write
+  // is a WhatsApp notice that is not sent; nothing here may fail the booking.
+  void writeBookingConsentsWithin({
+    user,
+    locale,
+    details,
+    effects: {
+      getAccessToken,
+      updateNewsletterForUser,
+      saveOwnWhatsAppConsent,
+      recordBookingNoticeConsent,
+      log: (message, detail) => console.error(message, detail),
+    },
+  });
 
   return { kind: "saved", contactId: resolvedContactId, bookingId: draftId };
 }
