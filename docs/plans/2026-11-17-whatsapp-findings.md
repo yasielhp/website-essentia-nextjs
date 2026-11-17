@@ -187,7 +187,7 @@ Arreglo: mover cada uno a `legacy-subjects.ts` y hacer que el remitente y el tes
 
 ---
 
-## (xiii) Un mensaje entrante puede llegar sin número: una baja así no se puede aplicar
+## (xv) Un mensaje entrante puede llegar sin número: una baja así no se puede aplicar
 
 **Qué pasa.** La referencia de Meta avisa de que `from` y `wa_id` **pueden omitirse** en un mensaje entrante, y de que a la persona se la identifique entonces por `from_user_id` / `user_id` (un identificador propio de Meta, no un teléfono). Todo lo que la ruta `/api/webhooks/whatsapp` hace con un mensaje entrante va **por número**: casar el STOP con el contacto, escribir la lista de bajas (`whatsapp_suppressed_phones`) y limpiar `whatsapp_unreachable_at`. Un STOP o BAJA que llegue sin `from` no tiene a quién aplicarse: **esa baja se pierde**.
 
