@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { authenticate } from "@/lib/auth-guard";
 import { clientIp } from "@/lib/auth-security";
@@ -109,6 +110,11 @@ export async function saveBookingConsentsCore(
             .eq("id", userId);
           return { ok: !error };
         },
+        // A write that was begun when the deadline came is finished after the
+        // answer: `after` holds the function open until it settles (it is the
+        // platform's `waitUntil`), instead of a loose promise that would die
+        // with the response.
+        keepAlive: (work) => after(work),
       },
       { deadlineMs },
     );

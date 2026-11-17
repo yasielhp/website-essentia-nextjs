@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   BOOKING_CONSENT_DEADLINE_MS,
+  BOOKING_CONSENT_GRACE_MS,
   answerWithin,
   publicReply,
   writeBookingConsents,
@@ -322,12 +323,12 @@ describe("writeBookingConsents: one deadline for all of it", () => {
     });
   }
 
-  test("a write that answers after the deadline does not start the next one", async () => {
+  test("a session check that answers after the deadline writes nothing: the deadline is checked before the contact write begins", async () => {
     const timer = fakeTimer();
-    let release: (value: { ok: boolean }) => void = () => undefined;
+    let release: (value: Session) => void = () => undefined;
     const { fx, names } = effects({
-      saveOwnContact: () =>
-        new Promise<{ ok: boolean }>((resolve) => {
+      authenticate: () =>
+        new Promise<Session>((resolve) => {
           release = resolve;
         }),
     });
@@ -335,9 +336,122 @@ describe("writeBookingConsents: one deadline for all of it", () => {
     await tick();
     timer.fire();
     expect(await run).toEqual({ ok: false, stamped: false, error: "timeout" });
-    release({ ok: true });
+    release({ userId: "u1", email: "ana@example.com" });
     await tick();
-    expect(names()).toEqual(["authenticate"]);
+    expect(names()).toEqual([]);
+  });
+
+  test("once her contact is being written, the notice consent is ALWAYS attempted, deadline or not", async () => {
+    // Otherwise a booking would be left with a contact and no notices; and a
+    // client who ticked news and offers after a STOP (which withdraws the
+    // notices) would keep the news and lose the notices until she booked again.
+    const timer = fakeTimer();
+    let release: (value: { ok: boolean }) => void = () => undefined;
+    const kept: Promise<unknown>[] = [];
+    const { fx, names } = effects({
+      saveOwnContact: () =>
+        new Promise<{ ok: boolean }>((resolve) => {
+          release = resolve;
+        }),
+      keepAlive: (work) => void kept.push(work),
+    });
+    const run = writeBookingConsents(
+      "token",
+      { ...INPUT, marketing: true },
+      fx,
+      timer,
+    );
+    await tick();
+    timer.fire();
+    // The browser is answered at the deadline all the same...
+    expect(await run).toEqual({ ok: false, stamped: false, error: "timeout" });
+    // ...and what was begun is handed over to be kept alive, not left loose.
+    expect(kept).toHaveLength(1);
+
+    release({ ok: true });
+    await kept[0];
+    // The stamp followed the contact. The list did not: it is a copy, and it
+    // is not begun once time is up.
+    expect(names()).toEqual(["authenticate", "notice"]);
+  });
+
+  test("a stamp still running at the deadline is kept alive too, and nothing is begun after it", async () => {
+    const timer = fakeTimer();
+    let release: (value: { ok: boolean; stamped: boolean }) => void = () =>
+      undefined;
+    const kept: Promise<unknown>[] = [];
+    const { fx, names } = effects({
+      stampNotice: () =>
+        new Promise<{ ok: boolean; stamped: boolean }>((resolve) => {
+          release = resolve;
+        }),
+      keepAlive: (work) => void kept.push(work),
+    });
+    const run = writeBookingConsents(
+      "token",
+      { ...INPUT, marketing: true },
+      fx,
+      timer,
+    );
+    await tick();
+    timer.fire();
+    expect(await run).toEqual({ ok: false, stamped: false, error: "timeout" });
+    expect(kept).toHaveLength(1);
+    release({ ok: true, stamped: true });
+    await kept[0];
+    expect(names()).toEqual(["authenticate", "contact"]);
+  });
+
+  test("a session check that hangs is not kept alive: nothing was begun", async () => {
+    const timer = fakeTimer();
+    const kept: Promise<unknown>[] = [];
+    const { fx } = effects({
+      authenticate: never,
+      keepAlive: (work) => void kept.push(work),
+    });
+    const run = writeBookingConsents("token", INPUT, fx, timer);
+    await tick();
+    timer.fire();
+    await run;
+    expect(kept).toEqual([]);
+    expect(timer.pending).toHaveLength(1);
+  });
+
+  test("what is kept alive has a grace of its own: a write that never answers is let go", async () => {
+    const timer = fakeTimer();
+    const kept: Promise<unknown>[] = [];
+    const { fx } = effects({
+      stampNotice: never,
+      keepAlive: (work) => void kept.push(work),
+    });
+    const run = writeBookingConsents(null, INPUT, fx, timer);
+    await tick();
+    timer.fire();
+    await run;
+    expect(timer.pending).toHaveLength(2);
+    expect(timer.pending[1].ms).toBe(BOOKING_CONSENT_GRACE_MS);
+    timer.fire();
+    await kept[0];
+    expect(timer.pending[1].cancelled).toBe(true);
+  });
+
+  test("work that finished in time is not handed over to anyone", async () => {
+    const kept: Promise<unknown>[] = [];
+    const { fx } = effects({ keepAlive: (work) => void kept.push(work) });
+    await writeBookingConsents("token", { ...INPUT, marketing: true }, fx);
+    expect(kept).toEqual([]);
+  });
+
+  test("a keeper that throws does not cost the answer", async () => {
+    const { fx } = effects({
+      stampNotice: never,
+      keepAlive: () => {
+        throw new Error("outside a request");
+      },
+    });
+    expect(
+      await writeBookingConsents(null, INPUT, fx, { deadlineMs: 20 }),
+    ).toEqual({ ok: false, stamped: false, error: "timeout" });
   });
 
   test("a write that fails after the deadline is nobody's unhandled rejection", async () => {

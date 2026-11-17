@@ -14,9 +14,12 @@ import type { OwnWhatsAppConsentInput } from "@/types/contact";
  *
  * Why the deadline is here. A timer in the browser cannot free that queue: it
  * only stops the browser waiting, while the action goes on occupying its turn.
- * So the limit is kept on the server, around every read and write: when it is
- * up the action answers "not done" and the queue moves. The only cost is a
- * WhatsApp notice that is not sent; a booking is worth more than a flag.
+ * So the limit is kept on the server: when it is up the action answers "not
+ * done" and the queue moves, whatever the database is doing. Nothing is BEGUN
+ * after it, but what was begun is finished: a contact that was written always
+ * gets its notice consent attempted, kept alive past the answer (`keepAlive`)
+ * for a bounded grace. The only cost of a lost write is a WhatsApp notice that
+ * is not sent; a booking is worth more than a flag.
  *
  * What it writes:
  *  - a guest: the notice consent, on the contact the step has just saved (her
@@ -35,6 +38,12 @@ import type { OwnWhatsAppConsentInput } from "@/types/contact";
 
 /** How long the consent writes may occupy the page's action queue. */
 export const BOOKING_CONSENT_DEADLINE_MS = 3000;
+
+/**
+ * How much longer a write that was already begun at the deadline is kept alive
+ * after the browser has been answered.
+ */
+export const BOOKING_CONSENT_GRACE_MS = 10_000;
 
 const inputSchema = z.object({
   /** The address typed in the form. It decides nothing by itself: see `consentTarget`. */
@@ -127,6 +136,12 @@ export type BookingConsentEffects = {
     userId: string,
     sessionEmail: string,
   ) => Promise<Outcome>;
+  /**
+   * Keeps the function alive, after the browser has been answered, until the
+   * work it is handed settles (`after()` of `next/server` on the server).
+   * Without one, work that outlives the deadline lasts as long as the process.
+   */
+  keepAlive?: (work: Promise<unknown>) => void;
 };
 
 type StartTimer = (fn: () => void, ms: number) => () => void;
@@ -155,6 +170,9 @@ function startDeadline(ms: number, startTimer: StartTimer) {
   });
   return {
     cancel: () => cancel(),
+    /** Resolves when the time is up. Never, once cancelled. */
+    over,
+    expired: () => expired,
     within<T>(work: () => Promise<T>): Promise<T | TimedOut> {
       if (expired) return Promise.resolve(TIMED_OUT);
       return Promise.race([work(), over]);
@@ -202,14 +220,41 @@ const attempt =
     }
   };
 
+/**
+ * Hands work that outlived the deadline to whoever keeps it alive, bounded by
+ * its own grace: a database that never answers must not pin the function for
+ * as long as the platform lets it run.
+ */
+function handOver(
+  work: Promise<unknown>,
+  keepAlive: (work: Promise<unknown>) => void,
+  graceMs: number,
+  startTimer: StartTimer,
+): void {
+  let cancel = () => {};
+  const grace = new Promise<void>((resolve) => {
+    cancel = startTimer(resolve, graceMs);
+  });
+  const kept = Promise.race([work.then(() => undefined), grace]).finally(() =>
+    cancel(),
+  );
+  try {
+    keepAlive(kept);
+  } catch {
+    // Nobody to keep it: the work goes on for as long as the process does.
+    cancel();
+  }
+}
+
 export async function writeBookingConsents(
   accessToken: string | null,
   raw: unknown,
   effects: BookingConsentEffects,
   {
     deadlineMs = BOOKING_CONSENT_DEADLINE_MS,
+    graceMs = BOOKING_CONSENT_GRACE_MS,
     startTimer = realTimer,
-  }: { deadlineMs?: number; startTimer?: StartTimer } = {},
+  }: { deadlineMs?: number; graceMs?: number; startTimer?: StartTimer } = {},
 ): Promise<BookingConsentResult> {
   const parsed = inputSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, stamped: false, error: "invalid" };
@@ -218,6 +263,8 @@ export async function writeBookingConsents(
   const deadline = startDeadline(deadlineMs, startTimer);
   const errors: BookingConsentError[] = [];
   let stamped = false;
+  /** A write is under way, or done: from here on the work is worth keeping. */
+  let begun = false;
   const done = (): BookingConsentResult =>
     errors.length > 0
       ? { ok: false, stamped, error: errors[0] }
@@ -228,79 +275,96 @@ export async function writeBookingConsents(
     error: "timeout",
   });
 
-  try {
-    let session: { userId: string; email: string | null } | null = null;
-    if (accessToken) {
-      const who = await deadline.within(async () => {
+  // The deadline decides when the BROWSER is answered, and it is looked at
+  // again before each thing is BEGUN: the first write, and the newsletter
+  // list. It is deliberately not looked at between her contact and the notice
+  // consent. Those two are one piece: a contact written and left unstamped is a
+  // booking with no notices, and for a client who ticked "news and offers"
+  // after a STOP (which withdraws the notices so they can be given afresh) it
+  // would mean the news without the notices until she booked again.
+  const work = (async (): Promise<BookingConsentResult> => {
+    try {
+      let session: { userId: string; email: string | null } | null = null;
+      if (accessToken) {
         try {
-          return await effects.authenticate(accessToken);
+          session = await effects.authenticate(accessToken);
         } catch {
-          return null;
+          return { ok: false, stamped: false, error: "auth" };
         }
+      }
+
+      // Her own contact only when the form carries her own address. With any
+      // other address in it she is booking for somebody else: her contact is
+      // not touched and that booking's consent goes the way a guest's does.
+      const { email, own } = consentTarget({
+        signedIn: session !== null,
+        sessionEmail: session?.email ?? null,
+        formEmail: input.email,
       });
-      if (who === TIMED_OUT) return late();
-      if (!who) return { ok: false, stamped: false, error: "auth" };
-      session = who;
-    }
+      if (!email) {
+        // With nothing to stamp there is nothing to do here at all.
+        if (!input.termsAccepted) return done();
+        return { ok: false, stamped: false, error: "noEmail" };
+      }
 
-    // Her own contact only when the form carries her own address. With any
-    // other address in it she is booking for somebody else: her contact is not
-    // touched and that booking's consent goes the way a guest's does.
-    const { email, own } = consentTarget({
-      signedIn: session !== null,
-      sessionEmail: session?.email ?? null,
-      formEmail: input.email,
-    });
-    if (!email) {
-      // With nothing to stamp there is nothing to do here at all.
-      if (!input.termsAccepted) return done();
-      return { ok: false, stamped: false, error: "noEmail" };
-    }
+      // Time ran out while her session was being checked: nothing is begun.
+      if (deadline.expired()) return late();
 
-    if (own) {
-      const contact = contactSchema.safeParse(input);
-      if (!contact.success) {
-        errors.push("invalid");
-      } else {
-        const saved = await deadline.within(
-          attempt(() =>
+      if (own) {
+        const contact = contactSchema.safeParse(input);
+        if (!contact.success) {
+          errors.push("invalid");
+        } else {
+          begun = true;
+          const saved = await attempt(() =>
             effects.saveOwnContact(email, {
               ...contact.data,
               language: input.language,
               marketing: input.marketing,
             }),
-          ),
-        );
-        if (saved === TIMED_OUT) return late();
-        if (!saved.ok) errors.push("db");
+          )();
+          if (!saved.ok) errors.push("db");
+        }
       }
-    }
 
-    if (input.termsAccepted) {
-      const notice = await deadline.within(
-        attempt(() => effects.stampNotice(email)),
-      );
-      if (notice === TIMED_OUT) return late();
-      if (!notice.ok) errors.push("db");
-      else stamped = "stamped" in notice && notice.stamped === true;
-    }
+      if (input.termsAccepted) {
+        begun = true;
+        const notice = await attempt(() => effects.stampNotice(email))();
+        if (!notice.ok) errors.push("db");
+        else stamped = "stamped" in notice && notice.stamped === true;
+      }
 
-    // Last, because the contact above already carries her yes, which is what
-    // the campaigns read: the list at Resend and the flag on her profile are
-    // copies, and the first thing to go if time runs short.
-    if (session && own && input.marketing) {
-      const { userId } = session;
-      const listed = await deadline.within(
-        attempt(() => effects.subscribeNewsletter(userId, email)),
-      );
-      if (listed === TIMED_OUT) return late();
-      if (!listed.ok) errors.push("newsletter");
-    }
+      // Last, because the contact above already carries her yes, which is what
+      // the campaigns read: the list at Resend and the flag on her profile are
+      // copies, the first thing to go if time runs short, and not begun at all
+      // once it has.
+      if (session && own && input.marketing) {
+        if (deadline.expired()) return late();
+        const { userId } = session;
+        const listed = await attempt(() =>
+          effects.subscribeNewsletter(userId, email),
+        )();
+        if (!listed.ok) errors.push("newsletter");
+      }
 
-    return done();
-  } catch {
-    return { ok: false, stamped, error: "db" };
+      return done();
+    } catch {
+      return { ok: false, stamped, error: "db" };
+    }
+  })();
+
+  try {
+    const first = await Promise.race([work, deadline.over]);
+    if (first !== TIMED_OUT) return first;
   } finally {
     deadline.cancel();
   }
+
+  // Answered at the deadline, so the page's queue moves. What was begun is not
+  // abandoned to a promise the platform may kill with the response: it is
+  // handed to `keepAlive`, which holds the function until it settles.
+  if (begun && effects.keepAlive) {
+    handOver(work, effects.keepAlive, graceMs, startTimer);
+  }
+  return late();
 }
