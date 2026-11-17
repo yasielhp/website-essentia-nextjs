@@ -17,7 +17,6 @@ const MAX_STATIC = 200;
  * form and the transactional messages, which differ in the fields they offer
  * and in the sentence that says a field has no value there.
  */
-/** One `{{n}}`: a contact field or a fixed text, with what is wrong with it. */
 export function WhatsAppParamRow({
   index,
   source,

@@ -67,7 +67,13 @@ export function messageTemplateChoices(
 export type WhatsAppRowState =
   /** Nothing saved, or no template chosen: nothing is sent. */
   | { kind: "none" }
-  /** The row is switched off: nothing is sent. */
+  /**
+   * The row is switched off: nothing is sent. Nothing on this screen produces
+   * it (the only switch is the email reminder's, and the sender stops a
+   * WhatsApp reminder by deleting its row), but a row saved with
+   * `enabled: false` by a direct call is honoured by the sender, and the list
+   * must not call it "set up". So the state stays, as the honest reading.
+   */
   | { kind: "off" }
   | { kind: "configured"; templateName: string }
   | { kind: "invalid"; issue: TemplateIssue | "dynamic_url" }
