@@ -114,7 +114,11 @@ function cancelBlock(d: FixedBlocksData): string {
 
 /** `booking_received`: only when the client chose to pay at the centre. */
 function receivedPaymentNote(d: FixedBlocksData): string {
-  if (d.amountDueEur == null) return "";
+  // Printed as it comes, so only ever a number: the caller normalises it
+  // (`notifyBookingCore`), and this is for a caller that one day does not.
+  if (typeof d.amountDueEur !== "number" || !Number.isFinite(d.amountDueEur)) {
+    return "";
+  }
   return d.locale === "es"
     ? `<p style="margin:0 0 24px;font-size:16px;color:#335554;line-height:1.6;">
              Has elegido pagar en el centro: el día de tu sesión abonarás <strong>${d.amountDueEur} €</strong>, el precio íntegro del tratamiento.

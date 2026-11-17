@@ -61,6 +61,28 @@ describe("hostile values in the booking data", () => {
     });
   }
 
+  test("booking_received: an amount due that is not a number prints no payment sentence", () => {
+    const [c] = casesFor("booking_received", "es");
+    const withAmount = (amountDueEur: unknown) =>
+      fixedBlocksHtml("booking_received", {
+        ...c!.fixed,
+        amountDueEur: amountDueEur as number,
+      });
+    for (const hostile of [
+      "<img src=x onerror=alert(1)>",
+      "45",
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      { toString: () => "<b>45</b>" },
+    ]) {
+      const html = withAmount(hostile);
+      expect(html).toBe(withAmount(null));
+      expect(html).not.toContain("abonarás");
+    }
+    expect(withAmount(45)).toContain("abonarás <strong>45\u00a0€</strong>");
+    expect(withAmount(0)).toContain("abonarás <strong>0\u00a0€</strong>");
+  });
+
   test("the calendar link carries the raw title once, encoded, not escaped twice", () => {
     const [c] = casesFor("booking_confirmed", "es");
     const html = fixedBlocksHtml("booking_confirmed", {

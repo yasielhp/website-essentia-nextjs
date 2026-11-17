@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmail } from "@/emails/send";
@@ -34,6 +35,71 @@ export type BookingNotificationPayload = {
   duration?: string | null;
   locale?: "en" | "es";
 };
+
+const CONTROL_OR_MARKUP = /[<>\u0000-\u001f\u007f\u0085\u2028\u2029]/;
+
+/**
+ * What `notifyBooking` (the Server Action) accepts: the shape of
+ * `BookingNotificationPayload`, with a ceiling on every text.
+ *
+ * A Server Action is a public endpoint and its TypeScript types are a wish, so
+ * this is what stands between a hand-made request and an email signed by the
+ * centre. The limits are several times what the booking form and the dashboard
+ * send (a name, a service title, "60 min", "10:30"), and the formats are left
+ * loose on purpose (an empty date or time, a time the database wrote as
+ * `10:30:00`): a real booking must never be turned away here. Nothing is
+ * rewritten: what passes goes on as it came.
+ *
+ * `received` is the one event a stranger can send, and the legacy emails print
+ * the name, the service, the session type, the time and the duration as they
+ * come. On that event those five may carry no `<` or `>` and no control
+ * character (a line break in the service would be one in the subject). The
+ * team's own events are not doubted that way.
+ */
+export const bookingNotificationSchema = z
+  .object({
+    bookingId: z
+      .string()
+      .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+    event: z.enum(["received", "confirmed", "cancelled", "rescheduled"]),
+    clientName: z.string().max(200),
+    // Never the recipient (that is read from the booking row): only ever shown.
+    clientEmail: z.string().max(320),
+    clientPhone: z.string().max(40).nullish(),
+    service: z.string().max(200),
+    serviceId: z.string().max(100).nullish(),
+    sessionType: z.string().max(200).nullish(),
+    // A number that is one: zod refuses NaN and the infinities by itself.
+    amountDueEur: z.number().min(0).max(100_000).nullish(),
+    date: z.string().max(40),
+    time: z.string().max(20),
+    duration: z.string().max(40).nullish(),
+    locale: z.enum(["en", "es"]).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.event !== "received") return;
+    for (const field of [
+      "clientName",
+      "service",
+      "sessionType",
+      "time",
+      "duration",
+    ] as const) {
+      const text = value[field];
+      if (typeof text === "string" && CONTROL_OR_MARKUP.test(text)) {
+        ctx.addIssue({ code: "custom", path: [field], message: "notAllowed" });
+      }
+    }
+  });
+
+/**
+ * The amount as the emails may print it: a finite number, or nothing. The
+ * legacy template and the fixed block both set it into HTML as it comes, so
+ * whatever is not a number never gets that far, whoever the caller is.
+ */
+function amountOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
 
 /**
  * Resolves the recipient from the booking row rather than trusting the caller.
@@ -196,9 +262,9 @@ export async function notifyBookingCore(
     service,
     sessionType,
     duration,
-    amountDueEur,
     locale = "en",
   } = payload;
+  const amountDueEur = amountOrNull(payload.amountDueEur);
 
   const recipient = await getBookingRecipient(bookingId);
   if (!recipient) return;
