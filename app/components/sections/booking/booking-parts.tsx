@@ -114,6 +114,8 @@ export type BookingStepRendererProps = {
   preselectedLabel?: string | null;
   paymentMode: PaymentMode;
   onPaymentModeChange: (method: PaymentMode) => void;
+  /** WhatsApp uses the signed-in client already has on. */
+  whatsappOn: { appointments: boolean; marketing: boolean };
 };
 
 export function BookingStepRenderer({
@@ -136,6 +138,7 @@ export function BookingStepRenderer({
   preselectedLabel,
   paymentMode,
   onPaymentModeChange,
+  whatsappOn,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -177,6 +180,7 @@ export function BookingStepRenderer({
           errors={detailErrors}
           onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
           onClearError={onClearDetailError}
+          whatsappOn={whatsappOn}
         />
       )}
       {currentStepId === "datetime" && selectedService && (

@@ -16,6 +16,9 @@ import type { DetailsErrors } from "./steps/details-step";
 import type { PaymentMode } from "@/lib/payments/amounts";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
+import { fetchOwnWhatsAppUses } from "@/actions/whatsapp-consent";
+import { getAccessToken } from "@/lib/client-session";
+import type { OwnWhatsAppUses } from "@/types/contact";
 import {
   BookingModals,
   BookingNavigation,
@@ -70,6 +73,27 @@ function BookingContentInner() {
   // calendar and a booking nobody can honour.
   const [tierHasStaff, setTierHasStaff] = useState(false);
   const { contactId, bookingId, memberBlocker, checking } = local;
+
+  // What a signed-in client already has on, so her boxes show ticked rather
+  // than asking again. A guest has nothing to read, and a failed read is just
+  // "nothing on".
+  const [whatsappOn, setWhatsappOn] = useState<OwnWhatsAppUses>({
+    appointments: false,
+    marketing: false,
+  });
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void fetchOwnWhatsAppUses(getAccessToken())
+      .then((uses) => {
+        if (!cancelled) setWhatsappOn(uses);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const updateLocal = useCallback((patch: Partial<BookingLocalState>) => {
     setLocal((prev) => ({ ...prev, ...patch }));
@@ -250,6 +274,9 @@ function BookingContentInner() {
         selectedTierLabel={selectedTierLabel}
         paymentMode={paymentMode}
         onPaymentModeChange={setPaymentMode}
+        whatsappOn={
+          user ? whatsappOn : { appointments: false, marketing: false }
+        }
       />
 
       <BookingNavigation

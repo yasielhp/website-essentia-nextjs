@@ -1,7 +1,30 @@
 import type { getAdminClient } from "@/lib/insforge-admin";
-import type { OwnWhatsAppConsentInput } from "@/types/contact";
+import type { OwnWhatsAppConsentInput, OwnWhatsAppUses } from "@/types/contact";
+import { activeWhatsAppUses } from "@/lib/whatsapp/consent";
 
 type Db = ReturnType<typeof getAdminClient>["database"];
+
+/**
+ * Which uses the contact of this address already has on, for the booking form
+ * to show as already active. Reads only the caller's own row, found by the
+ * verified session address, and says nothing else about it. No row, or a read
+ * that fails, is "nothing on": the box simply shows unticked.
+ */
+export async function readOwnWhatsAppUses(
+  db: Db,
+  sessionEmail: string,
+): Promise<OwnWhatsAppUses> {
+  const { data, error } = await db
+    .from("contacts")
+    .select(
+      "whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at",
+    )
+    .eq("email", sessionEmail)
+    .limit(1);
+  const row = (data as Parameters<typeof activeWhatsAppUses>[0][] | null)?.[0];
+  if (error || !row) return { appointments: false, marketing: false };
+  return activeWhatsAppUses(row);
+}
 
 /**
  * Records a signed-in client's WhatsApp consent on her own contact.

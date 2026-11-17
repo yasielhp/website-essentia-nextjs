@@ -3,7 +3,11 @@
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { AuthError, authenticate } from "@/lib/auth-guard";
-import { recordOwnWhatsAppConsent } from "@/lib/whatsapp/self-consent";
+import {
+  readOwnWhatsAppUses,
+  recordOwnWhatsAppConsent,
+} from "@/lib/whatsapp/self-consent";
+import type { OwnWhatsAppUses } from "@/types/contact";
 import { normalizeEmail } from "@/utils/contact";
 
 const inputSchema = z.object({
@@ -14,6 +18,24 @@ const inputSchema = z.object({
   appointments: z.boolean(),
   marketing: z.boolean(),
 });
+
+/**
+ * What the signed-in client already has on, so the booking form can show it
+ * ticked instead of asking again. Answers "nothing on" to anyone it cannot
+ * identify and never throws: the form works the same without it.
+ */
+export async function fetchOwnWhatsAppUses(
+  accessToken: string | null,
+): Promise<OwnWhatsAppUses> {
+  const none = { appointments: false, marketing: false };
+  try {
+    const email = normalizeEmail((await authenticate(accessToken)).email);
+    if (!email) return none;
+    return await readOwnWhatsAppUses(getAdminClient().database, email);
+  } catch {
+    return none;
+  }
+}
 
 /**
  * A signed-in client ticking WhatsApp on the booking form.

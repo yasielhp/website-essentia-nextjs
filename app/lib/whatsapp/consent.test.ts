@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  activeWhatsAppUses,
   whatsappConsentColumn,
   whatsappConsentState,
 } from "@/lib/whatsapp/consent";
@@ -53,6 +54,35 @@ describe("whatsappConsentState", () => {
       optedOut: true,
       appointments: "none",
       marketing: "none",
+    });
+  });
+});
+
+describe("activeWhatsAppUses", () => {
+  test("a use is active when consented and not stopped", () => {
+    expect(
+      activeWhatsAppUses({
+        whatsapp_opted_in_at: IN,
+        whatsapp_marketing_opted_in_at: null,
+        whatsapp_opted_out_at: null,
+      }),
+    ).toEqual({ appointments: true, marketing: false });
+  });
+
+  test("a STOP turns both off whatever was consented", () => {
+    expect(
+      activeWhatsAppUses({
+        whatsapp_opted_in_at: IN,
+        whatsapp_marketing_opted_in_at: IN,
+        whatsapp_opted_out_at: OUT,
+      }),
+    ).toEqual({ appointments: false, marketing: false });
+  });
+
+  test("nothing consented is nothing active", () => {
+    expect(activeWhatsAppUses({})).toEqual({
+      appointments: false,
+      marketing: false,
     });
   });
 });

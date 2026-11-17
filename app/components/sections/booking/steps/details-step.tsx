@@ -18,11 +18,14 @@ export function DetailsStep({
   errors = {},
   onChange,
   onClearError,
+  whatsappOn,
 }: {
   details: DetailsState;
   errors?: DetailsErrors;
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
+  /** Uses a signed-in client already has on: shown ticked and left alone. */
+  whatsappOn?: { appointments: boolean; marketing: boolean };
 }) {
   const validationMessage = useValidationMessage();
   const t = useTranslations("booking.detailsStep");
@@ -181,38 +184,42 @@ export function DetailsStep({
           does not withdraw a consent already given — an unticked box means
           "do not touch" — so a withdrawal is the STOP/BAJA reply the hint
           names, or the centre in the dashboard. */}
-      <>
-        <Checkbox
-          name="whatsapp"
-          checked={details.whatsapp ?? false}
-          onChange={(e) => {
-            onChange({ ...details, whatsapp: e.target.checked });
-          }}
-          label={
-            <span className="text-petroleum-400 text-sm">
-              {t("whatsappOptIn")}
-              <span className="mt-0.5 block text-xs">
-                {t("whatsappOptInHint")}
-              </span>
+      <Checkbox
+        name="whatsapp"
+        checked={whatsappOn?.appointments || (details.whatsapp ?? false)}
+        disabled={whatsappOn?.appointments}
+        onChange={(e) => {
+          onChange({ ...details, whatsapp: e.target.checked });
+        }}
+        label={
+          <span className="text-petroleum-400 text-sm">
+            {t("whatsappOptIn")}
+            <span className="mt-0.5 block text-xs">
+              {whatsappOn?.appointments
+                ? t("whatsappAlreadyOn")
+                : t("whatsappOptInHint")}
             </span>
-          }
-        />
-        <Checkbox
-          name="whatsappMarketing"
-          checked={details.whatsappMarketing ?? false}
-          onChange={(e) => {
-            onChange({ ...details, whatsappMarketing: e.target.checked });
-          }}
-          label={
-            <span className="text-petroleum-400 text-sm">
-              {t("whatsappMarketingOptIn")}
-              <span className="mt-0.5 block text-xs">
-                {t("whatsappMarketingOptInHint")}
-              </span>
+          </span>
+        }
+      />
+      <Checkbox
+        name="whatsappMarketing"
+        checked={whatsappOn?.marketing || (details.whatsappMarketing ?? false)}
+        disabled={whatsappOn?.marketing}
+        onChange={(e) => {
+          onChange({ ...details, whatsappMarketing: e.target.checked });
+        }}
+        label={
+          <span className="text-petroleum-400 text-sm">
+            {t("whatsappMarketingOptIn")}
+            <span className="mt-0.5 block text-xs">
+              {whatsappOn?.marketing
+                ? t("whatsappAlreadyOn")
+                : t("whatsappMarketingOptInHint")}
             </span>
-          }
-        />
-      </>
+          </span>
+        }
+      />
 
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">

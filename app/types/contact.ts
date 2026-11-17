@@ -123,6 +123,9 @@ export type WhatsAppConsentColumnsRow = {
 export type WhatsAppConsentResult =
   ({ ok: true } & WhatsAppConsentColumnsRow) | { ok: false; error: string };
 
+/** Which WhatsApp uses a signed-in client already has switched on. */
+export type OwnWhatsAppUses = { appointments: boolean; marketing: boolean };
+
 /** What a signed-in client sends from the booking form to record her WhatsApp consent. */
 export type OwnWhatsAppConsentInput = {
   firstName: string;

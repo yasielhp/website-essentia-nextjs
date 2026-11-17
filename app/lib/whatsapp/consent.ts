@@ -35,6 +35,21 @@ export function whatsappConsentColumn(
     : "whatsapp_opted_in_at";
 }
 
+/**
+ * Which uses can be messaged right now: consent given and no STOP since.
+ * What the booking form shows a signed-in client as "already on".
+ */
+export function activeWhatsAppUses(contact: WhatsAppConsentColumns): {
+  appointments: boolean;
+  marketing: boolean;
+} {
+  const state = whatsappConsentState(contact);
+  return {
+    appointments: !state.optedOut && state.appointments === "accepted",
+    marketing: !state.optedOut && state.marketing === "accepted",
+  };
+}
+
 export function whatsappConsentState(
   contact: WhatsAppConsentColumns,
 ): WhatsAppConsentState {
