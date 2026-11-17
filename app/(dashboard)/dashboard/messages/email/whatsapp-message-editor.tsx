@@ -12,6 +12,7 @@ import {
   sendTestMessage,
 } from "@/actions/message-templates";
 import { useMessageDraft } from "@/hooks/use-message-draft";
+import { headerActions } from "@/lib/messages/header-actions";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import {
   draftKey,
@@ -39,8 +40,10 @@ import { useEmailActionToast } from "./action-error";
 import {
   DraftBanner,
   MessagePageHeader,
-  ResetControl,
+  ResetButton,
+  ResetConfirm,
   UnsavedBar,
+  useMessageReset,
 } from "./page-parts";
 
 type Locale = "es" | "en";
@@ -130,6 +133,32 @@ export function WhatsAppMessageEditor({
     current: currentDraft,
     dirty,
   });
+
+  const reset = useMessageReset({
+    channel: "whatsapp",
+    messageKey,
+    locale,
+    onBeforeLeave: draft.forget,
+  });
+  const actions = headerActions({
+    channel: "whatsapp",
+    dirty,
+    saving,
+    testing,
+    switching: false,
+    hasSaved,
+    enabled: true,
+    canTest,
+    hasTemplate: baseline.templateId !== null,
+    usable: usable !== null,
+  });
+  const resetLabels = {
+    button: t("actions.remove"),
+    working: t("actions.removing"),
+    confirm: t("removeConfirm"),
+    yes: t("removeYes"),
+    no: t("removeNo"),
+  };
 
   function recoverDraft() {
     const recovered = draft.take();
@@ -229,7 +258,47 @@ export function WhatsAppMessageEditor({
           text: hasSaved ? tEmail("status.custom") : tEmail("status.default"),
           tone: hasSaved ? "custom" : "default",
         }}
+        help={{
+          id: "message-test-help",
+          text:
+            actions.help === "saveFirst" ? tEd("saveFirst") : tEd("testNote"),
+        }}
+        actions={
+          <>
+            {actions.reset.shown && (
+              <ResetButton
+                label={reset.busy ? resetLabels.working : resetLabels.button}
+                disabled={actions.reset.disabled || reset.busy}
+                onClick={() => reset.setAsking(true)}
+              />
+            )}
+            <Button
+              variant="outline"
+              aria-describedby="message-test-help"
+              disabled={actions.test.disabled}
+              onClick={() => void sendTest()}
+            >
+              {testing ? tEd("testing") : tEd("test")}
+            </Button>
+            <Button
+              disabled={actions.save.disabled}
+              onClick={() => void save()}
+              title={dirty ? undefined : tEd("unchanged")}
+            >
+              {saving ? tEd("saving") : tEd("save")}
+            </Button>
+          </>
+        }
       />
+
+      {reset.asking && (
+        <ResetConfirm
+          labels={resetLabels}
+          busy={reset.busy}
+          onCancel={() => reset.setAsking(false)}
+          onConfirm={() => void reset.reset()}
+        />
+      )}
 
       {guard.pending && (
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
@@ -364,52 +433,6 @@ export function WhatsAppMessageEditor({
           </aside>
         </div>
       )}
-
-      <div className="border-sand-200 bg-sand-50/95 sticky bottom-0 z-10 -mx-6 flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4 lg:-mx-10 lg:px-10">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="outline"
-            disabled={
-              saving ||
-              testing ||
-              dirty ||
-              !canTest ||
-              baseline.templateId === null
-            }
-            onClick={() => void sendTest()}
-          >
-            {testing ? tEd("testing") : tEd("test")}
-          </Button>
-          <p className="text-petroleum-400 max-w-xs text-xs">
-            {dirty ? tEd("saveFirst") : tEd("testNote")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {hasSaved && (
-            <ResetControl
-              channel="whatsapp"
-              messageKey={messageKey}
-              locale={locale}
-              disabled={saving}
-              onBeforeLeave={draft.forget}
-              labels={{
-                button: t("actions.remove"),
-                working: t("actions.removing"),
-                confirm: t("removeConfirm"),
-                yes: t("removeYes"),
-                no: t("removeNo"),
-              }}
-            />
-          )}
-          <Button
-            disabled={!dirty || saving || !usable}
-            onClick={() => void save()}
-            title={dirty ? undefined : tEd("unchanged")}
-          >
-            {saving ? tEd("saving") : tEd("save")}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "@/actions/message-templates";
 import Link from "next/link";
 import { useMessageDraft } from "@/hooks/use-message-draft";
+import { headerActions } from "@/lib/messages/header-actions";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import {
   draftKey,
@@ -45,8 +46,10 @@ import { useMessagePreview, type Problems } from "./use-message-preview";
 import {
   DraftBanner,
   MessagePageHeader,
-  ResetControl,
+  ResetButton,
+  ResetConfirm,
   UnsavedBar,
+  useMessageReset,
 } from "./page-parts";
 import { VariableChips } from "./variable-chips";
 
@@ -161,6 +164,32 @@ export function MessageEditor({
         () => editorRef.current?.getJSON() as EmailDoc | undefined,
       ),
   });
+
+  const reset = useMessageReset({
+    channel: "email",
+    messageKey,
+    locale,
+    onBeforeLeave: draft.forget,
+  });
+  const actions = headerActions({
+    channel: "email",
+    dirty,
+    saving,
+    testing,
+    switching,
+    hasSaved,
+    enabled,
+    canTest: true,
+    hasTemplate: true,
+    usable: true,
+  });
+  const resetLabels = {
+    button: t("actions.reset"),
+    working: t("actions.resetting"),
+    confirm: t("resetConfirm"),
+    yes: t("resetYes"),
+    no: t("resetNo"),
+  };
 
   function recoverDraft() {
     const recovered = draft.take();
@@ -403,7 +432,47 @@ export function MessageEditor({
           catalog.canDisable && !enabled ? t("status.disabled") : undefined
         }
         describedBy="message-notice"
+        help={{
+          id: "message-test-help",
+          text:
+            actions.help === "saveFirst" ? tEditor("saveFirst") : t("testNote"),
+        }}
+        actions={
+          <>
+            {actions.reset.shown && (
+              <ResetButton
+                label={reset.busy ? resetLabels.working : resetLabels.button}
+                disabled={actions.reset.disabled || reset.busy}
+                onClick={() => reset.setAsking(true)}
+              />
+            )}
+            <Button
+              variant="outline"
+              aria-describedby="message-test-help"
+              disabled={actions.test.disabled}
+              onClick={() => void sendTest()}
+            >
+              {testing ? t("actions.testing") : t("actions.test")}
+            </Button>
+            <Button
+              disabled={actions.save.disabled}
+              onClick={() => void save()}
+              title={dirty ? undefined : tEditor("unchanged")}
+            >
+              {saving ? tEditor("saving") : tEditor("save")}
+            </Button>
+          </>
+        }
       />
+
+      {reset.asking && (
+        <ResetConfirm
+          labels={resetLabels}
+          busy={reset.busy}
+          onCancel={() => reset.setAsking(false)}
+          onConfirm={() => void reset.reset()}
+        />
+      )}
 
       {guard.pending && (
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
@@ -588,46 +657,6 @@ export function MessageEditor({
                 : null
             }
           />
-        </div>
-      </div>
-
-      <div className="border-sand-200 bg-sand-50/95 sticky bottom-0 z-10 -mx-6 flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4 lg:-mx-10 lg:px-10">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="outline"
-            disabled={saving || testing || dirty}
-            onClick={() => void sendTest()}
-          >
-            {testing ? t("actions.testing") : t("actions.test")}
-          </Button>
-          <p className="text-petroleum-400 max-w-xs text-xs">
-            {dirty ? tEditor("saveFirst") : t("testNote")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {(hasSaved || !enabled) && (
-            <ResetControl
-              channel="email"
-              messageKey={messageKey}
-              locale={locale}
-              disabled={saving}
-              onBeforeLeave={draft.forget}
-              labels={{
-                button: t("actions.reset"),
-                working: t("actions.resetting"),
-                confirm: t("resetConfirm"),
-                yes: t("resetYes"),
-                no: t("resetNo"),
-              }}
-            />
-          )}
-          <Button
-            disabled={!dirty || saving || switching}
-            onClick={() => void save()}
-            title={dirty ? undefined : tEditor("unchanged")}
-          >
-            {saving ? tEditor("saving") : tEditor("save")}
-          </Button>
         </div>
       </div>
     </div>

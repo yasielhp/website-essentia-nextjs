@@ -197,7 +197,6 @@ describe("the Emails tab strings", () => {
 
 describe("the message pages' strings", () => {
   const KEYS = [
-    "messages.email.page.back",
     "messages.email.page.loading",
     "messages.email.actions.editRow",
     "messages.email.whatsapp.actions.editRow",
@@ -245,6 +244,14 @@ describe("the draft banner's strings", () => {
       for (const key of ["notice", "recover", "discard"]) {
         expect(messages[`messages.email.draft.${key}`]).toBeTruthy();
       }
+    }
+  });
+});
+
+describe("the way back is the crumb, not a button", () => {
+  it("has no string for a back button any more", () => {
+    for (const messages of Object.values(LOCALES)) {
+      expect(messages["messages.email.page.back"]).toBeUndefined();
     }
   });
 });
