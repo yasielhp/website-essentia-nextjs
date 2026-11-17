@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { optOutButtonKind } from "@/lib/whatsapp/optout-button";
 import { IconPlus, IconTrash } from "@/components/ui/icons";
 import { OptionSelect } from "@/components/ui/option-select";
 import { INPUT_CLASS, TEXTAREA_CLASS } from "@/constants/form-styles";
@@ -713,9 +714,31 @@ export function TemplateForm({
                       }
                       disabled={state.submitting}
                       aria-invalid={Boolean(state.errors[`buttons.${i}.text`])}
+                      aria-describedby={
+                        button.type === "QUICK_REPLY"
+                          ? `wa-button-${i}-optout`
+                          : undefined
+                      }
                       className={INPUT_CLASS}
                     />
                   </Field>
+                  {button.type === "QUICK_REPLY" && (
+                    <p
+                      id={`wa-button-${i}-optout`}
+                      role={
+                        optOutButtonKind(button.text) === "looksLikeOptOut"
+                          ? "status"
+                          : undefined
+                      }
+                      className={`text-xs ${
+                        optOutButtonKind(button.text) === "looksLikeOptOut"
+                          ? "font-medium text-yellow-800"
+                          : "text-petroleum-400"
+                      }`}
+                    >
+                      {t("help.optOutButton")}
+                    </p>
+                  )}
                   {button.type === "URL" && (
                     <Field
                       id={`wa-button-${i}-url`}

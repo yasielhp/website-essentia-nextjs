@@ -2313,7 +2313,8 @@
         "body": "Up to 1024 characters. Write '{{'1'}}', '{{'2'}}'… where the data should change on each send. They cannot be at the very start or end.",
         "footer": "Up to 60 characters. It cannot contain '{{'n'}}' variable values.",
         "buttons": "Up to 3. A link must start with https:// and is fixed: it cannot contain '{{'n'}}' variable values.",
-        "examples": "Meta will not review a template without an example for each variable value. Write a realistic value."
+        "examples": "Meta will not review a template without an example for each variable value. Write a realistic value.",
+        "optOutButton": "For a button to unsubscribe the client, its text must be exactly STOP (or BAJA in Spanish)."
       },
       "toasts": {
         "submitted": "Template submitted for review",

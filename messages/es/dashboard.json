@@ -2313,7 +2313,8 @@
         "body": "Hasta 1024 caracteres. Escribe '{{'1'}}', '{{'2'}}'… donde quieras que cambie el dato en cada envío. No pueden ir al principio ni al final.",
         "footer": "Hasta 60 caracteres. No admite datos variables '{{'n'}}'.",
         "buttons": "Hasta 3. Un enlace debe empezar por https:// y es fijo: no admite datos variables '{{'n'}}'.",
-        "examples": "Meta no revisa una plantilla sin un ejemplo por cada dato variable. Escribe un valor realista."
+        "examples": "Meta no revisa una plantilla sin un ejemplo por cada dato variable. Escribe un valor realista.",
+        "optOutButton": "Para que un botón dé de baja a la clienta, su texto debe ser exactamente BAJA (o STOP en inglés)."
       },
       "toasts": {
         "submitted": "Plantilla enviada a revisión",

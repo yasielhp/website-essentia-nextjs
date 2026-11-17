@@ -4,8 +4,9 @@ import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
 import en from "../../../../../messages/en/dashboard.json";
 import { TemplateForm } from "./template-form";
+import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 
-const wrap = (locale: "es" | "en") =>
+const wrap = (locale: "es" | "en", seed: WhatsAppTemplateRow | null = null) =>
   renderToStaticMarkup(
     <NextIntlClientProvider
       locale={locale}
@@ -13,7 +14,7 @@ const wrap = (locale: "es" | "en") =>
       messages={{ dashboard: locale === "es" ? es : en }}
     >
       <TemplateForm
-        seed={null}
+        seed={seed}
         configured
         takenNames={[]}
         onClose={() => {}}
@@ -39,5 +40,41 @@ describe("the template form", () => {
       expect(es.messages.whatsapp.form[key]).toBeTruthy();
       expect(en.messages.whatsapp.form[key]).toBeTruthy();
     }
+  });
+});
+
+describe("the quick-reply button that should unsubscribe", () => {
+  const seed = (text: string) =>
+    ({
+      name: "aviso",
+      language: "es",
+      category: "MARKETING",
+      body: "Hola",
+      header_text: null,
+      footer_text: null,
+      example_params: [],
+      buttons: [{ type: "QUICK_REPLY", text }],
+    }) as unknown as WhatsAppTemplateRow;
+  const explanation =
+    "Para que un botón dé de baja a la clienta, su texto debe ser exactamente BAJA (o STOP en inglés).";
+
+  test("a quick-reply button always carries the explanation", () => {
+    const html = wrap("es", seed("Confirmar"));
+    expect(html).toContain(explanation);
+    expect(html).toContain('id="wa-button-0-optout"');
+    expect(html).not.toContain('role="status"');
+  });
+  test("one that talks about leaving without being the exact word says it as a warning", () => {
+    const html = wrap("es", seed("Darme de baja"));
+    expect(html).toContain('role="status"');
+    expect(html).toContain("text-yellow-800");
+  });
+  test("the exact word is not warned about", () => {
+    expect(wrap("es", seed("BAJA"))).not.toContain('role="status"');
+  });
+  test("the English text", () => {
+    expect(en.messages.whatsapp.help.optOutButton).toBe(
+      "For a button to unsubscribe the client, its text must be exactly STOP (or BAJA in Spanish).",
+    );
   });
 });
