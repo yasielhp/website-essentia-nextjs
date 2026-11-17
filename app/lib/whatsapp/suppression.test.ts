@@ -179,3 +179,60 @@ describe("loadSuppressedPhones", () => {
     await expect(loadAllSuppressedPhones(broken)).rejects.toThrow("no table");
   });
 });
+
+describe("the whole list, past a thousand numbers", () => {
+  // The database answers at most a thousand rows a request, whatever range is
+  // asked for. A list read in one go lost every number after the thousandth,
+  // and a lost number is a person who wrote STOP being written to again.
+  const PAGE = 1_000;
+  const phoneAt = (n: number) => `+346${String(n).padStart(8, "0")}`;
+  const many = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ phone: phoneAt(i + 1) }));
+
+  /** A table that answers like the real one: a page of at most a thousand. */
+  const paged = (rows: { phone: string }[], failFrom?: number) =>
+    db((_t, chain) => {
+      const [from, to] = (argsOf(chain, "range") ?? [0, PAGE - 1]) as number[];
+      if (failFrom !== undefined && from! >= failFrom) {
+        return { error: { message: "connection reset" } };
+      }
+      return { data: rows.slice(from!, Math.min(to!, from! + PAGE - 1) + 1) };
+    });
+
+  it("reads 2500 numbers to the last one: the 1001st and the 2500th are on it", async () => {
+    const { db: client, log } = paged(many(2500));
+    const list = await loadAllSuppressedPhones(client);
+    expect(list.size).toBe(2500);
+    expect(list.has(phoneAt(1))).toBe(true);
+    expect(list.has(phoneAt(1000))).toBe(true);
+    expect(list.has(phoneAt(1001))).toBe(true);
+    expect(list.has(phoneAt(2500))).toBe(true);
+    // Three pages, each asked for in a fixed order so none repeats or skips.
+    expect(log.map((q) => argsOf(q.chain, "range"))).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+    ]);
+    for (const query of log) {
+      expect(argsOf(query.chain, "order")?.[0]).toBe("phone");
+    }
+  });
+
+  it("a list of exactly a thousand asks once more, to be sure it ended", async () => {
+    const { db: client, log } = paged(many(1000));
+    expect((await loadAllSuppressedPhones(client)).size).toBe(1000);
+    expect(log).toHaveLength(2);
+  });
+
+  it("a page that fails fails the read: never part of the list", async () => {
+    const { db: client } = paged(many(2500), 1000);
+    await expect(loadAllSuppressedPhones(client)).rejects.toThrow(
+      "connection reset",
+    );
+  });
+
+  it("a list longer than can be read is an error, not a silent cut", async () => {
+    const { db: client } = paged(many(10_000));
+    await expect(loadAllSuppressedPhones(client)).rejects.toThrow();
+  });
+});

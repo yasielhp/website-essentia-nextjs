@@ -1,4 +1,5 @@
 import type { getAdminClient } from "@/lib/insforge-admin";
+import { readAllPages } from "@/lib/campaigns/paged-read";
 import { toCampaignPhone } from "./phone";
 
 /**
@@ -118,12 +119,28 @@ export async function isPhoneSuppressed(
   return normalised !== null && listed.has(normalised);
 }
 
-/** The whole list, for resolving an audience. Throws when it cannot be read. */
+/**
+ * The whole list, for resolving an audience. Throws when it cannot be read
+ * WHOLE: the caller must not send.
+ *
+ * Read a page at a time. The database answers at most a thousand rows a
+ * request whatever range is asked for, so the single `range(0, 9999)` this
+ * used to be returned the first thousand and said nothing: the number in
+ * position 1001 was not on the list anyone sent against, which is the one way
+ * this list could fail OPEN. `readAllPages` goes on until a page comes back
+ * short; a page that fails, or a list past its cap, fails the whole read, and
+ * a failed read is what every caller already treats as "send nothing". The
+ * order is by `phone`, the table's unique key, so no page repeats or skips.
+ */
 export async function loadAllSuppressedPhones(db: Db): Promise<Set<string>> {
-  const { data, error } = await db
-    .from(SUPPRESSED_TABLE)
-    .select("phone")
-    .range(0, 9_999);
-  if (error) throw new Error(error.message);
-  return new Set(((data ?? []) as { phone: string }[]).map((r) => r.phone));
+  const rows = await readAllPages<{ phone: string }>(
+    "[whatsapp] suppressed phones",
+    (from, to) =>
+      db
+        .from(SUPPRESSED_TABLE)
+        .select("phone")
+        .order("phone", { ascending: true })
+        .range(from, to),
+  );
+  return new Set(rows.map((r) => r.phone));
 }
