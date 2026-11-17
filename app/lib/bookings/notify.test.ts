@@ -323,9 +323,11 @@ describe("the amount due is a number or it is nothing", () => {
   const HOSTILE: [string, unknown][] = [
     ["an image tag", "<img src=x onerror=alert(1)>"],
     ["a number and a script", "45<script>alert(1)</script>"],
-    ["a numeric string", "45"],
+    ["a string that is not a plain number", "45.500,00"],
     ["NaN", Number.NaN],
     ["Infinity", Number.POSITIVE_INFINITY],
+    ["a negative number", -5],
+    ["an absurd number", 1e9],
     ["an object that prints as HTML", { toString: () => "<b>45</b>" }],
     ["an array", [45]],
     ["true", true],
@@ -388,6 +390,31 @@ describe("the amount due is a number or it is nothing", () => {
       });
     }
   }
+
+  test("a number that arrived as text (a numeric column, a decimal comma) is the number", async () => {
+    for (const [text, amount] of [
+      ["45", 45],
+      [" 45.50 ", 45.5],
+      ["45,50", 45.5],
+      ["0", 0],
+    ] as const) {
+      sent = [];
+      await notifyBookingCore(withAmount(text, "es"), actor);
+      expect(clientEmail().html).toBe(
+        bookingReceivedEmail({
+          name: "Ana García",
+          service: "Drenaje linfático",
+          sessionType: "Sesión individual",
+          date: formatLongDate("2026-08-20", "es"),
+          time: "10:30",
+          duration: "60 min",
+          amountDueEur: amount,
+          cancelUrl: `https://app.example.test/es/reserva/cancelar?token=${TOKEN}`,
+          locale: "es",
+        }),
+      );
+    }
+  });
 
   test("a real amount still reads as it always has, zero included", async () => {
     for (const amount of [45, 0, 37.5]) {
@@ -479,55 +506,136 @@ describe("the Server Action checks what it is handed before anything is sent", (
     expect(sent).toHaveLength(1);
   });
 
-  const INVALID: [string, Record<string, unknown>][] = [
-    [
-      "an amount that is HTML",
-      { amountDueEur: "<img src=x onerror=alert(1)>" },
-    ],
-    ["an amount that is a numeric string", { amountDueEur: "45" }],
-    [
-      "an amount that is not finite",
-      { amountDueEur: Number.POSITIVE_INFINITY },
-    ],
-    ["an amount that is NaN", { amountDueEur: Number.NaN }],
-    ["a negative amount", { amountDueEur: -1 }],
-    ["an absurd amount", { amountDueEur: 1e9 }],
-    ["a booking id that is not an id", { bookingId: "1 or 1=1" }],
-    ["no booking id", { bookingId: "" }],
-    ["an event nobody sends", { event: "paid" }],
-    ["a language we do not write in", { locale: "fr" }],
-    ["a service that is not text", { service: { title: "x" } }],
-    ["a name that is not text", { clientName: ["Ana"] }],
-    ["a session type that is not text", { sessionType: 7 }],
-    ["a time that is not text", { time: 1030 }],
-    ["a duration that is not text", { duration: 60 }],
-    ["a date too long", { date: "2026-08-20".repeat(10) }],
-    ["a date that is not text", { date: 20260820 }],
-    ["a phone too long", { clientPhone: "6".repeat(41) }],
+  // What cannot be repaired. Each is logged, with the path and the code of
+  // what was wrong and nothing a client typed.
+  const INVALID: [string, Record<string, unknown>, string][] = [
+    ["a booking id that is not an id", { bookingId: "1 or 1=1" }, "bookingId"],
+    ["no booking id", { bookingId: "" }, "bookingId"],
+    ["an event nobody sends", { event: "paid" }, "event"],
+    ["a service that is not text", { service: { title: "x" } }, "service"],
+    ["a name that is not text", { clientName: ["Ana"] }, "clientName"],
+    ["a session type that is not text", { sessionType: 7 }, "sessionType"],
+    ["a time that is not text", { time: 1030 }, "time"],
+    ["a duration that is not text", { duration: 60 }, "duration"],
+    ["a date too long", { date: "2026-08-20".repeat(10) }, "date"],
+    ["a date that is not text", { date: 20260820 }, "date"],
     // Nothing is left of it once cleaned: there is no service to write about.
-    ["a service that is nothing but markup", { service: "<<>>\r\n" }],
-    ["an empty service", { service: "" }],
+    [
+      "a service that is nothing but markup",
+      { service: "<<>>\r\n" },
+      "service",
+    ],
+    ["an empty service", { service: "" }, "service"],
   ];
-  for (const [label, over] of INVALID) {
-    test(`${label}: refused, nothing sent, nothing thrown`, async () => {
+  for (const [label, over, path] of INVALID) {
+    test(`${label}: refused, nothing sent, nothing thrown, and it is logged`, async () => {
+      const logged = spyOn(console, "error").mockImplementation(() => {});
       const out = await notifyBooking(null, {
         ...fromTheForm(),
         ...over,
       } as never);
+      const lines = logged.mock.calls.map((call) => JSON.stringify(call));
+      logged.mockRestore();
       expect(out).toEqual({ ok: false, error: "invalidInput" });
       expect(sent).toEqual([]);
       expect(recorded).toEqual([]);
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain(`${path}: `);
+      // Where and what kind, never whose: no name, address, phone or id.
+      for (const personal of [
+        "Ana",
+        "ana@example.test",
+        "Drenaje",
+        ID,
+        "1 or 1=1",
+        "2026-08-20",
+      ]) {
+        expect(lines[0]).not.toContain(personal);
+      }
     });
   }
 
   test("something that is not a payload at all is refused the same way", async () => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
     for (const junk of [null, undefined, "received", 7, []]) {
       expect(await notifyBooking(null, junk as never)).toEqual({
         ok: false,
         error: "invalidInput",
       });
     }
+    expect(logged).toHaveBeenCalledTimes(5);
+    logged.mockRestore();
     expect(sent).toEqual([]);
+  });
+
+  // What used to be refused and can be repaired: a refusal is an email that
+  // does not go out, and nobody is told.
+  const REPAIRED: [string, Record<string, unknown>, number | null][] = [
+    ["an amount that is a numeric string", { amountDueEur: "45" }, 45],
+    ["an amount with a decimal comma", { amountDueEur: "45,50" }, 45.5],
+    ["an amount that is HTML", { amountDueEur: "<img src=x>" }, null],
+    ["an amount that is not finite", { amountDueEur: Infinity }, null],
+    ["an amount that is NaN", { amountDueEur: Number.NaN }, null],
+    ["a negative amount", { amountDueEur: -1 }, null],
+    ["an absurd amount", { amountDueEur: 1e9 }, null],
+    ["an amount that is an object", { amountDueEur: { eur: 45 } }, null],
+    ["a phone far too long", { clientPhone: "6".repeat(500) }, null],
+    ["a phone that is not text", { clientPhone: 600000000 }, null],
+    ["a service id far too long", { serviceId: "s".repeat(500) }, null],
+    ["a service id that is not text", { serviceId: 7 }, null],
+    ["an address that is not text", { clientEmail: null }, null],
+    ["an address far too long", { clientEmail: "a".repeat(999) }, null],
+  ];
+  for (const [label, over, amount] of REPAIRED) {
+    test(`${label}: repaired, and the email goes out`, async () => {
+      const logged = spyOn(console, "error").mockImplementation(() => {});
+      const out = await notifyBooking(null, {
+        ...fromTheForm(),
+        ...over,
+      } as never);
+      expect(logged).not.toHaveBeenCalled();
+      logged.mockRestore();
+      expect(out).toEqual({ ok: true });
+      expect(sent).toHaveLength(1);
+      expect(clientEmail().subject).toBe(SUBJECTS.es.received);
+      expect(clientEmail().html).toBe(legacyReceived("es", amount));
+    });
+  }
+
+  test("a time or a date that is null, or missing, is an empty one", async () => {
+    for (const over of [
+      { time: null },
+      { time: undefined },
+      { date: null },
+      { time: null, date: null },
+    ]) {
+      sent = [];
+      const out = await notifyBooking(null, {
+        ...fromTheForm(),
+        ...over,
+      } as never);
+      expect(out).toEqual({ ok: true });
+      expect(sent).toHaveLength(1);
+      expect(clientEmail().html).toBe(
+        received({
+          ...("time" in over ? { time: "" } : {}),
+          ...("date" in over ? { date: "" } : {}),
+        }),
+      );
+    }
+  });
+
+  test("a language nobody writes in is no language: the email goes out in the default one", async () => {
+    for (const locale of ["fr", "", 7, null]) {
+      sent = [];
+      const out = await notifyBooking(null, {
+        ...fromTheForm(),
+        locale,
+      } as never);
+      expect(out).toEqual({ ok: true });
+      expect(clientEmail().subject).toBe(SUBJECTS.en.received);
+      expect(clientEmail().html).toBe(legacyReceived("en"));
+    }
   });
 
   test("a staff event with no session is turned away, as before", async () => {
@@ -688,6 +796,8 @@ describe("the Server Action checks what it is handed before anything is sent", (
       readBookingNotification({ ...created, clientName: "a".repeat(500) })
         ?.clientName,
     ).toBe("a".repeat(200));
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
     expect(readBookingNotification({ ...created, service: 7 })).toBeNull();
+    quiet.mockRestore();
   });
 });

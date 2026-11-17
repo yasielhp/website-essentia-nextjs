@@ -39,6 +39,11 @@ export type BookingNotificationPayload = {
   locale?: "en" | "es";
 };
 
+/**
+ * The shape of what `notifyBooking` is handed. It refuses as little as it can:
+ * a field that can be done without, or read another way, never costs the
+ * email (see `readBookingNotification`).
+ */
 const payloadShape = z.object({
   bookingId: z
     .string()
@@ -47,17 +52,28 @@ const payloadShape = z.object({
   clientName: z.string(),
   // Never the recipient (that is read from the booking row) and never used:
   // an odd address here is no reason to leave a client without her email.
-  clientEmail: z.string().max(320),
-  clientPhone: z.string().max(40).nullish(),
+  clientEmail: z.string().max(320).catch(""),
+  // Not printed in the client's email: one that cannot be right is left out.
+  clientPhone: z.string().max(40).nullish().catch(null),
   service: z.string(),
-  serviceId: z.string().max(100).nullish(),
+  // The booking row's own is preferred anyway.
+  serviceId: z.string().max(100).nullish().catch(null),
   sessionType: z.string().nullish(),
-  // A number that is one: zod refuses NaN and the infinities by itself.
-  amountDueEur: z.number().min(0).max(100_000).nullish(),
-  date: z.string().max(40),
-  time: z.string(),
+  // Whatever arrives: `amountOrNull` makes a number of it, or nothing.
+  amountDueEur: z.unknown().optional(),
+  // Null, or missing, is an empty one: the emails have always taken those.
+  date: z
+    .string()
+    .max(40)
+    .nullish()
+    .transform((value) => value ?? ""),
+  time: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ""),
   duration: z.string().nullish(),
-  locale: z.enum(["en", "es"]).optional(),
+  // A language nobody writes in is the same as none stated.
+  locale: z.enum(["en", "es"]).nullish().catch(null),
 });
 
 /**
@@ -92,6 +108,38 @@ function printable(text: string): string {
     .trim();
 }
 
+/** More than any treatment costs: an amount above it is not an amount. */
+const MAX_AMOUNT_EUR = 100_000;
+
+/**
+ * The amount as the emails may print it: a number, or nothing. The legacy
+ * template and the fixed block both set it into HTML as it comes, so whatever
+ * is not a number never gets that far, whoever the caller is.
+ *
+ * A number that arrived as text is read as the number it is (a `numeric`
+ * column comes as a string, and a person writes the decimals after a comma):
+ * digits, and at most one `.` or `,` with digits after it. Anything else, a
+ * negative amount or one no treatment costs, is nothing: the email goes out
+ * without the sentence about paying at the centre rather than not at all.
+ */
+function amountOrNull(value: unknown): number | null {
+  const amount =
+    typeof value === "string" && /^\d+(?:[.,]\d+)?$/.test(value.trim())
+      ? Number(value.trim().replace(",", "."))
+      : value;
+  return typeof amount === "number" &&
+    Number.isFinite(amount) &&
+    amount >= 0 &&
+    amount <= MAX_AMOUNT_EUR
+    ? amount
+    : null;
+}
+
+/** Why a payload was refused: where and what kind, never what it said. */
+function logRefusal(reasons: string[]): void {
+  console.error("[notifyBooking] payload refused, nothing sent:", reasons);
+}
+
 /**
  * What `notifyBooking` (the Server Action) was handed, as a payload that may
  * go on, or null when it cannot be made into one.
@@ -105,12 +153,18 @@ function printable(text: string): string {
  *  - on `received`, the one event a stranger can send, they are also cleaned
  *    (`printable`): the legacy emails print them as they come, and a line
  *    break in the service would be one in the subject. The team's own events
- *    are not doubted that way.
+ *    are not doubted that way;
+ *  - the amount is read as a number if it is one in any form, else dropped;
+ *  - a phone, a service id or an address that cannot be right is left out
+ *    (none of them is printed in the client's email), a language nobody
+ *    writes in is no language, and a null date or time is an empty one.
  *
- * Null only for what cannot be repaired: a field of the wrong type, a booking
- * id that is not one, an event or a language nobody sends, an amount that is
- * not a sane number, a date, phone or id far beyond any real one, and a
- * `received` with no service left to write about. Formats are left loose on
+ * Null only for what cannot be repaired: a booking id that is not one, an
+ * event nobody sends, a printed text or a date of the wrong type, a date far
+ * beyond any real one, and a `received` with no service left to write about.
+ * Every refusal is logged (`console.error`) with the path and the code of
+ * each problem and nothing of what was sent, because a refusal is an email
+ * that does not go out and nothing else records it. Formats are left loose on
  * purpose (an empty date or time, a time the database wrote as `10:30:00`).
  * What needs no repair goes on exactly as it came.
  */
@@ -118,8 +172,24 @@ export function readBookingNotification(
   input: unknown,
 ): BookingNotificationPayload | null {
   const parsed = payloadShape.safeParse(input);
-  if (!parsed.success) return null;
-  const payload: BookingNotificationPayload = { ...parsed.data };
+  if (!parsed.success) {
+    logRefusal(
+      parsed.error.issues.map(
+        (issue) =>
+          `${issue.path.map(String).join(".") || "(payload)"}: ${issue.code}`,
+      ),
+    );
+    return null;
+  }
+  const { amountDueEur, locale, ...rest } = parsed.data;
+  const payload: BookingNotificationPayload = {
+    ...rest,
+    // Only when it was sent, so what needs no repair is not added to.
+    ...(amountDueEur === undefined
+      ? {}
+      : { amountDueEur: amountOrNull(amountDueEur) }),
+    ...(locale ? { locale } : {}),
+  };
   const anonymous = payload.event === "received";
   for (const [field, max] of Object.entries(PRINTED) as [
     keyof typeof PRINTED,
@@ -130,17 +200,11 @@ export function readBookingNotification(
     const clean = anonymous ? printable(text) : text;
     payload[field] = clean.length > max ? clean.slice(0, max).trimEnd() : clean;
   }
-  if (anonymous && payload.service === "") return null;
+  if (anonymous && payload.service === "") {
+    logRefusal(["service: empty"]);
+    return null;
+  }
   return payload;
-}
-
-/**
- * The amount as the emails may print it: a finite number, or nothing. The
- * legacy template and the fixed block both set it into HTML as it comes, so
- * whatever is not a number never gets that far, whoever the caller is.
- */
-function amountOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 /**
