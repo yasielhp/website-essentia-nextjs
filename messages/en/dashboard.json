@@ -1780,7 +1780,7 @@
         "languageHint": "With “Both languages”, the language of the notice is chosen in the template step.",
         "reach": "{count} with appointment notices switched on",
         "note": "Only clients with appointment notices switched on and no opt-out receive the notice; the figure counts clients, not appointments.",
-        "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on her contact page, in the WhatsApp consent.",
+        "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on the client's contact page, in the WhatsApp consent.",
         "services": "Appointment services",
         "anyService": "Any service"
       }
