@@ -164,3 +164,12 @@ describe("the list on a phone and on a wide screen", () => {
     expect(pill).not.toContain("whitespace-nowrap");
   });
 });
+
+describe("the list says nothing about where reminders are set up", () => {
+  const html = render([]);
+  test("no note after the WhatsApp rows, in the table or in the cards", () => {
+    expect(html).not.toContain("Crear un Aviso de cita");
+    expect(html).not.toContain("Aviso de cita");
+    expect(html).not.toContain('href="/dashboard/campaigns/new"');
+  });
+});

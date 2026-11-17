@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
@@ -156,22 +155,6 @@ function EmailNotes({
   );
 }
 
-/** Where the reminders and what follows an appointment are set up. */
-function CampaignNote() {
-  const tWa = useTranslations("dashboard.messages.email.whatsapp");
-  return (
-    <>
-      {tWa("campaignNote")}{" "}
-      <Link
-        href="/dashboard/campaigns/new"
-        className="text-petroleum-700 inline-flex min-h-6 items-center font-medium underline underline-offset-2"
-      >
-        {tWa("campaignLink")}
-      </Link>
-    </>
-  );
-}
-
 /**
  * One row per message and language the system really sends: its name, whether
  * it is the default or the admin's (and, for the reminder, whether it is
@@ -217,21 +200,6 @@ export function MessageList({
           </thead>
           <tbody>
             {list.map((row) => {
-              if (row.type === "note") {
-                return (
-                  <tr
-                    key={row.id}
-                    className="border-sand-100 bg-sand-50/50 border-b last:border-0"
-                  >
-                    <td
-                      colSpan={4}
-                      className="text-petroleum-400 px-5 py-2.5 text-xs"
-                    >
-                      <CampaignNote />
-                    </td>
-                  </tr>
-                );
-              }
               if (row.type === "whatsapp") {
                 const link = w.whatsappLink(row);
                 return (
@@ -310,16 +278,6 @@ export function MessageList({
       {/* Mobile cards */}
       <ul className="divide-sand-100 divide-y md:hidden">
         {list.map((row) => {
-          if (row.type === "note") {
-            return (
-              <li
-                key={row.id}
-                className="text-petroleum-400 bg-sand-50/50 px-5 py-3 text-xs"
-              >
-                <CampaignNote />
-              </li>
-            );
-          }
           if (row.type === "whatsapp") {
             const link = w.whatsappLink(row);
             return (

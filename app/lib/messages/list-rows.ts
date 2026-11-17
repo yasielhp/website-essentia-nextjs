@@ -45,10 +45,7 @@ export type WhatsAppListRow = {
   saved: boolean;
 };
 
-/** After the WhatsApp rows of a message: where the reminders are set up. */
-export type NoteListRow = { type: "note"; id: string; key: MessageKey };
-
-export type ListRow = EmailListRow | WhatsAppListRow | NoteListRow;
+export type ListRow = EmailListRow | WhatsAppListRow;
 
 export function messageListRows(
   rows: MessageTemplateRowView[],
@@ -95,6 +92,6 @@ export function messageListRows(
         saved: saved !== undefined,
       };
     });
-    return [...email, ...whatsapp, { type: "note", id: `note:${key}`, key }];
+    return [...email, ...whatsapp];
   });
 }

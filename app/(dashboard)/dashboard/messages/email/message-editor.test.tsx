@@ -11,8 +11,15 @@ import type {
 
 // The editor reads the router and calls Server Actions; neither exists here.
 const calls: unknown[] = [];
+// Bun's module mocks outlive the file: the whole of what other tests import from
+// the router is given, so they do not find an export missing.
 mock.module("next/navigation", () => ({
-  useRouter: () => ({ push: () => {} }),
+  useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+  redirect: () => {},
+  notFound: () => {},
 }));
 mock.module("@/actions/message-templates", () => ({
   saveMessageTemplate: async (...args: unknown[]) => {

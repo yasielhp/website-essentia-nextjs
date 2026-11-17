@@ -308,6 +308,17 @@ export function WhatsAppMessageEditor({
         <DraftBanner onRecover={recoverDraft} onDiscard={draft.discard} />
       )}
 
+      {/* The reminder and what follows an appointment are set up as a campaign. */}
+      <p className="text-petroleum-400 text-xs">
+        {t("campaignNote")}{" "}
+        <Link
+          href="/dashboard/campaigns/new"
+          className="text-petroleum-700 font-medium underline underline-offset-2"
+        >
+          {t("campaignLink")}
+        </Link>
+      </p>
+
       <div className="bg-sand-50 text-petroleum-500 flex flex-col gap-1.5 rounded-xl px-4 py-3 text-xs">
         <p className="text-petroleum-700 font-medium">
           {t(`when.${messageKey}`)}

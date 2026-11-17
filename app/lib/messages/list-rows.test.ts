@@ -38,7 +38,7 @@ describe("messageListRows", () => {
     expect(email.map((r) => r.id)).toEqual(expected);
   });
 
-  test("the messages that go out on WhatsApp get a row per language, then the note, right after their email rows", () => {
+  test("the messages that go out on WhatsApp get a row per language, right after their email rows, and nothing else", () => {
     for (const key of MESSAGE_KEYS) {
       const at = rows.findIndex(
         (r) => r.id === `${key}:es` || r.id === `${key}:en`,
@@ -46,18 +46,19 @@ describe("messageListRows", () => {
       const wa = rows.filter(
         (r): r is WhatsAppListRow => r.type === "whatsapp" && r.key === key,
       );
-      const note = rows.filter((r) => r.type === "note" && r.key === key);
       if (WHATSAPP_MESSAGE_KEYS.includes(key)) {
         expect(wa.map((r) => r.locale)).toEqual(["es", "en"]);
-        expect(note).toHaveLength(1);
-        const idx = rows.indexOf(wa[0]);
-        expect(rows[idx + 2]).toBe(note[0]);
-        expect(idx).toBeGreaterThan(at);
+        expect(rows.indexOf(wa[0])).toBeGreaterThan(at);
       } else {
         expect(wa).toHaveLength(0);
-        expect(note).toHaveLength(0);
       }
     }
+  });
+
+  test("a row is an email row or a WhatsApp row: the list carries no notes between them", () => {
+    expect(new Set(rows.map((r) => r.type))).toEqual(
+      new Set(["email", "whatsapp"]),
+    );
   });
 
   test("every row has an id of its own, so a list can key on it", () => {
