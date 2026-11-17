@@ -9,11 +9,20 @@ import type { WhatsAppSendResult } from "@/lib/whatsapp/types";
  * normal state, not an error: `sendTemplate` reports `skipped` before touching
  * the network and the caller records the message anyway. Going live is a matter
  * of filling in the environment variables.
+ *
+ * Contract: `sendTemplate` and `sendTemplateMessage` never throw, every failure
+ * comes back as a value. `listRemoteTemplates` and `createRemoteTemplate` throw
+ * an `Error` whose message is fit to show to the staff.
  */
 
 const DEFAULT_API_VERSION = "v21.0";
 const DEFAULT_TEMPLATE = "essentia_booking_update";
 const TIMEOUT_MS = 10_000;
+const GRAPH_ORIGIN = "https://graph.facebook.com";
+/** 100 templates a page: far above any real account, and a ceiling on a loop. */
+const MAX_TEMPLATE_PAGES = 50;
+/** Stands in for `{{1}}` in a dynamic button URL when no example is given. */
+const DEFAULT_URL_EXAMPLE = "ejemplo";
 
 /**
  * The only language registered with Meta.
@@ -63,28 +72,146 @@ export function toE164(raw: string | null | undefined): string | null {
   return `+${digits}`;
 }
 
+type MetaError = {
+  message?: string;
+  error_user_msg?: string;
+  error_data?: { details?: string };
+};
+
 type MetaResponse = {
   messages?: { id?: string }[];
-  error?: { message?: string; error_data?: { details?: string } };
+  error?: MetaError;
 };
+
+/**
+ * Meta's explanation of a failure, most specific first. `error_user_msg` is the
+ * one written for people, `details` narrows `message`, and the status is what
+ * is left when the body is not JSON at all (a gateway page, say).
+ */
+function metaErrorMessage(
+  payload: { error?: MetaError } | null,
+  status: number,
+): string {
+  return (
+    payload?.error?.error_user_msg ??
+    payload?.error?.error_data?.details ??
+    payload?.error?.message ??
+    `Meta ${status}`
+  );
+}
+
+/** Raised before any request is made, so its message is already readable. */
+class UnsafeUrlError extends Error {}
+
+/**
+ * An absolute URL taken from Meta's answer is followed with the access token
+ * attached. Anything that is not the Graph API over HTTPS is refused, so a
+ * strange answer cannot send the token elsewhere.
+ */
+function assertGraphUrl(raw: string): void {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new UnsafeUrlError("Meta returned an invalid pagination URL");
+  }
+  if (url.protocol !== "https:" || url.hostname !== "graph.facebook.com") {
+    throw new UnsafeUrlError(
+      "Meta returned a pagination URL on an unexpected host",
+    );
+  }
+}
+
+/**
+ * Every call to the Graph API goes through here: API version, bearer token,
+ * timeout, no caching and no redirects (a redirect would replay the token at
+ * wherever it points). `target` is a path under the version, or an absolute
+ * URL that must still be the Graph API.
+ */
+function graphFetch(
+  target: string,
+  init: { method?: "POST"; body?: string } = {},
+): Promise<Response> {
+  const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
+  const isAbsolute = /^https?:/i.test(target);
+  const url = isAbsolute ? target : `${GRAPH_ORIGIN}/${version}/${target}`;
+  if (isAbsolute) assertGraphUrl(url);
+
+  return fetch(url, {
+    ...(init.method ? { method: init.method } : {}),
+    headers: {
+      Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+      ...(init.body === undefined
+        ? {}
+        : { "Content-Type": "application/json" }),
+    },
+    ...(init.body === undefined ? {} : { body: init.body }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    cache: "no-store",
+    redirect: "error",
+  });
+}
+
+/** `graphFetch` for the calls that throw: a network failure gets a readable message. */
+async function graphRequest(
+  target: string,
+  init?: { method?: "POST"; body?: string },
+): Promise<Response> {
+  try {
+    return await graphFetch(target, init);
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) throw err;
+    throw new Error(
+      `Could not reach WhatsApp: ${err instanceof Error ? err.message : "unknown error"}`,
+    );
+  }
+}
 
 /** What one template message needs, whichever template it is. */
 export type TemplateSend = {
+  /** Already in E.164 (`+34600112233`); see `toE164`. Not normalised here. */
   to: string;
   name: string;
   /** Meta language code: `es`, `en`, `en_US`… */
   language: string;
   bodyParams: string[];
-  /** One entry per URL button with a dynamic suffix, by button index. */
+  /**
+   * One entry per URL button with a dynamic suffix, by button index. `index`
+   * must be an integer >= 0 or the message is not built.
+   */
   buttonUrlParams?: { index: number; text: string }[];
+};
+
+type TemplateParameters = { type: "text"; text: string }[];
+
+export type TemplateMessageComponent =
+  | { type: "body"; parameters: TemplateParameters }
+  | {
+      type: "button";
+      sub_type: "url";
+      index: string;
+      parameters: TemplateParameters;
+    };
+
+/** The JSON Meta receives for one template message. */
+export type TemplateMessageBody = {
+  messaging_product: "whatsapp";
+  to: string;
+  type: "template";
+  template: {
+    name: string;
+    language: { code: string };
+    components: TemplateMessageComponent[];
+  };
 };
 
 /**
  * The JSON Meta receives for one template message. Pure, so a test can pin the
- * exact shape the staff notification has always sent.
+ * exact shape the staff notification has always sent. Throws on a button index
+ * that is not a non-negative integer.
  */
-export function buildTemplateBody(send: TemplateSend) {
-  const components: unknown[] = [];
+export function buildTemplateBody(send: TemplateSend): TemplateMessageBody {
+  const components: TemplateMessageComponent[] = [];
   // A template with no placeholders has no body component: Meta rejects an
   // empty parameter list.
   if (send.bodyParams.length > 0) {
@@ -94,6 +221,9 @@ export function buildTemplateBody(send: TemplateSend) {
     });
   }
   for (const button of send.buttonUrlParams ?? []) {
+    if (!Number.isInteger(button.index) || button.index < 0) {
+      throw new Error(`Invalid button index: ${button.index}`);
+    }
     components.push({
       type: "button",
       sub_type: "url",
@@ -118,30 +248,19 @@ export function buildTemplateBody(send: TemplateSend) {
  *
  * Never throws: a WhatsApp outage must not take a booking down with it, so
  * every failure comes back as a value the caller stores and moves on from.
+ *
+ * A `failed` caused by a timeout or a dropped connection does not prove Meta
+ * did not send the message, so a caller that retries can deliver it twice.
  */
 export async function sendTemplateMessage(
   send: TemplateSend,
 ): Promise<WhatsAppSendResult> {
   if (!isWhatsAppConfigured()) return { status: "skipped" };
 
-  const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-  const body = buildTemplateBody(send);
-
   try {
-    const response = await fetch(
-      `https://graph.facebook.com/${version}/${phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        cache: "no-store",
-      },
+    const response = await graphFetch(
+      `${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      { method: "POST", body: JSON.stringify(buildTemplateBody(send)) },
     );
 
     // Status first: `fetch` resolves on 4xx, and Meta answers both cases with
@@ -189,6 +308,8 @@ export async function sendTemplate(opts: {
   });
 }
 
+const NOT_CONFIGURED = "WhatsApp template API is not configured";
+
 /** Whether the account's templates can be listed and submitted. */
 export function isTemplateApiConfigured(): boolean {
   return Boolean(
@@ -204,7 +325,7 @@ type MetaTemplate = {
   category: string;
   status: string;
   rejected_reason?: string;
-  components: {
+  components?: {
     type: "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
     format?: string;
     text?: string;
@@ -227,9 +348,11 @@ export type RemoteTemplate = {
   rejectionReason: string | null;
 };
 
-function flatten(t: MetaTemplate): RemoteTemplate {
-  const find = (type: MetaTemplate["components"][number]["type"]) =>
-    t.components.find((c) => c.type === type);
+function flattenTemplate(t: MetaTemplate): RemoteTemplate {
+  const components = t.components ?? [];
+  const find = (
+    type: NonNullable<MetaTemplate["components"]>[number]["type"],
+  ) => components.find((c) => c.type === type);
   const header = find("HEADER");
   const body = find("BODY");
   return {
@@ -248,43 +371,43 @@ function flatten(t: MetaTemplate): RemoteTemplate {
 }
 
 /**
- * The next page is an absolute URL taken from Meta's answer, and the request
- * that follows it carries the access token. Anything that is not the Graph API
- * over HTTPS is refused, so a strange answer cannot send the token elsewhere.
+ * Every template on the account, flattened. Throws an `Error` with a message
+ * fit for the staff when the API is not configured or Meta cannot be read.
  */
-function assertGraphUrl(raw: string): void {
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    throw new Error("Meta returned an invalid pagination URL");
-  }
-  if (url.protocol !== "https:" || url.hostname !== "graph.facebook.com") {
-    throw new Error("Meta returned a pagination URL on an unexpected host");
-  }
-}
-
-/** Every template on the account, flattened. Throws on a network/API error. */
 export async function listRemoteTemplates(): Promise<RemoteTemplate[]> {
-  const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
-  const waba = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+  if (!isTemplateApiConfigured()) throw new Error(NOT_CONFIGURED);
+
   const out: RemoteTemplate[] = [];
-  let url: string | null =
-    `https://graph.facebook.com/${version}/${waba}/message_templates?fields=id,name,language,category,status,rejected_reason,components&limit=100`;
-  while (url) {
-    const response: Response = await fetch(url, {
-      headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cache: "no-store",
-    });
-    if (!response.ok) throw new Error(`Meta ${response.status}`);
-    const page = (await response.json()) as {
-      data: MetaTemplate[];
+  const seen = new Set<string>();
+  let target: string | null =
+    `${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates?fields=id,name,language,category,status,rejected_reason,components&limit=100`;
+
+  for (let pages = 0; target; pages += 1) {
+    if (pages >= MAX_TEMPLATE_PAGES) {
+      throw new Error(
+        `Meta returned more than ${MAX_TEMPLATE_PAGES} pages of templates`,
+      );
+    }
+    if (seen.has(target)) {
+      throw new Error("Meta returned the same templates page twice");
+    }
+    seen.add(target);
+
+    const response: Response = await graphRequest(target);
+    if (!response.ok) {
+      const failure = (await response.json().catch(() => null)) as {
+        error?: MetaError;
+      } | null;
+      throw new Error(metaErrorMessage(failure, response.status));
+    }
+    const page = (await response.json().catch(() => null)) as {
+      data?: MetaTemplate[];
       paging?: { next?: string };
-    };
-    out.push(...page.data.map(flatten));
-    url = page.paging?.next ?? null;
-    if (url) assertGraphUrl(url);
+    } | null;
+    if (!page) throw new Error("Meta returned an unreadable response");
+
+    out.push(...(page.data ?? []).map(flattenTemplate));
+    target = page.paging?.next ?? null;
   }
   return out;
 }
@@ -296,16 +419,40 @@ export type CreateTemplateInput = {
   headerText?: string | null;
   body: string;
   footerText?: string | null;
-  buttons: { type: "URL" | "QUICK_REPLY"; text: string; url?: string }[];
+  buttons: {
+    type: "URL" | "QUICK_REPLY";
+    text: string;
+    url?: string;
+    /**
+     * For a URL with a `{{1}}` suffix: the value Meta's reviewers see in its
+     * place. Defaults to a placeholder word on the same domain.
+     */
+    example?: string;
+  }[];
   exampleParams: string[];
 };
 
-/** Submits a template for review. Returns Meta's id and initial status. */
+/** A button as Meta wants it: a dynamic URL carries an example of itself. */
+function toMetaButton(button: CreateTemplateInput["buttons"][number]) {
+  const { example, ...rest } = button;
+  if (button.type !== "URL" || !button.url?.includes("{{")) return rest;
+  return {
+    ...rest,
+    example: [
+      button.url.replace(/\{\{[^}]*\}\}/, () => example ?? DEFAULT_URL_EXAMPLE),
+    ],
+  };
+}
+
+/**
+ * Submits a template for review. Returns Meta's id and initial status. Throws
+ * an `Error` with a message fit for the staff.
+ */
 export async function createRemoteTemplate(
   input: CreateTemplateInput,
 ): Promise<{ id: string; status: string }> {
-  const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
-  const waba = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+  if (!isTemplateApiConfigured()) throw new Error(NOT_CONFIGURED);
+
   const components: unknown[] = [];
   if (input.headerText) {
     components.push({ type: "HEADER", format: "TEXT", text: input.headerText });
@@ -321,37 +468,32 @@ export async function createRemoteTemplate(
     components.push({ type: "FOOTER", text: input.footerText });
   }
   if (input.buttons.length > 0) {
-    components.push({ type: "BUTTONS", buttons: input.buttons });
+    components.push({
+      type: "BUTTONS",
+      buttons: input.buttons.map(toMetaButton),
+    });
   }
-  const response = await fetch(
-    `https://graph.facebook.com/${version}/${waba}/message_templates`,
+
+  const response = await graphRequest(
+    `${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         name: input.name,
         language: input.language,
         category: input.category,
         components,
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cache: "no-store",
     },
   );
   const payload = (await response.json().catch(() => null)) as {
     id?: string;
     status?: string;
-    error?: { message?: string; error_user_msg?: string };
+    error?: MetaError;
   } | null;
-  if (!response.ok || !payload?.id) {
-    throw new Error(
-      payload?.error?.error_user_msg ??
-        payload?.error?.message ??
-        `Meta ${response.status}`,
-    );
+  if (!response.ok) throw new Error(metaErrorMessage(payload, response.status));
+  if (!payload?.id) {
+    throw new Error("Meta accepted the template but returned no id for it");
   }
   return { id: payload.id, status: payload.status ?? "PENDING" };
 }
