@@ -1882,7 +1882,8 @@
       "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono).",
       "noConditionsAppointment": "Todas las clientas con los avisos de la cita activados",
       "appointmentPace": "Cada aviso sale con hasta 15 minutos de retraso sobre la hora indicada.",
-      "emptyAppointment": "Ahora mismo ninguna clienta tiene los avisos de la cita activados. Puedes activar la campaña igualmente: avisará de las citas de quien los active después."
+      "emptyAppointment": "Ahora mismo ninguna clienta tiene los avisos de la cita activados. Puedes activar la campaña igualmente: avisará de las citas de quien los active después.",
+      "condManualList": "Lista manual de {count, plural, one {# persona} other {# personas}}"
     },
     "detail": {
       "sent": "Enviados",
@@ -2002,7 +2003,8 @@
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
       "manualHint": "Se añaden al segmento, solo para esta campaña.",
       "createOption": "+ Nuevo segmento…",
-      "manage": "Gestionar segmentos"
+      "manage": "Gestionar segmentos",
+      "manualListHint": "Lista manual · llega a {count, plural, one {# persona} other {# personas}} (tras las exclusiones)"
     },
     "trigger": {
       "title": "Disparador",
@@ -2066,8 +2068,6 @@
       "empty": "Todavía no hay segmentos. Crea el primero.",
       "everyoneHint": "Todos los contactos con email, sin rebotes ni bajas.",
       "count": "{count} personas",
-      "counting": "Contando…",
-      "reach": "Llega a {count} personas",
       "confirmDelete": "¿Eliminar este segmento? Las campañas que lo usaron conservan su copia.",
       "delete": "Eliminar",
       "notFound": "Segmento no encontrado",
@@ -2078,7 +2078,8 @@
         "email": "Email",
         "phone": "Teléfono",
         "language": "Idioma",
-        "newsletter": "Newsletter"
+        "newsletter": "Newsletter",
+        "lastBooking": "Última reserva"
       },
       "subscribed": "Suscrito",
       "notSubscribed": "—",
@@ -2090,7 +2091,39 @@
         "updated": "Actualizado",
         "created": "Creado"
       },
-      "noConditions": "Todos los contactos con email"
+      "noConditions": "Todos los contactos con email",
+      "form": {
+        "search": "Buscar por nombre, correo o teléfono",
+        "filterSentence": "{count, plural, one {El segmento incluye a la persona que cumple los filtros, y a las que los cumplan más adelante.} other {El segmento incluye a las # personas que cumplen los filtros, y a las que los cumplan más adelante.}}",
+        "listSentence": "{count, plural, one {El segmento incluye solo a la persona seleccionada.} other {El segmento incluye solo a las # personas seleccionadas.}}",
+        "clearSelection": "Quitar selección",
+        "onlySelected": "Ver solo seleccionadas ({count})",
+        "selectVisible": "Seleccionar las personas que se ven",
+        "selectPerson": "Seleccionar a {name}",
+        "shown": "{count, plural, one {Se ve # persona} other {Se ven # personas}}",
+        "filteredEmpty": "Nadie cumple estos filtros",
+        "searchEmpty": "Nadie coincide con la búsqueda",
+        "clearFilters": "Quitar filtros",
+        "noPeople": "Todavía no hay contactos con correo o teléfono.",
+        "loadFailed": "No se pudo cargar a las personas.",
+        "retry": "Reintentar",
+        "chips": "Filtros activos",
+        "chipRemove": "Quitar el filtro {name}",
+        "chipServices": "Servicios: {value}",
+        "chipLastBooking": "Última reserva: {op, select, gt {hace más de} other {hace menos de}} {days} días"
+      },
+      "issue": {
+        "unsubscribed": "Baja de email",
+        "bounced": "Email rebotado",
+        "stopped": "Pidió BAJA de WhatsApp",
+        "unreachable": "Sin WhatsApp"
+      },
+      "kind": {
+        "filter": "Por filtro",
+        "list": "Lista manual"
+      },
+      "listReach": "{selected, plural, one {# seleccionada} other {# seleccionadas}} · {count, plural, one {# recibe} other {# reciben}} hoy",
+      "listReachWhy": "Quien se dio de baja, rebotó o no ha dado su consentimiento queda fuera aunque esté en la lista."
     },
     "template": {
       "title": "Punto de partida",

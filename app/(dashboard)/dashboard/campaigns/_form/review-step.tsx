@@ -27,6 +27,10 @@ export function describeAudience(
   tAudience: ReturnType<typeof useTranslations<"dashboard.campaigns.audience">>,
 ): string[] {
   const lines: string[] = [];
+  // A hand-made list is its people; the conditions were only how they were found.
+  if (audience.manualOnly) {
+    return [t("condManualList", { count: audience.manualIds.length })];
+  }
   if (audience.language !== "any") {
     lines.push(
       t("condLanguage", {

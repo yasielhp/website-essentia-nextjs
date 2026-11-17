@@ -363,3 +363,52 @@ describe("the note on who each channel writes to", () => {
     );
   });
 });
+
+describe("the screen where a segment is made", () => {
+  const KEYS = [
+    "campaigns.segments.form.search",
+    "campaigns.segments.form.filterSentence",
+    "campaigns.segments.form.listSentence",
+    "campaigns.segments.form.clearSelection",
+    "campaigns.segments.form.onlySelected",
+    "campaigns.segments.form.selectVisible",
+    "campaigns.segments.form.selectPerson",
+    "campaigns.segments.form.shown",
+    "campaigns.segments.form.filteredEmpty",
+    "campaigns.segments.form.searchEmpty",
+    "campaigns.segments.form.clearFilters",
+    "campaigns.segments.form.noPeople",
+    "campaigns.segments.form.loadFailed",
+    "campaigns.segments.form.retry",
+    "campaigns.segments.form.chips",
+    "campaigns.segments.form.chipRemove",
+    "campaigns.segments.form.chipServices",
+    "campaigns.segments.form.chipLastBooking",
+    "campaigns.segments.issue.unsubscribed",
+    "campaigns.segments.issue.bounced",
+    "campaigns.segments.issue.stopped",
+    "campaigns.segments.issue.unreachable",
+    "campaigns.segments.kind.filter",
+    "campaigns.segments.kind.list",
+    "campaigns.segments.listReach",
+    "campaigns.segments.listReachWhy",
+    "campaigns.segments.columns.lastBooking",
+    "campaigns.segment.manualListHint",
+    "campaigns.review.condManualList",
+  ];
+  test("every string is there, in both languages", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(KEYS.filter((key) => !locales[locale][key])).toEqual([]);
+    }
+  });
+  test("the old live count of the form, which the table replaced, is gone", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(locales[locale]["campaigns.segments.reach"]).toBeUndefined();
+      expect(locales[locale]["campaigns.segments.counting"]).toBeUndefined();
+    }
+  });
+  test("the two kinds are named as the brief names them", () => {
+    expect(locales.es["campaigns.segments.kind.filter"]).toBe("Por filtro");
+    expect(locales.es["campaigns.segments.kind.list"]).toBe("Lista manual");
+  });
+});

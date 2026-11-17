@@ -1882,7 +1882,8 @@
       "whatsappConsentNote": "It also fires when the team records the consent from the contact's page (for example, when the client asked for it by phone).",
       "noConditionsAppointment": "Every client with appointment notices switched on",
       "appointmentPace": "Each notice goes out up to 15 minutes later than the time indicated.",
-      "emptyAppointment": "No client has appointment notices switched on right now. You can still activate the campaign: it will notify the appointments of whoever switches them on later."
+      "emptyAppointment": "No client has appointment notices switched on right now. You can still activate the campaign: it will notify the appointments of whoever switches them on later.",
+      "condManualList": "Manual list of {count, plural, one {# person} other {# people}}"
     },
     "detail": {
       "sent": "Sent",
@@ -2002,7 +2003,8 @@
       "selectedHint": "Using \"{name}\". Edit it to change the conditions for every campaign that picks it from now on.",
       "manualHint": "Added on top of the segment, for this campaign only.",
       "createOption": "+ New segment…",
-      "manage": "Manage segments"
+      "manage": "Manage segments",
+      "manualListHint": "Manual list · reaches {count, plural, one {# person} other {# people}} (after exclusions)"
     },
     "trigger": {
       "title": "Trigger",
@@ -2066,8 +2068,6 @@
       "empty": "No segments yet. Build the first one.",
       "everyoneHint": "Every contact with an email address, minus bounces and unsubscribes.",
       "count": "{count} people",
-      "counting": "Counting…",
-      "reach": "Reaches {count} people",
       "confirmDelete": "Delete this segment? Campaigns that used it keep their copy.",
       "delete": "Delete",
       "notFound": "Segment not found",
@@ -2078,7 +2078,8 @@
         "email": "Email",
         "phone": "Phone",
         "language": "Language",
-        "newsletter": "Newsletter"
+        "newsletter": "Newsletter",
+        "lastBooking": "Last booking"
       },
       "subscribed": "Subscribed",
       "notSubscribed": "—",
@@ -2090,7 +2091,39 @@
         "updated": "Updated",
         "created": "Created"
       },
-      "noConditions": "Every contact with an email"
+      "noConditions": "Every contact with an email",
+      "form": {
+        "search": "Search by name, email or phone",
+        "filterSentence": "{count, plural, one {The segment includes the person who meets the filters, and anyone who meets them later.} other {The segment includes the # people who meet the filters, and anyone who meets them later.}}",
+        "listSentence": "{count, plural, one {The segment includes only the person selected.} other {The segment includes only the # people selected.}}",
+        "clearSelection": "Clear selection",
+        "onlySelected": "Show only selected ({count})",
+        "selectVisible": "Select the people shown",
+        "selectPerson": "Select {name}",
+        "shown": "{count, plural, one {# person shown} other {# people shown}}",
+        "filteredEmpty": "Nobody meets these filters",
+        "searchEmpty": "Nobody matches the search",
+        "clearFilters": "Clear filters",
+        "noPeople": "There are no contacts with an email or a phone yet.",
+        "loadFailed": "The people could not be loaded.",
+        "retry": "Try again",
+        "chips": "Active filters",
+        "chipRemove": "Remove the filter {name}",
+        "chipServices": "Services: {value}",
+        "chipLastBooking": "Last booking: {op, select, gt {more than} other {less than}} {days} days ago"
+      },
+      "issue": {
+        "unsubscribed": "Unsubscribed from email",
+        "bounced": "Email bounced",
+        "stopped": "Asked to STOP WhatsApp",
+        "unreachable": "No WhatsApp"
+      },
+      "kind": {
+        "filter": "By filter",
+        "list": "Manual list"
+      },
+      "listReach": "{selected, plural, one {# selected} other {# selected}} · {count} today",
+      "listReachWhy": "Anyone who unsubscribed, bounced or has not given consent is left out even if she is on the list."
     },
     "template": {
       "title": "Starting point",

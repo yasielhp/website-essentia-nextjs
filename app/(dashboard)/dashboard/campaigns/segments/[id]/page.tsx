@@ -15,9 +15,13 @@ import {
 import {
   deleteSegment,
   listSegmentMembers,
+  listSegmentPeople,
   listSegments,
 } from "@/actions/campaigns";
 import type { CampaignSegment, SegmentMember } from "@/types/campaign";
+import { segmentKindOf } from "@/lib/campaigns/segment-conditions";
+import { SegmentKindBadge } from "../_form/kind-badge";
+import { Issue } from "../_form/people-table";
 import { describeAudience } from "../../_form/review-step";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 
@@ -27,8 +31,15 @@ type Loaded =
   | {
       kind: "ready";
       segment: CampaignSegment & { count: number };
-      members: SegmentMember[] | null;
+      /** What the page lists: who a filter reaches today, or the people of a list. */
+      members: Member[] | null;
     };
+
+/** A person on the page, with what already keeps a channel from reaching her. */
+type Member = SegmentMember & {
+  emailIssue?: "unsubscribed" | "bounced" | null;
+  whatsappIssue?: "stopped" | "unreachable" | null;
+};
 
 const LIST = "/dashboard/campaigns/segments";
 
@@ -66,10 +77,37 @@ export default function SegmentDetailPage() {
         return;
       }
       setLoaded({ kind: "ready", segment, members: null });
-      const members = await listSegmentMembers(
-        getAccessToken(),
-        segment.conditions,
-      ).catch(() => []);
+      let members: Member[];
+      if (segmentKindOf(segment.conditions) === "list") {
+        // A list shows the people picked, with the reasons a channel would
+        // not reach some of them, not only who is reached: the difference is
+        // the point of showing it. A person deleted since is not there.
+        const picked = new Set(segment.conditions.manualIds ?? []);
+        const result = await listSegmentPeople(getAccessToken()).catch(
+          () => null,
+        );
+        members =
+          result && result.ok
+            ? result.people
+                .filter((p) => picked.has(p.id))
+                .map((p) => ({
+                  id: p.id,
+                  first_name: p.firstName || null,
+                  last_name: p.lastName,
+                  email: p.email,
+                  phone: p.phone,
+                  language: p.language === "es" ? "es" : "en",
+                  newsletter: p.newsletter,
+                  emailIssue: p.emailIssue,
+                  whatsappIssue: p.whatsappIssue,
+                }))
+            : [];
+      } else {
+        members = await listSegmentMembers(
+          getAccessToken(),
+          segment.conditions,
+        ).catch(() => []);
+      }
       if (!cancelled) setLoaded({ kind: "ready", segment, members });
     })();
     return () => {
@@ -116,6 +154,13 @@ export default function SegmentDetailPage() {
     tReview,
     tAudience,
   );
+  const isList = segmentKindOf(segment.conditions) === "list";
+  // The people of the list that still exist, once the page has them.
+  const picked = isList
+    ? members === null
+      ? (segment.conditions.manualIds?.length ?? 0)
+      : members.length
+    : 0;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -124,10 +169,24 @@ export default function SegmentDetailPage() {
           <h1 className="font-display text-petroleum-700 truncate text-3xl">
             {segment.name}
           </h1>
-          <p className="text-petroleum-400 mt-1 text-sm">
-            {t("count", { count: segment.count })}
-            {conditions.length > 0 ? ` · ${conditions.join(" · ")}` : ""}
+          <p className="text-petroleum-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <SegmentKindBadge conditions={segment.conditions} />
+            {isList ? (
+              <span>
+                {t("listReach", { selected: picked, count: segment.count })}
+              </span>
+            ) : (
+              <span>
+                {t("count", { count: segment.count })}
+                {conditions.length > 0 ? ` · ${conditions.join(" · ")}` : ""}
+              </span>
+            )}
           </p>
+          {isList && picked !== segment.count && (
+            <p className="text-petroleum-400 mt-1 text-xs">
+              {t("listReachWhy")}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {confirmDelete ? (
@@ -214,9 +273,19 @@ export default function SegmentDetailPage() {
                     </td>
                     <td className="text-petroleum-500 px-6 py-3">
                       {member.email}
+                      {member.emailIssue && (
+                        <div>
+                          <Issue reason={member.emailIssue} />
+                        </div>
+                      )}
                     </td>
                     <td className="text-petroleum-500 px-6 py-3 whitespace-nowrap">
                       {member.phone ?? "—"}
+                      {member.whatsappIssue && (
+                        <div>
+                          <Issue reason={member.whatsappIssue} />
+                        </div>
+                      )}
                     </td>
                     <td className="text-petroleum-500 px-6 py-3 uppercase">
                       {member.language}

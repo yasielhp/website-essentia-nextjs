@@ -356,6 +356,15 @@ function ListAudienceStep({
           {tSeg("selectedHint", { name: selected.name })}
         </p>
       )}
+      {/* A hand-made list has no conditions to show: it is its people, counted
+          as the send will resolve them. */}
+      {state.audience.manualOnly && (
+        <p className="text-petroleum-700 mt-3 text-sm font-medium">
+          {tSeg("manualListHint", {
+            count: reach ? reach.count : state.audience.manualIds.length,
+          })}
+        </p>
+      )}
       {channel === "whatsapp" && (
         <div className="mt-3 text-xs">
           {reach && !counting && (

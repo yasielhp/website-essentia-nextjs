@@ -12,6 +12,8 @@ import { EMPTY_AUDIENCE, type SegmentList } from "@/types/campaign";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { formatMediumDate } from "@/utils/format";
 import { describeAudience } from "../_form/review-step";
+import { segmentKindOf } from "@/lib/campaigns/segment-conditions";
+import { SegmentKindBadge } from "./_form/kind-badge";
 
 const TH =
   "text-petroleum-400 px-5 py-3 text-left text-xs font-medium whitespace-nowrap";
@@ -90,12 +92,21 @@ export default function SegmentsPage() {
                         {formatMediumDate(segment.created_at, locale)}
                       </td>
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
-                        {segment.name}
+                        <span className="flex flex-wrap items-center gap-2">
+                          {segment.name}
+                          <SegmentKindBadge conditions={segment.conditions} />
+                        </span>
                       </td>
                       <td className="text-petroleum-500 max-w-md truncate px-5 py-3.5 text-xs">
-                        {conditions.length > 0
-                          ? conditions.join(" · ")
-                          : t("noConditions")}
+                        {segmentKindOf(segment.conditions) === "list"
+                          ? t("listReach", {
+                              selected:
+                                segment.conditions.manualIds?.length ?? 0,
+                              count: segment.count,
+                            })
+                          : conditions.length > 0
+                            ? conditions.join(" · ")
+                            : t("noConditions")}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
                         {segment.count}
