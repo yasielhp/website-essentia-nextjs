@@ -194,3 +194,20 @@ Arreglo: mover cada uno a `legacy-subjects.ts` y hacer que el remitente y el tes
 **Qué hay ahora.** La ruta no se rompe: responde 200, no escribe nada para ese mensaje y deja **una línea `console.warn` por payload** con cuántos mensajes llegaron sin número, cuántos eran una baja que no se pudo aplicar y sus ids de mensaje (nunca el identificador de la persona). Los demás mensajes del mismo payload se tratan con normalidad. Si esa línea aparece con una baja, hay que darla de baja a mano desde la ficha.
 
 **Arreglo futuro.** El mismo de (xii): guardar en cada envío el identificador que Meta devuelve para la destinataria (el `wa_id` y, donde exista, el identificador de usuario) junto al contacto o al destinatario, y casar las bajas, la lista y la marca de inalcanzable por ese valor cuando el número falte. La lista de bajas necesitaría además una segunda clave por identificador. Requiere migración: queda para decisión del usuario. No se ha visto todavía ningún mensaje real sin `from`.
+
+---
+
+## (xiv) Nada impide dos reservas a la misma hora
+
+**Estado: ya existía en `main`. Sin arreglar: exige una migración y una decisión del centro.**
+
+**Qué pasa.** Ni el servidor ni la base de datos impiden hoy que dos reservas ocupen la misma hora de la misma profesional:
+
+- La tabla `bookings` no tiene índice único, restricción de exclusión ni trigger sobre `(staff_id, date, time)`.
+- `update_booking_datetime` (la función que guarda el día y la hora del borrador) escribe sin mirar solapes.
+- `confirmDraftBooking` pasa el borrador a `pending` sin comprobar que la hora siga libre.
+- La política `anyone_insert_bookings` (`migrations/20260514160000_roles-and-open-bookings.sql`) deja a `anon` insertar una reserva directamente, con la clave del navegador y sin pasar por el formulario.
+
+La retención de 60 minutos de un borrador (`app/lib/bookings/holds-slot.ts`) y la lista de horas libres (`fetchAvailability`) son **solo cortesía de la interfaz**: quitan la hora del calendario que ve la siguiente visitante, pero no rechazan nada. Dos personas con el calendario abierto a la vez, una pestaña vieja o una llamada directa a la base pueden acabar con la misma hora. El formulario ya vuelve a comprobar una hora restaurada contra la lista antes de dejar seguir (`steps/datetime-selection.ts`), lo que reduce el caso de la pestaña vieja, no el de la carrera.
+
+**Arreglo de fondo.** Una guarda de solape en el servidor: en `confirmDraftBooking` (releer las reservas de esa profesional y ese día justo antes de promover, y no promover si hay solape) o, mejor, en la base (restricción de exclusión por profesional y rango horario, que es la única que cierra la carrera de verdad). Las dos piden decidir qué ve la clienta cuando pierde la hora en el último paso, y la segunda es una migración sobre la tabla de reservas en producción. Conviene cerrar a la vez la inserción directa de `anon` en `bookings`.
