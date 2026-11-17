@@ -465,3 +465,47 @@ describe("the two sides of an appointment notice", () => {
     expect(locales.en["campaigns.trigger.appointment.after"]).toBe("After");
   });
 });
+
+describe("texts that read the wrong way before", () => {
+  test("the emails 'automatically', not 'only' to clients (which read as 'solely')", () => {
+    expect(locales.es["messages.email.intro"]).toContain(
+      "envía automáticamente a los clientes",
+    );
+    expect(locales.es["messages.email.intro"]).not.toContain("envía solo");
+  });
+  test("the reminder is a reminder email two days before", () => {
+    expect(locales.es["messages.keyHints.booking_reminder"]).toBe(
+      "Un correo de recordatorio unos dos días antes de la cita.",
+    );
+    expect(locales.en["messages.keyHints.booking_reminder"]).toBe(
+      "A reminder email about two days before the appointment.",
+    );
+  });
+  test("a number back from 'no WhatsApp' can receive messages, not campaigns only", () => {
+    expect(locales.es["contacts.detail.whatsapp.unreachableConfirm"]).toContain(
+      "mensajes de WhatsApp",
+    );
+    expect(locales.en["contacts.detail.whatsapp.unreachableConfirm"]).toContain(
+      "WhatsApp messages",
+    );
+  });
+  test("what an activated campaign does is 'message', not 'mail', whatever the channel", () => {
+    expect(locales.en["campaigns.review.activateHint"]).not.toMatch(/mails/);
+  });
+  test("the pace is an upper bound every 15 minutes", () => {
+    expect(locales.es["campaigns.review.whatsappPace"]).toContain(
+      "hasta {count} mensajes cada 15 minutos",
+    );
+    expect(locales.en["campaigns.review.whatsappPace"]).toContain(
+      "Up to {count} messages go out every 15 minutes",
+    );
+  });
+  test("the note on team-made appointments names the switch to use", () => {
+    expect(locales.es["campaigns.audience.appointment.panelNote"]).toContain(
+      "«Avisos de la cita»",
+    );
+    expect(locales.en["campaigns.audience.appointment.panelNote"]).toContain(
+      "“Appointment notices”",
+    );
+  });
+});

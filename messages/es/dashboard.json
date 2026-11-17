@@ -1193,7 +1193,7 @@
         "unreachable": "Número sin WhatsApp desde {date}",
         "unreachableWhy": "Meta lo marca cuando un mensaje no se pudo entregar. Se limpia solo si ese número escribe al centro.",
         "unreachableReset": "Restablecer",
-        "unreachableConfirm": "¿Restablecer? Volverá a poder recibir campañas por WhatsApp.",
+        "unreachableConfirm": "¿Restablecer? Volverá a poder recibir mensajes de WhatsApp.",
         "unreachableConfirmYes": "Sí, restablecer",
         "unreachableResetting": "Restableciendo…",
         "unreachableError": "No se pudo restablecer el número.",
@@ -1785,7 +1785,7 @@
         "languageHint": "Con «Ambos idiomas», el idioma del aviso se elige en el paso de la plantilla.",
         "reach": "{count} con avisos de la cita activados",
         "note": "Solo reciben el aviso las clientas con los avisos de la cita activados y sin baja; la cifra cuenta clientas, no citas.",
-        "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp.",
+        "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, con el interruptor «Avisos de la cita».",
         "services": "Servicios de la cita",
         "anyService": "Cualquier servicio"
       },
@@ -1878,7 +1878,7 @@
       "whatsappTemplate": "Plantilla: {name}",
       "whatsappCost": "Mensajes de plantilla: Meta cobra por cada mensaje según el país y la categoría.",
       "whatsappCostLink": "Ver los precios de Meta",
-      "whatsappPace": "Se envían unos {count} mensajes por ejecución, una cada 15 minutos. Las listas grandes continúan solas.",
+      "whatsappPace": "Se envían hasta {count} mensajes cada 15 minutos; las listas grandes siguen solas.",
       "whatsappTestHint": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla.",
       "whatsappNoTemplate": "Todavía no has elegido una plantilla.",
       "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono).",
@@ -2327,12 +2327,12 @@
       "booking_paid": "Cuando se cobra la reserva online.",
       "booking_rescheduled": "Cuando la cita cambia de fecha u hora.",
       "booking_cancelled": "Cuando se cancela la reserva.",
-      "booking_reminder": "Un aviso antes de la cita, enviado automáticamente.",
+      "booking_reminder": "Un correo de recordatorio unos dos días antes de la cita.",
       "consent_request": "Cuando el equipo reenvía el consentimiento informado desde la ficha del contacto.",
       "bonus_purchase": "Cuando alguien compra un bono en la web."
     },
     "email": {
-      "intro": "Los correos que el sistema envía solo a los clientes. Mientras nadie edite uno, sale el de siempre; al editarlo, tu versión sustituye al texto por defecto.",
+      "intro": "Los correos que el sistema envía automáticamente a los clientes. Mientras nadie edite uno, sale el de siempre; al editarlo, tu versión sustituye al texto por defecto.",
       "loadFailed": "No se pudieron cargar los mensajes.",
       "retry": "Reintentar",
       "columns": {
