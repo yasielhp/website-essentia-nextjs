@@ -1,0 +1,247 @@
+import { renderVariables } from "@/lib/campaigns/body-html";
+import type { EmailDoc } from "@/types/campaign";
+
+/**
+ * What an admin may put in the body of a transactional email, and what the
+ * renderer does with the rest.
+ *
+ * Pure and shared: saving a message rejects what `findForbiddenNodes` finds,
+ * and sending one runs the document through `sanitizeDoc`, so a document that
+ * was saved before a rule existed (or got in some other way) still cannot
+ * reach a client's inbox.
+ *
+ * What it guards against, in the Maily renderer (`@maily-to/render`):
+ *  - `htmlCodeBlock` writes its text into the email as raw HTML, variables
+ *    included and unescaped. The only node that does. Removed.
+ *  - Links (text links, buttons, link cards, linked images) go into `href`.
+ *    Only `https:`, `http:` and `mailto:` may leave; anything else, a
+ *    `javascript:` or `data:` address above all, becomes `#`.
+ *  - A link can be a variable (`isUrlVariable`, and a link card's `link`): the
+ *    renderer then puts the variable's VALUE in the `href` after any check
+ *    made on the document, and the value comes from a client's own data. So
+ *    the value is resolved here, checked, and written into the document in
+ *    place of the variable, with the flag switched off.
+ *  - Images (`image`, `inlineImage`, `logo`) go into `src` and may only be
+ *    `https:` or `http:`; one that is not is removed.
+ *  - Colours go into inline `style`: anything that is not a plain colour value
+ *    is dropped.
+ */
+
+/** Nodes that write raw HTML into the email. The list in `@maily-to/render`. */
+export const FORBIDDEN_NODES: ReadonlySet<string> = new Set(["htmlCodeBlock"]);
+
+export type DocProblem = {
+  /** `blockNotAllowed`: a raw-HTML block. `linkNotAllowed`: a bad address. */
+  kind: "blockNotAllowed" | "linkNotAllowed";
+  /** Where in the document, e.g. `content[2].marks[0]`. */
+  path: string;
+  /** The node type, or the mark. */
+  node: string;
+  /** The offending address, for `linkNotAllowed`. */
+  value?: string;
+};
+
+const LINK_OK = /^(?:https?:|mailto:)/i;
+const IMAGE_OK = /^https?:/i;
+// The renderer strips the first `http(s)://` it finds, twice.
+const PROTOCOL = /https?:\/\//;
+const VARIABLE_PREFIX = /^\{\{\s*[a-z_][a-z0-9_]*\s*\}\}/i;
+const COLOR =
+  /^(?:#[0-9a-f]{3,8}|[a-z]{3,20}|(?:rgb|hsl)a?\([0-9\s.,%/deg]+\))$/i;
+
+const has = (values: Record<string, string>, name: string) =>
+  Object.prototype.hasOwnProperty.call(values, name);
+
+/** The address a variable-typed link stands for, as the renderer would find it. */
+function variableName(raw: string): string {
+  return raw.replace(PROTOCOL, "").replace(PROTOCOL, "").trim();
+}
+
+/** An address with its variables filled in, or "" when there is none to fill. */
+function resolve(
+  raw: unknown,
+  isVariable: unknown,
+  values: Record<string, string>,
+): string {
+  if (typeof raw !== "string") return "";
+  if (isVariable) {
+    const name = variableName(raw);
+    return has(values, name) ? (values[name] ?? "").trim() : "";
+  }
+  return renderVariables(raw, values, { escape: false }).trim();
+}
+
+const safeLink = (url: string) => (LINK_OK.test(url) ? url : "#");
+
+// ── sanitising ──────────────────────────────────────────────────────────────
+
+function cleanColours(attrs: Record<string, unknown>) {
+  for (const key of Object.keys(attrs)) {
+    if (key !== "color" && !key.endsWith("Color")) continue;
+    const value = attrs[key];
+    if (typeof value === "string" && !COLOR.test(value.trim()))
+      delete attrs[key];
+  }
+}
+
+function cleanNode(
+  node: EmailDoc,
+  values: Record<string, string>,
+): EmailDoc | null {
+  if (FORBIDDEN_NODES.has(node.type)) return null;
+
+  const next: EmailDoc = { ...node };
+
+  if (node.attrs) {
+    const attrs: Record<string, unknown> = { ...node.attrs };
+    cleanColours(attrs);
+
+    switch (node.type) {
+      case "button":
+        attrs.url = safeLink(resolve(attrs.url, attrs.isUrlVariable, values));
+        attrs.isUrlVariable = false;
+        break;
+      case "image":
+      case "inlineImage":
+      case "logo": {
+        const src = resolve(attrs.src, attrs.isSrcVariable, values);
+        if (!IMAGE_OK.test(src)) return null;
+        attrs.src = src;
+        attrs.isSrcVariable = false;
+        if (node.type !== "logo" && "externalLink" in attrs) {
+          const link = resolve(
+            attrs.externalLink,
+            attrs.isExternalLinkVariable,
+            values,
+          );
+          attrs.externalLink = LINK_OK.test(link) ? link : "";
+          attrs.isExternalLinkVariable = false;
+        }
+        break;
+      }
+      case "linkCard": {
+        // The renderer looks the address up among the variables by name first.
+        const raw = typeof attrs.link === "string" ? attrs.link : "";
+        const link = has(values, raw.trim())
+          ? (values[raw.trim()] ?? "").trim()
+          : resolve(raw, false, values);
+        attrs.link = safeLink(link);
+        if (typeof attrs.image === "string" && attrs.image !== "") {
+          const image = resolve(attrs.image, false, values);
+          attrs.image = IMAGE_OK.test(image) ? image : "";
+        }
+        break;
+      }
+    }
+    next.attrs = attrs;
+  }
+
+  if (node.marks) {
+    next.marks = node.marks.map((mark) => {
+      if (!mark.attrs) return mark;
+      const attrs: Record<string, unknown> = { ...mark.attrs };
+      cleanColours(attrs);
+      if (mark.type === "link") {
+        attrs.href = safeLink(resolve(attrs.href, attrs.isUrlVariable, values));
+        attrs.isUrlVariable = false;
+      }
+      return { ...mark, attrs };
+    });
+  }
+
+  if (node.content) {
+    next.content = node.content
+      .map((child) => cleanNode(child, values))
+      .filter((child): child is EmailDoc => child !== null);
+  }
+  return next;
+}
+
+/**
+ * The document as it may be rendered, with `values` the variables the render
+ * will fill. Never throws on an odd document: what it cannot make safe it
+ * removes.
+ */
+export function sanitizeDoc(
+  doc: EmailDoc,
+  values: Record<string, string>,
+): EmailDoc {
+  return cleanNode(doc, values) ?? { type: "doc", content: [] };
+}
+
+// ── checking, for saving ───────────────────────────────────────────────────
+
+/** An address that can be judged now: a variable's value cannot, so it passes. */
+function literalOk(
+  raw: unknown,
+  isVariable: unknown,
+  allowed: RegExp,
+): boolean {
+  if (typeof raw !== "string" || isVariable) return true;
+  const url = raw.trim();
+  return (
+    url === "" || url === "#" || VARIABLE_PREFIX.test(url) || allowed.test(url)
+  );
+}
+
+/**
+ * Everything in the document that `sanitizeDoc` would remove or rewrite, with
+ * where it is. Empty means the document is fine to save. A link whose address
+ * is a variable (or starts with one) is not judged here: its value is only
+ * known when the email is sent, where `sanitizeDoc` checks it.
+ */
+export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
+  const problems: DocProblem[] = [];
+
+  const visit = (node: EmailDoc, path: string) => {
+    if (FORBIDDEN_NODES.has(node.type)) {
+      problems.push({ kind: "blockNotAllowed", path, node: node.type });
+    }
+    const a = node.attrs ?? {};
+    const bad = (value: unknown, where: string, nodeName: string) =>
+      problems.push({
+        kind: "linkNotAllowed",
+        path: where,
+        node: nodeName,
+        value: typeof value === "string" ? value : undefined,
+      });
+
+    if (node.type === "button" && !literalOk(a.url, a.isUrlVariable, LINK_OK)) {
+      bad(a.url, path, node.type);
+    }
+    if (["image", "inlineImage", "logo"].includes(node.type)) {
+      if (!literalOk(a.src, a.isSrcVariable, IMAGE_OK))
+        bad(a.src, path, node.type);
+      if (
+        node.type !== "logo" &&
+        !literalOk(a.externalLink, a.isExternalLinkVariable, LINK_OK)
+      ) {
+        bad(a.externalLink, path, node.type);
+      }
+    }
+    if (node.type === "linkCard") {
+      // A card's address may be the name of a variable: the renderer looks it
+      // up before using it as an address.
+      const named =
+        typeof a.link === "string" && /^[a-z_][a-z0-9_]*$/i.test(a.link.trim());
+      if (!named && !literalOk(a.link, false, LINK_OK)) {
+        bad(a.link, path, node.type);
+      }
+      if (!literalOk(a.image, false, IMAGE_OK)) bad(a.image, path, node.type);
+    }
+    (node.marks ?? []).forEach((mark, i) => {
+      if (
+        mark.type === "link" &&
+        !literalOk(mark.attrs?.href, mark.attrs?.isUrlVariable, LINK_OK)
+      ) {
+        bad(mark.attrs?.href, `${path}.marks[${i}]`, "link");
+      }
+    });
+    (node.content ?? []).forEach((child, i) =>
+      visit(child, `${path ? `${path}.` : ""}content[${i}]`),
+    );
+  };
+
+  visit(doc, "");
+  return problems;
+}
