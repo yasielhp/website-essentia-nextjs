@@ -110,11 +110,7 @@ export function TypeStep({
         })}
       </div>
       <p id="campaign-channel-note" className="text-petroleum-400 mb-6 text-xs">
-        {channelLocked
-          ? t("channelLocked")
-          : state.channel === "whatsapp"
-            ? t("channelHint")
-            : ""}
+        {channelLocked ? t("channelLocked") : ""}
       </p>
 
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
@@ -181,6 +177,12 @@ export function TypeStep({
           );
         })}
       </div>
+      {/* Who each channel writes to, under the types it applies to. */}
+      <p className="text-petroleum-400 mt-4 text-xs">
+        {state.channel === "whatsapp"
+          ? t("consentNoteWhatsApp")
+          : t("consentNoteEmail")}
+      </p>
     </section>
   );
 }

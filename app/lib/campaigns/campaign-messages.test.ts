@@ -329,3 +329,37 @@ describe("the Utility-only rule and the card, in words", () => {
     );
   });
 });
+
+describe("the note on who each channel writes to", () => {
+  test("is there in both languages and the old channel hint is gone", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(
+        locales[locale]["campaigns.type.consentNoteWhatsApp"],
+      ).toBeTruthy();
+      expect(locales[locale]["campaigns.type.consentNoteEmail"]).toBeTruthy();
+      expect(locales[locale]["campaigns.type.channelHint"]).toBeUndefined();
+    }
+  });
+  test("WhatsApp names the exception, by the type's own name", () => {
+    expect(locales.es["campaigns.type.consentNoteWhatsApp"]).toContain(
+      locales.es["campaigns.type.appointment"],
+    );
+    expect(locales.en["campaigns.type.consentNoteWhatsApp"]).toContain(
+      locales.en["campaigns.type.appointment"],
+    );
+  });
+  test("email names the audience filter exactly as the screen shows it, and does not claim a consent it does not require", () => {
+    for (const locale of ["es", "en"] as const) {
+      const note = locales[locale]["campaigns.type.consentNoteEmail"];
+      expect(note).toContain(
+        locales[locale]["campaigns.audience.subscriptionOnly"],
+      );
+      expect(note).toContain(
+        locales[locale]["campaigns.audience.subscription"],
+      );
+    }
+    expect(locales.es["campaigns.type.consentNoteEmail"]).not.toMatch(
+      /solo escribe a quien acept/i,
+    );
+  });
+});

@@ -1980,11 +1980,12 @@
       "channel": "Channel",
       "channelEmail": "Email",
       "channelWhatsApp": "WhatsApp",
-      "channelHint": "WhatsApp only writes to people who agreed to receive news and offers there, using a template approved by Meta.",
       "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one.",
       "appointment": "Appointment notice",
       "appointmentDesc": "A WhatsApp message before or after each appointment: reminder or follow-up. Only to clients who accepted appointment notices.",
-      "kindLocked": "A saved campaign cannot become an Appointment notice or stop being one: it counts appointments, not lists."
+      "kindLocked": "A saved campaign cannot become an Appointment notice or stop being one: it counts appointments, not lists.",
+      "consentNoteWhatsApp": "WhatsApp only writes to people who agreed to receive news and offers, using a template approved by Meta. The Appointment notice is the exception: it goes to clients who switched on appointment notices.",
+      "consentNoteEmail": "An email goes to the contacts in the audience who have an address and have not unsubscribed or bounced. To write only to people who agreed to news and offers, choose “Newsletter subscribers only” in the Subscription filter of the audience."
     },
     "segment": {
       "title": "Segment",
