@@ -7,8 +7,11 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
-import type { MessageKey } from "@/lib/messages/catalog";
 import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import {
+  LEGACY_BOOKING_SUBJECTS,
+  type BookingNoticeKey,
+} from "@/lib/messages/legacy-subjects";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
@@ -335,30 +338,19 @@ export async function notifyBookingCore(
       }),
   };
 
-  const clientSubjects: Record<BookingNotificationEvent, string> =
-    locale === "es"
-      ? {
-          received: `Solicitud de reserva recibida — ${service}`,
-          confirmed: `Tu reserva ha sido confirmada — ${service}`,
-          cancelled: `Reserva cancelada — ${service}`,
-          rescheduled: `Sesión reprogramada — ${service}`,
-        }
-      : {
-          received: `Booking request received — ${service}`,
-          confirmed: `Booking confirmed — ${service}`,
-          cancelled: `Booking cancelled — ${service}`,
-          rescheduled: `Booking rescheduled — ${service}`,
-        };
-
   // The admin's version of the message, if they edited it. Without one, or if
   // anything about reading it fails, `legacy` and the email goes out exactly
   // as it always has.
-  const messageKey: Record<BookingNotificationEvent, MessageKey> = {
+  const messageKey: Record<BookingNotificationEvent, BookingNoticeKey> = {
     received: "booking_received",
     confirmed: "booking_confirmed",
     cancelled: "booking_cancelled",
     rescheduled: "booking_rescheduled",
   };
+  // The subject it has always had: shared with the test that keeps the
+  // editor's default subject equal to it.
+  const legacySubject =
+    LEGACY_BOOKING_SUBJECTS[locale][messageKey[event]](service);
   const custom = await renderMessageEmail({
     key: messageKey[event],
     locale,
@@ -399,7 +391,7 @@ export async function notifyBookingCore(
     bookingId,
     event,
     to: clientEmail,
-    subject: custom.kind === "custom" ? custom.subject : clientSubjects[event],
+    subject: custom.kind === "custom" ? custom.subject : legacySubject,
     html: custom.kind === "custom" ? custom.html : clientTemplates[event](),
     ...actor,
   });

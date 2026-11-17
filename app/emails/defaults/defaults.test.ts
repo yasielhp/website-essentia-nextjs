@@ -10,6 +10,10 @@ import {
   fixedBlocksHtml,
   fixedBlocksSplit,
 } from "@/lib/messages/fixed-blocks";
+import {
+  LEGACY_BOOKING_SUBJECTS,
+  type BookingNoticeKey,
+} from "@/lib/messages/legacy-subjects";
 import type { CampaignLocale } from "@/types/campaign";
 import { emailBase } from "../templates/_base";
 import {
@@ -47,34 +51,30 @@ function shellPieces(key: MessageKey, locale: CampaignLocale): string[] {
   return [visibleText(emailBase({ locale, preheader: "", body: "" }))];
 }
 
-// The one subject per message and language that lives in a caller, copied from
-// there: `notify.ts` (`clientSubjects`), `booking-cancellation.ts`,
+// The four subjects `notifyBookingCore` sends are not copied: they are asked
+// of the very functions it calls, with the variable where it puts the service.
+const sent = (key: BookingNoticeKey) => ({
+  es: LEGACY_BOOKING_SUBJECTS.es[key]("{{service}}"),
+  en: LEGACY_BOOKING_SUBJECTS.en[key]("{{service}}"),
+});
+
+// The rest still live in their callers and are COPIED here from them:
 // `booking-payments.service.ts`, `bonus-payments.service.ts`, `consent.ts` and
-// the reminder cron. Variables are written as the callers interpolate them.
+// the reminder cron (and `booking-cancellation.ts` holds a second copy of the
+// Spanish cancellation subject). Variables are written as those callers
+// interpolate them.
 const LEGACY_SUBJECTS: Record<
   MessageKey,
   Record<CampaignLocale, string | null>
 > = {
-  booking_received: {
-    es: "Solicitud de reserva recibida — {{service}}",
-    en: "Booking request received — {{service}}",
-  },
-  booking_confirmed: {
-    es: "Tu reserva ha sido confirmada — {{service}}",
-    en: "Booking confirmed — {{service}}",
-  },
+  booking_received: sent("booking_received"),
+  booking_confirmed: sent("booking_confirmed"),
   booking_paid: {
     es: "Tu reserva en Essentia está confirmada",
     en: "Your Essentia booking is confirmed",
   },
-  booking_rescheduled: {
-    es: "Sesión reprogramada — {{service}}",
-    en: "Booking rescheduled — {{service}}",
-  },
-  booking_cancelled: {
-    es: "Reserva cancelada — {{service}}",
-    en: "Booking cancelled — {{service}}",
-  },
+  booking_rescheduled: sent("booking_rescheduled"),
+  booking_cancelled: sent("booking_cancelled"),
   booking_reminder: {
     es: "Tu sesión del {{date}} — {{service}}",
     // The cron sends Spanish only: there is no English subject in the code.
