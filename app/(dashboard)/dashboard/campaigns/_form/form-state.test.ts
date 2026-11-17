@@ -153,17 +153,33 @@ describe("LOAD", () => {
 });
 
 describe("SET_AUDIENCE", () => {
-  test("choosing only the send language does not lose the count", () => {
+  test("choosing only the send language keeps the count and moves everybody to it", () => {
     const before: FormState = {
       ...initialFormState,
-      reach: { count: 7, en: 3, es: 4 },
+      reach: { count: 7, en: 0, es: 7 },
     };
     const after = formReducer(before, {
       type: "SET_AUDIENCE",
       patch: { sendLocale: "en" },
     });
     expect(after.audience.sendLocale).toBe("en");
-    expect(after.reach).toEqual({ count: 7, en: 3, es: 4 });
+    // One language, one version: everybody who is reached gets this one.
+    expect(after.reach).toEqual({ count: 7, en: 7, es: 0 });
+  });
+  test("an empty patch changes nothing, the breakdown included", () => {
+    const before: FormState = {
+      ...initialFormState,
+      reach: { count: 7, en: 0, es: 7 },
+    };
+    const after = formReducer(before, { type: "SET_AUDIENCE", patch: {} });
+    expect(after.reach).toEqual({ count: 7, en: 0, es: 7 });
+  });
+  test("no count yet stays no count", () => {
+    const after = formReducer(initialFormState, {
+      type: "SET_AUDIENCE",
+      patch: { sendLocale: "en" },
+    });
+    expect(after.reach).toBeNull();
   });
   test("any other change makes the count stale", () => {
     const before: FormState = {

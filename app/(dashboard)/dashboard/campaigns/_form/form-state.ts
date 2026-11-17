@@ -154,6 +154,25 @@ export const initialFormState: FormState = {
   error: null,
 };
 
+/**
+ * The count with its language breakdown settled for the audience as it is.
+ * A campaign goes out in one language and everybody reached gets that
+ * version, so the breakdown is the whole count in the send language; a
+ * breakdown computed under another send language would be a lie.
+ */
+function reachIn(
+  reach: FormState["reach"],
+  audience: CampaignAudience,
+): FormState["reach"] {
+  if (!reach) return reach;
+  const locale = audience.sendLocale ?? "es";
+  return {
+    count: reach.count,
+    en: locale === "en" ? reach.count : 0,
+    es: locale === "es" ? reach.count : 0,
+  };
+}
+
 /** Drops every error under a dotted prefix, e.g. `content.es.`. */
 function without(
   errors: Record<string, string>,
@@ -251,7 +270,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return {
         ...state,
         audience,
-        reach: onlyLocale ? state.reach : null,
+        reach: onlyLocale ? reachIn(state.reach, audience) : null,
         fieldErrors: without(state.fieldErrors, "audience"),
       };
     }
