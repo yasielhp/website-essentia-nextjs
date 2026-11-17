@@ -28,12 +28,27 @@ export type MessageVariable =
   | "first_name"
   | "service"
   | "session_type"
+  /**
+   * Whatever the caller passes, already formatted. There is no single format
+   * today: the booking events, the self-service cancellation and the reminder
+   * print "jueves, 20 de agosto de 2026", the paid confirmation prints
+   * "20 de agosto de 2026" (no weekday). Defaults must keep each message's
+   * current format; formats are not unified.
+   */
   | "date"
   | "time"
   | "duration"
-  /** What is still owed at the centre. Empty when nothing is. */
+  /**
+   * What is still owed at the centre. Empty when nothing is. In `booking_paid`
+   * it is formatted with the currency; in `booking_received` the caller passes
+   * a bare number (and passes null today, so it is always empty).
+   */
   | "amount_due"
-  /** What the client paid online, already formatted with the currency. */
+  /**
+   * What the client paid in THIS payment, formatted with the currency. For a
+   * deposit followed by the balance, each email carries its own payment, not
+   * the running total.
+   */
   | "amount_paid"
   /** Vouchers: how many sessions it holds. */
   | "sessions"
