@@ -132,6 +132,19 @@ describe("accessibility of the two switches", () => {
     expect(toggle).toContain("aria-checked");
   });
 
+  test("the confirmation dialog is centred: m-auto on the <dialog>, not left to the browser", () => {
+    // Tailwind's reset sets `margin: 0` on everything, which cancels the
+    // browser's own centring of a modal <dialog> and pins it to the top left.
+    const tag = DIALOG.slice(
+      DIALOG.indexOf("<dialog"),
+      DIALOG.indexOf("</dialog>"),
+    );
+    expect(tag).toMatch(/className="[^"]*\bm-auto\b[^"]*"/);
+    expect(tag).toMatch(/className="[^"]*\bmax-w-sm\b[^"]*"/);
+    // The box inside no longer carries the margin and width that did nothing.
+    expect(tag).not.toContain("mx-4 w-full max-w-sm");
+  });
+
   test("turning one on asks first, in a native dialog that takes the focus", () => {
     expect(ROWS).toContain("setAsking(");
     expect(DIALOG).toContain("showModal()");
