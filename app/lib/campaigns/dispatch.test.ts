@@ -462,6 +462,27 @@ describe("dispatchCampaign: repeated refusals", () => {
   });
 });
 
+describe("dispatchCampaign: a few refusals do not stop a one-off send", () => {
+  test("three rows refused for one reason: the campaign finishes as before and reads no streak", async () => {
+    const { mem, deps } = setup(3, {
+      send: () => ({
+        status: "failed",
+        error: "Access token expired",
+        code: 190,
+      }),
+    });
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    expect(result).toEqual({ ok: true, sent: 0, failed: 3 });
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.last_error).toBe("190: Access token expired");
+    expect(
+      mem.log.filter(
+        (q) => q.table === "campaign_recipients" && has(q.chain, "order"),
+      ),
+    ).toHaveLength(0);
+  });
+});
+
 describe("a lost write is reported on the campaign", () => {
   test("the campaign finishes and says how many went out unrecorded", async () => {
     const { mem, deps } = setup(2, {

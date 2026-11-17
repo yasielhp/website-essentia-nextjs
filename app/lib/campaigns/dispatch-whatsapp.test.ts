@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import type { CampaignRow } from "@/types/campaign";
 import {
@@ -10,9 +10,11 @@ import {
   haltMessage,
   parseHalted,
   reconcileInterrupted,
+  refusalStreak,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
 } from "./dispatch-whatsapp";
+import { argsOf, chainDb, has } from "./fake-db";
 import {
   SOURCES,
   campaign,
@@ -1377,5 +1379,165 @@ describe("sendQueuedWhatsApp and a deadline shared with other work", () => {
     const clock = fakeClock(T0 + 60_000);
     const result = await run(20, clock, T0 + 50_000);
     expect(result).toMatchObject({ sent: 0, remaining: 20 });
+  });
+});
+
+describe("sendQueuedWhatsApp names the refusal it last got from Meta", () => {
+  const send = (answer: Parameters<typeof fakeSend>[0], count = 2) => {
+    const queued = rowsOf(count);
+    const mem = memoryDb(queued);
+    return sendQueuedWhatsApp(campaign(), queued, {
+      db: mem.db,
+      send: fakeSend(answer).send,
+      sleep: async () => {},
+    });
+  };
+
+  test("a definitive no from Meta, as it is stored on the row", async () => {
+    const result = await send(() => ({
+      status: "failed",
+      error: "Access token expired",
+      code: 190,
+    }));
+    expect(result.refusal).toBe("190: Access token expired");
+    // Two rows are nowhere near three whole batches.
+    expect(result.halted).toBeNull();
+  });
+
+  test("nothing when every message went out", async () => {
+    expect((await send(() => ok("w"))).refusal).toBeNull();
+  });
+
+  test("nothing for a failure that may have been delivered", async () => {
+    const result = await send(() => ({
+      status: "failed",
+      error: "timeout",
+      ambiguous: true,
+    }));
+    expect(result.refusal).toBeNull();
+  });
+
+  test("nothing when the template could not be sent at all", async () => {
+    const queued = rowsOf(1);
+    const mem = memoryDb(queued, { template: template({ status: "PAUSED" }) });
+    const result = await sendQueuedWhatsApp(campaign(), queued, {
+      db: mem.db,
+    });
+    expect(result.refusal).toBeNull();
+  });
+});
+
+describe("refusalStreak", () => {
+  const REASON = "190: Access token expired";
+  type Finished = {
+    status: string;
+    error: string | null;
+    claimed_at: string | null;
+  };
+  /** Minutes ago, newest first, as the database would answer. */
+  const at = (minute: number) =>
+    `2026-11-17T11:${String(59 - minute).padStart(2, "0")}:00+00:00`;
+  const refused = (minute: number, error = REASON): Finished => ({
+    status: "failed",
+    error,
+    claimed_at: at(minute),
+  });
+  const went = (minute: number, status = "sent"): Finished => ({
+    status,
+    error: null,
+    claimed_at: at(minute),
+  });
+  const streak = (rows: Finished[]) => {
+    const { db, log } = chainDb(() => ({ data: rows, error: null }));
+    return { answer: refusalStreak(db, "camp-1", REASON), log };
+  };
+
+  test("the last three finished rows refused for that reason: a streak", async () => {
+    expect(await streak([refused(0), refused(15), refused(30)]).answer).toBe(
+      true,
+    );
+  });
+
+  test("two are not three", async () => {
+    expect(await streak([refused(0), refused(15)]).answer).toBe(false);
+  });
+
+  test.each(["sent", "delivered", "opened", "bounced"])(
+    "a message Meta took (%s) among them breaks it",
+    async (status) => {
+      expect(
+        await streak([refused(0), went(15, status), refused(30), refused(45)])
+          .answer,
+      ).toBe(false);
+    },
+  );
+
+  test("a refusal for another reason breaks it", async () => {
+    expect(
+      await streak([
+        refused(0),
+        refused(15, "131026: Message undeliverable"),
+        refused(30),
+        refused(45),
+      ]).answer,
+    ).toBe(false);
+  });
+
+  test("skipped and unconfirmed rows are not counted either way", async () => {
+    expect(
+      await streak([
+        refused(0),
+        refused(5, `${SKIPPED_PREFIX}no_consent`),
+        refused(15),
+        refused(20, `${UNCONFIRMED_PREFIX}timeout`),
+        refused(30),
+        went(45),
+      ]).answer,
+    ).toBe(true);
+  });
+
+  test("rows not finished yet are not counted", async () => {
+    expect(
+      await streak([
+        went(0, "sending"),
+        refused(1),
+        refused(15),
+        went(16, "queued"),
+        refused(30),
+      ]).answer,
+    ).toBe(true);
+  });
+
+  test("a message that went out in the same batch as the third refusal breaks it", async () => {
+    // One claim stamps a whole batch: which of its rows ended last is unknown.
+    expect(
+      await streak([refused(0), refused(0), refused(0), went(0)]).answer,
+    ).toBe(false);
+  });
+
+  test("a read that fails is no streak: nothing is paused on a guess", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const { db } = chainDb(() => ({
+      data: null,
+      error: { message: "connection reset" },
+    }));
+    expect(await refusalStreak(db, "camp-1", REASON)).toBe(false);
+    quiet.mockRestore();
+  });
+
+  test("is one read of that campaign's claimed rows, newest first, with no `or`", async () => {
+    const { answer, log } = streak([]);
+    await answer;
+    expect(log).toHaveLength(1);
+    const [{ table, chain }] = log;
+    expect(table).toBe("campaign_recipients");
+    expect(has(chain, "update")).toBe(false);
+    expect(has(chain, "or")).toBe(false);
+    expect(argsOf(chain, "eq")).toEqual(["campaign_id", "camp-1"]);
+    expect(argsOf(chain, "not")).toEqual(["claimed_at", "is", null]);
+    expect(argsOf(chain, "order")).toEqual([
+      "claimed_at",
+      { ascending: false },
+    ]);
   });
 });

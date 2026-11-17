@@ -200,6 +200,8 @@ export async function sendQueued(
   remaining?: number;
   unrecorded?: number;
   halted?: string | null;
+  /** WhatsApp only: the last reason Meta itself refused a message for. */
+  refusal?: string | null;
 }> {
   if (campaign.channel === "whatsapp") {
     return sendQueuedWhatsApp(campaign, queued, whatsapp);

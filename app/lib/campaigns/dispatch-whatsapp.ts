@@ -60,6 +60,10 @@ export {
  *   The caller keeps the campaign open so the cron comes back for the rest.
  * - A failure that may still have been delivered is not a plain `failed`: the
  *   row is stamped `[unconfirmed]` and a retry leaves it alone.
+ *
+ * It stops by itself after three whole batches Meta refused for one reason.
+ * An automation never fills three batches, so its run also asks
+ * `refusalStreak` after a send in which Meta refused something.
  */
 
 /** Meta allows 80 messages a second by default; this is well under it. */
@@ -80,6 +84,18 @@ export const RETRYABLE_FAILURE_FILTER = `error.is.null,and(error.not.like.${UNCO
 
 /** Batches in a row, all refused for one reason, after which a send stops. */
 export const HALT_AFTER_BATCHES = 3;
+
+/**
+ * An automation is stopped once its last few finished rows, this many, were
+ * all refused by Meta for one reason. It sends a handful of rows per tick (an
+ * appointment notice, one or two), so it never fills three batches: without
+ * this, an expired token or a template Meta rejected would fail every notice
+ * one by one with the campaign still `active`.
+ */
+export const HALT_AFTER_REFUSALS = 3;
+
+/** How far back `refusalStreak` reads: skipped and unconfirmed rows do not count. */
+const STREAK_READ = 30;
 
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
@@ -131,6 +147,12 @@ export type WhatsAppSendOutcome = {
    * burns the number's quality. The reason, as stored on the rows.
    */
   halted: string | null;
+  /**
+   * The reason of the last message Meta itself refused in this send, as stored
+   * on its row, or null when it refused none. An automation's run looks for a
+   * streak of it (`refusalStreak`).
+   */
+  refusal: string | null;
   /** Rows still `queued` when this returned. The campaign is not done while any remain. */
   remaining: number;
 };
@@ -294,6 +316,7 @@ export async function sendQueuedWhatsApp(
       failed: 0,
       unrecorded: 0,
       halted: null,
+      refusal: null,
       lastError: `db: ${(err as Error).message}`,
       remaining: rows.length,
     };
@@ -308,6 +331,7 @@ export async function sendQueuedWhatsApp(
       failed: 0,
       unrecorded: 0,
       halted: null,
+      refusal: null,
       lastError: `template_unavailable: ${issue ?? "template_missing"}`,
       remaining: rows.length,
     };
@@ -468,6 +492,7 @@ export async function sendQueuedWhatsApp(
   let halted: string | null = null;
   let refusedBatches = 0;
   let refusedError: string | null = null;
+  let refusal: string | null = null;
   const deadlineAt = deps.deadlineAt;
   /** Whether a batch beginning at `t` is still inside the budget and the deadline. */
   const mayStartAt = (t: number) =>
@@ -548,8 +573,10 @@ export async function sendQueuedWhatsApp(
         ) {
           lastError = outcome.error;
         }
-        if (outcome.kind === "failed") failed += 1;
-        else if (outcome.kind === "unrecorded") unrecorded += 1;
+        if (outcome.kind === "failed") {
+          failed += 1;
+          if (outcome.refused) refusal = outcome.error;
+        } else if (outcome.kind === "unrecorded") unrecorded += 1;
         else deferred = true;
         // A row that could not be handed back says the same: no credentials.
         if (outcome.error === "whatsapp_not_configured") deferred = true;
@@ -588,6 +615,71 @@ export async function sendQueuedWhatsApp(
     unrecorded,
     lastError,
     halted,
+    refusal,
     remaining: rows.length - sent - failed - unrecorded - lost,
   };
+}
+
+/**
+ * Whether the campaign's last `HALT_AFTER_REFUSALS` finished rows were all
+ * refused by Meta for `reason`: the cause is then the account or the template,
+ * not the contacts.
+ *
+ * "Finished" is a row that was claimed and is no longer `queued` or `sending`,
+ * newest claim first. A skipped contact and an unconfirmed failure say nothing
+ * about the account, so they neither count nor break the streak; a message
+ * Meta took (whatever became of it later) does break it. A claim stamps a whole
+ * batch at once, so the rows claimed in the same instant as the last one
+ * counted are looked at too: one that went out among them is no streak.
+ *
+ * The rows are read and judged here: PostgREST takes no `or` on an UPDATE, and
+ * the caller pauses the campaign by id. A read that fails is no streak.
+ */
+export async function refusalStreak(
+  db: Db,
+  campaignId: string,
+  reason: string,
+): Promise<boolean> {
+  type Finished = {
+    status: string;
+    error: string | null;
+    claimed_at: string | null;
+  };
+  let rows: Finished[];
+  try {
+    const { data, error } = await db
+      .from("campaign_recipients")
+      .select("status, error, claimed_at")
+      .eq("campaign_id", campaignId)
+      .not("claimed_at", "is", null)
+      .order("claimed_at", { ascending: false })
+      .limit(STREAK_READ);
+    if (error) {
+      console.error("[campaigns] streak read failed:", error.message);
+      return false;
+    }
+    rows = (data ?? []) as Finished[];
+  } catch (err) {
+    console.error("[campaigns] streak read threw:", err);
+    return false;
+  }
+
+  const counted = rows.filter(
+    (row) =>
+      row.status !== "queued" &&
+      row.status !== "sending" &&
+      !(
+        row.status === "failed" &&
+        (row.error?.startsWith(SKIPPED_PREFIX) ||
+          row.error?.startsWith(UNCONFIRMED_PREFIX))
+      ),
+  );
+  const last = counted[HALT_AFTER_REFUSALS - 1];
+  if (!last) return false;
+  return counted
+    .filter(
+      (row, index) =>
+        index < HALT_AFTER_REFUSALS || row.claimed_at === last.claimed_at,
+    )
+    .every((row) => row.status === "failed" && row.error === reason);
 }

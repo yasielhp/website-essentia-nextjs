@@ -3,6 +3,7 @@ import { EMPTY_AUDIENCE } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import { runAutomation } from "./automations";
 import { INTERRUPTED_ERROR } from "./dispatch-whatsapp";
+import { argsOf, chainDb, has } from "./fake-db";
 import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import {
   campaign,
@@ -194,6 +195,208 @@ describe("runAutomation on WhatsApp", () => {
     expect(sender.calls).toHaveLength(0);
     expect(result).toMatchObject({ queued: 2, sent: 0, failed: 0 });
     expect(mem.status("row-1")).toBe("queued");
+  });
+});
+
+/**
+ * `memoryDb`, plus the one read it does not know: the campaign's claimed rows,
+ * newest first, which is how a run looks for a streak of refusals. Every other
+ * query is passed on untouched.
+ */
+function withFinishedRows(mem: ReturnType<typeof memoryDb>) {
+  type Chain = Record<string, (...args: unknown[]) => Chain>;
+  return chainDb((table, chain) => {
+    if (
+      table === "campaign_recipients" &&
+      has(chain, "order") &&
+      !has(chain, "update")
+    ) {
+      const limit = Number(argsOf(chain, "limit")?.[0] ?? Infinity);
+      return {
+        data: [...mem.rows.values()]
+          .filter((r) => r.claimed_at !== null)
+          .sort((a, b) =>
+            String(b.claimed_at).localeCompare(String(a.claimed_at)),
+          )
+          .slice(0, limit)
+          .map(({ status, error, claimed_at }) => ({
+            status,
+            error,
+            claimed_at,
+          })),
+        error: null,
+      };
+    }
+    let query = mem.db.from(table) as unknown as Chain;
+    for (const step of chain) query = query[step.name]!(...step.args);
+    return query;
+  }).db;
+}
+
+describe("runAutomation: an automation Meta refuses a few rows at a time", () => {
+  const REASON = "190: Access token expired";
+  const expired = () =>
+    fakeSend(() => ({
+      status: "failed",
+      error: "Access token expired",
+      code: 190,
+    }));
+  /** A row an earlier tick sent to Meta, `minutes` before NOW. */
+  const earlier = (n: number, minutes: number, over: object = {}) => ({
+    id: `row-${n}`,
+    status: "failed",
+    error: REASON,
+    claimed_at: new Date(NOW.getTime() - minutes * 60_000).toISOString(),
+    ...over,
+  });
+  const tick = async (
+    mem: ReturnType<typeof memoryDb>,
+    sender = expired(),
+    running = automated(),
+  ) => {
+    const result = await runAutomation(running, NOW, {
+      db: withFinishedRows(mem),
+      resolveAudience: async () => [],
+      whatsapp: {
+        send: sender.send,
+        sleep: async () => {},
+        now: () => NOW.getTime(),
+      },
+    });
+    return { result, sender };
+  };
+
+  test("the third refusal in a row for one reason pauses it, across ticks", async () => {
+    const mem = memoryDb(rowsOf(3), {
+      campaign: automated(),
+      rows: [earlier(1, 30), earlier(2, 15)],
+    });
+    const { result, sender } = await tick(mem);
+    expect(sender.calls).toHaveLength(1);
+    expect(result).toMatchObject({ sent: 0, failed: 1, halted: REASON });
+    expect(mem.campaign.status).toBe("paused");
+    expect(mem.campaign.last_error).toBe(`[halted] ${REASON}`);
+  });
+
+  test("two refusals are not enough: it stays active and says what Meta said", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      campaign: automated(),
+      rows: [earlier(1, 15)],
+    });
+    const { result } = await tick(mem);
+    expect(result.halted).toBeUndefined();
+    expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error).toBe(REASON);
+  });
+
+  test("a message that went out in between starts the count again", async () => {
+    const mem = memoryDb(rowsOf(4), {
+      campaign: automated(),
+      rows: [
+        earlier(1, 45),
+        earlier(2, 30),
+        earlier(3, 15, { status: "delivered", error: null }),
+      ],
+    });
+    await tick(mem);
+    expect(mem.campaign.status).toBe("active");
+  });
+
+  test("a contact skipped in between does not: it says nothing about the account", async () => {
+    const mem = memoryDb(rowsOf(4), {
+      campaign: automated(),
+      rows: [
+        earlier(1, 45),
+        earlier(2, 30),
+        earlier(3, 15, { error: "[skipped] opted_out" }),
+      ],
+    });
+    await tick(mem);
+    expect(mem.campaign.status).toBe("paused");
+    expect(mem.campaign.last_error).toBe(`[halted] ${REASON}`);
+  });
+
+  test("refusals for different reasons are the contacts', not the account's", async () => {
+    const mem = memoryDb(rowsOf(3), {
+      campaign: automated(),
+      rows: [
+        earlier(1, 30, { error: "131026: Message undeliverable" }),
+        earlier(2, 15),
+      ],
+    });
+    await tick(mem);
+    expect(mem.campaign.status).toBe("active");
+  });
+
+  test("a run in which nothing was refused does not look at the past at all", async () => {
+    const mem = memoryDb(rowsOf(4), {
+      campaign: automated(),
+      rows: [earlier(1, 45), earlier(2, 30), earlier(3, 15)],
+    });
+    // The cause is gone: the fourth goes out and the campaign stays on.
+    await tick(
+      mem,
+      fakeSend(() => ok("w")),
+    );
+    expect(mem.status("row-4")).toBe("sent");
+    expect(mem.campaign.status).toBe("active");
+    expect(
+      mem.log.filter(
+        (q) => q.table === "campaign_recipients" && has(q.chain, "order"),
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("an appointment notice: three refused in one small tick pause it", async () => {
+    const notice = campaign({
+      status: "active",
+      kind: "appointment",
+      trigger: { event: "before_visit", hours: 24 },
+      activated_at: "2026-11-01T00:00:00Z",
+      audience: { ...EMPTY_AUDIENCE, language: "es", sendLocale: "es" },
+    });
+    const bookings = ["b1", "b2", "b3"];
+    const mem = memoryDb(
+      bookings.map((cycle, i) => row(i + 1, { cycle })),
+      {
+        campaign: notice,
+        contacts: [1, 2, 3].map((n) => noticesOnly(`contact-${n}`)),
+        template: template({ category: "UTILITY" }),
+      },
+    );
+    const sender = expired();
+    const result = await runAutomation(notice, NOW, {
+      db: withFinishedRows(mem),
+      resolveAudience: async () =>
+        bookings.map(
+          (id, i) =>
+            ({
+              ...recipient(i + 1),
+              language: "es",
+              appointments: [
+                {
+                  id,
+                  serviceId: "svc-1",
+                  status: "confirmed",
+                  startsAt: "2026-11-18T11:30:00.000Z",
+                  endsAt: "2026-11-18T12:30:00.000Z",
+                  visit: {
+                    service: "Drenaje linfático",
+                    sessionType: null,
+                    date: "2026-11-18",
+                    time: "11:30",
+                  },
+                },
+              ],
+            }) as Recipient,
+        ),
+      whatsapp: { send: sender.send, sleep: async () => {} },
+    });
+    expect(sender.calls).toHaveLength(3);
+    // One batch of three: the old rule (three whole batches) never saw it.
+    expect(result).toMatchObject({ failed: 3, halted: REASON });
+    expect(mem.campaign.status).toBe("paused");
+    expect(mem.campaign.last_error).toBe(`[halted] ${REASON}`);
   });
 });
 

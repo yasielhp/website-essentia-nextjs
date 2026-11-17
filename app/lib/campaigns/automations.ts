@@ -6,6 +6,7 @@ import { resolveAudience as defaultResolveAudience } from "./audience";
 import {
   haltMessage,
   reconcileInterrupted,
+  refusalStreak,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
 import { conflictTarget, recipientRow } from "./recipient-rows";
@@ -132,7 +133,7 @@ export async function runAutomation(
     rows = rows.filter(isOwed);
   }
 
-  const { sent, failed, lastError, halted } =
+  const outcome =
     rows.length > 0
       ? await sendQueued(campaign, rows, {
           db,
@@ -140,6 +141,21 @@ export async function runAutomation(
           ...deps.whatsapp,
         })
       : { sent: 0, failed: 0, lastError: null, halted: null };
+  const { sent, failed, lastError } = outcome;
+
+  // The sender stops itself after three whole batches refused for one reason,
+  // which an automation never fills: it sends a few rows a tick, an appointment
+  // notice one or two. So after a send in which Meta refused something, the
+  // campaign's last finished rows are looked at across ticks: three in a row
+  // refused for that reason is the account or the template, and it is paused
+  // just the same.
+  const halted =
+    outcome.halted ??
+    (campaign.channel === "whatsapp" &&
+    outcome.refusal &&
+    (await refusalStreak(db, campaign.id, outcome.refusal))
+      ? outcome.refusal
+      : null);
 
   // Meta refuses the template or the account: pause the automation with the
   // reason so it stops hitting the number. The admin resumes it once fixed.
