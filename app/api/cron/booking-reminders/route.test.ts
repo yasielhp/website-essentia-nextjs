@@ -111,6 +111,8 @@ let stamp: (ids: string[]) => { data: unknown; error: unknown } = (ids) => ({
 let stampSteps: string[] = [];
 /** Every UPDATE of `bookings`, with the ids it named. */
 let bookingUpdates: { ids: string[]; steps: string[] }[] = [];
+/** The bookings that hold a stamp right now, after every stamp and take-back. */
+let holds = new Set<string>();
 /** The stamps taken back, and what taking them back answers. */
 let unstamped: string[][] = [];
 let unstamp: () => { data: unknown; error: unknown } = () => ({
@@ -150,11 +152,17 @@ const fakeAdmin = {
             bookingUpdates.push({ ids: asked.ids, steps: asked.steps });
             if (asked.patch.reminder_sent_at === null) {
               unstamped.push(asked.ids);
-              return unstamp();
+              const undone = unstamp();
+              if (!undone.error) for (const id of asked.ids) holds.delete(id);
+              return undone;
             }
             stampSteps = asked.steps;
             stamped.push(asked.ids);
-            return stamp(asked.ids);
+            const done = stamp(asked.ids);
+            for (const row of (done.data ?? []) as { id: string }[]) {
+              holds.add(row.id);
+            }
+            return done;
           });
         }
         return chain(() => ({ data: null, error: null }));
@@ -209,6 +217,7 @@ beforeEach(() => {
   stampSteps = [];
   bookingUpdates = [];
   unstamped = [];
+  holds = new Set();
   unstamp = () => ({ data: null, error: null });
   mailer = takesAll;
   process.env.RESEND_API_KEY = "test-key";
@@ -557,8 +566,11 @@ describe("booking reminders", () => {
       ]);
       // What went out alone is the very email of the lot.
       expect(batches[1]).toEqual([legacy(BOOKING)]);
-      // Only the refused one loses its stamp; the two that left keep theirs.
-      expect(unstamped).toEqual([["b-2"]]);
+      // The refused lot gives every stamp back at once; each booking takes
+      // its own again as its turn comes, and the one refused alone loses it
+      // there and then.
+      expect(unstamped).toEqual([["b-1", "b-2", "b-3"], ["b-2"]]);
+      expect([...holds].sort()).toEqual(["b-1", "b-3"]);
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({
         error: "Send refused",
@@ -581,7 +593,7 @@ describe("booking reminders", () => {
       };
       const res = await run();
       done();
-      expect(unstamped).toEqual([]);
+      expect([...holds].sort()).toEqual(["b-1", "b-2", "b-3"]);
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ ok: true, sent: 3, skipped: 0 });
     });
@@ -601,7 +613,7 @@ describe("booking reminders", () => {
       };
       const res = await run();
       done();
-      expect(unstamped).toEqual([["b-2"]]);
+      expect([...holds].sort()).toEqual(["b-1", "b-3"]);
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({
         error: "Send failed",
@@ -621,7 +633,7 @@ describe("booking reminders", () => {
       done();
       // The lot and three alone; the other two are not asked for.
       expect(batches).toHaveLength(4);
-      expect(unstamped).toEqual([["b-1", "b-2", "b-3", "b-4", "b-5"]]);
+      expect(holds.size).toBe(0);
       expect(await res.json()).toEqual({
         error: "Send refused",
         sent: 0,
@@ -647,13 +659,81 @@ describe("booking reminders", () => {
       clock.mockRestore();
       done();
       expect(batches).toHaveLength(2);
-      expect(unstamped).toEqual([["b-2", "b-3"]]);
+      expect([...holds]).toEqual(["b-1"]);
       expect(await res.json()).toEqual({
         error: "Send refused",
         sent: 1,
         skipped: 0,
         retry: ["b-2", "b-3"],
       });
+    });
+
+    test("the function dies while one email hangs: nobody is left stamped without having been tried", async () => {
+      bookingsInRun = [BOOKING, SECOND, THIRD];
+      let call = 0;
+      mailer = (emails) => {
+        call += 1;
+        if (call === 1) return refusal(emails, "Too many requests");
+        // The second email alone never comes back: the platform cuts the run.
+        if (call === 3) throw new Error("function killed");
+        return takesAll(emails);
+      };
+      await expect(run()).rejects.toThrow("function killed");
+      const lines = done();
+      // The first has its reminder; the one in flight may have left, so it
+      // keeps its stamp; the third was never tried and is still owed.
+      expect([...holds].sort()).toEqual(["b-1", "b-2"]);
+      // And the stamps given back were named before anything was sent alone.
+      expect(lines.some((l) => l.includes("b-3"))).toBe(true);
+    });
+
+    test("a booking whose stamp cannot be taken again is not mailed: it stays owed", async () => {
+      bookingsInRun = [BOOKING, SECOND, THIRD];
+      let first = true;
+      mailer = (emails) => {
+        if (!first) return takesAll(emails);
+        first = false;
+        return refusal(emails, "Too many requests");
+      };
+      const stampAll = stamp;
+      let stamps = 0;
+      stamp = (ids) => {
+        stamps += 1;
+        // The lot's stamp, then b-1's; b-2's fails.
+        return stamps === 3
+          ? { data: null, error: { message: "connection reset" } }
+          : stampAll(ids);
+      };
+      const res = await run();
+      done();
+      expect(batches.map((b) => b.map((e) => e.to))).toEqual([
+        [BOOKING.email, SECOND.email, THIRD.email],
+        [BOOKING.email],
+        [THIRD.email],
+      ]);
+      expect([...holds].sort()).toEqual(["b-1", "b-3"]);
+      expect(await res.json()).toEqual({
+        error: "Send refused",
+        sent: 2,
+        skipped: 0,
+        retry: ["b-2"],
+      });
+    });
+
+    test("the stamps of a refused lot that cannot be given back: nobody is mailed alone, and they are named", async () => {
+      bookingsInRun = [BOOKING, SECOND, THIRD];
+      mailer = (emails) => refusal(emails, "Too many requests");
+      unstamp = () => ({ data: null, error: { message: "connection reset" } });
+      const res = await run();
+      const lines = done();
+      expect(batches).toHaveLength(1);
+      expect(await res.json()).toEqual({
+        error: "Send failed",
+        sent: 0,
+        skipped: 0,
+        unsent: ["b-1", "b-2", "b-3"],
+      });
+      expect(lines.some((l) => l.includes("b-1, b-2, b-3"))).toBe(true);
     });
   });
 });

@@ -304,55 +304,41 @@ async function handle(request: NextRequest) {
 
   // A send that failed after the stamp is not a quiet loss, whichever way.
   const noId = toSend.filter((_, index) => !ids[index]);
+  const noIdIds = noId.map((item) => item.id);
   let delivered = sent;
-  /** Resend refused them, or they were not tried: nothing left, the stamp goes. */
+  /** Certainly got nothing and hold no stamp: the next run tries them again. */
   let refused: string[] = [];
-  /** May have left all the same: the stamp stays. */
+  /** May have left all the same, or hold a stamp that could not be taken back. */
   let doubtful: string[] = [];
 
   if (!rejected) {
-    // A request with no answer, a 5xx: Resend may have sent the lot.
-    doubtful = noId.map((item) => item.id);
+    // A request with no answer, a 5xx: Resend may have sent the lot, so the
+    // stamps stay. A duplicate is worse than a missing reminder.
+    doubtful = noIdIds;
+  } else if (!(await takeBack(db, noIdIds, sendError))) {
+    // Resend refused the lot, so nothing of it left, but its stamps could not
+    // be given back: nobody is mailed alone on top of that.
+    doubtful = noIdIds;
   } else if (toSend.length === 1) {
-    refused = noId.map((item) => item.id);
+    // The stamps of a refused lot are given back at once, above, before
+    // anything else is tried: whatever happens to this run from here on, a
+    // booking that got nothing is still owed its reminder.
+    refused = noIdIds;
   } else {
     // Resend validates a lot as a whole, so ONE address it does not like
     // turns the whole lot down, every hour that booking spends in the window,
-    // and everybody in its slot goes without a reminder. Nothing of a refused
-    // lot left, so it is sent again here, one email at a time: whoever goes out
-    // keeps the stamp, and the one Resend refuses alone is the one to name.
-    const alone = await sendOneByOne(noId, now + ONE_BY_ONE_DEADLINE_MS);
+    // and everybody in its slot goes without a reminder. So the lot is sent
+    // again here, one email at a time, each booking taking its stamp again
+    // just before its own email: whoever goes out keeps it, and the one
+    // Resend refuses alone is the one to name.
+    const alone = await sendOneByOne(db, noId, now + ONE_BY_ONE_DEADLINE_MS);
     delivered += alone.sent;
     refused = alone.refused;
     doubtful = alone.doubtful;
   }
 
-  // The stamp of whoever certainly got nothing is taken back: the next run
-  // tries them again, while they are still inside the window.
-  if (refused.length > 0) {
-    const { error: unstampError } = await db
-      .from("bookings")
-      .update({ reminder_sent_at: null })
-      .in("id", refused);
-    if (unstampError) {
-      console.error(
-        "[cron/booking-reminders] stamp could not be taken back:",
-        unstampError,
-      );
-      doubtful = [...doubtful, ...refused];
-      refused = [];
-    } else {
-      console.error(
-        "[cron/booking-reminders] refused:",
-        sendError,
-        "- stamp taken back, to be tried again:",
-        refused.join(", "),
-      );
-    }
-  }
-
-  // Anything that may have been sent keeps its stamp: a duplicate is worse
-  // than a missing reminder. Those bookings are named in the log.
+  // Anything that may have been sent keeps its stamp. Those bookings are
+  // named in the log.
   if (doubtful.length > 0) {
     console.error(
       "[cron/booking-reminders] batch failed:",
@@ -377,33 +363,97 @@ async function handle(request: NextRequest) {
   );
 }
 
+type Db = ReturnType<typeof getAdminClient>["database"];
+
+/**
+ * Takes back the stamp of bookings Resend refused (nothing left for them), so
+ * the next run tries them again while they are still inside the window, and
+ * names them in the log. False when the stamps could not be taken back.
+ */
+async function takeBack(
+  db: Db,
+  ids: string[],
+  reason: string,
+): Promise<boolean> {
+  if (ids.length === 0) return true;
+  const { error } = await db
+    .from("bookings")
+    .update({ reminder_sent_at: null })
+    .in("id", ids);
+  if (error) {
+    console.error(
+      "[cron/booking-reminders] stamp could not be taken back:",
+      ids.join(", "),
+      error,
+    );
+    return false;
+  }
+  console.error(
+    "[cron/booking-reminders] refused:",
+    reason,
+    "- stamp taken back, to be tried again:",
+    ids.join(", "),
+  );
+  return true;
+}
+
 /**
  * Sends each email of a lot Resend refused, alone, and says what became of
- * each booking: sent, refused (nothing left: also the ones it did not get to),
- * or doubtful (no answer, so it may have left).
+ * each booking: sent, refused (nothing left and no stamp: also the ones it did
+ * not get to), or doubtful (no answer, so it may have left).
  *
- * Bounded twice. By the clock: no email is started after `deadlineAt`, and
- * what is left counts as refused, for the next hour. And by the answers: three
- * refusals in a row are not one bad address but the account (a key Resend no
- * longer takes, a limit), and asking for the rest would only repeat it.
+ * The bookings arrive WITHOUT a stamp (the caller gave them back when the lot
+ * was refused). Each takes its own again just before its email, and loses it
+ * the moment Resend refuses it alone. So a run cut off half way, by a request
+ * that hangs, leaves stamped only the bookings whose email went out or was in
+ * flight; the ones it never got to are still owed, with nothing to undo.
+ *
+ * Bounded twice. By the clock: no email is started after `deadlineAt`. And by
+ * the answers: three refusals in a row are not one bad address but the account
+ * (a key Resend no longer takes, a limit), and asking for the rest would only
+ * repeat it.
  */
 async function sendOneByOne(
+  db: Db,
   items: Due[],
   deadlineAt: number,
 ): Promise<{ sent: number; refused: string[]; doubtful: string[] }> {
   let sent = 0;
   let refusedInARow = 0;
+  let asked = 0;
   const refused: string[] = [];
   const doubtful: string[] = [];
-  for (const [index, item] of items.entries()) {
+  for (const item of items) {
     if (refusedInARow >= STOP_AFTER_REFUSALS || Date.now() > deadlineAt) {
       refused.push(item.id);
       continue;
     }
+
+    // Its stamp first, as with the lot: only a booking nobody has stamped,
+    // and only if the stamp is seen to land.
+    const { data: taken, error: stampError } = await db
+      .from("bookings")
+      .update({ reminder_sent_at: new Date().toISOString() })
+      .in("id", [item.id])
+      .is("reminder_sent_at", null)
+      .select("id");
+    if (stampError) {
+      console.error(
+        "[cron/booking-reminders] stamp failed, not sent:",
+        item.id,
+        stampError,
+      );
+      refused.push(item.id);
+      continue;
+    }
+    // Another run stamped it in between: its reminder is that run's.
+    if (((taken ?? []) as unknown[]).length === 0) continue;
+
     // Resend takes two requests a second.
-    if (index > 0) {
+    if (asked > 0) {
       await new Promise((resolve) => setTimeout(resolve, ONE_BY_ONE_PAUSE_MS));
     }
+    asked += 1;
     const one = await sendEmailBatch([item.email]);
     if (one.ids[0]) {
       sent += 1;
@@ -412,8 +462,14 @@ async function sendOneByOne(
       doubtful.push(item.id);
       refusedInARow = 0;
     } else {
-      refused.push(item.id);
       refusedInARow += 1;
+      // Refused alone: its stamp goes now, not at the end of the run.
+      const undone = await takeBack(
+        db,
+        [item.id],
+        one.error ?? "no id returned",
+      );
+      (undone ? refused : doubtful).push(item.id);
     }
   }
   return { sent, refused, doubtful };
