@@ -16,7 +16,7 @@ import {
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type { MessageRow } from "@/lib/messages/compose";
-import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
+import { CLEARED_COLUMNS, keepsSwitch, resetPlan } from "@/lib/messages/reset";
 import { editorIds, editorNames, withEditors } from "@/lib/messages/editors";
 import { buildPreviewEmail } from "@/lib/messages/preview";
 import { readRows } from "@/lib/messages/rows";
@@ -359,6 +359,12 @@ export async function previewMessage(
  * its switch (`kept: "disabled"`), because deleting it would turn the reminder
  * back on without a word. Every other row is deleted. Idempotent: resetting
  * what was never saved is a success with `removed: false`.
+ *
+ * The switch can be turned between the read and the write, so the read only
+ * chooses what to try: the delete of such a row carries `enabled = true`, and
+ * when it deletes nothing the row is emptied instead, which never touches the
+ * switch. Whatever the other admin did in between, a reset cannot turn a
+ * reminder back on.
  */
 export async function resetMessageTemplate(
   accessToken: string | null,
@@ -390,33 +396,56 @@ export async function resetMessageTemplate(
     const plan = resetPlan(target.key, target.channel, row);
 
     if (plan === "none") return { ok: true, removed: false, kept: null };
-    if (plan === "clear") {
-      const { error } = await db
+
+    const guarded = keepsSwitch(target.key, target.channel);
+    if (plan === "delete") {
+      const removal = db
         .from("message_templates")
-        .update({
-          ...CLEARED_COLUMNS,
-          updated_by: caller.userId,
-          updated_at: new Date().toISOString(),
-        })
+        .delete()
         .eq("key", target.key)
         .eq("channel", target.channel)
         .eq("locale", target.locale);
+      if (!guarded) {
+        const { error } = await removal;
+        if (error) return { ok: false, error: "db" };
+        revalidatePath(PATH);
+        return { ok: true, removed: true, kept: null };
+      }
+      // Only while it is still on: switched off since the read, it is not
+      // deleted, and falls through to be emptied with its switch kept.
+      const { data, error } = await removal.eq("enabled", true).select("key");
       if (error) return { ok: false, error: "db" };
-      revalidatePath(PATH);
-      return { ok: true, removed: false, kept: "disabled" };
+      if (((data ?? []) as unknown[]).length > 0) {
+        revalidatePath(PATH);
+        return { ok: true, removed: true, kept: null };
+      }
     }
-    const { error } = await db
+
+    // Emptied, never deleted, and the switch is not among the columns written.
+    const { data, error } = await db
       .from("message_templates")
-      .delete()
+      .update({
+        ...CLEARED_COLUMNS,
+        updated_by: caller.userId,
+        updated_at: new Date().toISOString(),
+      })
       .eq("key", target.key)
       .eq("channel", target.channel)
-      .eq("locale", target.locale);
+      .eq("locale", target.locale)
+      .select("enabled");
     if (error) return { ok: false, error: "db" };
+    const [kept] = (data ?? []) as { enabled: boolean }[];
+    revalidatePath(PATH);
+    return {
+      ok: true,
+      removed: false,
+      // No row left (somebody deleted it meanwhile), or one that is on again:
+      // either way the default email goes out and no switch is being held.
+      kept: kept?.enabled === false ? "disabled" : null,
+    };
   } catch {
     return { ok: false, error: "db" };
   }
-  revalidatePath(PATH);
-  return { ok: true, removed: true, kept: null };
 }
 
 /**

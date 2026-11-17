@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
-import { CLEARED_COLUMNS, resetPlan } from "./reset";
+import { CLEARED_COLUMNS, keepsSwitch, resetPlan } from "./reset";
 
 describe("resetPlan", () => {
   it("does nothing when there is no saved row", () => {
@@ -56,5 +56,15 @@ describe("CLEARED_COLUMNS", () => {
       whatsapp_params: [],
     });
     expect(CLEARED_COLUMNS).not.toHaveProperty("enabled");
+  });
+});
+
+describe("keepsSwitch", () => {
+  it("is the email of a message that can be switched off, and nothing else", () => {
+    for (const key of MESSAGE_KEYS) {
+      expect(keepsSwitch(key, "email")).toBe(MESSAGE_CATALOG[key].canDisable);
+      expect(keepsSwitch(key, "whatsapp")).toBe(false);
+    }
+    expect(keepsSwitch("booking_reminder", "email")).toBe(true);
   });
 });

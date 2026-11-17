@@ -17,13 +17,24 @@ export type ResetPlan = "none" | "delete" | "clear";
  *
  * Pure.
  */
+/**
+ * Whether this row carries a switch a reset must not undo: the email of a
+ * message that can be switched off. Pure.
+ */
+export function keepsSwitch(
+  key: MessageKey,
+  channel: "email" | "whatsapp",
+): boolean {
+  return channel === "email" && MESSAGE_CATALOG[key].canDisable;
+}
+
 export function resetPlan(
   key: MessageKey,
   channel: "email" | "whatsapp",
   row: { enabled: boolean } | null,
 ): ResetPlan {
   if (!row) return "none";
-  if (channel === "email" && MESSAGE_CATALOG[key].canDisable) {
+  if (keepsSwitch(key, channel)) {
     // Strictly false: a null or an odd value in the column is not "off".
     return row.enabled === false ? "clear" : "delete";
   }
