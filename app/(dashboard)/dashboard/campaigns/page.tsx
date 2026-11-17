@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
 import { fetchCampaignStatusCounts, listCampaigns } from "@/actions/campaigns";
 import type {
+  CampaignChannel,
   CampaignRow,
   CampaignStatus,
   CampaignStatusCounts,
 } from "@/types/campaign";
 import { CampaignTable, campaignHref } from "./campaign-table";
+import { ChannelFilter } from "./channel-filter";
 
 const PAGE_SIZE = 20;
 
@@ -52,6 +54,7 @@ export default function CampaignsPage() {
   });
   const [page, setPage] = useState(0);
   const [status, setStatus] = useState<CampaignStatus | "">("");
+  const [channel, setChannel] = useState<CampaignChannel | "">("");
   const [counts, setCounts] = useState<CampaignStatusCounts | null>(null);
 
   useEffect(() => {
@@ -59,6 +62,7 @@ export default function CampaignsPage() {
     dispatch({ type: "loading" });
     void listCampaigns(getAccessToken(), {
       status,
+      channel,
       page,
       pageSize: PAGE_SIZE,
     })
@@ -74,11 +78,11 @@ export default function CampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, status]);
+  }, [page, status, channel]);
 
   useEffect(() => {
     let cancelled = false;
-    void fetchCampaignStatusCounts(getAccessToken())
+    void fetchCampaignStatusCounts(getAccessToken(), channel)
       .catch(() => null)
       .then((result) => {
         if (!cancelled && result) setCounts(result);
@@ -86,7 +90,7 @@ export default function CampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [channel]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -104,6 +108,16 @@ export default function CampaignsPage() {
         >
           {t("segments.title")}
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <ChannelFilter
+          value={channel}
+          onChange={(next) => {
+            setChannel(next);
+            setPage(0);
+          }}
+        />
       </div>
 
       {/* One card per state; the card is the filter. */}
@@ -148,6 +162,7 @@ export default function CampaignsPage() {
         onPage={setPage}
         onOpen={(campaign) => push(campaignHref(campaign))}
         locale={locale}
+        channel={channel}
       />
     </div>
   );

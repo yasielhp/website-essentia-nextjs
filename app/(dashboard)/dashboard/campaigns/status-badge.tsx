@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { CampaignStatus, RecipientStatus } from "@/types/campaign";
+import type {
+  CampaignChannel,
+  CampaignStatus,
+  RecipientStatus,
+} from "@/types/campaign";
 
 /**
  * One pill for both vocabularies: a campaign's state and a recipient's. The
@@ -46,13 +50,29 @@ export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
   );
 }
 
-export function RecipientStatusBadge({ status }: { status: RecipientStatus }) {
+export function RecipientStatusBadge({
+  status,
+  channel = "email",
+}: {
+  status: RecipientStatus;
+  /** WhatsApp has its own words for two of the states: read, not delivered. */
+  channel?: CampaignChannel;
+}) {
   const t = useTranslations("dashboard.campaigns.recipientStatus");
+  const tWhatsApp = useTranslations(
+    "dashboard.campaigns.recipientStatusWhatsApp",
+  );
+  const label =
+    channel === "whatsapp" && tWhatsApp.has(status)
+      ? tWhatsApp(status)
+      : t.has(status)
+        ? t(status)
+        : status;
   return (
     <span
       className={`${PILL} ${RECIPIENT_STYLES[status] ?? RECIPIENT_STYLES.queued}`}
     >
-      {t.has(status) ? t(status) : status}
+      {label}
     </span>
   );
 }

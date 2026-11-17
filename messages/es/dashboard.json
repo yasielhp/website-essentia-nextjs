@@ -1850,7 +1850,26 @@
       "pause": "Pausar",
       "resume": "Reanudar",
       "lastRun": "última revisión {date}",
-      "variants": "Prueba A/B"
+      "variants": "Prueba A/B",
+      "columnsPhone": "Teléfono",
+      "searchPhone": "Buscar teléfono…",
+      "read": "Leídos",
+      "undelivered": "No entregados",
+      "byStatus": "Por estado",
+      "readNote": "Un mensaje cuenta como leído solo si el cliente tiene activadas las confirmaciones de lectura de WhatsApp. La entrega es el dato fiable.",
+      "retryWhatsAppNote": "Reintentar no reenvía los mensajes sin confirmar (podrían haber llegado) ni los omitidos (el contacto no puede recibirlos).",
+      "notes": {
+        "haltedReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos: {reason}",
+        "haltedNoReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos.",
+        "unconfirmedInterrupted": "No se pudo confirmar: el envío se interrumpió; no se reintenta para no duplicar",
+        "unconfirmed": "No se pudo confirmar si salió: {detail}",
+        "skippedOptedOut": "Omitido: se dio de baja",
+        "skippedUnreachable": "Omitido: su número no tiene WhatsApp",
+        "skippedNoConsent": "Omitido: sin consentimiento de novedades",
+        "skippedNoContact": "Omitido: el contacto ya no existe",
+        "skippedNoEmail": "Omitido: no tiene email",
+        "skippedOther": "Omitido: {reason}"
+      }
     },
     "errors": {
       "not_claimable": "Esta campaña ya se está enviando o ya se envió.",
@@ -2024,6 +2043,16 @@
         "blog-post": "Título, resumen y enlace de la última entrada, rellenados solos.",
         "event": "Reserva la fecha, detalles y botón de confirmar."
       }
+    },
+    "channel": {
+      "label": "Canal",
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "all": "Todos"
+    },
+    "recipientStatusWhatsApp": {
+      "opened": "Leído",
+      "bounced": "No entregado"
     }
   },
   "messages": {

@@ -4,7 +4,8 @@ import { useTranslations } from "next-intl";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
 import { Pagination } from "@/components/dashboard/pagination";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
-import type { CampaignRow } from "@/types/campaign";
+import type { CampaignChannel, CampaignRow } from "@/types/campaign";
+import { ChannelChip } from "./channel-chip";
 import { CampaignStatusBadge } from "./status-badge";
 
 /** Where a row leads: a draft opens in the editor, anything sent in its report. */
@@ -46,6 +47,7 @@ export function CampaignTable({
   onPage,
   onOpen,
   locale,
+  channel = "",
 }: {
   campaigns: CampaignRow[];
   loading: boolean;
@@ -54,6 +56,8 @@ export function CampaignTable({
   onPage: (page: number) => void;
   onOpen: (campaign: CampaignRow) => void;
   locale: SupportedLocale;
+  /** The channel the list is narrowed to; both when empty. */
+  channel?: CampaignChannel | "";
 }) {
   const t = useTranslations("dashboard.campaigns");
 
@@ -78,7 +82,11 @@ export function CampaignTable({
                     {t("table.recipients")}
                   </th>
                   <th className={`${TH} text-right`}>{t("table.delivered")}</th>
-                  <th className={`${TH} text-right`}>{t("table.opened")}</th>
+                  <th className={`${TH} text-right`}>
+                    {channel === "whatsapp"
+                      ? t("detail.read")
+                      : t("table.opened")}
+                  </th>
                   <th className={`${TH} text-right`}>{t("table.clicked")}</th>
                   <th className={TH}>{t("table.date")}</th>
                 </tr>
@@ -93,7 +101,10 @@ export function CampaignTable({
                       className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b transition-colors last:border-0"
                     >
                       <td className="text-petroleum-700 px-5 py-3.5 font-medium">
-                        {campaign.name}
+                        <span className="flex flex-wrap items-center gap-2">
+                          {campaign.name}
+                          <ChannelChip channel={campaign.channel} />
+                        </span>
                       </td>
                       <td className="px-5 py-3.5">
                         <CampaignStatusBadge status={campaign.status} />
@@ -106,11 +117,21 @@ export function CampaignTable({
                       <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
                         {rate(campaign.delivered_count, sent)}
                       </td>
-                      <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
+                      <td
+                        className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums"
+                        title={
+                          campaign.channel === "whatsapp"
+                            ? t("detail.read")
+                            : undefined
+                        }
+                      >
                         {rate(campaign.opened_count, sent)}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-right tabular-nums">
-                        {rate(campaign.clicked_count, sent)}
+                        {/* Meta reports no clicks, so there is nothing to show. */}
+                        {campaign.channel === "whatsapp"
+                          ? "—"
+                          : rate(campaign.clicked_count, sent)}
                       </td>
                       <td className="text-petroleum-500 px-5 py-3.5 text-xs whitespace-nowrap">
                         {formatMediumDate(dateOf(campaign), locale)}
@@ -134,8 +155,9 @@ export function CampaignTable({
                   className="hover:bg-sand-50 flex w-full items-center justify-between px-5 py-4 text-left transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="text-petroleum-700 truncate font-medium">
-                      {campaign.name}
+                    <p className="text-petroleum-700 flex items-center gap-2 font-medium">
+                      <span className="truncate">{campaign.name}</span>
+                      <ChannelChip channel={campaign.channel} />
                     </p>
                     <p className="text-petroleum-400 text-xs">
                       {formatMediumDate(dateOf(campaign), locale)}

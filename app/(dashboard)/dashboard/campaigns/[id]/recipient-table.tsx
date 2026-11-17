@@ -4,12 +4,19 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
-import type { CampaignRecipientRow } from "@/types/campaign";
+import { describeRecipientError } from "@/lib/campaigns/report";
+import type { CampaignChannel, CampaignRecipientRow } from "@/types/campaign";
 import { RecipientStatusBadge } from "../status-badge";
 
 /** The most recent thing that happened to this recipient. */
-function lastEvent(row: CampaignRecipientRow): string | null {
-  return row.clicked_at ?? row.opened_at ?? row.delivered_at ?? row.sent_at;
+function lastEvent(
+  row: CampaignRecipientRow,
+  channel: CampaignChannel,
+): string | null {
+  // WhatsApp has no clicks; the read receipt is its last word.
+  return channel === "whatsapp"
+    ? (row.read_at ?? row.delivered_at ?? row.sent_at)
+    : (row.clicked_at ?? row.opened_at ?? row.delivered_at ?? row.sent_at);
 }
 
 /**
@@ -19,11 +26,26 @@ function lastEvent(row: CampaignRecipientRow): string | null {
 export function RecipientTable({
   recipients,
   locale,
+  channel = "email",
 }: {
   recipients: CampaignRecipientRow[];
   locale: SupportedLocale;
+  channel?: CampaignChannel;
 }) {
   const t = useTranslations("dashboard.campaigns.detail");
+  const tNotes = useTranslations("dashboard.campaigns.detail.notes");
+  const whatsapp = channel === "whatsapp";
+
+  /** The error column: our words for what the send marked, Meta's as they came. */
+  const errorText = (error: string | null): string => {
+    const note = describeRecipientError(error);
+    if (!note) return "";
+    return note.kind === "raw"
+      ? note.text
+      : tNotes.has(note.key)
+        ? tNotes(note.key, note.values)
+        : (error ?? "");
+  };
   const [query, setQuery] = useState("");
 
   const visible = useMemo(() => {
@@ -52,8 +74,8 @@ export function RecipientTable({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("search")}
-          aria-label={t("search")}
+          placeholder={whatsapp ? t("searchPhone") : t("search")}
+          aria-label={whatsapp ? t("searchPhone") : t("search")}
           className={`${INPUT_CLASS} sm:w-64`}
         />
       </div>
@@ -68,13 +90,21 @@ export function RecipientTable({
             <thead>
               <tr className="border-sand-100 border-b text-left">
                 {(
-                  ["email", "language", "status", "date", "error"] as const
+                  [
+                    whatsapp ? "phone" : "email",
+                    "language",
+                    "status",
+                    "date",
+                    "error",
+                  ] as const
                 ).map((column) => (
                   <th
                     key={column}
                     className="text-petroleum-400 px-6 py-2.5 text-xs font-medium whitespace-nowrap"
                   >
-                    {t(`columns.${column}`)}
+                    {column === "phone"
+                      ? t("columnsPhone")
+                      : t(`columns.${column}`)}
                   </th>
                 ))}
               </tr>
@@ -86,19 +116,25 @@ export function RecipientTable({
                   className="border-sand-50 border-b last:border-0"
                 >
                   <td className="text-petroleum-700 px-6 py-3 font-medium">
-                    {row.email ?? row.phone}
+                    {whatsapp ? (row.phone ?? "—") : (row.email ?? row.phone)}
                   </td>
                   <td className="text-petroleum-500 px-6 py-3 uppercase">
                     {row.language}
                   </td>
                   <td className="px-6 py-3">
-                    <RecipientStatusBadge status={row.status} />
+                    <RecipientStatusBadge
+                      status={row.status}
+                      channel={channel}
+                    />
                   </td>
                   <td className="text-petroleum-400 px-6 py-3 text-xs whitespace-nowrap">
-                    {formatMediumDate(lastEvent(row), locale)}
+                    {formatMediumDate(lastEvent(row, channel), locale)}
                   </td>
-                  <td className="text-petroleum-400 max-w-xs truncate px-6 py-3 text-xs">
-                    {row.error ?? ""}
+                  <td
+                    className="text-petroleum-400 max-w-xs truncate px-6 py-3 text-xs"
+                    title={errorText(row.error)}
+                  >
+                    {errorText(row.error)}
                   </td>
                 </tr>
               ))}

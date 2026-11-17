@@ -3,6 +3,7 @@ import { haltMessage } from "./error-markers";
 import {
   describeLastError,
   describeRecipientError,
+  REPORT_NOTE_KEYS,
   reportTiles,
   sentCountOf,
   statusBreakdown,
@@ -174,5 +175,30 @@ describe("statusBreakdown", () => {
 
   test("no rows, no breakdown", () => {
     expect(statusBreakdown([])).toEqual([]);
+  });
+});
+
+describe("REPORT_NOTE_KEYS", () => {
+  test("covers every key the two describe functions can answer with", () => {
+    const answers = [
+      describeLastError(haltMessage("x")),
+      describeLastError(haltMessage("")),
+      describeRecipientError("[unconfirmed] interrupted"),
+      describeRecipientError("[unconfirmed] x"),
+      ...[
+        "opted_out",
+        "unreachable",
+        "no_consent",
+        "no_contact",
+        "no_email",
+        "other",
+      ].map((reason) => describeRecipientError(`[skipped] ${reason}`)),
+    ];
+    const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
+    expect(keys.length).toBe(10);
+    for (const key of keys) {
+      expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
+    }
+    expect(new Set(keys).size).toBe(REPORT_NOTE_KEYS.length);
   });
 });

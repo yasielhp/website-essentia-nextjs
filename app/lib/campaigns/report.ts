@@ -34,6 +34,20 @@ export function describeLastError(
     : { kind: "note", key: "haltedNoReason" };
 }
 
+/** Every message key a note can carry; the report's messages must have each. */
+export const REPORT_NOTE_KEYS = [
+  "haltedReason",
+  "haltedNoReason",
+  "unconfirmedInterrupted",
+  "unconfirmed",
+  "skippedOptedOut",
+  "skippedUnreachable",
+  "skippedNoConsent",
+  "skippedNoContact",
+  "skippedNoEmail",
+  "skippedOther",
+] as const;
+
 const SKIP_KEYS: Record<string, string> = {
   opted_out: "skippedOptedOut",
   unreachable: "skippedUnreachable",

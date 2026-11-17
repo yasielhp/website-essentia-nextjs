@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { IntlMessageFormat } from "intl-messageformat";
 import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
+import { REPORT_NOTE_KEYS } from "./report";
 import { TEMPLATE_CHOICE_ISSUES } from "./whatsapp-eligibility";
 import { PARAM_FIELDS, kindAllowedForChannel } from "./whatsapp-form";
 
@@ -127,6 +128,23 @@ describe("the campaign form strings", () => {
         "campaigns.trigger.eventDesc.newsletter_subscribedWhatsApp",
         "campaigns.review.whatsappConsentNote",
         "campaigns.type.autoresponderDescWhatsApp",
+      ]) {
+        expect(messages[key]).toBeTruthy();
+      }
+    }
+  });
+
+  test("every note the report can show is translated in both languages", () => {
+    for (const messages of [locales.es, locales.en]) {
+      for (const key of REPORT_NOTE_KEYS) {
+        expect(messages[`campaigns.detail.notes.${key}`]).toBeTruthy();
+      }
+      for (const key of [
+        "campaigns.channel.email",
+        "campaigns.channel.whatsapp",
+        "campaigns.recipientStatusWhatsApp.opened",
+        "campaigns.recipientStatusWhatsApp.bounced",
+        "campaigns.detail.columnsPhone",
       ]) {
         expect(messages[key]).toBeTruthy();
       }

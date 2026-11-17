@@ -26,8 +26,16 @@ import {
 import { useSendNoticeToast } from "../send-notice-toast";
 import { isAutomatedKind } from "@/types/campaign";
 import type { CampaignRecipientRow, CampaignRow } from "@/types/campaign";
-import { CampaignStatusBadge } from "../status-badge";
+import { CampaignStatusBadge, RecipientStatusBadge } from "../status-badge";
 import { rate, sentCount } from "../campaign-table";
+import { ChannelChip } from "../channel-chip";
+import {
+  describeLastError,
+  reportTiles,
+  sentCountOf,
+  statusBreakdown,
+  type ReportTile,
+} from "@/lib/campaigns/report";
 import { RecipientTable } from "./recipient-table";
 
 type State =
@@ -159,7 +167,11 @@ export default function CampaignDetailPage() {
   }
 
   const { campaign, recipients, refreshing } = state;
-  const sent = sentCount(campaign);
+  const whatsapp = campaign.channel === "whatsapp";
+  // `recipients_count` also counts the rows a long WhatsApp send has not
+  // reached yet, so there the rows themselves say how many went out.
+  const sent = whatsapp ? sentCountOf(recipients) : sentCount(campaign);
+  const lastError = describeLastError(campaign.last_error);
   const byLanguage = (["en", "es"] as const).map((lang) => {
     const rows = recipients.filter((r) => r.language === lang);
     const delivered = rows.filter((r) =>
@@ -168,15 +180,27 @@ export default function CampaignDetailPage() {
     return { lang, total: rows.length, delivered };
   });
 
-  const tiles: { key: string; value: number }[] = [
-    { key: "sent", value: sent },
-    { key: "delivered", value: campaign.delivered_count },
-    { key: "opened", value: campaign.opened_count },
-    { key: "clicked", value: campaign.clicked_count },
-    { key: "bounced", value: campaign.bounced_count },
-    { key: "complained", value: campaign.complained_count },
-    { key: "failed", value: campaign.failed_count },
-  ];
+  const counters: Record<ReportTile, number> = {
+    sent,
+    delivered: campaign.delivered_count,
+    opened: campaign.opened_count,
+    clicked: campaign.clicked_count,
+    bounced: campaign.bounced_count,
+    complained: campaign.complained_count,
+    failed: campaign.failed_count,
+  };
+  // On WhatsApp "opened" is the read receipt and "bounced" a delivery Meta
+  // said failed; the counters are the same columns, the words are not.
+  const tileLabel = (key: ReportTile) =>
+    whatsapp && key === "opened"
+      ? t("detail.read")
+      : whatsapp && key === "bounced"
+        ? t("detail.undelivered")
+        : t(`detail.${key}`);
+  const tiles = reportTiles(campaign.channel).map((key) => ({
+    key,
+    value: counters[key],
+  }));
 
   const when = campaign.sent_at
     ? t("detail.sentAt", { date: formatLongDate(campaign.sent_at, locale) })
@@ -197,6 +221,7 @@ export default function CampaignDetailPage() {
               {campaign.name}
             </h1>
             <CampaignStatusBadge status={campaign.status} />
+            <ChannelChip channel={campaign.channel} />
             {refreshing && (
               <span className="text-petroleum-400 text-xs">
                 {t("detail.refreshing")}
@@ -225,9 +250,11 @@ export default function CampaignDetailPage() {
                   .join(" · ")
               : when}
           </p>
-          {campaign.last_error && (
+          {lastError && (
             <p className="text-xs text-red-500">
-              {t("detail.lastError", { error: campaign.last_error })}
+              {lastError.kind === "raw"
+                ? t("detail.lastError", { error: lastError.text })
+                : t(`detail.notes.${lastError.key}`, lastError.values)}
             </p>
           )}
         </div>
@@ -343,6 +370,13 @@ export default function CampaignDetailPage() {
               {t("detail.retryFailed")}
             </Button>
           )}
+          {whatsapp &&
+            campaign.status === "sent" &&
+            campaign.failed_count > 0 && (
+              <p className="text-petroleum-400 basis-full text-xs">
+                {t("detail.retryWhatsAppNote")}
+              </p>
+            )}
           {["draft", "cancelled", "failed", "paused"].includes(
             campaign.status,
           ) &&
@@ -389,13 +423,17 @@ export default function CampaignDetailPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+      <div
+        className={`grid grid-cols-2 gap-3 md:grid-cols-4 ${
+          whatsapp ? "lg:grid-cols-5" : "lg:grid-cols-7"
+        }`}
+      >
         {tiles.map(({ key, value }) => (
           <div
             key={key}
             className="border-sand-200 rounded-2xl border bg-white p-4"
           >
-            <p className="text-petroleum-400 text-xs">{t(`detail.${key}`)}</p>
+            <p className="text-petroleum-400 text-xs">{tileLabel(key)}</p>
             <p className="font-display text-petroleum-700 mt-1 text-2xl">
               {value}
             </p>
@@ -405,26 +443,47 @@ export default function CampaignDetailPage() {
           </div>
         ))}
       </div>
-      <p className="text-petroleum-400 -mt-3 text-xs">{t("detail.openNote")}</p>
+      <p className="text-petroleum-400 -mt-3 text-xs">
+        {whatsapp ? t("detail.readNote") : t("detail.openNote")}
+      </p>
 
-      <section className="border-sand-200 rounded-2xl border bg-white p-6">
-        <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
-          {t("detail.byLanguage")}
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          {byLanguage.map(({ lang, total, delivered }) => (
-            <div key={lang}>
-              <p className="text-petroleum-400 text-xs uppercase">{lang}</p>
-              <p className="text-petroleum-700 text-lg font-medium">
-                {total}
-                <span className="text-petroleum-400 ml-2 text-sm">
-                  {t("detail.delivered").toLowerCase()} {rate(delivered, total)}
+      {whatsapp ? (
+        <section className="border-sand-200 rounded-2xl border bg-white p-6">
+          <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
+            {t("detail.byStatus")}
+          </h2>
+          <ul className="flex flex-wrap gap-x-8 gap-y-3">
+            {statusBreakdown(recipients).map(({ status, count }) => (
+              <li key={status} className="flex items-center gap-2">
+                <RecipientStatusBadge status={status} channel="whatsapp" />
+                <span className="text-petroleum-700 text-lg font-medium tabular-nums">
+                  {count}
                 </span>
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section className="border-sand-200 rounded-2xl border bg-white p-6">
+          <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
+            {t("detail.byLanguage")}
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {byLanguage.map(({ lang, total, delivered }) => (
+              <div key={lang}>
+                <p className="text-petroleum-400 text-xs uppercase">{lang}</p>
+                <p className="text-petroleum-700 text-lg font-medium">
+                  {total}
+                  <span className="text-petroleum-400 ml-2 text-sm">
+                    {t("detail.delivered").toLowerCase()}{" "}
+                    {rate(delivered, total)}
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {campaign.kind === "split" && (
         <section className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -461,7 +520,11 @@ export default function CampaignDetailPage() {
         </section>
       )}
 
-      <RecipientTable recipients={recipients} locale={locale} />
+      <RecipientTable
+        recipients={recipients}
+        locale={locale}
+        channel={campaign.channel}
+      />
     </div>
   );
 }

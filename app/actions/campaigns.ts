@@ -102,7 +102,13 @@ function message(error: { message?: string } | null | undefined): string {
 
 export async function listCampaigns(
   accessToken: string | null,
-  options: { status?: CampaignStatus | ""; page: number; pageSize: number },
+  options: {
+    status?: CampaignStatus | "";
+    /** Only the campaigns of this channel; absent or empty means both. */
+    channel?: CampaignChannel | "";
+    page: number;
+    pageSize: number;
+  },
 ): Promise<{ campaigns: CampaignRow[]; total: number }> {
   try {
     await admin(accessToken);
@@ -120,6 +126,11 @@ export async function listCampaigns(
     .order("created_at", { ascending: false })
     .range(page * size, page * size + size - 1);
   if (options.status) query = query.eq("status", options.status);
+  if (options.channel) {
+    const channel = campaignChannelSchema.safeParse(options.channel);
+    if (!channel.success) return { campaigns: [], total: 0 };
+    query = query.eq("channel", channel.data);
+  }
 
   const { data, count, error } = await query;
   if (error) {
@@ -132,6 +143,8 @@ export async function listCampaigns(
 /** One count per status, for the cards that double as the list's filter. */
 export async function fetchCampaignStatusCounts(
   accessToken: string | null,
+  /** Count only this channel's campaigns; absent or empty means both. */
+  channel?: CampaignChannel | "",
 ): Promise<CampaignStatusCounts> {
   const empty: CampaignStatusCounts = {
     all: 0,
@@ -150,10 +163,16 @@ export async function fetchCampaignStatusCounts(
     if (err instanceof AuthError) return empty;
     throw err;
   }
-  const { data, error } = await getAdminClient()
+  let query = getAdminClient()
     .database.from("campaigns")
     .select("status")
     .range(0, 9_999);
+  if (channel) {
+    const parsed = campaignChannelSchema.safeParse(channel);
+    if (!parsed.success) return empty;
+    query = query.eq("channel", parsed.data);
+  }
+  const { data, error } = await query;
   if (error) return empty;
   return ((data ?? []) as { status: CampaignStatus }[]).reduce(
     (acc, row) => {
