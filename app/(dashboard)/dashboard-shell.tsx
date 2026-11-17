@@ -243,7 +243,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <nav className="flex min-w-0 items-center gap-1.5 text-sm">
             {breadcrumbs.map((crumb, i) => (
-              <Fragment key={crumb.href ?? crumb.key ?? crumb.label}>
+              <Fragment
+                key={crumb.href ?? crumb.key ?? crumb.label ?? `crumb-${i}`}
+              >
                 {i > 0 && (
                   <span className="text-petroleum-300 shrink-0 text-xs">›</span>
                 )}
