@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IntlMessageFormat } from "intl-messageformat";
+import { formatsCleanly } from "@/lib/icu-sample";
 import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
 import { REPORT_NOTE_KEYS } from "./report";
@@ -39,54 +40,11 @@ describe("the campaign form strings", () => {
     );
   });
 
-  test("every string is valid ICU", () => {
+  test("every string is valid ICU and formats with the values it asks for", () => {
     const broken: string[] = [];
     for (const locale of ["es", "en"] as const) {
       for (const [key, value] of Object.entries(inGroups(locales[locale]))) {
-        try {
-          new IntlMessageFormat(value, locale);
-        } catch {
-          broken.push(`${locale}:${key}`);
-        }
-      }
-    }
-    expect(broken).toEqual([]);
-  });
-
-  test("the new WhatsApp strings format with the values the form gives them", () => {
-    const values = {
-      count: 3,
-      n: 1,
-      language: "x",
-      reason: "r",
-      example: "e",
-      name: "n",
-      sent: 1,
-      remaining: 2,
-      phone: "+34",
-      en: 1,
-      es: 2,
-    };
-    const broken: string[] = [];
-    for (const locale of ["es", "en"] as const) {
-      for (const [key, value] of Object.entries(locales[locale])) {
-        const watched =
-          key.startsWith("campaigns.form.whatsapp.") ||
-          key.startsWith("campaigns.review.whatsapp") ||
-          key.startsWith("campaigns.audience.reachWhatsApp") ||
-          [
-            "toasts.sendPartial",
-            "toasts.sendHalted",
-            "toasts.sendHaltedNoReason",
-            "toasts.sendUnrecorded",
-            "toasts.campaignTestSentPhone",
-          ].includes(key);
-        if (!watched) continue;
-        try {
-          new IntlMessageFormat(value, locale).format(values);
-        } catch {
-          broken.push(`${locale}:${key}`);
-        }
+        if (!formatsCleanly(value, locale)) broken.push(`${locale}:${key}`);
       }
     }
     expect(broken).toEqual([]);
@@ -135,14 +93,11 @@ describe("the campaign form strings", () => {
   });
 
   test("every note the report can show exists in both files and formats with its values", () => {
-    const values = { reason: "r", detail: "d" };
     for (const locale of ["es", "en"] as const) {
       for (const key of REPORT_NOTE_KEYS) {
         const text = locales[locale][`campaigns.detail.notes.${key}`];
         expect([locale, key, Boolean(text)]).toEqual([locale, key, true]);
-        expect(() =>
-          new IntlMessageFormat(text, locale).format(values),
-        ).not.toThrow();
+        expect(formatsCleanly(text, locale)).toBe(true);
       }
     }
     expect(locales.es["campaigns.detail.notes.haltedReason"]).toContain(

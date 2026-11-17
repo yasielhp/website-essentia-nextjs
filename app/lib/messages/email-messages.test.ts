@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { IntlMessageFormat } from "intl-messageformat";
+import { formatsCleanly } from "@/lib/icu-sample";
 import en from "../../../messages/en/dashboard.json";
 import es from "../../../messages/es/dashboard.json";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
@@ -45,24 +45,10 @@ describe("the Emails tab strings", () => {
   });
 
   it("every string is valid ICU and formats with the values the tab gives it", () => {
-    const values = {
-      name: "n",
-      language: "l",
-      date: "d",
-      email: "e@x.com",
-      names: "a, b",
-      message: "m",
-      block: 3,
-      subject: "s",
-    };
     const broken: string[] = [];
     for (const locale of ["es", "en"] as const) {
       for (const [key, text] of Object.entries(LOCALES[locale])) {
-        try {
-          new IntlMessageFormat(text, locale).format(values);
-        } catch {
-          broken.push(`${locale}:${key}`);
-        }
+        if (!formatsCleanly(text, locale)) broken.push(`${locale}:${key}`);
       }
     }
     expect(broken).toEqual([]);

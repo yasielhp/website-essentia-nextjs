@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IntlMessageFormat } from "intl-messageformat";
+import { formatsCleanly } from "@/lib/icu-sample";
 import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
 import { TEMPLATE_MESSAGE_KEYS } from "@/lib/schemas";
@@ -46,24 +47,13 @@ describe("the Messages screen strings", () => {
   });
 
   test("every string is valid ICU, so a stray brace cannot crash the page", () => {
-    const sample = {
-      count: 2,
-      n: 1,
-      name: "x",
-      date: "17 nov 2026",
-      reason: "r",
-    };
     const broken: string[] = [];
     for (const [locale, messages] of [
       ["es", esMessages],
       ["en", enMessages],
     ] as const) {
       for (const [key, value] of Object.entries(messages)) {
-        try {
-          new IntlMessageFormat(value, locale).format(sample);
-        } catch {
-          broken.push(`${locale}:${key}`);
-        }
+        if (!formatsCleanly(value, locale)) broken.push(`${locale}:${key}`);
       }
     }
     expect(broken).toEqual([]);
