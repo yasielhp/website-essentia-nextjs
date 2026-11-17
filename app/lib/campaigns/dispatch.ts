@@ -16,6 +16,7 @@ import {
   INTERRUPTED_ERROR,
   RETRYABLE_FAILURE_FILTER,
   SKIPPED_PREFIX,
+  WRITE_RETRY_MS,
   campaignTemplateIssue,
   haltMessage,
   loadWhatsAppTemplate,
@@ -181,12 +182,55 @@ async function claim(
   return ((data as CampaignRow[] | null) ?? [])[0] ?? null;
 }
 
+/** What a campaign says when messages left whose rows could not be written. */
+export const unrecordedMessage = (count: number): string =>
+  `${count} sent without being recorded`;
+
+/**
+ * Writes what became of an email to its row, tried twice with a short pause.
+ * False when both tries failed, which is logged here: an error the SDK hands
+ * back (it does not throw) used to go unread.
+ */
+async function stamp(
+  db: Db,
+  rowId: string,
+  patch: Record<string, unknown>,
+  sleep: (ms: number) => Promise<void>,
+): Promise<boolean> {
+  let failure = "";
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0) await sleep(WRITE_RETRY_MS);
+    try {
+      const { error } = await db
+        .from("campaign_recipients")
+        .update(patch)
+        .eq("id", rowId);
+      if (!error) return true;
+      failure = error.message;
+    } catch (err) {
+      failure = err instanceof Error ? err.message : "update threw";
+    }
+  }
+  console.error(
+    `[campaigns] row ${rowId} could not be updated after its email:`,
+    failure,
+  );
+  return false;
+}
+
 /**
  * Mails every row still `queued` for a campaign, in chunks, stamping each as
  * `sent` or `failed`. Shared by one-off sends and automations.
  *
  * A row's `variant` picks the A/B subject; its `vars` (a blog post's title
  * and link, say) join the recipient's first name in the template.
+ *
+ * An email Resend took whose row could not be stamped `sent` is not counted
+ * as sent: it is `unrecorded`. Its row is still `queued`, so whatever sends
+ * this campaign's queue again would mail that person twice; the callers say
+ * so on the campaign, and an automation (whose next tick is that "whatever")
+ * is paused. A row that could not be stamped `failed` also stays `queued`, but
+ * nothing left for it, so being sent later is what should happen.
  */
 export async function sendQueued(
   campaign: CampaignRow,
@@ -207,10 +251,12 @@ export async function sendQueued(
     return sendQueuedWhatsApp(campaign, queued, whatsapp);
   }
   const db = whatsapp.db ?? getAdminClient().database;
+  const sleep = whatsapp.sleep ?? pause;
   const content = campaign.content as CampaignContent;
   const appUrl = getAppUrl();
   let sent = 0;
   let failed = 0;
+  let unrecorded = 0;
   let lastError: string | null = null;
 
   // The table lets a row carry only a phone. On an email campaign it has
@@ -225,10 +271,12 @@ export async function sendQueued(
         .map((row) => {
           failed += 1;
           lastError = `${SKIPPED_PREFIX}no_email`;
-          return db
-            .from("campaign_recipients")
-            .update({ status: "failed", error: lastError })
-            .eq("id", row.id);
+          return stamp(
+            db,
+            row.id,
+            { status: "failed", error: lastError },
+            sleep,
+          );
         }),
     );
   }
@@ -277,27 +325,31 @@ export async function sendQueued(
     }
 
     const at = new Date().toISOString();
+    const chunkError = result.error ?? "no id returned";
     await Promise.all(
-      chunk.map((row, index) => {
+      chunk.map(async (row, index) => {
         const providerId = result.ids[index] ?? null;
         if (providerId) {
-          sent += 1;
-          return db
-            .from("campaign_recipients")
-            .update({ status: "sent", provider_id: providerId, sent_at: at })
-            .eq("id", row.id);
+          const recorded = await stamp(
+            db,
+            row.id,
+            { status: "sent", provider_id: providerId, sent_at: at },
+            sleep,
+          );
+          if (recorded) sent += 1;
+          else unrecorded += 1;
+          return;
         }
         failed += 1;
-        lastError = result.error ?? "no id returned";
-        return db
-          .from("campaign_recipients")
-          .update({ status: "failed", error: lastError })
-          .eq("id", row.id);
+        lastError = chunkError;
+        await stamp(db, row.id, { status: "failed", error: chunkError }, sleep);
       }),
     );
   }
 
-  return { sent, failed, lastError };
+  return unrecorded > 0
+    ? { sent, failed, lastError, unrecorded }
+    : { sent, failed, lastError };
 }
 
 /** The rows of a campaign still waiting to go out. */
@@ -580,8 +632,7 @@ export async function dispatchCampaign(
       // Rows left `sending` because their answer could not be written are not
       // in any count: say so where the admin looks.
       last_error:
-        lastError ??
-        (unrecorded ? `${unrecorded} sent without being recorded` : null),
+        lastError ?? (unrecorded ? unrecordedMessage(unrecorded) : null),
     },
     db,
   );

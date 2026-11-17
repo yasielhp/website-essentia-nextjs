@@ -16,6 +16,7 @@ import {
   loadQueued,
   refreshCounts,
   sendQueued,
+  unrecordedMessage,
   type QueuedRow,
 } from "./dispatch";
 
@@ -54,7 +55,10 @@ export async function runAutomation(
    * or the booking was cancelled or moved, while they waited in the queue.
    */
   late?: number;
-  /** Why the run paused the automation, when Meta kept refusing it. */
+  /**
+   * Why the run paused the automation: Meta kept refusing it, or (on email) it
+   * could not record what it had sent.
+   */
   halted?: string;
 }> {
   const db = deps.db ?? getAdminClient().database;
@@ -149,12 +153,21 @@ export async function runAutomation(
   // campaign's last finished rows are looked at across ticks: three in a row
   // refused for that reason is the account or the template, and it is paused
   // just the same.
+  //
+  // An email that left and whose row could not be stamped `sent` is still
+  // `queued`, and the next tick would mail that person again, and the one
+  // after: an email automation that cannot record what it sends is paused too.
+  // (A WhatsApp row in that state is left `sending` and settled as
+  // unconfirmed, so nothing sends it again.)
   const halted =
     outcome.halted ??
     (campaign.channel === "whatsapp" &&
     outcome.refusal &&
     (await refusalStreak(db, campaign.id, outcome.refusal))
       ? outcome.refusal
+      : null) ??
+    (campaign.channel !== "whatsapp" && outcome.unrecorded
+      ? unrecordedMessage(outcome.unrecorded)
       : null);
 
   // Meta refuses the template or the account: pause the automation with the
