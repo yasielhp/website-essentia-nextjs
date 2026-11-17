@@ -268,7 +268,8 @@ describe("the email rules, now checked by the campaign schema", () => {
     const r = validateCampaign({
       ...campaign,
       channel: "whatsapp",
-      kind: "split",
+      // A half-written email block left from before the channel was switched.
+      kind: "standard",
       content: {
         en: { ...empty, subject: "Left over" },
         es: empty,
@@ -288,5 +289,71 @@ describe("channelChangeAllowed", () => {
     expect(channelChangeAllowed("whatsapp", "whatsapp")).toBe(true);
     expect(channelChangeAllowed("email", "whatsapp")).toBe(false);
     expect(channelChangeAllowed("whatsapp", "email")).toBe(false);
+  });
+});
+
+describe("the kinds a channel allows", () => {
+  const whatsappContent = {
+    en: empty,
+    es: empty,
+    whatsapp: {
+      templateId: "6f1c2a3e-1111-4222-8333-444455556666",
+      params: [{ kind: "field" as const, field: "first_name" as const }],
+    },
+  };
+  const asWhatsApp = (kind: string) => ({
+    ...campaign,
+    kind,
+    channel: "whatsapp" as const,
+    content: whatsappContent,
+  });
+
+  test("an email can be an A/B test or an RSS campaign", () => {
+    for (const kind of ["split", "rss"]) {
+      const email = {
+        ...campaign,
+        kind,
+        content: {
+          en: empty,
+          es: { ...filled, subjectB: "Otro asunto" },
+        },
+      };
+      expect(validateCampaign(email).ok).toBe(true);
+      expect(validateCampaignDraft(email).ok).toBe(true);
+    }
+  });
+
+  test("a WhatsApp campaign cannot be one, though the browser says it can", () => {
+    for (const kind of ["split", "rss"]) {
+      for (const validate of [validateCampaign, validateCampaignDraft]) {
+        const r = validate(asWhatsApp(kind));
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.errors.kind).toBe("kindNotAllowedForChannel");
+      }
+    }
+  });
+
+  test("the other kinds work on WhatsApp", () => {
+    for (const kind of [
+      "standard",
+      "automated",
+      "autoresponder",
+      "dateBased",
+    ]) {
+      expect(validateCampaign(asWhatsApp(kind)).ok).toBe(true);
+      expect(validateCampaignDraft(asWhatsApp(kind)).ok).toBe(true);
+    }
+  });
+
+  test("a kind refused for the channel does not hide the template error", () => {
+    const r = validateCampaign({
+      ...asWhatsApp("split"),
+      content: { en: empty, es: empty },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors.kind).toBe("kindNotAllowedForChannel");
+      expect(r.errors["content.whatsapp.templateId"]).toBe("templateRequired");
+    }
   });
 });

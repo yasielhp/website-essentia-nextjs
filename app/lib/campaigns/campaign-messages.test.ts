@@ -151,6 +151,7 @@ describe("the campaign form strings", () => {
         "templateUnavailable",
         "paramCountMismatch",
         "paramTooLong",
+        "kindNotAllowedForChannel",
       ]) {
         expect(messages[`validation.${key}`]).toBeTruthy();
       }

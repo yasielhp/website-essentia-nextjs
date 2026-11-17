@@ -1094,7 +1094,8 @@
     "footerNoVariables": "El pie no admite variables.",
     "urlNoVariables": "El enlace del botón no admite variables.",
     "templateUnavailable": "La plantilla elegida no está aprobada o ya no se puede enviar en este idioma.",
-    "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla."
+    "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla.",
+    "kindNotAllowedForChannel": "Este tipo de campaña no está disponible por WhatsApp."
   },
   "gender": {
     "unspecified": "Sin especificar",

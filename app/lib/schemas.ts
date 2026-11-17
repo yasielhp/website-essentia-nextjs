@@ -4,12 +4,14 @@ import type {
   CampaignAudience,
   CampaignChannel,
   CampaignContent,
+  CampaignKind,
   CampaignLocale,
   CampaignLocaleContent,
   EmailDoc,
   WhatsAppContent,
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
+import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 import { countParams, paramIssues } from "@/lib/whatsapp/templates";
 import {
   WHATSAPP_TEMPLATE_CATEGORIES,
@@ -277,6 +279,7 @@ const CAMPAIGN_MESSAGE_KEYS = new Set([
   "tooManyContacts",
   "templateRequired",
   "paramTooLong",
+  "kindNotAllowedForChannel",
   "invalidInput",
 ]);
 
@@ -492,6 +495,25 @@ export const campaignTriggerSchema = z.object({
 });
 
 /**
+ * A template has no subject to test and no link that changes per send, so the
+ * A/B and RSS kinds exist only as emails. The form greys them out, but the
+ * action is a public endpoint: this is where it is actually enforced, for a
+ * draft as much as for a send. `kindAllowedForChannel` is the one source.
+ */
+function addKindIssue(
+  value: { kind: CampaignKind; channel: CampaignChannel },
+  ctx: z.RefinementCtx,
+) {
+  if (!kindAllowedForChannel(value.kind, value.channel)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["kind"],
+      message: "kindNotAllowedForChannel",
+    });
+  }
+}
+
+/**
  * The whole campaign. What it must contain depends on the channel. An email
  * needs the language blocks the audience selects (the one rule that needs
  * `audience` and `content` side by side), and any other block somebody
@@ -510,6 +532,7 @@ export const campaignSchema = z
     content: campaignContentSchema,
   })
   .superRefine((value, ctx) => {
+    addKindIssue(value, ctx);
     if (value.channel === "whatsapp") {
       // The email blocks are not sent, so nothing is asked of them. The
       // template is the one thing a WhatsApp message cannot go without.
@@ -564,14 +587,16 @@ export function channelChangeAllowed(
  * unfinished — but nothing may be malformed either, so a saved draft always
  * loads back into the form.
  */
-export const campaignDraftSchema = z.object({
-  name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
-  channel: campaignChannelSchema.default("email"),
-  kind: campaignKindSchema,
-  trigger: campaignTriggerSchema,
-  audience: campaignAudienceSchema,
-  content: campaignContentSchema,
-});
+export const campaignDraftSchema = z
+  .object({
+    name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+    channel: campaignChannelSchema.default("email"),
+    kind: campaignKindSchema,
+    trigger: campaignTriggerSchema,
+    audience: campaignAudienceSchema,
+    content: campaignContentSchema,
+  })
+  .superRefine(addKindIssue);
 
 /**
  * The first issue per dotted path — `"content.es.subject"` — wins. An issue

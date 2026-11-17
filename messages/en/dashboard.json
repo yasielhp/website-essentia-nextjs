@@ -1094,7 +1094,8 @@
     "footerNoVariables": "The footer cannot contain variables.",
     "urlNoVariables": "The button link cannot contain variables.",
     "templateUnavailable": "The chosen template is not approved or can no longer be sent in this language.",
-    "paramCountMismatch": "The values do not match what the template asks for."
+    "paramCountMismatch": "The values do not match what the template asks for.",
+    "kindNotAllowedForChannel": "This campaign type is not available on WhatsApp."
   },
   "gender": {
     "unspecified": "Not specified",
