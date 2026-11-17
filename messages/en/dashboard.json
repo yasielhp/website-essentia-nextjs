@@ -1179,10 +1179,8 @@
         "unreachableError": "The number could not be reset.",
         "suppression": {
           "note": "This number opted out on WhatsApp (STOP). It will receive no messages of any kind, even if this contact has consent.",
-          "remove": "Remove",
           "removing": "Removing…",
           "error": "Could not remove the number from the opt-out list.",
-          "unavailable": "Could not check the WhatsApp opt-out list.",
           "removeLabel": "Remove from the STOP list",
           "removeConfirm": "Remove this number from the STOP list? It will be able to receive WhatsApp messages again if the contact has consent. Do it only if the person asked to hear from the centre again.",
           "removeYes": "Yes, remove",
@@ -2389,7 +2387,7 @@
           "booking_reminder": "Sent once per booking, 40 to 56 hours before the appointment."
         },
         "rules": {
-          "consent": "Only clients who ticked “appointment notices” and have not written STOP receive the message.",
+          "consent": "Only clients who ticked “appointment notices” and have not written STOP receive the message. Numbers Meta could not deliver to are left out, and so are numbers that wrote STOP even if another contact file has them ticked: the STOP list is by number.",
           "nothing": "If there is no template set up for the booking's language, nothing is sent.",
           "languages": "Each language needs its own template. Every booking is sent in the language it was made in or, when that is not known, in the one on the contact's file, and a contact with no language chosen is on file as English: it is worth setting up English too.",
           "languagesReminder": "The reminder goes out in the language on the contact's file; with no file, in Spanish. A contact with no language chosen is on file as English: it is worth setting up English too.",
@@ -2428,7 +2426,8 @@
           "discardTitle": "You have unsaved changes.",
           "discardYes": "Discard changes",
           "discardNo": "Keep editing"
-        }
+        },
+        "templatesFailed": "The WhatsApp templates could not be read, so they cannot be set up or checked."
       }
     }
   },

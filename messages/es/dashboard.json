@@ -1179,10 +1179,8 @@
         "unreachableError": "No se pudo restablecer el número.",
         "suppression": {
           "note": "Este número se dio de baja por WhatsApp (STOP). No recibirá mensajes de ningún tipo, aunque este contacto tenga consentimiento.",
-          "remove": "Quitar",
           "removing": "Quitando…",
           "error": "No se pudo quitar el número de la lista de bajas.",
-          "unavailable": "No se pudo comprobar la lista de bajas de WhatsApp.",
           "removeLabel": "Quitar de la lista de bajas",
           "removeConfirm": "¿Quitar este número de la lista de bajas? Volverá a poder recibir mensajes de WhatsApp si el contacto tiene consentimiento. Hazlo solo si la persona ha pedido volver a recibirlos.",
           "removeYes": "Sí, quitar",
@@ -2389,7 +2387,7 @@
           "booking_reminder": "Se envía una vez por reserva, de 40 a 56 horas antes de la cita."
         },
         "rules": {
-          "consent": "Solo reciben el mensaje las clientas que marcaron «avisos de la cita» y no han escrito BAJA.",
+          "consent": "Solo reciben el mensaje las clientas que marcaron «avisos de la cita» y no han escrito BAJA. Quedan fuera los números a los que Meta no pudo entregar un mensaje y los que escribieron BAJA aunque otra ficha los tenga marcados: la lista de bajas es por número.",
           "nothing": "Si no hay plantilla configurada para el idioma de la reserva, no se envía nada.",
           "languages": "Hace falta una plantilla para cada idioma. Cada reserva se envía en el idioma con el que se hizo o, si no consta, en el de la ficha del contacto, y un contacto sin idioma elegido figura como inglés: conviene configurar también el inglés.",
           "languagesReminder": "El recordatorio sale en el idioma de la ficha del contacto; si no hay ficha, en español. Un contacto sin idioma elegido figura como inglés: conviene configurar también el inglés.",
@@ -2428,7 +2426,8 @@
           "discardTitle": "Hay cambios sin guardar.",
           "discardYes": "Descartar cambios",
           "discardNo": "Seguir editando"
-        }
+        },
+        "templatesFailed": "No se pudieron leer las plantillas de WhatsApp, así que no se pueden configurar ni comprobar."
       }
     }
   },

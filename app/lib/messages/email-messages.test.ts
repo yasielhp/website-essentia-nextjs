@@ -149,11 +149,31 @@ describe("the Emails tab strings", () => {
         expect(messages[`messages.email.whatsapp.rules.${rule}`]).toBeTruthy();
       }
     }
+    // Who is left out is said in full: the STOP list is by number.
+    expect(LOCALES.es["messages.email.whatsapp.rules.consent"]).toContain(
+      "por número",
+    );
+    expect(LOCALES.en["messages.email.whatsapp.rules.consent"]).toContain(
+      "by number",
+    );
+    expect(LOCALES.es["messages.email.whatsapp.templatesFailed"]).toBeTruthy();
+    expect(LOCALES.en["messages.email.whatsapp.templatesFailed"]).toBeTruthy();
     expect(LOCALES.es["messages.email.whatsapp.rules.stop"]).toContain("BAJA");
     expect(LOCALES.en["messages.email.whatsapp.rules.stop"]).toContain("STOP");
     expect(LOCALES.es["messages.email.whatsapp.rules.reminderFirst"]).toContain(
       "40-56",
     );
+  });
+
+  it("the card has no STOP-list string nothing reads", () => {
+    for (const messages of Object.values(LOCALES)) {
+      expect(
+        messages["contacts.detail.whatsapp.suppression.remove"],
+      ).toBeUndefined();
+      expect(
+        messages["contacts.detail.whatsapp.suppression.unavailable"],
+      ).toBeUndefined();
+    }
   });
 
   it("the card's STOP-list strings exist, with the confirmation", () => {

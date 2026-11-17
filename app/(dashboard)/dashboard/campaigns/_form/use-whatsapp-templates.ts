@@ -41,7 +41,11 @@ function reducer(_: TemplatesState, action: Action): TemplatesState {
  * WhatsApp campaign), for the step that picks one and the review that shows
  * it. `error` is the action's key, for the caller to translate.
  */
-export function useWhatsAppTemplates(enabled: boolean): TemplatesState {
+export function useWhatsAppTemplates(
+  enabled: boolean,
+  /** Change it to read the templates again (a retry, a refresh after a save). */
+  reloadKey = 0,
+): TemplatesState {
   const [state, dispatch] = useReducer(reducer, { status: "idle" });
 
   useEffect(() => {
@@ -67,7 +71,7 @@ export function useWhatsAppTemplates(enabled: boolean): TemplatesState {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, reloadKey]);
 
   return state;
 }

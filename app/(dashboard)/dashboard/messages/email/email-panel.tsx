@@ -74,7 +74,7 @@ export function EmailPanel() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   // The WhatsApp rows need the account's templates; the email half does not,
   // so a failure to read them leaves those rows saying "could not be checked".
-  const waTemplates = useWhatsAppTemplates(true);
+  const waTemplates = useWhatsAppTemplates(true, reloadKey);
   const templateRows =
     waTemplates.status === "ready" ? waTemplates.templates : null;
 
@@ -235,6 +235,17 @@ export function EmailPanel() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-petroleum-400 max-w-2xl text-sm">{t("intro")}</p>
+      {waTemplates.status === "error" && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-xl bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
+        >
+          <p>{t("whatsapp.templatesFailed")}</p>
+          <Button variant="outline" size="sm" onClick={reload}>
+            {t("retry")}
+          </Button>
+        </div>
+      )}
       <MessageList
         rows={state.rows}
         catalog={state.catalog}
