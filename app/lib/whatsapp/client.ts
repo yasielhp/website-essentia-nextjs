@@ -124,13 +124,16 @@ function assertGraphUrl(raw: string): void {
 
 /**
  * Every call to the Graph API goes through here: API version, bearer token,
- * timeout, no caching and no redirects (a redirect would replay the token at
- * wherever it points). `target` is a path under the version, or an absolute
+ * timeout and no caching. `target` is a path under the version, or an absolute
  * URL that must still be the Graph API.
+ *
+ * `strictRedirects` makes a redirect an error instead of replaying the token at
+ * wherever it points. It is off for the message POST on purpose: that request
+ * must stay exactly what the staff notification has always sent.
  */
 function graphFetch(
   target: string,
-  init: { method?: "POST"; body?: string } = {},
+  init: { method?: "POST"; body?: string; strictRedirects?: boolean } = {},
 ): Promise<Response> {
   const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
   const isAbsolute = /^https?:/i.test(target);
@@ -148,7 +151,7 @@ function graphFetch(
     ...(init.body === undefined ? {} : { body: init.body }),
     signal: AbortSignal.timeout(TIMEOUT_MS),
     cache: "no-store",
-    redirect: "error",
+    ...(init.strictRedirects ? { redirect: "error" as const } : {}),
   });
 }
 
@@ -158,7 +161,7 @@ async function graphRequest(
   init?: { method?: "POST"; body?: string },
 ): Promise<Response> {
   try {
-    return await graphFetch(target, init);
+    return await graphFetch(target, { ...init, strictRedirects: true });
   } catch (err) {
     if (err instanceof UnsafeUrlError) throw err;
     throw new Error(

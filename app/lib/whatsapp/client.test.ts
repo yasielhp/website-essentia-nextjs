@@ -227,6 +227,14 @@ describe("sending", () => {
         Authorization: "Bearer secret-token",
         "Content-Type": "application/json",
       });
+      // No field beyond what the notification has always sent.
+      expect(Object.keys(calls[0].init).sort()).toEqual([
+        "body",
+        "cache",
+        "headers",
+        "method",
+        "signal",
+      ]);
       expect(calls[0].init.body).toBe(
         JSON.stringify({
           messaging_product: "whatsapp",
@@ -385,6 +393,7 @@ describe("listRemoteTemplates", () => {
       expect(calls[0].init.headers).toEqual({
         Authorization: "Bearer secret-token",
       });
+      expect(calls[0].init.redirect).toBe("error");
     }));
 
   test("follows Meta's pagination and flattens", () =>
@@ -587,6 +596,7 @@ describe("createRemoteTemplate", () => {
         Authorization: "Bearer secret-token",
         "Content-Type": "application/json",
       });
+      expect(calls[0].init.redirect).toBe("error");
       const components = sentComponents(calls[0]);
       expect(components.map((c) => c.type)).toEqual([
         "HEADER",
