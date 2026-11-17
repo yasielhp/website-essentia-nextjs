@@ -16,7 +16,8 @@
     "education": "Education",
     "blog": "Blog",
     "settings": "Settings",
-    "campaigns": "Campaigns"
+    "campaigns": "Campaigns",
+    "messages": "Messages"
   },
   "breadcrumbs": {
     "sections": {
@@ -30,7 +31,8 @@
       "transactions": "Transactions",
       "account": "Edit account",
       "settings": "Settings",
-      "campaigns": "Campaigns"
+      "campaigns": "Campaigns",
+      "messages": "Messages"
     },
     "leaves": {
       "new": "New",
@@ -1065,7 +1067,30 @@
     "imageUrlRequired": "Add an image or its URL",
     "tooManyBlocks": "Too many blocks",
     "subjectBRequired": "The A/B test needs a second subject",
-    "tierInvalid": "Choose a valid session type"
+    "tierInvalid": "Choose a valid session type",
+    "templateNameRequired": "Give the template a name",
+    "templateNameTooLong": "The name can be 512 characters at most",
+    "templateBodyRequired": "Write the body of the message",
+    "templateBodyTooLong": "The body can be 1024 characters at most",
+    "templateNameFormat": "Lowercase letters, numbers and underscores only.",
+    "templateLanguageInvalid": "Choose a valid language",
+    "templateCategoryInvalid": "Choose a valid category",
+    "headerTooLong": "The header can be 60 characters at most",
+    "footerTooLong": "The footer can be 60 characters at most",
+    "tooManyButtons": "A template can have up to 3 buttons",
+    "exampleRequired": "Write an example for this parameter",
+    "exampleCountMismatch": "Each parameter needs an example.",
+    "buttonTextRequired": "The button needs a text",
+    "buttonTextTooLong": "The button text can be 25 characters at most",
+    "urlInvalid": "Enter a valid link",
+    "urlTooLong": "The button link is too long.",
+    "exampleTooLong": "Each example can be 200 characters, and there can be 20 examples at most.",
+    "paramMalformed": "Use only parameters shaped like '{{'1'}}', '{{'2'}}'… (from 1 to 50, no spaces).",
+    "paramGap": "Parameters must be consecutive: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+    "paramAtEdge": "Meta does not accept a parameter at the very start or end of the text.",
+    "headerNoVariables": "The header cannot contain variables.",
+    "footerNoVariables": "The footer cannot contain variables.",
+    "urlNoVariables": "The button link cannot contain variables."
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1882,6 +1907,131 @@
         "first-visit-review": "Thanks and a button to leave a Google review.",
         "blog-post": "Title, excerpt and link of the latest post, filled in automatically.",
         "event": "Save the date, details and a confirm button."
+      }
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "description": "The texts the centre sends to its clients.",
+    "tabsLabel": "Message type",
+    "tabs": {
+      "whatsapp": "WhatsApp templates",
+      "email": "Emails"
+    },
+    "whatsapp": {
+      "intro": "Meta reviews every template before it can be sent, and a WhatsApp campaign can only use approved templates. A review takes anywhere from minutes to days.",
+      "sync": "Sync with Meta",
+      "syncing": "Syncing…",
+      "syncUnavailable": "WhatsApp Business is not set up on the server",
+      "new": "New template",
+      "notConfigured": "WhatsApp Business is not set up on the server (WHATSAPP_BUSINESS_ACCOUNT_ID). Templates are saved as drafts and are not submitted for review.",
+      "loadFailed": "The templates could not be loaded.",
+      "retry": "Try again",
+      "empty": "There are no templates yet. Create the first one or sync the ones you already have at Meta.",
+      "table": {
+        "name": "Name",
+        "language": "Language",
+        "category": "Category",
+        "status": "Status",
+        "params": "Parameters",
+        "updated": "Updated"
+      },
+      "languages": {
+        "es": "Spanish",
+        "en": "English"
+      },
+      "categories": {
+        "MARKETING": "Marketing",
+        "UTILITY": "Utility"
+      },
+      "status": {
+        "draft": "Draft",
+        "PENDING": "In review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "PAUSED": "Paused",
+        "DISABLED": "Disabled",
+        "IN_APPEAL": "In appeal",
+        "PENDING_DELETION": "Pending deletion",
+        "DELETED": "Deleted",
+        "LIMIT_EXCEEDED": "Limit exceeded",
+        "ARCHIVED": "Archived",
+        "LOCKED": "Locked",
+        "FLAGGED": "Flagged"
+      },
+      "unsupported": {
+        "badge": "Cannot be sent from here",
+        "media_header": "It has an image, video or document header.",
+        "header_variable": "The header contains variables.",
+        "named_params": "It uses named parameters.",
+        "button_type": "It has buttons we cannot send (call, copy code…)."
+      },
+      "rejection": "Reason for rejection: {reason}",
+      "rejectionUnknown": "Meta did not give a reason.",
+      "useAnotherName": "Use another name",
+      "lastSync": "Last synced: {date}",
+      "neverSynced": "never",
+      "paramCount": "{count, plural, =0 {No parameters} one {# parameter} other {# parameters}}",
+      "detail": {
+        "title": "Template {name}",
+        "preview": "How it will look",
+        "rejectedHelp": "Meta does not let a rejected template reuse its name. Create a copy under another name and fix the text before submitting it."
+      },
+      "buttonType": {
+        "URL": "Link",
+        "QUICK_REPLY": "Quick reply"
+      },
+      "form": {
+        "title": "New WhatsApp template",
+        "submit": "Submit for review",
+        "saveDraft": "Save draft",
+        "sending": "Sending…",
+        "draftNotice": "WhatsApp Business is not set up: the template will be saved as a draft and will not be submitted for review.",
+        "reviewNotice": "Once submitted, Meta will review it. Until it approves it, it cannot be used in a campaign.",
+        "addButton": "Add button",
+        "removeButton": "Remove button",
+        "buttonN": "Button {n}",
+        "exampleN": "Example for parameter {n}",
+        "useName": "Use “{name}”",
+        "nameTaken": "A template with that name and language already exists. Try another name."
+      },
+      "fields": {
+        "name": "Name",
+        "language": "Language",
+        "category": "Category",
+        "header": "Header (optional)",
+        "body": "Body",
+        "footer": "Footer (optional)",
+        "buttons": "Buttons",
+        "buttonType": "Button type",
+        "buttonText": "Button text",
+        "buttonUrl": "Button link",
+        "examples": "Parameter examples"
+      },
+      "help": {
+        "name": "Lowercase letters, numbers and underscores (_) only. Meta does not let you change it after submitting.",
+        "category": "Marketing requires the contact's WhatsApp consent and costs more per message. Utility is for notices about something the client already asked for, such as a booking.",
+        "header": "Text only, up to 60 characters. It cannot contain '{{'n'}}' variables.",
+        "body": "Up to 1024 characters. Write '{{'1'}}', '{{'2'}}'… where the data should change on each send. They cannot be at the very start or end.",
+        "footer": "Up to 60 characters. It cannot contain '{{'n'}}' variables.",
+        "buttons": "Up to 3. A link must start with https:// and is fixed: it cannot contain '{{'n'}}' variables.",
+        "examples": "Meta will not review a template without an example for each parameter. Write a realistic value."
+      },
+      "toasts": {
+        "submitted": "Template submitted for review",
+        "draftSaved": "Template saved as a draft",
+        "synced": "{count, plural, =0 {No new templates at Meta} one {# template synced} other {# templates synced}}",
+        "skipped": "{count, plural, one {# template skipped: its category cannot be used here} other {# templates skipped: their category cannot be used here}}",
+        "syncHint": "Sync to see whether Meta received it."
+      },
+      "errors": {
+        "generic": "The action could not be completed.",
+        "db": "The database could not be reached.",
+        "invalid": "Check the highlighted fields.",
+        "templateExists": "A template with that name and language already exists.",
+        "submittedNotSaved": "Meta accepted the template, but it was not saved here. Sync to bring it in.",
+        "whatsapp_not_configured": "WhatsApp Business is not set up on the server.",
+        "meta": "Meta rejected the request."
       }
     }
   },

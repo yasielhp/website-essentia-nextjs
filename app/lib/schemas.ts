@@ -621,7 +621,7 @@ export const whatsappTemplateSchema = z
 export type WhatsAppTemplateInput = z.infer<typeof whatsappTemplateSchema>;
 
 /** Every key the template schema can raise; anything else is `invalidInput`. */
-const TEMPLATE_MESSAGE_KEYS = new Set([
+export const TEMPLATE_MESSAGE_KEYS = new Set([
   "templateNameRequired",
   "templateNameTooLong",
   "templateNameFormat",

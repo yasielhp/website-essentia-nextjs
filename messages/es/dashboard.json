@@ -16,7 +16,8 @@
     "education": "Formación",
     "blog": "Blog",
     "settings": "Ajustes",
-    "campaigns": "Campañas"
+    "campaigns": "Campañas",
+    "messages": "Mensajes"
   },
   "breadcrumbs": {
     "sections": {
@@ -30,7 +31,8 @@
       "transactions": "Transacciones",
       "account": "Editar cuenta",
       "settings": "Ajustes",
-      "campaigns": "Campañas"
+      "campaigns": "Campañas",
+      "messages": "Mensajes"
     },
     "leaves": {
       "new": "Nuevo",
@@ -1065,7 +1067,30 @@
     "imageUrlRequired": "Añade una imagen o su URL",
     "tooManyBlocks": "Demasiados bloques",
     "subjectBRequired": "La prueba A/B necesita un segundo asunto",
-    "tierInvalid": "Elige un tipo de sesión válido"
+    "tierInvalid": "Elige un tipo de sesión válido",
+    "templateNameRequired": "Ponle un nombre a la plantilla",
+    "templateNameTooLong": "El nombre admite 512 caracteres como máximo",
+    "templateBodyRequired": "Escribe el cuerpo del mensaje",
+    "templateBodyTooLong": "El cuerpo admite 1024 caracteres como máximo",
+    "templateNameFormat": "Solo minúsculas, números y guion bajo.",
+    "templateLanguageInvalid": "Elige un idioma válido",
+    "templateCategoryInvalid": "Elige una categoría válida",
+    "headerTooLong": "La cabecera admite 60 caracteres como máximo",
+    "footerTooLong": "El pie admite 60 caracteres como máximo",
+    "tooManyButtons": "Una plantilla admite hasta 3 botones",
+    "exampleRequired": "Escribe un ejemplo para este parámetro",
+    "exampleCountMismatch": "Falta un ejemplo por cada parámetro.",
+    "buttonTextRequired": "El botón necesita un texto",
+    "buttonTextTooLong": "El texto del botón admite 25 caracteres como máximo",
+    "urlInvalid": "Introduce un enlace válido",
+    "urlTooLong": "El enlace del botón es demasiado largo.",
+    "exampleTooLong": "Cada ejemplo admite 200 caracteres y como mucho 20 ejemplos.",
+    "paramMalformed": "Usa solo parámetros con la forma '{{'1'}}', '{{'2'}}'… (de 1 a 50, sin espacios).",
+    "paramGap": "Los parámetros deben ir seguidos: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+    "paramAtEdge": "Meta no acepta un parámetro al principio o al final del texto.",
+    "headerNoVariables": "La cabecera no admite variables.",
+    "footerNoVariables": "El pie no admite variables.",
+    "urlNoVariables": "El enlace del botón no admite variables."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1882,6 +1907,131 @@
         "first-visit-review": "Agradecimiento y botón para dejar una reseña en Google.",
         "blog-post": "Título, resumen y enlace de la última entrada, rellenados solos.",
         "event": "Reserva la fecha, detalles y botón de confirmar."
+      }
+    }
+  },
+  "messages": {
+    "title": "Mensajes",
+    "description": "Los textos que el centro envía a sus clientes.",
+    "tabsLabel": "Tipo de mensaje",
+    "tabs": {
+      "whatsapp": "Plantillas de WhatsApp",
+      "email": "Emails"
+    },
+    "whatsapp": {
+      "intro": "Meta revisa cada plantilla antes de que se pueda enviar, y una campaña de WhatsApp solo puede usar plantillas aprobadas. La revisión tarda de minutos a días.",
+      "sync": "Sincronizar con Meta",
+      "syncing": "Sincronizando…",
+      "syncUnavailable": "Falta configurar WhatsApp Business en el servidor",
+      "new": "Nueva plantilla",
+      "notConfigured": "Falta configurar WhatsApp Business en el servidor (WHATSAPP_BUSINESS_ACCOUNT_ID). Las plantillas se guardan como borrador y no se envían a revisión.",
+      "loadFailed": "No se pudieron cargar las plantillas.",
+      "retry": "Reintentar",
+      "empty": "Todavía no hay plantillas. Crea la primera o sincroniza las que ya tengas en Meta.",
+      "table": {
+        "name": "Nombre",
+        "language": "Idioma",
+        "category": "Categoría",
+        "status": "Estado",
+        "params": "Parámetros",
+        "updated": "Actualizada"
+      },
+      "languages": {
+        "es": "Español",
+        "en": "Inglés"
+      },
+      "categories": {
+        "MARKETING": "Marketing",
+        "UTILITY": "Utilidad"
+      },
+      "status": {
+        "draft": "Borrador",
+        "PENDING": "En revisión",
+        "APPROVED": "Aprobada",
+        "REJECTED": "Rechazada",
+        "PAUSED": "Pausada",
+        "DISABLED": "Desactivada",
+        "IN_APPEAL": "En apelación",
+        "PENDING_DELETION": "Pendiente de borrado",
+        "DELETED": "Borrada",
+        "LIMIT_EXCEEDED": "Límite superado",
+        "ARCHIVED": "Archivada",
+        "LOCKED": "Bloqueada",
+        "FLAGGED": "Señalada"
+      },
+      "unsupported": {
+        "badge": "No enviable desde aquí",
+        "media_header": "Tiene cabecera con imagen, vídeo o documento.",
+        "header_variable": "La cabecera lleva variables.",
+        "named_params": "Usa parámetros con nombre.",
+        "button_type": "Tiene botones que no sabemos enviar (llamada, copiar código…)."
+      },
+      "rejection": "Motivo del rechazo: {reason}",
+      "rejectionUnknown": "Meta no indicó el motivo.",
+      "useAnotherName": "Usar otro nombre",
+      "lastSync": "Última sincronización: {date}",
+      "neverSynced": "nunca",
+      "paramCount": "{count, plural, =0 {Sin parámetros} one {# parámetro} other {# parámetros}}",
+      "detail": {
+        "title": "Plantilla {name}",
+        "preview": "Así se verá",
+        "rejectedHelp": "Meta no admite repetir el nombre de una plantilla rechazada. Crea una copia con otro nombre y corrige el texto antes de enviarla."
+      },
+      "buttonType": {
+        "URL": "Enlace",
+        "QUICK_REPLY": "Respuesta rápida"
+      },
+      "form": {
+        "title": "Nueva plantilla de WhatsApp",
+        "submit": "Enviar a revisión",
+        "saveDraft": "Guardar borrador",
+        "sending": "Enviando…",
+        "draftNotice": "WhatsApp Business no está configurado: la plantilla se guardará como borrador y no se enviará a revisión.",
+        "reviewNotice": "Al enviarla, Meta la revisará. Hasta que la apruebe no se puede usar en una campaña.",
+        "addButton": "Añadir botón",
+        "removeButton": "Quitar botón",
+        "buttonN": "Botón {n}",
+        "exampleN": "Ejemplo para el parámetro {n}",
+        "useName": "Usar «{name}»",
+        "nameTaken": "Ya existe una plantilla con ese nombre e idioma. Prueba con otro nombre."
+      },
+      "fields": {
+        "name": "Nombre",
+        "language": "Idioma",
+        "category": "Categoría",
+        "header": "Cabecera (opcional)",
+        "body": "Cuerpo",
+        "footer": "Pie (opcional)",
+        "buttons": "Botones",
+        "buttonType": "Tipo de botón",
+        "buttonText": "Texto del botón",
+        "buttonUrl": "Enlace del botón",
+        "examples": "Ejemplos de los parámetros"
+      },
+      "help": {
+        "name": "Solo minúsculas, números y guion bajo (_). Meta no permite cambiarlo después de enviarla.",
+        "category": "Marketing exige el consentimiento de WhatsApp del contacto y cuesta más por mensaje. Utilidad es para avisos sobre algo que el cliente ya pidió, como una reserva.",
+        "header": "Solo texto, hasta 60 caracteres. No admite variables '{{'n'}}'.",
+        "body": "Hasta 1024 caracteres. Escribe '{{'1'}}', '{{'2'}}'… donde quieras que cambie el dato en cada envío. No pueden ir al principio ni al final.",
+        "footer": "Hasta 60 caracteres. No admite variables '{{'n'}}'.",
+        "buttons": "Hasta 3. Un enlace debe empezar por https:// y es fijo: no admite variables '{{'n'}}'.",
+        "examples": "Meta no revisa una plantilla sin un ejemplo por cada parámetro. Escribe un valor realista."
+      },
+      "toasts": {
+        "submitted": "Plantilla enviada a revisión",
+        "draftSaved": "Plantilla guardada como borrador",
+        "synced": "{count, plural, =0 {No hay plantillas nuevas en Meta} one {# plantilla sincronizada} other {# plantillas sincronizadas}}",
+        "skipped": "{count, plural, one {# plantilla omitida: su categoría no se puede usar aquí} other {# plantillas omitidas: su categoría no se puede usar aquí}}",
+        "syncHint": "Sincroniza para ver si Meta la recibió."
+      },
+      "errors": {
+        "generic": "No se pudo completar la acción.",
+        "db": "No se pudo acceder a la base de datos.",
+        "invalid": "Revisa los campos marcados.",
+        "templateExists": "Ya existe una plantilla con ese nombre e idioma.",
+        "submittedNotSaved": "Meta aceptó la plantilla, pero no se guardó aquí. Sincroniza para traerla.",
+        "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
+        "meta": "Meta rechazó la petición."
       }
     }
   },

@@ -15,6 +15,7 @@ export type Breadcrumb = {
 const SECTION_KEYS: Record<string, string> = {
   blog: "sections.blog",
   campaigns: "sections.campaigns",
+  messages: "sections.messages",
   bookings: "sections.bookings",
   contacts: "sections.users",
   subscriptions: "sections.subscriptions",
