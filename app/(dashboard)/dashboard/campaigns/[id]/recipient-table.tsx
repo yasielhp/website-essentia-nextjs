@@ -8,6 +8,8 @@ import { appointmentLabel } from "@/lib/campaigns/appointment-form";
 import {
   recipientIdentity,
   recipientLastEvent,
+  recipientMatches,
+  recipientName,
 } from "@/lib/campaigns/recipient-row";
 import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { describeRecipientError } from "@/lib/campaigns/report";
@@ -52,18 +54,11 @@ export function RecipientTable({
   };
   const [query, setQuery] = useState("");
 
-  const visible = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return recipients;
-    // A WhatsApp recipient has a phone and no email; typing "600 11" must
-    // still find +34600112233.
-    const digits = term.replace(/\s+/g, "");
-    return recipients.filter(
-      (r) =>
-        (r.email ?? "").includes(term) ||
-        (digits !== "" && (r.phone ?? "").includes(digits)),
-    );
-  }, [recipients, query]);
+  // By name, address or phone; a phone typed with spaces still finds its number.
+  const visible = useMemo(
+    () => recipients.filter((r) => recipientMatches(r, query)),
+    [recipients, query],
+  );
 
   return (
     <section className="border-sand-200 rounded-2xl border bg-white">
@@ -125,7 +120,16 @@ export function RecipientTable({
                     className="border-sand-50 border-b last:border-0"
                   >
                     <td className="text-petroleum-700 px-6 py-3 font-medium">
-                      {recipientIdentity(row, channel)}
+                      {recipientName(row) ? (
+                        <>
+                          <span className="block">{recipientName(row)}</span>
+                          <span className="text-petroleum-400 block text-xs font-normal">
+                            {recipientIdentity(row, channel)}
+                          </span>
+                        </>
+                      ) : (
+                        recipientIdentity(row, channel)
+                      )}
                     </td>
                     {appointment && (
                       <td className="text-petroleum-500 px-6 py-3 text-xs">
@@ -166,11 +170,16 @@ export function RecipientTable({
               return (
                 <MobileRowCard
                   key={row.id}
-                  title={recipientIdentity(row, channel)}
+                  title={recipientName(row) ?? recipientIdentity(row, channel)}
                   description={
-                    appointment
-                      ? `${t("columnsAppointment")}: ${appointmentLabel(row.vars) ?? "—"}`
-                      : undefined
+                    [
+                      recipientName(row) ? recipientIdentity(row, channel) : "",
+                      appointment
+                        ? `${t("columnsAppointment")}: ${appointmentLabel(row.vars) ?? "—"}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || undefined
                   }
                   facts={[
                     {

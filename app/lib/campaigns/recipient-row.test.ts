@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { recipientIdentity, recipientLastEvent } from "./recipient-row";
+import {
+  recipientIdentity,
+  recipientLastEvent,
+  recipientMatches,
+  recipientName,
+} from "./recipient-row";
 
 const base = {
   email: null,
@@ -53,5 +58,39 @@ describe("recipientLastEvent", () => {
     ).toBe("3");
     expect(recipientLastEvent({ ...base, sent_at: "1" }, "email")).toBe("1");
     expect(recipientLastEvent(base, "email")).toBeNull();
+  });
+});
+
+describe("the name of a recipient, and finding her by it", () => {
+  const ana = { contact_name: "Ana Pérez", email: null, phone: "+34600112233" };
+  test("a row with no contact (deleted since) has no name", () => {
+    expect(recipientName({ contact_name: null })).toBeNull();
+    expect(recipientName({})).toBeNull();
+    expect(recipientName({ contact_name: "  " })).toBeNull();
+    expect(recipientName(ana)).toBe("Ana Pérez");
+  });
+  test("the search finds by name, without minding case", () => {
+    expect(recipientMatches(ana, "ana")).toBe(true);
+    expect(recipientMatches(ana, "PÉREZ")).toBe(true);
+    expect(recipientMatches(ana, "luis")).toBe(false);
+  });
+  test("and by phone, with or without spaces, and by address", () => {
+    expect(recipientMatches(ana, "600 11")).toBe(true);
+    expect(recipientMatches(ana, "+34600112233")).toBe(true);
+    expect(
+      recipientMatches(
+        { contact_name: null, email: "Ana@Example.com", phone: null },
+        "ana@exa",
+      ),
+    ).toBe(true);
+  });
+  test("an empty search finds everyone, and a row with no name is still found by its phone", () => {
+    expect(recipientMatches(ana, "   ")).toBe(true);
+    expect(
+      recipientMatches(
+        { contact_name: null, email: null, phone: "+34600112233" },
+        "112233",
+      ),
+    ).toBe(true);
   });
 });

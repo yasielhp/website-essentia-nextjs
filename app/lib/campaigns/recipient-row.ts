@@ -28,3 +28,29 @@ export function recipientLastEvent(
     ? (row.read_at ?? row.delivered_at ?? row.sent_at)
     : (row.clicked_at ?? row.opened_at ?? row.delivered_at ?? row.sent_at);
 }
+
+/** The contact's name as the report shows it, or null when the row has none. */
+export function recipientName(
+  row: Pick<CampaignRecipientRow, "contact_name">,
+): string | null {
+  const name = (row.contact_name ?? "").trim();
+  return name === "" ? null : name;
+}
+
+/**
+ * Whether a typed search finds this row: by name, by address, or by phone
+ * (typing "600 11" finds +34600112233, as spaces are not part of a number).
+ */
+export function recipientMatches(
+  row: Pick<CampaignRecipientRow, "contact_name" | "email" | "phone">,
+  query: string,
+): boolean {
+  const term = query.trim().toLowerCase();
+  if (!term) return true;
+  const digits = term.replace(/\s+/g, "");
+  return (
+    (recipientName(row) ?? "").toLowerCase().includes(term) ||
+    (row.email ?? "").toLowerCase().includes(term) ||
+    (digits !== "" && (row.phone ?? "").includes(digits))
+  );
+}

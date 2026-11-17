@@ -297,29 +297,48 @@ export async function fetchCampaign(
   }
 
   const db = getAdminClient().database;
-  const [campaignResult, recipientsResult] = await Promise.all([
-    db.from("campaigns").select("*").eq("id", id).maybeSingle(),
+  const RECIPIENT_COLUMNS =
+    "id, contact_id, email, phone, language, status, cycle, variant, error, vars, sent_at, delivered_at, opened_at, clicked_at, read_at";
+  const readRecipients = (columns: string) =>
     db
       .from("campaign_recipients")
-      .select(
-        "id, contact_id, email, phone, language, status, cycle, variant, error, vars, sent_at, delivered_at, opened_at, clicked_at, read_at",
-      )
+      .select(columns)
       .eq("campaign_id", id)
       .order("email", { ascending: true })
       // WhatsApp rows have no email, so they tie on it: the phone settles the
       // order, or the list would shuffle between two reloads.
       .order("phone", { ascending: true })
-      .range(0, 9_999),
+      .range(0, 9_999);
+  const [campaignResult, withNames] = await Promise.all([
+    db.from("campaigns").select("*").eq("id", id).maybeSingle(),
+    // The name comes with the row through the contact it points to (one read,
+    // no list of ids). If that embedding is refused, the report is the same
+    // as before, without names: a name is never worth losing the report.
+    readRecipients(`${RECIPIENT_COLUMNS}, contacts(first_name, last_name)`),
   ]);
+  const recipientsResult = withNames.error
+    ? await readRecipients(RECIPIENT_COLUMNS)
+    : withNames;
 
   if (campaignResult.error || !campaignResult.data) return nothing;
 
+  type JoinedContact = { first_name: string | null; last_name: string | null };
   const recipients = (
-    (recipientsResult.data ?? []) as CampaignRecipientRow[]
-  ).sort(
-    (a, b) =>
-      (RECIPIENT_ORDER[a.status] ?? 9) - (RECIPIENT_ORDER[b.status] ?? 9),
-  );
+    (recipientsResult.data ?? []) as unknown as (CampaignRecipientRow & {
+      contacts?: JoinedContact | JoinedContact[] | null;
+    })[]
+  )
+    .map(({ contacts, ...row }) => {
+      const contact = Array.isArray(contacts) ? contacts[0] : contacts;
+      const name = [contact?.first_name, contact?.last_name]
+        .filter((part) => part && part.trim() !== "")
+        .join(" ");
+      return { ...row, contact_name: name === "" ? null : name };
+    })
+    .sort(
+      (a, b) =>
+        (RECIPIENT_ORDER[a.status] ?? 9) - (RECIPIENT_ORDER[b.status] ?? 9),
+    );
 
   return { campaign: campaignResult.data as CampaignRow, recipients };
 }

@@ -329,6 +329,8 @@ export type CampaignRow = {
 export type CampaignRecipientRow = {
   id: string;
   contact_id: string | null;
+  /** The contact's name, read with the row (the contact may be gone: then none). */
+  contact_name?: string | null;
   /** Null on a WhatsApp row: the address is the phone. */
   email: string | null;
   /** E.164; null on an email row. */
