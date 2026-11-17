@@ -477,7 +477,7 @@ describe("a read and the hour of delivery", () => {
 describe("an inbound message with no number", () => {
   // Meta's reference warns that `from` (and `wa_id`) may be left out and the
   // sender named only by `from_user_id`. Nothing here is keyed by that id yet.
-  const lines = (spy: ReturnType<typeof spyOn>) =>
+  const lines = (spy: { mock: { calls: unknown[][] } }) =>
     spy.mock.calls.map((call) => String(call[0]));
 
   test("a STOP with no number cannot be applied: 200, nothing written, and a warning that says so", async () => {
