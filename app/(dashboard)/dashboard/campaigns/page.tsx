@@ -121,7 +121,9 @@ export default function CampaignsPage() {
       </div>
 
       {/* One card per state; the card is the filter. */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
+      {/* On a phone the nine cards are one row to swipe (a peek of the next
+          one shows there is more, no bar); from `sm` up they are the grid. */}
+      <div className="-mx-6 mb-8 flex snap-x snap-mandatory [scrollbar-width:none] gap-2 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-5 xl:grid-cols-9 [&::-webkit-scrollbar]:hidden">
         {STATUSES.map((value) => {
           const active = (status === "" ? "all" : status) === value;
           return (
@@ -133,7 +135,7 @@ export default function CampaignsPage() {
                 setStatus(value === "all" ? "" : value);
                 setPage(0);
               }}
-              className={`rounded-2xl border bg-white p-4 text-left transition-colors ${
+              className={`min-w-28 shrink-0 snap-start scroll-mx-6 rounded-2xl border bg-white p-3 text-left transition-colors sm:min-w-0 sm:shrink sm:p-4 ${
                 active
                   ? "border-petroleum-400 ring-petroleum-100 ring-2"
                   : "border-sand-200 hover:border-petroleum-400"
