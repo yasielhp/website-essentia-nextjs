@@ -102,12 +102,18 @@ export function dueRecipients({
     case "segment_entry":
       return recipients.map((recipient) => ({ recipient, cycle: "" }));
 
-    // Whoever subscribed since the campaign went live. Older subscribers are
-    // not greeted late: a welcome three months on reads as a mistake.
+    // Whoever subscribed since the campaign went live (on WhatsApp: whoever
+    // agreed to receive news there). Older subscribers are not greeted late: a
+    // welcome three months on reads as a mistake.
     case "newsletter_subscribed":
       return recipients
         .filter((r) => r.subscribedAt && r.subscribedAt >= activatedAt)
-        .map((recipient) => ({ recipient, cycle: "" }));
+        .map((recipient) => ({
+          recipient,
+          // "" for the newsletter; a WhatsApp consent brings its own, so a
+          // fresh consent after a STOP is welcomed once more.
+          cycle: recipient.subscriptionCycle ?? "",
+        }));
 
     // N days after the most recent booking. Keyed by that booking's date, so
     // a client who comes back next month is written to again for that visit.

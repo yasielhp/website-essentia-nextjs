@@ -92,7 +92,20 @@ export type Recipient = {
   /** Carried through for the automation rules; the send ignores them. */
   lastBookingDate?: string | null;
   firstBookingDate?: string | null;
+  /**
+   * When the contact joined what the campaign is about: the newsletter, or on
+   * WhatsApp the day they agreed to receive news there. Greets the
+   * `newsletter_subscribed` rule.
+   */
   subscribedAt?: string | null;
+  /**
+   * What makes one subscription different from the next, so the rule greets
+   * once per consent and not once per life. Absent on email, where the
+   * newsletter is joined once and the greeting is sent once. On WhatsApp it is
+   * the consent's own instant: a contact who says STOP and consents again has
+   * a new one, and is welcomed again.
+   */
+  subscriptionCycle?: string;
   birthdate?: string | null;
   lastName?: string | null;
   /** In a WhatsApp recipient: the campaign phone, always E.164. */
@@ -187,6 +200,13 @@ function matchesConditions(
   return true;
 }
 
+/** The instant as ISO in UTC, or null when it does not read as one. */
+function isoOrNull(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const at = new Date(value);
+  return Number.isNaN(at.getTime()) ? null : at.toISOString();
+}
+
 export function filterAudience(
   candidates: ContactCandidate[],
   audience: CampaignAudience,
@@ -211,13 +231,21 @@ export function filterAudience(
     // whatever the casing or the spacing, collapse into one row: the first.
     if (seen.has(point)) continue;
     seen.add(point);
+    // On WhatsApp "subscribed" is the consent to receive news there, not the
+    // newsletter: a contact can have either without the other.
+    const consentAt =
+      channel === "whatsapp"
+        ? isoOrNull(candidate.whatsappMarketingOptedInAt)
+        : null;
     recipients.push({
       id: candidate.id,
       email: channel === "whatsapp" ? null : point,
       firstName: candidate.firstName,
       lastBookingDate: candidate.lastBookingDate,
       firstBookingDate: candidate.firstBookingDate ?? null,
-      subscribedAt: candidate.subscribedAt ?? null,
+      subscribedAt:
+        channel === "whatsapp" ? consentAt : (candidate.subscribedAt ?? null),
+      ...(consentAt ? { subscriptionCycle: consentAt } : {}),
       birthdate: candidate.birthdate ?? null,
       lastName: candidate.lastName ?? null,
       phone: channel === "whatsapp" ? point : (candidate.phone ?? null),

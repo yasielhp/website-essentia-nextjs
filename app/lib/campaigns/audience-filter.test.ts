@@ -514,3 +514,39 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(ids(out)).toEqual([es.id, picked.id]);
   });
 });
+
+describe("filterAudience — what 'subscribed' means per channel", () => {
+  const both = (overrides: Partial<ContactCandidate> = {}) =>
+    c({
+      phone: "600112233",
+      newsletter: true,
+      subscribedAt: "2026-08-01T10:00:00.000+00:00",
+      whatsappMarketingOptedInAt: "2026-11-10T09:30:00.000+00:00",
+      ...overrides,
+    });
+
+  it("on WhatsApp it is the day the contact agreed to receive news there", () => {
+    const [r] = filterAudience([both()], EMPTY_AUDIENCE, NOW, "whatsapp");
+    expect(r.subscribedAt).toBe("2026-11-10T09:30:00.000Z");
+    expect(r.subscriptionCycle).toBe("2026-11-10T09:30:00.000Z");
+  });
+
+  it("on email nothing changed: the newsletter date, and no cycle of its own", () => {
+    const [r] = filterAudience([both()], EMPTY_AUDIENCE, NOW);
+    expect(r.subscribedAt).toBe("2026-08-01T10:00:00.000+00:00");
+    expect(r.subscriptionCycle).toBeUndefined();
+  });
+
+  it("a WhatsApp contact who never joined the newsletter still has the date", () => {
+    const only = both({ subscribedAt: null, newsletter: false });
+    const [r] = filterAudience([only], EMPTY_AUDIENCE, NOW, "whatsapp");
+    expect(r.subscribedAt).toBe("2026-11-10T09:30:00.000Z");
+  });
+
+  it("an unreadable consent date is no date, not a crash", () => {
+    const bad = both({ whatsappMarketingOptedInAt: "not a date" });
+    const out = filterAudience([bad], EMPTY_AUDIENCE, NOW, "whatsapp");
+    expect(out[0].subscribedAt).toBeNull();
+    expect(out[0].subscriptionCycle).toBeUndefined();
+  });
+});

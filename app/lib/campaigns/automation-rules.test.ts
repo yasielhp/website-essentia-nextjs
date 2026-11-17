@@ -53,6 +53,58 @@ describe("dueRecipients", () => {
     expect(cycles(due)).toEqual(["1:"]);
   });
 
+  describe("newsletter_subscribed on WhatsApp", () => {
+    // `filterAudience` hands a WhatsApp recipient the date of its consent as
+    // `subscribedAt` and `subscriptionCycle`; the rule never learns the channel.
+    const consent = (at: string, over: Partial<Recipient> = {}) =>
+      r({
+        id: "w",
+        email: null,
+        phone: "+34600112233",
+        subscribedAt: at,
+        subscriptionCycle: at,
+        ...over,
+      });
+    const run = (recipient: Recipient) =>
+      dueRecipients({
+        trigger: { event: "newsletter_subscribed" },
+        recipients: [recipient],
+        activatedAt: ACTIVATED,
+        now: NOW,
+      });
+
+    it("does not greet a consent given before activation", () => {
+      expect(run(consent("2026-08-30T10:00:00.000Z"))).toEqual([]);
+    });
+
+    it("greets a consent given after activation, under that consent's own cycle", () => {
+      expect(cycles(run(consent("2026-09-03T10:00:00.000Z")))).toEqual([
+        "w:2026-09-03T10:00:00.000Z",
+      ]);
+    });
+
+    it("greets again after a STOP and a new consent: the cycle is new", () => {
+      const first = run(consent("2026-09-02T10:00:00.000Z"));
+      const again = run(consent("2026-09-04T08:00:00.000Z"));
+      expect(first[0].cycle).not.toBe(again[0].cycle);
+    });
+
+    it("a consent that did not change gives the same cycle on every run", () => {
+      const at = "2026-09-03T10:00:00.000Z";
+      expect(run(consent(at))[0].cycle).toBe(run(consent(at))[0].cycle);
+    });
+  });
+
+  it("newsletter_subscribed on email still greets once in a lifetime", () => {
+    const due = dueRecipients({
+      trigger: { event: "newsletter_subscribed" },
+      recipients: [r({ subscribedAt: "2026-09-03T10:00:00Z" })],
+      activatedAt: ACTIVATED,
+      now: NOW,
+    });
+    expect(cycles(due)).toEqual(["1:"]);
+  });
+
   it("after_booking fires N days after the last booking, keyed by that date", () => {
     const due = dueRecipients({
       trigger: { event: "after_booking", days: 3 },
