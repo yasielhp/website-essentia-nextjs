@@ -3,6 +3,7 @@ import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
 import {
   MAX_DOC_CHARS,
+  MESSAGE_VALIDATION_KEYS,
   toRowPayload,
   validateMessageTemplate,
   type MessageTemplateWrite,
@@ -50,9 +51,16 @@ const whatsapp = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+const omit = <T extends Record<string, unknown>>(value: T, key: string) =>
+  Object.fromEntries(Object.entries(value).filter(([k]) => k !== key));
+
 function errorsOf(input: unknown): Record<string, string> {
   const result = validateMessageTemplate(input);
   if (result.ok) throw new Error("expected the input to be refused");
+  // Whatever it says must be a key the dashboard translates.
+  for (const key of Object.values(result.fieldErrors)) {
+    expect(MESSAGE_VALIDATION_KEYS as readonly string[]).toContain(key);
+  }
   return result.fieldErrors;
 }
 
@@ -578,6 +586,58 @@ describe("validateMessageTemplate — WhatsApp", () => {
       subject: null,
       doc: null,
     });
+  });
+});
+
+describe("the switch is only written when it was sent", () => {
+  it("a text saved without the switch leaves the switch out of the write", () => {
+    const out = accepted(omit(email({ key: "booking_reminder" }), "enabled"));
+    expect(out.enabled).toBeUndefined();
+    const payload = toRowPayload(out, "admin-1", "now");
+    expect(payload).not.toHaveProperty("enabled");
+    expect(payload).toHaveProperty("subject");
+  });
+
+  it("an explicit switch is written, on or off", () => {
+    expect(
+      toRowPayload(
+        accepted(email({ key: "booking_reminder", enabled: false })),
+        "u",
+        "n",
+      ),
+    ).toMatchObject({ enabled: false });
+    expect(
+      toRowPayload(
+        accepted(email({ key: "booking_reminder", enabled: true })),
+        "u",
+        "n",
+      ),
+    ).toMatchObject({ enabled: true });
+  });
+
+  it("a WhatsApp save without the switch does not write it either", () => {
+    expect(
+      toRowPayload(accepted(omit(whatsapp(), "enabled")), "u", "n"),
+    ).not.toHaveProperty("enabled");
+  });
+
+  it("a WhatsApp save without the switch still needs a template", () => {
+    expect(
+      errorsOf(omit(whatsapp({ whatsappTemplateId: null }), "enabled")),
+    ).toEqual({
+      whatsappTemplateId: "templateRequired",
+    });
+  });
+
+  it("the catalogue's rule on switching off still holds when it is omitted", () => {
+    expect(
+      validateMessageTemplate({
+        key: "booking_confirmed",
+        channel: "email",
+        locale: "es",
+        subject: "Hola",
+      }).ok,
+    ).toBe(true);
   });
 });
 

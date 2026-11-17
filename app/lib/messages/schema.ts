@@ -22,7 +22,7 @@ import { findForbiddenNodes } from "./safe-doc";
 /** A body above this (serialised) is refused: a mail client would clip it anyway. */
 export const MAX_DOC_CHARS = 200_000;
 
-/** The validation keys this module can answer with, besides `invalidInput`. */
+/** What the shape check (zod) can say; anything else it says is `invalidInput`. */
 const KNOWN_KEYS = new Set([
   "subjectTooLong",
   "preheaderTooLong",
@@ -30,6 +30,26 @@ const KNOWN_KEYS = new Set([
   "templateRequired",
   "paramTooLong",
 ]);
+
+/**
+ * Every key a save can answer with, in `fieldErrors`: this module's and the
+ * action's (the two that need the database). A test checks each one has a
+ * translation in both languages, and that this module never says another.
+ */
+export const MESSAGE_VALIDATION_KEYS = [
+  "invalidInput",
+  ...KNOWN_KEYS,
+  "docTooLarge",
+  "cannotDisable",
+  "unknownVariable",
+  "linkNotAllowed",
+  "blockNotAllowed",
+  "channelNotAllowed",
+  "paramFieldNotOffered",
+  // From the action, after reading the template:
+  "templateUnavailable",
+  "paramCountMismatch",
+] as const;
 
 const optionalText = (max: number, tooLong: string) =>
   z.string().trim().max(max, tooLong).nullable().optional();
@@ -68,7 +88,12 @@ export type WhatsAppContentWrite = {
 export type MessageTemplateWrite = {
   key: (typeof MESSAGE_KEYS)[number];
   locale: "en" | "es";
-  enabled: boolean;
+  /**
+   * Undefined when the input did not carry the switch: saving a text must not
+   * touch it, or a reminder the admin switched off would come back on. A new
+   * row then takes the column's default (on), which is "no row" behaviour.
+   */
+  enabled?: boolean;
 } & (
   | { channel: "email"; content: EmailContentWrite | null }
   | { channel: "whatsapp"; whatsapp: WhatsAppContentWrite | null }
@@ -215,7 +240,7 @@ function checkEmail(
 
 function checkWhatsApp(
   data: z.infer<typeof messageTemplateSchema>,
-  enabled: boolean,
+  enabled: boolean | undefined,
   errors: Errors,
 ): WhatsAppContentWrite | null {
   const provided =
@@ -224,8 +249,9 @@ function checkWhatsApp(
 
   const templateId = data.whatsappTemplateId ?? null;
   // A switched-off message may carry no template: it will not be sent.
-  if (templateId === null && enabled)
+  if (templateId === null && enabled !== false) {
     errors.whatsappTemplateId ??= "templateRequired";
+  }
 
   const params = data.whatsappParams ?? [];
   const allowed = new Set<string>(allowedParamFields(data.key));
@@ -279,13 +305,13 @@ export function validateMessageTemplate(
   }
 
   const def = MESSAGE_CATALOG[data.key];
-  const enabled = data.enabled ?? true;
+  const enabled = data.enabled;
   const errors: Errors = {};
   const unknown = new Set<string>();
 
   // Switching off the confirmation would leave a client who has paid without
   // their email: only the message that `canDisable` may be off.
-  if (!enabled && !def.canDisable) errors.enabled = "cannotDisable";
+  if (enabled === false && !def.canDisable) errors.enabled = "cannotDisable";
 
   if (data.channel === "whatsapp") {
     if (!def.whatsappEligible) {
@@ -344,7 +370,9 @@ export function toRowPayload(
     key: write.key,
     channel: write.channel,
     locale: write.locale,
-    enabled: write.enabled,
+    // Only when the input carried it: a text saved without the switch leaves
+    // the row's switch as it is.
+    ...(write.enabled === undefined ? {} : { enabled: write.enabled }),
     updated_by: userId,
     updated_at: now,
   };

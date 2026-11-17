@@ -44,3 +44,21 @@ export type MessageDefaultEntry = {
   title: string;
   doc: EmailDoc;
 };
+
+/**
+ * The `error` keys the actions in `app/actions/message-templates.ts` answer
+ * with, besides the auth ones. The dashboard translates each under
+ * `dashboard.messages.email.errors`; a test keeps this list and the
+ * translations together.
+ */
+export const MESSAGE_ACTION_ERROR_KEYS = [
+  "db",
+  "invalid",
+  "no_email",
+  "no_phone",
+  "email_failed",
+  "test_rate_limited",
+  "template_unavailable",
+  "whatsapp_not_configured",
+  "meta",
+] as const;

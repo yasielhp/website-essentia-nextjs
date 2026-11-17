@@ -119,10 +119,14 @@ export async function listMessageTemplates(accessToken: string | null): Promise<
 /**
  * Saves one message in one channel and language.
  *
- * Saving only the switch (the reminder on or off) creates no content: a new
- * row keeps its text columns NULL, which is "the email that has always gone
- * out", and an existing row keeps the text it has. The default text is never
- * copied into a row, here or by opening the editor.
+ * Fields the input does not carry are left untouched: saving only the switch
+ * (the reminder on or off) creates no content (a new row keeps its text
+ * columns NULL, "the email that has always gone out", and an existing row
+ * keeps the text it has), and saving a text without the switch leaves the
+ * switch alone. A field that is carried as `null` or `""` is cleared. So a
+ * client must send ONLY `enabled` for a toggle: sending the text fields as
+ * null would wipe the admin's text. The default text is never copied into a
+ * row, here or by opening the editor.
  */
 export async function saveMessageTemplate(
   accessToken: string | null,
@@ -150,7 +154,13 @@ export async function saveMessageTemplate(
   const write = parsed.data;
   const db = getAdminClient().database;
 
-  if (write.channel === "whatsapp" && write.enabled) {
+  // A switched-off message is not sent, so its template is not checked. A save
+  // that carries neither a template nor the switch changes nothing to check.
+  if (
+    write.channel === "whatsapp" &&
+    write.enabled !== false &&
+    (write.whatsapp !== null || write.enabled === true)
+  ) {
     // What a database read can add to the schema: the template must exist and
     // be sendable in this language with exactly these parameters.
     const fieldErrors: Record<string, string> = {};
