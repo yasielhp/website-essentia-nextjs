@@ -136,7 +136,9 @@
     "rights": "Your rights:",
     "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
     "fullDetails": "Full details in our",
-    "newsletterOptIn": "I'd like to receive Essentia news and offers by email (optional)."
+    "newsletterOptIn": "I'd like to receive Essentia news and offers by email (optional).",
+    "whatsappOptIn": "Send me my booking confirmation and reminder on WhatsApp.",
+    "whatsappOptInHint": "You can opt out by replying STOP."
   },
   "confirmStep": {
     "date": "Date",

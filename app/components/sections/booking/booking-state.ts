@@ -15,6 +15,7 @@ const EMPTY_DETAILS: DetailsState = {
   phone: "",
   consent: false,
   newsletter: false,
+  whatsapp: false,
   notes: "",
 };
 

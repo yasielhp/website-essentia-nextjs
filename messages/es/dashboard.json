@@ -1134,6 +1134,15 @@
       "delete": "Eliminar",
       "save": "Guardar",
       "saving": "Guardando…",
+      "whatsapp": {
+        "label": "WhatsApp",
+        "accepted": "Acepta WhatsApp desde {date}",
+        "optedOut": "Se dio de baja el {date}",
+        "none": "Sin consentimiento",
+        "savesNow": "Este cambio se guarda al instante, sin pulsar Guardar.",
+        "reoptWarning": "Se dio de baja. Actívalo solo si ha pedido volver a recibir mensajes.",
+        "error": "No se pudo guardar el consentimiento de WhatsApp."
+      },
       "newsletter": {
         "label": "Newsletter",
         "subscribed": "Suscrito",

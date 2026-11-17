@@ -86,6 +86,8 @@ export async function saveDetailsStep({
         p_gender: details.gender || null,
         // `null`, not `false`: an unticked box must not undo a yes given before.
         p_newsletter: details.newsletter ? true : null,
+        // Same rule: `null` leaves an earlier yes (or a STOP) untouched.
+        p_whatsapp: details.whatsapp ? true : null,
       });
 
     // Never swallow this. A failure here used to pass unnoticed and the draft

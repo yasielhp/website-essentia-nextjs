@@ -136,7 +136,9 @@
     "rights": "Tus derechos:",
     "rightsValue": "acceso, rectificación, supresión, limitación, portabilidad y oposición: escribe a",
     "fullDetails": "Más detalles en nuestra",
-    "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email (opcional)."
+    "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email (opcional).",
+    "whatsappOptIn": "Quiero recibir por WhatsApp la confirmación y el recordatorio de mi cita.",
+    "whatsappOptInHint": "Puedes darte de baja respondiendo BAJA."
   },
   "confirmStep": {
     "date": "Fecha",

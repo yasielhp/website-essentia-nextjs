@@ -1134,6 +1134,15 @@
       "delete": "Delete",
       "save": "Save",
       "saving": "Saving…",
+      "whatsapp": {
+        "label": "WhatsApp",
+        "accepted": "Accepts WhatsApp since {date}",
+        "optedOut": "Opted out on {date}",
+        "none": "No consent",
+        "savesNow": "This change saves immediately, without pressing Save.",
+        "reoptWarning": "Opted out. Turn it on only if they have asked to receive messages again.",
+        "error": "Could not save the WhatsApp consent."
+      },
       "newsletter": {
         "label": "Newsletter",
         "subscribed": "Subscribed",

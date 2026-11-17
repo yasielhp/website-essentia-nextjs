@@ -35,6 +35,8 @@ import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
 import { BonusesSection } from "./bonuses-section";
 import { ConsentSection } from "./consent-section";
+import { WhatsAppConsentRow } from "./whatsapp-consent-row";
+import type { WhatsAppConsentColumns } from "@/lib/whatsapp/consent";
 import { fetchContactConsent } from "@/actions/consent";
 import type { ContactConsent } from "@/types/consent";
 
@@ -67,6 +69,7 @@ type LoadState = {
   bonuses: ContactBonus[];
   consent: ContactConsent | null;
   bouncedAt: string | null;
+  whatsapp: WhatsAppConsentColumns;
 };
 
 type LoadAction =
@@ -80,6 +83,7 @@ type LoadAction =
       bonuses: ContactBonus[];
       consent: ContactConsent | null;
       bouncedAt: string | null;
+      whatsapp: WhatsAppConsentColumns;
     }
   | { type: "BONUSES_LOADED"; bonuses: ContactBonus[] }
   | { type: "BOUNCE_CLEARED" }
@@ -96,6 +100,7 @@ const initialLoadState: LoadState = {
   bonuses: [],
   consent: null,
   bouncedAt: null,
+  whatsapp: {},
 };
 
 function loadReducer(state: LoadState, action: LoadAction): LoadState {
@@ -112,6 +117,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
         bonuses: action.bonuses,
         consent: action.consent,
         bouncedAt: action.bouncedAt,
+        whatsapp: action.whatsapp,
       };
     case "BONUSES_LOADED":
       return { ...state, bonuses: action.bonuses };
@@ -195,6 +201,7 @@ function ContactDetailPageInner() {
     bonuses,
     consent,
     bouncedAt,
+    whatsapp,
   } = loadState;
   const [clearingBounce, setClearingBounce] = useState(false);
 
@@ -271,6 +278,10 @@ function ContactDetailPageInner() {
         bonuses: bonusRows,
         consent: consentRow,
         bouncedAt: contact.email_bounced_at ?? null,
+        whatsapp: {
+          whatsapp_opted_in_at: contact.whatsapp_opted_in_at,
+          whatsapp_opted_out_at: contact.whatsapp_opted_out_at,
+        },
       });
     }
 
@@ -446,6 +457,13 @@ function ContactDetailPageInner() {
               saving={saving}
               dispatchForm={dispatchForm}
             />
+            <div className="mt-4">
+              {loading ? (
+                <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
+              ) : (
+                <WhatsAppConsentRow contactId={id} initial={whatsapp} />
+              )}
+            </div>
             <div className="mt-6 flex justify-end">
               <Button
                 type="submit"

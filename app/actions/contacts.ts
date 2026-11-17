@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { ADMIN_ROLES, AuthError, requireRole } from "@/lib/auth-guard";
 import type {
@@ -10,6 +11,7 @@ import type {
   ContactMembership,
   ContactRow,
   UpdateContactPayload,
+  WhatsAppConsentResult,
 } from "@/types/contact";
 
 /**
@@ -102,7 +104,7 @@ export async function fetchContactDetail(
   const { data: contacts, error: contactError } = await db
     .from("contacts")
     .select(
-      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate",
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_opted_out_at",
     )
     .eq("id", id)
     .limit(1);
@@ -244,6 +246,63 @@ export async function updateContact(
     .update(payload)
     .eq("id", id);
   return { error: (error as { message?: string } | null)?.message ?? null };
+}
+
+/**
+ * Staff recording, on a contact's behalf, that they do or do not take WhatsApp.
+ *
+ * The same two columns the public booking box and a STOP/BAJA reply write, so
+ * the dashboard is just a third door onto one record. Turning it on stamps the
+ * new date and clears an earlier opt-out; turning it off stamps the opt-out and
+ * leaves the original opt-in date as history.
+ *
+ * Takes a uuid and nothing else: the id reaches the filter only after it has
+ * been checked, and a malformed one never touches the database.
+ */
+export async function setWhatsAppConsent(
+  accessToken: string | null,
+  contactId: string,
+  accepted: boolean,
+): Promise<WhatsAppConsentResult> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.message };
+    throw err;
+  }
+  if (!z.uuid().safeParse(contactId).success) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const now = new Date().toISOString();
+  const patch = accepted
+    ? { whatsapp_opted_in_at: now, whatsapp_opted_out_at: null }
+    : { whatsapp_opted_out_at: now };
+
+  try {
+    const { data, error } = await getAdminClient()
+      .database.from("contacts")
+      .update(patch)
+      .eq("id", contactId)
+      .select("whatsapp_opted_in_at, whatsapp_opted_out_at");
+    if (error) return { ok: false, error: "db" };
+    const row = (
+      data as
+        | {
+            whatsapp_opted_in_at: string | null;
+            whatsapp_opted_out_at: string | null;
+          }[]
+        | null
+    )?.[0];
+    if (!row) return { ok: false, error: "notFound" };
+    return {
+      ok: true,
+      whatsapp_opted_in_at: row.whatsapp_opted_in_at,
+      whatsapp_opted_out_at: row.whatsapp_opted_out_at,
+    };
+  } catch {
+    return { ok: false, error: "db" };
+  }
 }
 
 /** How many contacts sit at each point of the lifecycle. */

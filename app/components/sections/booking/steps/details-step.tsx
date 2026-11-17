@@ -18,11 +18,14 @@ export function DetailsStep({
   errors = {},
   onChange,
   onClearError,
+  offerWhatsapp = true,
 }: {
   details: DetailsState;
   errors?: DetailsErrors;
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
+  /** Off for a signed-in client: there is no contact row to record it on. */
+  offerWhatsapp?: boolean;
 }) {
   const validationMessage = useValidationMessage();
   const t = useTranslations("booking.detailsStep");
@@ -174,6 +177,24 @@ export function DetailsStep({
           </span>
         }
       />
+
+      {offerWhatsapp && (
+        <Checkbox
+          name="whatsapp"
+          checked={details.whatsapp ?? false}
+          onChange={(e) => {
+            onChange({ ...details, whatsapp: e.target.checked });
+          }}
+          label={
+            <span className="text-petroleum-400 text-sm">
+              {t("whatsappOptIn")}
+              <span className="mt-0.5 block text-xs">
+                {t("whatsappOptInHint")}
+              </span>
+            </span>
+          }
+        />
+      )}
 
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">

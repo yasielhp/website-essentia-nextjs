@@ -16,6 +16,12 @@ export type DetailsState = {
   consent: boolean;
   /** Opt-in to news and offers. Unticked means "do not touch", never "no". */
   newsletter?: boolean;
+  /**
+   * Opt-in to booking confirmations and reminders on WhatsApp. Same rule as
+   * `newsletter`: unticked means "do not touch", never "no" — only a STOP/BAJA
+   * reply opts anyone out.
+   */
+  whatsapp?: boolean;
   notes?: string;
 };
 
