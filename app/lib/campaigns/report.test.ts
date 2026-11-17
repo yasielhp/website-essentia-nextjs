@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { haltMessage } from "./error-markers";
+import { unrecordedMessage } from "./dispatch";
+import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import { consentVerdict } from "./dispatch-whatsapp";
 import {
   describeLastError,
@@ -187,6 +189,9 @@ describe("REPORT_NOTE_KEYS", () => {
     const answers = [
       describeLastError(haltMessage("x")),
       describeLastError(haltMessage("")),
+      describeLastError(RUN_FAILED_ERROR),
+      describeLastError(unrecordedMessage(1)),
+      describeLastError(unrecordedMessage(1), "whatsapp"),
       describeRecipientError("[unconfirmed] interrupted"),
       describeRecipientError("[unconfirmed] x"),
       ...[
@@ -202,7 +207,7 @@ describe("REPORT_NOTE_KEYS", () => {
       describeRecipientError("[skipped] no_consent", "appointment"),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(13);
+    expect(keys.length).toBe(16);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }
@@ -288,5 +293,62 @@ describe("a recipient left out for consent", () => {
       kind: "note",
       key: "skippedLate",
     });
+  });
+});
+
+describe("the markers of the engine never reach the screen as they are stored", () => {
+  test("a run that threw says it retries by itself", () => {
+    expect(describeLastError(RUN_FAILED_ERROR)).toEqual({
+      kind: "note",
+      key: "runFailed",
+    });
+  });
+  test("messages that left unrecorded, as the engine really writes it, with their count", () => {
+    expect(describeLastError(unrecordedMessage(3))).toEqual({
+      kind: "note",
+      key: "unrecorded",
+      values: { count: "3" },
+    });
+    expect(describeLastError(unrecordedMessage(12), "whatsapp")).toEqual({
+      kind: "note",
+      key: "unrecordedWhatsApp",
+      values: { count: "12" },
+    });
+  });
+  test("the same inside a halt is still said in our words", () => {
+    expect(describeLastError(haltMessage(unrecordedMessage(2)))).toEqual({
+      kind: "note",
+      key: "unrecorded",
+      values: { count: "2" },
+    });
+  });
+  test("a halt that is Meta's own text keeps it, as before", () => {
+    expect(describeLastError(haltMessage("(#131056) pair rate limit"))).toEqual(
+      {
+        kind: "note",
+        key: "haltedReason",
+        values: { reason: "(#131056) pair rate limit" },
+      },
+    );
+  });
+  test("a text that only looks like the count is raw", () => {
+    expect(describeLastError("3 sent without being recorded, mostly")).toEqual({
+      kind: "raw",
+      text: "3 sent without being recorded, mostly",
+    });
+  });
+  test("a row skipped for coming too late maps to its own message, from the real marker", () => {
+    expect(describeRecipientError(LATE_ERROR)).toEqual({
+      kind: "note",
+      key: "skippedLate",
+    });
+  });
+  test("every key a note can carry has a text in both languages", async () => {
+    const es = (await import("../../../messages/es/dashboard.json")).default;
+    const en = (await import("../../../messages/en/dashboard.json")).default;
+    for (const key of REPORT_NOTE_KEYS) {
+      expect(Object.hasOwn(es.campaigns.detail.notes, key)).toBe(true);
+      expect(Object.hasOwn(en.campaigns.detail.notes, key)).toBe(true);
+    }
   });
 });

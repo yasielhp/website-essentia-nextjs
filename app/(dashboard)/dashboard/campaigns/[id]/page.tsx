@@ -200,7 +200,7 @@ export default function CampaignDetailPage() {
   // `recipients_count` also counts the rows a long WhatsApp send has not
   // reached yet, so there the rows themselves say how many went out.
   const sent = whatsapp ? sentCountOf(recipients) : sentCount(campaign);
-  const lastError = describeLastError(campaign.last_error);
+  const lastError = describeLastError(campaign.last_error, campaign.channel);
   const byLanguage = (["en", "es"] as const).map((lang) => {
     const rows = recipients.filter((r) => r.language === lang);
     const delivered = rows.filter((r) =>

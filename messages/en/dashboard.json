@@ -1944,6 +1944,9 @@
       "notes": {
         "haltedReason": "WhatsApp stopped sending because Meta refused several batches in a row: {reason}",
         "haltedNoReason": "WhatsApp stopped sending because Meta refused several batches in a row.",
+        "runFailed": "The last run failed; it retries by itself every 15 minutes.",
+        "unrecorded": "{count} emails went out without being recorded; check before retrying so they are not sent twice.",
+        "unrecordedWhatsApp": "{count} messages went out without being recorded; check before retrying so they are not sent twice.",
         "unconfirmedInterrupted": "Could not be confirmed: the send was interrupted; it is not retried so as not to duplicate",
         "unconfirmed": "Could not confirm whether it went out: {detail}",
         "skippedOptedOut": "Skipped: they opted out",

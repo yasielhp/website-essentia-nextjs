@@ -10,6 +10,7 @@ import {
   INTERRUPTED_ERROR,
   parseHalted,
 } from "./error-markers";
+import { RUN_FAILED_ERROR } from "./run-markers";
 
 /**
  * What a campaign's report says, over plain values.
@@ -23,22 +24,54 @@ export type ReportNote =
   | { kind: "note"; key: string; values?: Record<string, string> }
   | { kind: "raw"; text: string };
 
-/** The `last_error` of a campaign. */
+/**
+ * What a send writes when messages left and their rows could not be written
+ * (`unrecordedMessage` in `dispatch.ts`, the one that makes it), read back by
+ * its shape: the count in it is all the screen needs.
+ */
+const UNRECORDED = /^(\d+) sent without being recorded$/;
+
+/**
+ * The `last_error` of a campaign. A marker the engine writes is said in the
+ * admin's words, never as it is stored; only what the engine did not mark
+ * (Meta's or Resend's own text) reaches the screen untouched. The channel says
+ * whether what went out was an email or a WhatsApp message.
+ */
 export function describeLastError(
   lastError: string | null | undefined,
+  channel?: CampaignChannel,
 ): ReportNote | null {
   if (!lastError) return null;
+  if (lastError === RUN_FAILED_ERROR) return { kind: "note", key: "runFailed" };
+  const unrecorded = (text: string): ReportNote | null => {
+    const count = UNRECORDED.exec(text)?.[1];
+    return count
+      ? {
+          kind: "note",
+          key: channel === "whatsapp" ? "unrecordedWhatsApp" : "unrecorded",
+          values: { count },
+        }
+      : null;
+  };
   const reason = parseHalted(lastError);
-  if (reason === null) return { kind: "raw", text: lastError };
-  return reason
-    ? { kind: "note", key: "haltedReason", values: { reason } }
-    : { kind: "note", key: "haltedNoReason" };
+  if (reason === null) {
+    return unrecorded(lastError) ?? { kind: "raw", text: lastError };
+  }
+  return (
+    unrecorded(reason) ??
+    (reason
+      ? { kind: "note", key: "haltedReason", values: { reason } }
+      : { kind: "note", key: "haltedNoReason" })
+  );
 }
 
 /** Every message key a note can carry; the report's messages must have each. */
 export const REPORT_NOTE_KEYS = [
   "haltedReason",
   "haltedNoReason",
+  "runFailed",
+  "unrecorded",
+  "unrecordedWhatsApp",
   "unconfirmedInterrupted",
   "unconfirmed",
   "skippedOptedOut",

@@ -1944,6 +1944,9 @@
       "notes": {
         "haltedReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos: {reason}",
         "haltedNoReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos.",
+        "runFailed": "La última ejecución falló; se reintenta sola cada 15 minutos.",
+        "unrecorded": "{count} correos salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",
+        "unrecordedWhatsApp": "{count} mensajes salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",
         "unconfirmedInterrupted": "No se pudo confirmar: el envío se interrumpió; no se reintenta para no duplicar",
         "unconfirmed": "No se pudo confirmar si salió: {detail}",
         "skippedOptedOut": "Omitido: se dio de baja",
