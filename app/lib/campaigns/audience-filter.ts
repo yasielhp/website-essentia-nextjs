@@ -212,6 +212,12 @@ export function filterAudience(
   audience: CampaignAudience,
   now: Date,
   channel: CampaignChannel = "email",
+  /**
+   * The E.164 numbers that wrote STOP. Only WhatsApp reads them: a contact on
+   * one is left out whatever the consent says and even when hand-picked, since
+   * the number may belong to somebody else than the contact it sits on.
+   */
+  suppressedPhones: ReadonlySet<string> = new Set(),
 ): Recipient[] {
   const manual = new Set(audience.manualIds);
   const seen = new Set<string>();
@@ -220,6 +226,7 @@ export function filterAudience(
   for (const candidate of candidates) {
     const point = contactPoint(candidate, channel);
     if (point === null) continue;
+    if (channel === "whatsapp" && suppressedPhones.has(point)) continue;
     if (
       !manual.has(candidate.id) &&
       !matchesConditions(candidate, audience, now)

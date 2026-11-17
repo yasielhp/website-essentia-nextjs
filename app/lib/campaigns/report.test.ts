@@ -82,6 +82,7 @@ describe("describeRecipientError", () => {
     ["no_consent", "skippedNoConsent"],
     ["no_contact", "skippedNoContact"],
     ["no_email", "skippedNoEmail"],
+    ["suppressed", "skippedSuppressed"],
   ])("a skipped row for %s", (reason, key) => {
     expect(describeRecipientError(`[skipped] ${reason}`)).toEqual({
       kind: "note",
@@ -194,11 +195,12 @@ describe("REPORT_NOTE_KEYS", () => {
         "no_consent",
         "no_contact",
         "no_email",
+        "suppressed",
         "other",
       ].map((reason) => describeRecipientError(`[skipped] ${reason}`)),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(10);
+    expect(keys.length).toBe(11);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }

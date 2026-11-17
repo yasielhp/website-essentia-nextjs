@@ -468,6 +468,46 @@ describe("filterAudience — WhatsApp channel", () => {
     ).toEqual(["es"]);
   });
 
+  it("leaves out a number that wrote STOP, whatever the contact's consent and however the phone is written", () => {
+    const quiet = wa({ phone: "600 11 22 33" });
+    const fine = wa({ phone: "611222333" });
+    const out = filterAudience(
+      [quiet, fine],
+      EMPTY_AUDIENCE,
+      NOW,
+      "whatsapp",
+      new Set(["+34600112233"]),
+    );
+    expect(ids(out)).toEqual([fine.id]);
+  });
+
+  it("and a hand-picked contact on that number too", () => {
+    const quiet = wa({ phone: "34600112233" });
+    const out = filterAudience(
+      [quiet],
+      audience({ manualIds: [quiet.id] }),
+      NOW,
+      "whatsapp",
+      new Set(["+34600112233"]),
+    );
+    expect(ids(out)).toEqual([]);
+  });
+
+  it("the STOP list is a WhatsApp matter: email ignores it", () => {
+    const person = c({ phone: "600112233" });
+    expect(
+      ids(
+        filterAudience(
+          [person],
+          EMPTY_AUDIENCE,
+          NOW,
+          "email",
+          new Set(["+34600112233"]),
+        ),
+      ),
+    ).toEqual([person.id]);
+  });
+
   it("collapses two contacts sharing a number, however it is written", () => {
     const first = wa({ phone: "600112233" });
     const second = wa({ phone: "600 11 22 33" });

@@ -1886,6 +1886,7 @@
         "skippedNoConsent": "Skipped: no consent to news",
         "skippedNoContact": "Skipped: the contact no longer exists",
         "skippedNoEmail": "Skipped: no email address",
+        "skippedSuppressed": "Skipped: that number wrote STOP",
         "skippedOther": "Skipped: {reason}"
       }
     },

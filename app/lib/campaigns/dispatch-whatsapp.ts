@@ -1,5 +1,6 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendTemplateMessage, type TemplateSend } from "@/lib/whatsapp/client";
+import { loadSuppressedPhones } from "@/lib/whatsapp/suppression";
 import type {
   WhatsAppSendResult,
   WhatsAppTemplateRow,
@@ -132,7 +133,7 @@ export type ConsentRow = {
 };
 
 export type ConsentVerdict =
-  "no_contact" | "opted_out" | "unreachable" | "no_consent";
+  "no_contact" | "opted_out" | "unreachable" | "no_consent" | "suppressed";
 
 /**
  * Why a contact must not get a marketing message right now, or null. The same
@@ -466,6 +467,21 @@ export async function sendQueuedWhatsApp(
       break;
     }
 
+    // The numbers that wrote STOP, by number and whatever contact they sit on,
+    // read again before every batch for the same reason as the consent. A list
+    // that cannot be read stops the send with the rows still queued: nobody is
+    // written to on a guess, and the next tick looks again.
+    let suppressed: Set<string>;
+    try {
+      suppressed = await loadSuppressedPhones(
+        db,
+        batch.map((r) => r.phone),
+      );
+    } catch (err) {
+      lastError = `db: ${err instanceof Error ? err.message : "suppression read threw"}`;
+      break;
+    }
+
     // A contact the read did not return is either a failed read or a delete
     // racing it. Neither is a reason to give up on the row: it stays queued
     // and the next tick looks again. (A contact that is really gone has had
@@ -484,9 +500,9 @@ export async function sendQueuedWhatsApp(
     lost += eligible.length - claimed.owned.length;
     const outcomes = await Promise.all(
       claimed.owned.map((row) => {
-        const verdict = consentVerdict(
-          row.contact_id ? consent.get(row.contact_id) : null,
-        );
+        const verdict: ConsentVerdict | null =
+          consentVerdict(row.contact_id ? consent.get(row.contact_id) : null) ??
+          (row.phone && suppressed.has(row.phone) ? "suppressed" : null);
         return verdict
           ? failRow(row, `${SKIPPED_PREFIX}${verdict}`)
           : sendOne(row);

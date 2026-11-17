@@ -1,4 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+import { loadAllSuppressedPhones } from "@/lib/whatsapp/suppression";
 import type { CampaignAudience, CampaignChannel } from "@/types/campaign";
 import { foldVisits, type VisitBooking } from "./visits";
 import {
@@ -76,7 +77,20 @@ export async function resolveAudience(
   now = new Date(),
   channel: CampaignChannel = "email",
 ): Promise<Recipient[]> {
-  return filterAudience(await loadCandidates(channel), audience, now, channel);
+  // The numbers that wrote STOP, for WhatsApp only. A list that cannot be read
+  // throws (it fails closed: an audience that cannot be filtered is not
+  // resolved), and email never touches it.
+  const suppressed =
+    channel === "whatsapp"
+      ? await loadAllSuppressedPhones(getAdminClient().database)
+      : undefined;
+  return filterAudience(
+    await loadCandidates(channel),
+    audience,
+    now,
+    channel,
+    suppressed,
+  );
 }
 
 /**

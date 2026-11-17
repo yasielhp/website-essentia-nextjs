@@ -861,6 +861,50 @@ describe("consentVerdict", () => {
   });
 });
 
+describe("sendQueuedWhatsApp does not write to a number that said STOP", () => {
+  test("a suppressed number is skipped, whatever its contact's consent, and the rest are sent", async () => {
+    const mem = memoryDb(rowsOf(3), { suppressed: ["+34600000002"] });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001", "+34600000003"]);
+    expect(mem.status("row-2")).toBe("failed");
+    expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}suppressed`);
+    expect(result).toMatchObject({ sent: 2, failed: 1, remaining: 0 });
+  });
+
+  test("the list is read for the numbers of the batch, once per batch", async () => {
+    const mem = memoryDb(rowsOf(3));
+    const { send } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(3), { db: mem.db, send });
+    expect(mem.suppressedReads).toHaveLength(1);
+    expect(mem.suppressedReads[0]).toEqual([
+      "+34600000001",
+      "+34600000002",
+      "+34600000003",
+    ]);
+  });
+
+  test("a list that cannot be read stops the send before anything is claimed or written: it fails closed", async () => {
+    const mem = memoryDb(rowsOf(3), {
+      suppressedError: 'relation "whatsapp_suppressed_phones" does not exist',
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(calls).toHaveLength(0);
+    expect(mem.status("row-1")).toBe("queued");
+    expect(mem.status("row-2")).toBe("queued");
+    expect(result.sent).toBe(0);
+    expect(result.remaining).toBe(3);
+    expect(result.lastError).toContain("db:");
+  });
+});
+
 describe("sendQueuedWhatsApp re-checks consent before every batch", () => {
   const blocked = (id: string, over: Record<string, string | null>) => ({
     ...consenting(id),

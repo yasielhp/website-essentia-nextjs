@@ -162,6 +162,10 @@ export type MemoryDbOptions = {
   onWrite?: (id: string, patch: Record<string, unknown>) => void;
   /** Rows some other process already moved on from `queued`. */
   rows?: Partial<StoredRow>[];
+  /** E.164 phones on the STOP list (`whatsapp_suppressed_phones`). */
+  suppressed?: string[];
+  /** Makes reading that list fail, as it does until its migration is applied. */
+  suppressedError?: string;
 };
 
 /**
@@ -201,6 +205,7 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
   const attempts = new Map<string, number>();
   const reads: string[] = [];
   const contactReads: string[][] = [];
+  const suppressedReads: string[][] = [];
 
   const stepArgs = (chain: Step[], name: string) =>
     chain.filter((s) => s.name === name).map((s) => s.args);
@@ -244,6 +249,20 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
       }
       return {
         data: "template" in opts ? opts.template : template(),
+        error: null,
+      };
+    }
+
+    if (table === "whatsapp_suppressed_phones") {
+      const phones = (stepArgs(chain, "in")[0]?.[1] ?? []) as string[];
+      suppressedReads.push(phones);
+      if (opts.suppressedError) {
+        return { data: null, error: { message: opts.suppressedError } };
+      }
+      return {
+        data: (opts.suppressed ?? [])
+          .filter((p) => phones.includes(p))
+          .map((phone) => ({ phone })),
         error: null,
       };
     }
@@ -373,6 +392,7 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
     writes,
     reads,
     contactReads,
+    suppressedReads,
     campaign: campaignRow,
     campaignWrites,
     upserts,

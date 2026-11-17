@@ -45,6 +45,7 @@ export const REPORT_NOTE_KEYS = [
   "skippedNoConsent",
   "skippedNoContact",
   "skippedNoEmail",
+  "skippedSuppressed",
   "skippedOther",
 ] as const;
 
@@ -54,6 +55,7 @@ const SKIP_KEYS: Record<string, string> = {
   no_consent: "skippedNoConsent",
   no_contact: "skippedNoContact",
   no_email: "skippedNoEmail",
+  suppressed: "skippedSuppressed",
 };
 
 /** The `error` of one recipient. */
