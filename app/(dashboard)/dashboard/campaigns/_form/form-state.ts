@@ -272,9 +272,14 @@ export function formReducer(state: FormState, action: FormAction): FormState {
           ...action.conditions,
           // A hand-made list brings its people and `manualOnly` along; a filter
           // leaves the campaign's own hand-picked extras alone and is not one.
+          // Leaving a list must not leave its people behind as invisible
+          // extras: what survives is only what was picked by hand IN this
+          // campaign (the chips show those), never the list's ids.
           manualIds: action.conditions.manualOnly
             ? (action.conditions.manualIds ?? [])
-            : state.audience.manualIds,
+            : state.audience.manualOnly
+              ? state.pickedContacts.map((c) => c.id)
+              : state.audience.manualIds,
           manualOnly: action.conditions.manualOnly === true ? true : undefined,
           sendLocale:
             action.conditions.language !== "any"

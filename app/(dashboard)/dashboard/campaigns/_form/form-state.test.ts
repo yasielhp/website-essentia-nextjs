@@ -438,3 +438,59 @@ describe("the form opened from a link that names the type", () => {
     expect(state.step).toBe(STEP_OF.name);
   });
 });
+
+describe("leaving a hand-made list for another segment", () => {
+  const A = "6f1c2a3e-1111-4222-8333-444455556661";
+  const B = "6f1c2a3e-1111-4222-8333-444455556662";
+  const base = {
+    language: "any" as const,
+    newsletter: null,
+    services: [],
+    lastBooking: null,
+    neverBooked: false,
+    hasBooked: false,
+  };
+  const list = { ...base, manualIds: [A, B], manualOnly: true as const };
+  const filter = { ...base, language: "es" as const };
+  const choose = (
+    state: FormState,
+    conditions: typeof list | typeof filter,
+    id: string | null = "seg",
+  ) =>
+    formReducer(state, {
+      type: "SET_SEGMENT",
+      id,
+      name: id ? "x" : null,
+      conditions,
+    });
+
+  test("list to filter: the list's people are gone, and it is no longer a list", () => {
+    const out = choose(choose(initialFormState, list), filter);
+    expect(out.audience.manualIds).toEqual([]);
+    expect(out.audience.manualOnly).toBeUndefined();
+    expect(out.audience.language).toBe("es");
+  });
+  test("list to everyone: the same", () => {
+    const out = choose(choose(initialFormState, list), { ...base }, null);
+    expect(out.audience.manualIds).toEqual([]);
+    expect(out.audience.manualOnly).toBeUndefined();
+  });
+  test("a contact picked by hand in the campaign survives the trip through a list", () => {
+    const withExtra: FormState = {
+      ...initialFormState,
+      pickedContacts: [{ id: "x", name: "Ana", email: "a@b.c" }],
+      audience: { ...initialFormState.audience, manualIds: ["x"] },
+    };
+    const onList = choose(withExtra, list);
+    expect(onList.audience.manualIds).toEqual([A, B]);
+    const back = choose(onList, filter);
+    expect(back.audience.manualIds).toEqual(["x"]);
+    expect(back.audience.manualOnly).toBeUndefined();
+  });
+  test("list to another list is that list's people", () => {
+    const other = { ...list, manualIds: [B] };
+    expect(
+      choose(choose(initialFormState, list), other).audience.manualIds,
+    ).toEqual([B]);
+  });
+});
