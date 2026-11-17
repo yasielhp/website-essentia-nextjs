@@ -48,27 +48,54 @@ export const UNCONFIRMED_PREFIX = "[unconfirmed] ";
  */
 export const SKIPPED_PREFIX = "[skipped] ";
 
+/**
+ * The PostgREST `or` filter that keeps the failed rows a retry may requeue: no
+ * error recorded, or one that is neither unconfirmed nor skipped.
+ */
+export const RETRYABLE_FAILURE_FILTER = `error.is.null,and(error.not.like.${UNCONFIRMED_PREFIX.trim()}*,error.not.like.${SKIPPED_PREFIX.trim()}*)`;
+
 /** Batches in a row, all refused for one reason, after which a send stops. */
 export const HALT_AFTER_BATCHES = 3;
 
-/** What a halted campaign shows as its last error. */
+/**
+ * Begins the `last_error` of a campaign or automation stopped on repeated
+ * refusals. The text after it is Meta's, as stored on the rows; the prefix is
+ * stable so the dashboard can say it in the admin's language.
+ */
+export const HALTED_PREFIX = "[halted] ";
+
 export const haltMessage = (error: string): string =>
-  `WhatsApp rechazó ${HALT_AFTER_BATCHES} lotes seguidos: ${error}`;
+  `${HALTED_PREFIX}${error}`;
+
+/** The reason inside a `haltMessage`, or null when `lastError` is something else. */
+export function parseHalted(
+  lastError: string | null | undefined,
+): string | null {
+  return lastError?.startsWith(HALTED_PREFIX)
+    ? lastError.slice(HALTED_PREFIX.length)
+    : null;
+}
 
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
 
-/** A row held in `sending` this long belongs to a process that died. */
-export const INTERRUPTED_AFTER_MS = 10 * 60_000;
+/**
+ * A row held in `sending` this long belongs to a process that died: an
+ * invocation lives 60 s at most, so five minutes is far past any live one.
+ * Deliberately shorter than the campaign's own stuck window.
+ */
+export const INTERRUPTED_AFTER_MS = 5 * 60_000;
 export const INTERRUPTED_ERROR = `${UNCONFIRMED_PREFIX}interrupted`;
 
 type Db = ReturnType<typeof getAdminClient>["database"];
 
 /**
- * No batch starts with less than this left before the deadline: it has to
- * send, write its rows and let the caller close up inside the time it has.
+ * No batch starts with less than this left before the deadline. A batch can
+ * wait on Meta for up to its 10 s timeout and then write ten rows (twice, on a
+ * retry), and the caller still has to close up: a batch beginning at second 45
+ * must still be over before the function's 60.
  */
-export const START_MARGIN_MS = 1500;
+export const START_MARGIN_MS = 5000;
 
 export type WhatsAppDeps = {
   db?: Db;
@@ -243,7 +270,7 @@ type RowOutcome =
       refused?: boolean;
     }
   /** The answer could not be written: the row stays `sending`. */
-  | { kind: "unrecorded"; error: string }
+  | { kind: "unrecorded"; error: string | null }
   /** Nothing was sent and the row is back in the queue. */
   | { kind: "deferred"; error: string };
 
@@ -432,9 +459,7 @@ export async function sendQueuedWhatsApp(
         provider_id: result.providerId,
         sent_at: new Date(now()).toISOString(),
       });
-      return recorded
-        ? { kind: "sent" }
-        : { kind: "unrecorded", error: "row not recorded" };
+      return recorded ? { kind: "sent" } : { kind: "unrecorded", error: null };
     }
     // Meta's code first, so a row's error says which of its refusals it was.
     const text =
@@ -480,12 +505,22 @@ export async function sendQueuedWhatsApp(
       break;
     }
 
-    const claimed = await claim(batch);
+    // A contact the read did not return is either a failed read or a delete
+    // racing it. Neither is a reason to give up on the row: it stays queued
+    // and the next tick looks again. (A contact that is really gone has had
+    // its contact_id nulled by the foreign key and is skipped below.)
+    const eligible = batch.filter(
+      (r) => r.contact_id === null || consent.has(r.contact_id),
+    );
+    const claimed =
+      eligible.length > 0
+        ? await claim(eligible)
+        : { owned: [] as QueuedRow[], error: null };
     if (claimed.error !== null) {
       lastError = `db: ${claimed.error}`;
       break;
     }
-    lost += batch.length - claimed.owned.length;
+    lost += eligible.length - claimed.owned.length;
     const outcomes = await Promise.all(
       claimed.owned.map((row) => {
         const verdict = consentVerdict(
@@ -502,8 +537,12 @@ export async function sendQueuedWhatsApp(
       if (outcome.kind === "sent") sent += 1;
       else {
         // A skipped contact is routine, not something the admin must read in
-        // the campaign's last error.
-        if (!outcome.error.startsWith(SKIPPED_PREFIX)) {
+        // the campaign's last error, and a lost write has no error of its own:
+        // the dispatch reports it as "N sent without being recorded".
+        if (
+          outcome.error !== null &&
+          !outcome.error.startsWith(SKIPPED_PREFIX)
+        ) {
           lastError = outcome.error;
         }
         if (outcome.kind === "failed") failed += 1;

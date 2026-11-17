@@ -11,6 +11,7 @@ import type {
 } from "@/lib/whatsapp/types";
 import type { CampaignRow } from "@/types/campaign";
 import type { QueuedRow } from "./dispatch";
+import { RETRYABLE_FAILURE_FILTER } from "./dispatch-whatsapp";
 import { chainDb, type FakeDbClient, type Step } from "./fake-db";
 
 export const template = (
@@ -283,10 +284,20 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
             error: null,
           };
         }
+        // The retry's filter, as PostgREST applies it to a read.
+        const orFilter = stepArgs(chain, "or")[0]?.[0];
+        const retryable = (error: string | null) =>
+          orFilter !== RETRYABLE_FAILURE_FILTER ||
+          error === null ||
+          !(error.startsWith("[unconfirmed]") || error.startsWith("[skipped]"));
         return {
-          data: queued.filter(
-            (q) => (statusEq ?? "queued") === rows.get(q.id)?.status,
-          ),
+          data: queued.filter((q) => {
+            const stored = rows.get(q.id);
+            return (
+              (statusEq ?? "queued") === stored?.status &&
+              retryable(stored.error)
+            );
+          }),
           error: null,
         };
       }
@@ -334,9 +345,20 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
         writes.push({ id: stored.id, patch });
         opts.onWrite?.(stored.id, patch);
       }
+      const selected = chain.find((s) => s.name === "select");
+      const columns = String(selected?.args[0] ?? "id")
+        .split(",")
+        .map((c) => c.trim());
       return {
-        data: chain.some((s) => s.name === "select")
-          ? matched.map((id) => ({ id }))
+        data: selected
+          ? matched.map((id) =>
+              Object.fromEntries(
+                columns.map((c) => [
+                  c,
+                  (rows.get(id) as unknown as Record<string, unknown>)[c],
+                ]),
+              ),
+            )
           : null,
         error: null,
       };

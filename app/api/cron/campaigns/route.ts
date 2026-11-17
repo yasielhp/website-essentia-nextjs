@@ -5,9 +5,11 @@ import {
   STUCK_AFTER_MS,
   abandonedMessage,
   dispatchCampaign,
+  reconcileAllInterrupted,
 } from "@/lib/campaigns/dispatch";
 import { runAutomation } from "@/lib/campaigns/automations";
-import { deadlineFrom, outOfTime } from "@/lib/campaigns/deadline";
+import { deadlineFrom } from "@/lib/campaigns/deadline";
+import { orderJobs, runJobs } from "@/lib/campaigns/cron-plan";
 import type { CampaignRow } from "@/types/campaign";
 
 /**
@@ -58,6 +60,16 @@ async function handle(request: NextRequest) {
   const deadlineAt = deadlineFrom(now);
   const results: Record<string, unknown> = {};
 
+  // First of all, for every campaign whatever its state: rows a dead process
+  // left `sending`. A one-off campaign already closed as `sent` would keep
+  // them forever, because nothing resumes it.
+  try {
+    const touched = await reconcileAllInterrupted(now, db);
+    if (touched.length > 0) results.reconciled = touched;
+  } catch (err) {
+    console.error("[cron/campaigns] reconcile failed:", err);
+  }
+
   const { data: due, error: dueError } = await db
     .from("campaigns")
     .select("id")
@@ -68,48 +80,16 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  // One at a time: each dispatch paces its own chunks, and two campaigns
-  // sending at once would share Resend's rate limit rather than the clock.
-  for (const row of (due ?? []) as { id: string }[]) {
-    // Out of time: it stays `scheduled` and the next tick takes it.
-    if (outOfTime(deadlineAt)) {
-      results[row.id] = { deferred: "out of time" };
-      continue;
-    }
-    results[row.id] = await dispatchCampaign(row.id, { deadlineAt });
-  }
-
   const { data: stuck } = await db
     .from("campaigns")
     .select("id, sending_started_at, last_error")
     .eq("status", "sending")
     .lt("sending_started_at", new Date(now - STUCK_AFTER_MS).toISOString());
-
-  for (const row of (stuck ?? []) as {
+  const stuckRows = (stuck ?? []) as {
     id: string;
     sending_started_at: string;
     last_error: string | null;
-  }[]) {
-    const age = now - new Date(row.sending_started_at).getTime();
-    if (age > ABANDON_AFTER_MS) {
-      await db
-        .from("campaigns")
-        .update({
-          status: "failed",
-          last_error: abandonedMessage(row.last_error),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", row.id);
-      results[row.id] = { abandoned: true };
-    } else if (outOfTime(deadlineAt)) {
-      results[row.id] = { deferred: "out of time" };
-    } else {
-      results[row.id] = await dispatchCampaign(row.id, {
-        resume: true,
-        deadlineAt,
-      });
-    }
-  }
+  }[];
 
   // Automated campaigns: every active one is evaluated on every run. A rule
   // that owes nobody today costs one read; one that does mails them now.
@@ -117,20 +97,51 @@ async function handle(request: NextRequest) {
     .from("campaigns")
     .select("*")
     .eq("status", "active");
-  for (const campaign of (active ?? []) as CampaignRow[]) {
-    if (outOfTime(deadlineAt)) {
-      results[campaign.id] = { deferred: "out of time" };
-      continue;
+  const activeRows = (active ?? []) as CampaignRow[];
+
+  const jobs = orderJobs({
+    scheduled: ((due ?? []) as { id: string }[]).map((row) => row.id),
+    stuck: stuckRows.map((row) => ({
+      id: row.id,
+      abandon:
+        now - new Date(row.sending_started_at).getTime() > ABANDON_AFTER_MS,
+    })),
+    automations: activeRows.map((campaign) => campaign.id),
+  });
+
+  // One at a time: each dispatch paces its own chunks, and two campaigns
+  // sending at once would share Resend's rate limit rather than the clock.
+  // Whatever the deadline leaves no room for waits for the next tick.
+  const done = await runJobs(jobs, deadlineAt, async (job) => {
+    switch (job.kind) {
+      case "scheduled":
+        return dispatchCampaign(job.id, { deadlineAt });
+      case "resume":
+        return dispatchCampaign(job.id, { resume: true, deadlineAt });
+      case "abandon": {
+        const row = stuckRows.find((r) => r.id === job.id);
+        await db
+          .from("campaigns")
+          .update({
+            status: "failed",
+            last_error: abandonedMessage(row?.last_error ?? null),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", job.id);
+        return { abandoned: true };
+      }
+      case "automation": {
+        const campaign = activeRows.find((c) => c.id === job.id) as CampaignRow;
+        try {
+          return await runAutomation(campaign, new Date(), { deadlineAt });
+        } catch (err) {
+          console.error("[cron/campaigns] automation failed:", job.id, err);
+          return { error: (err as Error).message };
+        }
+      }
     }
-    try {
-      results[campaign.id] = await runAutomation(campaign, new Date(), {
-        deadlineAt,
-      });
-    } catch (err) {
-      console.error("[cron/campaigns] automation failed:", campaign.id, err);
-      results[campaign.id] = { error: (err as Error).message };
-    }
-  }
+  });
+  Object.assign(results, done);
 
   return NextResponse.json({ ok: true, results });
 }

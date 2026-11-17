@@ -11,8 +11,10 @@ import type {
 import { isWhatsAppConfigured } from "@/lib/whatsapp/client";
 import { resolveAudience as defaultResolveAudience } from "./audience";
 import {
+  INTERRUPTED_AFTER_MS,
+  INTERRUPTED_ERROR,
+  RETRYABLE_FAILURE_FILTER,
   SKIPPED_PREFIX,
-  UNCONFIRMED_PREFIX,
   campaignTemplateIssue,
   haltMessage,
   loadWhatsAppTemplate,
@@ -91,6 +93,7 @@ export type DispatchResult =
         | "no_api_key"
         | "whatsapp_not_configured"
         | "template_unavailable"
+        | "nothing_to_retry"
         | "db";
       /** `template_unavailable`: why (a code from `whatsappTemplateEligibility`). */
       detail?: string;
@@ -331,7 +334,11 @@ export async function refreshCounts(
 }
 
 type Preflight =
-  | { ok: true; channel: CampaignChannel | null }
+  | {
+      ok: true;
+      channel: CampaignChannel | null;
+      status: CampaignRow["status"] | null;
+    }
   | Extract<DispatchResult, { ok: false }>;
 
 /**
@@ -359,9 +366,9 @@ async function preflight(
     "channel" | "status" | "audience" | "content"
   > | null;
   // No such row: the claim that follows reports it as not claimable.
-  if (!campaign) return { ok: true, channel: null };
+  if (!campaign) return { ok: true, channel: null, status: null };
   if (campaign.channel !== "whatsapp") {
-    return { ok: true, channel: campaign.channel };
+    return { ok: true, channel: campaign.channel, status: campaign.status };
   }
 
   // The state is left alone, but a scheduled or stuck campaign the cron keeps
@@ -403,7 +410,7 @@ async function preflight(
   } catch (err) {
     return { ok: false, error: "db", detail: (err as Error).message };
   }
-  return { ok: true, channel: "whatsapp" };
+  return { ok: true, channel: "whatsapp", status: campaign.status };
 }
 
 /** What the cron records on a campaign it gives up on after two hours. */
@@ -582,6 +589,44 @@ export async function retryFailed(
   );
   if (!checked.ok) return checked;
 
+  const whatsapp = checked.channel === "whatsapp";
+
+  // A WhatsApp campaign with nothing to send again (it failed on an empty
+  // audience, say, or every failure is one a retry must not repeat) is left as
+  // it is, instead of being reopened only to close again with nothing done.
+  // The state is checked by the reopen below; this only decides "nothing".
+  let retryableIds: string[] = [];
+  if (whatsapp && (checked.status === "sent" || checked.status === "failed")) {
+    // Read first, update by id: PostgREST rejects an `or` filter on an UPDATE
+    // ("column campaign_recipients.error does not exist"), but accepts it on a
+    // read. A failure marked unconfirmed may have been delivered after all and
+    // resending it could message the same person twice; one marked skipped was
+    // refused for lack of consent, which a retry does not change. Both stay
+    // failed.
+    const [retryable, pending] = await Promise.all([
+      db
+        .from("campaign_recipients")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("status", "failed")
+        .or(RETRYABLE_FAILURE_FILTER)
+        .range(0, 9_999),
+      db
+        .from("campaign_recipients")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId)
+        .eq("status", "queued"),
+    ]);
+    const readError = retryable.error ?? pending.error;
+    if (readError) return { ok: false, error: "db", detail: readError.message };
+    retryableIds = ((retryable.data ?? []) as { id: string }[]).map(
+      (row) => row.id,
+    );
+    if (retryableIds.length === 0 && (pending.count ?? 0) === 0) {
+      return { ok: false, error: "nothing_to_retry" };
+    }
+  }
+
   // Reopen first, requeue second: if the campaign is not a finished send the
   // reopen matches nothing, and requeued rows would otherwise sit in `queued`
   // with nobody coming back for them.
@@ -595,7 +640,7 @@ export async function retryFailed(
   // A WhatsApp send can also stop `failed` with rows still queued (Meta kept
   // refusing it); reopening it sends those as well as the retryable failures.
   const { data: reopened, error: reopenError } = await (
-    checked.channel === "whatsapp"
+    whatsapp
       ? reopening.in("status", ["sent", "failed"])
       : reopening.eq("status", "sent")
   ).select("id");
@@ -606,21 +651,24 @@ export async function retryFailed(
     return { ok: false, error: "not_claimable" };
   }
 
-  let requeue = db
-    .from("campaign_recipients")
-    .update({ status: "queued", error: null })
-    .eq("campaign_id", campaignId)
-    .eq("status", "failed");
-  // A WhatsApp failure marked unconfirmed may have been delivered after all:
-  // resending it could message the same person twice. One marked skipped was
-  // refused for lack of consent, which a retry does not change. Both stay
-  // failed.
-  if (checked.channel === "whatsapp") {
-    requeue = requeue.or(
-      `error.is.null,and(error.not.like.${UNCONFIRMED_PREFIX.trim()}*,error.not.like.${SKIPPED_PREFIX.trim()}*)`,
-    );
+  let requeueError: { message: string } | null = null;
+  if (whatsapp) {
+    // In chunks: the ids travel in the URL.
+    for (let i = 0; i < retryableIds.length && !requeueError; i += 100) {
+      const { error } = await db
+        .from("campaign_recipients")
+        .update({ status: "queued", error: null })
+        .in("id", retryableIds.slice(i, i + 100))
+        .eq("status", "failed");
+      requeueError = error;
+    }
+  } else {
+    ({ error: requeueError } = await db
+      .from("campaign_recipients")
+      .update({ status: "queued", error: null })
+      .eq("campaign_id", campaignId)
+      .eq("status", "failed"));
   }
-  const { error: requeueError } = await requeue;
   if (requeueError) {
     await markFailed(campaignId, requeueError.message, db);
     return { ok: false, error: "db", detail: requeueError.message };
@@ -631,4 +679,31 @@ export async function retryFailed(
     { resume: true, preflighted: true, deadlineAt: opts.deadlineAt },
     deps,
   );
+}
+
+/**
+ * Fails every row any campaign left `sending` for over five minutes, in one
+ * UPDATE, and recounts only the campaigns that had some. Called at the start of
+ * every cron tick: without it a one-off campaign already closed as `sent`
+ * would keep such rows forever, because nothing resumes it. The rows may have
+ * been sent, so they fail as unconfirmed and a retry never requeues them.
+ */
+export async function reconcileAllInterrupted(
+  nowMs: number,
+  db: Db = getAdminClient().database,
+): Promise<string[]> {
+  const { data, error } = await db
+    .from("campaign_recipients")
+    .update({ status: "failed", error: INTERRUPTED_ERROR })
+    .eq("status", "sending")
+    .lt("claimed_at", new Date(nowMs - INTERRUPTED_AFTER_MS).toISOString())
+    .select("campaign_id");
+  if (error) throw new Error(error.message);
+  const campaigns = [
+    ...new Set(
+      ((data ?? []) as { campaign_id: string }[]).map((r) => r.campaign_id),
+    ),
+  ];
+  for (const id of campaigns) await refreshCounts(id, {}, db);
+  return campaigns;
 }

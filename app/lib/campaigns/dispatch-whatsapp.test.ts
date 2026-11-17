@@ -8,6 +8,7 @@ import {
   UNCONFIRMED_PREFIX,
   consentVerdict,
   haltMessage,
+  parseHalted,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
@@ -711,6 +712,24 @@ describe("sendQueuedWhatsApp when the final write fails", () => {
     }
   });
 
+  test("a lost write does not become the campaign's last error", async () => {
+    const mem = memoryDb(rowsOf(1), { failUpdate: finalWrite });
+    const { send } = fakeSend(() => ok("w"));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+        db: mem.db,
+        send,
+        sleep: quietSleep,
+      });
+      expect(result.unrecorded).toBe(1);
+      expect(result.lastError).toBeNull();
+    } finally {
+      console.error = original;
+    }
+  });
+
   test("it retries once after a short pause", async () => {
     const mem = memoryDb(rowsOf(1), {
       failUpdate: ({ patch, attempt }) =>
@@ -784,11 +803,11 @@ describe("reconcileInterrupted", () => {
   const iso = (minutesAgo: number) =>
     new Date(NOW - minutesAgo * 60_000).toISOString();
 
-  test("fails rows left `sending` for more than ten minutes, unconfirmed", async () => {
+  test("fails rows left `sending` for more than five minutes, unconfirmed", async () => {
     const mem = memoryDb(rowsOf(4), {
       rows: [
-        { id: "row-1", status: "sending", claimed_at: iso(11) },
-        { id: "row-2", status: "sending", claimed_at: iso(9) },
+        { id: "row-1", status: "sending", claimed_at: iso(6) },
+        { id: "row-2", status: "sending", claimed_at: iso(4) },
         { id: "row-3", status: "sent", claimed_at: iso(60) },
       ],
     });
@@ -868,14 +887,14 @@ describe("sendQueuedWhatsApp re-checks consent before every batch", () => {
   });
 
   test("an unreachable number, a missing marketing consent and a deleted contact are skipped", async () => {
-    const rows = [row(1), row(2), row(3), row(4, { contact_id: null })];
+    // A deleted contact has had its contact_id nulled by the foreign key.
+    const rows = [row(1), row(2), row(3, { contact_id: null })];
     const mem = memoryDb(rows, {
       contacts: [
         blocked("contact-1", {
           whatsapp_unreachable_at: "2026-11-10T00:00:00Z",
         }),
         blocked("contact-2", { whatsapp_marketing_opted_in_at: null }),
-        // contact-3 was deleted: it is not in the table at all.
       ],
     });
     const { send, calls } = fakeSend(() => ok("w"));
@@ -887,8 +906,39 @@ describe("sendQueuedWhatsApp re-checks consent before every batch", () => {
     expect(mem.error("row-1")).toBe("[skipped] unreachable");
     expect(mem.error("row-2")).toBe("[skipped] no_consent");
     expect(mem.error("row-3")).toBe("[skipped] no_contact");
-    expect(mem.error("row-4")).toBe("[skipped] no_contact");
-    expect(result).toMatchObject({ sent: 0, failed: 4, remaining: 0 });
+    expect(result).toMatchObject({ sent: 0, failed: 3, remaining: 0 });
+  });
+
+  test("a contact the read did not return is left queued for the next tick, not skipped", async () => {
+    // contact-2 is missing from the answer: a failed read or a delete racing
+    // it. Nothing irreversible is written for it.
+    const mem = memoryDb(rowsOf(3), {
+      contacts: [consenting("contact-1"), consenting("contact-3")],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001", "+34600000003"]);
+    expect(mem.status("row-2")).toBe("queued");
+    expect(mem.rows.get("row-2")?.claimed_at).toBeNull();
+    expect(result).toMatchObject({ sent: 2, failed: 0, remaining: 1 });
+  });
+
+  test("an empty answer without an error leaves the whole batch queued", async () => {
+    const mem = memoryDb(rowsOf(12), { contacts: [] });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(12), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(calls).toHaveLength(0);
+    expect(result).toMatchObject({ sent: 0, failed: 0, remaining: 12 });
+    expect([...mem.rows.values()].every((r) => r.status === "queued")).toBe(
+      true,
+    );
   });
 
   test("one contacts query per batch, for that batch's contacts only", async () => {
@@ -1059,10 +1109,21 @@ describe("sendQueuedWhatsApp stops after repeated refusals", () => {
     expect(result).toMatchObject({ failed: 40, halted: null, remaining: 0 });
   });
 
-  test("the message the campaign records names the reason", () => {
+  test("the message the campaign records is a stable prefix and Meta's text", () => {
     expect(haltMessage("132000: Template param mismatch")).toBe(
-      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+      "[halted] 132000: Template param mismatch",
     );
+  });
+
+  test("parseHalted gives the reason back, and only for a halted message", () => {
+    expect(parseHalted(haltMessage("132000: Template param mismatch"))).toBe(
+      "132000: Template param mismatch",
+    );
+    expect(parseHalted("[halted] ")).toBe("");
+    expect(parseHalted("template_unavailable: param_count")).toBeNull();
+    expect(parseHalted("Template param mismatch [halted] ")).toBeNull();
+    expect(parseHalted(null)).toBeNull();
+    expect(parseHalted(undefined)).toBeNull();
   });
 });
 
@@ -1102,8 +1163,8 @@ describe("sendQueuedWhatsApp and a deadline shared with other work", () => {
 
   test("it works up to the deadline, not up to its own budget", async () => {
     const clock = fakeClock(T0);
-    // Batches begin at +0, +1 s, +2 s; at +3 s only 0.5 s would be left.
-    const result = await run(100, clock, T0 + 3500);
+    // Batches begin at +0, +1 s, +2 s; at +3 s only 4.5 s would be left.
+    const result = await run(100, clock, T0 + 7500);
     expect(result).toMatchObject({ sent: 30, remaining: 70 });
   });
 
@@ -1116,6 +1177,11 @@ describe("sendQueuedWhatsApp and a deadline shared with other work", () => {
     const near = fakeClock(T0);
     await run(1000, near, T0 + 20_000);
     expect(near.now() - T0).toBeLessThanOrEqual(20_000);
+  });
+
+  test("the margin leaves room for a batch that waits on a slow Meta", () => {
+    // A batch may wait 10 s for Meta and then write its rows.
+    expect(START_MARGIN_MS).toBeGreaterThanOrEqual(5000);
   });
 
   test("two sends in one invocation never start a message past the deadline", async () => {

@@ -100,7 +100,7 @@ describe("runAutomation on WhatsApp", () => {
     });
     expect(mem.campaign.status).toBe("paused");
     expect(mem.campaign.last_error).toBe(
-      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+      "[halted] 132000: Template param mismatch",
     );
     // The rest waits in the queue for when the admin resumes it.
     expect(

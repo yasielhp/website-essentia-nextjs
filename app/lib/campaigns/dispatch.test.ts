@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { CampaignRow } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
-import { abandonedMessage, dispatchCampaign, retryFailed } from "./dispatch";
+import {
+  abandonedMessage,
+  dispatchCampaign,
+  reconcileAllInterrupted,
+  retryFailed,
+} from "./dispatch";
+import { RETRYABLE_FAILURE_FILTER } from "./dispatch-whatsapp";
 import { INTERRUPTED_ERROR } from "./dispatch-whatsapp";
 import {
   campaign,
@@ -363,12 +369,86 @@ describe("dispatchCampaign: repeated refusals", () => {
     });
     expect(mem.campaign.status).toBe("failed");
     expect(mem.campaign.last_error).toBe(
-      "WhatsApp rechazó 3 lotes seguidos: 132000: Template param mismatch",
+      "[halted] 132000: Template param mismatch",
     );
     expect(mem.campaign.sent_at ?? null).toBeNull();
     expect(
       [...mem.rows.values()].filter((r) => r.status === "queued"),
     ).toHaveLength(15);
+  });
+});
+
+describe("a lost write is reported on the campaign", () => {
+  test("the campaign finishes and says how many went out unrecorded", async () => {
+    const { mem, deps } = setup(2, {
+      failUpdate: ({ patch }) => (patch.status === "sent" ? "db down" : null),
+    });
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await dispatchCampaign("camp-1", {}, deps);
+      expect(result).toMatchObject({ ok: true, sent: 0, unrecorded: 2 });
+      expect(mem.campaign.status).toBe("sent");
+      expect(mem.campaign.last_error).toBe("2 sent without being recorded");
+    } finally {
+      console.error = original;
+    }
+  });
+});
+
+describe("reconcileAllInterrupted", () => {
+  const NOW = Date.parse("2026-11-17T12:00:00Z");
+  const iso = (minutesAgo: number) =>
+    new Date(NOW - minutesAgo * 60_000).toISOString();
+
+  test("settles a closed campaign's orphaned rows and recounts it", async () => {
+    // The campaign finished as `sent` long ago; nothing will resume it.
+    const mem = memoryDb(rowsOf(3), {
+      campaign: campaign({ status: "sent" }),
+      rows: [
+        { id: "row-1", status: "sending", claimed_at: iso(6) },
+        { id: "row-2", status: "sending", claimed_at: iso(2) },
+        { id: "row-3", status: "sent" },
+      ],
+    });
+    const touched = await reconcileAllInterrupted(NOW, mem.db);
+    expect(touched).toEqual(["camp-1"]);
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
+    expect(mem.status("row-2")).toBe("sending");
+    expect(mem.campaign.failed_count).toBe(1);
+  });
+
+  test("is one UPDATE for every campaign, with no campaign filter", async () => {
+    const mem = memoryDb(rowsOf(1), {
+      rows: [{ id: "row-1", status: "sending", claimed_at: iso(30) }],
+    });
+    await reconcileAllInterrupted(NOW, mem.db);
+    const updates = mem.log.filter(
+      (q) => q.table === "campaign_recipients" && has(q.chain, "update"),
+    );
+    expect(updates).toHaveLength(1);
+    expect(
+      updates[0].chain.some(
+        (step) => step.name === "eq" && step.args[0] === "campaign_id",
+      ),
+    ).toBe(false);
+  });
+
+  test("recounts only the campaigns that had orphans, and nothing when none", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      campaign: campaign({ status: "sent" }),
+      rows: [{ id: "row-1", status: "sending", claimed_at: iso(1) }],
+    });
+    expect(await reconcileAllInterrupted(NOW, mem.db)).toEqual([]);
+    expect(touchedCampaign(mem.log)).toHaveLength(0);
+  });
+
+  test("a failed UPDATE is an error for the caller to log, not a silent zero", async () => {
+    const mem = memoryDb(rowsOf(1), { failUpdate: () => "db down" });
+    await expect(reconcileAllInterrupted(NOW, mem.db)).rejects.toThrow(
+      "db down",
+    );
   });
 });
 
@@ -418,7 +498,7 @@ describe("retryFailed", () => {
     });
   });
 
-  test("a WhatsApp retry sends the requeued rows", async () => {
+  test("a WhatsApp retry reads the retryable failures, then requeues them by id", async () => {
     const { mem, deps, sender } = setup(2, {
       campaign: campaign({ status: "sent" }),
       rows: [{ id: "row-1", status: "failed", error: "Meta said no" }],
@@ -427,35 +507,90 @@ describe("retryFailed", () => {
     expect(result).toMatchObject({ ok: true, sent: 2 });
     expect(sender.calls).toHaveLength(2);
     expect(mem.campaign.status).toBe("sent");
-    const requeue = mem.log.find(
-      (q) =>
-        q.table === "campaign_recipients" &&
-        has(q.chain, "update") &&
-        argsOf(q.chain, "update")?.[0] &&
-        (argsOf(q.chain, "update")?.[0] as { status?: string }).status ===
-          "queued" &&
-        has(q.chain, "or"),
-    );
-    expect(requeue).toBeDefined();
-  });
 
-  test("never requeues a failure that may have been delivered or was skipped", async () => {
-    const { mem, deps } = setup(1, { campaign: campaign({ status: "sent" }) });
-    await retryFailed("camp-1", {}, deps);
-    const requeue = mem.log.find(
+    // The filter travels on a read: PostgREST refuses an `or` on an UPDATE
+    // (checked against the live database).
+    const read = mem.log.find(
       (q) =>
         q.table === "campaign_recipients" &&
         has(q.chain, "or") &&
-        (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
-          "queued",
+        !has(q.chain, "update"),
     );
-    const filter = String(argsOf(requeue?.chain ?? [], "or")?.[0]);
-    // A row with no error yet, or one that is neither unconfirmed nor skipped.
-    expect(filter).toBe(
+    expect(argsOf(read?.chain ?? [], "or")).toEqual([RETRYABLE_FAILURE_FILTER]);
+    expect(
+      mem.log.some((q) => has(q.chain, "update") && has(q.chain, "or")),
+    ).toBe(false);
+    const requeue = mem.log.find(
+      (q) =>
+        q.table === "campaign_recipients" &&
+        (argsOf(q.chain, "update")?.[0] as { status?: string })?.status ===
+          "queued" &&
+        has(q.chain, "in"),
+    );
+    expect(argsOf(requeue?.chain ?? [], "in")).toEqual(["id", ["row-1"]]);
+  });
+
+  test("the filter keeps unconfirmed and skipped failures out, and the null ones in", () => {
+    expect(RETRYABLE_FAILURE_FILTER).toBe(
       "error.is.null,and(error.not.like.[unconfirmed]*,error.not.like.[skipped]*)",
     );
-    expect(filter).toContain("[unconfirmed]");
-    expect(filter).toContain("[skipped]");
+  });
+
+  test("only the retryable failures are sent again", async () => {
+    const { mem, deps, sender } = setup(5, {
+      campaign: campaign({ status: "sent" }),
+      rows: [
+        { id: "row-1", status: "failed", error: "131049: frequency cap" },
+        { id: "row-2", status: "failed", error: "[unconfirmed] 5xx" },
+        { id: "row-3", status: "failed", error: "[skipped] opted_out" },
+        { id: "row-4", status: "failed", error: null },
+        { id: "row-5", status: "failed", error: "[unconfirmed] interrupted" },
+      ],
+    });
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: true, sent: 2 });
+    expect(sender.calls.map((c) => c.to)).toEqual([
+      "+34600000001",
+      "+34600000004",
+    ]);
+    expect(mem.error("row-2")).toBe("[unconfirmed] 5xx");
+    expect(mem.error("row-3")).toBe("[skipped] opted_out");
+    expect(mem.status("row-5")).toBe("failed");
+  });
+
+  test("with nothing to send again the campaign is left exactly as it was", async () => {
+    const { mem, deps, sender } = setup(2, {
+      campaign: campaign({ status: "failed", last_error: "empty_audience" }),
+      rows: [
+        { id: "row-1", status: "failed", error: "[unconfirmed] 5xx" },
+        { id: "row-2", status: "failed", error: "[skipped] no_consent" },
+      ],
+    });
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toEqual({ ok: false, error: "nothing_to_retry" });
+    expect(mem.campaign.status).toBe("failed");
+    expect(mem.campaign.last_error).toBe("empty_audience");
+    expect(touchedCampaign(mem.log)).toHaveLength(0);
+    expect(sender.calls).toHaveLength(0);
+  });
+
+  test("a campaign with no rows at all has nothing to retry", async () => {
+    const { mem, deps } = setup(0, { campaign: campaign({ status: "sent" }) });
+    expect(await retryFailed("camp-1", {}, deps)).toEqual({
+      ok: false,
+      error: "nothing_to_retry",
+    });
+    expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("queued rows alone are reason enough to reopen", async () => {
+    const { mem, deps, sender } = setup(3, {
+      campaign: campaign({ status: "failed" }),
+    });
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: true, sent: 3 });
+    expect(sender.calls).toHaveLength(3);
+    expect(mem.campaign.status).toBe("sent");
   });
 
   test("an email retry keeps requeueing every failed row", async () => {
