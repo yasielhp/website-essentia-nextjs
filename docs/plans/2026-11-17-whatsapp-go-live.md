@@ -96,12 +96,6 @@ Guarda los **números** que han escrito STOP o BAJA, aunque no coincidan con nin
 
 **Falla cerrado.** Mientras la tabla no exista, leerla da error y el código **no envía ningún WhatsApp**, ni a clientas ni en campañas (los correos no la leen). Es decir, aplicarla es lo que habilita el envío. Los avisos al personal por WhatsApp no leen esta tabla y no se ven afectados.
 
-### `20261117n`: decisión del usuario
-
-Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil desde el navegador (política `users_update_own_profile`, privilegio de columna, y el trigger `profiles_guard_role` solo protege `role`). Ese correo se leía como dirección verificada, así que quien lo cambiara por el de otra persona podía darla de baja de la newsletter o registrar un consentimiento en su contacto. El código ya no se fía de esa columna para eso (el guard entrega aparte el correo de la sesión); la migración cierra la puerta por debajo: amplía `profiles_guard_role` para que, a quien no es admin, un `email` distinto se le devuelva al guardado, igual que ya hace con `role`.
-
-**Es seguro aplicarla** (comprobado en `app/` el 2026-11-17): ninguna pantalla cambia `profiles.email` desde el navegador. La única escritura del navegador sobre `profiles` es la página "Mi cuenta" del panel (nombre, teléfono, idioma, avatar); el cambio de correo de una persona del equipo va por `updateUserProfile` con la clave de servicio, que el trigger deja pasar. Vuelta atrás: aplicar de nuevo `20260810e_profiles_guard_role_tolerates_api_key.sql`.
-
 ### `20261117m`: decisión del usuario
 
 `booking_events` se creó sin RLS con el comentario "se lee solo con la clave de servicio", pero con RLS apagada la clave anon del navegador también puede leerla. Guarda en `summary` el nombre de la clienta y la fecha de la reserva, y en `recipient` el teléfono completo o el correo de cada destinataria.
@@ -114,6 +108,12 @@ Se comprobó (releyendo el código el 2026-11-17) que **es seguro activarla**:
 - Activar RLS sin políticas no cambia nada para la aplicación y cierra la lectura con la clave anon.
 
 Reversible: `ALTER TABLE booking_events DISABLE ROW LEVEL SECURITY;`. Las demás tablas internas sin RLS son otro asunto, porque algunas sí las lee el navegador: ver `2026-11-17-whatsapp-findings.md`.
+
+### `20261117n`: decisión del usuario
+
+Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil desde el navegador (política `users_update_own_profile`, privilegio de columna, y el trigger `profiles_guard_role` solo protege `role`). Ese correo se leía como dirección verificada, así que quien lo cambiara por el de otra persona podía darla de baja de la newsletter o registrar un consentimiento en su contacto. El código ya no se fía de esa columna para eso (el guard entrega aparte el correo de la sesión); la migración cierra la puerta por debajo: amplía `profiles_guard_role` para que, a quien no es admin, un `email` distinto se le devuelva al guardado, igual que ya hace con `role`.
+
+**Es seguro aplicarla** (comprobado en `app/` el 2026-11-17): ninguna pantalla cambia `profiles.email` desde el navegador. La única escritura del navegador sobre `profiles` es la página "Mi cuenta" del panel (nombre, teléfono, idioma, avatar); el cambio de correo de una persona del equipo va por `updateUserProfile` con la clave de servicio, que el trigger deja pasar. Vuelta atrás: aplicar de nuevo `20260810e_profiles_guard_role_tolerates_api_key.sql`.
 
 ---
 
