@@ -2316,7 +2316,8 @@
         "test": "Enviarme prueba",
         "testing": "Enviando…",
         "reset": "Restablecer",
-        "resetting": "Restableciendo…"
+        "resetting": "Restableciendo…",
+        "editRow": "Editar {name}, {language}"
       },
       "testNote": "La prueba se envía solo a tu email, con el asunto [PRUEBA], y lleva la versión guardada.",
       "testSent": "Prueba enviada a {email}",
@@ -2382,7 +2383,6 @@
         "saved": "Mensaje guardado",
         "unchanged": "Sin cambios que guardar",
         "saveFirst": "Guarda los cambios para enviar la prueba.",
-        "close": "Cerrar",
         "discardTitle": "Hay cambios sin guardar.",
         "discardYes": "Descartar cambios",
         "discardNo": "Seguir editando",
@@ -2436,7 +2436,9 @@
           "configure": "Configurar",
           "edit": "Editar",
           "remove": "Quitar",
-          "removing": "Quitando…"
+          "removing": "Quitando…",
+          "editRow": "Editar el WhatsApp de {name}, {language}",
+          "configureRow": "Configurar el WhatsApp de {name}, {language}"
         },
         "removeConfirm": "¿Dejar de enviar este aviso por WhatsApp? Se borra la configuración de esta fila.",
         "removeYes": "Sí, quitar",
@@ -2475,19 +2477,19 @@
           "saving": "Guardando…",
           "saved": "WhatsApp configurado",
           "unchanged": "Sin cambios que guardar",
-          "close": "Cerrar",
           "test": "Enviarme prueba",
           "testing": "Enviando…",
           "testNote": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla y la configuración guardada.",
           "saveFirst": "Guarda los cambios para enviar la prueba.",
-          "testSent": "Prueba enviada a {phone}",
-          "discardTitle": "Hay cambios sin guardar.",
-          "discardYes": "Descartar cambios",
-          "discardNo": "Seguir editando"
+          "testSent": "Prueba enviada a {phone}"
         },
         "templatesFailed": "No se pudieron leer las plantillas de WhatsApp, así que no se pueden configurar ni comprobar.",
         "campaignNote": "Los recordatorios y avisos posteriores a la cita se configuran en Campañas > Aviso de cita.",
         "campaignLink": "Crear un Aviso de cita"
+      },
+      "page": {
+        "back": "Volver a mensajes",
+        "loading": "Cargando…"
       }
     }
   },

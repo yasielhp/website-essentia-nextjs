@@ -2316,7 +2316,8 @@
         "test": "Send me a test",
         "testing": "Sending…",
         "reset": "Reset",
-        "resetting": "Resetting…"
+        "resetting": "Resetting…",
+        "editRow": "Edit {name}, {language}"
       },
       "testNote": "The test goes only to your email, with the subject [PRUEBA], and carries the saved version.",
       "testSent": "Test sent to {email}",
@@ -2382,7 +2383,6 @@
         "saved": "Message saved",
         "unchanged": "No changes to save",
         "saveFirst": "Save your changes to send the test.",
-        "close": "Close",
         "discardTitle": "You have unsaved changes.",
         "discardYes": "Discard changes",
         "discardNo": "Keep editing",
@@ -2436,7 +2436,9 @@
           "configure": "Set up",
           "edit": "Edit",
           "remove": "Remove",
-          "removing": "Removing…"
+          "removing": "Removing…",
+          "editRow": "Edit the WhatsApp of {name}, {language}",
+          "configureRow": "Set up the WhatsApp of {name}, {language}"
         },
         "removeConfirm": "Stop sending this notice on WhatsApp? This row's setup is deleted.",
         "removeYes": "Yes, remove",
@@ -2475,19 +2477,19 @@
           "saving": "Saving…",
           "saved": "WhatsApp set up",
           "unchanged": "No changes to save",
-          "close": "Close",
           "test": "Send me a test",
           "testing": "Sending…",
           "testNote": "The test goes to the phone on your profile, with the template's example values and the saved setup.",
           "saveFirst": "Save your changes to send the test.",
-          "testSent": "Test sent to {phone}",
-          "discardTitle": "You have unsaved changes.",
-          "discardYes": "Discard changes",
-          "discardNo": "Keep editing"
+          "testSent": "Test sent to {phone}"
         },
         "templatesFailed": "The WhatsApp templates could not be read, so they cannot be set up or checked.",
         "campaignNote": "Reminders and notices after the appointment are set up in Campaigns > Appointment notice.",
         "campaignLink": "Create an Appointment notice"
+      },
+      "page": {
+        "back": "Back to messages",
+        "loading": "Loading…"
       }
     }
   },

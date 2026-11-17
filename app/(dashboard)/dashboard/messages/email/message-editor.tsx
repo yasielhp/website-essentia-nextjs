@@ -10,7 +10,7 @@ import {
   saveMessageTemplate,
   sendTestMessage,
 } from "@/actions/message-templates";
-import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
 import {
@@ -31,10 +31,10 @@ import type {
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import type { EmailDoc } from "@/types/campaign";
-import { Modal } from "../whatsapp/modal";
 import { useEmailActionToast } from "./action-error";
 import { EmailPreviewFrame } from "./email-preview-frame";
 import { useMessagePreview, type Problems } from "./use-message-preview";
+import { MessagePageHeader, ResetControl, UnsavedBar } from "./page-parts";
 import { VariableChips } from "./variable-chips";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
@@ -54,42 +54,6 @@ type TextField = "subject" | "preheader" | "title";
 const NO_PROBLEMS: Problems = { fieldErrors: {}, names: null };
 
 /**
- * "Unsaved changes: discard?" in the footer. It exists only while it is asked:
- * focus goes to "keep editing" when it appears and back to "Close" when it goes.
- */
-function DiscardBar({
-  onKeep,
-  onDiscard,
-}: {
-  onKeep: () => void;
-  onDiscard: () => void;
-}) {
-  const tEditor = useTranslations("dashboard.messages.email.editor");
-  const ref = useRef<HTMLDivElement>(null);
-  useDialogFocus(ref, () => document.getElementById("message-close-button"));
-  return (
-    <div
-      ref={ref}
-      role="alertdialog"
-      aria-label={tEditor("discardTitle")}
-      className="flex flex-wrap items-center justify-between gap-3"
-    >
-      <p className="text-petroleum-700 text-sm font-medium">
-        {tEditor("discardTitle")}
-      </p>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={onKeep}>
-          {tEditor("discardNo")}
-        </Button>
-        <Button variant="danger" onClick={onDiscard}>
-          {tEditor("discardYes")}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/**
  * Edits one message in one language: the subject, the preheader, the title and
  * the body, with the variables it offers, a live preview of the whole email
  * and the notes about what is fixed.
@@ -105,8 +69,6 @@ export function MessageEditor({
   saved,
   defaults,
   catalog,
-  onClose,
-  onSaved,
 }: {
   messageKey: MessageCatalogEntry["key"];
   locale: "es" | "en";
@@ -114,8 +76,6 @@ export function MessageEditor({
   saved: MessageTemplateRowView | null;
   defaults: MessageDefaultEntry;
   catalog: MessageCatalogEntry;
-  onClose: () => void;
-  onSaved: () => void;
 }) {
   const t = useTranslations("dashboard.messages.email");
   const tEditor = useTranslations("dashboard.messages.email.editor");
@@ -133,10 +93,14 @@ export function MessageEditor({
     }),
     [defaults],
   );
-  // What the editor opened with: fixed for the life of the modal.
+  // What the editor opened with: the body is handed to the editor once.
   const [opened] = useState<EmailFields>(() =>
     openingState(saved, defaultFields),
   );
+  // What counts as saved: the opening state, then whatever was last saved here.
+  // The page stays open after a save, so this moves and "changed" is measured
+  // from it.
+  const [baseline, setBaseline] = useState<EmailFields>(opened);
   const [current, setCurrent] = useState<EmailFields>(opened);
   // What a failed save found, good only while the draft is the one it refused.
   const [refused, setRefused] = useState<{
@@ -145,7 +109,7 @@ export function MessageEditor({
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [hasSaved, setHasSaved] = useState(saved !== null);
 
   const editorRef = useRef<TiptapEditor | null>(null);
   const lastField = useRef<TextField | "body">("body");
@@ -156,10 +120,10 @@ export function MessageEditor({
   // A second press while the first is still being answered does nothing.
   const inFlight = useRef(false);
 
-  const changes = changedFields(opened, current);
+  const changes = changedFields(baseline, current);
   const changesKey = JSON.stringify(changes);
   const dirty = Object.keys(changes).length > 0;
-  const hasSaved = saved !== null;
+  const guard = useUnsavedGuard(dirty);
 
   /**
    * The fields as they are this instant. The body reaches `current` a beat
@@ -195,14 +159,6 @@ export function MessageEditor({
       if (pending.timer) clearTimeout(pending.timer);
     };
   }, []);
-
-  function requestClose() {
-    if (Object.keys(changedFields(opened, fieldsNow())).length > 0) {
-      setConfirmDiscard(true);
-    } else {
-      onClose();
-    }
-  }
 
   function setText(field: TextField, value: string) {
     setCurrent((before) => ({ ...before, [field]: value }));
@@ -245,7 +201,7 @@ export function MessageEditor({
   async function save() {
     if (inFlight.current) return;
     const now = fieldsNow();
-    const toSave = changedFields(opened, now);
+    const toSave = changedFields(baseline, now);
     if (Object.keys(toSave).length === 0) return;
     inFlight.current = true;
     setSaving(true);
@@ -258,7 +214,12 @@ export function MessageEditor({
       });
       if (result.ok) {
         notifySuccess(tEditor("saved"));
-        onSaved();
+        // Still here, and now saved: what was just sent is the new baseline.
+        setBaseline(now);
+        setHasSaved(true);
+        setRefused(null);
+        inFlight.current = false;
+        setSaving(false);
         return;
       }
       setRefused({
@@ -280,7 +241,7 @@ export function MessageEditor({
     if (inFlight.current) return;
     // The test carries the saved version: with a change in the editor that
     // this render does not know of yet, do not send, let the button say so.
-    if (Object.keys(changedFields(opened, fieldsNow())).length > 0) return;
+    if (Object.keys(changedFields(baseline, fieldsNow())).length > 0) return;
     inFlight.current = true;
     setTesting(true);
     try {
@@ -363,168 +324,185 @@ export function MessageEditor({
   const language = t(`locales.${locale}`);
 
   return (
-    <Modal
-      title={tEditor("title", { name: tKeys(messageKey), language })}
-      onClose={requestClose}
-      wide
-      dirty={dirty}
-      busy={saving}
-    >
-      <div className="flex flex-col gap-6 overflow-y-auto px-6 py-5">
-        <p className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs">
-          {hasSaved ? tEditor("customNotice") : tEditor("seedNotice")}
-        </p>
+    <div className="flex flex-col gap-6">
+      <MessagePageHeader
+        title={tEditor("title", { name: tKeys(messageKey), language })}
+        status={{
+          text: hasSaved ? t("status.custom") : t("status.default"),
+          tone: hasSaved ? "custom" : "default",
+        }}
+        describedBy="message-notice"
+      />
 
-        {textInput("subject", tEditor("subject"), undefined, true)}
-        {textInput("preheader", tEditor("preheader"), tEditor("preheaderHint"))}
-        {textInput("title", tEditor("titleField"), tEditor("titleHint"))}
+      {guard.pending && (
+        <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
+      )}
 
-        <VariableChips
-          variables={catalog.variables}
-          disabled={saving}
-          onInsert={insertVariable}
-        />
+      <p
+        id="message-notice"
+        className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs"
+      >
+        {hasSaved ? tEditor("customNotice") : tEditor("seedNotice")}
+      </p>
 
-        <section className="flex flex-col gap-2">
-          <h3
-            id="message-body-label"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {tEditor("body")}
-          </h3>
-          <div
-            role="group"
-            aria-labelledby="message-body-label"
-            onFocusCapture={() => {
-              lastField.current = "body";
-            }}
-            className={`rounded-2xl border px-4 py-2 ${
-              docLines.length > 0 ? "border-red-300" : "border-sand-200"
-            }`}
-          >
-            <MailyEditor
-              contentJson={opened.doc as never}
-              editable={!saving}
-              onCreate={(editor) => {
-                editorRef.current = editor;
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-6">
+          {textInput("subject", tEditor("subject"))}
+          {textInput(
+            "preheader",
+            tEditor("preheader"),
+            tEditor("preheaderHint"),
+          )}
+          {textInput("title", tEditor("titleField"), tEditor("titleHint"))}
+
+          <VariableChips
+            variables={catalog.variables}
+            disabled={saving}
+            onInsert={insertVariable}
+          />
+
+          <section className="flex flex-col gap-2">
+            <h2
+              id="message-body-label"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              {tEditor("body")}
+            </h2>
+            <div
+              role="group"
+              aria-labelledby="message-body-label"
+              onFocusCapture={() => {
+                lastField.current = "body";
               }}
-              onUpdate={(editor) => {
-                if (pendingDoc.current.timer) {
-                  clearTimeout(pendingDoc.current.timer);
-                }
-                pendingDoc.current.timer = setTimeout(() => {
-                  pendingDoc.current.timer = null;
-                  setCurrent((before) => ({
-                    ...before,
-                    doc: editor.getJSON() as EmailDoc,
-                  }));
-                }, 300);
+              className={`rounded-2xl border bg-white px-4 py-2 ${
+                docLines.length > 0 ? "border-red-300" : "border-sand-200"
+              }`}
+            >
+              <MailyEditor
+                contentJson={opened.doc as never}
+                editable={!saving}
+                onCreate={(editor) => {
+                  editorRef.current = editor;
+                }}
+                onUpdate={(editor) => {
+                  if (pendingDoc.current.timer) {
+                    clearTimeout(pendingDoc.current.timer);
+                  }
+                  pendingDoc.current.timer = setTimeout(() => {
+                    pendingDoc.current.timer = null;
+                    setCurrent((before) => ({
+                      ...before,
+                      doc: editor.getJSON() as EmailDoc,
+                    }));
+                  }, 300);
+                }}
+              />
+            </div>
+            {docLines.length > 0 && (
+              <div role="alert" className="text-xs text-red-600">
+                <p className="font-medium">{tEditor("docErrorsTitle")}</p>
+                <ul className="list-disc pl-4">
+                  {docLines.map(({ key, block }) => {
+                    const message = tValidation.has(key)
+                      ? tValidation(key)
+                      : tValidation("invalidInput");
+                    return (
+                      <li key={`${key}-${block}`}>
+                        {block === null
+                          ? message
+                          : tEditor("docErrorAt", { message, block })}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            <ul className="text-petroleum-400 list-disc space-y-1 pl-4 text-xs">
+              <li>{tEditor("fixedAfter")}</li>
+              <li>{tEditor("closingNote")}</li>
+              <li>{tEditor("emptyNote")}</li>
+            </ul>
+          </section>
+
+          <section
+            aria-labelledby="message-fixed"
+            className="bg-sand-50 rounded-xl px-4 py-3"
+          >
+            <h2
+              id="message-fixed"
+              className="text-petroleum-500 text-xs font-medium"
+            >
+              {tEditor("fixedTitle")}
+            </h2>
+            {catalog.fixed.length === 0 ? (
+              <p className="text-petroleum-400 mt-1 text-xs">
+                {tEditor("fixedNone")}
+              </p>
+            ) : (
+              <ul className="text-petroleum-500 mt-1 list-disc pl-4 text-xs">
+                {catalog.fixed.map((block) => (
+                  <li key={block}>{t(`fixed.${block}`)}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* The preview stays in view beside the editor on a wide screen. */}
+        <div className="min-w-0 xl:sticky xl:top-6">
+          <EmailPreviewFrame
+            html={preview.html}
+            subject={preview.subject}
+            failed={preview.failed}
+            failure={
+              preview.failure
+                ? tErrors.has(preview.failure)
+                  ? tErrors(preview.failure)
+                  : tErrors("generic")
+                : null
+            }
+          />
+        </div>
+      </div>
+
+      <div className="border-sand-200 bg-sand-50/95 sticky bottom-0 z-10 -mx-6 flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4 lg:-mx-10 lg:px-10">
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="outline"
+            disabled={saving || testing || dirty}
+            onClick={() => void sendTest()}
+          >
+            {testing ? t("actions.testing") : t("actions.test")}
+          </Button>
+          <p className="text-petroleum-400 max-w-xs text-xs">
+            {dirty ? tEditor("saveFirst") : t("testNote")}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {hasSaved && (
+            <ResetControl
+              channel="email"
+              messageKey={messageKey}
+              locale={locale}
+              disabled={saving}
+              labels={{
+                button: t("actions.reset"),
+                working: t("actions.resetting"),
+                confirm: t("resetConfirm"),
+                yes: t("resetYes"),
+                no: t("resetNo"),
               }}
             />
-          </div>
-          {docLines.length > 0 && (
-            <div role="alert" className="text-xs text-red-600">
-              <p className="font-medium">{tEditor("docErrorsTitle")}</p>
-              <ul className="list-disc pl-4">
-                {docLines.map(({ key, block }) => {
-                  const message = tValidation.has(key)
-                    ? tValidation(key)
-                    : tValidation("invalidInput");
-                  return (
-                    <li key={`${key}-${block}`}>
-                      {block === null
-                        ? message
-                        : tEditor("docErrorAt", { message, block })}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
           )}
-          <ul className="text-petroleum-400 list-disc space-y-1 pl-4 text-xs">
-            <li>{tEditor("fixedAfter")}</li>
-            <li>{tEditor("closingNote")}</li>
-            <li>{tEditor("emptyNote")}</li>
-          </ul>
-        </section>
-
-        <section
-          aria-labelledby="message-fixed"
-          className="bg-sand-50 rounded-xl px-4 py-3"
-        >
-          <h3
-            id="message-fixed"
-            className="text-petroleum-500 text-xs font-medium"
+          <Button
+            disabled={!dirty || saving}
+            onClick={() => void save()}
+            title={dirty ? undefined : tEditor("unchanged")}
           >
-            {tEditor("fixedTitle")}
-          </h3>
-          {catalog.fixed.length === 0 ? (
-            <p className="text-petroleum-400 mt-1 text-xs">
-              {tEditor("fixedNone")}
-            </p>
-          ) : (
-            <ul className="text-petroleum-500 mt-1 list-disc pl-4 text-xs">
-              {catalog.fixed.map((block) => (
-                <li key={block}>{t(`fixed.${block}`)}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <EmailPreviewFrame
-          html={preview.html}
-          subject={preview.subject}
-          failed={preview.failed}
-          failure={
-            preview.failure
-              ? tErrors.has(preview.failure)
-                ? tErrors(preview.failure)
-                : tErrors("generic")
-              : null
-          }
-        />
+            {saving ? tEditor("saving") : tEditor("save")}
+          </Button>
+        </div>
       </div>
-
-      <div className="border-sand-100 flex shrink-0 flex-col gap-3 border-t px-6 py-4">
-        {confirmDiscard ? (
-          <DiscardBar
-            onKeep={() => setConfirmDiscard(false)}
-            onDiscard={onClose}
-          />
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <Button
-                variant="outline"
-                disabled={saving || testing || dirty}
-                onClick={() => void sendTest()}
-              >
-                {testing ? t("actions.testing") : t("actions.test")}
-              </Button>
-              <p className="text-petroleum-400 max-w-xs text-xs">
-                {dirty ? tEditor("saveFirst") : t("testNote")}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                id="message-close-button"
-                variant="ghost"
-                disabled={saving}
-                onClick={requestClose}
-              >
-                {tEditor("close")}
-              </Button>
-              <Button
-                disabled={!dirty || saving}
-                onClick={() => void save()}
-                title={dirty ? undefined : tEditor("unchanged")}
-              >
-                {saving ? tEditor("saving") : tEditor("save")}
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </Modal>
+    </div>
   );
 }

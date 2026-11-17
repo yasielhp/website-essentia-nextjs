@@ -6,14 +6,30 @@ import { radioTarget } from "@/lib/radio-nav";
 import { EmailPanel } from "./email/email-panel";
 import { TemplatesPanel } from "./whatsapp/templates-panel";
 
-type TabKey = "whatsapp" | "email";
+export type TabKey = "whatsapp" | "email";
 
 const TABS: TabKey[] = ["whatsapp", "email"];
 
-export function MessagesTabs() {
+export function MessagesTabs({
+  initialTab = "whatsapp",
+}: {
+  initialTab?: TabKey;
+}) {
   const t = useTranslations("dashboard.messages");
-  const [active, setActive] = useState<TabKey>("whatsapp");
+  const [active, setActive] = useState<TabKey>(initialTab);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /**
+   * Picking a tab is remembered in the address, without a new history entry:
+   * coming back from a message's page (or pressing back) lands on this tab.
+   */
+  function select(key: TabKey) {
+    setActive(key);
+    const url = new URL(window.location.href);
+    if (key === "email") url.searchParams.set("tab", "email");
+    else url.searchParams.delete("tab");
+    window.history.replaceState(null, "", url);
+  }
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -40,13 +56,13 @@ export function MessagesTabs() {
               // Only the open tab has a panel in the page.
               aria-controls={selected ? `messages-panel-${key}` : undefined}
               tabIndex={selected ? 0 : -1}
-              onClick={() => setActive(key)}
+              onClick={() => select(key)}
               // Arrows move between tabs, as a tab list does.
               onKeyDown={(e) => {
                 const target = radioTarget(e.key, index, TABS.length);
                 if (target === null) return;
                 e.preventDefault();
-                setActive(TABS[target]);
+                select(TABS[target]);
                 tabs.current[target]?.focus();
               }}
               className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${

@@ -20,9 +20,7 @@ import type {
 } from "@/lib/messages/types";
 import { useEmailActionToast } from "./action-error";
 import { useWhatsAppTemplates } from "../../campaigns/_form/use-whatsapp-templates";
-import { MessageEditor } from "./message-editor";
 import { MessageList } from "./message-list";
-import { WhatsAppMessageEditor } from "./whatsapp-message-editor";
 
 type Locale = "es" | "en";
 
@@ -63,14 +61,6 @@ export function EmailPanel() {
   const showError = useEmailActionToast();
   const [state, dispatch] = useReducer(reducer, { status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
-  const [editing, setEditing] = useState<{
-    key: MessageKey;
-    locale: Locale;
-  } | null>(null);
-  const [waEditing, setWaEditing] = useState<{
-    key: MessageKey;
-    locale: Locale;
-  } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   // The WhatsApp rows need the account's templates; the email half does not,
   // so a failure to read them leaves those rows saying "could not be checked".
@@ -216,22 +206,6 @@ export function EmailPanel() {
     );
   }
 
-  const editor = editing
-    ? {
-        saved:
-          state.rows.find(
-            (r) =>
-              r.channel === "email" &&
-              r.key === editing.key &&
-              r.locale === editing.locale,
-          ) ?? null,
-        defaults: state.defaults.find(
-          (d) => d.key === editing.key && d.locale === editing.locale,
-        ),
-        catalog: state.catalog.find((c) => c.key === editing.key),
-      }
-    : null;
-
   return (
     <div className="flex flex-col gap-6">
       <p className="text-petroleum-400 max-w-2xl text-sm">{t("intro")}</p>
@@ -250,50 +224,13 @@ export function EmailPanel() {
         rows={state.rows}
         catalog={state.catalog}
         busyKey={busyKey}
-        onEdit={(key, locale) => setEditing({ key, locale })}
         onTest={(key, locale) => void test(key, locale)}
         onReset={(key, locale) => void reset(key, locale)}
         onToggle={(key, locale, enabled) => void toggle(key, locale, enabled)}
         templates={templateRows}
-        onWaConfigure={(key, locale) => setWaEditing({ key, locale })}
         onWaTest={(key, locale) => void waTest(key, locale)}
         onWaRemove={(key, locale) => void waRemove(key, locale)}
       />
-      {waEditing && templateRows && (
-        <WhatsAppMessageEditor
-          messageKey={waEditing.key}
-          locale={waEditing.locale}
-          saved={
-            state.rows.find(
-              (r) =>
-                r.channel === "whatsapp" &&
-                r.key === waEditing.key &&
-                r.locale === waEditing.locale,
-            ) ?? null
-          }
-          templates={templateRows}
-          canTest={waTemplates.status === "ready" && waTemplates.configured}
-          onClose={() => setWaEditing(null)}
-          onSaved={() => {
-            setWaEditing(null);
-            reload();
-          }}
-        />
-      )}
-      {editing && editor?.defaults && editor.catalog && (
-        <MessageEditor
-          messageKey={editing.key}
-          locale={editing.locale}
-          saved={editor.saved}
-          defaults={editor.defaults}
-          catalog={editor.catalog}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            reload();
-          }}
-        />
-      )}
     </div>
   );
 }

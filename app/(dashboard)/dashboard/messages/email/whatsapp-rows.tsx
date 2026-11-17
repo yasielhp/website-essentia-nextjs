@@ -9,6 +9,7 @@ import {
   type SavedWhatsAppRow,
 } from "@/lib/messages/whatsapp-row";
 import type { MessageKey } from "@/lib/messages/catalog";
+import { messageEditHref } from "@/lib/messages/message-route";
 import type { MessageTemplateRowView } from "@/lib/messages/types";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import { ConfirmBar } from "./confirm-bar";
@@ -29,7 +30,6 @@ export function WhatsAppRows({
   rows,
   templates,
   busyKey,
-  onConfigure,
   onTest,
   onRemove,
 }: {
@@ -38,7 +38,6 @@ export function WhatsAppRows({
   /** The account's templates; null when they could not be read. */
   templates: WhatsAppTemplateRow[] | null;
   busyKey: string | null;
-  onConfigure: (locale: Locale) => void;
   onTest: (locale: Locale) => void;
   onRemove: (locale: Locale) => void;
 }) {
@@ -118,9 +117,14 @@ export function WhatsAppRows({
                   <Button
                     size="sm"
                     variant="outline"
-                    // Without the list of templates there is nothing to choose from.
-                    disabled={busy || templates === null}
-                    onClick={() => onConfigure(locale)}
+                    href={messageEditHref("whatsapp", messageKey, locale)}
+                    aria-label={tWa(
+                      saved ? "actions.editRow" : "actions.configureRow",
+                      {
+                        name: tKeys(messageKey),
+                        language: t(`locales.${locale}`),
+                      },
+                    )}
                   >
                     {saved ? tWa("actions.edit") : tWa("actions.configure")}
                   </Button>

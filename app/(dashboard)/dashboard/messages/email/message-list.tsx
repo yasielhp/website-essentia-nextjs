@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { editableLocales } from "@/lib/messages/editor-state";
+import { messageEditHref } from "@/lib/messages/message-route";
 import { WHATSAPP_MESSAGE_KEYS } from "@/lib/messages/whatsapp-row";
 import { MESSAGE_KEYS, type MessageKey } from "@/lib/messages/catalog";
 import type {
@@ -42,12 +43,10 @@ export function MessageList({
   rows,
   catalog,
   busyKey,
-  onEdit,
   onTest,
   onReset,
   onToggle,
   templates,
-  onWaConfigure,
   onWaTest,
   onWaRemove,
 }: {
@@ -55,13 +54,11 @@ export function MessageList({
   catalog: MessageCatalogEntry[];
   /** `key:locale` of the row an action is running on. */
   busyKey: string | null;
-  onEdit: (key: MessageKey, locale: Locale) => void;
   onTest: (key: MessageKey, locale: Locale) => void;
   onReset: (key: MessageKey, locale: Locale) => void;
   onToggle: (key: MessageKey, locale: Locale, enabled: boolean) => void;
   /** The account's templates, for the WhatsApp rows; null when unreadable. */
   templates: WhatsAppTemplateRow[] | null;
-  onWaConfigure: (key: MessageKey, locale: Locale) => void;
   onWaTest: (key: MessageKey, locale: Locale) => void;
   onWaRemove: (key: MessageKey, locale: Locale) => void;
 }) {
@@ -240,11 +237,15 @@ export function MessageList({
                       <div className="flex flex-wrap gap-2">
                         {!corrupt && (
                           <>
+                            {/* A page of its own: a link, so it opens in a new tab too. */}
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={busy}
-                              onClick={() => onEdit(key, locale)}
+                              href={messageEditHref("email", key, locale)}
+                              aria-label={t("actions.editRow", {
+                                name: tKeys(key),
+                                language: t(`locales.${locale}`),
+                              })}
                             >
                               {t("actions.edit")}
                             </Button>
@@ -284,7 +285,6 @@ export function MessageList({
                     rows={rows}
                     templates={templates}
                     busyKey={busyKey}
-                    onConfigure={(locale) => onWaConfigure(key, locale)}
                     onTest={(locale) => onWaTest(key, locale)}
                     onRemove={(locale) => onWaRemove(key, locale)}
                   />,

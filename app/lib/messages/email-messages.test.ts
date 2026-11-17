@@ -194,3 +194,47 @@ describe("the Emails tab strings", () => {
     expect(off).toEqual(["booking_reminder"]);
   });
 });
+
+describe("the message pages' strings", () => {
+  const KEYS = [
+    "messages.email.page.back",
+    "messages.email.page.loading",
+    "messages.email.actions.editRow",
+    "messages.email.whatsapp.actions.editRow",
+    "messages.email.whatsapp.actions.configureRow",
+  ];
+
+  it("every string the pages and the list's links read is there, in both languages", () => {
+    for (const [name, messages] of Object.entries(LOCALES)) {
+      expect({ name, missing: KEYS.filter((key) => !messages[key]) }).toEqual({
+        name,
+        missing: [],
+      });
+    }
+  });
+
+  it("a link's accessible name carries the message and the language, so no two rows read alike", () => {
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of [
+        "messages.email.actions.editRow",
+        "messages.email.whatsapp.actions.editRow",
+        "messages.email.whatsapp.actions.configureRow",
+      ]) {
+        expect(messages[key]).toContain("{name}");
+        expect(messages[key]).toContain("{language}");
+      }
+    }
+  });
+
+  it("the modal's own strings are gone: nothing closes a page, and the discard question is the email editor's alone", () => {
+    for (const messages of Object.values(LOCALES)) {
+      expect(messages["messages.email.editor.close"]).toBeUndefined();
+      for (const key of ["close", "discardTitle", "discardYes", "discardNo"]) {
+        expect(
+          messages[`messages.email.whatsapp.editor.${key}`],
+        ).toBeUndefined();
+      }
+      expect(messages["messages.email.editor.discardTitle"]).toBeTruthy();
+    }
+  });
+});
