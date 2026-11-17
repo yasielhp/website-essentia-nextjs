@@ -60,11 +60,12 @@ export type ContactCandidate = {
 export type Recipient = {
   id: string;
   /**
-   * Lowercased address. Empty in a WhatsApp recipient, which may have none:
-   * the dispatch stores it as NULL there (the column is nullable, and two
-   * contacts sharing an email must not collide on the unique index).
+   * Lowercased address. Null in a WhatsApp recipient: the address there is the
+   * phone, and the row stores NULL (an empty string would collide on the
+   * unique index, and two contacts sharing an email must not). The email
+   * channel never produces null.
    */
-  email: string;
+  email: string | null;
   firstName: string;
   language: CampaignLocale;
   /** Carried through for the automation rules; the send ignores them. */
@@ -187,7 +188,7 @@ export function filterAudience(
     seen.add(point);
     recipients.push({
       id: candidate.id,
-      email: channel === "whatsapp" ? "" : point,
+      email: channel === "whatsapp" ? null : point,
       firstName: candidate.firstName,
       lastBookingDate: candidate.lastBookingDate,
       firstBookingDate: candidate.firstBookingDate ?? null,

@@ -440,7 +440,7 @@ export async function listSegmentMembers(
       id: r.id,
       first_name: r.firstName || null,
       last_name: r.lastName ?? null,
-      email: r.email,
+      email: r.email ?? "",
       phone: r.phone ?? null,
       language: r.language,
       newsletter: r.newsletter ?? false,
@@ -669,7 +669,8 @@ export async function previewAudience(
       sample: recipients.slice(0, 20).map((r) => ({
         id: r.id,
         name: r.firstName,
-        email: r.email,
+        email: r.email ?? "",
+        phone: r.phone ?? null,
         language: r.language,
       })),
     };

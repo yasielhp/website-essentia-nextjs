@@ -267,7 +267,9 @@ export type AudiencePreview = {
   sample: {
     id: string;
     name: string;
+    /** Empty for a WhatsApp recipient, whose address is the phone. */
     email: string;
+    phone?: string | null;
     language: CampaignLocale;
   }[];
 };

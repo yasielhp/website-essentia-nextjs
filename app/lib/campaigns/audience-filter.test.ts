@@ -383,8 +383,8 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(out[0].phone).toBe("+34600112233");
   });
 
-  it("hands the send an empty email, never a made-up one", () => {
-    expect(run([wa()])[0].email).toBe("");
+  it("hands the send no email at all, never a made-up one", () => {
+    expect(run([wa()])[0].email).toBeNull();
   });
 
   it("needs no email, which the email channel does", () => {
