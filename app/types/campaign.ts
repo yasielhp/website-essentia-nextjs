@@ -307,6 +307,8 @@ export type CampaignStats = {
 /** One campaign as seen from a contact's page. */
 export type ContactCampaignRow = {
   id: string;
+  /** The campaign's channel; the row's status reads differently on each. */
+  channel: CampaignChannel;
   status: RecipientStatus;
   sent_at: string | null;
   campaign: { id: string; name: string; sent_at: string | null } | null;

@@ -151,6 +151,22 @@ describe("the campaign form strings", () => {
     }
   });
 
+  test("the contact card's unreachable-number strings exist in both languages", () => {
+    for (const messages of [locales.es, locales.en]) {
+      for (const key of [
+        "unreachable",
+        "unreachableWhy",
+        "unreachableReset",
+        "unreachableConfirm",
+        "unreachableConfirmYes",
+        "unreachableResetting",
+        "unreachableError",
+      ]) {
+        expect(messages[`contacts.detail.whatsapp.${key}`]).toBeTruthy();
+      }
+    }
+  });
+
   test("every kind WhatsApp refuses says why on its card", () => {
     const refused = (["split", "rss"] as const).filter(
       (kind) => !kindAllowedForChannel(kind, "whatsapp"),

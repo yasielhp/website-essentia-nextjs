@@ -110,7 +110,7 @@ export async function fetchContactDetail(
   const { data: contacts, error: contactError } = await db
     .from("contacts")
     .select(
-      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at",
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
     )
     .eq("id", id)
     .limit(1);
@@ -363,4 +363,42 @@ export async function fetchContactRoleCounts(
     clients: (clientsRes as { count: number | null }).count ?? 0,
     members: (membersRes as { count: number | null }).count ?? 0,
   };
+}
+
+/**
+ * Lets a number Meta marked as having no WhatsApp back into campaigns.
+ *
+ * Meta answers that way when a message cannot be delivered, and the number is
+ * left out of every send so it does not cost again. It clears itself when
+ * that number writes to the centre; this is for staff who know it works now
+ * (a new SIM, a reinstalled app). Takes a uuid and sets one column to NULL.
+ */
+export async function clearWhatsAppUnreachable(
+  accessToken: string | null,
+  contactId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.message };
+    throw err;
+  }
+  if (!z.uuid().safeParse(contactId).success) {
+    return { ok: false, error: "invalid" };
+  }
+
+  try {
+    const { data, error } = await getAdminClient()
+      .database.from("contacts")
+      .update({ whatsapp_unreachable_at: null })
+      .eq("id", contactId)
+      .select("id");
+    if (error) return { ok: false, error: "db" };
+    if (!data || (data as unknown[]).length === 0) {
+      return { ok: false, error: "notFound" };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "db" };
+  }
 }

@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
-import { setWhatsAppConsent } from "@/actions/contacts";
+import {
+  clearWhatsAppUnreachable,
+  setWhatsAppConsent,
+} from "@/actions/contacts";
+import { Button } from "@/components/ui/button";
 import { getAccessToken } from "@/lib/client-session";
 import {
   whatsappConsentColumn,
@@ -33,10 +37,19 @@ export function WhatsAppConsentRows({
   initial: WhatsAppConsentColumns;
 }) {
   const t = useTranslations("dashboard.contacts.detail.whatsapp");
+  const tCommon = useTranslations("dashboard.common");
   const [columns, setColumns] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const [asking, setAsking] = useState<WhatsAppPurpose | null>(null);
+  // Meta's "this number has no WhatsApp", kept apart from the consents: a
+  // save of a consent does not return it.
+  const [unreachableAt, setUnreachableAt] = useState(
+    initial.whatsapp_unreachable_at ?? null,
+  );
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetFailed, setResetFailed] = useState(false);
 
   const state = whatsappConsentState(columns);
 
@@ -67,8 +80,80 @@ export function WhatsAppConsentRows({
     }
   }
 
+  async function resetUnreachable() {
+    setResetting(true);
+    setResetFailed(false);
+    try {
+      const result = await clearWhatsAppUnreachable(
+        getAccessToken(),
+        contactId,
+      );
+      if (result.ok) {
+        setUnreachableAt(null);
+        setConfirmingReset(false);
+      } else {
+        setResetFailed(true);
+      }
+    } catch {
+      setResetFailed(true);
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
+      {unreachableAt && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-xl bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
+        >
+          <div className="flex flex-col gap-1">
+            <p className="font-medium">
+              {t("unreachable", { date: shortDate(unreachableAt) })}
+            </p>
+            <p className="text-xs">{t("unreachableWhy")}</p>
+          </div>
+          {confirmingReset ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs">{t("unreachableConfirm")}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={resetting}
+                onClick={() => setConfirmingReset(false)}
+              >
+                {tCommon("cancel")}
+              </Button>
+              <Button
+                size="sm"
+                disabled={resetting}
+                onClick={() => void resetUnreachable()}
+              >
+                {resetting
+                  ? t("unreachableResetting")
+                  : t("unreachableConfirmYes")}
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmingReset(true)}
+              >
+                {t("unreachableReset")}
+              </Button>
+            </div>
+          )}
+          {resetFailed && (
+            <p role="alert" className="text-xs text-red-600">
+              {t("unreachableError")}
+            </p>
+          )}
+        </div>
+      )}
+
       {state.optedOut && columns.whatsapp_opted_out_at && (
         <p
           role="status"

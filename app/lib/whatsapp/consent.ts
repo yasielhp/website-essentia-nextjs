@@ -20,6 +20,12 @@ export type WhatsAppConsentColumns = {
   whatsapp_opted_in_at?: string | null;
   whatsapp_marketing_opted_in_at?: string | null;
   whatsapp_opted_out_at?: string | null;
+  /**
+   * Not a consent: Meta answered that the number has no WhatsApp. Carried
+   * here so one object describes where the contact stands, but it plays no
+   * part in `whatsappConsentState`.
+   */
+  whatsapp_unreachable_at?: string | null;
 };
 
 export type WhatsAppConsentState = {

@@ -1194,25 +1194,37 @@ export async function fetchContactCampaigns(
 
   const { data, error } = await getAdminClient()
     .database.from("campaign_recipients")
-    .select("id, status, sent_at, campaigns(id, name, sent_at)")
+    .select("id, status, sent_at, campaigns(id, name, sent_at, channel)")
     .eq("contact_id", contactId)
     .order("sent_at", { ascending: false, nullsFirst: false });
   if (error) return [];
 
-  type Row = Omit<ContactCampaignRow, "campaign"> & {
-    campaigns:
-      | ContactCampaignRow["campaign"]
-      | NonNullable<ContactCampaignRow["campaign"]>[]
-      | null;
+  type Joined = {
+    id: string;
+    name: string;
+    sent_at: string | null;
+    channel: CampaignChannel;
   };
-  return ((data ?? []) as Row[]).map((row) => ({
-    id: row.id,
-    status: row.status,
-    sent_at: row.sent_at,
-    campaign: Array.isArray(row.campaigns)
+  type Row = Omit<ContactCampaignRow, "campaign" | "channel"> & {
+    campaigns: Joined | Joined[] | null;
+  };
+  return ((data ?? []) as Row[]).map((row) => {
+    const joined = Array.isArray(row.campaigns)
       ? (row.campaigns[0] ?? null)
-      : row.campaigns,
-  }));
+      : row.campaigns;
+    return {
+      id: row.id,
+      // Matched by contact id, which every campaign row carries (the send
+      // writes it for both channels), so an email row and a WhatsApp row of
+      // the same person are both here.
+      channel: joined?.channel ?? "email",
+      status: row.status,
+      sent_at: row.sent_at,
+      campaign: joined
+        ? { id: joined.id, name: joined.name, sent_at: joined.sent_at }
+        : null,
+    };
+  });
 }
 
 /**

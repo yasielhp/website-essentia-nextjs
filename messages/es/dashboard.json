@@ -1158,7 +1158,14 @@
           "optedOutScope": "La baja es global: al activar este uso se retiran los consentimientos anteriores del otro uso, y habrá que volver a pedirlos.",
           "confirm": "Activar",
           "confirming": "Activando…"
-        }
+        },
+        "unreachable": "Número sin WhatsApp desde {date}",
+        "unreachableWhy": "Meta lo marca cuando un mensaje no se pudo entregar. Se limpia solo si ese número escribe al centro.",
+        "unreachableReset": "Restablecer",
+        "unreachableConfirm": "¿Restablecer? Volverá a poder recibir campañas por WhatsApp.",
+        "unreachableConfirmYes": "Sí, restablecer",
+        "unreachableResetting": "Restableciendo…",
+        "unreachableError": "No se pudo restablecer el número."
       },
       "newsletter": {
         "label": "Newsletter",

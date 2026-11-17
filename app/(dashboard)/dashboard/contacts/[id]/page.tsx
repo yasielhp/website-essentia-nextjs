@@ -283,6 +283,7 @@ function ContactDetailPageInner() {
           whatsapp_marketing_opted_in_at:
             contact.whatsapp_marketing_opted_in_at,
           whatsapp_opted_out_at: contact.whatsapp_opted_out_at,
+          whatsapp_unreachable_at: contact.whatsapp_unreachable_at ?? null,
         },
       });
     }

@@ -42,6 +42,8 @@ export type ContactDetail = {
   whatsapp_marketing_opted_in_at: string | null;
   /** Set by a STOP/BAJA reply; cleared when they agree to either use again. */
   whatsapp_opted_out_at: string | null;
+  /** Meta said this number has no WhatsApp; staff or a message from it clear it. */
+  whatsapp_unreachable_at: string | null;
 };
 
 export type ContactBooking = {

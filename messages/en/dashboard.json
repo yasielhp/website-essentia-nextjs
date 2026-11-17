@@ -1158,7 +1158,14 @@
           "optedOutScope": "The opt-out is global: turning this use on withdraws the earlier consent for the other use, and it will have to be asked for again.",
           "confirm": "Turn on",
           "confirming": "Turning on…"
-        }
+        },
+        "unreachable": "Number without WhatsApp since {date}",
+        "unreachableWhy": "Meta flags it when a message could not be delivered. It clears by itself if that number writes to the centre.",
+        "unreachableReset": "Reset",
+        "unreachableConfirm": "Reset it? It will be able to receive WhatsApp campaigns again.",
+        "unreachableConfirmYes": "Yes, reset",
+        "unreachableResetting": "Resetting…",
+        "unreachableError": "The number could not be reset."
       },
       "newsletter": {
         "label": "Newsletter",
