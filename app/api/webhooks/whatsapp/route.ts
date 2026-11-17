@@ -54,7 +54,10 @@ type MetaStatus = {
 };
 
 type MetaInboundMessage = {
+  /** The sender's number, digits only. May be omitted: see `senderOf`. */
   from?: string;
+  /** Meta's own id for the sender, when it names one. Not used yet. */
+  from_user_id?: string;
   id?: string;
   type?: string;
   /** `type: "text"`: what the client typed. */
@@ -159,6 +162,20 @@ const CONTACTS_MAX_ROWS = 9_999;
 function objectsIn<T>(value: unknown): T[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => item && typeof item === "object") as T[];
+}
+
+/**
+ * The number an inbound message came from, or null when it carries none.
+ *
+ * Meta's reference says `from` (and `wa_id`) MAY BE OMITTED, with the sender
+ * named only by `from_user_id`, an id of Meta's own that is not a phone.
+ * Everything this route does with an inbound message is keyed by the number,
+ * so a message without one has nobody to be applied to. A `from` that is not a
+ * string, or has no digit in it, is the same case.
+ */
+function senderOf(message: MetaInboundMessage): string | null {
+  const from: unknown = message.from;
+  return typeof from === "string" && /\d/.test(from) ? from : null;
 }
 
 /** Meta's seconds-since-epoch, as a timestamp the database will take. */
@@ -342,13 +359,39 @@ export async function POST(req: NextRequest) {
   // STOP that blows up would cost the delivery states in the same payload.
   try {
     const optOutSenders = new Set<string>();
+    // Messages that name no number: see `senderOf`. Counted, never applied.
+    const unnamed: { id: string; optOut: boolean }[] = [];
     for (const change of changes) {
       for (const message of objectsIn<MetaInboundMessage>(
         change.value?.messages,
       )) {
-        if (typeof message.from !== "string") continue;
-        if (isOptOutMessage(message)) optOutSenders.add(message.from);
+        const sender = senderOf(message);
+        const optOut = isOptOutMessage(message);
+        if (sender === null) {
+          unnamed.push({
+            id: typeof message.id === "string" ? message.id : "?",
+            optOut,
+          });
+        } else if (optOut) {
+          optOutSenders.add(sender);
+        }
       }
+    }
+
+    // Said out loud, once per payload: a STOP that arrives without a number
+    // CANNOT be honoured (the contact, the STOP list and the unreachable mark
+    // are all found by number), and silence here would be an opt-out ignored
+    // with nobody knowing. The message ids are Meta's; the person's own id is
+    // deliberately not logged. The fix is to keep Meta's user id per send; see
+    // `docs/plans/2026-11-17-whatsapp-findings.md`.
+    if (unnamed.length > 0) {
+      const lost = unnamed.filter((m) => m.optOut);
+      const ids = (list: typeof unnamed) => list.map((m) => m.id).join(", ");
+      console.warn(
+        lost.length > 0
+          ? `[webhooks/whatsapp] ${lost.length} opt-out(s) arrived with no sender number and could NOT be applied (${ids(lost)}); ${unnamed.length} inbound message(s) without a number in all`
+          : `[webhooks/whatsapp] ${unnamed.length} inbound message(s) arrived with no sender number and were not matched to anyone (${ids(unnamed)})`,
+      );
     }
 
     if (optOutSenders.size > 0) {
@@ -409,7 +452,8 @@ export async function POST(req: NextRequest) {
       for (const message of objectsIn<MetaInboundMessage>(
         change.value?.messages,
       )) {
-        if (typeof message.from === "string") inboundSenders.add(message.from);
+        const sender = senderOf(message);
+        if (sender !== null) inboundSenders.add(sender);
       }
     }
 
@@ -561,13 +605,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Acknowledged even when a write above failed, and on purpose. Asking Meta
-  // to send the payload again would need a non-200, and this subscription also
-  // carries the STOPs: Meta gives up on an endpoint that keeps erroring, and
-  // losing every future callback (opt-outs included) is worse than losing the
-  // states of this one. A payload can also carry a STOP or a template review
-  // next to the states, and replaying those late is not harmless. The failure
-  // is logged above, per message, with the id needed to look it up.
+  // Acknowledged even when a write above failed, and on purpose. A non-200
+  // makes Meta send the WHOLE payload again, with decreasing frequency for up
+  // to 7 days, and a payload is not only states: it can carry a STOP or a
+  // template review next to them, and a review written again after a newer
+  // one puts the template back in an old state. The states alone could be
+  // repeated safely (`record_campaign_event` and the scoped update only move
+  // forward), so a 503 for a payload that holds nothing but states is the
+  // next step if a lost receipt ever costs more than it does today. Until
+  // then the failure is logged above, per message, with the id to look it up.
 
   return NextResponse.json({ received: true });
 }

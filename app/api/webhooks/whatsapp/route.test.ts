@@ -473,3 +473,111 @@ describe("a read and the hour of delivery", () => {
     expect(logged).toBe(1);
   });
 });
+
+describe("an inbound message with no number", () => {
+  // Meta's reference warns that `from` (and `wa_id`) may be left out and the
+  // sender named only by `from_user_id`. Nothing here is keyed by that id yet.
+  const lines = (spy: ReturnType<typeof spyOn>) =>
+    spy.mock.calls.map((call) => String(call[0]));
+
+  test("a STOP with no number cannot be applied: 200, nothing written, and a warning that says so", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+    const res = await POST(
+      signed(
+        inboundMessage({
+          id: "wamid.no-number",
+          from_user_id: "ES.1234567890",
+          type: "text",
+          text: { body: "STOP" },
+        }),
+      ),
+    );
+    const said = lines(warned);
+    warned.mockRestore();
+    expect(res.status).toBe(200);
+    expect(suppressionWrites()).toHaveLength(0);
+    expect(optOutUpdates()).toHaveLength(0);
+    expect(said).toHaveLength(1);
+    expect(said[0]).toContain("opt-out");
+    expect(said[0]).toContain("wamid.no-number");
+    // The identifier of the person is not what the log is for.
+    expect(said[0]).not.toContain("ES.1234567890");
+  });
+
+  test("any other message with no number is acknowledged and warned about, once per payload", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+    const res = await POST(
+      signed({
+        entry: [
+          {
+            changes: [
+              {
+                field: "messages",
+                value: {
+                  messages: [
+                    { id: "wamid.a", type: "text", text: { body: "Hola" } },
+                    { id: "wamid.b", type: "image", from: null },
+                    { id: "wamid.c", type: "text", from: 34600112233 },
+                    { id: "wamid.d", type: "text", from: "" },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const said = lines(warned);
+    warned.mockRestore();
+    expect(res.status).toBe(200);
+    expect(said).toHaveLength(1);
+    expect(said[0]).not.toContain("opt-out");
+    // Nobody was looked up, so nobody's unreachable mark was cleared.
+    expect(log).toHaveLength(0);
+  });
+
+  test("it does not cost the messages that do carry their number", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+    const res = await POST(
+      signed({
+        entry: [
+          {
+            changes: [
+              {
+                field: "messages",
+                value: {
+                  messages: [
+                    { id: "wamid.a", type: "text", text: { body: "BAJA" } },
+                    {
+                      id: "wamid.b",
+                      from: "34600112233",
+                      type: "text",
+                      text: { body: "BAJA" },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    warned.mockRestore();
+    expect(res.status).toBe(200);
+    expect(argsOf(suppressionWrites()[0]!.chain, "upsert")?.[0]).toEqual([
+      { phone: "+34600112233", reason: "stop" },
+    ]);
+    expect(optOutUpdates()).toHaveLength(1);
+  });
+
+  test("a payload where every message has its number warns about nothing", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    await POST(signed(inbound("34600112233", "Hola")));
+    const count = warned.mock.calls.length;
+    warned.mockRestore();
+    expect(count).toBe(0);
+  });
+});
