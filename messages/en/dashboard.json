@@ -2202,7 +2202,8 @@
     "recipientStatusWhatsApp": {
       "opened": "Read",
       "bounced": "Not delivered"
-    }
+    },
+    "countsFailed": "The campaigns could not be counted by state."
   },
   "messages": {
     "title": "Messages",

@@ -44,6 +44,7 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 export default function CampaignsPage() {
   const t = useTranslations("dashboard.campaigns");
+  const tCommon = useTranslations("dashboard.common");
   const locale = useDashboardLocale();
   const { push } = useRouter();
 
@@ -56,6 +57,9 @@ export default function CampaignsPage() {
   const [status, setStatus] = useState<CampaignStatus | "">("");
   const [channel, setChannel] = useState<CampaignChannel | "">("");
   const [counts, setCounts] = useState<CampaignStatusCounts | null>(null);
+  // The totals could not be counted: the cards say so, they never show zeros.
+  const [countsFailed, setCountsFailed] = useState(false);
+  const [countsAttempt, setCountsAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,12 +89,14 @@ export default function CampaignsPage() {
     void fetchCampaignStatusCounts(getAccessToken(), channel)
       .catch(() => null)
       .then((result) => {
-        if (!cancelled && result) setCounts(result);
+        if (cancelled) return;
+        setCountsFailed(result === null);
+        if (result) setCounts(result);
       });
     return () => {
       cancelled = true;
     };
-  }, [channel]);
+  }, [channel, countsAttempt]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -144,7 +150,11 @@ export default function CampaignsPage() {
               <p className="text-petroleum-400 text-xs">
                 {value === "all" ? t("filter.all") : t(`status.${value}`)}
               </p>
-              {counts === null ? (
+              {countsFailed ? (
+                <p className="font-display text-petroleum-400 mt-1 text-2xl">
+                  —
+                </p>
+              ) : counts === null ? (
                 <div className="bg-sand-100 mt-2 h-7 w-10 animate-pulse rounded-lg" />
               ) : (
                 <p className="font-display text-petroleum-700 mt-1 text-2xl">
@@ -155,6 +165,26 @@ export default function CampaignsPage() {
           );
         })}
       </div>
+
+      {countsFailed && (
+        <p
+          role="alert"
+          className="text-petroleum-400 -mt-4 mb-6 text-xs font-medium"
+        >
+          {t("countsFailed")}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setCounts(null);
+              setCountsFailed(false);
+              setCountsAttempt((n) => n + 1);
+            }}
+            className="inline-flex min-h-11 items-center underline underline-offset-2"
+          >
+            {tCommon("retry")}
+          </button>
+        </p>
+      )}
 
       <CampaignTable
         campaigns={campaigns}

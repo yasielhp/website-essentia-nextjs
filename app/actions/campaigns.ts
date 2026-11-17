@@ -192,12 +192,16 @@ async function addSentCounts(campaigns: CampaignRow[]): Promise<void> {
   );
 }
 
-/** One count per status, for the cards that double as the list's filter. */
+/**
+ * One count per status, for the cards that double as the list's filter. Null
+ * when it could not be counted (the session, the database): zeros would read as
+ * "no campaigns", so the cards say they could not be read instead.
+ */
 export async function fetchCampaignStatusCounts(
   accessToken: string | null,
   /** Count only this channel's campaigns; absent or empty means both. */
   channel?: CampaignChannel | "",
-): Promise<CampaignStatusCounts> {
+): Promise<CampaignStatusCounts | null> {
   const empty: CampaignStatusCounts = {
     all: 0,
     draft: 0,
@@ -212,13 +216,13 @@ export async function fetchCampaignStatusCounts(
   try {
     await admin(accessToken);
   } catch (err) {
-    if (err instanceof AuthError) return empty;
+    if (err instanceof AuthError) return null;
     throw err;
   }
   let channelFilter: CampaignChannel | null = null;
   if (channel) {
     const parsed = campaignChannelSchema.safeParse(channel);
-    if (!parsed.success) return empty;
+    if (!parsed.success) return null;
     channelFilter = parsed.data;
   }
   // The database gives a thousand rows at most: read to the end, or not at all.
@@ -239,7 +243,7 @@ export async function fetchCampaignStatusCounts(
       },
     );
   } catch {
-    return empty;
+    return null;
   }
   return data.reduce(
     (acc, row) => {
