@@ -56,6 +56,7 @@ Se aplican a mano a la única base viva (producción). Estado comprobado el 2026
 | `20261117k_booking_whatsapp_reminder.sql`            | `bookings.whatsapp_reminder_sent_at`                                                                 | **Aplicada. Columna obsoleta, sin uso** (ver 5.1)   |
 | `20261117l_whatsapp_suppressed_phones.sql`           | Lista de números que escribieron STOP o BAJA                                                         | **NO aplicada. Obligatoria antes de usar WhatsApp** |
 | `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                       | **NO aplicada. Decisión del usuario**               |
+| `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)    | **NO aplicada. Decisión del usuario**               |
 
 No existe la `d`: la tabla de mensajes editables salió como `j` porque `d` a `i` estaban ocupadas.
 
@@ -71,6 +72,9 @@ npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/202611
 
 # 20261117m: solo si el usuario decide aplicarla (ver más abajo)
 npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261117m_booking_events_rls.sql | grep -v -E '^(BEGIN|COMMIT);$')"
+
+# 20261117n: solo si el usuario decide aplicarla (ver más abajo)
+npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261117n_profiles_email_guard.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 ```
 
 Cada una se envía como una sola consulta. Verificar siempre después:
@@ -81,6 +85,9 @@ npx -y @insforge/cli@latest db query "SELECT c.relname, c.relrowsecurity, (SELEC
 
 # m: relrowsecurity debe pasar a true
 npx -y @insforge/cli@latest db query "SELECT relname, relrowsecurity FROM pg_class WHERE relname = 'booking_events'"
+
+# n: debe devolver true
+npx -y @insforge/cli@latest db query "SELECT pg_get_functiondef('public.profiles_guard_role'::regproc) LIKE '%NEW.email := OLD.email%' AS guards_email"
 ```
 
 ### `20261117l`: por qué es obligatoria
@@ -88,6 +95,12 @@ npx -y @insforge/cli@latest db query "SELECT relname, relrowsecurity FROM pg_cla
 Guarda los **números** que han escrito STOP o BAJA, aunque no coincidan con ningún contacto. El consentimiento vive en el contacto, pero el formulario público de reserva también guarda el teléfono tal como se escribe: alguien puede reservar con su propio correo, el número de otra persona y la casilla marcada, y el centro escribiría a esa otra persona. Un STOP desde ese número es la respuesta de esa persona y se recuerda por número. Nada que haga un formulario, una casilla o `upsert_contact` lo levanta; solo una administradora, desde la ficha del contacto.
 
 **Falla cerrado.** Mientras la tabla no exista, leerla da error y el código **no envía ningún WhatsApp**, ni a clientas ni en campañas (los correos no la leen). Es decir, aplicarla es lo que habilita el envío. Los avisos al personal por WhatsApp no leen esta tabla y no se ven afectados.
+
+### `20261117n`: decisión del usuario
+
+Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil desde el navegador (política `users_update_own_profile`, privilegio de columna, y el trigger `profiles_guard_role` solo protege `role`). Ese correo se leía como dirección verificada, así que quien lo cambiara por el de otra persona podía darla de baja de la newsletter o registrar un consentimiento en su contacto. El código ya no se fía de esa columna para eso (el guard entrega aparte el correo de la sesión); la migración cierra la puerta por debajo: amplía `profiles_guard_role` para que, a quien no es admin, un `email` distinto se le devuelva al guardado, igual que ya hace con `role`.
+
+**Es seguro aplicarla** (comprobado en `app/` el 2026-11-17): ninguna pantalla cambia `profiles.email` desde el navegador. La única escritura del navegador sobre `profiles` es la página "Mi cuenta" del panel (nombre, teléfono, idioma, avatar); el cambio de correo de una persona del equipo va por `updateUserProfile` con la clave de servicio, que el trigger deja pasar. Vuelta atrás: aplicar de nuevo `20260810e_profiles_guard_role_tolerates_api_key.sql`.
 
 ### `20261117m`: decisión del usuario
 
