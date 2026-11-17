@@ -487,6 +487,8 @@ export async function saveCampaign(
   const check = options.draft ? validateCampaignDraft : validateCampaign;
   const validated = check({
     name: input.name,
+    kind: input.kind,
+    trigger: input.trigger,
     audience: input.audience,
     content: input.content,
   });
