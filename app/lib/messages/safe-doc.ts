@@ -16,6 +16,12 @@ import type { EmailDoc } from "@/types/campaign";
  *  - Links (text links, buttons, link cards, linked images) go into `href`.
  *    Only `https:`, `http:` and `mailto:` may leave; anything else, a
  *    `javascript:` or `data:` address above all, becomes `#`.
+ *  - A button or a text link whose address is a VARIABLE and nothing else
+ *    (`{{consent_url}}`, `{{cancel_url}}`) and whose value is not an address
+ *    that may leave is not left pointing at `#`: the button is removed and
+ *    the link's text stays without its link. `consent_url` is empty for every
+ *    client who has already signed, and a "Sign the consent" button that goes
+ *    nowhere is worse than none.
  *  - A link can be a variable (`isUrlVariable`, and a link card's `link`): the
  *    renderer then puts the variable's VALUE in the `href` after any check
  *    made on the document, and the value comes from a client's own data. So
@@ -146,6 +152,17 @@ function resolve(
 
 const safeLink = (url: string) => (LINK_OK.test(url) ? url : "#");
 
+const ONLY_TOKEN = /^\{\{\s*[a-z_][a-z0-9_]*\s*\}\}$/i;
+
+/**
+ * An address that is a variable and nothing else: the editor's flag ("this
+ * link is a variable"), or one `{{token}}` on its own. A fixed address with a
+ * token somewhere in it is a fixed address.
+ */
+const isVariableAddress = (raw: unknown, isVariable: unknown) =>
+  Boolean(isVariable) ||
+  (typeof raw === "string" && ONLY_TOKEN.test(raw.trim()));
+
 // ── sanitising ──────────────────────────────────────────────────────────────
 
 // Attributes the renderer writes into inline `style`, some of them inside a
@@ -238,10 +255,20 @@ function cleanNode(
     cleanStyleValues(attrs);
 
     switch (node.type) {
-      case "button":
-        attrs.url = safeLink(resolve(attrs.url, attrs.isUrlVariable, values));
+      case "button": {
+        const url = resolve(attrs.url, attrs.isUrlVariable, values);
+        // A variable that holds no address this time: no button, rather than
+        // one that leads nowhere.
+        if (
+          !LINK_OK.test(url) &&
+          isVariableAddress(attrs.url, attrs.isUrlVariable)
+        ) {
+          return null;
+        }
+        attrs.url = safeLink(url);
         attrs.isUrlVariable = false;
         break;
+      }
       case "image":
       case "inlineImage":
       case "logo": {
@@ -278,7 +305,8 @@ function cleanNode(
   }
 
   if (node.marks) {
-    // A mark that is not a known one is dropped; the text keeps showing.
+    // A mark that is not a known one is dropped; the text keeps showing. So is
+    // a link whose address is a variable that holds no address this time.
     next.marks = node.marks
       .filter(
         (mark) =>
@@ -286,6 +314,15 @@ function cleanNode(
           mark !== null &&
           typeof mark.type === "string" &&
           ALLOWED_MARKS.has(mark.type),
+      )
+      .filter(
+        (mark) =>
+          mark.type !== "link" ||
+          !mark.attrs ||
+          !isVariableAddress(mark.attrs.href, mark.attrs.isUrlVariable) ||
+          LINK_OK.test(
+            resolve(mark.attrs.href, mark.attrs.isUrlVariable, values),
+          ),
       )
       .map((mark) => {
         if (!mark.attrs) return mark;

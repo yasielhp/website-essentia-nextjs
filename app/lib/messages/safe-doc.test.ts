@@ -71,25 +71,116 @@ const button = (url: string, extra: Record<string, unknown> = {}) => ({
 
 describe("a link that is a variable", () => {
   // `https://first_name`: Maily writes the variable's VALUE into the href.
+  // A value that is no address leaves nothing to press: the text of a link
+  // stays without its link, and a button goes altogether. A button that leads
+  // nowhere is worse than none (the consent button of somebody who has already
+  // signed has an empty `consent_url`).
   for (const bad of HOSTILE) {
-    test(`link, value ${JSON.stringify(bad)} ends in #`, async () => {
+    test(`link, value ${JSON.stringify(bad)} keeps the text and loses the link`, async () => {
       const out = await html(
         link("https://first_name", { isUrlVariable: true }),
         {
           first_name: bad,
         },
       );
-      expect(urls(out)).toEqual(["#"]);
+      expect(urls(out)).toEqual([]);
+      expect(out).not.toContain("<a");
+      expect(out).toContain("pulsa");
     });
 
-    test(`button, value ${JSON.stringify(bad)} ends in #`, async () => {
+    test(`button, value ${JSON.stringify(bad)} is removed`, async () => {
       const out = await html(
-        doc(button("https://first_name", { isUrlVariable: true })),
+        doc(
+          p(text("antes")),
+          button("https://first_name", { isUrlVariable: true }),
+          p(text("después")),
+        ),
         { first_name: bad },
       );
-      expect(urls(out)).toEqual(["#"]);
+      expect(urls(out)).toEqual([]);
+      expect(out).not.toContain("Botón");
+      expect(out).toContain("antes");
+      expect(out).toContain("después");
     });
   }
+
+  test("the button the editor inserts for a link variable goes when the link is empty", async () => {
+    // What `linkButtonNode("consent_url")` writes: the bare name and the flag.
+    const consent = button("consent_url", { isUrlVariable: true });
+    const signed = await html(doc(p(text("Hola")), consent), {
+      consent_url: "",
+    });
+    expect(signed).not.toContain("Botón");
+    expect(urls(signed)).toEqual([]);
+    expect(signed).toContain("Hola");
+
+    const pending = await html(doc(p(text("Hola")), consent), {
+      consent_url: "https://example.test/consent?token=abc",
+    });
+    expect(pending).toContain("Botón");
+    expect(urls(pending)).toEqual(["https://example.test/consent?token=abc"]);
+  });
+
+  test("an address that is one token and nothing else is a variable too", async () => {
+    for (const bad of ["", "javascript:alert(1)"]) {
+      const values = { consent_url: bad };
+      const btn = await html(
+        doc(p(text("Hola")), button("{{consent_url}}")),
+        values,
+      );
+      expect(btn).not.toContain("Botón");
+      expect(urls(btn)).toEqual([]);
+      const lnk = await html(link(" {{ consent_url }} "), values);
+      expect(urls(lnk)).toEqual([]);
+      expect(lnk).not.toContain("<a");
+      expect(lnk).toContain("pulsa");
+    }
+    const good = { consent_url: "https://example.test/c" };
+    expect(urls(await html(doc(button("{{consent_url}}")), good))).toEqual([
+      "https://example.test/c",
+    ]);
+    expect(urls(await html(link("{{consent_url}}"), good))).toEqual([
+      "https://example.test/c",
+    ]);
+  });
+
+  test("a button inside a section or a column goes the same way", async () => {
+    const out = await html(
+      doc({
+        type: "section",
+        content: [
+          p(text("dentro")),
+          button("consent_url", { isUrlVariable: true }),
+        ],
+      }),
+      { consent_url: "" },
+    );
+    expect(out).toContain("dentro");
+    expect(out).not.toContain("Botón");
+    expect(urls(out)).toEqual([]);
+  });
+
+  test("the other marks of a link that goes stay on its text", async () => {
+    const clean = sanitizeDoc(
+      doc(
+        p(
+          text("pulsa", [
+            { type: "bold" },
+            {
+              type: "link",
+              attrs: { href: "consent_url", isUrlVariable: true },
+            },
+          ]),
+        ),
+      ),
+      { consent_url: "" },
+    );
+    expect(clean.content?.[0]?.content?.[0]).toEqual({
+      type: "text",
+      text: "pulsa",
+      marks: [{ type: "bold" }],
+    });
+  });
 
   test("a safe value is used, and Maily does not substitute it a second time", async () => {
     const values = { first_name: "https://example.test/a?b=1&c=2" };
@@ -115,9 +206,10 @@ describe("a link that is a variable", () => {
     expect(urls(out)).toEqual(["mailto:info@example.test"]);
   });
 
-  test("a variable nobody provided ends in #, not in a relative address", async () => {
+  test("a variable nobody provided is no link at all, not a relative address", async () => {
     const out = await html(link("https://nope", { isUrlVariable: true }), {});
-    expect(urls(out)).toEqual(["#"]);
+    expect(urls(out)).toEqual([]);
+    expect(out).toContain("pulsa");
   });
 
   test("a name the object prototype owns is not a variable", async () => {
@@ -131,7 +223,7 @@ describe("a link that is a variable", () => {
         link(`https://${name}`, { isUrlVariable: true }),
         {},
       );
-      expect(urls(out)).toEqual(["#"]);
+      expect(urls(out)).toEqual([]);
     }
   });
 
@@ -156,10 +248,25 @@ describe("a literal address", () => {
       cancel_url: "https://example.test/c?t=1",
     });
     expect(urls(good)).toEqual(["https://example.test/c?t=1"]);
+    // The token alone is a variable address: with a bad value the link goes.
     const bad = await html(link("{{cancel_url}}"), {
       cancel_url: "javascript:alert(1)",
     });
-    expect(urls(bad)).toEqual(["#"]);
+    expect(urls(bad)).toEqual([]);
+    expect(bad).toContain("pulsa");
+  });
+
+  test("a fixed address with a token in it is still a fixed one: # when it does not hold", async () => {
+    const values = { first_name: "javascript:alert(1)", cancel_url: "" };
+    const out = await html(
+      doc(
+        link("{{first_name}}//x"),
+        button("{{cancel_url}}reserva"),
+        button("https://example.test/{{cancel_url}}"),
+      ),
+      values,
+    );
+    expect(urls(out)).toEqual(["#", "#", "https://example.test/"]);
   });
 });
 

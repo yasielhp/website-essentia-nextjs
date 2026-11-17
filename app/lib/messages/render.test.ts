@@ -440,10 +440,13 @@ describe("links in the admin's body", () => {
     ).toBe(true);
   });
 
-  test("a variable that holds something else does not", async () => {
-    const { html } = await send("{{cancel_url}}", {
-      cancel_url: "javascript:alert(1)",
-    });
-    for (const href of hrefs(html)) expect(href).toBe("#");
+  test("a variable that holds something else leaves no link and no button", async () => {
+    for (const cancel_url of ["javascript:alert(1)", ""]) {
+      const { html } = await send("{{cancel_url}}", { cancel_url });
+      expect(hrefs(html)).toEqual([]);
+      expect(html).toContain("pulsa aquí");
+      expect(html).not.toContain("Botón");
+      expect(html.toLowerCase()).not.toContain("javascript:");
+    }
   });
 });
