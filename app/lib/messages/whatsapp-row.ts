@@ -1,0 +1,124 @@
+import {
+  templateChoiceIssue,
+  whatsappTemplateEligibility,
+  type TemplateChoiceIssue,
+  type TemplateIssue,
+} from "@/lib/campaigns/whatsapp-eligibility";
+import type { CampaignLocale } from "@/types/campaign";
+import type {
+  WhatsAppParamField,
+  WhatsAppParamSource,
+  WhatsAppTemplateRow,
+} from "@/lib/whatsapp/types";
+import { MESSAGE_CATALOG, MESSAGE_KEYS, type MessageKey } from "./catalog";
+import { allowedParamFields } from "./param-fields";
+
+/**
+ * What the Emails tab decides about a message's WhatsApp row, over plain
+ * values: which messages have one, which templates it may use, and what to say
+ * about the one it has. Pure, and light enough for the browser (the validator
+ * and the renderer are not imported).
+ */
+
+/** The messages that may also go out on WhatsApp: the ones the opt-in promises. */
+export const WHATSAPP_MESSAGE_KEYS: MessageKey[] = MESSAGE_KEYS.filter(
+  (key) => MESSAGE_CATALOG[key].whatsappEligible,
+);
+
+/** The contact fields a message's WhatsApp parameters can read from. */
+export function messageParamFields(key: MessageKey): WhatsAppParamField[] {
+  return allowedParamFields(key);
+}
+
+/**
+ * Whether a button's address ends in a `{{n}}`. This send fills the body only,
+ * never a button, so Meta would refuse a template that asks for one.
+ */
+export function hasDynamicUrlButton(template: WhatsAppTemplateRow): boolean {
+  return (template.buttons ?? []).some(
+    (button) => button.type === "URL" && button.url.includes("{{"),
+  );
+}
+
+export type MessageTemplateChoices = {
+  eligible: WhatsAppTemplateRow[];
+  /** Why the others are not offered, by the first reason that rules each out. */
+  excluded: Partial<Record<TemplateChoiceIssue, number>>;
+  /** Of the otherwise sendable ones, how many were left out for a variable link. */
+  dynamicUrl: number;
+};
+
+/** The templates a message may be given in this language. */
+export function messageTemplateChoices(
+  templates: WhatsAppTemplateRow[],
+  locale: CampaignLocale,
+): MessageTemplateChoices {
+  const eligible: WhatsAppTemplateRow[] = [];
+  const excluded: MessageTemplateChoices["excluded"] = {};
+  let dynamicUrl = 0;
+  for (const template of templates) {
+    const issue = templateChoiceIssue(template, locale);
+    if (issue) {
+      excluded[issue] = (excluded[issue] ?? 0) + 1;
+    } else if (hasDynamicUrlButton(template)) {
+      dynamicUrl += 1;
+    } else {
+      eligible.push(template);
+    }
+  }
+  return { eligible, excluded, dynamicUrl };
+}
+
+export type WhatsAppRowState =
+  /** Nothing saved, or no template chosen: nothing is sent. */
+  | { kind: "none" }
+  /** The row is switched off: nothing is sent. */
+  | { kind: "off" }
+  | { kind: "configured"; templateName: string }
+  | { kind: "invalid"; issue: TemplateIssue | "dynamic_url" }
+  /** The templates could not be read, so the saved one cannot be judged. */
+  | { kind: "unknown" };
+
+/** The saved part of a WhatsApp row that decides what is shown. */
+export type SavedWhatsAppRow = {
+  enabled: boolean;
+  whatsapp_template_id: string | null;
+  whatsapp_params: WhatsAppParamSource[];
+};
+
+export function whatsappRowState(
+  saved: SavedWhatsAppRow | undefined,
+  templates: WhatsAppTemplateRow[] | null,
+  locale: CampaignLocale,
+): WhatsAppRowState {
+  if (!saved || !saved.whatsapp_template_id) return { kind: "none" };
+  if (saved.enabled === false) return { kind: "off" };
+  if (templates === null) return { kind: "unknown" };
+  const template = templates.find((t) => t.id === saved.whatsapp_template_id);
+  const issue = whatsappTemplateEligibility(
+    template,
+    locale,
+    saved.whatsapp_params,
+  );
+  if (issue) return { kind: "invalid", issue };
+  if (template && hasDynamicUrlButton(template)) {
+    return { kind: "invalid", issue: "dynamic_url" };
+  }
+  return { kind: "configured", templateName: template?.name ?? "" };
+}
+
+/**
+ * Whether saving a WhatsApp reminder now would be the first. The first one
+ * also reaches the bookings already inside the reminder window whose email
+ * reminder has not gone out, which is worth saying once.
+ */
+export function isFirstReminderSetup(
+  rows: { key: string; channel: string; whatsapp_template_id: string | null }[],
+): boolean {
+  return !rows.some(
+    (row) =>
+      row.key === "booking_reminder" &&
+      row.channel === "whatsapp" &&
+      row.whatsapp_template_id !== null,
+  );
+}
