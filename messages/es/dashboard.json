@@ -2339,7 +2339,8 @@
         "meta": "Meta rechazó la petición.",
         "unauthenticated": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
         "forbidden": "No tienes permiso para esta acción.",
-        "email_not_configured": "El envío de emails no está configurado en el servidor."
+        "email_not_configured": "El envío de emails no está configurado en el servidor.",
+        "preview_rate_limited": "Estás pidiendo demasiadas vistas previas; espera un momento."
       }
     }
   },

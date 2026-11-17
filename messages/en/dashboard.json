@@ -2339,7 +2339,8 @@
         "meta": "Meta rejected the request.",
         "unauthenticated": "Your session has expired. Sign in again.",
         "forbidden": "You do not have permission for this action.",
-        "email_not_configured": "Email sending is not configured on the server."
+        "email_not_configured": "Email sending is not configured on the server.",
+        "preview_rate_limited": "You are asking for too many previews; wait a moment."
       }
     }
   },

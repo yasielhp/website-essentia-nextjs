@@ -68,6 +68,7 @@ export const MESSAGE_ACTION_ERROR_KEYS = [
   "email_failed",
   "email_not_configured",
   "test_rate_limited",
+  "preview_rate_limited",
   "template_unavailable",
   "whatsapp_not_configured",
   "meta",

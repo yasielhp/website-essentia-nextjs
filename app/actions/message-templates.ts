@@ -278,6 +278,14 @@ export async function saveMessageTemplate(
 }
 
 /**
+ * Sixty previews a minute per administrator: the editor asks half a second
+ * after the last keystroke, so a person typing stays far below it, and a loop
+ * or a stuck page stops. Each one renders an email on the server. Per process,
+ * like the test limiter: a brake, not a guarantee.
+ */
+const previewLimiter = createRateLimiter({ max: 60, windowMs: 60_000 });
+
+/**
  * The whole email as it would go out with a draft that is not saved, for the
  * editor's live preview: the default text for what the draft leaves out, the
  * admin's for what it carries, the fixed blocks with an example booking. Built
@@ -294,8 +302,9 @@ export async function previewMessage(
   locale: string,
   draft: unknown,
 ): Promise<{ ok: true; subject: string; html: string } | Failure> {
+  let caller: AuthContext;
   try {
-    await admin(accessToken);
+    caller = await admin(accessToken);
   } catch (err) {
     return authFailure(err);
   }
@@ -303,6 +312,9 @@ export async function previewMessage(
     .pick({ key: true, locale: true })
     .safeParse({ key, locale });
   if (!address.success) return { ok: false, error: "invalid" };
+  if (!previewLimiter.take(caller.userId)) {
+    return { ok: false, error: "preview_rate_limited" };
+  }
 
   const fields =
     typeof draft === "object" && draft !== null && !Array.isArray(draft)
