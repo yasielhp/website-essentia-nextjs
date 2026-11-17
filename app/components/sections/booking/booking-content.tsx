@@ -202,7 +202,7 @@ function BookingContentInner() {
     updateLocal({ checking: true });
 
     const result = await saveDetailsStep({
-      user: user ? { id: user.id } : null,
+      user: user ? { id: user.id, email: user.email } : null,
       locale,
       draft,
       contactId,

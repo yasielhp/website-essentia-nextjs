@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pickNoticeEmail } from "@/lib/whatsapp/consent";
+import { consentTarget } from "@/lib/whatsapp/consent";
 import type { OwnWhatsAppConsentInput } from "@/types/contact";
 
 /**
@@ -21,10 +21,14 @@ import type { OwnWhatsAppConsentInput } from "@/types/contact";
  * What it writes:
  *  - a guest: the notice consent, on the contact the step has just saved (her
  *    contact and her "news and offers" choice went in with `upsert_contact`);
- *  - a signed-in client: her contact, found by the address of her verified
- *    session (it is what gives the notice consent a fresh row to land on), the
- *    notice consent on that same address, and the newsletter list when she
- *    ticked the box.
+ *  - a signed-in client whose address in the form is her session's: her
+ *    contact, found by the address of her verified session (it is what gives
+ *    the notice consent a fresh row to land on), the notice consent on that
+ *    same address, and the newsletter list when she ticked the box;
+ *  - a signed-in caller who typed ANOTHER address (a booking for somebody
+ *    else, or staff with their session open): nothing of her own. The name and
+ *    the phone in the form are not hers, so that booking is treated as a
+ *    guest's (`consentTarget`).
  *
  * It never lifts a STOP by itself and never throws.
  */
@@ -33,7 +37,7 @@ import type { OwnWhatsAppConsentInput } from "@/types/contact";
 export const BOOKING_CONSENT_DEADLINE_MS = 3000;
 
 const inputSchema = z.object({
-  /** The address typed in the form. A signed-in client's is her session's. */
+  /** The address typed in the form. It decides nothing by itself: see `consentTarget`. */
   email: z.unknown().optional(),
   firstName: z.unknown().optional(),
   lastName: z.unknown().optional(),
@@ -217,18 +221,21 @@ export async function writeBookingConsents(
       session = who;
     }
 
-    const email = pickNoticeEmail({
-      hasToken: session !== null,
+    // Her own contact only when the form carries her own address. With any
+    // other address in it she is booking for somebody else: her contact is not
+    // touched and that booking's consent goes the way a guest's does.
+    const { email, own } = consentTarget({
+      signedIn: session !== null,
       sessionEmail: session?.email ?? null,
-      inputEmail: input.email,
+      formEmail: input.email,
     });
     if (!email) {
-      // A guest with nothing to stamp has nothing to do here at all.
-      if (!session && !input.termsAccepted) return done();
+      // With nothing to stamp there is nothing to do here at all.
+      if (!input.termsAccepted) return done();
       return { ok: false, stamped: false, error: "noEmail" };
     }
 
-    if (session) {
+    if (own) {
       const contact = contactSchema.safeParse(input);
       if (!contact.success) {
         errors.push("invalid");
@@ -259,7 +266,7 @@ export async function writeBookingConsents(
     // Last, because the contact above already carries her yes, which is what
     // the campaigns read: the list at Resend and the flag on her profile are
     // copies, and the first thing to go if time runs short.
-    if (session && input.marketing) {
+    if (session && own && input.marketing) {
       const { userId } = session;
       const listed = await deadline.within(
         attempt(() => effects.subscribeNewsletter(userId, email)),

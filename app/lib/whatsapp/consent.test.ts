@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  consentTarget,
   NOTICE_CONSENT_WINDOW_MS,
   marketingNotes,
   marketingRowState,
   isContactFresh,
   marketingConsentActive,
-  pickNoticeEmail,
   whatsappActivationPatch,
   whatsappConsentColumn,
   whatsappConsentState,
@@ -127,42 +127,72 @@ describe("isContactFresh", () => {
   });
 });
 
-describe("pickNoticeEmail", () => {
-  test("a verified session address wins over whatever the browser sent", () => {
+describe("consentTarget", () => {
+  test("a signed-in client booking with her own address is her own contact", () => {
     expect(
-      pickNoticeEmail({
-        hasToken: true,
+      consentTarget({
+        signedIn: true,
         sessionEmail: "Ana@Example.com",
-        inputEmail: "victim@example.com",
+        formEmail: "  ana@EXAMPLE.com ",
       }),
-    ).toBe("ana@example.com");
+    ).toEqual({ email: "ana@example.com", own: true });
   });
 
-  test("a token whose session has no address picks nothing, never the input", () => {
+  test("a signed-in caller who typed another address is not writing her own contact", () => {
     expect(
-      pickNoticeEmail({
-        hasToken: true,
-        sessionEmail: null,
-        inputEmail: "victim@example.com",
+      consentTarget({
+        signedIn: true,
+        sessionEmail: "staff@example.com",
+        formEmail: "Client@Example.com",
       }),
-    ).toBeNull();
+    ).toEqual({ email: "client@example.com", own: false });
   });
 
-  test("a guest uses the address of the step, trimmed and lowercased", () => {
+  test("a session with no address owns nothing: the form's address, as a guest's", () => {
     expect(
-      pickNoticeEmail({
-        hasToken: false,
+      consentTarget({
+        signedIn: true,
         sessionEmail: null,
-        inputEmail: "  Maria@Example.COM ",
+        formEmail: "client@example.com",
       }),
-    ).toBe("maria@example.com");
+    ).toEqual({ email: "client@example.com", own: false });
   });
 
-  test("a guest with no usable address picks nothing", () => {
-    for (const inputEmail of ["", "   ", "not-an-email", 42, null, undefined]) {
+  test("a signed-in caller with no usable address in the form targets nobody, not even herself", () => {
+    for (const formEmail of ["", "   ", "not-an-email", 42, null, undefined]) {
       expect(
-        pickNoticeEmail({ hasToken: false, sessionEmail: null, inputEmail }),
-      ).toBeNull();
+        consentTarget({
+          signedIn: true,
+          sessionEmail: "ana@example.com",
+          formEmail,
+        }),
+      ).toEqual({ email: null, own: false });
+    }
+  });
+
+  test("a guest uses the address of the step, trimmed and lowercased, and owns nothing", () => {
+    expect(
+      consentTarget({
+        signedIn: false,
+        sessionEmail: null,
+        formEmail: "  Maria@Example.COM ",
+      }),
+    ).toEqual({ email: "maria@example.com", own: false });
+    // A session address handed in without a session is not one.
+    expect(
+      consentTarget({
+        signedIn: false,
+        sessionEmail: "maria@example.com",
+        formEmail: "maria@example.com",
+      }),
+    ).toEqual({ email: "maria@example.com", own: false });
+  });
+
+  test("a guest with no usable address targets nobody", () => {
+    for (const formEmail of ["", "   ", "not-an-email", 42, null, undefined]) {
+      expect(
+        consentTarget({ signedIn: false, sessionEmail: null, formEmail }),
+      ).toEqual({ email: null, own: false });
     }
   });
 });

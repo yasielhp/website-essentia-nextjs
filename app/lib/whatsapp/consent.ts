@@ -159,25 +159,39 @@ export function isContactFresh(
 }
 
 /**
- * The address the notice consent is stamped on.
+ * Whose contact the booking form's consents are about, and whether it is the
+ * caller's own.
  *
- * With a token it is the verified session's and nothing else: if that session
- * has no address, nothing is picked, because falling back to what the browser
- * sent would let a signed-in caller name another person. A guest has no
- * session, so the address of the step she just saved is the only one there is.
+ * `own` is true only when the address typed in the form IS the address of the
+ * verified session (case and surrounding spaces aside). Then the session's
+ * contact is written with the form's name and phone, as her own. A signed-in
+ * caller who typed ANOTHER address is booking for somebody else, or is staff
+ * with their session open: the name and the phone in the form are not hers, so
+ * her contact is left alone and the consent of that booking goes the way a
+ * guest's does, on the address of the form and under the stamp's own guards (a
+ * contact written in the last 15 minutes, no consent yet, no STOP). That gives
+ * her nothing a guest does not have: anyone can send the form without a
+ * session.
+ *
+ * A session address only counts with a session, and an address that is not one
+ * targets nobody.
  */
-export function pickNoticeEmail(input: {
-  hasToken: boolean;
+export function consentTarget(input: {
+  signedIn: boolean;
   sessionEmail: string | null;
-  inputEmail: unknown;
-}): string | null {
+  formEmail: unknown;
+}): { email: string | null; own: boolean } {
   const clean = (value: unknown) => {
     if (typeof value !== "string") return null;
     const email = value.trim().toLowerCase();
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
   };
-  if (input.hasToken) return clean(input.sessionEmail);
-  return clean(input.inputEmail);
+  const formEmail = clean(input.formEmail);
+  const sessionEmail = input.signedIn ? clean(input.sessionEmail) : null;
+  return {
+    email: formEmail,
+    own: formEmail !== null && formEmail === sessionEmail,
+  };
 }
 
 /**

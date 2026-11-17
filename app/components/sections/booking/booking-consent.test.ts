@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  bookingForSomeoneElse,
   contactConsentArgs,
   sendBookingConsents,
   type ConsentEffects,
@@ -45,6 +46,29 @@ describe("contactConsentArgs", () => {
         p_whatsapp_marketing: null,
       });
     }
+  });
+});
+
+describe("bookingForSomeoneElse", () => {
+  test("another address in the form than the session's is a booking for somebody else", () => {
+    expect(bookingForSomeoneElse("staff@example.com", "ana@example.com")).toBe(
+      true,
+    );
+  });
+
+  test("her own address is her own booking, whatever the case or the spaces", () => {
+    expect(bookingForSomeoneElse("Ana@Example.com", "  ana@EXAMPLE.com ")).toBe(
+      false,
+    );
+  });
+
+  test("a session whose address is not known here changes nothing", () => {
+    for (const sessionEmail of [undefined, null, "", "  "]) {
+      expect(bookingForSomeoneElse(sessionEmail, "ana@example.com")).toBe(
+        false,
+      );
+    }
+    expect(bookingForSomeoneElse("ana@example.com", "")).toBe(false);
   });
 });
 

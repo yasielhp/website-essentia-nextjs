@@ -27,7 +27,9 @@ let sessionValid = true;
 let dbFails = false;
 let dbHangs = false;
 let adminCalls = 0;
-let rpcCalls: { name: string; args: unknown }[] = [];
+/** One list per client the action asked for; `rpcs()` reads them all. */
+let rpcLists: { name: string; args: unknown }[][] = [];
+const rpcs = () => rpcLists.flat();
 let listed: string[] = [];
 
 const real = {
@@ -55,7 +57,7 @@ beforeAll(async () => {
       const { db, calls } = fakeDb(rows, {
         failOn: dbFails ? "read" : undefined,
       });
-      rpcCalls = calls.rpc;
+      rpcLists.push(calls.rpc);
       return { database: db };
     },
   }));
@@ -101,7 +103,7 @@ beforeEach(() => {
   dbFails = false;
   dbHangs = false;
   adminCalls = 0;
-  rpcCalls = [];
+  rpcLists = [];
   listed = [];
 });
 
@@ -126,23 +128,62 @@ describe("saveBookingConsents", () => {
     expect(rows[0].whatsapp_opted_in_at).not.toBeNull();
     expect(rows[1].whatsapp_opted_in_at).toBeNull();
     // A guest's contact is the browser's `upsert_contact`, not this action's.
-    expect(rpcCalls).toEqual([]);
+    expect(rpcs()).toEqual([]);
   });
 
-  test("a signed-in client's contact is written and stamped on her session's address, whatever the browser sent", async () => {
-    const result = await saveBookingConsents("token", input());
-    expect(result).toEqual({ ok: true, stamped: true });
-    expect(rows[1].whatsapp_opted_in_at).not.toBeNull();
-    expect(rows[0].whatsapp_opted_in_at).toBeNull();
-  });
-
-  test("her news and offers tick puts her session's address on the list", async () => {
+  test("a signed-in client booking with her own address has her contact written and stamped", async () => {
     const result = await saveBookingConsents(
       "token",
-      input({ email: "session@example.com", marketing: true }),
+      input({ email: " Session@Example.com", marketing: true }),
     );
     expect(result).toEqual({ ok: true, stamped: true });
+    expect(rpcs()).toHaveLength(1);
+    expect(rpcs()[0]).toMatchObject({
+      name: "upsert_contact",
+      args: {
+        p_email: "session@example.com",
+        p_first_name: "Ana",
+        p_phone: "600000000",
+        p_newsletter: true,
+        p_whatsapp_marketing: true,
+      },
+    });
+    expect(rows[1].whatsapp_opted_in_at).not.toBeNull();
+    expect(rows[0].whatsapp_opted_in_at).toBeNull();
     expect(listed).toEqual(["session@example.com"]);
+  });
+
+  test("signed in with ANOTHER address in the form: the session's contact is not written, stamped or listed", async () => {
+    const result = await saveBookingConsents(
+      "token",
+      input({ email: "guest@example.com", marketing: true }),
+    );
+    expect(result).toEqual({ ok: true, stamped: true });
+    // No name or phone of somebody else lands on the caller's own contact.
+    expect(rpcs()).toEqual([]);
+    expect(listed).toEqual([]);
+    expect(rows[1].whatsapp_opted_in_at).toBeNull();
+    // That booking's consent goes the guest's way: the form's contact, which
+    // the step has just written.
+    expect(rows[0].whatsapp_opted_in_at).not.toBeNull();
+  });
+
+  test("and the guest's guards hold for it: a contact not just written, or with a STOP, is not stamped", async () => {
+    rows[0].updated_at = "2026-01-01T00:00:00.000Z";
+    rows[0].created_at = "2026-01-01T00:00:00.000Z";
+    expect(await saveBookingConsents("token", input())).toEqual({
+      ok: true,
+      stamped: false,
+    });
+    rows[0] = contact("guest@example.com", {
+      whatsapp_opted_out_at: "2026-01-01T00:00:00.000Z",
+    });
+    expect(await saveBookingConsents("token", input())).toEqual({
+      ok: true,
+      stamped: false,
+    });
+    expect(rows[0].whatsapp_opted_in_at).toBeNull();
+    expect(rows[1].whatsapp_opted_in_at).toBeNull();
   });
 
   test("nothing is stamped without the terms accepted", async () => {
@@ -167,11 +208,13 @@ describe("saveBookingConsents", () => {
     expect(adminCalls).toBe(0);
   });
 
-  test("a session with no address stamps nobody", async () => {
+  test("a session with no address has no contact of its own: the form's goes the guest's way", async () => {
     sessionEmail = null;
     const result = await saveBookingConsents("token", input());
-    expect(result).toEqual({ ok: false, stamped: false, error: "noEmail" });
-    expect(rows.every((r) => r.whatsapp_opted_in_at === null)).toBe(true);
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(rpcs()).toEqual([]);
+    expect(rows[0].whatsapp_opted_in_at).not.toBeNull();
+    expect(rows[1].whatsapp_opted_in_at).toBeNull();
   });
 
   test("a guest who sent a STOP is not reactivated by booking again", async () => {

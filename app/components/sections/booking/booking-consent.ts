@@ -38,6 +38,29 @@ export function contactConsentArgs(details: Pick<DetailsState, "newsletter">): {
   };
 }
 
+/**
+ * Whether a signed-in caller is booking for somebody else: the address in the
+ * form is not the one of her session (case and surrounding spaces aside). It
+ * happens when a client books for another person, and when staff book with
+ * their own session open.
+ *
+ * Then the name and the phone in the form are not hers, so the step writes
+ * that person's contact the way it writes a guest's, and the server leaves the
+ * caller's own contact alone. The server decides that by itself, from the
+ * verified session (`consentTarget`); this is only how the browser knows which
+ * contact to write. A session whose address is not known here changes nothing.
+ */
+export function bookingForSomeoneElse(
+  sessionEmail: string | null | undefined,
+  formEmail: string,
+): boolean {
+  const clean = (value: string | null | undefined) =>
+    value?.trim().toLowerCase() ?? "";
+  const own = clean(sessionEmail);
+  const typed = clean(formEmail);
+  return own !== "" && typed !== "" && own !== typed;
+}
+
 /** What the form calls, as plain functions so tests can swap them. */
 export type ConsentEffects = {
   getAccessToken: () => string | null;
@@ -66,7 +89,9 @@ export type ConsentEffects = {
  * `upsert_contact`, so for her only the notice consent is left, and with the
  * Terms unaccepted (which the form does not allow) there is nothing to send. A
  * signed-in client has no such call, so the action writes her contact first,
- * from the address of her verified session.
+ * from the address of her verified session; unless the form carries another
+ * address (`bookingForSomeoneElse`), in which case the action treats the
+ * booking as a guest's and her own contact is not touched.
  */
 export async function sendBookingConsents({
   user,

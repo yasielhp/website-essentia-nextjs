@@ -9,7 +9,11 @@ import {
 } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { saveBookingConsents } from "@/actions/whatsapp-consent";
-import { contactConsentArgs, sendBookingConsents } from "./booking-consent";
+import {
+  bookingForSomeoneElse,
+  contactConsentArgs,
+  sendBookingConsents,
+} from "./booking-consent";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -40,7 +44,8 @@ type Draft = {
   paymentMode: PaymentMode;
 };
 
-type Viewer = { id: string } | null;
+/** The signed-in caller, with the address of her session as the browser knows it. */
+type Viewer = { id: string; email?: string | null } | null;
 
 export type DetailsStepResult =
   /** The address belongs to a member, who should sign in rather than book as a guest. */
@@ -77,8 +82,17 @@ export async function saveDetailsStep({
   const { details, service } = draft;
   let resolvedContactId = contactId;
 
-  if (!user) {
-    if (!asGuest) {
+  // A signed-in client's own contact is written on the server, from her
+  // verified session. The browser writes the contact of a guest, and of the
+  // person a signed-in caller is booking FOR when the form carries another
+  // address than hers: that name and that phone are not the caller's, and
+  // must not land on her contact.
+  const forSomeoneElse =
+    user !== null && bookingForSomeoneElse(user.email, details.email);
+
+  if (!user || forSomeoneElse) {
+    // Somebody who is signed in is not asked to sign in.
+    if (!user && !asGuest) {
       const { data: roleData } = await insforge.database.rpc(
         "check_email_role",
         { p_email: details.email },

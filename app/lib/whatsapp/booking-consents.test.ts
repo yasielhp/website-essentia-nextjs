@@ -36,7 +36,7 @@ function effects(over: Partial<BookingConsentEffects> = {}) {
   const fx: BookingConsentEffects = {
     authenticate: spy<Session>("authenticate", {
       userId: "u1",
-      email: "Session@Example.com",
+      email: "ANA@example.com",
     }),
     saveOwnContact: spy("contact", { ok: true }),
     stampNotice: spy("notice", { ok: true, stamped: true }),
@@ -131,13 +131,13 @@ describe("writeBookingConsents, a guest", () => {
 });
 
 describe("writeBookingConsents, a signed-in client", () => {
-  test("her contact is written first, on her session's address, then the notice consent", async () => {
+  test("with her own address in the form, her contact is written first, then the notice consent", async () => {
     const { fx, calls, names } = effects();
     const result = await writeBookingConsents("token", INPUT, fx);
     expect(result).toEqual({ ok: true, stamped: true });
     expect(names()).toEqual(["authenticate", "contact", "notice"]);
     expect(calls[1].args).toEqual([
-      "session@example.com",
+      "ana@example.com",
       {
         firstName: "Ana",
         lastName: "García",
@@ -146,7 +146,7 @@ describe("writeBookingConsents, a signed-in client", () => {
         marketing: false,
       },
     ]);
-    expect(calls[2].args).toEqual(["session@example.com"]);
+    expect(calls[2].args).toEqual(["ana@example.com"]);
   });
 
   test("the news and offers box also puts her on the list, last, with her own id and address", async () => {
@@ -159,7 +159,7 @@ describe("writeBookingConsents, a signed-in client", () => {
       "newsletter",
     ]);
     expect(calls[1].args[1]).toMatchObject({ marketing: true });
-    expect(calls[3].args).toEqual(["u1", "session@example.com"]);
+    expect(calls[3].args).toEqual(["u1", "ana@example.com"]);
   });
 
   test("without the terms her contact is still written but no notice is stamped", async () => {
@@ -179,15 +179,6 @@ describe("writeBookingConsents, a signed-in client", () => {
     });
     const result = await writeBookingConsents("stale", INPUT, fx);
     expect(result).toEqual({ ok: false, stamped: false, error: "auth" });
-    expect(names()).toEqual([]);
-  });
-
-  test("a session with no address writes nobody", async () => {
-    const { fx, names } = effects({
-      authenticate: () => Promise.resolve({ userId: "u1", email: null }),
-    });
-    const result = await writeBookingConsents("token", INPUT, fx);
-    expect(result).toEqual({ ok: false, stamped: false, error: "noEmail" });
     expect(names()).toEqual([]);
   });
 
@@ -224,6 +215,58 @@ describe("writeBookingConsents, a signed-in client", () => {
       fx,
     );
     expect(result).toEqual({ ok: false, stamped: true, error: "newsletter" });
+  });
+});
+
+describe("writeBookingConsents, signed in but booking with another address", () => {
+  // Somebody booking for another person, or staff with their session open: the
+  // name and the phone in the form are that other person's.
+  const OTHER = { ...INPUT, email: "Client@Example.com" };
+
+  test("the contact of the session is not touched: no contact write, no list, no stamp on it", async () => {
+    const { fx, calls, names } = effects();
+    const result = await writeBookingConsents(
+      "token",
+      { ...OTHER, marketing: true },
+      fx,
+    );
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(names()).toEqual(["authenticate", "notice"]);
+    // The consent of that booking goes the way a guest's does: the address of
+    // the form, under the rules of the stamp (a contact just written, no STOP).
+    expect(calls[1].args).toEqual(["client@example.com"]);
+    expect(JSON.stringify(calls)).not.toContain("ana@example.com");
+  });
+
+  test("the same address in another case or with spaces is still her own", async () => {
+    const { fx, names } = effects();
+    await writeBookingConsents(
+      "token",
+      { ...INPUT, email: "  aNa@EXAMPLE.com" },
+      fx,
+    );
+    expect(names()).toEqual(["authenticate", "contact", "notice"]);
+  });
+
+  test("without the terms there is nothing to write for the other person", async () => {
+    const { fx, names } = effects();
+    const result = await writeBookingConsents(
+      "token",
+      { ...OTHER, termsAccepted: false },
+      fx,
+    );
+    expect(result).toEqual({ ok: true, stamped: false });
+    expect(names()).toEqual(["authenticate"]);
+  });
+
+  test("a session with no address writes no contact of its own either", async () => {
+    const { fx, calls, names } = effects({
+      authenticate: () => Promise.resolve({ userId: "u1", email: null }),
+    });
+    const result = await writeBookingConsents("token", OTHER, fx);
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(names()).toEqual(["notice"]);
+    expect(calls[0].args).toEqual(["client@example.com"]);
   });
 });
 

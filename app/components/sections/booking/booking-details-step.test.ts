@@ -219,7 +219,7 @@ describe("saveDetailsStep, a member who goes on as a guest", () => {
 describe("saveDetailsStep, a signed-in client", () => {
   test("the browser writes no contact: her own is the server's to find, in one action with her token", async () => {
     const result = await saveDetailsStep({
-      user: { id: "u1" },
+      user: { id: "u1", email: "Ana@Example.com" },
       locale: "en",
       draft: draft(),
       contactId: null,
@@ -242,5 +242,43 @@ describe("saveDetailsStep, a signed-in client", () => {
       marketing: true,
       termsAccepted: true,
     });
+  });
+
+  test("with ANOTHER address in the form, that person's contact is written as a guest's and the draft points at it", async () => {
+    const result = await saveDetailsStep({
+      user: { id: "u1", email: "staff@example.com" },
+      locale: "es",
+      draft: draft(),
+      contactId: null,
+      bookingId: null,
+    });
+    await settle();
+    expect(result).toEqual({
+      kind: "saved",
+      contactId: "contact-1",
+      bookingId: "booking-1",
+    });
+    // No member notice for somebody who is already signed in.
+    expect(names()).toEqual([
+      "rpc:upsert_contact",
+      "rpc:create_draft_booking",
+      "updateDraftBookingMeta",
+      "saveBookingConsents",
+    ]);
+    expect(argsOf("rpc:upsert_contact")).toMatchObject({
+      p_email: "ana@example.com",
+      p_first_name: "Ana",
+      p_phone: "600000000",
+      p_newsletter: true,
+      p_whatsapp_marketing: true,
+    });
+    expect(argsOf("rpc:create_draft_booking")).toMatchObject({
+      p_contact_id: "contact-1",
+      p_user_id: "u1",
+    });
+    // The token still travels: it is the server that decides, from the
+    // verified session, that this is not her own contact.
+    expect(calls.at(-1)?.args[0]).toBe("token");
+    expect(calls.at(-1)?.args[1]).toMatchObject({ email: "ana@example.com" });
   });
 });
