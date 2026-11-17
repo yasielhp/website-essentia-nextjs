@@ -256,17 +256,50 @@ describe("a literal address", () => {
     expect(bad).toContain("pulsa");
   });
 
-  test("a fixed address with a token in it is still a fixed one: # when it does not hold", async () => {
+  // `{{consent_url}}?x=1`: the address is the variable's, with something
+  // after it. Without the variable there is no address, only the tail.
+  test("an address that starts with a variable and goes on is a variable one: it goes when it does not hold", async () => {
+    for (const consent_url of ["", "javascript:alert(1)"]) {
+      const out = await html(
+        doc(
+          link("{{consent_url}}?x=1"),
+          p(text("medio")),
+          button(" {{ consent_url }}&utm=correo"),
+          button("{{consent_url}}reserva"),
+        ),
+        { consent_url },
+      );
+      expect(urls(out)).toEqual([]);
+      expect(out).not.toContain("<a");
+      expect(out).not.toContain("Botón");
+      expect(out).toContain("pulsa");
+      expect(out).toContain("medio");
+      expect(out.toLowerCase()).not.toContain("javascript:");
+    }
+  });
+
+  test("and with an address in the variable it is that address, tail and all", async () => {
+    const out = await html(
+      doc(link("{{consent_url}}&x=1"), button("{{consent_url}}&utm=correo")),
+      { consent_url: "https://example.test/c?token=abc" },
+    );
+    expect(urls(out)).toEqual([
+      "https://example.test/c?token=abc&x=1",
+      "https://example.test/c?token=abc&utm=correo",
+    ]);
+  });
+
+  test("a fixed address with a token further in is still a fixed one: # when it does not hold", async () => {
     const values = { first_name: "javascript:alert(1)", cancel_url: "" };
     const out = await html(
       doc(
-        link("{{first_name}}//x"),
-        button("{{cancel_url}}reserva"),
+        link("x{{first_name}}"),
         button("https://example.test/{{cancel_url}}"),
+        button("mailto:{{cancel_url}}"),
       ),
       values,
     );
-    expect(urls(out)).toEqual(["#", "#", "https://example.test/"]);
+    expect(urls(out)).toEqual(["#", "https://example.test/", "mailto:"]);
   });
 });
 
@@ -412,12 +445,30 @@ describe("images and link cards", () => {
     });
   }
 
+  test("a link card whose address starts with a variable that holds none is removed too", async () => {
+    for (const consent_url of ["", "javascript:alert(1)"]) {
+      const out = await html(
+        doc(p(text("antes")), card({ link: "{{consent_url}}?x=1" })),
+        { consent_url },
+      );
+      expect(urls(out)).toEqual([]);
+      expect(out).toContain("antes");
+    }
+    const good = await html(doc(card({ link: "{{consent_url}}&x=1" })), {
+      consent_url: "https://example.test/c?t=1",
+    });
+    expect(urls(good)).not.toEqual([]);
+    for (const href of urls(good)) {
+      expect(href).toBe("https://example.test/c?t=1&x=1");
+    }
+  });
+
   test("a link card with a fixed address that does not hold still goes to #", async () => {
     for (const link of [
       "",
-      "{{consent_url}}/x",
       "/relative",
       "www.example.test",
+      "x{{consent_url}}",
     ]) {
       const out = await html(doc(card({ link })), { consent_url: "" });
       expect(urls(out)).not.toEqual([]);

@@ -16,17 +16,13 @@ import type { EmailDoc } from "@/types/campaign";
  *  - Links (text links, buttons, link cards, linked images) go into `href`.
  *    Only `https:`, `http:` and `mailto:` may leave; anything else, a
  *    `javascript:` or `data:` address above all, becomes `#`.
- *  - A button, a link card or a text link whose address is a VARIABLE and
- *    nothing else (`{{consent_url}}`, `{{cancel_url}}`) and whose value is not
- *    an address that may leave is not left pointing at `#`: the button or the
- *    card is removed and the link's text stays without its link. `consent_url` is empty for every
- *    client who has already signed, and a "Sign the consent" button that goes
- *    nowhere is worse than none.
- *  - A link can be a variable (`isUrlVariable`, and a link card's `link`): the
- *    renderer then puts the variable's VALUE in the `href` after any check
- *    made on the document, and the value comes from a client's own data. So
- *    the value is resolved here, checked, and written into the document in
- *    place of the variable, with the flag switched off.
+ *  - A button, a link card or a text link whose address is a VARIABLE
+ *    (`{{consent_url}}`, `{{cancel_url}}`, alone or with something after it)
+ *    and which does not come out as an address that may leave is not left
+ *    pointing at `#`: the button or the card is removed and the link's text
+ *    stays without its link. `consent_url` is empty for every client who has
+ *    already signed, and a "Sign the consent" button that goes nowhere is
+ *    worse than none.
  *  - "Show conditionally" (`showIfKey` on any block): the renderer draws the
  *    block only when a PAYLOAD value of that name is truthy, and these emails
  *    are rendered with variables and no payload, so such a block would never
@@ -163,16 +159,15 @@ const safeLink = (url: string) => (LINK_OK.test(url) ? url : "#");
 // How a link card names a variable: the renderer looks its address up among
 // the variables by name before using it as an address.
 const BARE_NAME = /^[a-z_][a-z0-9_]*$/i;
-const ONLY_TOKEN = /^\{\{\s*[a-z_][a-z0-9_]*\s*\}\}$/i;
-
 /**
- * An address that is a variable and nothing else: the editor's flag ("this
- * link is a variable"), or one `{{token}}` on its own. A fixed address with a
- * token somewhere in it is a fixed address.
+ * An address that is a variable's: the editor's flag ("this link is a
+ * variable"), one `{{token}}` on its own, or one followed by something
+ * (`{{consent_url}}?x=1`: without the variable only the tail is left, which is
+ * no address). A fixed address with a token further in is a fixed address.
  */
 const isVariableAddress = (raw: unknown, isVariable: unknown) =>
   Boolean(isVariable) ||
-  (typeof raw === "string" && ONLY_TOKEN.test(raw.trim()));
+  (typeof raw === "string" && VARIABLE_PREFIX.test(raw.trim()));
 
 // ── sanitising ──────────────────────────────────────────────────────────────
 
@@ -306,8 +301,8 @@ function cleanNode(
         const link = has(values, raw.trim())
           ? (values[raw.trim()] ?? "").trim()
           : resolve(raw, false, values);
-        // A card whose address is a variable and nothing else (its bare name,
-        // which is never an address by itself, or one token) goes the way of
+        // A card whose address is a variable (its bare name, which is never
+        // an address by itself, or a token it starts with) goes the way of
         // such a button when the variable holds no address this time.
         if (
           !LINK_OK.test(link) &&
