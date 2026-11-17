@@ -1,6 +1,11 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import type { Recipient } from "./audience-filter";
-import { dispatchCampaign, loadQueued, retryFailed } from "./dispatch";
+import {
+  STUCK_AFTER_MS,
+  dispatchCampaign,
+  loadQueued,
+  retryFailed,
+} from "./dispatch";
 import { argsOf, chainDb, has, type Step } from "./fake-db";
 import {
   campaign,
@@ -24,7 +29,10 @@ type Mem = ReturnType<typeof memoryDb>;
  * than a page of `campaign_recipients`, and honours the range it is asked for.
  * `failPage` makes the read that starts at that row fail.
  */
-function paged(mem: Mem, failPage?: (from: number) => string | null) {
+function paged(
+  mem: Mem,
+  failPage?: (from: number, chain: Step[]) => string | null,
+) {
   type Chain = Record<string, (...args: unknown[]) => Chain>;
   const reads: { from: number; to: number; chain: Step[] }[] = [];
   const replay = (table: string, chain: Step[]) => {
@@ -43,7 +51,7 @@ function paged(mem: Mem, failPage?: (from: number) => string | null) {
     }
     const [from, to] = range;
     reads.push({ from, to, chain: [...chain] });
-    const failure = failPage?.(from);
+    const failure = failPage?.(from, chain);
     if (failure) return { data: null, error: { message: failure } };
     const all = (await replay(table, chain)).data ?? [];
     // The whole table: `chainDb` cuts it to the range, as the database does.
@@ -152,6 +160,62 @@ describe("dispatchCampaign with a queue longer than a page", () => {
     expect(
       [...mem.rows.values()].filter((r) => r.status === "queued"),
     ).toHaveLength(COUNT);
+  });
+});
+
+describe("a queue that cannot be read does not keep the campaign young for ever", () => {
+  const HOUR = 3_600_000;
+
+  test("a resume that could not read it leaves the send as old as it was, so the cron's two hours still run out", async () => {
+    const startedAt = new Date(Date.now() - 1.5 * HOUR).toISOString();
+    const mem = memoryDb(rowsOf(COUNT), {
+      campaign: campaign({
+        status: "sending",
+        sending_started_at: startedAt,
+      } as never),
+    });
+    const { db } = paged(mem, () => "table too long");
+    const { deps } = setup(mem, db);
+    const result = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(result).toMatchObject({ ok: false, error: "db" });
+    expect(mem.campaign.status).toBe("sending");
+    // The claim stamped it "now"; the failure gives it its age back.
+    expect(mem.campaign.sending_started_at).toBe(startedAt);
+    expect(String(mem.campaign.last_error)).toContain("table too long");
+  });
+
+  test("a first send that could not read it began now: that is its age", async () => {
+    const before = Date.now();
+    const mem = memoryDb(rowsOf(3), {
+      campaign: campaign({ status: "draft" }),
+    });
+    const { db } = paged(mem, () => "timeout");
+    const { deps } = setup(mem, db);
+    await dispatchCampaign("camp-1", {}, deps);
+    expect(mem.campaign.status).toBe("sending");
+    expect(
+      Date.parse(String(mem.campaign.sending_started_at)),
+    ).toBeGreaterThanOrEqual(before);
+  });
+
+  test("a retry that could not read it is left as old as its reopening, not as its claim", async () => {
+    const before = Date.now();
+    const mem = memoryDb(rowsOf(3), {
+      campaign: campaign({ status: "sent" }),
+      rows: [{ id: "row-1", status: "failed", error: "Meta said no" }],
+    });
+    // The failures are read; the queue, afterwards, is not.
+    const { db } = paged(mem, (_from, chain) =>
+      has(chain, "or") ? null : "timeout",
+    );
+    const { deps } = setup(mem, db);
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: false, error: "db" });
+    expect(mem.campaign.status).toBe("sending");
+    // Stale enough for the cron's next tick to resume it.
+    expect(Date.parse(String(mem.campaign.sending_started_at))).toBeLessThan(
+      before - STUCK_AFTER_MS,
+    );
   });
 });
 

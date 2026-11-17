@@ -552,6 +552,8 @@ type Preflight =
       ok: true;
       channel: CampaignChannel | null;
       status: CampaignRow["status"] | null;
+      /** When its current send was claimed, before this dispatch claims it. */
+      sendingStartedAt: string | null;
     }
   | Extract<DispatchResult, { ok: false }>;
 
@@ -570,17 +572,22 @@ async function preflight(
 ): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
-    .select("id, channel, kind, status, audience, content")
+    .select("id, channel, kind, status, audience, content, sending_started_at")
     .eq("id", campaignId)
     .maybeSingle();
   if (error) return { ok: false, error: "db", detail: error.message };
 
-  const campaign = data as Pick<
-    CampaignRow,
-    "channel" | "kind" | "status" | "audience" | "content"
-  > | null;
+  const campaign = data as
+    | (Pick<
+        CampaignRow,
+        "channel" | "kind" | "status" | "audience" | "content"
+      > & { sending_started_at?: string | null })
+    | null;
+  const sendingStartedAt = campaign?.sending_started_at ?? null;
   // No such row: the claim that follows reports it as not claimable.
-  if (!campaign) return { ok: true, channel: null, status: null };
+  if (!campaign) {
+    return { ok: true, channel: null, status: null, sendingStartedAt };
+  }
 
   // An automated kind (an appointment notice above all) is switched on and the
   // cron runs it; it is never sent in one go. The actions refuse it before they
@@ -596,7 +603,12 @@ async function preflight(
     return { ok: false, error: "locked" };
   }
   if (campaign.channel !== "whatsapp") {
-    return { ok: true, channel: campaign.channel, status: campaign.status };
+    return {
+      ok: true,
+      channel: campaign.channel,
+      status: campaign.status,
+      sendingStartedAt,
+    };
   }
 
   // The state is left alone, but a scheduled or stuck campaign the cron keeps
@@ -638,7 +650,12 @@ async function preflight(
   } catch (err) {
     return { ok: false, error: "db", detail: (err as Error).message };
   }
-  return { ok: true, channel: "whatsapp", status: campaign.status };
+  return {
+    ok: true,
+    channel: "whatsapp",
+    status: campaign.status,
+    sendingStartedAt,
+  };
 }
 
 /** What the cron records on a campaign it gives up on after two hours. */
@@ -657,6 +674,11 @@ export async function dispatchCampaign(
   opts: {
     resume?: boolean;
     preflighted?: boolean;
+    /**
+     * With `preflighted`: when the send being resumed was claimed, which the
+     * caller knows and the skipped preflight would have read.
+     */
+    startedAt?: string;
     /** Epoch ms by which the caller's whole invocation must be over. */
     deadlineAt?: number;
   } = {},
@@ -668,9 +690,12 @@ export async function dispatchCampaign(
   const now = new Date();
   const resume = opts.resume === true;
 
+  /** `sending_started_at` as it was before the claim below stamps it anew. */
+  let startedBefore = opts.startedAt ?? null;
   if (!opts.preflighted) {
     const checked = await preflight(campaignId, db, configured);
     if (!checked.ok) return checked;
+    startedBefore = checked.sendingStartedAt;
   }
 
   let campaign: CampaignRow | null;
@@ -744,12 +769,27 @@ export async function dispatchCampaign(
   // A queue that cannot be read to its end is not sent in part, and the
   // campaign is neither done nor failed: its audience is frozen and whole, so
   // it stays `sending` with the reason and the cron's resume reads it again.
+  //
+  // A resume that got nowhere also hands the send its age back. The claim
+  // above stamped `sending_started_at` with now; left like that, a queue that
+  // can never be read (longer than the reader's cap, say) would be resumed
+  // every quarter of an hour for ever, each try making the send look new. With
+  // its old stamp the two hours after which the cron gives up still run out.
   let rows: QueuedRow[];
   try {
     rows = await loadQueued(campaignId, db);
   } catch (err) {
     const detail = (err as Error).message;
-    await refreshCounts(campaignId, { last_error: `db: ${detail}` }, db);
+    await refreshCounts(
+      campaignId,
+      {
+        last_error: `db: ${detail}`,
+        ...(resume && startedBefore
+          ? { sending_started_at: startedBefore }
+          : {}),
+      },
+      db,
+    );
     return { ok: false, error: "db", detail };
   }
 
@@ -884,14 +924,10 @@ export async function retryFailed(
   // before it, but two hours short of the age at which the cron gives up on a
   // send. (The epoch, as it used to be, read as abandoned to a tick that looked
   // in between.)
+  const reopenedAt = new Date(Date.now() - STUCK_AFTER_MS - 1000).toISOString();
   const reopening = db
     .from("campaigns")
-    .update({
-      status: "sending",
-      sending_started_at: new Date(
-        Date.now() - STUCK_AFTER_MS - 1000,
-      ).toISOString(),
-    })
+    .update({ status: "sending", sending_started_at: reopenedAt })
     .eq("id", campaignId);
   // A WhatsApp send can also stop `failed` with rows still queued (Meta kept
   // refusing it); reopening it sends those as well as the retryable failures.
@@ -924,7 +960,12 @@ export async function retryFailed(
 
   return dispatchCampaign(
     campaignId,
-    { resume: true, preflighted: true, deadlineAt: opts.deadlineAt },
+    {
+      resume: true,
+      preflighted: true,
+      startedAt: reopenedAt,
+      deadlineAt: opts.deadlineAt,
+    },
     deps,
   );
 }
