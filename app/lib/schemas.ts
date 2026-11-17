@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isValidPhone } from "@/utils/contact";
 import type {
   CampaignAudience,
+  CampaignChannel,
   CampaignContent,
   CampaignLocale,
   CampaignLocaleContent,
@@ -452,12 +453,6 @@ export function requiredLocales(
   return [sendLocaleOf(audience)];
 }
 
-/**
- * The whole campaign. On top of the field rules, the languages the audience
- * filter selects cannot be left empty — the one rule that needs `audience` and
- * `content` side by side. Non-empty blocks are already checked by
- * `campaignContentSchema`, so only the empty ones are re-run here.
- */
 export const campaignKindSchema = z.enum([
   "standard",
   "automated",
@@ -496,6 +491,14 @@ export const campaignTriggerSchema = z.object({
   tierId: z.string().uuid("tierInvalid").optional(),
 });
 
+/**
+ * The whole campaign. What it must contain depends on the channel. An email
+ * needs the language blocks the audience selects (the one rule that needs
+ * `audience` and `content` side by side), and any other block somebody
+ * started must be complete too. A WhatsApp campaign needs only a template and
+ * ignores the email blocks. `campaignContentSchema` holds just the per-field
+ * limits.
+ */
 export const campaignSchema = z
   .object({
     name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
@@ -542,6 +545,18 @@ export const campaignSchema = z
   });
 
 export type CampaignInput = z.infer<typeof campaignSchema>;
+
+/**
+ * A saved campaign keeps its channel. Its recipients, counters and report all
+ * mean something only in that channel, so editing cannot turn an email into a
+ * WhatsApp message or back. Make a new campaign instead.
+ */
+export function channelChangeAllowed(
+  saved: CampaignChannel,
+  next: CampaignChannel,
+): boolean {
+  return saved === next;
+}
 
 /**
  * What a draft has to satisfy: a name, well-shaped conditions, and blocks

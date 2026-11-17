@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
+import {
+  channelChangeAllowed,
+  validateCampaign,
+  validateCampaignDraft,
+} from "@/lib/schemas";
 
 /**
  * The payload `saveCampaign` validates, field by field. The action once left
@@ -154,7 +158,7 @@ describe("a WhatsApp campaign", () => {
     expect(r.ok).toBe(false);
   });
 
-  test("an email campaign ignores the whatsapp block", () => {
+  test("an email campaign needs no template, but a malformed whatsapp block still rejects it", () => {
     expect(
       validateCampaign({
         ...campaign,
@@ -166,6 +170,17 @@ describe("a WhatsApp campaign", () => {
       }).ok,
     ).toBe(true);
     expect(validateCampaign({ ...campaign, channel: "email" }).ok).toBe(true);
+    // Ignored for what it asks (a template), not for its shape.
+    expect(
+      validateCampaign({
+        ...campaign,
+        channel: "email",
+        content: {
+          ...campaign.content,
+          whatsapp: { templateId: "not-a-uuid", params: [] },
+        },
+      }).ok,
+    ).toBe(false);
   });
 
   test("an unknown channel is refused", () => {
@@ -227,5 +242,51 @@ describe("the channel default", () => {
     expect(r.ok && r.data.channel).toBe("email");
     const d = validateCampaignDraft(campaign);
     expect(d.ok && d.data.channel).toBe("email");
+  });
+});
+
+describe("the email rules, now checked by the campaign schema", () => {
+  test("an auxiliary language block left half written is refused", () => {
+    const r = validateCampaign({
+      ...campaign,
+      content: {
+        en: { ...empty, subject: "Only a subject" },
+        es: filled,
+      },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors["content.en.title"]).toBe("titleRequired");
+  });
+
+  test("a split test without a second subject is refused", () => {
+    const r = validateCampaign({ ...campaign, kind: "split" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors["content.es.subjectB"]).toBe("subjectBRequired");
+  });
+
+  test("a WhatsApp campaign is not held to the email blocks", () => {
+    const r = validateCampaign({
+      ...campaign,
+      channel: "whatsapp",
+      kind: "split",
+      content: {
+        en: { ...empty, subject: "Left over" },
+        es: empty,
+        whatsapp: {
+          templateId: "6f1c2a3e-1111-4222-8333-444455556666",
+          params: [],
+        },
+      },
+    });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe("channelChangeAllowed", () => {
+  test("a saved campaign keeps its channel", () => {
+    expect(channelChangeAllowed("email", "email")).toBe(true);
+    expect(channelChangeAllowed("whatsapp", "whatsapp")).toBe(true);
+    expect(channelChangeAllowed("email", "whatsapp")).toBe(false);
+    expect(channelChangeAllowed("whatsapp", "email")).toBe(false);
   });
 });

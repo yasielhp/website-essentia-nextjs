@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth-guard";
 import {
   campaignAudienceSchema,
+  channelChangeAllowed,
   requiredLocales,
   segmentSchema,
   validateCampaign,
@@ -25,6 +26,7 @@ import {
   EMPTY_LOCALE_CONTENT,
   type AudiencePreview,
   type CampaignAudience,
+  type CampaignChannel,
   type CampaignContent,
   type CampaignInput,
   type CampaignLocale,
@@ -487,8 +489,7 @@ export async function saveCampaign(
   const check = options.draft ? validateCampaignDraft : validateCampaign;
   const validated = check({
     name: input.name,
-    // Task 15: pass `input.channel` through. Left out, the schema defaults it
-    // to "email", which is all the form can send until then.
+    channel: input.channel,
     kind: input.kind,
     trigger: input.trigger,
     audience: input.audience,
@@ -515,12 +516,19 @@ export async function saveCampaign(
     // draft or a scheduled one keeps its state, the schedule included.
     const { data, error } = await db
       .from("campaigns")
-      .select("status")
+      .select("status, channel")
       .eq("id", input.id)
       .maybeSingle();
-    const status = (data as { status: CampaignStatus } | null)?.status;
-    if (error || !status) return { ok: false, error: "not_found" };
+    const saved = data as {
+      status: CampaignStatus;
+      channel: CampaignChannel;
+    } | null;
+    const status = saved?.status;
+    if (error || !saved || !status) return { ok: false, error: "not_found" };
     if (!EDITABLE.includes(status)) return { ok: false, error: "locked" };
+    if (!channelChangeAllowed(saved.channel, validated.data.channel)) {
+      return { ok: false, error: "locked" };
+    }
 
     const { error: updateError } = await db
       .from("campaigns")
@@ -880,8 +888,7 @@ export async function activateCampaign(
 
   const check = validateCampaign({
     name: row.name,
-    // Task 15: add `channel: row.channel` here, or a WhatsApp campaign is
-    // checked as an email and refused for its empty email blocks.
+    channel: row.channel,
     kind: row.kind,
     trigger: row.trigger,
     audience: row.audience,

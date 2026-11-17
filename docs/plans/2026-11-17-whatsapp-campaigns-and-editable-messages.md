@@ -1552,7 +1552,11 @@ export function resolveParams(
 }
 ```
 
-`service`, `session_type`, `date`, `time` llegan por `vars` (las ponen las reglas `after_booking`/`first_visit` en Task 13). Run tests → verde. Commit:
+`service`, `session_type`, `date`, `time` llegan por `vars` (las ponen las reglas `after_booking`/`first_visit` en Task 13). Run tests → verde.
+
+**Texto fijo vacío.** El esquema de la Task 9 deja pasar a propósito un texto fijo vacío o solo de espacios (así un borrador a medias se guarda); `resolveParams` lo sanea con `—` al enviar, porque Meta rechaza un parámetro vacío.
+
+Commit:
 
 ```bash
 git add app/lib/campaigns/whatsapp-params.ts app/lib/campaigns/whatsapp-params.test.ts
