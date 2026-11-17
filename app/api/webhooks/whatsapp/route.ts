@@ -9,7 +9,7 @@ import {
 import { inBatches } from "@/lib/whatsapp/batch";
 import { matchByPhone } from "@/lib/whatsapp/match";
 import { recordOptOutSuppression } from "@/lib/whatsapp/suppression";
-import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
+import { isOptOutMessage, matchOptOut } from "@/lib/whatsapp/optout";
 import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 
 /**
@@ -57,7 +57,16 @@ type MetaInboundMessage = {
   from?: string;
   id?: string;
   type?: string;
+  /** `type: "text"`: what the client typed. */
   text?: { body?: string };
+  /** `type: "button"`: a quick-reply button of a template. */
+  button?: { text?: string; payload?: string };
+  /** `type: "interactive"`: a reply button or a list row. */
+  interactive?: {
+    type?: string;
+    button_reply?: { id?: string; title?: string };
+    list_reply?: { id?: string; title?: string };
+  };
 };
 
 type MetaWebhookBody = {
@@ -322,7 +331,9 @@ export async function POST(req: NextRequest) {
 
   // Opt-outs. The centre answers WhatsApp by hand, but a STOP has to be
   // honoured by the machine: it stamps the contact and every audience from now
-  // on leaves them out. Only text is read, and nothing inbound is stored.
+  // on leaves them out. The word can be typed or pressed (a template's
+  // quick-reply button, an interactive reply): `isOptOutMessage` reads each of
+  // those and nothing else, and nothing inbound is stored.
   // Everything from here to the `statuses` block must not be able to throw: a
   // STOP that blows up would cost the delivery states in the same payload.
   try {
@@ -331,10 +342,8 @@ export async function POST(req: NextRequest) {
       for (const message of objectsIn<MetaInboundMessage>(
         change.value?.messages,
       )) {
-        if (message.type !== "text" || typeof message.from !== "string") {
-          continue;
-        }
-        if (isOptOutText(message.text?.body)) optOutSenders.add(message.from);
+        if (typeof message.from !== "string") continue;
+        if (isOptOutMessage(message)) optOutSenders.add(message.from);
       }
     }
 

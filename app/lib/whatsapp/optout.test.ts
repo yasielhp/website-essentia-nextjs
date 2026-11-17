@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
+import {
+  isOptOutMessage,
+  isOptOutText,
+  matchOptOut,
+} from "@/lib/whatsapp/optout";
 
 describe("isOptOutText", () => {
   test("accepts the two opt-out words", () => {
@@ -93,5 +97,96 @@ describe("matchOptOut", () => {
   });
   test("accepts a sender that already carries a plus sign", () => {
     expect(matchOptOut("+34600112233", contacts)).toHaveLength(5);
+  });
+});
+
+describe("isOptOutMessage", () => {
+  test("a typed STOP or BAJA", () => {
+    expect(isOptOutMessage({ type: "text", text: { body: "STOP" } })).toBe(
+      true,
+    );
+    expect(isOptOutMessage({ type: "text", text: { body: " Baja. " } })).toBe(
+      true,
+    );
+  });
+  test("a template's quick-reply button, by its label or its payload", () => {
+    expect(
+      isOptOutMessage({
+        type: "button",
+        button: { text: "BAJA", payload: "optout-1" },
+      }),
+    ).toBe(true);
+    expect(
+      isOptOutMessage({
+        type: "button",
+        button: { text: "No me escribas", payload: "STOP" },
+      }),
+    ).toBe(true);
+  });
+  test("an interactive reply, button or list row, by its title", () => {
+    expect(
+      isOptOutMessage({
+        type: "interactive",
+        interactive: {
+          type: "button_reply",
+          button_reply: { id: "1", title: "Stop" },
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isOptOutMessage({
+        type: "interactive",
+        interactive: {
+          type: "list_reply",
+          list_reply: { id: "row-3", title: "Baja" },
+        },
+      }),
+    ).toBe(true);
+  });
+  test("the same exact-word rule on a button: a longer label is not a STOP", () => {
+    expect(
+      isOptOutMessage({
+        type: "button",
+        button: { text: "Darme de baja", payload: "x" },
+      }),
+    ).toBe(false);
+    expect(
+      isOptOutMessage({
+        type: "button",
+        button: { text: "Cancelar", payload: "cancelar" },
+      }),
+    ).toBe(false);
+    expect(
+      isOptOutMessage({
+        type: "interactive",
+        interactive: { button_reply: { id: "1", title: "Confirmar cita" } },
+      }),
+    ).toBe(false);
+  });
+  test("each type reads its own fields only", () => {
+    // An image with a stray `text` is not a typed STOP.
+    expect(isOptOutMessage({ type: "image", text: { body: "STOP" } })).toBe(
+      false,
+    );
+    expect(isOptOutMessage({ type: "text", button: { text: "STOP" } })).toBe(
+      false,
+    );
+  });
+  test("a body that is not the promised shape never throws", () => {
+    for (const message of [
+      null,
+      undefined,
+      "STOP",
+      7,
+      [],
+      { type: "button" },
+      { type: "button", button: "STOP" },
+      { type: "button", button: { text: 5, payload: {} } },
+      { type: "interactive", interactive: null },
+      { type: "interactive", interactive: { button_reply: "STOP" } },
+      { type: "text", text: null },
+    ]) {
+      expect(isOptOutMessage(message)).toBe(false);
+    }
   });
 });

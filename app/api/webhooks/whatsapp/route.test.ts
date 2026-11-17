@@ -93,6 +93,19 @@ const inbound = (from: string, body: string) => ({
   ],
 });
 
+/** An inbound message of any type, as Meta delivers it. */
+const inboundMessage = (message: Record<string, unknown>) => ({
+  entry: [{ changes: [{ field: "messages", value: { messages: [message] } }] }],
+});
+
+const optOutUpdates = () =>
+  log.filter(
+    (q) =>
+      q.table === "contacts" &&
+      "whatsapp_opted_out_at" in
+        ((argsOf(q.chain, "update")?.[0] as object | undefined) ?? {}),
+  );
+
 const suppressionWrites = () =>
   log.filter((q) => q.table === "whatsapp_suppressed_phones");
 
@@ -159,5 +172,95 @@ describe("STOP and the phone list", () => {
     quiet.mockRestore();
     expect(res.status).toBe(403);
     expect(suppressionWrites()).toHaveLength(0);
+  });
+});
+
+describe("a STOP that is pressed, not typed", () => {
+  const pressed: [string, Record<string, unknown>][] = [
+    [
+      "a template's quick-reply button (its label)",
+      { type: "button", button: { text: "BAJA", payload: "optout" } },
+    ],
+    [
+      "a template's quick-reply button (its payload)",
+      { type: "button", button: { text: "No, gracias", payload: "STOP" } },
+    ],
+    [
+      "an interactive reply button",
+      {
+        type: "interactive",
+        interactive: {
+          type: "button_reply",
+          button_reply: { id: "1", title: "Stop" },
+        },
+      },
+    ],
+    [
+      "an interactive list row",
+      {
+        type: "interactive",
+        interactive: {
+          type: "list_reply",
+          list_reply: { id: "r-1", title: "Baja" },
+        },
+      },
+    ],
+  ];
+
+  for (const [name, message] of pressed) {
+    test(`${name} suppresses the number and opts the contact out`, async () => {
+      contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+      const res = await POST(
+        signed(inboundMessage({ from: "34600112233", ...message })),
+      );
+      expect(res.status).toBe(200);
+      const writes = suppressionWrites();
+      expect(writes).toHaveLength(1);
+      expect(argsOf(writes[0]!.chain, "upsert")?.[0]).toEqual([
+        { phone: "+34600112233", reason: "stop" },
+      ]);
+      const updates = optOutUpdates();
+      expect(updates).toHaveLength(1);
+      expect(argsOf(updates[0]!.chain, "in")).toEqual(["id", ["c-1"]]);
+    });
+  }
+
+  test("a button that says something else is not a STOP", async () => {
+    contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+    for (const message of [
+      { type: "button", button: { text: "Cancelar", payload: "cancelar" } },
+      { type: "button", button: { text: "Darme de baja", payload: "x" } },
+      {
+        type: "interactive",
+        interactive: { button_reply: { id: "1", title: "Confirmar" } },
+      },
+    ]) {
+      await POST(signed(inboundMessage({ from: "34600112233", ...message })));
+    }
+    expect(suppressionWrites()).toHaveLength(0);
+    expect(optOutUpdates()).toHaveLength(0);
+  });
+
+  test("a pressed button still proves the number has WhatsApp: the unreachable mark is cleared", async () => {
+    contacts = [{ id: "c-1", phone: "600 11 22 33" }];
+    await POST(
+      signed(
+        inboundMessage({
+          from: "34600112233",
+          type: "button",
+          button: { text: "Confirmar", payload: "ok" },
+        }),
+      ),
+    );
+    const cleared = log.filter(
+      (q) =>
+        q.table === "contacts" &&
+        "whatsapp_unreachable_at" in
+          ((argsOf(q.chain, "update")?.[0] as object | undefined) ?? {}),
+    );
+    expect(cleared).toHaveLength(1);
+    expect(argsOf(cleared[0]!.chain, "update")?.[0]).toEqual({
+      whatsapp_unreachable_at: null,
+    });
   });
 });
