@@ -9,6 +9,7 @@ import {
   EMPTY_FILTERS,
   type CalendarFilters,
 } from "@/utils/calendar-filters";
+import { applyOnEnter } from "@/utils/filter-modal-keys";
 
 const FIELD_CLASS =
   "border-sand-200 text-petroleum-700 focus:border-petroleum-400 w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none";
@@ -57,7 +58,10 @@ export function CalendarFiltersModal({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
     >
-      <div className="border-sand-200 mx-4 w-full max-w-sm rounded-2xl border bg-white shadow-xl">
+      <div
+        className="border-sand-200 mx-4 w-full max-w-sm rounded-2xl border bg-white shadow-xl"
+        onKeyDown={applyOnEnter(() => onApply(draft))}
+      >
         <div className="border-sand-100 flex items-center justify-between border-b px-6 py-4">
           <h3 className="text-petroleum-700 font-semibold">{t("title")}</h3>
           <button

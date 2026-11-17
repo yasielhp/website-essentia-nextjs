@@ -14,6 +14,7 @@ import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 import { BookingList } from "./booking-list";
 import type { Booking } from "./types";
+import { applyOnEnter } from "@/utils/filter-modal-keys";
 
 type Filters = {
   status: string;
@@ -106,6 +107,10 @@ function DateRangeButton({
     setLocalTo(dateTo);
     setOpen(true);
   }
+  function applyRange() {
+    onChange(localFrom, localTo);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -146,7 +151,10 @@ function DateRangeButton({
       </Button>
 
       {open && (
-        <div className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl">
+        <div
+          className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl"
+          onKeyDown={applyOnEnter(applyRange)}
+        >
           <div className="mb-3 flex flex-wrap gap-1.5">
             {DATE_PRESETS.map(({ key, days }) => {
               const [f, until] = presetDates(days);
@@ -207,14 +215,7 @@ function DateRangeButton({
             >
               {t("common.dates.clear")}
             </button>
-            <Button
-              variant="solid"
-              size="md"
-              onClick={() => {
-                onChange(localFrom, localTo);
-                setOpen(false);
-              }}
-            >
+            <Button variant="solid" size="md" onClick={applyRange}>
               {t("common.dates.apply")}
             </Button>
           </div>
@@ -250,7 +251,10 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <div
+        className="flex max-h-[85vh] w-full max-w-sm flex-col gap-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        onKeyDown={applyOnEnter(onApply)}
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">

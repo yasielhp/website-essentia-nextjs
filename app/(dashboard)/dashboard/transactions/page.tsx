@@ -14,6 +14,7 @@ import type { UnifiedRow } from "./types";
 import { fetchBonusSales } from "@/actions/bonuses";
 import { getAccessToken } from "@/lib/client-session";
 import { bookingMoney, ledgerTotals } from "@/lib/payments/ledger";
+import { applyOnEnter } from "@/utils/filter-modal-keys";
 
 // ─── Source row types ─────────────────────────────────────────
 
@@ -154,6 +155,10 @@ function DateRangeButton({
     setLocalTo(dateTo);
     setOpen(true);
   }
+  function applyRange() {
+    onChange(localFrom, localTo);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -194,7 +199,10 @@ function DateRangeButton({
       </Button>
 
       {open && (
-        <div className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl">
+        <div
+          className="border-sand-200 absolute top-full right-0 z-50 mt-2 w-72 rounded-2xl border bg-white p-4 shadow-xl"
+          onKeyDown={applyOnEnter(applyRange)}
+        >
           <div className="mb-3 flex flex-wrap gap-1.5">
             {DATE_PRESETS.map(({ key, days }) => {
               const [f, until] = presetDates(days);
@@ -255,14 +263,7 @@ function DateRangeButton({
             >
               {t("common.dates.clear")}
             </button>
-            <Button
-              variant="solid"
-              size="md"
-              onClick={() => {
-                onChange(localFrom, localTo);
-                setOpen(false);
-              }}
-            >
+            <Button variant="solid" size="md" onClick={applyRange}>
               {t("common.dates.apply")}
             </Button>
           </div>
@@ -296,7 +297,10 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+      <div
+        className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl"
+        onKeyDown={applyOnEnter(onApply)}
+      >
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">
             {t("common.filters")}

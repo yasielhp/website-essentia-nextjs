@@ -11,6 +11,7 @@ import { IconPlus, IconFilter } from "@/components/ui/icons";
 import { formatMediumDate } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { activatable } from "@/lib/a11y";
+import { applyOnEnter } from "@/utils/filter-modal-keys";
 
 type Post = {
   id: string;
@@ -77,7 +78,10 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+      <div
+        className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl"
+        onKeyDown={applyOnEnter(onApply)}
+      >
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">
             {t("common.filters")}

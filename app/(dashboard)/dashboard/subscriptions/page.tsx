@@ -10,6 +10,7 @@ import { StatCard } from "@/components/dashboard/calendar/stat-card";
 import { IconPlus, IconFilter } from "@/components/ui/icons";
 import { SubscriptionTable } from "./subscription-table";
 import type { Subscription } from "./types";
+import { applyOnEnter } from "@/utils/filter-modal-keys";
 
 const PAGE_SIZE = 20;
 
@@ -69,7 +70,10 @@ function FilterModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl">
+      <div
+        className="flex w-full max-w-sm flex-col gap-5 rounded-2xl bg-white p-6 shadow-xl"
+        onKeyDown={applyOnEnter(onApply)}
+      >
         <div className="flex items-center justify-between">
           <h3 className="font-display text-petroleum-700 text-xl">
             {t("common.filters")}
