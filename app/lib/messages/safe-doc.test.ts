@@ -549,6 +549,77 @@ describe("findForbiddenNodes, for saving", () => {
   });
 });
 
+describe("a block set to show conditionally", () => {
+  // The renderer draws a node with `showIfKey` only when a payload value of
+  // that name is truthy, and a transactional email is rendered with none: the
+  // block would never be sent.
+  const conditional = doc(
+    { ...p(text("siempre")), attrs: { showIfKey: "" } },
+    { ...p(text("párrafo condicional")), attrs: { showIfKey: "first_name" } },
+    {
+      type: "section",
+      attrs: { showIfKey: "es_vip" },
+      content: [p(text("sección condicional"))],
+    },
+    {
+      ...button("https://example.test/x"),
+      attrs: { ...button("https://example.test/x").attrs, showIfKey: "es_vip" },
+    },
+  );
+
+  test("the renderer alone never draws it", async () => {
+    const raw = await renderBodyFragment(conditional, { first_name: "Ana" });
+    expect(raw).toContain("siempre");
+    expect(raw).not.toContain("párrafo condicional");
+    expect(raw).not.toContain("sección condicional");
+  });
+
+  test("sending takes the condition off: what the admin wrote goes out", async () => {
+    const out = await html(conditional, { first_name: "Ana" });
+    expect(out).toContain("siempre");
+    expect(out).toContain("párrafo condicional");
+    expect(out).toContain("sección condicional");
+    expect(urls(out)).toEqual(["https://example.test/x"]);
+    expect(JSON.stringify(sanitizeDoc(conditional, {}))).not.toContain(
+      "showIfKey",
+    );
+  });
+
+  test("saving refuses it, with its place", () => {
+    expect(findForbiddenNodes(conditional)).toEqual([
+      { kind: "blockNotAllowed", path: "content[1]", node: "paragraph" },
+      { kind: "blockNotAllowed", path: "content[2]", node: "section" },
+      { kind: "blockNotAllowed", path: "content[3]", node: "button" },
+    ]);
+  });
+
+  test("the empty condition the editor writes on every block is no condition", () => {
+    for (const showIfKey of ["", null, undefined]) {
+      const d = doc({ ...p(text("hola")), attrs: { showIfKey } });
+      expect(findForbiddenNodes(d)).toEqual([]);
+    }
+  });
+
+  test("a condition deep inside is found", () => {
+    const d = doc({
+      type: "columns",
+      content: [
+        {
+          type: "column",
+          content: [{ ...p(text("x")), attrs: { showIfKey: "k" } }],
+        },
+      ],
+    });
+    expect(findForbiddenNodes(d)).toEqual([
+      {
+        kind: "blockNotAllowed",
+        path: "content[0].content[0].content[0]",
+        node: "paragraph",
+      },
+    ]);
+  });
+});
+
 // ── the allow-list ─────────────────────────────────────────────────────────
 
 describe("node types are an allow-list", () => {

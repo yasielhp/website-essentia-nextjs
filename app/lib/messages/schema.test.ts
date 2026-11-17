@@ -528,6 +528,22 @@ describe("validateMessageTemplate — links", () => {
     ).toEqual({ "doc.content.0": "blockNotAllowed" });
   });
 
+  it("refuses a block set to show conditionally: it would never be sent", () => {
+    const conditional = (showIfKey: unknown) =>
+      email({
+        doc: doc(para(text("hola")), {
+          ...para(text("solo a veces")),
+          attrs: { showIfKey },
+        }),
+      });
+    expect(errorsOf(conditional("first_name"))).toEqual({
+      "doc.content.1": "blockNotAllowed",
+    });
+    // What the editor writes on a block nobody made conditional.
+    expect(validateMessageTemplate(conditional("")).ok).toBe(true);
+    expect(validateMessageTemplate(conditional(null)).ok).toBe(true);
+  });
+
   it("applies to a button's address and to an image's", () => {
     expect(
       errorsOf(

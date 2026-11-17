@@ -27,6 +27,11 @@ import type { EmailDoc } from "@/types/campaign";
  *    made on the document, and the value comes from a client's own data. So
  *    the value is resolved here, checked, and written into the document in
  *    place of the variable, with the flag switched off.
+ *  - "Show conditionally" (`showIfKey` on any block): the renderer draws the
+ *    block only when a PAYLOAD value of that name is truthy, and these emails
+ *    are rendered with variables and no payload, so such a block would never
+ *    be sent. Saving refuses it; sending takes the condition off, so a
+ *    document that got in anyway goes out whole, as the editor showed it.
  *  - Images (`image`, `inlineImage`, `logo`) go into `src` and may only be
  *    `https:` or `http:`; one that is not is removed.
  *  - Colours go into inline `style`: anything that is not a plain colour value
@@ -110,7 +115,10 @@ export const ALLOWED_MARKS: ReadonlySet<string> = new Set([
 ]);
 
 export type DocProblem = {
-  /** `blockNotAllowed`: a raw-HTML block. `linkNotAllowed`: a bad address. */
+  /**
+   * `blockNotAllowed`: a raw-HTML block, a node or mark off the allow-list, or
+   * a block set to show conditionally. `linkNotAllowed`: a bad address.
+   */
   kind: "blockNotAllowed" | "linkNotAllowed";
   /** Where in the document, e.g. `content[2].marks[0]`. */
   path: string;
@@ -253,6 +261,8 @@ function cleanNode(
     const attrs: Record<string, unknown> = { ...node.attrs };
     cleanColours(attrs);
     cleanStyleValues(attrs);
+    // No payload is ever set, so a condition could only ever hide the block.
+    delete attrs.showIfKey;
 
     switch (node.type) {
       case "button": {
@@ -396,6 +406,11 @@ export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
       return;
     }
     const a = node.attrs ?? {};
+    // A condition the renderer would act on (it ignores an empty one, which
+    // is what the editor writes on every block): the block would never go out.
+    if (a.showIfKey) {
+      problems.push({ kind: "blockNotAllowed", path, node: node.type });
+    }
     const bad = (value: unknown, where: string, nodeName: string) =>
       problems.push({
         kind: "linkNotAllowed",
