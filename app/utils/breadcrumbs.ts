@@ -1,3 +1,8 @@
+import {
+  messageListHref,
+  parseMessageRoute,
+} from "@/lib/messages/message-route";
+
 const UUID_RE = /^[0-9a-f-]{36}$/i;
 
 /**
@@ -10,6 +15,15 @@ export type Breadcrumb = {
   key?: string;
   label?: string;
   href?: string;
+  /**
+   * A message's own page: the caller names it from the catalogue ("Booking
+   * confirmed · Spanish"), which needs the translations this module has not.
+   */
+  messageRow?: {
+    channel: "email" | "whatsapp";
+    key: string;
+    locale: "es" | "en";
+  };
 };
 
 const SECTION_KEYS: Record<string, string> = {
@@ -65,6 +79,24 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
   const sectionHref = SECTION_HREFS[section] ?? `/dashboard/${section}`;
 
   if (rest.length === 0) return [sectionCrumb];
+
+  // A message's own page: Messages, then the message and its language. The
+  // way back is the list on the tab the page came from.
+  if (section === "messages" && rest.length === 3) {
+    const route = parseMessageRoute(rest[0], rest[1], rest[2]);
+    if (route.ok) {
+      return [
+        { key: "sections.messages", href: messageListHref() },
+        {
+          messageRow: {
+            channel: route.channel,
+            key: route.key,
+            locale: route.locale,
+          },
+        },
+      ];
+    }
+  }
 
   // A sub-list under a section — campaigns/segments — is its own crumb, so
   // the trail reads Campañas › Segmentos › <name> and not Campañas › <name>.

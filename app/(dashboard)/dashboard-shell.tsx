@@ -9,6 +9,7 @@ import { UserMenu } from "@/components/dashboard/user-menu";
 import { Logo } from "@/components/ui/logo";
 import { FavIcon, IconSidebarLeft } from "@/components/ui/icons";
 import { navLinks, navIcons } from "@/constants/nav";
+import { messageRowLabel } from "@/lib/messages/message-route";
 import { getBreadcrumbs, type Breadcrumb } from "@/utils/breadcrumbs";
 import { avatarInitials } from "@/utils/avatar";
 import { RoleProvider, useRole } from "@/context/role-context";
@@ -67,8 +68,19 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   }
 
   const displayName = user?.name ?? user?.email ?? t("shell.fallbackUser");
-  const crumbLabel = (crumb: Breadcrumb) =>
-    crumb.key ? t(`breadcrumbs.${crumb.key}`) : (crumb.label ?? "");
+  const crumbLabel = (crumb: Breadcrumb) => {
+    if (crumb.messageRow) {
+      const { channel, key, locale } = crumb.messageRow;
+      return messageRowLabel(
+        t(`messages.keys.${key}`),
+        t(`messages.email.locales.${locale}`),
+        channel === "whatsapp"
+          ? t("messages.email.whatsapp.channelLabel")
+          : undefined,
+      );
+    }
+    return crumb.key ? t(`breadcrumbs.${crumb.key}`) : (crumb.label ?? "");
+  };
   const UUID_RE = /^[0-9a-f-]{36}$/i;
   const rawCrumbs = getBreadcrumbs(pathname);
   const segments = pathname
