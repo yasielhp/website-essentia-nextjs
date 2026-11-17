@@ -8,6 +8,7 @@ import type {
   EmailDoc,
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
+import { countParams, paramIssues } from "@/lib/whatsapp/templates";
 
 /**
  * Message KEYS, not sentences: this form is on the bilingual public site, and
@@ -532,6 +533,73 @@ export function validateCampaignDraft(input: unknown): CampaignValidation {
   if (parsed.success) return { ok: true, data: parsed.data };
   return { ok: false, errors: collectIssues(parsed.error.issues) };
 }
+
+// ─── WhatsApp templates ───────────────────────────────────────
+//
+// Messages are keys under `dashboard.validation.*`. Meta's naming rule for
+// templates is lowercase letters, digits and underscores, up to 512 chars; the
+// body may run to 1024 and placeholders must be 1..n consecutive and not at an
+// edge. Every message below is a key, never prose, so the form can translate it.
+export const whatsappTemplateSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "templateNameRequired")
+      .max(512, "templateNameTooLong")
+      .regex(/^[a-z0-9_]+$/, "templateNameFormat"),
+    language: z.enum(["es", "en"], "templateLanguageInvalid"),
+    category: z.enum(["MARKETING", "UTILITY"], "templateCategoryInvalid"),
+    headerText: z.string().trim().max(60, "headerTooLong").optional(),
+    body: z
+      .string()
+      .trim()
+      .min(1, "templateBodyRequired")
+      .max(1024, "templateBodyTooLong"),
+    footerText: z.string().trim().max(60, "footerTooLong").optional(),
+    buttons: z
+      .array(
+        z.discriminatedUnion("type", [
+          z.object({
+            type: z.literal("URL"),
+            text: z
+              .string()
+              .trim()
+              .min(1, "buttonTextRequired")
+              .max(25, "buttonTextTooLong"),
+            url: z
+              .string()
+              .trim()
+              .url("urlInvalid")
+              .startsWith("https://", "urlMustBeHttps"),
+          }),
+          z.object({
+            type: z.literal("QUICK_REPLY"),
+            text: z
+              .string()
+              .trim()
+              .min(1, "buttonTextRequired")
+              .max(25, "buttonTextTooLong"),
+          }),
+        ]),
+      )
+      .max(3, "tooManyButtons"),
+    exampleParams: z.array(z.string().trim().min(1, "exampleRequired")),
+  })
+  .superRefine((value, ctx) => {
+    for (const issue of paramIssues(value.body)) {
+      ctx.addIssue({ code: "custom", path: ["body"], message: issue });
+    }
+    if (value.exampleParams.length !== countParams(value.body)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["exampleParams"],
+        message: "exampleCountMismatch",
+      });
+    }
+  });
+
+export type WhatsAppTemplateInput = z.infer<typeof whatsappTemplateSchema>;
 
 export const paymentSettingsSchema = z.object({
   depositPercent: z.number().int().min(10).max(100),
