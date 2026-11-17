@@ -212,9 +212,10 @@ function withFinishedRows(mem: ReturnType<typeof memoryDb>) {
       !has(chain, "update")
     ) {
       const limit = Number(argsOf(chain, "limit")?.[0] ?? Infinity);
+      const since = String(argsOf(chain, "gte")?.[1] ?? "");
       return {
         data: [...mem.rows.values()]
-          .filter((r) => r.claimed_at !== null)
+          .filter((r) => r.claimed_at !== null && r.claimed_at >= since)
           .sort((a, b) =>
             String(b.claimed_at).localeCompare(String(a.claimed_at)),
           )
@@ -316,16 +317,59 @@ describe("runAutomation: an automation Meta refuses a few rows at a time", () =>
     expect(mem.campaign.last_error).toBe(`[halted] ${REASON}`);
   });
 
-  test("refusals for different reasons are the contacts', not the account's", async () => {
+  test("refusals for different reasons are not one cause", async () => {
     const mem = memoryDb(rowsOf(3), {
       campaign: automated(),
       rows: [
-        earlier(1, 30, { error: "131026: Message undeliverable" }),
+        earlier(1, 30, { error: "132000: Template param mismatch" }),
         earlier(2, 15),
       ],
     });
     await tick(mem);
     expect(mem.campaign.status).toBe("active");
+  });
+
+  test("three clients whose number has no WhatsApp do not pause it: that is theirs, not the account's", async () => {
+    const NO_WHATSAPP = "131026: Message undeliverable";
+    const mem = memoryDb(rowsOf(3), {
+      campaign: automated(),
+      rows: [
+        earlier(1, 30, { error: NO_WHATSAPP }),
+        earlier(2, 15, { error: NO_WHATSAPP }),
+      ],
+    });
+    const { result } = await tick(
+      mem,
+      fakeSend(() => ({
+        status: "failed",
+        error: "Message undeliverable",
+        code: 131026,
+      })),
+    );
+    expect(result).toMatchObject({ failed: 1 });
+    expect(result.halted).toBeUndefined();
+    expect(mem.campaign.status).toBe("active");
+  });
+
+  test("refusals from days ago do not add up to today's", async () => {
+    const DAY = 24 * 60;
+    const mem = memoryDb(rowsOf(3), {
+      campaign: automated(),
+      rows: [earlier(1, 3 * DAY), earlier(2, 2 * DAY + 60)],
+    });
+    await tick(mem);
+    expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error).toBe(REASON);
+  });
+
+  test("inside two days they do", async () => {
+    const DAY = 24 * 60;
+    const mem = memoryDb(rowsOf(3), {
+      campaign: automated(),
+      rows: [earlier(1, 2 * DAY - 60), earlier(2, DAY)],
+    });
+    await tick(mem);
+    expect(mem.campaign.status).toBe("paused");
   });
 
   test("a run in which nothing was refused does not look at the past at all", async () => {
@@ -390,7 +434,11 @@ describe("runAutomation: an automation Meta refuses a few rows at a time", () =>
               ],
             }) as Recipient,
         ),
-      whatsapp: { send: sender.send, sleep: async () => {} },
+      whatsapp: {
+        send: sender.send,
+        sleep: async () => {},
+        now: () => NOW.getTime(),
+      },
     });
     expect(sender.calls).toHaveLength(3);
     // One batch of three: the old rule (three whole batches) never saw it.

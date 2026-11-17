@@ -148,13 +148,14 @@ export async function runAutomation(
   // which an automation never fills: it sends a few rows a tick, an appointment
   // notice one or two. So after a send in which Meta refused something, the
   // campaign's last finished rows are looked at across ticks: three in a row
-  // refused for that reason is the account or the template, and it is paused
-  // just the same.
+  // in two days refused for that reason is the account or the template, and it
+  // is paused just the same. (A refusal that is about the recipient, a number
+  // with no WhatsApp, is never that.)
   const halted =
     outcome.halted ??
     (campaign.channel === "whatsapp" &&
     outcome.refusal &&
-    (await refusalStreak(db, campaign.id, outcome.refusal))
+    (await refusalStreak(db, campaign.id, outcome.refusal, now.getTime()))
       ? outcome.refusal
       : null);
   // A message that left and whose row could not be written is left `sending`

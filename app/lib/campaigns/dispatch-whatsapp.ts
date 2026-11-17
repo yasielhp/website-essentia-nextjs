@@ -1,5 +1,6 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendTemplateMessage, type TemplateSend } from "@/lib/whatsapp/client";
+import { metaFailureKind } from "@/lib/whatsapp/failure";
 import { loadSuppressedPhones } from "@/lib/whatsapp/suppression";
 import type {
   WhatsAppSendResult,
@@ -96,6 +97,42 @@ export const HALT_AFTER_REFUSALS = 3;
 
 /** How far back `refusalStreak` reads: skipped and unconfirmed rows do not count. */
 const STREAK_READ = 30;
+
+/**
+ * And how far back in time. Refusals spread over weeks are separate
+ * incidents, not one cause still standing: three in a row only stop an
+ * automation when they all happened in the last two days.
+ */
+export const STREAK_WINDOW_MS = 48 * 3_600_000;
+
+/**
+ * Meta's codes that speak of the RECIPIENT, not of the account or the
+ * template, on top of the one `metaFailureKind` calls `unreachable` (131026,
+ * no WhatsApp on that number). That classification files the per-recipient
+ * limits under `transient` together with the account's own, and does not know
+ * the others, so the minimum is listed here:
+ *
+ * - 131049: Meta held the message back for that user (marketing frequency).
+ * - 131050: that user stopped marketing messages from the business.
+ * - 131056: too many messages to that one number in a short time.
+ * - 130472: that user's number is in one of Meta's experiments.
+ * - 131021: the recipient is the sender's own number.
+ *
+ * Three clients in a row refused for one of these is three clients, not a
+ * broken campaign.
+ */
+const RECIPIENT_CODES: ReadonlySet<number> = new Set([
+  131049, 131050, 131056, 130472, 131021,
+]);
+
+/** Whether a row's stored `error` is a refusal Meta gave because of the recipient. */
+export function isRecipientRefusal(error: string | null | undefined): boolean {
+  const code = /^(\d+): /.exec(error ?? "")?.[1];
+  if (code === undefined) return false;
+  return (
+    metaFailureKind(code) === "unreachable" || RECIPIENT_CODES.has(Number(code))
+  );
+}
 
 /** Pause before the second try of a row's write. */
 export const WRITE_RETRY_MS = 250;
@@ -625,10 +662,12 @@ export async function sendQueuedWhatsApp(
  * refused by Meta for `reason`: the cause is then the account or the template,
  * not the contacts.
  *
- * "Finished" is a row that was claimed and is no longer `queued` or `sending`,
- * newest claim first. A skipped contact and an unconfirmed failure say nothing
- * about the account, so they neither count nor break the streak; a message
- * Meta took (whatever became of it later) does break it. A claim stamps a whole
+ * "Finished" is a row that was claimed in the last `STREAK_WINDOW_MS` and is
+ * no longer `queued` or `sending`, newest claim first. A skipped contact, an
+ * unconfirmed failure and a refusal that is about the recipient
+ * (`isRecipientRefusal`) say nothing about the account, so they neither count
+ * nor break the streak, and such a `reason` is never one; a message Meta took
+ * (whatever became of it later) does break it. A claim stamps a whole
  * batch at once, so the rows claimed in the same instant as the last one
  * counted are looked at too: one that went out among them is no streak.
  *
@@ -639,7 +678,10 @@ export async function refusalStreak(
   db: Db,
   campaignId: string,
   reason: string,
+  /** Milliseconds, like `Date.now`: the run's own clock. */
+  nowMs: number,
 ): Promise<boolean> {
+  if (isRecipientRefusal(reason)) return false;
   type Finished = {
     status: string;
     error: string | null;
@@ -652,6 +694,7 @@ export async function refusalStreak(
       .select("status, error, claimed_at")
       .eq("campaign_id", campaignId)
       .not("claimed_at", "is", null)
+      .gte("claimed_at", new Date(nowMs - STREAK_WINDOW_MS).toISOString())
       .order("claimed_at", { ascending: false })
       .limit(STREAK_READ);
     if (error) {
@@ -671,7 +714,8 @@ export async function refusalStreak(
       !(
         row.status === "failed" &&
         (row.error?.startsWith(SKIPPED_PREFIX) ||
-          row.error?.startsWith(UNCONFIRMED_PREFIX))
+          row.error?.startsWith(UNCONFIRMED_PREFIX) ||
+          isRecipientRefusal(row.error))
       ),
   );
   const last = counted[HALT_AFTER_REFUSALS - 1];

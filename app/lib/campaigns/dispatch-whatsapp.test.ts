@@ -10,6 +10,8 @@ import {
   haltMessage,
   parseHalted,
   reconcileInterrupted,
+  STREAK_WINDOW_MS,
+  isRecipientRefusal,
   refusalStreak,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
@@ -1447,9 +1449,10 @@ describe("refusalStreak", () => {
     error: null,
     claimed_at: at(minute),
   });
-  const streak = (rows: Finished[]) => {
+  const NOW_MS = Date.parse("2026-11-17T12:00:00Z");
+  const streak = (rows: Finished[], reason = REASON) => {
     const { db, log } = chainDb(() => ({ data: rows, error: null }));
-    return { answer: refusalStreak(db, "camp-1", REASON), log };
+    return { answer: refusalStreak(db, "camp-1", reason, NOW_MS), log };
   };
 
   test("the last three finished rows refused for that reason: a streak", async () => {
@@ -1476,7 +1479,7 @@ describe("refusalStreak", () => {
     expect(
       await streak([
         refused(0),
-        refused(15, "131026: Message undeliverable"),
+        refused(15, "132000: Template param mismatch"),
         refused(30),
         refused(45),
       ]).answer,
@@ -1521,8 +1524,65 @@ describe("refusalStreak", () => {
       data: null,
       error: { message: "connection reset" },
     }));
-    expect(await refusalStreak(db, "camp-1", REASON)).toBe(false);
+    expect(await refusalStreak(db, "camp-1", REASON, NOW_MS)).toBe(false);
     quiet.mockRestore();
+  });
+
+  test("a refusal that is about the recipient is never a streak, however many in a row", async () => {
+    const NO_WHATSAPP = "131026: Message undeliverable";
+    const { answer, log } = streak(
+      [
+        refused(0, NO_WHATSAPP),
+        refused(15, NO_WHATSAPP),
+        refused(30, NO_WHATSAPP),
+      ],
+      NO_WHATSAPP,
+    );
+    expect(await answer).toBe(false);
+    // Not even read: three numbers without WhatsApp say nothing of the account.
+    expect(log).toHaveLength(0);
+  });
+
+  test("refusals about a recipient among the others are not counted either way", async () => {
+    expect(
+      await streak([
+        refused(0),
+        refused(5, "131026: Message undeliverable"),
+        refused(15),
+        refused(20, "131049: Not delivered to maintain healthy engagement"),
+        refused(30),
+        went(45),
+      ]).answer,
+    ).toBe(true);
+  });
+
+  test.each([131026, 131049, 131050, 131056, 130472, 131021])(
+    "code %i is the recipient's",
+    (code) => {
+      expect(isRecipientRefusal(`${code}: whatever Meta wrote`)).toBe(true);
+    },
+  );
+
+  test.each([
+    "190: Access token expired",
+    "132000: Template param mismatch",
+    "132001: Template does not exist",
+    "131048: Spam rate limit hit",
+    "no phone",
+    "params: missing",
+    null,
+  ])("%s is not", (error) => {
+    expect(isRecipientRefusal(error)).toBe(false);
+  });
+
+  test("only looks at the last 48 hours: old refusals do not add up over the weeks", async () => {
+    const { answer, log } = streak([]);
+    await answer;
+    expect(argsOf(log[0]!.chain, "gte")).toEqual([
+      "claimed_at",
+      new Date(NOW_MS - 48 * 3_600_000).toISOString(),
+    ]);
+    expect(STREAK_WINDOW_MS).toBe(48 * 3_600_000);
   });
 
   test("is one read of that campaign's claimed rows, newest first, with no `or`", async () => {
