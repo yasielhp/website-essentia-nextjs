@@ -69,7 +69,46 @@ describe("booking.detailsStep messages", () => {
   test("the booking's consent line says the notices go by email and WhatsApp, in both languages", () => {
     expect(es.detailsStep.consentNoticeSuffix).toMatch(/email y WhatsApp/);
     expect(en.detailsStep.consentNoticeSuffix).toMatch(/email and WhatsApp/);
-    expect(es.detailsStep.newsletterOptInHint).toMatch(/BAJA/);
-    expect(en.detailsStep.newsletterOptInHint).toMatch(/STOP/);
+  });
+
+  test("the news and offers box is not labelled optional and carries no opt-out line", () => {
+    for (const messages of [es, en]) {
+      expect(messages.detailsStep.newsletterOptIn).not.toMatch(
+        /opcional|optional/i,
+      );
+      expect(messages.detailsStep.newsletterOptIn).not.toMatch(/BAJA|STOP/);
+      expect(messages.detailsStep.newsletterAlreadyOn).not.toMatch(
+        /BAJA|STOP|baja|opt out/,
+      );
+      expect("newsletterOptInHint" in messages.detailsStep).toBe(false);
+    }
+  });
+
+  test("how to opt out is written in the data-protection panel, in both languages", () => {
+    expect(es.detailsStep.optOutValue).toMatch(/novedades y ofertas/);
+    expect(es.detailsStep.optOutValue).toMatch(/en cualquier momento/);
+    expect(es.detailsStep.optOutValue).toMatch(/enlace de baja de cada correo/);
+    expect(es.detailsStep.optOutValue).toMatch(/BAJA por WhatsApp/);
+    expect(en.detailsStep.optOutValue).toMatch(/news and offers/);
+    expect(en.detailsStep.optOutValue).toMatch(/at any time/);
+    expect(en.detailsStep.optOutValue).toMatch(
+      /unsubscribe link in each email/,
+    );
+    expect(en.detailsStep.optOutValue).toMatch(/STOP on WhatsApp/);
+  });
+
+  test("the Terms box is the required one: red asterisk, aria-hidden, aria-required", () => {
+    const consent = STEP.slice(
+      STEP.indexOf('name="consent"'),
+      STEP.indexOf('name="newsletter"'),
+    );
+    expect(consent).toContain('aria-required="true"');
+    expect(consent).toMatch(
+      /aria-hidden="true"[^>]*className="ml-0\.5 text-red-400"/,
+    );
+    // The news and offers box is not marked required.
+    expect(STEP.slice(STEP.indexOf('name="newsletter"'))).not.toContain(
+      "aria-required",
+    );
   });
 });

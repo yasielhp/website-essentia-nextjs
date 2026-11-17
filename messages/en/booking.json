@@ -131,17 +131,16 @@
     "dataController": "Data controller:",
     "dataControllerValue": "Essentia Social Wellness Club",
     "purpose": "Purpose:",
-    "purposeValue": "managing your booking and notifying you about your appointment (confirmation and reminder, by email and WhatsApp); only if you tick the optional box, sending you news and offers by email and WhatsApp",
+    "purposeValue": "managing your booking and notifying you about your appointment (confirmation and reminder, by email and WhatsApp); only if you tick the news and offers box, sending you news and offers by email and WhatsApp",
     "legalBasis": "Legal basis:",
     "legalBasisValue": "performance of the service you book (GDPR art. 6.1.b) for the booking and the notices about your appointment; your consent (art. 6.1.a) for news and offers",
     "optOut": "Opting out:",
-    "optOutValue": "at any time, by replying STOP to a WhatsApp message or with the link in our emails.",
+    "optOutValue": "you can withdraw your consent to news and offers at any time, with the unsubscribe link in each email and by replying STOP on WhatsApp.",
     "rights": "Your rights:",
     "rightsValue": "access, rectification, erasure, restriction, portability, and objection: write to",
     "fullDetails": "Full details in our",
-    "newsletterOptIn": "I'd like to receive Essentia news and offers by email and WhatsApp (optional).",
-    "newsletterOptInHint": "You can opt out at any time: with the link in our emails or by replying STOP on WhatsApp.",
-    "newsletterAlreadyOn": "Already on. You can opt out with the link in our emails or by replying STOP on WhatsApp."
+    "newsletterOptIn": "I'd like to receive Essentia news and offers by email and WhatsApp.",
+    "newsletterAlreadyOn": "Already on."
   },
   "confirmStep": {
     "date": "Date",

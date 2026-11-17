@@ -129,6 +129,7 @@ export function DetailsStep({
       <div className="flex flex-col gap-1">
         <Checkbox
           name="consent"
+          aria-required="true"
           checked={details.consent}
           onChange={(e) => {
             onChange({ ...details, consent: e.target.checked });
@@ -153,6 +154,11 @@ export function DetailsStep({
                 {t("privacyPolicy")}
               </Link>
               {t("consentNoticeSuffix")}
+              {/* The same red asterisk the required fields above carry (see
+                  `Field`); decorative, since `aria-required` says it. */}
+              <span aria-hidden="true" className="ml-0.5 text-red-400">
+                *
+              </span>
             </span>
           }
         />
@@ -163,14 +169,17 @@ export function DetailsStep({
         )}
       </div>
 
-      {/* The only optional box. Accepting the Terms and the Policy above is what
-          allows the confirmation and the reminder of the appointment, by email
-          and WhatsApp; this one is marketing, a different question that the law
+      {/* The only box that is not required (the Terms box above carries the
+          asterisk). Accepting the Terms and the Policy is what allows the
+          confirmation and the reminder of the appointment, by email and
+          WhatsApp; this one is marketing, a different question that the law
           wants asked apart, and it is ONE choice for both channels. It is never
           ticked for the visitor, and unticking it later does not withdraw a yes
-          given before (unticked means "do not touch"): that is the unsubscribe
-          link in an email or a BAJA reply on WhatsApp. A signed-in client who
-          already has both channels on sees it ticked and locked. */}
+          given before (unticked means "do not touch"): a withdrawal is the
+          unsubscribe link in an email or a BAJA reply on WhatsApp. How to opt out
+          is written in the data-protection panel and the Privacy Policy, not
+          under the box, on purpose. A signed-in client who already has both
+          channels on sees it ticked and locked. */}
       <Checkbox
         name="newsletter"
         checked={marketingOn || (details.newsletter ?? false)}
@@ -181,11 +190,11 @@ export function DetailsStep({
         label={
           <span className="text-petroleum-400 text-sm">
             {t("newsletterOptIn")}
-            <span className="mt-0.5 block text-xs">
-              {marketingOn
-                ? t("newsletterAlreadyOn")
-                : t("newsletterOptInHint")}
-            </span>
+            {marketingOn && (
+              <span className="mt-0.5 block text-xs">
+                {t("newsletterAlreadyOn")}
+              </span>
+            )}
           </span>
         }
       />

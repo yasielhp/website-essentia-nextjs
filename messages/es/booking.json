@@ -131,17 +131,16 @@
     "dataController": "Responsable del tratamiento:",
     "dataControllerValue": "Essentia Social Wellness Club",
     "purpose": "Finalidad:",
-    "purposeValue": "gestionar tu reserva y avisarte de tu cita (confirmación y recordatorio, por email y WhatsApp); solo si marcas la casilla opcional, enviarte novedades y ofertas por email y WhatsApp",
+    "purposeValue": "gestionar tu reserva y avisarte de tu cita (confirmación y recordatorio, por email y WhatsApp); solo si marcas la casilla de novedades y ofertas, enviarte novedades y ofertas por email y WhatsApp",
     "legalBasis": "Base legal:",
     "legalBasisValue": "ejecución del servicio que reservas (RGPD art. 6.1.b) para la reserva y los avisos de tu cita; tu consentimiento (art. 6.1.a) para las novedades y ofertas",
     "optOut": "Baja:",
-    "optOutValue": "cuando quieras, respondiendo BAJA a un mensaje de WhatsApp o desde el enlace de los correos.",
+    "optOutValue": "puedes retirar el consentimiento de novedades y ofertas en cualquier momento, con el enlace de baja de cada correo y respondiendo BAJA por WhatsApp.",
     "rights": "Tus derechos:",
     "rightsValue": "acceso, rectificación, supresión, limitación, portabilidad y oposición: escribe a",
     "fullDetails": "Más detalles en nuestra",
-    "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email y WhatsApp (opcional).",
-    "newsletterOptInHint": "Puedes darte de baja cuando quieras: en el enlace de los correos o respondiendo BAJA por WhatsApp.",
-    "newsletterAlreadyOn": "Ya lo tienes activado. Puedes darte de baja en el enlace de los correos o respondiendo BAJA por WhatsApp."
+    "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email y WhatsApp.",
+    "newsletterAlreadyOn": "Ya lo tienes activado."
   },
   "confirmStep": {
     "date": "Fecha",
