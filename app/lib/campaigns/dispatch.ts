@@ -14,6 +14,7 @@ import {
   UNCONFIRMED_PREFIX,
   campaignTemplateIssue,
   loadWhatsAppTemplate,
+  reconcileInterrupted,
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
@@ -75,6 +76,8 @@ export type DispatchResult =
       failed: number;
       /** WhatsApp only: rows left `queued` for the next run to finish. */
       remaining?: number;
+      /** WhatsApp only: messages sent whose answer could not be written down. */
+      unrecorded?: number;
     }
   | {
       ok: false;
@@ -180,6 +183,7 @@ export async function sendQueued(
   lastError: string | null;
   /** Only a WhatsApp send can stop early; an email send always finishes. */
   remaining?: number;
+  unrecorded?: number;
 }> {
   if (campaign.channel === "whatsapp") {
     return sendQueuedWhatsApp(campaign, rows, whatsapp);
@@ -386,6 +390,12 @@ export async function dispatchCampaign(
     return { ok: false, error: "no_api_key" };
   }
 
+  // A resume first settles what the dead process left `sending`: those rows
+  // may have gone out, so they fail as unconfirmed instead of being resent.
+  if (whatsapp && resume) {
+    await reconcileInterrupted(db, campaignId, now.getTime());
+  }
+
   // Fresh sends freeze the audience now; resumes keep the frozen list.
   if (!resume) {
     let recipients;
@@ -439,13 +449,10 @@ export async function dispatchCampaign(
     return { ok: false, error: "db", detail };
   }
 
-  const { sent, failed, lastError, remaining } = await sendQueued(
+  const { sent, failed, lastError, remaining, unrecorded } = await sendQueued(
     campaign,
     rows,
-    {
-      db,
-      ...deps.whatsapp,
-    },
+    { db, ...deps.whatsapp },
   );
 
   // A WhatsApp send that ran out of time (or credentials) is not finished.
@@ -453,7 +460,7 @@ export async function dispatchCampaign(
   // a `sending` row once it has been quiet for `STUCK_AFTER_MS`.
   if (remaining) {
     await refreshCounts(campaignId, { last_error: lastError }, db);
-    return { ok: true, sent, failed, remaining };
+    return { ok: true, sent, failed, remaining, unrecorded };
   }
 
   const finishedAt = new Date().toISOString();
@@ -462,12 +469,18 @@ export async function dispatchCampaign(
     {
       status: "sent",
       sent_at: finishedAt,
-      last_error: lastError,
+      // Rows left `sending` because their answer could not be written are not
+      // in any count: say so where the admin looks.
+      last_error:
+        lastError ??
+        (unrecorded ? `${unrecorded} sent without being recorded` : null),
     },
     db,
   );
 
-  return { ok: true, sent, failed };
+  return unrecorded
+    ? { ok: true, sent, failed, unrecorded }
+    : { ok: true, sent, failed };
 }
 
 /**

@@ -42,6 +42,13 @@ export const BUDGET_MS = 45_000;
 /** Begins the `error` of a row whose delivery is in doubt; a retry skips it. */
 export const UNCONFIRMED_PREFIX = "[unconfirmed] ";
 
+/** Pause before the second try of a row's write. */
+export const WRITE_RETRY_MS = 250;
+
+/** A row held in `sending` this long belongs to a process that died. */
+export const INTERRUPTED_AFTER_MS = 10 * 60_000;
+export const INTERRUPTED_ERROR = `${UNCONFIRMED_PREFIX}interrupted`;
+
 type Db = ReturnType<typeof getAdminClient>["database"];
 
 export type WhatsAppDeps = {
@@ -56,6 +63,12 @@ export type WhatsAppDeps = {
 export type WhatsAppSendOutcome = {
   sent: number;
   failed: number;
+  /**
+   * Messages whose answer could not be written to their row, twice. The row is
+   * left `sending` (never `queued`: the message may have gone out), and it is
+   * counted here and nowhere else.
+   */
+  unrecorded: number;
   lastError: string | null;
   /** Rows still `queued` when this returned. The campaign is not done while any remain. */
   remaining: number;
@@ -120,10 +133,41 @@ export function campaignTemplateIssue(
   );
 }
 
+/**
+ * Fails the rows a dead process left in `sending`. They may have been sent, so
+ * they are stamped `[unconfirmed]` (which a retry never requeues) rather than
+ * sent again. Returns how many there were; the caller recounts `failed_count`.
+ */
+export async function reconcileInterrupted(
+  db: Db,
+  campaignId: string,
+  nowMs: number,
+): Promise<number> {
+  try {
+    const { data, error } = await db
+      .from("campaign_recipients")
+      .update({ status: "failed", error: INTERRUPTED_ERROR })
+      .eq("campaign_id", campaignId)
+      .eq("status", "sending")
+      .lt("claimed_at", new Date(nowMs - INTERRUPTED_AFTER_MS).toISOString())
+      .select("id");
+    if (error) {
+      console.error("[campaigns] reconcile failed:", error.message);
+      return 0;
+    }
+    return ((data ?? []) as unknown[]).length;
+  } catch (err) {
+    console.error("[campaigns] reconcile threw:", err);
+    return 0;
+  }
+}
+
 type RowOutcome =
   | { kind: "sent" }
   | { kind: "failed"; error: string }
-  /** Nothing was sent and the row stays queued. */
+  /** The answer could not be written: the row stays `sending`. */
+  | { kind: "unrecorded"; error: string }
+  /** Nothing was sent and the row is back in the queue. */
   | { kind: "deferred"; error: string };
 
 export async function sendQueuedWhatsApp(
@@ -146,6 +190,7 @@ export async function sendQueuedWhatsApp(
     return {
       sent: 0,
       failed: 0,
+      unrecorded: 0,
       lastError: `db: ${(err as Error).message}`,
       remaining: rows.length,
     };
@@ -158,6 +203,7 @@ export async function sendQueuedWhatsApp(
     return {
       sent: 0,
       failed: 0,
+      unrecorded: 0,
       lastError: `template_unavailable: ${issue ?? "template_missing"}`,
       remaining: rows.length,
     };
@@ -165,42 +211,74 @@ export async function sendQueuedWhatsApp(
   const chosen = template;
 
   /**
-   * One update per message, retried once. If the write still fails the
-   * message has already left; the row stays `queued` and a resume would send
-   * it again, so it is logged where somebody can find it.
+   * One write to a row, tried twice with a short pause. False when both
+   * failed: the message may already have left, so the caller must not treat
+   * the row as queued again.
    */
-  async function record(
+  async function write(
     row: QueuedRow,
     patch: Record<string, unknown>,
-  ): Promise<void> {
+  ): Promise<boolean> {
+    let failure = "";
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      let failure: string | null = null;
+      if (attempt > 0) await sleep(WRITE_RETRY_MS);
       try {
         const { error } = await db
           .from("campaign_recipients")
           .update(patch)
           .eq("id", row.id);
-        failure = error ? error.message : null;
+        if (!error) return true;
+        failure = error.message;
       } catch (err) {
         // A throw here would escape the batch and abandon the rest of it.
         failure = err instanceof Error ? err.message : "update threw";
       }
-      if (failure === null) return;
-      if (attempt === 1) {
-        console.error(
-          `[campaigns] row ${row.id} could not be updated after its WhatsApp answer:`,
-          failure,
-        );
-      }
+    }
+    console.error(
+      `[campaigns] row ${row.id} could not be updated after its WhatsApp answer:`,
+      failure,
+    );
+    return false;
+  }
+
+  /**
+   * Moves the batch's rows queued -> sending in one conditional UPDATE. A row
+   * somebody else already moved matches nothing and is not ours to send.
+   */
+  async function claim(
+    batch: QueuedRow[],
+  ): Promise<{ owned: QueuedRow[]; error: string | null }> {
+    try {
+      const { data, error } = await db
+        .from("campaign_recipients")
+        .update({
+          status: "sending",
+          claimed_at: new Date(now()).toISOString(),
+        })
+        .in(
+          "id",
+          batch.map((r) => r.id),
+        )
+        .eq("status", "queued")
+        .select("id");
+      if (error) return { owned: [], error: error.message };
+      const won = new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+      return { owned: batch.filter((r) => won.has(r.id)), error: null };
+    } catch (err) {
+      return {
+        owned: [],
+        error: err instanceof Error ? err.message : "claim threw",
+      };
     }
   }
 
   async function sendOne(row: QueuedRow): Promise<RowOutcome> {
-    if (!row.phone) {
-      const error = "no phone";
-      await record(row, { status: "failed", error });
-      return { kind: "failed", error };
-    }
+    const fail = async (error: string): Promise<RowOutcome> =>
+      (await write(row, { status: "failed", error }))
+        ? { kind: "failed", error }
+        : { kind: "unrecorded", error };
+
+    if (!row.phone) return fail("no phone");
 
     let bodyParams: string[];
     try {
@@ -220,9 +298,7 @@ export async function sendQueuedWhatsApp(
         row.vars ?? undefined,
       );
     } catch (err) {
-      const error = `params: ${(err as Error).message}`;
-      await record(row, { status: "failed", error });
-      return { kind: "failed", error };
+      return fail(`params: ${(err as Error).message}`);
     }
 
     let result: WhatsAppSendResult;
@@ -244,25 +320,32 @@ export async function sendQueuedWhatsApp(
     }
 
     if (result.status === "skipped") {
-      return { kind: "deferred", error: "whatsapp_not_configured" };
+      // Nothing left the process: give the row back.
+      const released = await write(row, { status: "queued", claimed_at: null });
+      return released
+        ? { kind: "deferred", error: "whatsapp_not_configured" }
+        : { kind: "unrecorded", error: "whatsapp_not_configured" };
     }
     if (result.status === "sent") {
-      await record(row, {
+      const recorded = await write(row, {
         status: "sent",
         provider_id: result.providerId,
         sent_at: new Date(now()).toISOString(),
       });
-      return { kind: "sent" };
+      return recorded
+        ? { kind: "sent" }
+        : { kind: "unrecorded", error: "row not recorded" };
     }
-    const error = result.ambiguous
-      ? `${UNCONFIRMED_PREFIX}${result.error}`
-      : result.error;
-    await record(row, { status: "failed", error });
-    return { kind: "failed", error };
+    return fail(
+      result.ambiguous ? `${UNCONFIRMED_PREFIX}${result.error}` : result.error,
+    );
   }
 
   let sent = 0;
   let failed = 0;
+  let unrecorded = 0;
+  /** Rows another process had already claimed: theirs, not left over. */
+  let lost = 0;
   let lastError: string | null = null;
   const overBudget = () => now() - startedAt >= budgetMs;
 
@@ -270,7 +353,14 @@ export async function sendQueuedWhatsApp(
     if (overBudget()) break;
     const batchStartedAt = now();
     const batch = rows.slice(start, start + PER_SECOND);
-    const outcomes = await Promise.all(batch.map(sendOne));
+
+    const claimed = await claim(batch);
+    if (claimed.error !== null) {
+      lastError = `db: ${claimed.error}`;
+      break;
+    }
+    lost += batch.length - claimed.owned.length;
+    const outcomes = await Promise.all(claimed.owned.map(sendOne));
 
     let deferred = false;
     for (const outcome of outcomes) {
@@ -278,7 +368,10 @@ export async function sendQueuedWhatsApp(
       else {
         lastError = outcome.error;
         if (outcome.kind === "failed") failed += 1;
+        else if (outcome.kind === "unrecorded") unrecorded += 1;
         else deferred = true;
+        // A row that could not be handed back says the same: no credentials.
+        if (outcome.error === "whatsapp_not_configured") deferred = true;
       }
     }
     // Without credentials every remaining row would be skipped too.
@@ -292,5 +385,11 @@ export async function sendQueuedWhatsApp(
     }
   }
 
-  return { sent, failed, lastError, remaining: rows.length - sent - failed };
+  return {
+    sent,
+    failed,
+    unrecorded,
+    lastError,
+    remaining: rows.length - sent - failed - unrecorded - lost,
+  };
 }

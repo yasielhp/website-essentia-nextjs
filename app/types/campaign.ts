@@ -74,12 +74,14 @@ export function isAutomatedKind(kind: CampaignKind): boolean {
 }
 
 /**
- * Advances in this order: `queued` → `sent` → `delivered` → `opened` →
+ * Advances in this order: `queued` → (`sending` →) `sent` → `delivered` → `opened` →
  * `clicked`. `bounced` and `complained` are terminal, and `failed` is ours
  * (Resend never accepted the message).
  */
 export type RecipientStatus =
   | "queued"
+  /** WhatsApp: claimed by a sender and, perhaps, already sent. */
+  | "sending"
   | "sent"
   | "delivered"
   | "opened"

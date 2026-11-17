@@ -1593,6 +1593,7 @@
     },
     "recipientStatus": {
       "queued": "Queued",
+      "sending": "Sending",
       "sent": "Sent",
       "delivered": "Delivered",
       "opened": "Opened",

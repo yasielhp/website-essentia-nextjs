@@ -1593,6 +1593,7 @@
     },
     "recipientStatus": {
       "queued": "En cola",
+      "sending": "Enviando",
       "sent": "Enviado",
       "delivered": "Entregado",
       "opened": "Abierto",

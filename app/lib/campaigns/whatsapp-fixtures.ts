@@ -155,6 +155,8 @@ export type MemoryDbOptions = {
   }) => string | "throw" | null;
   /** Holds every update of `campaign_recipients` for this long. */
   updateDelayMs?: number;
+  /** The campaign row the dispatch reads and moves. Default: a draft. */
+  campaign?: CampaignRow;
   /** Called after each row is written, with the row's id and the patch. */
   onWrite?: (id: string, patch: Record<string, unknown>) => void;
   /** Rows some other process already moved on from `queued`. */
@@ -202,7 +204,38 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
   const stepArgs = (chain: Step[], name: string) =>
     chain.filter((s) => s.name === name).map((s) => s.args);
 
+  const campaignRow = (opts.campaign ??
+    campaign({ status: "draft" })) as CampaignRow & Record<string, unknown>;
+  const campaignWrites: Record<string, unknown>[] = [];
+  const upserts: { rows: Record<string, unknown>[]; options: unknown }[] = [];
+
   const { db, log } = chainDb(async (table, chain) => {
+    if (table === "campaigns") {
+      const update = chain.find((s) => s.name === "update");
+      if (!update) return { data: campaignRow, error: null };
+      const eqs = stepArgs(chain, "eq");
+      const ins = stepArgs(chain, "in");
+      const lts = stepArgs(chain, "lt");
+      const matches =
+        eqs.every(([c, v]) => campaignRow[c as string] === v) &&
+        ins.every(([c, v]) =>
+          (v as unknown[]).includes(campaignRow[c as string]),
+        ) &&
+        lts.every(([c, v]) => {
+          const current = campaignRow[c as string];
+          return typeof current === "string" && current < String(v);
+        });
+      const wantsRows = chain.find((s) => s.name === "select");
+      if (!matches) return { data: wantsRows ? [] : null, error: null };
+      const patch = update.args[0] as Record<string, unknown>;
+      Object.assign(campaignRow, patch);
+      campaignWrites.push(patch);
+      return {
+        data: wantsRows ? [{ ...campaignRow }] : null,
+        error: null,
+      };
+    }
+
     if (table === "whatsapp_templates") {
       reads.push(table);
       if (opts.readError) {
@@ -227,17 +260,43 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
     }
 
     if (table === "campaign_recipients") {
+      const upsert = chain.find((s) => s.name === "upsert");
+      if (upsert) {
+        upserts.push({
+          rows: upsert.args[0] as Record<string, unknown>[],
+          options: upsert.args[1],
+        });
+        return { error: null };
+      }
       const update = chain.find((s) => s.name === "update");
-      if (!update) return { data: [], error: null };
+      if (!update) {
+        const select = chain.find((s) => s.name === "select");
+        const head = (select?.args[1] as { head?: boolean } | undefined)?.head;
+        const statusEq = stepArgs(chain, "eq").find(
+          (a) => a[0] === "status",
+        )?.[1];
+        if (head) {
+          return {
+            count: [...rows.values()].filter(
+              (r) => statusEq === undefined || r.status === statusEq,
+            ).length,
+            error: null,
+          };
+        }
+        return {
+          data: queued.filter(
+            (q) => (statusEq ?? "queued") === rows.get(q.id)?.status,
+          ),
+          error: null,
+        };
+      }
       const patch = update.args[0] as Record<string, unknown>;
       const eqs = stepArgs(chain, "eq");
       const ins = stepArgs(chain, "in");
+      const lts = stepArgs(chain, "lt");
       const idEq = eqs.find((a) => a[0] === "id")?.[1] as string | undefined;
-      const idIn = ins.find((a) => a[0] === "id")?.[1] as string[] | undefined;
-      const statusEq = eqs.find((a) => a[0] === "status")?.[1];
-      const ids = idEq !== undefined ? [idEq] : (idIn ?? []);
 
-      const key = ids.join(",") + JSON.stringify(patch);
+      const key = JSON.stringify([eqs, ins, patch]);
       const attempt = (attempts.get(key) ?? 0) + 1;
       attempts.set(key, attempt);
       const failure = opts.failUpdate?.({
@@ -252,14 +311,28 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
       if (failure) return { data: null, error: { message: failure } };
 
       const matched: string[] = [];
-      for (const id of ids) {
-        const stored = rows.get(id);
-        if (!stored) continue;
-        if (statusEq !== undefined && stored.status !== statusEq) continue;
+      for (const stored of rows.values()) {
+        const field = (column: string) =>
+          (stored as unknown as Record<string, unknown>)[column];
+        if (!eqs.every(([column, value]) => field(column as string) === value))
+          continue;
+        if (
+          !ins.every(([column, values]) =>
+            (values as unknown[]).includes(field(column as string)),
+          )
+        )
+          continue;
+        if (
+          !lts.every(([column, value]) => {
+            const current = field(column as string);
+            return typeof current === "string" && current < String(value);
+          })
+        )
+          continue;
         Object.assign(stored, patch);
-        matched.push(id);
-        writes.push({ id, patch });
-        opts.onWrite?.(id, patch);
+        matched.push(stored.id);
+        writes.push({ id: stored.id, patch });
+        opts.onWrite?.(stored.id, patch);
       }
       return {
         data: chain.some((s) => s.name === "select")
@@ -278,6 +351,9 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
     writes,
     reads,
     contactReads,
+    campaign: campaignRow,
+    campaignWrites,
+    upserts,
     log,
     status: (id: string) => rows.get(id)?.status,
     error: (id: string) => rows.get(id)?.error,

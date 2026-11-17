@@ -1,7 +1,9 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+type Db = ReturnType<typeof getAdminClient>["database"];
 import { getAppUrl } from "@/lib/env";
 import type { CampaignRow } from "@/types/campaign";
-import { resolveAudience } from "./audience";
+import { resolveAudience as defaultResolveAudience } from "./audience";
+import { reconcileInterrupted, type WhatsAppDeps } from "./dispatch-whatsapp";
 import { conflictTarget, recipientRow } from "./recipient-rows";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
 import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
@@ -14,11 +16,26 @@ import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
  * runs cannot mail the same person twice for the same occasion. A queued row
  * left behind by a timeout is picked up by the next run.
  */
+/** What a run reads and calls out to; a test passes doubles. */
+export type AutomationDeps = {
+  db?: Db;
+  resolveAudience?: typeof defaultResolveAudience;
+  whatsapp?: WhatsAppDeps;
+};
+
 export async function runAutomation(
   campaign: CampaignRow,
   now = new Date(),
+  deps: AutomationDeps = {},
 ): Promise<{ queued: number; sent: number; failed: number }> {
-  const db = getAdminClient().database;
+  const db = deps.db ?? getAdminClient().database;
+  const resolveAudience = deps.resolveAudience ?? defaultResolveAudience;
+
+  // What a process that died left `sending` is failed (unconfirmed) before the
+  // run counts or sends anything, so it is neither lost nor sent twice.
+  if (campaign.channel === "whatsapp") {
+    await reconcileInterrupted(db, campaign.id, now.getTime());
+  }
 
   const recipients = await resolveAudience(
     campaign.audience,
@@ -55,16 +72,20 @@ export async function runAutomation(
     queued = due.length;
   }
 
-  const rows = await loadQueued(campaign.id);
+  const rows = await loadQueued(campaign.id, db);
   const { sent, failed, lastError } =
     rows.length > 0
-      ? await sendQueued(campaign, rows)
+      ? await sendQueued(campaign, rows, { db, ...deps.whatsapp })
       : { sent: 0, failed: 0, lastError: null };
 
-  await refreshCounts(campaign.id, {
-    last_run_at: now.toISOString(),
-    ...(lastError ? { last_error: lastError } : {}),
-  });
+  await refreshCounts(
+    campaign.id,
+    {
+      last_run_at: now.toISOString(),
+      ...(lastError ? { last_error: lastError } : {}),
+    },
+    db,
+  );
 
   return { queued, sent, failed };
 }

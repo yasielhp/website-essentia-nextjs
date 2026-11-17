@@ -4,6 +4,7 @@ import type { CampaignRow } from "@/types/campaign";
 import {
   PER_SECOND,
   UNCONFIRMED_PREFIX,
+  reconcileInterrupted,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
 } from "./dispatch-whatsapp";
@@ -564,5 +565,212 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
     expect(calls).toHaveLength(0);
     expect(mem.writes).toHaveLength(0);
     expect(mem.reads).toEqual(["whatsapp_templates"]);
+  });
+});
+
+describe("sendQueuedWhatsApp claims each row before sending to it", () => {
+  test("a row is `sending` with claimed_at while its message is in flight", async () => {
+    const mem = memoryDb(rowsOf(2));
+    const seen: Record<string, unknown>[] = [];
+    const send = async (s: TemplateSend) => {
+      const id = s.to.endsWith("01") ? "row-1" : "row-2";
+      seen.push({
+        id,
+        status: mem.status(id),
+        claimed: typeof mem.rows.get(id)?.claimed_at,
+      });
+      return ok(`w-${id}`);
+    };
+    await sendQueuedWhatsApp(campaign(), rowsOf(2), { db: mem.db, send });
+    expect(seen).toEqual([
+      { id: "row-1", status: "sending", claimed: "string" },
+      { id: "row-2", status: "sending", claimed: "string" },
+    ]);
+    expect(mem.status("row-1")).toBe("sent");
+  });
+
+  test("a row another process already holds is not sent and not counted", async () => {
+    const mem = memoryDb(rowsOf(3), {
+      rows: [{ id: "row-2", status: "sending" }],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001", "+34600000003"]);
+    expect(result).toMatchObject({ sent: 2, failed: 0, remaining: 0 });
+    expect(mem.status("row-2")).toBe("sending");
+  });
+
+  test("a row that was already sent is not sent again", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      rows: [{ id: "row-1", status: "sent" }],
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(2), { db: mem.db, send });
+    expect(calls).toHaveLength(1);
+  });
+
+  test("when the claim itself fails nothing is sent and the rows stay queued", async () => {
+    const mem = memoryDb(rowsOf(12), {
+      failUpdate: ({ patch }) =>
+        patch.status === "sending" ? "db down" : null,
+    });
+    const { send, calls } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(12), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    expect(calls).toHaveLength(0);
+    expect(result).toMatchObject({
+      sent: 0,
+      failed: 0,
+      lastError: "db: db down",
+      remaining: 12,
+    });
+    expect([...mem.rows.values()].every((r) => r.status === "queued")).toBe(
+      true,
+    );
+  });
+
+  test("without credentials the claimed rows go back to queued", async () => {
+    const mem = memoryDb(rowsOf(3));
+    const { send } = fakeSend(() => ({ status: "skipped" }));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+    });
+    expect(result.remaining).toBe(3);
+    for (const r of mem.rows.values()) {
+      expect(r.status).toBe("queued");
+      expect(r.claimed_at).toBeNull();
+    }
+  });
+});
+
+describe("sendQueuedWhatsApp when the final write fails", () => {
+  const finalWrite = ({ patch }: { patch: Record<string, unknown> }) =>
+    patch.status === "sent" || patch.status === "failed" ? "db down" : null;
+
+  test("the row stays `sending`, never `queued`, and is counted as unrecorded", async () => {
+    const mem = memoryDb(rowsOf(2), { failUpdate: finalWrite });
+    const clock = fakeClock();
+    const { send } = fakeSend(() => ok("w"));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await sendQueuedWhatsApp(campaign(), rowsOf(2), {
+        db: mem.db,
+        send,
+        now: clock.now,
+        sleep: clock.sleep,
+      });
+      expect(result).toMatchObject({
+        sent: 0,
+        failed: 0,
+        unrecorded: 2,
+        remaining: 0,
+      });
+      for (const r of mem.rows.values()) expect(r.status).toBe("sending");
+    } finally {
+      console.error = original;
+    }
+  });
+
+  test("it retries once after a short pause", async () => {
+    const mem = memoryDb(rowsOf(1), {
+      failUpdate: ({ patch, attempt }) =>
+        patch.status === "sent" && attempt === 1 ? "blip" : null,
+    });
+    const clock = fakeClock();
+    const { send } = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+      db: mem.db,
+      send,
+      now: clock.now,
+      sleep: clock.sleep,
+    });
+    expect(result).toMatchObject({ sent: 1, unrecorded: 0 });
+    expect(mem.status("row-1")).toBe("sent");
+    expect(clock.sleeps).toContain(250);
+  });
+
+  test("a throwing write is handled the same way", async () => {
+    const mem = memoryDb(rowsOf(1), {
+      failUpdate: ({ patch }) => (patch.status === "sent" ? "throw" : null),
+    });
+    const { send } = fakeSend(() => ok("w"));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+        db: mem.db,
+        send,
+        sleep: quietSleep,
+      });
+      expect(result).toMatchObject({ sent: 0, unrecorded: 1 });
+      expect(mem.status("row-1")).toBe("sending");
+    } finally {
+      console.error = original;
+    }
+  });
+
+  test("a failed message whose write is lost is unrecorded too", async () => {
+    const mem = memoryDb(rowsOf(1), { failUpdate: finalWrite });
+    const { send } = fakeSend(() => ({ status: "failed", error: "nope" }));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+        db: mem.db,
+        send,
+        sleep: quietSleep,
+      });
+      expect(result).toMatchObject({ failed: 0, unrecorded: 1, remaining: 0 });
+    } finally {
+      console.error = original;
+    }
+  });
+
+  test("a slow write is awaited before the send returns", async () => {
+    const mem = memoryDb(rowsOf(3), { updateDelayMs: 30 });
+    const { send } = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+      db: mem.db,
+      send,
+      sleep: quietSleep,
+    });
+    // Were the writes fired and forgotten, these would still be `sending`.
+    for (const r of mem.rows.values()) expect(r.status).toBe("sent");
+  });
+});
+
+describe("reconcileInterrupted", () => {
+  const NOW = Date.parse("2026-11-17T12:00:00Z");
+  const iso = (minutesAgo: number) =>
+    new Date(NOW - minutesAgo * 60_000).toISOString();
+
+  test("fails rows left `sending` for more than ten minutes, unconfirmed", async () => {
+    const mem = memoryDb(rowsOf(4), {
+      rows: [
+        { id: "row-1", status: "sending", claimed_at: iso(11) },
+        { id: "row-2", status: "sending", claimed_at: iso(9) },
+        { id: "row-3", status: "sent", claimed_at: iso(60) },
+      ],
+    });
+    const count = await reconcileInterrupted(mem.db, "camp-1", NOW);
+    expect(count).toBe(1);
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
+    expect(mem.status("row-2")).toBe("sending");
+    expect(mem.status("row-3")).toBe("sent");
+    expect(mem.status("row-4")).toBe("queued");
+  });
+
+  test("a failed read of the table is reported as zero, not thrown", async () => {
+    const mem = memoryDb(rowsOf(1), { failUpdate: () => "down" });
+    expect(await reconcileInterrupted(mem.db, "camp-1", NOW)).toBe(0);
   });
 });

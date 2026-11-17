@@ -22,6 +22,7 @@ const CAMPAIGN_STYLES: Record<CampaignStatus, string> = {
 
 const RECIPIENT_STYLES: Record<RecipientStatus, string> = {
   queued: "bg-sand-100 text-petroleum-500",
+  sending: "bg-blue-100 text-blue-800",
   sent: "bg-sand-100 text-petroleum-500",
   delivered: "bg-emerald-100 text-emerald-800",
   opened: "bg-emerald-100 text-emerald-800",
