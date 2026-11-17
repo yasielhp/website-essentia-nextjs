@@ -118,6 +118,7 @@ export const bookingDetailsSchema = z.object({
   phone: z.string().min(6, "phoneInvalid").refine(isValidPhone, "phoneInvalid"),
   consent: z.literal(true, { error: "consentRequired" }),
   whatsapp: z.boolean().optional(),
+  whatsappMarketing: z.boolean().optional(),
 });
 
 /** The first step of buying a bonus: who is buying, checked as a booking's client is. */

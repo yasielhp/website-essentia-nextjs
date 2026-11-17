@@ -86,8 +86,15 @@ export async function saveDetailsStep({
         p_gender: details.gender || null,
         // `null`, not `false`: an unticked box must not undo a yes given before.
         p_newsletter: details.newsletter ? true : null,
-        // Same rule: `null` leaves an earlier yes (or a STOP) untouched.
+        // Two separate consents (booking notices, news and offers), each
+        // sent only when ticked. `null`, never `false`: the box is "do not
+        // touch", so unticking it later does not withdraw a consent already
+        // given. That is an accepted gap — a withdrawal is a STOP/BAJA reply
+        // or staff in the dashboard. The same call can also be made with
+        // somebody else's email, which clears their STOP, exactly as the
+        // newsletter box can re-subscribe one.
         p_whatsapp: details.whatsapp ? true : null,
+        p_whatsapp_marketing: details.whatsappMarketing ? true : null,
       });
 
     // Never swallow this. A failure here used to pass unnoticed and the draft

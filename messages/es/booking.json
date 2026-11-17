@@ -138,7 +138,9 @@
     "fullDetails": "Más detalles en nuestra",
     "newsletterOptIn": "Quiero recibir novedades y ofertas de Essentia por email (opcional).",
     "whatsappOptIn": "Quiero recibir por WhatsApp la confirmación y el recordatorio de mi cita.",
-    "whatsappOptInHint": "Puedes darte de baja respondiendo BAJA."
+    "whatsappOptInHint": "Puedes darte de baja respondiendo BAJA.",
+    "whatsappMarketingOptIn": "Quiero recibir por WhatsApp novedades y ofertas de Essentia.",
+    "whatsappMarketingOptInHint": "Puedes darte de baja respondiendo BAJA. Puedes cambiarlo en cualquier momento."
   },
   "confirmStep": {
     "date": "Fecha",

@@ -22,6 +22,11 @@ export type DetailsState = {
    * reply opts anyone out.
    */
   whatsapp?: boolean;
+  /**
+   * Opt-in to news and offers on WhatsApp: its own consent, never implied by
+   * `whatsapp`, and never ticked for the visitor.
+   */
+  whatsappMarketing?: boolean;
   notes?: string;
 };
 

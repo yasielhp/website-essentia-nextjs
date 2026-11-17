@@ -36,9 +36,11 @@ export type ContactDetail = {
   email_bounced_at: string | null;
   /** YYYY-MM-DD, for date-based campaigns. Optional. */
   birthdate: string | null;
-  /** When they agreed to WhatsApp messages; see `whatsappConsentState`. */
+  /** When they agreed to booking notices on WhatsApp; see `whatsappConsentState`. */
   whatsapp_opted_in_at: string | null;
-  /** Set by a STOP/BAJA reply or by staff; cleared when they agree again. */
+  /** When they agreed to news and offers on WhatsApp. */
+  whatsapp_marketing_opted_in_at: string | null;
+  /** Set by a STOP/BAJA reply; cleared when they agree to either use again. */
   whatsapp_opted_out_at: string | null;
 };
 
@@ -110,11 +112,13 @@ export type UpdateContactPayload = {
   birthdate: string | null;
 };
 
-/** What `setWhatsAppConsent` hands back: the two columns as they now stand. */
+/** The three WhatsApp consent columns of a contact, as stored. */
+export type WhatsAppConsentColumnsRow = {
+  whatsapp_opted_in_at: string | null;
+  whatsapp_marketing_opted_in_at: string | null;
+  whatsapp_opted_out_at: string | null;
+};
+
+/** What `setWhatsAppConsent` hands back: the columns as they now stand. */
 export type WhatsAppConsentResult =
-  | {
-      ok: true;
-      whatsapp_opted_in_at: string | null;
-      whatsapp_opted_out_at: string | null;
-    }
-  | { ok: false; error: string };
+  ({ ok: true } & WhatsAppConsentColumnsRow) | { ok: false; error: string };

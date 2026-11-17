@@ -138,7 +138,9 @@
     "fullDetails": "Full details in our",
     "newsletterOptIn": "I'd like to receive Essentia news and offers by email (optional).",
     "whatsappOptIn": "Send me my booking confirmation and reminder on WhatsApp.",
-    "whatsappOptInHint": "You can opt out by replying STOP."
+    "whatsappOptInHint": "You can opt out by replying STOP.",
+    "whatsappMarketingOptIn": "Send me news and offers from Essentia on WhatsApp.",
+    "whatsappMarketingOptInHint": "You can opt out by replying STOP. You can change this at any time."
   },
   "confirmStep": {
     "date": "Date",

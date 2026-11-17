@@ -16,6 +16,7 @@ const EMPTY_DETAILS: DetailsState = {
   consent: false,
   newsletter: false,
   whatsapp: false,
+  whatsappMarketing: false,
   notes: "",
 };
 

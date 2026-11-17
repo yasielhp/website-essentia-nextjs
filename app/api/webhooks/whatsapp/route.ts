@@ -269,10 +269,11 @@ export async function POST(req: NextRequest) {
 
     if (optOutSenders.size > 0) {
       // Phones are stored however a form wrote them, so they are compared in
-      // code. Only contacts that can still be unsubscribed are read: an
-      // opted-out contact keeps their original date, and a contact who never
-      // opted in has nothing to withdraw. At this centre's volume reading them
-      // all once per payload is cheap.
+      // code. Only contacts that can still be unsubscribed are read: one who
+      // already opted out keeps their original date, and one who holds neither
+      // consent (booking notices or marketing) has nothing to withdraw. The
+      // STOP is a single opt-out that blocks both uses. At this centre's
+      // volume reading them all once per payload is cheap.
       //
       // The SDK cuts a read short without saying so, which here would mean a
       // STOP silently ignored. The range is the same ceiling `audience.ts`
@@ -280,7 +281,9 @@ export async function POST(req: NextRequest) {
       const { data, error } = await db
         .from("contacts")
         .select("id, phone")
-        .not("whatsapp_opted_in_at", "is", null)
+        .or(
+          "whatsapp_opted_in_at.not.is.null,whatsapp_marketing_opted_in_at.not.is.null",
+        )
         .is("whatsapp_opted_out_at", null)
         .range(0, OPT_OUT_MAX_ROWS);
       if (error) throw error;

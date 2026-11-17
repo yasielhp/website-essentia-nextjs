@@ -178,22 +178,45 @@ export function DetailsStep({
         }
       />
 
+      {/* Two boxes, because they are two consents: what the booking needs
+          (confirmation and reminder) and what is marketing. Neither is ticked
+          for the visitor and neither implies the other. Unticking one later
+          does not withdraw a consent already given — an unticked box means
+          "do not touch" — so a withdrawal is the STOP/BAJA reply the hint
+          names, or the centre in the dashboard. */}
       {offerWhatsapp && (
-        <Checkbox
-          name="whatsapp"
-          checked={details.whatsapp ?? false}
-          onChange={(e) => {
-            onChange({ ...details, whatsapp: e.target.checked });
-          }}
-          label={
-            <span className="text-petroleum-400 text-sm">
-              {t("whatsappOptIn")}
-              <span className="mt-0.5 block text-xs">
-                {t("whatsappOptInHint")}
+        <>
+          <Checkbox
+            name="whatsapp"
+            checked={details.whatsapp ?? false}
+            onChange={(e) => {
+              onChange({ ...details, whatsapp: e.target.checked });
+            }}
+            label={
+              <span className="text-petroleum-400 text-sm">
+                {t("whatsappOptIn")}
+                <span className="mt-0.5 block text-xs">
+                  {t("whatsappOptInHint")}
+                </span>
               </span>
-            </span>
-          }
-        />
+            }
+          />
+          <Checkbox
+            name="whatsappMarketing"
+            checked={details.whatsappMarketing ?? false}
+            onChange={(e) => {
+              onChange({ ...details, whatsappMarketing: e.target.checked });
+            }}
+            label={
+              <span className="text-petroleum-400 text-sm">
+                {t("whatsappMarketingOptIn")}
+                <span className="mt-0.5 block text-xs">
+                  {t("whatsappMarketingOptInHint")}
+                </span>
+              </span>
+            }
+          />
+        </>
       )}
 
       <Accordion className="border-sand-500 rounded-2xl border px-6">

@@ -35,7 +35,7 @@ import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
 import { BonusesSection } from "./bonuses-section";
 import { ConsentSection } from "./consent-section";
-import { WhatsAppConsentRow } from "./whatsapp-consent-row";
+import { WhatsAppConsentRows } from "./whatsapp-consent-rows";
 import type { WhatsAppConsentColumns } from "@/lib/whatsapp/consent";
 import { fetchContactConsent } from "@/actions/consent";
 import type { ContactConsent } from "@/types/consent";
@@ -280,6 +280,8 @@ function ContactDetailPageInner() {
         bouncedAt: contact.email_bounced_at ?? null,
         whatsapp: {
           whatsapp_opted_in_at: contact.whatsapp_opted_in_at,
+          whatsapp_marketing_opted_in_at:
+            contact.whatsapp_marketing_opted_in_at,
           whatsapp_opted_out_at: contact.whatsapp_opted_out_at,
         },
       });
@@ -461,7 +463,7 @@ function ContactDetailPageInner() {
               {loading ? (
                 <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
               ) : (
-                <WhatsAppConsentRow contactId={id} initial={whatsapp} />
+                <WhatsAppConsentRows contactId={id} initial={whatsapp} />
               )}
             </div>
             <div className="mt-6 flex justify-end">

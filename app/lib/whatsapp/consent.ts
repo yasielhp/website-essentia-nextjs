@@ -1,23 +1,46 @@
 /**
- * Where a contact stands on WhatsApp, from the two timestamps on `contacts`.
+ * Where a contact stands on WhatsApp, from the three timestamps on `contacts`.
  *
- * Pure so the dashboard row and any future audience filter read it the same
- * way. The rule it encodes is the one the database and the webhook already
- * keep: ticking the box (or the admin toggle) stamps `whatsapp_opted_in_at` and
- * clears `whatsapp_opted_out_at`; only a STOP/BAJA reply or the admin toggle
- * ever sets the opt-out. So a non-empty opt-out always means "currently out".
+ * There are two consents because there are two purposes: the booking
+ * confirmation and reminder (`whatsapp_opted_in_at`) and news and offers
+ * (`whatsapp_marketing_opted_in_at`). Each is held or not on its own. The
+ * opt-out is a single global stop (`whatsapp_opted_out_at`): a STOP or BAJA
+ * reply blocks both uses and leaves the two dates as history. Ticking either
+ * public checkbox, or staff turning a use on, clears it.
+ *
+ * Pure so the dashboard rows and any audience filter read it the same way.
  */
-export type WhatsAppConsentState = "accepted" | "opted_out" | "none";
+export type WhatsAppPurpose = "appointments" | "marketing";
 
 export type WhatsAppConsentColumns = {
   whatsapp_opted_in_at?: string | null;
+  whatsapp_marketing_opted_in_at?: string | null;
   whatsapp_opted_out_at?: string | null;
 };
+
+export type WhatsAppConsentState = {
+  /** The contact's own STOP/BAJA: no messages for either use. */
+  optedOut: boolean;
+  /** Whether each use has been consented to, whatever `optedOut` says. */
+  appointments: "accepted" | "none";
+  marketing: "accepted" | "none";
+};
+
+/** The column that holds the opt-in date of a use. */
+export function whatsappConsentColumn(
+  purpose: WhatsAppPurpose,
+): "whatsapp_opted_in_at" | "whatsapp_marketing_opted_in_at" {
+  return purpose === "marketing"
+    ? "whatsapp_marketing_opted_in_at"
+    : "whatsapp_opted_in_at";
+}
 
 export function whatsappConsentState(
   contact: WhatsAppConsentColumns,
 ): WhatsAppConsentState {
-  if (contact.whatsapp_opted_out_at) return "opted_out";
-  if (contact.whatsapp_opted_in_at) return "accepted";
-  return "none";
+  return {
+    optedOut: Boolean(contact.whatsapp_opted_out_at),
+    appointments: contact.whatsapp_opted_in_at ? "accepted" : "none",
+    marketing: contact.whatsapp_marketing_opted_in_at ? "accepted" : "none",
+  };
 }

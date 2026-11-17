@@ -11,8 +11,13 @@ import type {
   ContactMembership,
   ContactRow,
   UpdateContactPayload,
+  WhatsAppConsentColumnsRow,
   WhatsAppConsentResult,
 } from "@/types/contact";
+import {
+  whatsappConsentColumn,
+  type WhatsAppPurpose,
+} from "@/lib/whatsapp/consent";
 
 /**
  * Contact directory. Every function here reads or writes personal data with the
@@ -104,7 +109,7 @@ export async function fetchContactDetail(
   const { data: contacts, error: contactError } = await db
     .from("contacts")
     .select(
-      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_opted_out_at",
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at",
     )
     .eq("id", id)
     .limit(1);
@@ -249,20 +254,23 @@ export async function updateContact(
 }
 
 /**
- * Staff recording, on a contact's behalf, that they do or do not take WhatsApp.
+ * Staff recording, on a contact's behalf, that they do or do not take WhatsApp
+ * for one purpose: the booking notices or news and offers.
  *
- * The same two columns the public booking box and a STOP/BAJA reply write, so
- * the dashboard is just a third door onto one record. Turning it on stamps the
- * new date and clears an earlier opt-out; turning it off stamps the opt-out and
- * leaves the original opt-in date as history.
+ * The same columns the public booking boxes and a STOP/BAJA reply write, so
+ * the dashboard is one more door onto one record. Turning a use on stamps its
+ * opt-in date if it had none and clears the contact's opt-out; turning it off
+ * withdraws that one consent (the date goes back to NULL) and leaves the
+ * opt-out alone, which is only ever the contact's own STOP.
  *
- * Takes a uuid and nothing else: the id reaches the filter only after it has
- * been checked, and a malformed one never touches the database.
+ * Takes a uuid and a known purpose and nothing else: both are checked before
+ * they reach the database.
  */
 export async function setWhatsAppConsent(
   accessToken: string | null,
   contactId: string,
-  accepted: boolean,
+  purpose: WhatsAppPurpose,
+  enabled: boolean,
 ): Promise<WhatsAppConsentResult> {
   try {
     await requireRole(accessToken);
@@ -270,36 +278,47 @@ export async function setWhatsAppConsent(
     if (err instanceof AuthError) return { ok: false, error: err.message };
     throw err;
   }
-  if (!z.uuid().safeParse(contactId).success) {
+  if (
+    !z.uuid().safeParse(contactId).success ||
+    !z.enum(["appointments", "marketing"]).safeParse(purpose).success
+  ) {
     return { ok: false, error: "invalid" };
   }
 
-  const now = new Date().toISOString();
-  const patch = accepted
-    ? { whatsapp_opted_in_at: now, whatsapp_opted_out_at: null }
-    : { whatsapp_opted_out_at: now };
+  const column = whatsappConsentColumn(purpose);
+  const returned =
+    "whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at";
+  const db = getAdminClient().database;
 
   try {
-    const { data, error } = await getAdminClient()
-      .database.from("contacts")
+    let patch: Record<string, string | null>;
+    if (enabled) {
+      // The first consent date is the one that counts, so a use that already
+      // has one keeps it and only the opt-out is cleared.
+      const { data: current, error: readError } = await db
+        .from("contacts")
+        .select(column)
+        .eq("id", contactId)
+        .limit(1);
+      if (readError) return { ok: false, error: "db" };
+      const existing = (current as Record<string, string | null>[] | null)?.[0];
+      if (!existing) return { ok: false, error: "notFound" };
+      patch = existing[column]
+        ? { whatsapp_opted_out_at: null }
+        : { [column]: new Date().toISOString(), whatsapp_opted_out_at: null };
+    } else {
+      patch = { [column]: null };
+    }
+
+    const { data, error } = await db
+      .from("contacts")
       .update(patch)
       .eq("id", contactId)
-      .select("whatsapp_opted_in_at, whatsapp_opted_out_at");
+      .select(returned);
     if (error) return { ok: false, error: "db" };
-    const row = (
-      data as
-        | {
-            whatsapp_opted_in_at: string | null;
-            whatsapp_opted_out_at: string | null;
-          }[]
-        | null
-    )?.[0];
+    const row = (data as WhatsAppConsentColumnsRow[] | null)?.[0];
     if (!row) return { ok: false, error: "notFound" };
-    return {
-      ok: true,
-      whatsapp_opted_in_at: row.whatsapp_opted_in_at,
-      whatsapp_opted_out_at: row.whatsapp_opted_out_at,
-    };
+    return { ok: true, ...row };
   } catch {
     return { ok: false, error: "db" };
   }

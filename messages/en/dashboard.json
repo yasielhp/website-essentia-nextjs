@@ -1135,13 +1135,24 @@
       "save": "Save",
       "saving": "Saving…",
       "whatsapp": {
-        "label": "WhatsApp",
-        "accepted": "Accepts WhatsApp since {date}",
-        "optedOut": "Opted out on {date}",
+        "appointments": {
+          "label": "Appointment notices"
+        },
+        "marketing": {
+          "label": "News and offers"
+        },
+        "accepted": "Accepts since {date}",
         "none": "No consent",
-        "savesNow": "This change saves immediately, without pressing Save.",
-        "reoptWarning": "Opted out. Turn it on only if they have asked to receive messages again.",
-        "error": "Could not save the WhatsApp consent."
+        "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind until one of the two is turned on.",
+        "savesNow": "Changes save immediately, without pressing Save.",
+        "error": "Could not save the WhatsApp consent.",
+        "dialog": {
+          "title": "Turn on WhatsApp",
+          "body": "You are about to record that this person accepts WhatsApp for: {use}.",
+          "optedOutBody": "This person asked not to receive messages. Turn it on only if they have asked to receive them again.",
+          "confirm": "Turn on",
+          "confirming": "Turning on…"
+        }
       },
       "newsletter": {
         "label": "Newsletter",

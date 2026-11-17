@@ -1135,13 +1135,24 @@
       "save": "Guardar",
       "saving": "Guardando…",
       "whatsapp": {
-        "label": "WhatsApp",
-        "accepted": "Acepta WhatsApp desde {date}",
-        "optedOut": "Se dio de baja el {date}",
+        "appointments": {
+          "label": "Avisos de la cita"
+        },
+        "marketing": {
+          "label": "Novedades y ofertas"
+        },
+        "accepted": "Acepta desde {date}",
         "none": "Sin consentimiento",
-        "savesNow": "Este cambio se guarda al instante, sin pulsar Guardar.",
-        "reoptWarning": "Se dio de baja. Actívalo solo si ha pedido volver a recibir mensajes.",
-        "error": "No se pudo guardar el consentimiento de WhatsApp."
+        "optedOutNote": "Se dio de baja (STOP) el {date}. No recibirá mensajes de ningún tipo hasta que se active uno de los dos.",
+        "savesNow": "Los cambios se guardan al instante, sin pulsar Guardar.",
+        "error": "No se pudo guardar el consentimiento de WhatsApp.",
+        "dialog": {
+          "title": "Activar WhatsApp",
+          "body": "Vas a registrar que esta persona acepta recibir por WhatsApp: {use}.",
+          "optedOutBody": "Esta persona pidió no recibir mensajes. Actívalo solo si ha pedido volver a recibirlos.",
+          "confirm": "Activar",
+          "confirming": "Activando…"
+        }
       },
       "newsletter": {
         "label": "Newsletter",
