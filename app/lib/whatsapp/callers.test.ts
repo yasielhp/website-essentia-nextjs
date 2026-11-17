@@ -26,6 +26,11 @@ let calls: Call[] = [];
 let whatsappThrows = false;
 let paymentStatus = "none";
 let amountPaid = 0;
+/** A `payment/paid` event for this Redsys order already exists (a retry). */
+let priorPaidEvent = false;
+/** Another notification already added this money: our conditional update matches nothing. */
+let updateLoses = false;
+let bookingUpdates = 0;
 
 const BOOKING = () => ({
   first_name: "Ana",
@@ -48,7 +53,10 @@ function resolveDb(table: string, ops: string[]): unknown {
   const has = (op: string) => ops.includes(op);
   switch (table) {
     case "bookings":
-      if (has("update")) return { data: [{ id: "b-1" }], error: null };
+      if (has("update")) {
+        bookingUpdates += 1;
+        return { data: updateLoses ? [] : [{ id: "b-1" }], error: null };
+      }
       if (has("single") || has("maybeSingle")) {
         return {
           data: {
@@ -61,7 +69,7 @@ function resolveDb(table: string, ops: string[]): unknown {
       }
       return { data: [], error: null };
     case "booking_events":
-      return { data: [], error: null };
+      return { data: priorPaidEvent ? [{ id: "e-1" }] : [], error: null };
     case "contacts":
       return { data: { preferred_language: "es" }, error: null };
     default:
@@ -163,6 +171,9 @@ beforeEach(() => {
   whatsappThrows = false;
   paymentStatus = "none";
   amountPaid = 0;
+  priorPaidEvent = false;
+  updateLoses = false;
+  bookingUpdates = 0;
 });
 
 const payload = (
@@ -249,6 +260,22 @@ describe("payment: handleBookingPaid", () => {
     await handleBookingPaid("b-1", 4500);
     expect(sent).toHaveLength(1);
     expect(calls).toHaveLength(1);
+  });
+
+  test("Redsys retrying a notification already handled sends nothing at all: no money, no email, no WhatsApp", async () => {
+    priorPaidEvent = true;
+    await handleBookingPaid("b-1", 4500);
+    expect(bookingUpdates).toBe(0);
+    expect(sent).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("the loser of two notifications arriving together sends nothing: the other one does", async () => {
+    updateLoses = true;
+    await handleBookingPaid("b-1", 4500);
+    expect(bookingUpdates).toBe(1);
+    expect(sent).toHaveLength(0);
+    expect(calls).toHaveLength(0);
   });
 
   test("an already paid booking does not send it again either", async () => {
