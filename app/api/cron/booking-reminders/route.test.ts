@@ -54,21 +54,33 @@ const SECOND = {
 let bookingsInRun: (typeof BOOKING)[] = [BOOKING];
 let templateReads = 0;
 
-function chain(result: () => unknown, onIn?: (ids: string[]) => void): unknown {
+/** What a chain was asked: whether it is an UPDATE, the ids it names, its steps. */
+type Asked = { update: boolean; ids: string[]; steps: string[] };
+
+function chain(
+  result: (asked: Asked) => unknown,
+  onIn?: (ids: string[]) => void,
+): unknown {
+  const asked: Asked = { update: false, ids: [], steps: [] };
   const proxy: unknown = new Proxy(() => {}, {
     get(_t, prop) {
       if (prop === "then") {
         return (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => {
           try {
-            return Promise.resolve(result()).then(ok, bad);
+            return Promise.resolve(result(asked)).then(ok, bad);
           } catch (err) {
             return Promise.reject(err).then(ok, bad);
           }
         };
       }
+      asked.steps.push(String(prop));
+      if (prop === "update") asked.update = true;
       if (prop === "in") {
         return (col: string, ids: string[]) => {
-          if (col === "id") onIn?.(ids);
+          if (col === "id") {
+            asked.ids = ids;
+            onIn?.(ids);
+          }
           return proxy;
         };
       }
@@ -78,6 +90,13 @@ function chain(result: () => unknown, onIn?: (ids: string[]) => void): unknown {
   });
   return proxy;
 }
+
+/** What the stamp answers: by default, every booking it named is now stamped. */
+let stamp: (ids: string[]) => { data: unknown; error: unknown } = (ids) => ({
+  data: ids.map((id) => ({ id })),
+  error: null,
+});
+let stampSteps: string[] = [];
 
 const fakeAdmin = {
   getAdminClient: () => ({
@@ -91,7 +110,11 @@ const fakeAdmin = {
         }
         if (table === "bookings") {
           return chain(
-            () => ({ data: bookingsInRun, error: null }),
+            (asked) => {
+              if (!asked.update) return { data: bookingsInRun, error: null };
+              stampSteps = asked.steps;
+              return stamp(asked.ids);
+            },
             (ids) => stamped.push(ids),
           );
         }
@@ -139,6 +162,8 @@ beforeEach(() => {
   templates = () => ({ data: null, error: null });
   bookingsInRun = [BOOKING];
   templateReads = 0;
+  stamp = (ids) => ({ data: ids.map((id) => ({ id })), error: null });
+  stampSteps = [];
 });
 
 const run = () =>
@@ -294,5 +319,39 @@ describe("booking reminders", () => {
     bookingsInRun = [];
     await run();
     expect(templateReads).toBe(0);
+  });
+
+  test("the stamp cannot be written: nobody is mailed, it is logged and the answer is a 500", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    bookingsInRun = [BOOKING, SECOND];
+    stamp = () => ({ data: null, error: { message: "connection reset" } });
+    const res = await run();
+    const lines = quiet.mock.calls.map((c) => String(c[0]));
+    quiet.mockRestore();
+    // Unstamped and mailed, they would be mailed again every hour.
+    expect(batches).toEqual([]);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Stamp failed" });
+    expect(lines.some((l) => l.includes("stamp failed"))).toBe(true);
+  });
+
+  test("only the bookings the stamp took are mailed: another run got the other first", async () => {
+    bookingsInRun = [BOOKING, SECOND];
+    stamp = () => ({ data: [{ id: "b-1" }], error: null });
+    const res = await run();
+    expect(batches).toEqual([[legacy(BOOKING)]]);
+    expect(await res.json()).toMatchObject({ sent: 1, skipped: 1 });
+  });
+
+  test("a stamp that took nobody mails nobody", async () => {
+    stamp = () => ({ data: [], error: null });
+    const res = await run();
+    expect(batches).toEqual([]);
+    expect(await res.json()).toMatchObject({ ok: true, sent: 0, skipped: 1 });
+  });
+
+  test("the stamp only takes a booking nobody has stamped, and asks which it took", async () => {
+    await run();
+    expect(stampSteps).toEqual(["update", "in", "is", "select"]);
   });
 });

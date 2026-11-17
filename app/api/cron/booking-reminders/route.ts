@@ -224,18 +224,44 @@ async function handle(request: NextRequest) {
   // Stamped before sending, all of them at once: a duplicate reminder is worse
   // than a missing one, and a crash between here and the send would otherwise
   // send the lot again on the next run.
-  await db
+  //
+  // For the same reason the stamp has to be seen to land. If it fails nobody
+  // is mailed: a booking mailed without its stamp would be mailed again every
+  // hour it spends in the window (sixteen of them), while one left unstamped
+  // and unmailed gets its reminder from the next run. And only the bookings
+  // the stamp took are mailed (it takes one nobody has stamped yet), so two
+  // runs that overlap cannot both send.
+  const { data: stampedRows, error: stampError } = await db
     .from("bookings")
     .update({ reminder_sent_at: new Date().toISOString() })
     .in(
       "id",
       due.map((item) => item.id),
+    )
+    .is("reminder_sent_at", null)
+    .select("id");
+
+  if (stampError) {
+    console.error(
+      "[cron/booking-reminders] stamp failed, nothing sent:",
+      stampError,
     );
+    return NextResponse.json({ error: "Stamp failed" }, { status: 500 });
+  }
+
+  const stamped = new Set(
+    ((stampedRows ?? []) as { id: string }[]).map((row) => row.id),
+  );
+  const toSend = due.filter((item) => stamped.has(item.id));
+  skipped += due.length - toSend.length;
+  if (toSend.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, skipped });
+  }
 
   // One request for the whole run, which is what keeps this off Resend's rate
   // limit — the reason the loop above used to be sequential.
   const { sent, error: sendError } = await sendEmailBatch(
-    due.map((item) => item.email),
+    toSend.map((item) => item.email),
   );
 
   if (sendError) {
