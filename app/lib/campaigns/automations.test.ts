@@ -1,16 +1,19 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import { runAutomation } from "./automations";
 import { INTERRUPTED_ERROR } from "./dispatch-whatsapp";
-import { RUN_FAILED_ERROR } from "./run-markers";
+import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import {
   campaign,
   fakeSend,
   memoryDb,
+  noticesOnly,
   ok,
+  row,
   rowsOf,
   template,
+  type MemoryDbOptions,
 } from "./whatsapp-fixtures";
 
 const NOW = new Date("2026-11-17T12:00:00Z");
@@ -404,5 +407,180 @@ describe("runAutomation for an appointment notice", () => {
     // Ended at 10:00, two hours later is 12:00, which is NOW.
     expect(result.queued).toBe(1);
     expect(mem.upserts[0]?.rows[0]?.cycle).toBe("b1");
+  });
+
+  describe("a notice that was left in the queue", () => {
+    const MINUTE = 60_000;
+    const later = (minutes: number) =>
+      new Date(NOW.getTime() + minutes * MINUTE);
+    const utility = (over: Record<string, unknown> = {}) =>
+      template({ category: "UTILITY", ...over });
+
+    /**
+     * The notice of booking `b1` (owed since 11:30, half an hour before NOW),
+     * queued by an earlier tick and never sent.
+     */
+    const waiting = (over: MemoryDbOptions = {}, bookings = ["b1"]) => {
+      const opts: MemoryDbOptions = {
+        campaign: notice(),
+        contacts: [noticesOnly("contact-1")],
+        template: utility(),
+        ...over,
+      };
+      // One client, one number, a row per booking.
+      const mem = memoryDb(
+        bookings.map((cycle, i) =>
+          row(i + 1, {
+            cycle,
+            contact_id: "contact-1",
+            phone: "+34600000001",
+          }),
+        ),
+        opts,
+      );
+      const sender = fakeSend(() => ok("w"));
+      const tick = (at: Date, appointments: unknown[]) =>
+        runAutomation(notice(), at, {
+          db: mem.db,
+          resolveAudience: async () => [withAppointments(1, appointments)],
+          whatsapp: { send: sender.send, sleep: async () => {} },
+        });
+      return { mem, sender, tick, opts };
+    };
+
+    test("held by a paused template and found past its margin: closed as late, never sent", async () => {
+      const { mem, sender, tick, opts } = waiting({
+        template: utility({ status: "PAUSED" }),
+      });
+      const first = await tick(NOW, [appt("b1")]);
+      expect(first).toMatchObject({ sent: 0, failed: 0 });
+      expect(mem.status("row-1")).toBe("queued");
+
+      // Meta lets the template go again an hour later: 90 minutes past the
+      // notice's moment, twice the margin.
+      opts.template = utility();
+      const second = await tick(later(60), [appt("b1")]);
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.status("row-1")).toBe("failed");
+      expect(mem.error("row-1")).toBe("[skipped] late");
+      expect(LATE_ERROR).toBe("[skipped] late");
+      expect(second).toMatchObject({ sent: 0, late: 1 });
+      // In the campaign's count like any other row that was not sent.
+      expect(mem.campaign.failed_count).toBe(1);
+      expect(mem.campaign.status).toBe("active");
+    });
+
+    test("found again inside its margin: it goes out", async () => {
+      const { mem, sender, tick, opts } = waiting({
+        template: utility({ status: "PAUSED" }),
+      });
+      await tick(NOW, [appt("b1")]);
+      opts.template = utility();
+      // 40 minutes past the moment: still inside the 45.
+      const second = await tick(later(10), [appt("b1")]);
+      expect(sender.calls).toHaveLength(1);
+      expect(mem.status("row-1")).toBe("sent");
+      expect(second).toEqual({ queued: 1, sent: 1, failed: 0 });
+    });
+
+    test("a booking cancelled between the queue and the send gets no notice", async () => {
+      const { mem, sender, tick, opts } = waiting({
+        template: utility({ status: "PAUSED" }),
+      });
+      await tick(NOW, [appt("b1")]);
+      opts.template = utility();
+      // Still inside the margin, but the resolver no longer returns the
+      // booking: a cancelled one is not an appointment.
+      await tick(later(10), []);
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.status("row-1")).toBe("failed");
+      expect(mem.error("row-1")).toBe(LATE_ERROR);
+    });
+
+    test("a booking moved out of its window gets no notice for the hour it no longer has", async () => {
+      const { mem, sender, tick } = waiting();
+      await tick(later(10), [
+        appt("b1", { startsAt: "2026-11-25T11:30:00.000Z" }),
+      ]);
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.error("row-1")).toBe(LATE_ERROR);
+    });
+
+    test("a visit that has started is not reminded of, whatever was queued", async () => {
+      // A "2 hours before" queued at 9:30 for an 11:30 visit, found at 12:00.
+      const { mem, sender } = waiting();
+      await runAutomation(
+        notice({ trigger: { event: "before_visit", hours: 2 } }),
+        NOW,
+        {
+          db: mem.db,
+          resolveAudience: async () => [
+            withAppointments(1, [
+              appt("b1", { startsAt: "2026-11-17T11:30:00.000Z" }),
+            ]),
+          ],
+          whatsapp: { send: sender.send },
+        },
+      );
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.error("row-1")).toBe(LATE_ERROR);
+    });
+
+    test("only the late one is closed: the notice owed on this tick still goes out", async () => {
+      const { mem, sender, tick } = waiting({}, ["b1", "b2"]);
+      const result = await tick(NOW, [
+        appt("b1"),
+        // Booking b2 was moved a week on after its notice was queued.
+        appt("b2", { startsAt: "2026-11-25T11:30:00.000Z" }),
+      ]);
+      expect(sender.calls).toHaveLength(1);
+      expect(mem.status("row-1")).toBe("sent");
+      expect(mem.status("row-2")).toBe("failed");
+      expect(mem.error("row-2")).toBe(LATE_ERROR);
+      expect(result).toMatchObject({ sent: 1, late: 1 });
+    });
+
+    test("a row for a number the client no longer has is not this tick's notice", async () => {
+      const mem = memoryDb([row(1, { cycle: "b1", phone: "+34699999999" })], {
+        campaign: notice(),
+        contacts: [noticesOnly("contact-1")],
+        template: utility(),
+      });
+      const sender = fakeSend(() => ok("w"));
+      await runAutomation(notice(), NOW, {
+        db: mem.db,
+        resolveAudience: async () => [withAppointments(1, [appt("b1")])],
+        whatsapp: { send: sender.send },
+      });
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.error("row-1")).toBe(LATE_ERROR);
+    });
+
+    test("a late row that cannot be closed is still not sent", async () => {
+      const quiet = spyOn(console, "error").mockImplementation(() => {});
+      const { mem, sender, tick } = waiting({
+        failUpdate: ({ patch }) =>
+          patch.error === LATE_ERROR ? "connection reset" : null,
+      });
+      const result = await tick(later(60), [appt("b1")]);
+      quiet.mockRestore();
+      expect(sender.calls).toHaveLength(0);
+      expect(mem.status("row-1")).toBe("queued");
+      expect(result).toEqual({ queued: 0, sent: 0, failed: 0 });
+    });
+
+    test("every other kind keeps sending whatever it finds queued, as before", async () => {
+      // An automation's row left by a tick that ran out of time, for somebody
+      // who is no longer in the segment.
+      const mem = memoryDb([row(1, { cycle: "" })], { campaign: automated() });
+      const sender = fakeSend(() => ok("w"));
+      const result = await runAutomation(automated(), NOW, {
+        db: mem.db,
+        resolveAudience: async () => [],
+        whatsapp: { send: sender.send },
+      });
+      expect(sender.calls).toHaveLength(1);
+      expect(result).toEqual({ queued: 0, sent: 1, failed: 0 });
+    });
   });
 });

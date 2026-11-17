@@ -9,9 +9,14 @@ import {
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
 import { conflictTarget, recipientRow } from "./recipient-rows";
-import { RUN_FAILED_ERROR } from "./run-markers";
+import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
-import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
+import {
+  loadQueued,
+  refreshCounts,
+  sendQueued,
+  type QueuedRow,
+} from "./dispatch";
 
 /**
  * One run of an active campaign: who newly qualifies gets queued and sent.
@@ -20,7 +25,8 @@ import { loadQueued, refreshCounts, sendQueued } from "./dispatch";
  * index on (campaign_id, email, cycle), or (campaign_id, phone, cycle) on
  * WhatsApp, swallows a repeat, so two overlapping runs cannot message the same
  * person twice for the same occasion. A queued row left behind by a timeout or
- * the shared deadline is picked up by the next run.
+ * the shared deadline is picked up by the next run, except an appointment
+ * notice whose moment has passed by then: that one is closed, not sent.
  *
  * On WhatsApp a run first fails what a dead process left `sending`, and an
  * automation Meta keeps refusing is paused with the reason.
@@ -42,6 +48,11 @@ export async function runAutomation(
   queued: number;
   sent: number;
   failed: number;
+  /**
+   * Appointment notices closed without being sent: their moment had passed,
+   * or the booking was cancelled or moved, while they waited in the queue.
+   */
+  late?: number;
   /** Why the run paused the automation, when Meta kept refusing it. */
   halted?: string;
 }> {
@@ -97,7 +108,30 @@ export async function runAutomation(
     queued = due.length;
   }
 
-  const rows = await loadQueued(campaign.id, db);
+  // An appointment notice is only sent while it is still owed. The margin in
+  // the rules bounds when a notice is QUEUED; a row can then wait in the queue
+  // (its template paused by Meta, no credentials, a consent or STOP-list read
+  // that failed, a tick out of time, the campaign paused) and would otherwise
+  // go out on the first tick the cause is gone, with the visit begun or days
+  // after it. So of what is queued, only the rows this very tick still owes
+  // are sent: the same booking, to the same number. The rest are closed as
+  // late and never sent, which is also what happens to a booking cancelled or
+  // moved out of its window while its notice waited.
+  let rows = await loadQueued(campaign.id, db);
+  let late = 0;
+  if (campaign.kind === "appointment") {
+    const owed = new Set(
+      due.map(({ recipient, cycle }) => noticeKey(recipient.phone, cycle)),
+    );
+    const isOwed = (row: QueuedRow) =>
+      owed.has(noticeKey(row.phone, row.cycle));
+    late = await closeLate(
+      db,
+      rows.filter((row) => !isOwed(row)),
+    );
+    rows = rows.filter(isOwed);
+  }
+
   const { sent, failed, lastError, halted } =
     rows.length > 0
       ? await sendQueued(campaign, rows, {
@@ -129,7 +163,47 @@ export async function runAutomation(
     db,
   );
 
-  return halted ? { queued, sent, failed, halted } : { queued, sent, failed };
+  return {
+    queued,
+    sent,
+    failed,
+    ...(late > 0 ? { late } : {}),
+    ...(halted ? { halted } : {}),
+  };
+}
+
+/** One appointment notice: a booking, to a number. */
+const noticeKey = (
+  phone: string | null | undefined,
+  cycle: string | undefined,
+): string => `${phone ?? ""}\n${cycle ?? ""}`;
+
+/**
+ * Closes the notices whose moment has passed as `failed` with `LATE_ERROR`,
+ * and answers how many it closed. Only a row still `queued` is touched. A
+ * write that fails is logged and nothing else: the caller does not send those
+ * rows either way, and the next run finds them again.
+ */
+async function closeLate(db: Db, rows: QueuedRow[]): Promise<number> {
+  let closed = 0;
+  // In chunks: the ids travel in the URL.
+  for (let i = 0; i < rows.length; i += 100) {
+    const { data, error } = await db
+      .from("campaign_recipients")
+      .update({ status: "failed", error: LATE_ERROR })
+      .in(
+        "id",
+        rows.slice(i, i + 100).map((row) => row.id),
+      )
+      .eq("status", "queued")
+      .select("id");
+    if (error) {
+      console.error("[campaigns] late notices not closed:", error.message);
+      continue;
+    }
+    closed += ((data ?? []) as unknown[]).length;
+  }
+  return closed;
 }
 
 type PostRow = {

@@ -118,12 +118,17 @@ export type QueuedRow = {
   language: CampaignLocale;
   variant: "a" | "b" | null;
   vars: Record<string, string> | null;
+  /**
+   * The occasion the row is for: "" for a one-off send, the booking's id for
+   * an appointment notice (which is how a run tells whose moment has passed).
+   */
+  cycle?: string;
   // The SDK types an embedded relation as an array even when it is one row.
   contacts: QueuedContact | QueuedContact[] | null;
 };
 
 export const QUEUED_FIELDS =
-  "id, contact_id, email, phone, language, variant, vars, contacts(first_name, last_name, unsubscribe_token)";
+  "id, contact_id, email, phone, language, variant, vars, cycle, contacts(first_name, last_name, unsubscribe_token)";
 
 const one = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;

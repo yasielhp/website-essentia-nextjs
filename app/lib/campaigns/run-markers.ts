@@ -6,6 +6,16 @@
  * Pure and free of server imports, like `error-markers.ts`.
  */
 
+import { SKIPPED_PREFIX } from "./error-markers";
+
+/**
+ * The `error` of an appointment notice that was still in the queue when its
+ * moment had passed, or when its booking had been cancelled or moved: it was
+ * not sent and never will be. A `[skipped]` like the others, so a retry leaves
+ * it alone.
+ */
+export const LATE_ERROR = `${SKIPPED_PREFIX}late`;
+
 /**
  * The `last_error` of an active campaign whose run threw (its audience could
  * not be read, say). Deliberately nothing of the error itself, which can quote
