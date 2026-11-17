@@ -221,6 +221,19 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, skipped });
   }
 
+  // Nothing to send with: nothing is stamped either. A stamp here would be the
+  // end of these reminders (`sendEmailBatch` shrugs without a key), and with
+  // none they are still owed to the next run that has one.
+  if (!process.env.RESEND_API_KEY) {
+    console.error(
+      `[cron/booking-reminders] RESEND_API_KEY not set: ${due.length} reminders not sent, not stamped`,
+    );
+    return NextResponse.json(
+      { error: "RESEND_API_KEY not set" },
+      { status: 500 },
+    );
+  }
+
   // Stamped before sending, all of them at once: a duplicate reminder is worse
   // than a missing one, and a crash between here and the send would otherwise
   // send the lot again on the next run.
@@ -260,12 +273,30 @@ async function handle(request: NextRequest) {
 
   // One request for the whole run, which is what keeps this off Resend's rate
   // limit — the reason the loop above used to be sequential.
-  const { sent, error: sendError } = await sendEmailBatch(
-    toSend.map((item) => item.email),
-  );
+  const {
+    sent,
+    ids,
+    error: sendError,
+  } = await sendEmailBatch(toSend.map((item) => item.email));
 
+  // A send that failed after the stamp. `sendEmailBatch` hands back one text
+  // for a refusal by Resend and for a request that never got an answer, so
+  // which of the two it was is not known here, and an email with no id may
+  // still have left. The stamp is therefore kept (a duplicate is worse than a
+  // missing reminder), but the loss is not a quiet one: the bookings are named
+  // in the log and the run answers a 500.
   if (sendError) {
-    console.error("[cron/booking-reminders] batch failed:", sendError);
+    const unsent = toSend.filter((_, index) => !ids[index]).map((b) => b.id);
+    console.error(
+      "[cron/booking-reminders] batch failed:",
+      sendError,
+      "- stamped but not confirmed sent:",
+      unsent.join(", "),
+    );
+    return NextResponse.json(
+      { error: "Send failed", sent, skipped, unsent },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ ok: true, sent, skipped });

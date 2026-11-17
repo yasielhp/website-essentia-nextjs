@@ -97,6 +97,18 @@ let stamp: (ids: string[]) => { data: unknown; error: unknown } = (ids) => ({
   error: null,
 });
 let stampSteps: string[] = [];
+/** Every UPDATE of `bookings`, with the ids it named. */
+let bookingUpdates: { ids: string[]; steps: string[] }[] = [];
+
+type Sent = { sent: number; ids: (string | null)[]; error: string | null };
+/** What Resend answers: by default it takes every email. */
+const takesAll = (emails: Email[]): Sent => ({
+  sent: emails.length,
+  ids: emails.map((email) => `re_${email.to}`),
+  error: null,
+});
+let mailer: (emails: Email[]) => Sent = takesAll;
+const KEY = process.env.RESEND_API_KEY;
 
 const fakeAdmin = {
   getAdminClient: () => ({
@@ -113,6 +125,7 @@ const fakeAdmin = {
             (asked) => {
               if (!asked.update) return { data: bookingsInRun, error: null };
               stampSteps = asked.steps;
+              bookingUpdates.push({ ids: asked.ids, steps: asked.steps });
               return stamp(asked.ids);
             },
             (ids) => stamped.push(ids),
@@ -135,12 +148,14 @@ let GET: (r: NextRequest) => Promise<Response>;
 beforeAll(async () => {
   process.env.CRON_SECRET = "s3cret";
   process.env.NEXT_PUBLIC_APP_URL = "https://app.example.test";
+  // Never used: the mailer below stands in for Resend.
+  process.env.RESEND_API_KEY = "test-key";
   mock.module("@/lib/insforge-admin", () => fakeAdmin);
   mock.module("@/emails/send", () => ({
     ...real.send,
     sendEmailBatch: async (emails: Email[]) => {
       batches.push(emails);
-      return { sent: emails.length, error: null };
+      return mailer(emails);
     },
   }));
   mock.module("@/lib/auth-security", () => ({
@@ -154,6 +169,8 @@ afterAll(() => {
   mock.module("@/lib/insforge-admin", () => real.admin);
   mock.module("@/emails/send", () => real.send);
   mock.module("@/lib/auth-security", () => real.security);
+  if (KEY === undefined) delete process.env.RESEND_API_KEY;
+  else process.env.RESEND_API_KEY = KEY;
 });
 
 beforeEach(() => {
@@ -164,6 +181,9 @@ beforeEach(() => {
   templateReads = 0;
   stamp = (ids) => ({ data: ids.map((id) => ({ id })), error: null });
   stampSteps = [];
+  bookingUpdates = [];
+  mailer = takesAll;
+  process.env.RESEND_API_KEY = "test-key";
 });
 
 const run = () =>
@@ -353,5 +373,53 @@ describe("booking reminders", () => {
   test("the stamp only takes a booking nobody has stamped, and asks which it took", async () => {
     await run();
     expect(stampSteps).toEqual(["update", "in", "is", "select"]);
+  });
+
+  test("with no key to send with nothing is stamped: the reminder is still owed", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    delete process.env.RESEND_API_KEY;
+    const res = await run();
+    const logged = quiet.mock.calls.length;
+    quiet.mockRestore();
+    expect(stamped).toEqual([]);
+    expect(batches).toEqual([]);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "RESEND_API_KEY not set" });
+    expect(logged).toBeGreaterThan(0);
+  });
+
+  test("a send that fails after the stamp is not a quiet loss: the bookings are named and the answer is a 500", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    bookingsInRun = [BOOKING, SECOND];
+    // Resend took the first chunk's first email and nothing is known of the
+    // second: it may or may not have left.
+    mailer = (emails) => ({
+      sent: 1,
+      ids: [`re_${emails[0]!.to}`, null],
+      error: "fetch failed",
+    });
+    const res = await run();
+    const lines = quiet.mock.calls.map((c) => c.map(String).join(" "));
+    quiet.mockRestore();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Send failed",
+      sent: 1,
+      skipped: 0,
+      unsent: ["b-2"],
+    });
+    expect(lines.some((l) => l.includes("b-2") && !l.includes("b-1"))).toBe(
+      true,
+    );
+    // The stamp stays: mailing somebody twice is worse than not at all.
+    expect(bookingUpdates).toHaveLength(1);
+  });
+
+  test("a send that takes every email answers as before", async () => {
+    bookingsInRun = [BOOKING, SECOND];
+    const res = await run();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, sent: 2, skipped: 0 });
+    expect(bookingUpdates).toHaveLength(1);
   });
 });
