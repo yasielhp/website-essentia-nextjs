@@ -141,7 +141,7 @@
     "whatsappOptInHint": "You can opt out by replying STOP.",
     "whatsappAlreadyOn": "Already on. You can opt out by replying STOP.",
     "whatsappMarketingOptIn": "Send me news and offers from Essentia on WhatsApp.",
-    "whatsappMarketingOptInHint": "You can opt out by replying STOP. You can change this at any time."
+    "whatsappMarketingOptInHint": "You can opt out at any time by replying STOP."
   },
   "confirmStep": {
     "date": "Date",

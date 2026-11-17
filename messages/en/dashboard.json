@@ -1145,13 +1145,14 @@
         },
         "accepted": "Accepts since {date}",
         "none": "No consent",
-        "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind until one of the two is turned on.",
+        "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind, even if old consent dates are still stored, until one of the two uses is turned on.",
         "savesNow": "Changes save immediately, without pressing Save.",
         "error": "Could not save the WhatsApp consent.",
         "dialog": {
           "title": "Turn on WhatsApp",
           "body": "You are about to record that this person accepts WhatsApp for: {use}.",
           "optedOutBody": "This person asked not to receive messages. Turn it on only if they have asked to receive them again.",
+          "optedOutScope": "The opt-out is global: turning this use on withdraws the earlier consent for the other use, and it will have to be asked for again.",
           "confirm": "Turn on",
           "confirming": "Turning on…"
         }

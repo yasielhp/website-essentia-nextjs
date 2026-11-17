@@ -141,7 +141,7 @@
     "whatsappOptInHint": "Puedes darte de baja respondiendo BAJA.",
     "whatsappAlreadyOn": "Ya lo tienes activado. Puedes darte de baja respondiendo BAJA.",
     "whatsappMarketingOptIn": "Quiero recibir por WhatsApp novedades y ofertas de Essentia.",
-    "whatsappMarketingOptInHint": "Puedes darte de baja respondiendo BAJA. Puedes cambiarlo en cualquier momento."
+    "whatsappMarketingOptInHint": "Puedes darte de baja cuando quieras respondiendo BAJA."
   },
   "confirmStep": {
     "date": "Fecha",

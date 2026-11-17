@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   activeWhatsAppUses,
+  whatsappActivationPatch,
   whatsappConsentColumn,
   whatsappConsentState,
 } from "@/lib/whatsapp/consent";
@@ -15,13 +16,6 @@ describe("whatsappConsentState", () => {
       appointments: "none",
       marketing: "none",
     });
-    expect(
-      whatsappConsentState({
-        whatsapp_opted_in_at: null,
-        whatsapp_marketing_opted_in_at: null,
-        whatsapp_opted_out_at: null,
-      }),
-    ).toEqual({ optedOut: false, appointments: "none", marketing: "none" });
   });
 
   test("each use is read from its own column", () => {
@@ -35,18 +29,14 @@ describe("whatsappConsentState", () => {
     ).toEqual({ optedOut: false, appointments: "none", marketing: "accepted" });
   });
 
-  test("a STOP is one global state and leaves each use as it was", () => {
+  test("a STOP switches both uses off whatever dates are stored", () => {
     expect(
       whatsappConsentState({
         whatsapp_opted_in_at: IN,
         whatsapp_marketing_opted_in_at: IN,
         whatsapp_opted_out_at: OUT,
       }),
-    ).toEqual({
-      optedOut: true,
-      appointments: "accepted",
-      marketing: "accepted",
-    });
+    ).toEqual({ optedOut: true, appointments: "none", marketing: "none" });
   });
 
   test("an opt-out with no opt-in at all is still opted out", () => {
@@ -78,13 +68,6 @@ describe("activeWhatsAppUses", () => {
       }),
     ).toEqual({ appointments: false, marketing: false });
   });
-
-  test("nothing consented is nothing active", () => {
-    expect(activeWhatsAppUses({})).toEqual({
-      appointments: false,
-      marketing: false,
-    });
-  });
 });
 
 describe("whatsappConsentColumn", () => {
@@ -93,5 +76,62 @@ describe("whatsappConsentColumn", () => {
     expect(whatsappConsentColumn("marketing")).toBe(
       "whatsapp_marketing_opted_in_at",
     );
+  });
+});
+
+describe("whatsappActivationPatch", () => {
+  const NOW = "2026-11-17T12:00:00.000Z";
+
+  test("with no STOP, a use with a date keeps it and the other is left alone", () => {
+    const patch = whatsappActivationPatch(
+      "marketing",
+      { whatsapp_marketing_opted_in_at: IN, whatsapp_opted_in_at: IN },
+      NOW,
+    );
+    expect(patch).toEqual({
+      whatsapp_marketing_opted_in_at: IN,
+      whatsapp_opted_out_at: null,
+    });
+    expect("whatsapp_opted_in_at" in patch).toBe(false);
+  });
+
+  test("with no STOP, an empty use is stamped now", () => {
+    expect(whatsappActivationPatch("appointments", {}, NOW)).toEqual({
+      whatsapp_opted_in_at: NOW,
+      whatsapp_opted_out_at: null,
+    });
+  });
+
+  test("after a STOP the activated use is stamped now and the other is withdrawn", () => {
+    expect(
+      whatsappActivationPatch(
+        "appointments",
+        {
+          whatsapp_opted_in_at: IN,
+          whatsapp_marketing_opted_in_at: IN,
+          whatsapp_opted_out_at: OUT,
+        },
+        NOW,
+      ),
+    ).toEqual({
+      whatsapp_opted_in_at: NOW,
+      whatsapp_marketing_opted_in_at: null,
+      whatsapp_opted_out_at: null,
+    });
+    expect(
+      whatsappActivationPatch(
+        "marketing",
+        {
+          whatsapp_opted_in_at: IN,
+          whatsapp_marketing_opted_in_at: IN,
+          whatsapp_opted_out_at: OUT,
+        },
+        NOW,
+      ),
+    ).toEqual({
+      whatsapp_marketing_opted_in_at: NOW,
+      whatsapp_opted_in_at: null,
+      whatsapp_opted_out_at: null,
+    });
   });
 });

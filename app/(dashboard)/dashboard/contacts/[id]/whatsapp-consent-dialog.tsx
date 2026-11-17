@@ -85,9 +85,12 @@ export function WhatsAppConsentDialog({
         >
           <p>{t("dialog.body", { use: t(`${purpose}.label`) })}</p>
           {optedOut && (
-            <p className="text-petroleum-700 font-medium">
-              {t("dialog.optedOutBody")}
-            </p>
+            <>
+              <p className="text-petroleum-700 font-medium">
+                {t("dialog.optedOutBody")}
+              </p>
+              <p>{t("dialog.optedOutScope")}</p>
+            </>
           )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
