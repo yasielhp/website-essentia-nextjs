@@ -3,6 +3,7 @@ import {
   countParams,
   paramIssues,
   renderPreview,
+  templateStatusFromEvent,
   templateSupport,
 } from "@/lib/whatsapp/templates";
 
@@ -176,5 +177,37 @@ describe("templateSupport", () => {
         unsupportedButtons: ["COPY_CODE"],
       }),
     ).toBe("media_header");
+  });
+});
+
+describe("templateStatusFromEvent", () => {
+  test("Meta's own states pass through unchanged", () => {
+    for (const event of [
+      "APPROVED",
+      "REJECTED",
+      "PENDING",
+      "PAUSED",
+      "DISABLED",
+      "FLAGGED",
+      "IN_APPEAL",
+      "PENDING_DELETION",
+      "DELETED",
+      "LIMIT_EXCEEDED",
+      "ARCHIVED",
+      "LOCKED",
+    ]) {
+      expect(templateStatusFromEvent(event)).toBe(event as never);
+    }
+  });
+  test("REINSTATED means the template can be sent again", () => {
+    expect(templateStatusFromEvent("REINSTATED")).toBe("APPROVED");
+  });
+  test("an unknown event is not mapped", () => {
+    expect(templateStatusFromEvent("SOMETHING_NEW")).toBeNull();
+    expect(templateStatusFromEvent("approved")).toBeNull();
+    expect(templateStatusFromEvent("draft")).toBeNull();
+    expect(templateStatusFromEvent("")).toBeNull();
+    expect(templateStatusFromEvent(undefined)).toBeNull();
+    expect(templateStatusFromEvent(42)).toBeNull();
   });
 });

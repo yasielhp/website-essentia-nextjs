@@ -1,9 +1,12 @@
 import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
+import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 
 /**
- * Meta's status callbacks for the staff notifications.
+ * Meta's callbacks: message states for the staff notifications, template
+ * reviews, and inbound opt-outs.
  *
  * `sendTemplate` learns only whether the Cloud API accepted a message. What
  * happened next — delivered, read, or dropped because the number has no
@@ -40,9 +43,28 @@ type MetaStatus = {
   }[];
 };
 
+type MetaInboundMessage = {
+  from?: string;
+  id?: string;
+  type?: string;
+  text?: { body?: string };
+};
+
 type MetaWebhookBody = {
   entry?: {
-    changes?: { value?: { statuses?: MetaStatus[] } }[];
+    changes?: {
+      field?: string;
+      value?: {
+        statuses?: MetaStatus[];
+        messages?: MetaInboundMessage[];
+        // field === "message_template_status_update"
+        event?: string;
+        message_template_id?: string | number;
+        message_template_name?: string;
+        message_template_language?: string;
+        reason?: string;
+      };
+    }[];
   }[];
 };
 
@@ -95,6 +117,18 @@ const STATE_RANK: Record<string, number> = {
   failed: 3,
 };
 
+/**
+ * The elements of `value` that are objects, or none when it is not an array.
+ *
+ * The body is signed, not trusted to have the shape the types promise: a `null`
+ * or a string where a list should be would otherwise throw, and a thrown error
+ * is a 500 that Meta answers by retrying.
+ */
+function objectsIn<T>(value: unknown): T[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === "object") as T[];
+}
+
 /** Meta's seconds-since-epoch, as a timestamp the database will take. */
 function isoFrom(timestamp: string | undefined): string {
   const seconds = Number(timestamp);
@@ -142,14 +176,115 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // Inbound messages come through this same subscription. The centre answers
-  // WhatsApp by hand, so they are read past rather than stored.
-  const statuses = (payload.entry ?? []).flatMap((entry) =>
-    (entry.changes ?? []).flatMap((change) => change.value?.statuses ?? []),
+  let db: ReturnType<typeof getAdminClient>["database"];
+  try {
+    db = getAdminClient().database;
+  } catch (err) {
+    console.error("[webhooks/whatsapp] no database client:", err);
+    return NextResponse.json({ received: true });
+  }
+
+  type Change = NonNullable<
+    NonNullable<MetaWebhookBody["entry"]>[number]["changes"]
+  >[number];
+  const changes = objectsIn<{ changes?: unknown }>(
+    (payload as MetaWebhookBody | null)?.entry,
+  ).flatMap((entry) => objectsIn<Change>(entry.changes));
+
+  // Everything below the signature check answers 200 whatever the database
+  // does: Meta retries a non-2xx with growing backoff and ends up disabling the
+  // subscription, which costs far more than one lost callback. Each block logs
+  // its own failure so nothing is swallowed silently.
+
+  // Template reviews. Meta reports here, and nowhere else, that a template we
+  // submitted was approved, refused or paused.
+  for (const change of changes) {
+    if (change.field !== "message_template_status_update") continue;
+    const value = change.value;
+    try {
+      const status = templateStatusFromEvent(value?.event);
+      if (!status) {
+        // Not written: the column only holds states the dashboard understands.
+        console.warn(
+          "[webhooks/whatsapp] ignored unknown template event:",
+          value?.event,
+        );
+        continue;
+      }
+      const name = value?.message_template_name;
+      const language = value?.message_template_language;
+      if (!name || !language) continue;
+
+      const { error } = await db
+        .from("whatsapp_templates")
+        .update({
+          status,
+          // Meta sends "NONE" when there is nothing to explain.
+          rejection_reason:
+            value?.reason && value.reason !== "NONE" ? value.reason : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("name", name)
+        .eq("language", language);
+      if (error) throw error;
+    } catch (err) {
+      console.error(
+        "[webhooks/whatsapp] could not record template review:",
+        err,
+      );
+    }
+  }
+
+  // Opt-outs. The centre answers WhatsApp by hand, but a STOP has to be
+  // honoured by the machine: it stamps the contact and every audience from now
+  // on leaves them out. Only text is read, and nothing inbound is stored.
+  const optOutSenders = new Set<string>();
+  for (const change of changes) {
+    for (const message of objectsIn<MetaInboundMessage>(
+      change.value?.messages,
+    )) {
+      if (message.type !== "text" || !message.from) continue;
+      if (isOptOutText(message.text?.body)) optOutSenders.add(message.from);
+    }
+  }
+  if (optOutSenders.size > 0) {
+    try {
+      // Phones are stored however a form wrote them, so they are compared in
+      // code. Only contacts that can still be unsubscribed are read: an
+      // opted-out contact keeps their original date, and a contact who never
+      // opted in has nothing to withdraw. At this centre's volume reading them
+      // all once per payload is cheap.
+      const { data, error } = await db
+        .from("contacts")
+        .select("id, phone")
+        .not("whatsapp_opted_in_at", "is", null)
+        .is("whatsapp_opted_out_at", null);
+      if (error) throw error;
+
+      const optedIn = (data ?? []) as { id: string; phone: string | null }[];
+      const ids = [
+        ...new Set(
+          [...optOutSenders].flatMap((from) => matchOptOut(from, optedIn)),
+        ),
+      ];
+      if (ids.length > 0) {
+        const { error: updateError } = await db
+          .from("contacts")
+          .update({ whatsapp_opted_out_at: new Date().toISOString() })
+          .in("id", ids)
+          // A second STOP in the same batch must not move the date.
+          .is("whatsapp_opted_out_at", null);
+        if (updateError) throw updateError;
+      }
+    } catch (err) {
+      console.error("[webhooks/whatsapp] could not record opt-outs:", err);
+    }
+  }
+
+  const statuses = changes.flatMap((change) =>
+    objectsIn<MetaStatus>(change.value?.statuses),
   );
   if (statuses.length === 0) return NextResponse.json({ received: true });
-
-  const db = getAdminClient().database;
 
   // One payload routinely carries both a `delivered` and a `read` for the same
   // message. Sending each on its own left the order of the writes deciding the

@@ -12,7 +12,10 @@
  * slip through to Meta.
  */
 
-import type { WhatsAppTemplateUnsupportedReason } from "@/lib/whatsapp/types";
+import type {
+  WhatsAppTemplateStatus,
+  WhatsAppTemplateUnsupportedReason,
+} from "@/lib/whatsapp/types";
 
 const MAX_PARAM = 50;
 
@@ -122,4 +125,41 @@ export function templateSupport(
   }
   if (template.unsupportedButtons.length > 0) return "button_type";
   return null;
+}
+
+/** The states Meta reports as they are, so they are stored as they come. */
+const META_TEMPLATE_STATES: ReadonlySet<string> = new Set<
+  Exclude<WhatsAppTemplateStatus, "draft">
+>([
+  "APPROVED",
+  "REJECTED",
+  "PENDING",
+  "PAUSED",
+  "DISABLED",
+  "FLAGGED",
+  "IN_APPEAL",
+  "PENDING_DELETION",
+  "DELETED",
+  "LIMIT_EXCEEDED",
+  "ARCHIVED",
+  "LOCKED",
+]);
+
+/**
+ * The status to store for a `message_template_status_update` event, or null
+ * when the event is one we do not know.
+ *
+ * `REINSTATED` is Meta saying a paused or disabled template may be sent again,
+ * which for us is `APPROVED`. Anything else unknown returns null on purpose:
+ * the caller skips it, so the status column never holds a value the dashboard
+ * and the send guard have no meaning for. `draft` is ours and never arrives.
+ */
+export function templateStatusFromEvent(
+  event: unknown,
+): WhatsAppTemplateStatus | null {
+  if (typeof event !== "string") return null;
+  if (event === "REINSTATED") return "APPROVED";
+  return META_TEMPLATE_STATES.has(event)
+    ? (event as WhatsAppTemplateStatus)
+    : null;
 }
