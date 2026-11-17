@@ -30,7 +30,10 @@ export function AppointmentAudience({
   const t = useTranslations("dashboard.campaigns.audience");
   const ta = useTranslations("dashboard.campaigns.audience.appointment");
   const { audience, reach, submitting } = state;
-  const { counting, failed, retry } = useAudienceReach(state, dispatch);
+  const { counting, failed, notReady, retry } = useAudienceReach(
+    state,
+    dispatch,
+  );
 
   const languageOptions: SelectOption<CampaignLanguage>[] = [
     { value: "any", label: t("languageAny") },
@@ -103,7 +106,7 @@ export function AppointmentAudience({
               "…"
             )}
           </p>
-          {failed && <ReachFailed onRetry={retry} />}
+          {failed && <ReachFailed onRetry={retry} notReady={notReady} />}
           <p className="text-petroleum-500 text-xs">{ta("note")}</p>
         </div>
 

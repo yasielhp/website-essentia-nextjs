@@ -6,12 +6,22 @@ import { useTranslations } from "next-intl";
 export function ReachFailed({
   onRetry,
   message,
+  notReady = false,
 }: {
   onRetry: () => void;
+  /** The server is not set up yet: said so, with no retry, which would change nothing. */
+  notReady?: boolean;
   /** Already in words; the audience one when absent. */
   message?: string;
 }) {
   const t = useTranslations("dashboard.campaigns.audience");
+  if (notReady) {
+    return (
+      <p role="alert" className="text-xs font-medium text-red-600">
+        {t("reachNotReady")}
+      </p>
+    );
+  }
   return (
     <p role="alert" className="text-xs font-medium text-red-600">
       {message ?? t("reachFailed")}{" "}

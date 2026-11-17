@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { reachOutcome } from "./audience-reach";
+import {
+  isSuppressionTableMissing,
+  reachOutcome,
+  WHATSAPP_NOT_READY,
+} from "./audience-reach";
 
 describe("reachOutcome", () => {
   test("a count is a reach, with its languages", () => {
@@ -27,5 +31,43 @@ describe("reachOutcome", () => {
       ok: false,
     });
     expect(reachOutcome({ count: 5 })).toEqual({ ok: false });
+  });
+});
+
+describe("telling a server that is not set up from one that failed for a moment", () => {
+  test("Postgres' answer for the missing table is 'not ready'", () => {
+    // The real text, read from the live database's answer for this table.
+    expect(
+      isSuppressionTableMissing(
+        new Error(
+          'relation "public.whatsapp_suppressed_phones" does not exist',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      isSuppressionTableMissing(
+        new Error('relation "whatsapp_suppressed_phones" does not exist'),
+      ),
+    ).toBe(true);
+  });
+  test("a timeout, a refused connection or another table is not", () => {
+    for (const text of [
+      "fetch failed",
+      "canceling statement due to statement timeout",
+      "permission denied for table whatsapp_suppressed_phones",
+      'relation "public.contacts" does not exist',
+      "",
+    ]) {
+      expect(isSuppressionTableMissing(new Error(text))).toBe(false);
+    }
+    expect(isSuppressionTableMissing(null)).toBe(false);
+    expect(isSuppressionTableMissing(undefined)).toBe(false);
+  });
+  test("the preview's answer for it is a failure that says retrying will not help", () => {
+    expect(reachOutcome({ ok: false, error: WHATSAPP_NOT_READY })).toEqual({
+      ok: false,
+      notReady: true,
+    });
+    expect(reachOutcome({ ok: false, error: "db" })).toEqual({ ok: false });
   });
 });

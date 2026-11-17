@@ -269,7 +269,10 @@ function ListAudienceStep({
 
   const [list, setList] = useState<SegmentList | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
-  const { counting, failed, retry } = useAudienceReach(state, dispatch);
+  const { counting, failed, notReady, retry } = useAudienceReach(
+    state,
+    dispatch,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -401,7 +404,7 @@ function ListAudienceStep({
       )}
       {failed && (
         <div className="mt-3">
-          <ReachFailed onRetry={retry} />
+          <ReachFailed onRetry={retry} notReady={notReady} />
         </div>
       )}
       {!counting && !failed && reach && reach.count === 0 && (

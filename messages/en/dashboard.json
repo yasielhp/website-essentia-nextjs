@@ -1799,6 +1799,7 @@
         "anyService": "Any service"
       },
       "reachFailed": "The audience could not be calculated; please try again.",
+      "reachNotReady": "WhatsApp is not ready on the server yet; tell whoever manages the website.",
       "reachRetry": "Try again"
     },
     "content": {

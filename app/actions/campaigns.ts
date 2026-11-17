@@ -40,6 +40,10 @@ import {
   type SendFailure,
   type SendOutcome,
 } from "@/lib/campaigns/send-outcome";
+import {
+  isSuppressionTableMissing,
+  WHATSAPP_NOT_READY,
+} from "@/lib/campaigns/audience-reach";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import {
@@ -888,7 +892,10 @@ export async function previewAudience(
     };
   } catch (err) {
     console.error("[campaigns] preview failed:", err);
-    return { ok: false, error: "db" };
+    return {
+      ok: false,
+      error: isSuppressionTableMissing(err) ? WHATSAPP_NOT_READY : "db",
+    };
   }
 }
 

@@ -19,10 +19,17 @@ import type { FormAction, FormState } from "./form-state";
 export function useAudienceReach(
   state: Pick<FormState, "audience" | "channel" | "kind">,
   dispatch: Dispatch<FormAction>,
-): { counting: boolean; failed: boolean; retry: () => void } {
+): {
+  counting: boolean;
+  failed: boolean;
+  /** Failed because the server is not set up for WhatsApp: no retry will help. */
+  notReady: boolean;
+  retry: () => void;
+} {
   const { audience, channel, kind } = state;
   const [counting, setCounting] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [notReady, setNotReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const audienceKey = JSON.stringify(audience);
 
@@ -42,6 +49,7 @@ export function useAudienceReach(
           setCounting(false);
           const outcome = reachOutcome(result);
           setFailed(!outcome.ok);
+          setNotReady(!outcome.ok && outcome.notReady === true);
           dispatch({
             type: "SET_REACH",
             reach: outcome.ok ? outcome.reach : null,
@@ -54,5 +62,10 @@ export function useAudienceReach(
     };
   }, [audienceKey, channel, kind, attempt, dispatch]);
 
-  return { counting, failed, retry: () => setAttempt((n) => n + 1) };
+  return {
+    counting,
+    failed,
+    notReady,
+    retry: () => setAttempt((n) => n + 1),
+  };
 }
