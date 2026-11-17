@@ -13,6 +13,7 @@ import { writeStorage, clearStorage } from "@/storage/booking-storage";
 import { StepIndicator } from "./steps/step-indicator";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import type { DetailsErrors } from "./steps/details-step";
+import { firstInvalidFieldId } from "./steps/details-fields";
 import type { PaymentMode } from "@/lib/payments/amounts";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
@@ -162,7 +163,10 @@ function BookingContentInner() {
     // Which person is optional — the centre can allocate one — but somebody
     // has to be able to perform the treatment.
     duration: !!selectedTierId && tierHasStaff,
-    details: bookingDetailsSchema.safeParse(details).success,
+    // Always open: a greyed-out button cannot say what is missing. Pressing it
+    // checks the fields, writes each error under its own and takes the focus to
+    // the first one (`handleNextFromDetails`).
+    details: true,
     datetime: !!(selectedDate && selectedTime),
     confirm: !!(selectedDate && selectedTime),
   };
@@ -186,6 +190,12 @@ function BookingContentInner() {
     const errs = parseErrors(bookingDetailsSchema, details);
     if (Object.keys(errs).length > 0) {
       setDetailErrors(errs);
+      // Once the messages are on the page, so a screen reader that lands on
+      // the field finds the reason it is described by.
+      const firstId = firstInvalidFieldId(errs);
+      if (firstId) {
+        requestAnimationFrame(() => document.getElementById(firstId)?.focus());
+      }
       return;
     }
     setDetailErrors({});

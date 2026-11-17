@@ -10,6 +10,7 @@ import type { DetailsState } from "@/types";
 import type { Gender } from "@/types/person";
 import { EmailInput } from "@/components/ui/email-input";
 import { Field, inputClass, inputErr, inputOk } from "./field";
+import { DETAILS_FIELD_ID } from "./details-fields";
 
 export type DetailsErrors = Partial<Record<keyof DetailsState, string>>;
 
@@ -40,12 +41,12 @@ export function DetailsStep({
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field
           label={t("firstName")}
-          id="first-name"
+          id={DETAILS_FIELD_ID.firstName}
           required
           error={errors.firstName}
         >
           <input
-            id="first-name"
+            id={DETAILS_FIELD_ID.firstName}
             type="text"
             autoComplete="given-name"
             placeholder={t("firstNamePlaceholder")}
@@ -56,12 +57,12 @@ export function DetailsStep({
         </Field>
         <Field
           label={t("lastName")}
-          id="last-name"
+          id={DETAILS_FIELD_ID.lastName}
           required
           error={errors.lastName}
         >
           <input
-            id="last-name"
+            id={DETAILS_FIELD_ID.lastName}
             type="text"
             autoComplete="family-name"
             placeholder={t("lastNamePlaceholder")}
@@ -71,9 +72,14 @@ export function DetailsStep({
           />
         </Field>
       </div>
-      <Field label={t("email")} id="email" required error={errors.email}>
+      <Field
+        label={t("email")}
+        id={DETAILS_FIELD_ID.email}
+        required
+        error={errors.email}
+      >
         <EmailInput
-          id="email"
+          id={DETAILS_FIELD_ID.email}
           placeholder={t("emailPlaceholder")}
           value={details.email}
           onChange={(value) => {
@@ -84,9 +90,14 @@ export function DetailsStep({
           className={`${inputClass} ${errors.email ? inputErr : inputOk}`}
         />
       </Field>
-      <Field label={t("phone")} id="phone" required error={errors.phone}>
+      <Field
+        label={t("phone")}
+        id={DETAILS_FIELD_ID.phone}
+        required
+        error={errors.phone}
+      >
         <input
-          id="phone"
+          id={DETAILS_FIELD_ID.phone}
           type="tel"
           autoComplete="tel"
           placeholder={t("phonePlaceholder")}
@@ -126,48 +137,46 @@ export function DetailsStep({
         />
       </Field>
 
-      <div className="flex flex-col gap-1">
-        <Checkbox
-          name="consent"
-          aria-required="true"
-          checked={details.consent}
-          onChange={(e) => {
-            onChange({ ...details, consent: e.target.checked });
-            onClearError?.("consent");
-          }}
-          label={
-            <span className="text-petroleum-400 text-sm">
-              {t("consentPrefix")}{" "}
-              <Link
-                href="/terms"
-                className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-                target="_blank"
-              >
-                {t("terms")}
-              </Link>{" "}
-              {t("consentAnd")}{" "}
-              <Link
-                href="/privacy"
-                className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
-                target="_blank"
-              >
-                {t("privacyPolicy")}
-              </Link>
-              {t("consentNoticeSuffix")}
-              {/* The same red asterisk the required fields above carry (see
-                  `Field`); decorative, since `aria-required` says it. */}
-              <span aria-hidden="true" className="ml-0.5 text-red-400">
-                *
-              </span>
+      {/* Its error goes through the box's own `error`, which ties the message
+          to the input (`aria-describedby`, `aria-invalid`) instead of leaving a
+          loose line under it. */}
+      <Checkbox
+        id={DETAILS_FIELD_ID.consent}
+        name="consent"
+        aria-required="true"
+        checked={details.consent}
+        error={errors.consent ? validationMessage(errors.consent) : undefined}
+        onChange={(e) => {
+          onChange({ ...details, consent: e.target.checked });
+          onClearError?.("consent");
+        }}
+        label={
+          <span className="text-petroleum-400 text-sm">
+            {t("consentPrefix")}{" "}
+            <Link
+              href="/terms"
+              className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+              target="_blank"
+            >
+              {t("terms")}
+            </Link>{" "}
+            {t("consentAnd")}{" "}
+            <Link
+              href="/privacy"
+              className="text-petroleum-500 hover:text-petroleum-700 underline underline-offset-2 transition-colors"
+              target="_blank"
+            >
+              {t("privacyPolicy")}
+            </Link>
+            {t("consentNoticeSuffix")}
+            {/* The same red asterisk the required fields above carry (see
+                `Field`); decorative, since `aria-required` says it. */}
+            <span aria-hidden="true" className="ml-0.5 text-red-400">
+              *
             </span>
-          }
-        />
-        {errors.consent && (
-          <p className="text-xs text-red-500">
-            {validationMessage(errors.consent)}
-          </p>
-        )}
-      </div>
+          </span>
+        }
+      />
 
       {/* The only box that is not required (the Terms box above carries the
           asterisk). Accepting the Terms and the Policy is what allows the
