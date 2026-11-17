@@ -28,7 +28,19 @@ export class AuthError extends Error {
 
 export type AuthContext = {
   userId: string;
+  /**
+   * The address to show or write to: the profile's, else the session's. NOT
+   * proof of who the caller is. A user can rewrite her own `profiles.email`
+   * (the row is hers to update; only `role` is protected), so anything that
+   * picks WHOSE record to read or change by address must use `verifiedEmail`.
+   */
   email: string | null;
+  /**
+   * The address of the auth session itself, trimmed and lowercased, or null
+   * when the session carries none. It is what the caller signed in with, and
+   * nothing she can edit from the browser.
+   */
+  verifiedEmail: string | null;
   role: UserRole;
 };
 
@@ -117,6 +129,7 @@ export async function authenticate(
   const context: AuthContext = {
     userId,
     email: profile.email ?? session.user?.email ?? null,
+    verifiedEmail: session.user?.email?.trim().toLowerCase() || null,
     role: profile.role as UserRole,
   };
 
