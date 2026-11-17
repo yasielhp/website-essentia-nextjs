@@ -324,7 +324,7 @@ export const segmentSchema = z.object({
  * (`type: "doc"`), so a draft can hold whatever the editor produced; the
  * strict one refuses an empty body before anything is sent.
  */
-const docNode: z.ZodType<EmailDoc> = z.lazy(() =>
+export const docNode: z.ZodType<EmailDoc> = z.lazy(() =>
   z.object({
     type: z.string(),
     attrs: z.record(z.string(), z.unknown()).optional(),
@@ -393,7 +393,7 @@ function refineLocale(
  * A fixed text over 200 characters is reported on the parameter itself
  * (`content.whatsapp.params.N`), the one key the form can attach to its input.
  */
-const whatsappParamSchema = z.discriminatedUnion("kind", [
+export const whatsappParamSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("field"),
     field: z.enum([
