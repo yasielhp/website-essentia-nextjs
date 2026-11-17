@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { validateCampaign, validateCampaignDraft } from "@/lib/schemas";
+import {
+  campaignSchema,
+  validateCampaign,
+  validateCampaignDraft,
+} from "@/lib/schemas";
 import {
   AUTOMATED_KINDS,
   DEFAULT_TRIGGER,
@@ -142,6 +146,78 @@ describe("the hours of before_visit and after_visit", () => {
       });
     expect(first(168).ok).toBe(true);
     expect(first(169).ok).toBe(false);
+  });
+});
+
+describe("the ceiling on hours is back for every event that is not an appointment's", () => {
+  const withEvent = (event: string, hours: number) =>
+    validateCampaign({
+      ...appointment(),
+      kind: "automated",
+      trigger: { event, hours },
+    });
+
+  test("168 hours, as before the appointment kind, for any other event", () => {
+    for (const event of [
+      "segment_entry",
+      "after_booking",
+      "birthday",
+      "new_blog_post",
+    ]) {
+      expect(withEvent(event, 168).ok).toBe(true);
+      const over = withEvent(event, 169);
+      expect(over.ok).toBe(false);
+      if (!over.ok)
+        expect(over.errors["trigger.hours"]).toBe("hoursOutOfRange");
+    }
+  });
+
+  test("and in a draft too", () => {
+    const r = validateCampaignDraft({
+      ...appointment(),
+      kind: "automated",
+      trigger: { event: "segment_entry", hours: 300 },
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  test("a trigger with no event has the same ceiling", () => {
+    const r = validateCampaign({
+      ...appointment(),
+      kind: "standard",
+      trigger: { hours: 300 },
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  test("an appointment's 721 hours is ONE error, not two", () => {
+    const parsed = campaignSchema.safeParse(
+      appointment({ trigger: { event: "after_visit", hours: 721 } }),
+    );
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      const onHours = parsed.error.issues.filter(
+        (i) => i.path.join(".") === "trigger.hours",
+      );
+      expect(onHours).toHaveLength(1);
+    }
+  });
+
+  test("and so is a before_visit of 400, and a first_visit of 300", () => {
+    for (const [kind, trigger] of [
+      ["appointment", { event: "before_visit", hours: 400 }],
+      ["automated", { event: "first_visit", hours: 300 }],
+    ] as const) {
+      const parsed = campaignSchema.safeParse(appointment({ kind, trigger }));
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(
+          parsed.error.issues.filter(
+            (i) => i.path.join(".") === "trigger.hours",
+          ),
+        ).toHaveLength(1);
+      }
+    }
   });
 });
 

@@ -238,6 +238,26 @@ describe("foldAppointments", () => {
     }
   });
 
+  it("a length that is not a number ends when it starts too: nobody chose the 60 minutes", () => {
+    for (const duration of ["abc", "n/a", "- min", "?"]) {
+      const [a] = foldAppointments([ab({ duration })]);
+      expect(a?.endsAt).toBe(a?.startsAt);
+    }
+  });
+
+  it("an explicit zero is zero, and a number is read wherever it sits in the text", () => {
+    expect(foldAppointments([ab({ duration: "0" })])[0]?.endsAt).toBe(
+      "2026-12-10T09:30:00.000Z",
+    );
+    expect(foldAppointments([ab({ duration: "90 min" })])[0]?.endsAt).toBe(
+      "2026-12-10T11:00:00.000Z",
+    );
+    expect(foldAppointments([ab({ duration: "1h 30" })])[0]?.endsAt).toBe(
+      // Digits only: "1h 30" reads as 130, like everywhere else in the app.
+      "2026-12-10T11:40:00.000Z",
+    );
+  });
+
   it("cuts a time with seconds to HH:MM", () => {
     const [a] = foldAppointments([ab({ time: "09:30:00" })]);
     expect(a?.visit.time).toBe("09:30");

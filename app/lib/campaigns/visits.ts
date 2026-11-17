@@ -1,4 +1,3 @@
-import { parseDurationMinutes } from "@/utils/format";
 import type { Appointment, VisitInfo } from "./audience-filter";
 import { canaryWallClockToUtc, visitEndsAtIso } from "./visit-time";
 
@@ -118,9 +117,9 @@ export type AppointmentBooking = VisitBooking & {
  *   saved with, converted once here (`new Date(date + "T" + time)` would read
  *   it in the server's zone). A booking with no time starts at the day's first
  *   moment and says no time.
- * - A booking with no length ends when it starts; the first-visit rule's
- *   60-minute fallback is not applied to a notice, which would otherwise be
- *   timed from a length nobody chose.
+ * - A booking with no length, or one that is not a number, ends when it
+ *   starts; the first-visit rule's 60-minute fallback is not applied to a
+ *   notice, which would otherwise be timed from a length nobody chose.
  * - Ordered by start and, at the same moment, by id, so the result does not
  *   depend on the order the rows were read in.
  */
@@ -138,9 +137,12 @@ export function foldAppointments(
     const time = clockOf(booking.time);
     const start = canaryWallClockToUtc(date, time || "00:00");
     if (Number.isNaN(start.getTime())) continue;
-    const minutes = booking.duration?.trim()
-      ? parseDurationMinutes(booking.duration)
-      : 0;
+    // The digits of the length, or 0 when there are none ("", "abc"): a notice
+    // is timed from what the booking says, never from a default nobody chose.
+    // (`foldVisits` keeps the 60-minute fallback the first-visit rule has
+    // always used.)
+    const digits = (booking.duration ?? "").replace(/\D/g, "");
+    const minutes = digits ? parseInt(digits, 10) : 0;
     out.push({
       id: booking.id,
       serviceId: booking.service_id ?? null,

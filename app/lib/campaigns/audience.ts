@@ -110,7 +110,10 @@ export async function resolveAudience(
       ? await loadAllSuppressedPhones(getAdminClient().database)
       : undefined;
   return filterAudience(
-    await loadCandidates(channel, { appointments: options.appointments }),
+    await loadCandidates(channel, {
+      appointments: options.appointments,
+      now,
+    }),
     audience,
     now,
     channel,
@@ -127,9 +130,41 @@ export async function resolveAudience(
  * The channel only decides which contacts can possibly qualify: the email
  * channel needs an address, WhatsApp needs a phone and may have no email.
  */
+/**
+ * How far back an appointment notice reads bookings: the longest notice
+ * (`after_visit`, 720 hours = 30 days, plus its 3-hour bound) and a margin.
+ * Anything older cannot be due, and the table only grows.
+ */
+const APPOINTMENT_LOOKBACK_DAYS = 31;
+
+/**
+ * Narrows the bookings read for an appointment notice to the last
+ * `APPOINTMENT_LOOKBACK_DAYS` and what is ahead, in a fixed order. For every
+ * other resolution the query is the one it always was, untouched.
+ *
+ * Booking-history conditions of the audience (never booked, last booking…)
+ * therefore see only that span on an appointment notice; they have no meaning
+ * for one.
+ */
+function appointmentBookings<
+  Q extends {
+    gte: (column: string, value: string) => Q;
+    order: (column: string, options: { ascending: boolean }) => Q;
+  },
+>(query: Q, appointments: boolean, now: Date): Q {
+  if (!appointments) return query;
+  const since = new Date(now.getTime() - APPOINTMENT_LOOKBACK_DAYS * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  return query
+    .gte("date", since)
+    .order("date", { ascending: true })
+    .order("id", { ascending: true });
+}
+
 export async function loadCandidates(
   channel: CampaignChannel = "email",
-  options: Pick<AudienceOptions, "appointments"> = {},
+  options: Pick<AudienceOptions, "appointments"> & { now?: Date } = {},
 ): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
@@ -145,13 +180,16 @@ export async function loadCandidates(
       .order("created_at", { ascending: true })
       .order("id", { ascending: true })
       .range(0, MAX_ROWS),
-    db
-      .from("bookings")
-      .select(
-        "id, contact_id, email, service_id, service_title, tier_id, date, time, duration, status",
-      )
-      .neq("status", "cancelled")
-      .range(0, MAX_ROWS),
+    appointmentBookings(
+      db
+        .from("bookings")
+        .select(
+          "id, contact_id, email, service_id, service_title, tier_id, date, time, duration, status",
+        )
+        .neq("status", "cancelled"),
+      options.appointments === true,
+      options.now ?? new Date(),
+    ).range(0, MAX_ROWS),
     // A handful of rows: read apart rather than embedded, so it does not
     // depend on the foreign key being declared.
     db.from("service_tiers").select("id, label"),

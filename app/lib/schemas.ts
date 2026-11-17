@@ -557,6 +557,9 @@ function addCampaignIssues(
     });
   }
 
+  // The base schema allows up to 720 (the widest event). Past that it has
+  // already said so, once; saying it again here would give the field two errors.
+  if (hours !== undefined && hours > 720) return;
   if (visitEvent) {
     // The limits are `appointment-form.ts`'s, which the form reads too.
     const { min, max } = APPOINTMENT_HOURS[event];
@@ -567,7 +570,8 @@ function addCampaignIssues(
         message: "hoursOutOfRange",
       });
     }
-  } else if (event === "first_visit" && hours !== undefined && hours > 168) {
+  } else if (hours !== undefined && hours > 168) {
+    // Every other event keeps the ceiling it always had.
     ctx.addIssue({
       code: "custom",
       path: ["trigger", "hours"],

@@ -55,6 +55,8 @@ let tablesRead: string[] = [];
 let contact: typeof CONTACT = CONTACT;
 let bookings: (typeof BOOKING)[] = [];
 let selects: Record<string, string> = {};
+let chains: Record<string, string[]> = {};
+let bookingArgs: Record<string, unknown[]> = {};
 
 const real = { admin: { ...(await import("@/lib/insforge-admin")) } };
 let resolveAudience: typeof import("./audience").resolveAudience;
@@ -66,6 +68,10 @@ beforeAll(async () => {
         tablesRead.push(table);
         const select = chain.find((step) => step.name === "select");
         if (select) selects[table] = String(select.args[0]);
+        chains[table] = chain.map((step) => step.name);
+        for (const step of chain) {
+          if (table === "bookings") bookingArgs[step.name] = step.args;
+        }
         if (table === "contacts") return { data: [contact], error: null };
         if (table === "bookings") return { data: bookings, error: null };
         if (table === "whatsapp_suppressed_phones") {
@@ -91,6 +97,8 @@ beforeEach(() => {
   contact = CONTACT;
   bookings = [];
   selects = {};
+  chains = {};
+  bookingArgs = {};
 });
 
 const EVERYONE = EMPTY_AUDIENCE;
@@ -205,5 +213,55 @@ describe("resolveAudience for an appointment notice", () => {
       purpose: "appointment",
     });
     expect(withOptions).toEqual(base);
+  });
+});
+
+describe("the bookings an appointment notice reads", () => {
+  const appointment = { purpose: "appointment" as const, appointments: true };
+
+  test("every other resolution reads them exactly as it always did", async () => {
+    await resolveAudience(EVERYONE, NOW, "whatsapp");
+    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+    chains = {};
+    await resolveAudience(EVERYONE, NOW, "email");
+    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+    chains = {};
+    await resolveAudience(EVERYONE, NOW, "whatsapp", {
+      purpose: "appointment",
+    });
+    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+  });
+
+  test("an appointment notice reads only the last 31 days and what is ahead, in a fixed order", async () => {
+    await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(chains.bookings).toEqual([
+      "select",
+      "neq",
+      "gte",
+      "order",
+      "order",
+      "range",
+    ]);
+    // 31 days before 2026-11-17.
+    expect(bookingArgs.gte).toEqual(["date", "2026-10-17"]);
+  });
+
+  test("31 days is the longest notice (720 hours, 30 days) and the bound on it", async () => {
+    // after_visit can look back 30 days and 3 hours; 31 covers it.
+    await resolveAudience(
+      EVERYONE,
+      new Date("2026-03-01T00:30:00Z"),
+      "whatsapp",
+      appointment,
+    );
+    expect(bookingArgs.gte).toEqual(["date", "2026-01-29"]);
+  });
+
+  test("the contacts are read the same way in both", async () => {
+    await resolveAudience(EVERYONE, NOW, "whatsapp");
+    const plain = chains.contacts;
+    chains = {};
+    await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
+    expect(chains.contacts).toEqual(plain);
   });
 });
