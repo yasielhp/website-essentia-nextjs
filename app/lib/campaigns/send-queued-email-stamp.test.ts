@@ -714,3 +714,147 @@ describe("a one-off email campaign whose stamp failed after the email left", () 
     expect(mem.error("row-1")).toBe("[unconfirmed] interrupted");
   });
 });
+
+describe("an outage longer than the retries costs one chunk, not the campaign", () => {
+  const NO_ANSWER = "Unable to fetch data. The request could not be resolved.";
+  const NOTICE = `[unconfirmed] no_answer: ${NO_ANSWER}`;
+  const COUNT = 250;
+  const outage = (tries: number) =>
+    Array.from({ length: tries }, () => ({
+      error: NO_ANSWER,
+      rejected: false,
+    }));
+  const recipients = (): Recipient[] =>
+    Array.from({ length: COUNT }, (_, i) => ({
+      id: `contact-${i + 1}`,
+      email: `c${i + 1}@example.test`,
+      firstName: `Nombre${i + 1}`,
+      language: "es" as const,
+    }));
+  const setup = () => {
+    const mem = memoryDb(
+      Array.from({ length: COUNT }, (_, i) => mailRow(i + 1)),
+      { campaign: emailCampaign({ status: "draft" }) },
+    );
+    const deps = {
+      db: mem.db,
+      resolveAudience: async () => recipients(),
+      whatsapp: { sleep: noSleep },
+    };
+    const count = (status: string) =>
+      [...mem.rows.values()].filter((r) => r.status === status).length;
+    /** As the cron finds it a quarter of an hour later: stuck. */
+    const age = (ms: number) => {
+      mem.campaign.sending_started_at = new Date(Date.now() - ms).toISOString();
+      return mem.campaign.sending_started_at as string;
+    };
+    return { mem, deps, count, age };
+  };
+
+  test("250 rows and no answer all run long: one chunk unconfirmed, 150 still queued, the campaign `sending`", async () => {
+    failures = outage(4);
+    const { mem, deps, count } = setup();
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    // The first chunk and its three further tries; no other chunk is claimed.
+    expect(batches).toHaveLength(4);
+    expect(new Set(keys).size).toBe(1);
+    expect(count("failed")).toBe(100);
+    expect(mem.error("row-1")).toBe(NOTICE);
+    expect(count("queued")).toBe(150);
+    expect(count("sending")).toBe(0);
+    expect(result).toEqual({
+      ok: true,
+      sent: 0,
+      failed: 100,
+      remaining: 150,
+      unrecorded: undefined,
+    });
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.last_error).toBe(NOTICE);
+  });
+
+  test("Resend back on the next run: the 150 go out and the campaign closes, still saying a chunk is unconfirmed", async () => {
+    failures = outage(4);
+    const { mem, deps, count, age } = setup();
+    await dispatchCampaign("camp-1", {}, deps);
+    batches = [];
+
+    age(15 * MINUTE);
+    const resumed = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(resumed).toEqual({ ok: true, sent: 150, failed: 0 });
+    expect(mailed()).toHaveLength(150);
+    expect(new Set(mailed()).size).toBe(150);
+    // Nobody of the unconfirmed chunk is written to again.
+    expect(mailed()).not.toContain("c1@example.test");
+    expect(count("sent")).toBe(150);
+    expect(count("queued")).toBe(0);
+    expect(count("failed")).toBe(100);
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.last_error).toBe(NOTICE);
+    expect(mem.campaign.failed_count).toBe(100);
+  });
+
+  test("the outage goes on: each run costs one more chunk, and the send keeps its age so the cron's two hours run out", async () => {
+    failures = outage(8);
+    const { mem, deps, count, age } = setup();
+    await dispatchCampaign("camp-1", {}, deps);
+
+    const startedAt = age(90 * MINUTE);
+    const resumed = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(resumed).toMatchObject({ ok: true, sent: 0, remaining: 50 });
+    expect(count("queued")).toBe(50);
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.last_error).toBe(NOTICE);
+    // A run that sent nothing does not make the send look new.
+    expect(mem.campaign.sending_started_at).toBe(startedAt);
+  });
+
+  test("a run that did send something before the cut is a send making progress: its claim stands", async () => {
+    // The first chunk goes out; the second gets no answer.
+    const { mem, deps, count, age } = setup();
+    await (async () => {
+      failures = outage(4);
+      await dispatchCampaign("camp-1", {}, deps);
+    })();
+    const startedAt = age(90 * MINUTE);
+    failures = [];
+    let calls = 0;
+    onSend = () => {
+      calls += 1;
+      if (calls === 2) failures = outage(4);
+    };
+    const resumed = await dispatchCampaign("camp-1", { resume: true }, deps);
+    // 100 of the 150 left went out; the last 50 are the chunk that was cut.
+    expect(resumed).toEqual({ ok: true, sent: 100, failed: 50 });
+    expect(count("sent")).toBe(100);
+    expect(count("queued")).toBe(0);
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.sending_started_at).not.toBe(startedAt);
+  });
+
+  test("an automation the same: what was not claimed stays queued for the next tick", async () => {
+    failures = outage(4);
+    const automated = emailCampaign({
+      status: "active",
+      kind: "automated",
+      trigger: { event: "segment_entry" },
+      activated_at: "2026-11-01T00:00:00Z",
+    });
+    const mem = memoryDb(
+      Array.from({ length: COUNT }, (_, i) => mailRow(i + 1)),
+      { campaign: automated },
+    );
+    const result = await runAutomation(automated, new Date(T0), {
+      db: mem.db,
+      resolveAudience: async () => [],
+      whatsapp: { sleep: noSleep },
+    });
+    expect(batches).toHaveLength(4);
+    expect(result).toEqual({ queued: 0, sent: 0, failed: 100 });
+    expect(
+      [...mem.rows.values()].filter((r) => r.status === "queued"),
+    ).toHaveLength(150);
+    expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error).toBe(NOTICE);
+  });
+});

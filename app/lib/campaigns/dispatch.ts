@@ -303,7 +303,8 @@ async function stamp(
  * chunk Resend refused is tried once more. One whose fate nobody knows (the
  * request got no answer) is asked again under the same key, up to three times
  * and further apart, inside the invocation's deadline; if there is still no
- * answer its rows fail as `[unconfirmed] no_answer`, which no retry requeues.
+ * answer its rows fail as `[unconfirmed] no_answer`, which no retry requeues,
+ * and the send stops there with the rest still `queued` (`remaining`).
  *
  * A claim that cannot be made stops the send with the rest still `queued` and
  * says how many are left, so a one-off campaign stays `sending` for the cron
@@ -483,6 +484,15 @@ export async function sendQueued(
         await stamp(db, row.id, { status: "failed", error: chunkError }, sleep);
       }),
     );
+
+    // A chunk that ended with no answer is where this run stops. Resend is
+    // out of reach for longer than the retries, and every further chunk
+    // claimed now would end unconfirmed too, with no way back inside the
+    // application: an outage would cost the whole campaign. What was not
+    // claimed stays `queued`, the callers leave the campaign open, and the
+    // next run (the cron's resume, an automation's next tick) goes on from
+    // there. So a long outage costs one chunk per run.
+    if (result.error !== null && !result.rejected) break;
   }
 
   const remaining = rows.length - taken;
@@ -811,11 +821,29 @@ export async function dispatchCampaign(
     return { ok: true, sent, failed, remaining, unrecorded, halted };
   }
 
-  // A WhatsApp send that ran out of time (or credentials) is not finished.
-  // Leaving the campaign `sending` is what lets the cron resume it: it claims
-  // a `sending` row once it has been quiet for `STUCK_AFTER_MS`.
+  // A WhatsApp send that ran out of time (or credentials), or an email send
+  // that stopped on a chunk Resend never answered, is not finished. Leaving
+  // the campaign `sending` is what lets the cron resume it: it claims a
+  // `sending` row once it has been quiet for `STUCK_AFTER_MS`.
+  //
+  // A resume that sent nothing because Resend still does not answer hands the
+  // send its age back, like one that could not read its queue: otherwise an
+  // outage that never ends would be resumed for ever, each try making the
+  // send look new, and the cron's two hours would never run out.
   if (remaining) {
-    await refreshCounts(campaignId, { last_error: lastError }, db);
+    const stalled =
+      resume &&
+      startedBefore !== null &&
+      sent === 0 &&
+      lastError?.startsWith(NO_ANSWER_ERROR) === true;
+    await refreshCounts(
+      campaignId,
+      {
+        last_error: lastError,
+        ...(stalled ? { sending_started_at: startedBefore } : {}),
+      },
+      db,
+    );
     return { ok: true, sent, failed, remaining, unrecorded };
   }
 
@@ -826,9 +854,15 @@ export async function dispatchCampaign(
       status: "sent",
       sent_at: finishedAt,
       // Rows left `sending` because their answer could not be written are not
-      // in any count: say so where the admin looks.
+      // in any count: say so where the admin looks. And a send that an earlier
+      // run left with a chunk unanswered closes still saying so, even if this
+      // run had nothing to report: those rows are unconfirmed for good.
       last_error:
-        lastError ?? (unrecorded ? unrecordedMessage(unrecorded) : null),
+        lastError ??
+        (unrecorded ? unrecordedMessage(unrecorded) : null) ??
+        (campaign.last_error?.startsWith(NO_ANSWER_ERROR)
+          ? campaign.last_error
+          : null),
     },
     db,
   );
