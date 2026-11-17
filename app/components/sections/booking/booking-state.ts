@@ -1,6 +1,7 @@
 import type { DetailsState } from "@/types";
 import { readStorage } from "@/storage/booking-storage";
 import { bookableServices, type BookableService } from "@/data/services-data";
+import { buildSteps } from "@/utils/calendar-helpers";
 
 /**
  * A booking as the public form fills it in, and how it starts.
@@ -101,6 +102,25 @@ export function bookingReducer(
   }
 }
 
+/** Where the details step sits among the steps of the form. */
+export const DETAILS_STEP_INDEX = buildSteps().findIndex(
+  (s) => s.id === "details",
+);
+
+/**
+ * The step an abandoned booking comes back on.
+ *
+ * Never beyond the details step. Its required box IS the acceptance of the
+ * Terms and the consent to the booking notices, and it is not restored ticked
+ * (`readStorage`): a booking that came back on the calendar or on the
+ * confirmation would go on to the payment with that box unticked and nothing
+ * asking for it again. She returns to her details, all of them as she left
+ * them, ticks the box and goes on.
+ */
+export function resumeStep(savedStep: number | undefined): number {
+  return Math.min(savedStep ?? 0, DETAILS_STEP_INDEX);
+}
+
 export type InitArg = { slug: string | null; startStep: number };
 
 export function initState({ slug, startStep }: InitArg): BookingState {
@@ -128,7 +148,7 @@ export function initState({ slug, startStep }: InitArg): BookingState {
     ? (bookableServices.find((s) => s.id === saved.serviceId) ?? null)
     : null;
   return {
-    step: saved.step ?? 0,
+    step: resumeStep(saved.step),
     selectedService: service,
     selectedTierId: saved.selectedTierId ?? null,
     selectedTierLabel:
