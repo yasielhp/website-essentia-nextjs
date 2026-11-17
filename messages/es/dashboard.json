@@ -1095,7 +1095,14 @@
     "urlNoVariables": "El enlace del botón no admite variables.",
     "templateUnavailable": "La plantilla elegida no está aprobada o ya no se puede enviar en este idioma.",
     "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla.",
-    "kindNotAllowedForChannel": "Este tipo de campaña no está disponible por WhatsApp."
+    "kindNotAllowedForChannel": "Este tipo de campaña no está disponible por WhatsApp.",
+    "cannotDisable": "Este mensaje no se puede desactivar: una clienta que ha pagado se quedaría sin su correo.",
+    "unknownVariable": "Usa solo las variables que ofrece este mensaje.",
+    "linkNotAllowed": "Un enlace solo puede empezar por https://, http:// o mailto:.",
+    "blockNotAllowed": "Este bloque no está permitido en un mensaje.",
+    "docTooLarge": "El mensaje es demasiado largo.",
+    "channelNotAllowed": "Este mensaje no se puede enviar por ese canal.",
+    "paramFieldNotOffered": "Ese dato no está disponible en este mensaje."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -2184,6 +2191,20 @@
         "invalid": "Revisa los campos marcados.",
         "templateExists": "Ya existe una plantilla con ese nombre e idioma.",
         "submittedNotSaved": "Meta aceptó la plantilla, pero no se guardó aquí. Sincroniza para traerla.",
+        "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
+        "meta": "Meta rechazó la petición."
+      }
+    },
+    "email": {
+      "errors": {
+        "generic": "No se pudo completar la acción.",
+        "db": "No se pudo acceder a la base de datos.",
+        "invalid": "Revisa los campos marcados.",
+        "no_email": "Tu cuenta no tiene email al que enviar la prueba.",
+        "no_phone": "Tu perfil no tiene teléfono al que enviar la prueba.",
+        "email_failed": "No se pudo enviar el email de prueba.",
+        "test_rate_limited": "Has enviado demasiadas pruebas; espera un poco.",
+        "template_unavailable": "La plantilla elegida no está aprobada o ya no se puede enviar.",
         "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
         "meta": "Meta rechazó la petición."
       }
