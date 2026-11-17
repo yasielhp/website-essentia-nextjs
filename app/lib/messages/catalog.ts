@@ -1,0 +1,269 @@
+/**
+ * The catalogue of messages the centre can edit from the dashboard.
+ *
+ * Pure on purpose: the dashboard list, the editor's variable chips, the
+ * validation in the Server Actions and the renderer all read this one table,
+ * so none of them can disagree about what a message offers.
+ *
+ * What lives here is what the code guarantees, not what an admin writes:
+ * the variables a message can fill, and the blocks the code adds after the
+ * body whatever the admin wrote. The inventory these were taken from, with the
+ * current text of every email, is `docs/plans/2026-11-17-message-inventory.md`.
+ */
+
+export const MESSAGE_KEYS = [
+  "booking_received",
+  "booking_confirmed",
+  "booking_paid",
+  "booking_rescheduled",
+  "booking_cancelled",
+  "booking_reminder",
+  "consent_request",
+  "bonus_purchase",
+] as const;
+
+export type MessageKey = (typeof MESSAGE_KEYS)[number];
+
+export type MessageVariable =
+  | "first_name"
+  | "service"
+  | "session_type"
+  | "date"
+  | "time"
+  | "duration"
+  /** What is still owed at the centre. Empty when nothing is. */
+  | "amount_due"
+  /** What the client paid online, already formatted with the currency. */
+  | "amount_paid"
+  /** Vouchers: how many sessions it holds. */
+  | "sessions"
+  /** Vouchers: the last day it can be used, already formatted. */
+  | "expires_on"
+  | "cancel_url"
+  | "consent_url";
+
+/**
+ * What the code adds after the body, outside the admin's reach: they carry
+ * data, links and rules the editor cannot be trusted to keep intact.
+ */
+export type FixedBlock =
+  /** Service / session type / date / time / duration (and payment rows). */
+  | "details_card"
+  /** The centre's address. */
+  | "location"
+  /** A sentence that exists only when something is owed at the centre. */
+  | "payment_note"
+  | "calendar_button"
+  | "cancel_link"
+  | "consent_button"
+  /** Vouchers: service / sessions / amount paid / valid until. */
+  | "bonus_card";
+
+export type MessageDefinition = {
+  variables: MessageVariable[];
+  fixed: FixedBlock[];
+  /**
+   * Whether the admin may switch the message off. Only the reminder: it is the
+   * one nobody is owed. Switching off the confirmation would leave a client who
+   * has paid without their email.
+   */
+  canDisable: boolean;
+  /**
+   * Whether the message may also go out on WhatsApp. Two conditions: the
+   * client opted in to hear about exactly this (the checkbox promises "the
+   * confirmation and the reminder of my appointment"), and the message hangs
+   * off a booking, which is how the sender finds their number.
+   */
+  whatsappEligible: boolean;
+};
+
+// A link variable exists exactly where a fixed block carries that link, and
+// nowhere else: that is what a WhatsApp template needs for its button and what
+// an email body could meaningfully quote.
+export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
+  booking_received: {
+    variables: [
+      "first_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "duration",
+      "amount_due",
+      "cancel_url",
+    ],
+    fixed: ["details_card", "payment_note", "cancel_link"],
+    canDisable: false,
+    // An acknowledgement of a request, not the confirmation the client opted
+    // in to hear about.
+    whatsappEligible: false,
+  },
+  booking_confirmed: {
+    variables: [
+      "first_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "duration",
+      "cancel_url",
+      "consent_url",
+    ],
+    fixed: [
+      "details_card",
+      "location",
+      "calendar_button",
+      "consent_button",
+      "cancel_link",
+    ],
+    canDisable: false,
+    whatsappEligible: true,
+  },
+  // The email that follows an online payment (Redsys webhook). A different
+  // email from `booking_confirmed`, with its own text and its own payment rows.
+  booking_paid: {
+    variables: [
+      "first_name",
+      "service",
+      "date",
+      "time",
+      "duration",
+      "amount_paid",
+      "amount_due",
+      "consent_url",
+    ],
+    fixed: [
+      "details_card",
+      "location",
+      "payment_note",
+      "calendar_button",
+      "consent_button",
+    ],
+    canDisable: false,
+    // A confirmation, and the paid booking has a booking behind it.
+    whatsappEligible: true,
+  },
+  booking_rescheduled: {
+    variables: [
+      "first_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "duration",
+      "cancel_url",
+    ],
+    fixed: ["details_card", "calendar_button", "cancel_link"],
+    canDisable: false,
+    // The opt-in text names confirmation and reminder only.
+    whatsappEligible: false,
+  },
+  booking_cancelled: {
+    variables: [
+      "first_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "duration",
+    ],
+    fixed: ["details_card"],
+    canDisable: false,
+    whatsappEligible: false,
+  },
+  booking_reminder: {
+    variables: [
+      "first_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "duration",
+      "cancel_url",
+    ],
+    fixed: ["details_card", "location", "calendar_button", "cancel_link"],
+    canDisable: true,
+    whatsappEligible: true,
+  },
+  consent_request: {
+    variables: ["first_name", "consent_url"],
+    fixed: ["consent_button"],
+    canDisable: false,
+    // No booking behind it: the sender could not find a number to write to.
+    whatsappEligible: false,
+  },
+  bonus_purchase: {
+    variables: [
+      "first_name",
+      "service",
+      "sessions",
+      "amount_paid",
+      "expires_on",
+    ],
+    fixed: ["bonus_card"],
+    canDisable: false,
+    // Bought on the website, with no booking and no WhatsApp opt-in.
+    whatsappEligible: false,
+  },
+};
+
+/**
+ * Where each message is written today. The renderer falls back to these until
+ * the new path has proved itself end to end, and the defaults are copied from
+ * them, so this is the map from a key to the code it replaces.
+ *
+ * Callers, parameters and current text: the inventory document.
+ */
+export const LEGACY_TEMPLATES: Record<
+  MessageKey,
+  { file: string; fn: string }
+> = {
+  booking_received: {
+    file: "app/emails/templates/booking-received.ts",
+    fn: "bookingReceivedEmail",
+  },
+  booking_confirmed: {
+    file: "app/emails/templates/booking-confirmed.ts",
+    fn: "bookingConfirmedEmail",
+  },
+  booking_paid: {
+    file: "app/emails/templates/booking-confirmation.ts",
+    fn: "bookingConfirmationEmail",
+  },
+  booking_rescheduled: {
+    file: "app/emails/templates/booking-rescheduled.ts",
+    fn: "bookingRescheduledEmail",
+  },
+  booking_cancelled: {
+    file: "app/emails/templates/booking-cancelled.ts",
+    fn: "bookingCancelledEmail",
+  },
+  booking_reminder: {
+    file: "app/emails/templates/booking-reminder.ts",
+    fn: "bookingReminderEmail",
+  },
+  consent_request: {
+    file: "app/emails/templates/consent-request.ts",
+    fn: "consentRequestEmail",
+  },
+  bonus_purchase: {
+    file: "app/emails/templates/bonus-purchase.ts",
+    fn: "bonusPurchaseEmail",
+  },
+};
+
+// The same shape the renderer uses to find a token (`renderVariables` in
+// app/lib/campaigns/body-html.ts, minus its leading space): a token it would
+// swallow as empty must be flagged here, capitals and digits included.
+const TOKEN = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi;
+
+/** `{{x}}` tokens a text uses that the message does not offer, once each. */
+export function unknownVariables(key: MessageKey, text: string): string[] {
+  const offered = new Set<string>(MESSAGE_CATALOG[key].variables);
+  const unknown = new Set<string>();
+  for (const match of text.matchAll(TOKEN)) {
+    const name = match[1];
+    if (name && !offered.has(name)) unknown.add(name);
+  }
+  return [...unknown];
+}
