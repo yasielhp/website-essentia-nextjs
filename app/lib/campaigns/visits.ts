@@ -1,5 +1,6 @@
-import type { VisitInfo } from "./audience-filter";
-import { visitEndsAtIso } from "./visit-time";
+import { parseDurationMinutes } from "@/utils/format";
+import type { Appointment, VisitInfo } from "./audience-filter";
+import { canaryWallClockToUtc, visitEndsAtIso } from "./visit-time";
 
 /**
  * The visits of one contact that a message talks about, picked out of their
@@ -99,4 +100,66 @@ export function foldVisits(
       [...firstByTier].map(([tier, pick]) => [tier, pick.key]),
     ),
   };
+}
+
+// ── appointments, for the notices that count hours around each booking ─────
+
+export type AppointmentBooking = VisitBooking & {
+  service_id: string | null;
+};
+
+/**
+ * Every confirmed or completed booking of one contact, as an appointment: its
+ * start and end as instants and what a message says about it. Pure.
+ *
+ * - Anything else (cancelled, pending, a draft, no status) is not an
+ *   appointment, and neither is a booking with no date.
+ * - The start is the Canary wall clock of the date and time the booking was
+ *   saved with, converted once here (`new Date(date + "T" + time)` would read
+ *   it in the server's zone). A booking with no time starts at the day's first
+ *   moment and says no time.
+ * - A booking with no length ends when it starts; the first-visit rule's
+ *   60-minute fallback is not applied to a notice, which would otherwise be
+ *   timed from a length nobody chose.
+ * - Ordered by start and, at the same moment, by id, so the result does not
+ *   depend on the order the rows were read in.
+ */
+export function foldAppointments(
+  bookings: AppointmentBooking[],
+  tierLabels: ReadonlyMap<string, string> = new Map(),
+): Appointment[] {
+  const out: Appointment[] = [];
+  for (const booking of bookings) {
+    if (booking.status !== "confirmed" && booking.status !== "completed") {
+      continue;
+    }
+    if (!booking.date) continue;
+    const date = booking.date.slice(0, 10);
+    const time = clockOf(booking.time);
+    const start = canaryWallClockToUtc(date, time || "00:00");
+    if (Number.isNaN(start.getTime())) continue;
+    const minutes = booking.duration?.trim()
+      ? parseDurationMinutes(booking.duration)
+      : 0;
+    out.push({
+      id: booking.id,
+      serviceId: booking.service_id ?? null,
+      status: booking.status,
+      startsAt: start.toISOString(),
+      endsAt: new Date(start.getTime() + minutes * 60_000).toISOString(),
+      visit: {
+        service: booking.service_title ?? "",
+        sessionType: booking.tier_id
+          ? (tierLabels.get(booking.tier_id) ?? null)
+          : null,
+        date,
+        time,
+      },
+    });
+  }
+  return out.sort(
+    (a, b) =>
+      a.startsAt.localeCompare(b.startsAt) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
 }

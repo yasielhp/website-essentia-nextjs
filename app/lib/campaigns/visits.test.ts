@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { foldVisits, type VisitBooking } from "./visits";
+import {
+  foldAppointments,
+  foldVisits,
+  type AppointmentBooking,
+  type VisitBooking,
+} from "./visits";
 
 let seq = 0;
 const b = (over: Partial<VisitBooking> = {}): VisitBooking => {
@@ -168,5 +173,124 @@ describe("foldVisits — the first visit", () => {
     const out = foldVisits([b({ tier_id: "t1" })], labels);
     expect(out.firstVisitByTier).not.toHaveProperty("t2");
     expect(out.firstVisitEndsAtByTier).not.toHaveProperty("t2");
+  });
+});
+
+// ── the appointments a notice is about ─────────────────────────────────────
+
+let aseq = 0;
+const ab = (over: Partial<AppointmentBooking> = {}): AppointmentBooking => {
+  aseq += 1;
+  return {
+    id: `a${String(aseq).padStart(3, "0")}`,
+    service_id: "svc-1",
+    service_title: "Drenaje linfático",
+    tier_id: null,
+    date: "2026-12-10",
+    time: "09:30",
+    duration: "60 min",
+    status: "confirmed",
+    ...over,
+  };
+};
+
+describe("foldAppointments", () => {
+  it("keeps the confirmed and the completed, and nothing else", () => {
+    const out = foldAppointments([
+      ab({ id: "ok-1", status: "confirmed" }),
+      ab({ id: "ok-2", status: "completed" }),
+      ab({ id: "no-1", status: "cancelled" }),
+      ab({ id: "no-2", status: "pending" }),
+      ab({ id: "no-3", status: "draft" }),
+      ab({ id: "no-4", status: null }),
+    ]);
+    expect(out.map((a) => a.id).sort()).toEqual(["ok-1", "ok-2"]);
+    expect(out.find((a) => a.id === "ok-2")?.status).toBe("completed");
+  });
+
+  it("leaves out a booking with no date", () => {
+    expect(foldAppointments([ab({ date: null })])).toEqual([]);
+  });
+
+  it("reads the start as the clock of the Canaries, in winter", () => {
+    const [a] = foldAppointments([ab({ date: "2026-12-10", time: "09:30" })]);
+    // UTC+0 in December.
+    expect(a?.startsAt).toBe("2026-12-10T09:30:00.000Z");
+    expect(a?.endsAt).toBe("2026-12-10T10:30:00.000Z");
+  });
+
+  it("and in summer, an hour earlier in UTC", () => {
+    const [a] = foldAppointments([ab({ date: "2026-07-10", time: "09:30" })]);
+    // UTC+1 in July.
+    expect(a?.startsAt).toBe("2026-07-10T08:30:00.000Z");
+    expect(a?.endsAt).toBe("2026-07-10T09:30:00.000Z");
+  });
+
+  it("a session of another length ends when it ends", () => {
+    const [a] = foldAppointments([ab({ duration: "45 min" })]);
+    expect(a?.endsAt).toBe("2026-12-10T10:15:00.000Z");
+  });
+
+  it("a booking with no duration ends when it starts", () => {
+    for (const duration of [null, "", "  "]) {
+      const [a] = foldAppointments([ab({ duration })]);
+      expect(a?.endsAt).toBe(a?.startsAt);
+    }
+  });
+
+  it("cuts a time with seconds to HH:MM", () => {
+    const [a] = foldAppointments([ab({ time: "09:30:00" })]);
+    expect(a?.visit.time).toBe("09:30");
+    expect(a?.startsAt).toBe("2026-12-10T09:30:00.000Z");
+  });
+
+  it("a booking with no time has none to say, and starts at the day's first moment", () => {
+    for (const time of [null, ""]) {
+      const [a] = foldAppointments([ab({ time })]);
+      expect(a?.visit.time).toBe("");
+      expect(a?.startsAt).toBe("2026-12-10T00:00:00.000Z");
+    }
+  });
+
+  it("carries what a message says about it: service, session type, date, time", () => {
+    const [a] = foldAppointments(
+      [ab({ tier_id: "t1", service_id: "svc-9" })],
+      labels,
+    );
+    expect(a?.serviceId).toBe("svc-9");
+    expect(a?.visit).toEqual({
+      service: "Drenaje linfático",
+      sessionType: "Sesión larga",
+      date: "2026-12-10",
+      time: "09:30",
+    });
+  });
+
+  it("a booking with no service has an empty one", () => {
+    const [a] = foldAppointments([
+      ab({ service_id: null, service_title: null }),
+    ]);
+    expect(a?.serviceId).toBeNull();
+    expect(a?.visit.service).toBe("");
+  });
+
+  it("is ordered by start and, at the same moment, by id, whatever the order it came in", () => {
+    const later = ab({ id: "z", date: "2026-12-12" });
+    const a = ab({ id: "a" });
+    const b2 = ab({ id: "b" });
+    expect(foldAppointments([later, b2, a]).map((x) => x.id)).toEqual([
+      "a",
+      "b",
+      "z",
+    ]);
+    expect(foldAppointments([a, b2, later]).map((x) => x.id)).toEqual([
+      "a",
+      "b",
+      "z",
+    ]);
+  });
+
+  it("is empty for a contact with no bookings", () => {
+    expect(foldAppointments([])).toEqual([]);
   });
 });

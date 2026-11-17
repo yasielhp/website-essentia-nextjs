@@ -1,6 +1,6 @@
 import type { CampaignTrigger } from "@/types/campaign";
 import { formatLongDate } from "@/lib/format-date";
-import type { Recipient, VisitInfo } from "./audience-filter";
+import type { Appointment, Recipient, VisitInfo } from "./audience-filter";
 
 /**
  * Which recipients an automated campaign owes an email to today, and under
@@ -63,6 +63,42 @@ function visitVars(
 const withVars = (vars: Record<string, string> | undefined) =>
   vars ? { vars } : {};
 
+/** A whole number of hours, at least one, or null: what the engine can time. */
+const whole = (hours: number | undefined): number | null =>
+  Number.isInteger(hours) && (hours as number) >= 1 ? (hours as number) : null;
+
+/**
+ * The bookings of the recipients that `pick` says are due, one `Due` each with
+ * the booking as its cycle: the unique index on (campaign, phone, cycle) then
+ * makes one notice per booking whatever the number of runs, and one client
+ * with two due bookings has two rows. `services`, when it names any, keeps only
+ * the bookings of those services.
+ */
+function appointmentsDue(
+  recipients: Recipient[],
+  services: string[],
+  pick: (appointment: Appointment) => Appointment | null,
+): Due[] {
+  const due: Due[] = [];
+  for (const recipient of recipients) {
+    for (const appointment of recipient.appointments ?? []) {
+      if (
+        services.length > 0 &&
+        !(appointment.serviceId && services.includes(appointment.serviceId))
+      ) {
+        continue;
+      }
+      if (!pick(appointment)) continue;
+      due.push({
+        recipient,
+        cycle: appointment.id,
+        ...withVars(visitVars(appointment.visit, recipient.language)),
+      });
+    }
+  }
+  return due;
+}
+
 /** YYYY-MM-DD in Atlantic/Canary, where the centre and its clients live. */
 export function localDay(now: Date): string {
   return now.toLocaleDateString("en-CA", { timeZone: "Atlantic/Canary" });
@@ -84,6 +120,7 @@ export function dueRecipients({
   activatedAt,
   now,
   posts = [],
+  services = [],
 }: {
   trigger: CampaignTrigger;
   /** The campaign's segment, resolved now. */
@@ -92,6 +129,11 @@ export function dueRecipients({
   now: Date;
   /** Published blog posts, for `new_blog_post`. */
   posts?: BlogPostSummary[];
+  /**
+   * The campaign's service condition, for the appointment notices: they filter
+   * the BOOKINGS by it, one by one, not the client.
+   */
+  services?: string[];
 }): Due[] {
   const today = localDay(now);
   const year = today.slice(0, 4);
@@ -168,6 +210,38 @@ export function dueRecipients({
           ),
         }));
     }
+
+    // An appointment notice: one per booking, N hours before it starts. Every
+    // confirmed booking of the client counts, not only the next one. Due from
+    // the moment it is N hours away until it starts, and only when that moment
+    // is not older than the campaign: switching it on does not message the
+    // bookings that were already inside the window.
+    case "before_visit":
+      return appointmentsDue(recipients, services, (a) => {
+        if (a.status !== "confirmed") return null;
+        const starts = Date.parse(a.startsAt);
+        const hours = whole(trigger.hours);
+        if (hours === null) return null;
+        const notice = starts - hours * 3_600_000;
+        return notice <= now.getTime() &&
+          now.getTime() < starts &&
+          notice >= Date.parse(activatedAt)
+          ? a
+          : null;
+      });
+
+    // N hours after a booking ends (confirmed, or completed once it is over),
+    // under the same rule about not reaching back before activation.
+    case "after_visit":
+      return appointmentsDue(recipients, services, (a) => {
+        if (a.status !== "confirmed" && a.status !== "completed") return null;
+        const hours = whole(trigger.hours);
+        if (hours === null) return null;
+        const notice = Date.parse(a.endsAt) + hours * 3_600_000;
+        return notice <= now.getTime() && notice >= Date.parse(activatedAt)
+          ? a
+          : null;
+      });
 
     case "birthday":
       return recipients

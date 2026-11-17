@@ -29,6 +29,24 @@ export type VisitInfo = {
   time: string;
 };
 
+/**
+ * One booking of a contact, as an appointment notice sees it: when it starts
+ * and ends as instants (the wall clock of the Canaries, converted once, where
+ * the bookings are read), what a message says about it, and which service it
+ * is for. Only confirmed and completed bookings are ever here.
+ */
+export type Appointment = {
+  id: string;
+  /** `bookableServices` id, for the campaign's service condition. */
+  serviceId: string | null;
+  status: "confirmed" | "completed";
+  /** ISO instant. A booking with no time starts at the day's first moment. */
+  startsAt: string;
+  /** ISO instant; equal to `startsAt` when the booking has no length. */
+  endsAt: string;
+  visit: VisitInfo;
+};
+
 export type ContactCandidate = {
   id: string;
   /** Empty for a contact that only has a phone; the email channel drops those. */
@@ -67,6 +85,11 @@ export type ContactCandidate = {
   firstVisit?: VisitInfo | null;
   /** The same, per session type (`tier_id`). */
   firstVisitByTier?: Record<string, VisitInfo>;
+  /**
+   * Every confirmed or completed booking, for an appointment notice. Loaded
+   * only for that kind of campaign: nothing else reads it.
+   */
+  appointments?: Appointment[];
   /**
    * Consent to WhatsApp *campaigns*. Not `whatsapp_opted_in_at`, which only
    * covers booking notices: the two purposes are consented separately.
@@ -118,6 +141,8 @@ export type Recipient = {
   lastVisit?: VisitInfo | null;
   firstVisit?: VisitInfo | null;
   firstVisitByTier?: Record<string, VisitInfo>;
+  /** Only on a recipient of an appointment notice. */
+  appointments?: Appointment[];
 };
 
 const DAY_MS = 86_400_000;
@@ -263,6 +288,9 @@ export function filterAudience(
       lastVisit: candidate.lastVisit ?? null,
       firstVisit: candidate.firstVisit ?? null,
       firstVisitByTier: candidate.firstVisitByTier ?? {},
+      ...(candidate.appointments
+        ? { appointments: candidate.appointments }
+        : {}),
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.

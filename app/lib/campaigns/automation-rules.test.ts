@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { dueRecipients, localDay } from "./automation-rules";
-import type { Recipient } from "./audience-filter";
+import type { Appointment, Recipient } from "./audience-filter";
 
 const NOW = new Date("2026-09-05T12:00:00Z"); // 2026-09-05 in the Canaries
 const ACTIVATED = "2026-09-01T00:00:00Z";
@@ -532,5 +532,402 @@ describe("visit variables for the message", () => {
     );
     expect(due.recipient.id).toBe("v");
     expect(due.vars).toBeUndefined();
+  });
+});
+
+describe("appointment notices", () => {
+  const ACTIVATED_AT = "2026-12-01T00:00:00Z";
+  const WINTER = "2026-12-11"; // UTC+0: 09:00 here is 09:00Z.
+  const SUMMER = "2026-07-11"; // UTC+1: 09:00 here is 08:00Z.
+
+  const appt = (id: string, over: Partial<Appointment> = {}): Appointment => ({
+    id,
+    serviceId: "svc-1",
+    status: "confirmed",
+    startsAt: `${WINTER}T09:00:00.000Z`,
+    endsAt: `${WINTER}T10:00:00.000Z`,
+    visit: {
+      service: "Drenaje linfático",
+      sessionType: "Sesión individual",
+      date: WINTER,
+      time: "09:00",
+    },
+    ...over,
+  });
+
+  const person = (appointments: Appointment[], over: Partial<Recipient> = {}) =>
+    r({ id: "p1", language: "es", appointments, ...over });
+
+  const run = (
+    event: "before_visit" | "after_visit",
+    hours: number | undefined,
+    recipients: Recipient[],
+    at: string,
+    extra: { activatedAt?: string; services?: string[] } = {},
+  ) =>
+    dueRecipients({
+      trigger: { event, hours },
+      recipients,
+      activatedAt: extra.activatedAt ?? ACTIVATED_AT,
+      now: new Date(at),
+      services: extra.services,
+    });
+
+  const ids = (due: ReturnType<typeof dueRecipients>) =>
+    due.map((d) => `${d.recipient.id}:${d.cycle}`);
+
+  describe("before_visit", () => {
+    const bookings = [person([appt("b1")])];
+
+    it("is due from N hours before the start until the start", () => {
+      expect(
+        ids(run("before_visit", 24, bookings, "2026-12-10T09:00:00Z")),
+      ).toEqual(["p1:b1"]);
+      expect(
+        ids(run("before_visit", 24, bookings, "2026-12-10T20:00:00Z")),
+      ).toEqual(["p1:b1"]);
+      expect(
+        ids(run("before_visit", 24, bookings, "2026-12-11T08:59:59Z")),
+      ).toEqual(["p1:b1"]);
+    });
+
+    it("is not due before that moment", () => {
+      expect(run("before_visit", 24, bookings, "2026-12-10T08:59:59Z")).toEqual(
+        [],
+      );
+    });
+
+    it("is not due once the visit has started: a reminder after the fact is no reminder", () => {
+      expect(run("before_visit", 24, bookings, "2026-12-11T09:00:00Z")).toEqual(
+        [],
+      );
+      expect(run("before_visit", 24, bookings, "2026-12-11T12:00:00Z")).toEqual(
+        [],
+      );
+    });
+
+    it("does not reach back before the campaign was switched on", () => {
+      // The moment to tell her (Dec 10, 09:00) passed before activation.
+      expect(
+        run("before_visit", 24, bookings, "2026-12-10T12:00:00Z", {
+          activatedAt: "2026-12-10T10:00:00Z",
+        }),
+      ).toEqual([]);
+    });
+
+    it("but a moment that falls exactly on the activation counts", () => {
+      expect(
+        ids(
+          run("before_visit", 24, bookings, "2026-12-10T12:00:00Z", {
+            activatedAt: "2026-12-10T09:00:00Z",
+          }),
+        ),
+      ).toEqual(["p1:b1"]);
+    });
+
+    it("switching it on does not fire a burst for the bookings already inside the window", () => {
+      const soon = [
+        person([appt("soon", { startsAt: "2026-12-10T15:00:00.000Z" })]),
+      ];
+      // 24 h before 15:00 was yesterday 15:00; activation is today at noon.
+      expect(
+        run("before_visit", 24, soon, "2026-12-10T12:00:00Z", {
+          activatedAt: "2026-12-10T12:00:00Z",
+        }),
+      ).toEqual([]);
+    });
+
+    it("every confirmed booking of the client counts, not only the next one", () => {
+      const many = [
+        person([
+          appt("b1"),
+          appt("b2", {
+            startsAt: "2026-12-11T10:00:00.000Z",
+            visit: {
+              service: "Masaje",
+              sessionType: null,
+              date: WINTER,
+              time: "10:00",
+            },
+          }),
+          appt("b3", { startsAt: "2026-12-20T09:00:00.000Z" }),
+        ]),
+      ];
+      expect(
+        ids(run("before_visit", 24, many, "2026-12-10T12:00:00Z")),
+      ).toEqual(["p1:b1", "p1:b2"]);
+    });
+
+    it("a cancelled, pending or completed booking never gets a notice before it", () => {
+      const out = run(
+        "before_visit",
+        24,
+        [
+          person([
+            appt("x1", { status: "cancelled" as never }),
+            appt("x2", { status: "pending" as never }),
+            appt("x3", { status: "completed" }),
+          ]),
+        ],
+        "2026-12-10T12:00:00Z",
+      );
+      expect(out).toEqual([]);
+    });
+
+    it("the cycle is the booking: one notice per booking, the same every time it is asked", () => {
+      const first = run("before_visit", 24, bookings, "2026-12-10T12:00:00Z");
+      const again = run("before_visit", 24, bookings, "2026-12-10T12:15:00Z");
+      expect(ids(first)).toEqual(ids(again));
+      expect(first[0]?.cycle).toBe("b1");
+    });
+
+    it("two bookings of one client are two cycles", () => {
+      const two = [person([appt("b1"), appt("b2")])];
+      const cycles = run("before_visit", 24, two, "2026-12-10T12:00:00Z").map(
+        (d) => d.cycle,
+      );
+      expect(cycles).toEqual(["b1", "b2"]);
+    });
+
+    it("hours are real hours across the clock change, not wall-clock hours", () => {
+      // The Canaries put their clocks back on 2026-10-25 (01:00Z). A visit on
+      // the 26th at 09:00 (UTC+0) with a notice 48 hours before is due at
+      // 09:00Z on the 24th, which on the wall clock of the 24th (UTC+1) reads
+      // 10:00: counting wall-clock hours would be an hour out.
+      const afterChange = [
+        person([appt("c1", { startsAt: "2026-10-26T09:00:00.000Z" })]),
+      ];
+      const early = { activatedAt: "2026-10-01T00:00:00Z" };
+      expect(
+        run("before_visit", 48, afterChange, "2026-10-24T08:59:00Z", early),
+      ).toEqual([]);
+      expect(
+        ids(
+          run("before_visit", 48, afterChange, "2026-10-24T09:00:00Z", early),
+        ),
+      ).toEqual(["p1:c1"]);
+    });
+
+    it("hours that are not a whole number of at least one owe nothing", () => {
+      for (const hours of [undefined, 0, -2, 1.5]) {
+        expect(
+          run("before_visit", hours, bookings, "2026-12-10T12:00:00Z"),
+        ).toEqual([]);
+      }
+    });
+
+    it("a client with no appointments is owed nothing", () => {
+      expect(
+        run("before_visit", 24, [r({ id: "p1" })], "2026-12-10T12:00:00Z"),
+      ).toEqual([]);
+    });
+  });
+
+  describe("after_visit", () => {
+    const bookings = [person([appt("b1")])];
+
+    it("is due from N hours after the end", () => {
+      expect(run("after_visit", 2, bookings, "2026-12-11T11:59:59Z")).toEqual(
+        [],
+      );
+      expect(
+        ids(run("after_visit", 2, bookings, "2026-12-11T12:00:00Z")),
+      ).toEqual(["p1:b1"]);
+      expect(
+        ids(run("after_visit", 2, bookings, "2026-12-11T15:00:00Z")),
+      ).toEqual(["p1:b1"]);
+    });
+
+    it("does not reach back before the campaign was switched on", () => {
+      expect(
+        run("after_visit", 2, bookings, "2026-12-12T09:00:00Z", {
+          activatedAt: "2026-12-12T00:00:00Z",
+        }),
+      ).toEqual([]);
+      expect(
+        ids(
+          run("after_visit", 2, bookings, "2026-12-12T09:00:00Z", {
+            activatedAt: "2026-12-11T12:00:00Z",
+          }),
+        ),
+      ).toEqual(["p1:b1"]);
+    });
+
+    it("counts a booking that was confirmed and one that was completed", () => {
+      const both = [person([appt("b1"), appt("b2", { status: "completed" })])];
+      expect(ids(run("after_visit", 2, both, "2026-12-11T13:00:00Z"))).toEqual([
+        "p1:b1",
+        "p1:b2",
+      ]);
+    });
+
+    it("never for a cancelled or pending one", () => {
+      const out = run(
+        "after_visit",
+        2,
+        [
+          person([
+            appt("x1", { status: "cancelled" as never }),
+            appt("x2", { status: "pending" as never }),
+          ]),
+        ],
+        "2026-12-12T09:00:00Z",
+      );
+      expect(out).toEqual([]);
+    });
+
+    it("a booking with no length ends when it starts", () => {
+      const noLength = [
+        person([appt("b1", { endsAt: `${WINTER}T09:00:00.000Z` })]),
+      ];
+      expect(
+        ids(run("after_visit", 1, noLength, "2026-12-11T10:00:00Z")),
+      ).toEqual(["p1:b1"]);
+    });
+
+    it("one notice per booking: the cycle is the booking", () => {
+      const first = run("after_visit", 2, bookings, "2026-12-11T13:00:00Z");
+      const later = run("after_visit", 2, bookings, "2026-12-11T13:15:00Z");
+      expect(first.map((d) => d.cycle)).toEqual(["b1"]);
+      expect(later.map((d) => d.cycle)).toEqual(["b1"]);
+    });
+
+    it("works the same in summer, when the clock is an hour ahead", () => {
+      const summer = [
+        person([
+          appt("s1", {
+            startsAt: `${SUMMER}T08:00:00.000Z`,
+            endsAt: `${SUMMER}T09:00:00.000Z`,
+          }),
+        ]),
+      ];
+      const early = { activatedAt: "2026-07-01T00:00:00Z" };
+      expect(
+        run("after_visit", 2, summer, "2026-07-11T10:59:00Z", early),
+      ).toEqual([]);
+      expect(
+        ids(run("after_visit", 2, summer, "2026-07-11T11:00:00Z", early)),
+      ).toEqual(["p1:s1"]);
+    });
+
+    it("hours outside the engine's range owe nothing", () => {
+      for (const hours of [undefined, 0, 2.5]) {
+        expect(
+          run("after_visit", hours, bookings, "2026-12-12T09:00:00Z"),
+        ).toEqual([]);
+      }
+    });
+  });
+
+  describe("which bookings", () => {
+    const mixed = [
+      person([
+        appt("a", { serviceId: "svc-1" }),
+        appt("b", { serviceId: "svc-2" }),
+        appt("c", { serviceId: null }),
+      ]),
+    ];
+
+    it("with services chosen, only the bookings of those services, not the whole client", () => {
+      const out = run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+        services: ["svc-2"],
+      });
+      expect(out.map((d) => d.cycle)).toEqual(["b"]);
+    });
+
+    it("with none chosen, every booking", () => {
+      expect(
+        run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+          services: [],
+        }).map((d) => d.cycle),
+      ).toEqual(["a", "b", "c"]);
+    });
+
+    it("a booking with no service is not one of the chosen services", () => {
+      const out = run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+        services: ["svc-1", "svc-2"],
+      });
+      expect(out.map((d) => d.cycle)).toEqual(["a", "b"]);
+    });
+  });
+
+  describe("what the message says", () => {
+    it("is about that booking: service, session type, date in her language, time", () => {
+      const [es] = run(
+        "before_visit",
+        24,
+        [person([appt("b1")], { language: "es" })],
+        "2026-12-10T12:00:00Z",
+      );
+      expect(es?.vars).toEqual({
+        service: "Drenaje linfático",
+        session_type: "Sesión individual",
+        date: "viernes, 11 de diciembre de 2026",
+        time: "09:00",
+      });
+      const [en] = run(
+        "before_visit",
+        24,
+        [person([appt("b1")], { language: "en" })],
+        "2026-12-10T12:00:00Z",
+      );
+      expect(en?.vars?.date).toBe("Friday, 11 December 2026");
+    });
+
+    it("each booking brings its own", () => {
+      const out = run(
+        "before_visit",
+        24,
+        [
+          person([
+            appt("b1"),
+            appt("b2", {
+              startsAt: "2026-12-11T10:00:00.000Z",
+              visit: {
+                service: "Masaje",
+                sessionType: null,
+                date: WINTER,
+                time: "10:00",
+              },
+            }),
+          ]),
+        ],
+        "2026-12-10T12:00:00Z",
+      );
+      expect(out.map((d) => d.vars?.service)).toEqual([
+        "Drenaje linfático",
+        "Masaje",
+      ]);
+      expect(out[1]?.vars).not.toHaveProperty("session_type");
+    });
+
+    it("a booking with no time says no time, and a missing service no service", () => {
+      const [out] = run(
+        "before_visit",
+        24,
+        [
+          person([
+            appt("b1", {
+              visit: { service: "", sessionType: null, date: WINTER, time: "" },
+            }),
+          ]),
+        ],
+        "2026-12-10T12:00:00Z",
+      );
+      expect(out?.vars).not.toHaveProperty("time");
+      expect(out?.vars).not.toHaveProperty("service");
+      expect(out?.vars?.date).toBeDefined();
+    });
+  });
+
+  it("the other events are untouched by the new ones", () => {
+    expect(
+      dueRecipients({
+        trigger: { event: "segment_entry" },
+        recipients: [person([appt("b1")])],
+        activatedAt: ACTIVATED_AT,
+        now: new Date("2026-12-10T12:00:00Z"),
+      }).map((d) => d.cycle),
+    ).toEqual([""]);
   });
 });
