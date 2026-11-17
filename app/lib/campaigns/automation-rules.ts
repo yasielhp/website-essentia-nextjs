@@ -107,7 +107,13 @@ export function dueRecipients({
     // welcome three months on reads as a mistake.
     case "newsletter_subscribed":
       return recipients
-        .filter((r) => r.subscribedAt && r.subscribedAt >= activatedAt)
+        .filter(
+          (r) =>
+            r.subscribedAt &&
+            // Instants, not text: `Z` and `+00:00` (and a fraction or not)
+            // write the same moment differently.
+            Date.parse(r.subscribedAt) >= Date.parse(activatedAt),
+        )
         .map((recipient) => ({
           recipient,
           // "" for the newsletter; a WhatsApp consent brings its own, so a

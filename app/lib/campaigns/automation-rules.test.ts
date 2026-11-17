@@ -105,6 +105,58 @@ describe("dueRecipients", () => {
     expect(cycles(due)).toEqual(["1:"]);
   });
 
+  describe("newsletter_subscribed compares instants, not text", () => {
+    const owed = (subscribedAt: string, activatedAt: string) =>
+      dueRecipients({
+        trigger: { event: "newsletter_subscribed" },
+        recipients: [r({ subscribedAt })],
+        activatedAt,
+        now: NOW,
+      }).length;
+
+    it("Z and +00:00 spell the same moment: equal counts as joined", () => {
+      expect(
+        owed("2026-09-01T00:00:00+00:00", "2026-09-01T00:00:00.000Z"),
+      ).toBe(1);
+      expect(
+        owed("2026-09-01T00:00:00.000Z", "2026-09-01T00:00:00+00:00"),
+      ).toBe(1);
+    });
+
+    it("a fraction of a second does not decide it", () => {
+      expect(owed("2026-09-01T00:00:00.500Z", "2026-09-01T00:00:00Z")).toBe(1);
+      expect(owed("2026-08-31T23:59:59.999Z", "2026-09-01T00:00:00Z")).toBe(0);
+    });
+
+    it("another offset is another moment", () => {
+      // 01:00 at +02:00 is 23:00 the evening before, in UTC.
+      expect(owed("2026-09-01T01:00:00+02:00", "2026-09-01T00:00:00Z")).toBe(0);
+      expect(owed("2026-09-01T03:00:00+02:00", "2026-09-01T00:00:00Z")).toBe(1);
+    });
+
+    it("text that is not a date greets nobody", () => {
+      expect(owed("not a date", "2026-09-01T00:00:00Z")).toBe(0);
+    });
+
+    it("agrees with the old text comparison wherever the instants clearly differ", () => {
+      const activated = "2026-09-01T00:00:00.000Z";
+      const formats = (iso: string) => [
+        iso,
+        iso.replace(".000Z", "Z"),
+        iso.replace(".000Z", "+00:00"),
+        iso.replace(".000Z", ".000+00:00"),
+      ];
+      for (let hours = -48; hours <= 48; hours += 1) {
+        const at = new Date(Date.parse(activated) + hours * 3_600_000 + 30_000);
+        const iso = at.toISOString();
+        for (const text of formats(iso)) {
+          const before = text >= activated ? 1 : 0;
+          expect([text, owed(text, activated)]).toEqual([text, before]);
+        }
+      }
+    });
+  });
+
   it("after_booking fires N days after the last booking, keyed by that date", () => {
     const due = dueRecipients({
       trigger: { event: "after_booking", days: 3 },
