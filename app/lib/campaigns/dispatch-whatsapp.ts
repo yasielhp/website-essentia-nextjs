@@ -1,15 +1,21 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendTemplateMessage, type TemplateSend } from "@/lib/whatsapp/client";
 import type {
-  WhatsAppParamSource,
   WhatsAppSendResult,
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
 import { sendLocaleOf } from "@/lib/schemas";
-import type { CampaignLocale, CampaignRow } from "@/types/campaign";
+import type { CampaignRow } from "@/types/campaign";
 import type { QueuedRow } from "./dispatch";
 import { pause } from "./pause";
-import { paramsMatchTemplate, resolveParams } from "./whatsapp-params";
+import {
+  whatsappTemplateEligibility,
+  type TemplateIssue,
+} from "./whatsapp-eligibility";
+import { resolveParams } from "./whatsapp-params";
+
+// The rule lives in a module the browser can import; the send path keeps its name.
+export { whatsappTemplateEligibility, type TemplateIssue };
 
 /**
  * Sends the queued rows of a WhatsApp campaign, one template message each.
@@ -130,38 +136,6 @@ export type WhatsAppSendOutcome = {
   /** Rows still `queued` when this returned. The campaign is not done while any remain. */
   remaining: number;
 };
-
-export type TemplateIssue =
-  | "template_missing"
-  | "template_not_approved"
-  | "template_unsupported"
-  | "template_language"
-  | "param_count";
-
-/**
- * Null when the template can go out for this campaign; otherwise why not.
- *
- * Only an approved template that the dashboard can fill is sendable, it must
- * exist in the language the campaign is written in (`es_ES` serves `es`), and
- * the campaign must supply exactly the parameters it declares.
- */
-export function whatsappTemplateEligibility(
-  template: WhatsAppTemplateRow | null | undefined,
-  sendLocale: CampaignLocale,
-  sources: WhatsAppParamSource[],
-): TemplateIssue | null {
-  if (!template) return "template_missing";
-  if (template.status !== "APPROVED") return "template_not_approved";
-  if (template.unsupported_reason !== null) return "template_unsupported";
-  const language = template.language.toLowerCase().replace("-", "_");
-  if (language !== sendLocale && !language.startsWith(`${sendLocale}_`)) {
-    return "template_language";
-  }
-  if (paramsMatchTemplate(sources, template.param_count) !== null) {
-    return "param_count";
-  }
-  return null;
-}
 
 export type ConsentRow = {
   id: string;
