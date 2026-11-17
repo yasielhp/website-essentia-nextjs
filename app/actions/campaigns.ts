@@ -13,6 +13,7 @@ import {
   campaignChannelSchema,
   channelChangeAllowed,
   requiredLocales,
+  sendLocaleOf,
   segmentSchema,
   validateCampaign,
   validateCampaignDraft,
@@ -22,6 +23,10 @@ import { docIsEmpty } from "@/lib/campaigns/doc";
 import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
+import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
+import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
+import { prepareTestSend } from "@/lib/campaigns/whatsapp-test-send";
+import { sendTemplateMessage } from "@/lib/whatsapp/client";
 import {
   sendOutcome,
   type SendFailure,
@@ -521,6 +526,29 @@ export async function saveCampaign(
     return { ok: false, error: "invalid", fieldErrors: { name: "nameTaken" } };
   }
 
+  // A draft may point at any template, or none; anything that can go out must
+  // point at one that can be sent now, in the campaign's language, with the
+  // parameters it declares. The form offers only such templates, but the
+  // template may have been paused since, and the browser is not trusted.
+  if (!options.draft && validated.data.channel === "whatsapp") {
+    const block = validated.data.content.whatsapp;
+    let template: Awaited<ReturnType<typeof loadWhatsAppTemplate>>;
+    try {
+      template = await loadWhatsAppTemplate(db, block?.templateId);
+    } catch (err) {
+      console.error("[campaigns] template lookup failed:", err);
+      return { ok: false, error: "db" };
+    }
+    const templateErrors = whatsappContentErrors(
+      template,
+      sendLocaleOf(validated.data.audience),
+      block?.params ?? [],
+    );
+    if (templateErrors) {
+      return { ok: false, error: "invalid", fieldErrors: templateErrors };
+    }
+  }
+
   if (input.id) {
     // Editing a cancelled or failed campaign brings it back as a draft; a
     // draft or a scheduled one keeps its state, the schedule included.
@@ -623,12 +651,15 @@ export async function duplicateCampaign(
   const db = getAdminClient().database;
   const { data: source, error } = await db
     .from("campaigns")
-    .select("name, audience, content")
+    .select("name, channel, kind, trigger, audience, content")
     .eq("id", id)
     .maybeSingle();
   if (error || !source) return { ok: false, error: "not_found" };
 
-  const original = source as Pick<CampaignRow, "name" | "audience" | "content">;
+  const original = source as Pick<
+    CampaignRow,
+    "name" | "channel" | "kind" | "trigger" | "audience" | "content"
+  >;
 
   // "(copia)", then "(copia 2)", and so on: the name index refuses repeats.
   let copyName = `${original.name} (copia)`;
@@ -640,6 +671,11 @@ export async function duplicateCampaign(
     .from("campaigns")
     .insert({
       name: copyName,
+      // The channel, kind and trigger are part of what the copy is a copy of:
+      // without them a WhatsApp or automated campaign came back an email.
+      channel: original.channel,
+      kind: original.kind,
+      trigger: original.trigger,
       audience: original.audience,
       content: original.content,
       status: "draft",
@@ -826,6 +862,69 @@ export async function sendTestCampaign(
   }
 
   return { ok: true, to: caller.email };
+}
+
+/**
+ * Sends the campaign's template, as it would go out, to the administrator who
+ * asked: the template's own example values, to the phone on that admin's
+ * profile. Nothing is recorded and no campaign is needed.
+ *
+ * The phone is read here from the caller's profile, never taken from the
+ * browser, so this cannot message anyone else. Failures are keys the form
+ * translates; Meta's own words travel in `detail` for `meta` only, since they
+ * are about the template or the account and name nothing of ours.
+ */
+export async function sendTestWhatsAppCampaign(
+  accessToken: string | null,
+  content: CampaignContent,
+  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+): Promise<{ ok: true; to: string } | Failure> {
+  let caller: AuthContext;
+  try {
+    caller = await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+  const parsed = campaignAudienceSchema
+    .pick({ language: true, sendLocale: true })
+    .safeParse(audience);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+
+  const db = getAdminClient().database;
+  let phone: string | null = null;
+  let template: Awaited<ReturnType<typeof loadWhatsAppTemplate>>;
+  try {
+    const { data, error } = await db
+      .from("profiles")
+      .select("phone")
+      .eq("id", caller.userId)
+      .maybeSingle();
+    if (error) return { ok: false, error: "db" };
+    phone = (data as { phone: string | null } | null)?.phone ?? null;
+    template = await loadWhatsAppTemplate(
+      db,
+      content?.whatsapp?.templateId ?? null,
+    );
+  } catch (err) {
+    console.error("[campaigns] whatsapp test lookup failed:", err);
+    return { ok: false, error: "db" };
+  }
+
+  const plan = prepareTestSend(template, sendLocaleOf(parsed.data), phone);
+  if (!plan.ok) {
+    return {
+      ok: false,
+      error: plan.error,
+      ...(plan.detail ? { detail: plan.detail } : {}),
+    };
+  }
+
+  const result = await sendTemplateMessage(plan.send);
+  if (result.status === "sent") return { ok: true, to: plan.to };
+  if (result.status === "skipped") {
+    return { ok: false, error: "whatsapp_not_configured" };
+  }
+  return { ok: false, error: "meta", detail: result.error.slice(0, 300) };
 }
 
 // ─── Sending ────────────────────────────────────────────────────

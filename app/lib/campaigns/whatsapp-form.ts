@@ -184,7 +184,7 @@ export function sampleParams(
     String(day.getMonth() + 1).padStart(2, "0"),
     String(day.getDate()).padStart(2, "0"),
   ].join("-");
-  const vars = visitFieldsExist(kind, trigger)
+  const vars: Record<string, string> = visitFieldsExist(kind, trigger)
     ? {
         service: sample.service,
         session_type: sample.sessionType,
