@@ -125,6 +125,33 @@ export function PrivacyES() {
         <li>Para mejorar la experiencia en nuestro sitio web y servicios.</li>
         <li>Para cumplir con las obligaciones legales y reglamentarias.</li>
       </ul>
+      {/* DRAFT, pending legal review: see docs/plans/2026-11-17-whatsapp-go-live.md
+          (section 6). The wording must be checked by a lawyer before this page is
+          published. */}
+      <p>
+        <strong>
+          Avisos de la cita y comunicaciones por WhatsApp y correo.
+        </strong>{" "}
+        Al reservar, tratamos su teléfono y su correo electrónico para enviarle
+        la confirmación y el recordatorio de su cita por correo electrónico y
+        por WhatsApp. Aceptar los Términos y esta Política en el formulario de
+        reserva es lo que lo permite; la base jurídica es la ejecución del
+        servicio que ha reservado. Aparte, y solo si marca la casilla opcional
+        del formulario, le enviaremos novedades y ofertas de Essentia por correo
+        electrónico y por WhatsApp, con base en su consentimiento, que no es
+        obligatorio ni condiciona su reserva. Puede darse de baja en cualquier
+        momento: respondiendo <strong>BAJA</strong> (o <strong>STOP</strong>) a
+        un mensaje de WhatsApp, lo que detiene todos nuestros mensajes por
+        WhatsApp; con el enlace de baja de los correos; o escribiéndonos a{" "}
+        <a href="mailto:info@essentiawellnessclub.com">
+          info@essentiawellnessclub.com
+        </a>
+        . Si responde BAJA, guardamos su número en una lista de exclusión para
+        no volver a escribirle, aunque otra persona lo introduzca después en un
+        formulario. Conservamos su consentimiento y su número mientras no se dé
+        de baja, y la lista de exclusión mientras sea necesaria para respetar su
+        decisión.
+      </p>
 
       <h2>5. Conservación de datos</h2>
       <p>
@@ -146,9 +173,10 @@ export function PrivacyES() {
           <strong>Proveedores de servicios</strong> que actúan como encargados
           del tratamiento en virtud de acuerdos vinculantes: Redsys y Banco
           Santander (pagos con tarjeta), Resend (envío de correos electrónicos),
-          Google (calendario de nuestro personal), Meta (notificaciones por
-          WhatsApp a nuestro personal), Insforge y Vercel (alojamiento y base de
-          datos) y Sentry (supervisión de errores técnicos).
+          Google (calendario de nuestro personal), Meta (WhatsApp Business
+          Platform: avisos a nuestro personal y mensajes a clientes), Insforge y
+          Vercel (alojamiento y base de datos) y Sentry (supervisión de errores
+          técnicos).
         </li>
         <li>
           <strong>Asistentes de inteligencia artificial</strong> (OpenAI /

@@ -114,6 +114,32 @@ export function PrivacyEN() {
         <li>To improve our website experience and services.</li>
         <li>To comply with legal and regulatory obligations.</li>
       </ul>
+      {/* DRAFT, pending legal review: see docs/plans/2026-11-17-whatsapp-go-live.md
+          (section 6). The wording must be checked by a lawyer before this page is
+          published. */}
+      <p>
+        <strong>
+          Appointment notices and WhatsApp and email communications.
+        </strong>{" "}
+        When you book, we use your phone number and your email address to send
+        you the confirmation and the reminder of your appointment by email and
+        by WhatsApp. Accepting the Terms and this Policy on the booking form is
+        what allows it; the legal basis is the performance of the service you
+        have booked. Separately, and only if you tick the optional box on the
+        form, we will send you news and offers from Essentia by email and by
+        WhatsApp, on the basis of your consent, which is not required and does
+        not affect your booking. You can opt out at any time: by replying{" "}
+        <strong>STOP</strong> (or <strong>BAJA</strong>) to a WhatsApp message,
+        which stops all our WhatsApp messages; with the unsubscribe link in our
+        emails; or by writing to{" "}
+        <a href="mailto:info@essentiawellnessclub.com">
+          info@essentiawellnessclub.com
+        </a>
+        . If you reply STOP we keep your number on a suppression list so that we
+        do not write to it again, even if somebody else later enters it in a
+        form. We keep your consent and your number until you opt out, and the
+        suppression list for as long as it is needed to respect your decision.
+      </p>
 
       <h2>5. Data Retention</h2>
       <p>
@@ -133,8 +159,9 @@ export function PrivacyEN() {
           <strong>Service providers</strong> acting as data processors under
           binding agreements: Redsys and Banco Santander (card payments), Resend
           (email delivery), Google (our staff&apos;s calendar), Meta (WhatsApp
-          notifications to our staff), Insforge and Vercel (hosting and
-          database) and Sentry (technical error monitoring).
+          Business Platform: notices to our staff and messages to clients),
+          Insforge and Vercel (hosting and database) and Sentry (technical error
+          monitoring).
         </li>
         <li>
           <strong>AI assistants</strong> (OpenAI / ChatGPT and Anthropic /
