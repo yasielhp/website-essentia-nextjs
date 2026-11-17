@@ -39,61 +39,100 @@ export type BookingNotificationPayload = {
   locale?: "en" | "es";
 };
 
-const CONTROL_OR_MARKUP = /[<>\u0000-\u001f\u007f\u0085\u2028\u2029]/;
+const payloadShape = z.object({
+  bookingId: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  event: z.enum(["received", "confirmed", "cancelled", "rescheduled"]),
+  clientName: z.string(),
+  // Never the recipient (that is read from the booking row) and never used:
+  // an odd address here is no reason to leave a client without her email.
+  clientEmail: z.string().max(320),
+  clientPhone: z.string().max(40).nullish(),
+  service: z.string(),
+  serviceId: z.string().max(100).nullish(),
+  sessionType: z.string().nullish(),
+  // A number that is one: zod refuses NaN and the infinities by itself.
+  amountDueEur: z.number().min(0).max(100_000).nullish(),
+  date: z.string().max(40),
+  time: z.string(),
+  duration: z.string().nullish(),
+  locale: z.enum(["en", "es"]).optional(),
+});
 
 /**
- * What `notifyBooking` (the Server Action) accepts: the shape of
- * `BookingNotificationPayload`, with a ceiling on every text.
+ * The five texts the legacy emails print as they come, and the most each may
+ * be: several times what the booking form and the dashboard send (a name, a
+ * service title, "60 min", "10:30").
+ */
+const PRINTED = {
+  clientName: 200,
+  service: 200,
+  sessionType: 200,
+  time: 20,
+  duration: 40,
+} as const;
+
+const MARKUP = /[<>]/g;
+const CONTROL = /[\u0000-\u001f\u007f\u0085\u2028\u2029]+/g;
+const NEEDS_CLEANING = /[<>\u0000-\u001f\u007f\u0085\u2028\u2029]/;
+
+/**
+ * A stranger's text as it may be printed: no `<` or `>`, a space where a line
+ * break or another control character was, runs of spaces as one, no space at
+ * the ends. A text that carries none of those is returned untouched, odd
+ * spacing included, so the email it goes into is the one it always was.
+ */
+function printable(text: string): string {
+  if (!NEEDS_CLEANING.test(text)) return text;
+  return text
+    .replace(MARKUP, "")
+    .replace(CONTROL, " ")
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
+
+/**
+ * What `notifyBooking` (the Server Action) was handed, as a payload that may
+ * go on, or null when it cannot be made into one.
  *
  * A Server Action is a public endpoint and its TypeScript types are a wish, so
  * this is what stands between a hand-made request and an email signed by the
- * centre. The limits are several times what the booking form and the dashboard
- * send (a name, a service title, "60 min", "10:30"), and the formats are left
- * loose on purpose (an empty date or time, a time the database wrote as
- * `10:30:00`): a real booking must never be turned away here. Nothing is
- * rewritten: what passes goes on as it came.
+ * centre. It REPAIRS rather than refuses wherever it can, because refusing is
+ * "send nothing" and a client must never be left without her email:
  *
- * `received` is the one event a stranger can send, and the legacy emails print
- * the name, the service, the session type, the time and the duration as they
- * come. On that event those five may carry no `<` or `>` and no control
- * character (a line break in the service would be one in the subject). The
- * team's own events are not doubted that way.
+ *  - the five printed texts are cut to their ceiling, on every event;
+ *  - on `received`, the one event a stranger can send, they are also cleaned
+ *    (`printable`): the legacy emails print them as they come, and a line
+ *    break in the service would be one in the subject. The team's own events
+ *    are not doubted that way.
+ *
+ * Null only for what cannot be repaired: a field of the wrong type, a booking
+ * id that is not one, an event or a language nobody sends, an amount that is
+ * not a sane number, a date, phone or id far beyond any real one, and a
+ * `received` with no service left to write about. Formats are left loose on
+ * purpose (an empty date or time, a time the database wrote as `10:30:00`).
+ * What needs no repair goes on exactly as it came.
  */
-export const bookingNotificationSchema = z
-  .object({
-    bookingId: z
-      .string()
-      .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
-    event: z.enum(["received", "confirmed", "cancelled", "rescheduled"]),
-    clientName: z.string().max(200),
-    // Never the recipient (that is read from the booking row): only ever shown.
-    clientEmail: z.string().max(320),
-    clientPhone: z.string().max(40).nullish(),
-    service: z.string().max(200),
-    serviceId: z.string().max(100).nullish(),
-    sessionType: z.string().max(200).nullish(),
-    // A number that is one: zod refuses NaN and the infinities by itself.
-    amountDueEur: z.number().min(0).max(100_000).nullish(),
-    date: z.string().max(40),
-    time: z.string().max(20),
-    duration: z.string().max(40).nullish(),
-    locale: z.enum(["en", "es"]).optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.event !== "received") return;
-    for (const field of [
-      "clientName",
-      "service",
-      "sessionType",
-      "time",
-      "duration",
-    ] as const) {
-      const text = value[field];
-      if (typeof text === "string" && CONTROL_OR_MARKUP.test(text)) {
-        ctx.addIssue({ code: "custom", path: [field], message: "notAllowed" });
-      }
-    }
-  });
+export function readBookingNotification(
+  input: unknown,
+): BookingNotificationPayload | null {
+  const parsed = payloadShape.safeParse(input);
+  if (!parsed.success) return null;
+  const payload: BookingNotificationPayload = { ...parsed.data };
+  const anonymous = payload.event === "received";
+  for (const [field, max] of Object.entries(PRINTED) as [
+    keyof typeof PRINTED,
+    number,
+  ][]) {
+    const text = payload[field];
+    if (typeof text !== "string") continue;
+    const clean = anonymous ? printable(text) : text;
+    payload[field] = clean.length > max ? clean.slice(0, max).trimEnd() : clean;
+  }
+  if (anonymous && payload.service === "") return null;
+  return payload;
+}
 
 /**
  * The amount as the emails may print it: a finite number, or nothing. The

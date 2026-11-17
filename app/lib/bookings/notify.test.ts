@@ -16,7 +16,7 @@ import { formatLongDate } from "@/lib/format-date";
 import type { notifyBooking as NotifyBooking } from "@/actions/booking-notifications";
 import type {
   BookingNotificationEvent,
-  bookingNotificationSchema as NotificationSchema,
+  readBookingNotification as ReadNotification,
   notifyBookingCore as NotifyCore,
 } from "./notify";
 
@@ -95,7 +95,7 @@ const real = {
 };
 
 let notifyBookingCore: typeof NotifyCore;
-let bookingNotificationSchema: typeof NotificationSchema;
+let readBookingNotification: typeof ReadNotification;
 // The Server Action, over the same fakes: what the public form really calls.
 let notifyBooking: typeof NotifyBooking;
 
@@ -119,7 +119,7 @@ beforeAll(async () => {
     ...real.consent,
     pendingConsentUrl: async () => CONSENT,
   }));
-  ({ notifyBookingCore, bookingNotificationSchema } = await import("./notify"));
+  ({ notifyBookingCore, readBookingNotification } = await import("./notify"));
   ({ notifyBooking } = await import("@/actions/booking-notifications"));
 });
 
@@ -497,23 +497,16 @@ describe("the Server Action checks what it is handed before anything is sent", (
     ["an event nobody sends", { event: "paid" }],
     ["a language we do not write in", { locale: "fr" }],
     ["a service that is not text", { service: { title: "x" } }],
-    ["a service of ten thousand characters", { service: "a".repeat(10_000) }],
-    ["a name of ten thousand characters", { clientName: "a".repeat(10_000) }],
     ["a name that is not text", { clientName: ["Ana"] }],
-    ["a session type too long", { sessionType: "a".repeat(201) }],
+    ["a session type that is not text", { sessionType: 7 }],
+    ["a time that is not text", { time: 1030 }],
+    ["a duration that is not text", { duration: 60 }],
     ["a date too long", { date: "2026-08-20".repeat(10) }],
     ["a date that is not text", { date: 20260820 }],
-    ["a time too long", { time: "10:30".repeat(10) }],
-    ["a duration too long", { duration: "6".repeat(41) }],
     ["a phone too long", { clientPhone: "6".repeat(41) }],
-    // Only on the anonymous event: these are printed as they come.
-    ["HTML in the service", { service: "<a href=https://evil.test>Paga</a>" }],
-    ["HTML in the name", { clientName: "Ana <img src=x>" }],
-    ["HTML in the session type", { sessionType: "<b>x</b>" }],
-    ["HTML in the time", { time: "<i>10:30</i>" }],
-    ["HTML in the duration", { duration: "60 min>" }],
-    ["a line break in the service", { service: "Drenaje\r\nBcc: x@evil.test" }],
-    ["a line break in the name", { clientName: "Ana\nGarcía" }],
+    // Nothing is left of it once cleaned: there is no service to write about.
+    ["a service that is nothing but markup", { service: "<<>>\r\n" }],
+    ["an empty service", { service: "" }],
   ];
   for (const [label, over] of INVALID) {
     test(`${label}: refused, nothing sent, nothing thrown`, async () => {
@@ -545,7 +538,112 @@ describe("the Server Action checks what it is handed before anything is sent", (
     expect(sent).toEqual([]);
   });
 
-  test("what the dashboard sends passes the check", () => {
+  // A stranger's text is cleaned and the email still goes: refusing would be
+  // "send nothing", and a client must never be left without her email.
+  const received = (over: Partial<ReturnType<typeof legacyArgs>>) =>
+    bookingReceivedEmail({ ...legacyArgs(), ...over });
+  const legacyArgs = () => ({
+    name: "Ana García",
+    service: "Drenaje linfático",
+    sessionType: "Sesión individual" as string | null,
+    date: formatLongDate("2026-08-20", "es"),
+    time: "10:30",
+    duration: "60 min" as string | null,
+    amountDueEur: null,
+    cancelUrl: `https://app.example.test/es/reserva/cancelar?token=${TOKEN}`,
+    locale: "es" as const,
+  });
+
+  const CLEANED: [
+    string,
+    Record<string, unknown>,
+    Partial<ReturnType<typeof legacyArgs>>,
+  ][] = [
+    [
+      "HTML in the name",
+      { clientName: "Ana <img src=x onerror=alert(1)>" },
+      { name: "Ana img src=x onerror=alert(1)" },
+    ],
+    [
+      "HTML in the service",
+      { service: "<a href=https://evil.test>Paga aquí</a>" },
+      { service: "a href=https://evil.testPaga aquí/a" },
+    ],
+    [
+      "HTML in the session type",
+      { sessionType: "<b>Sesión</b>" },
+      { sessionType: "bSesión/b" },
+    ],
+    ["HTML in the time", { time: "<i>10:30</i>" }, { time: "i10:30/i" }],
+    ["HTML in the duration", { duration: "60 min>" }, { duration: "60 min" }],
+    [
+      "a line break in the name",
+      { clientName: "  Ana\r\n\tGarcía  " },
+      { name: "Ana García" },
+    ],
+    [
+      "a name of ten thousand characters",
+      { clientName: "a".repeat(10_000) },
+      { name: "a".repeat(200) },
+    ],
+    [
+      "a session type, a time and a duration far too long",
+      {
+        sessionType: "s".repeat(500),
+        time: "1".repeat(500),
+        duration: "6".repeat(500),
+      },
+      {
+        sessionType: "s".repeat(200),
+        time: "1".repeat(20),
+        duration: "6".repeat(40),
+      },
+    ],
+    // Nothing to clean: not a byte is touched, odd spacing included.
+    [
+      "a name with spaces of its own",
+      { clientName: " Ana  María  García " },
+      { name: " Ana  María  García " },
+    ],
+    ["a name that is empty", { clientName: "" }, { name: "" }],
+  ];
+  for (const [label, over, expected] of CLEANED) {
+    test(`${label}: cleaned if it needs it, and the email goes out`, async () => {
+      const out = await notifyBooking(null, {
+        ...fromTheForm(),
+        ...over,
+      } as never);
+      expect(out).toEqual({ ok: true });
+      expect(sent).toHaveLength(1);
+      expect(clientEmail().html).toBe(received(expected));
+      expect(clientEmail().html).not.toContain("<img src=x");
+    });
+  }
+
+  test("a line break in the service never reaches the subject", async () => {
+    await notifyBooking(null, {
+      ...fromTheForm(),
+      service: "Drenaje\r\nBcc: x@evil.test",
+    });
+    expect(clientEmail().subject).toBe(
+      "Solicitud de reserva recibida — Drenaje Bcc: x@evil.test",
+    );
+    expect(clientEmail().html).toBe(
+      received({ service: "Drenaje Bcc: x@evil.test" }),
+    );
+  });
+
+  test("the address in the payload is never the recipient, so an odd one costs nobody her email", async () => {
+    const out = await notifyBooking(null, {
+      ...fromTheForm(),
+      clientEmail: "no es un correo",
+    });
+    expect(out).toEqual({ ok: true });
+    expect(clientEmail().to).toBe("ana@example.test");
+    expect(clientEmail().html).toBe(legacyReceived("es"));
+  });
+
+  test("what the dashboard sends passes the check, untouched", () => {
     // New booking: `create-booking.ts`.
     const created = {
       bookingId: ID,
@@ -576,17 +674,20 @@ describe("the Server Action checks what it is handed before anything is sent", (
       duration: "60 min",
     };
     for (const input of [created, edited]) {
-      const parsed = bookingNotificationSchema.safeParse(input);
-      expect(parsed.success).toBe(true);
-      // Nothing is rewritten on the way through.
-      expect(parsed.data).toEqual(input as never);
+      expect(readBookingNotification(input)).toEqual(input as never);
     }
-    // The team writes what it wants in a name; only a stranger is doubted.
+    // The team writes what it wants in a name; only a stranger's is cleaned.
     expect(
-      bookingNotificationSchema.safeParse({
+      readBookingNotification({
         ...created,
-        clientName: "Ana <la de los martes>",
-      }).success,
-    ).toBe(true);
+        clientName: "Ana <la de los  martes>",
+      })?.clientName,
+    ).toBe("Ana <la de los  martes>");
+    // Too long is cut for the team as well, never refused.
+    expect(
+      readBookingNotification({ ...created, clientName: "a".repeat(500) })
+        ?.clientName,
+    ).toBe("a".repeat(200));
+    expect(readBookingNotification({ ...created, service: 7 })).toBeNull();
   });
 });

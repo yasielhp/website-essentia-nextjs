@@ -4,8 +4,8 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { actorFromToken } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
-  bookingNotificationSchema,
   notifyBookingCore,
+  readBookingNotification,
   type BookingNotificationPayload,
 } from "@/lib/bookings/notify";
 
@@ -17,10 +17,11 @@ import {
  * event is a staff operation and requires a dashboard role. The work itself is
  * `notifyBookingCore`, which the MCP tools call too.
  *
- * The payload is checked before anything else (`bookingNotificationSchema`):
- * its types are only TypeScript's word, and this is a public endpoint. One
- * that does not pass is answered `invalidInput`; nothing is read, nothing is
- * sent and nothing is thrown.
+ * The payload is read before anything else (`readBookingNotification`): its
+ * types are only TypeScript's word, and this is a public endpoint. What can be
+ * repaired is (a stranger's text is cleaned and cut, and the email still
+ * goes); what cannot is answered `invalidInput`, with nothing read, nothing
+ * sent and nothing thrown.
  */
 // Only `received` is anonymous — it is the one the public booking flow
 // sends — and even then the recipient is read from the booking row rather
@@ -32,9 +33,8 @@ export async function notifyBooking(
 ): Promise<
   { ok: true } | { ok: false; error: "invalidInput" | "unauthorized" }
 > {
-  const parsed = bookingNotificationSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "invalidInput" };
-  const payload: BookingNotificationPayload = parsed.data;
+  const payload = readBookingNotification(input);
+  if (!payload) return { ok: false, error: "invalidInput" };
 
   if (payload.event !== "received") {
     try {
