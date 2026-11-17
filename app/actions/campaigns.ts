@@ -44,6 +44,7 @@ import {
   isSuppressionTableMissing,
   WHATSAPP_NOT_READY,
 } from "@/lib/campaigns/audience-reach";
+import { readAllPages } from "@/lib/campaigns/paged-read";
 import { PAUSE_TO_SAVE, saveStrictness } from "@/lib/campaigns/save-mode";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
@@ -304,32 +305,57 @@ export async function fetchCampaign(
   const db = getAdminClient().database;
   const RECIPIENT_COLUMNS =
     "id, contact_id, email, phone, language, status, cycle, variant, error, vars, sent_at, delivered_at, opened_at, clicked_at, read_at";
+  // Page by page: the database gives a thousand rows at most, and a report of
+  // a bigger campaign must not stop at the first thousand.
   const readRecipients = (columns: string) =>
-    db
-      .from("campaign_recipients")
-      .select(columns)
-      .eq("campaign_id", id)
-      .order("email", { ascending: true })
-      // WhatsApp rows have no email, so they tie on it: the phone settles the
-      // order, or the list would shuffle between two reloads.
-      .order("phone", { ascending: true })
-      .range(0, 9_999);
-  const [campaignResult, withNames] = await Promise.all([
+    readAllPages<Record<string, unknown>>(
+      "[fetchCampaign] recipients",
+      (from, to) =>
+        db
+          .from("campaign_recipients")
+          .select(columns)
+          .eq("campaign_id", id)
+          .order("email", { ascending: true })
+          // WhatsApp rows have no email, so they tie on it: the phone settles the
+          // order, or the list would shuffle between two reloads. The id closes
+          // the order, so one page ends where the next begins.
+          .order("phone", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{
+          data: Record<string, unknown>[] | null;
+          error: { message: string } | null;
+        }>,
+    );
+  // The name comes with the row through the contact it points to (one read,
+  // no list of ids). If that embedding is refused, the report is the same
+  // as before, without names: a name is never worth losing the report.
+  const recipientRows = (async () => {
+    try {
+      return await readRecipients(
+        `${RECIPIENT_COLUMNS}, contacts(first_name, last_name)`,
+      );
+    } catch {
+      return readRecipients(RECIPIENT_COLUMNS);
+    }
+  })();
+  const [campaignResult, recipientData] = await Promise.all([
     db.from("campaigns").select("*").eq("id", id).maybeSingle(),
-    // The name comes with the row through the contact it points to (one read,
-    // no list of ids). If that embedding is refused, the report is the same
-    // as before, without names: a name is never worth losing the report.
-    readRecipients(`${RECIPIENT_COLUMNS}, contacts(first_name, last_name)`),
+    recipientRows.then(
+      (data) => ({ data, failed: false }),
+      () => ({ data: [] as Record<string, unknown>[], failed: true }),
+    ),
   ]);
-  const recipientsResult = withNames.error
-    ? await readRecipients(RECIPIENT_COLUMNS)
-    : withNames;
 
   if (campaignResult.error || !campaignResult.data) return nothing;
+  // A report that could not read all its rows is not a shorter report: the
+  // page is told it failed (and offers to try again), never shown a part.
+  if (recipientData.failed) {
+    throw new Error("[fetchCampaign] the recipients could not be read");
+  }
 
   type JoinedContact = { first_name: string | null; last_name: string | null };
   const recipients = (
-    (recipientsResult.data ?? []) as unknown as (CampaignRecipientRow & {
+    recipientData.data as unknown as (CampaignRecipientRow & {
       contacts?: JoinedContact | JoinedContact[] | null;
     })[]
   )

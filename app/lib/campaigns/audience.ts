@@ -1,4 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+import { readAllPages } from "./paged-read";
 import { loadAllSuppressedPhones } from "@/lib/whatsapp/suppression";
 import type {
   CampaignAudience,
@@ -78,9 +79,6 @@ type BookingSummary = {
   bookings: AppointmentBooking[];
 };
 
-/** Rows above what the centre could plausibly hold; only a guard, not paging. */
-const MAX_ROWS = 9_999;
-
 /** What a campaign being resolved is for, beyond its audience conditions. */
 export type AudienceOptions = {
   /**
@@ -152,7 +150,8 @@ function appointmentBookings<
     order: (column: string, options: { ascending: boolean }) => Q;
   },
 >(query: Q, appointments: boolean, now: Date): Q {
-  if (!appointments) return query;
+  // Read page by page, so the order must be total: the id settles it.
+  if (!appointments) return query.order("id", { ascending: true });
   const since = new Date(now.getTime() - APPOINTMENT_LOOKBACK_DAYS * 86_400_000)
     .toISOString()
     .slice(0, 10);
@@ -172,22 +171,29 @@ export async function loadCandidates(
 ): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
-  const contactsBase = db
-    .from("contacts")
-    .select(
-      "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+  // Each page is a fresh query: the database never gives more than a thousand
+  // rows at once, and `readAllPages` goes on until the table ends (or fails the
+  // whole read: a list that is only part of the contacts is worse than none).
+  const readContacts = (from: number, to: number) => {
+    const base = db
+      .from("contacts")
+      .select(
+        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+      );
+    return (
+      (
+        channel === "any"
+          ? base.or("email.not.is.null,phone.not.is.null")
+          : base.not(channel === "whatsapp" ? "phone" : "email", "is", null)
+      )
+        // A fixed order, so the contact kept when two share a phone (the first)
+        // is the same in the preview and in the send, and so the pages join up.
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
     );
-
-  const [contactsResult, bookingsResult, tiersResult] = await Promise.all([
-    (channel === "any"
-      ? contactsBase.or("email.not.is.null,phone.not.is.null")
-      : contactsBase.not(channel === "whatsapp" ? "phone" : "email", "is", null)
-    )
-      // A fixed order, so the contact kept when two share a phone (the first)
-      // is the same in the preview and in the send.
-      .order("created_at", { ascending: true })
-      .order("id", { ascending: true })
-      .range(0, MAX_ROWS),
+  };
+  const readBookings = (from: number, to: number) =>
     appointmentBookings(
       db
         .from("bookings")
@@ -197,22 +203,15 @@ export async function loadCandidates(
         .neq("status", "cancelled"),
       options.appointments === true,
       options.now ?? new Date(),
-    ).range(0, MAX_ROWS),
+    ).range(from, to);
+
+  const [contactRows, bookingRows, tiersResult] = await Promise.all([
+    readAllPages<ContactRow>("[resolveAudience] contacts", readContacts),
+    readAllPages<BookingRow>("[resolveAudience] bookings", readBookings),
     // A handful of rows: read apart rather than embedded, so it does not
     // depend on the foreign key being declared.
     db.from("service_tiers").select("id, label"),
   ]);
-
-  if (contactsResult.error) {
-    throw new Error(
-      `[resolveAudience] contacts read failed: ${contactsResult.error.message}`,
-    );
-  }
-  if (bookingsResult.error) {
-    throw new Error(
-      `[resolveAudience] bookings read failed: ${bookingsResult.error.message}`,
-    );
-  }
 
   // A label is a nicety for the message: if the read failed, the send goes
   // out without it rather than not at all.
@@ -229,7 +228,7 @@ export async function loadCandidates(
     if (tier.label) tierLabels.set(tier.id, tier.label);
   }
 
-  const contacts = (contactsResult.data ?? []) as ContactRow[];
+  const contacts = contactRows;
 
   // Contact emails are stored lowercased; booking emails are typed by hand,
   // so the booking side is normalised before the lookup.
@@ -245,7 +244,7 @@ export async function loadCandidates(
   // Each booking resolves to at most one contact, so a row carrying both a
   // matching id and email is counted once.
   const byContact = new Map<string, BookingSummary>();
-  for (const booking of (bookingsResult.data ?? []) as BookingRow[]) {
+  for (const booking of bookingRows) {
     const contactId =
       booking.contact_id ??
       (booking.email

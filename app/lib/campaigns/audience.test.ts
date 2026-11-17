@@ -54,6 +54,10 @@ let suppressedError: string | null = null;
 let tablesRead: string[] = [];
 let contact: typeof CONTACT = CONTACT;
 let bookings: (typeof BOOKING)[] = [];
+// When set, the tables behave like the real ones: pages of at most a thousand rows.
+let bigContacts: (typeof CONTACT)[] | null = null;
+let bookingPageError: number | null = null;
+let bookingReads = 0;
 let selects: Record<string, string> = {};
 let chains: Record<string, string[]> = {};
 let bookingArgs: Record<string, unknown[]> = {};
@@ -72,8 +76,25 @@ beforeAll(async () => {
         for (const step of chain) {
           if (table === "bookings") bookingArgs[step.name] = step.args;
         }
-        if (table === "contacts") return { data: [contact], error: null };
-        if (table === "bookings") return { data: bookings, error: null };
+        const range = chain.find((step) => step.name === "range")?.args as
+          [number, number] | undefined;
+        const page = <T>(rows: T[]) =>
+          range
+            ? rows.slice(range[0], Math.min(range[1] + 1, range[0] + 1_000))
+            : rows;
+        if (table === "contacts") {
+          return {
+            data: bigContacts ? page(bigContacts) : [contact],
+            error: null,
+          };
+        }
+        if (table === "bookings") {
+          bookingReads++;
+          if (bookingPageError !== null && range?.[0] === bookingPageError) {
+            return { data: null, error: { message: "timeout" } };
+          }
+          return { data: page(bookings), error: null };
+        }
         if (table === "whatsapp_suppressed_phones") {
           return suppressedError
             ? { data: null, error: { message: suppressedError } }
@@ -96,6 +117,9 @@ beforeEach(() => {
   tablesRead = [];
   contact = CONTACT;
   bookings = [];
+  bigContacts = null;
+  bookingPageError = null;
+  bookingReads = 0;
   selects = {};
   chains = {};
   bookingArgs = {};
@@ -221,15 +245,15 @@ describe("the bookings an appointment notice reads", () => {
 
   test("every other resolution reads them exactly as it always did", async () => {
     await resolveAudience(EVERYONE, NOW, "whatsapp");
-    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+    expect(chains.bookings).toEqual(["select", "neq", "order", "range"]);
     chains = {};
     await resolveAudience(EVERYONE, NOW, "email");
-    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+    expect(chains.bookings).toEqual(["select", "neq", "order", "range"]);
     chains = {};
     await resolveAudience(EVERYONE, NOW, "whatsapp", {
       purpose: "appointment",
     });
-    expect(chains.bookings).toEqual(["select", "neq", "range"]);
+    expect(chains.bookings).toEqual(["select", "neq", "order", "range"]);
   });
 
   test("an appointment notice reads only the last 31 days and what is ahead, in a fixed order", async () => {
@@ -263,5 +287,64 @@ describe("the bookings an appointment notice reads", () => {
     chains = {};
     await resolveAudience(EVERYONE, NOW, "whatsapp", appointment);
     expect(chains.contacts).toEqual(plain);
+  });
+});
+
+describe("a table longer than a page", () => {
+  const N = 2_500;
+  const people = Array.from({ length: N }, (_, i) => ({
+    ...CONTACT,
+    id: `c-${i}`,
+    email: `p${i}@example.test`,
+    phone: `+3460${String(1_000_000 + i)}`,
+  }));
+  const booked = people.map((p, i) => ({
+    ...BOOKING,
+    id: `b-${i}`,
+    contact_id: p.id,
+    email: p.email,
+  }));
+
+  test("every contact is read, not the first thousand", async () => {
+    bigContacts = people;
+    const out = await resolveAudience(EVERYONE, NOW, "email");
+    expect(out).toHaveLength(N);
+  });
+
+  test("and every booking: a client with one is not 'never booked' because hers is on page three", async () => {
+    bigContacts = people;
+    bookings = booked;
+    const out = await resolveAudience(
+      { ...EVERYONE, hasBooked: true },
+      NOW,
+      "email",
+    );
+    expect(out).toHaveLength(N);
+    expect(bookingReads).toBe(3);
+  });
+
+  test("a page of bookings that fails fails the whole read, with no partial audience", async () => {
+    bigContacts = people;
+    bookings = booked;
+    bookingPageError = 1_000;
+    await expect(resolveAudience(EVERYONE, NOW, "email")).rejects.toThrow(
+      "[resolveAudience] bookings read failed: timeout",
+    );
+  });
+
+  test("the pages of an appointment notice are in the same total order", async () => {
+    bigContacts = people;
+    bookings = booked;
+    await resolveAudience(EVERYONE, NOW, "email", {
+      appointments: true,
+    });
+    expect(chains.bookings).toEqual([
+      "select",
+      "neq",
+      "gte",
+      "order",
+      "order",
+      "range",
+    ]);
   });
 });
