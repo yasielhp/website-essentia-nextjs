@@ -4,6 +4,8 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { consentRequestEmail } from "@/emails/templates/consent-request";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { consentSchema, type ConsentInput } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
 import { signatureSource } from "@/lib/consent/signature";
@@ -486,17 +488,40 @@ export async function sendConsentEmail(
   if (consent.signed) return { error: "signed" };
 
   const locale = contact.preferred_language === "en" ? "en" : "es";
+  const consentUrl = buildConsentUrl(consent.token, locale);
+  const legacySubject =
+    locale === "es"
+      ? "Completa tu consentimiento informado · Essentia"
+      : "Complete your informed consent · Essentia";
+  // The admin's version of the message, if they edited it; otherwise (or if
+  // reading it fails) `legacy` and the email goes out as it always has.
+  const custom = await renderMessageEmail({
+    key: "consent_request",
+    locale,
+    vars: {
+      first_name: contact.first_name?.trim() || "",
+      consent_url: consentUrl,
+    },
+    fixedHtml: () =>
+      fixedBlocksHtml("consent_request", {
+        locale,
+        service: "",
+        date: "",
+        time: "",
+        consentUrl,
+      }),
+  });
   const { error } = await sendEmail({
     to: contact.email,
-    subject:
-      locale === "es"
-        ? "Completa tu consentimiento informado · Essentia"
-        : "Complete your informed consent · Essentia",
-    html: consentRequestEmail({
-      name: contact.first_name?.trim() || "",
-      url: buildConsentUrl(consent.token, locale),
-      locale,
-    }),
+    subject: custom.kind === "custom" ? custom.subject : legacySubject,
+    html:
+      custom.kind === "custom"
+        ? custom.html
+        : consentRequestEmail({
+            name: contact.first_name?.trim() || "",
+            url: consentUrl,
+            locale,
+          }),
   });
   return error ? { error: "failed" } : { error: null, email: contact.email };
 }

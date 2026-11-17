@@ -3,6 +3,8 @@ import { pushBookingToCalendars } from "@/lib/calendar-sync";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { formatLongDate, formatPrice } from "@/utils/format";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { notifyStaffOfPaidBooking } from "@/lib/bookings/notify-staff-paid";
@@ -152,24 +154,57 @@ export async function handleBookingPaid(
     },
     locale,
   );
-  const { error } = await sendEmail({
-    to: booking.email as string,
-    subject:
-      locale === "es"
-        ? "Tu reserva en Essentia está confirmada"
-        : "Your Essentia booking is confirmed",
-    html: bookingConfirmationEmail({
-      name: booking.first_name as string,
-      serviceName: booking.service_title as string,
-      date: formatLongDate(booking.date as string, locale),
+  const date = formatLongDate(booking.date as string, locale);
+  const legacySubject =
+    locale === "es"
+      ? "Tu reserva en Essentia está confirmada"
+      : "Your Essentia booking is confirmed";
+  // The admin's version of the message, if they edited it; otherwise (or if
+  // reading it fails) `legacy` and the email goes out as it always has.
+  const custom = await renderMessageEmail({
+    key: "booking_paid",
+    locale,
+    vars: {
+      first_name: booking.first_name as string,
+      service: booking.service_title as string,
+      date,
       time: booking.time as string,
       duration: booking.duration as string,
-      dateIso: booking.date as string,
-      locale,
-      paidEur: received,
-      owedEur,
-      consentUrl,
-    }),
+      amount_paid: received > 0 ? formatPrice(received, locale) : "",
+      amount_due: owedEur > 0 ? formatPrice(owedEur, locale) : "",
+      consent_url: consentUrl ?? "",
+    },
+    fixedHtml: () =>
+      fixedBlocksHtml("booking_paid", {
+        locale,
+        service: booking.service_title as string,
+        date,
+        time: booking.time as string,
+        duration: booking.duration as string,
+        dateIso: booking.date as string,
+        paidEur: received,
+        owedEur,
+        consentUrl,
+      }),
+  });
+  const { error } = await sendEmail({
+    to: booking.email as string,
+    subject: custom.kind === "custom" ? custom.subject : legacySubject,
+    html:
+      custom.kind === "custom"
+        ? custom.html
+        : bookingConfirmationEmail({
+            name: booking.first_name as string,
+            serviceName: booking.service_title as string,
+            date,
+            time: booking.time as string,
+            duration: booking.duration as string,
+            dateIso: booking.date as string,
+            locale,
+            paidEur: received,
+            owedEur,
+            consentUrl,
+          }),
   });
 
   if (error) {

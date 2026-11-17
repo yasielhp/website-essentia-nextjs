@@ -1,6 +1,8 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { bonusPurchaseEmail } from "@/emails/templates/bonus-purchase";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { bonusExpiry, bonusToday } from "@/lib/bonuses/expiry";
 import { shouldGrantBonus } from "@/lib/bonuses/orders";
 import { formatLongDate, formatPrice } from "@/utils/format";
@@ -176,20 +178,48 @@ async function sendConfirmation(
     const service = (tier as { label: string | null } | null)?.label ?? "";
     const locale = order.preferred_language;
 
+    const amount = formatPrice(Number(order.price_eur), locale);
+    const expires = formatLongDate(expiresOn, locale);
+    const legacySubject =
+      locale === "es"
+        ? `Tu bono de ${order.sessions} sesiones está confirmado`
+        : `Your ${order.sessions}-session voucher is confirmed`;
+    // The admin's version of the message, if they edited it; otherwise (or if
+    // reading it fails) `legacy` and the email goes out as it always has.
+    const custom = await renderMessageEmail({
+      key: "bonus_purchase",
+      locale,
+      vars: {
+        first_name: order.first_name,
+        service,
+        sessions: String(order.sessions),
+        amount_paid: amount,
+        expires_on: expires,
+      },
+      fixedHtml: () =>
+        fixedBlocksHtml("bonus_purchase", {
+          locale,
+          service,
+          date: "",
+          time: "",
+          bonus: { sessions: order.sessions, amount, expiresOn: expires },
+        }),
+    });
+
     const { error } = await sendEmail({
       to: order.email,
-      subject:
-        locale === "es"
-          ? `Tu bono de ${order.sessions} sesiones está confirmado`
-          : `Your ${order.sessions}-session voucher is confirmed`,
-      html: bonusPurchaseEmail({
-        name: order.first_name,
-        service,
-        sessions: order.sessions,
-        amount: formatPrice(Number(order.price_eur), locale),
-        expiresOn: formatLongDate(expiresOn, locale),
-        locale,
-      }),
+      subject: custom.kind === "custom" ? custom.subject : legacySubject,
+      html:
+        custom.kind === "custom"
+          ? custom.html
+          : bonusPurchaseEmail({
+              name: order.first_name,
+              service,
+              sessions: order.sessions,
+              amount,
+              expiresOn: expires,
+              locale,
+            }),
     });
     if (error) console.error("[handleBonusPaid] email failed:", error);
   } catch (err) {

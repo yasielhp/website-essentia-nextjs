@@ -6,6 +6,9 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
+import type { MessageKey } from "@/lib/messages/catalog";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
 import { recordBookingEvent } from "@/lib/booking-events/record";
@@ -280,12 +283,50 @@ export async function notifyBookingCore(
           rescheduled: `Booking rescheduled — ${service}`,
         };
 
+  // The admin's version of the message, if they edited it. Without one, or if
+  // anything about reading it fails, `legacy` and the email goes out exactly
+  // as it always has.
+  const messageKey: Record<BookingNotificationEvent, MessageKey> = {
+    received: "booking_received",
+    confirmed: "booking_confirmed",
+    cancelled: "booking_cancelled",
+    rescheduled: "booking_rescheduled",
+  };
+  const custom = await renderMessageEmail({
+    key: messageKey[event],
+    locale,
+    vars: {
+      first_name: clientName,
+      service,
+      session_type: sessionType ?? "",
+      date,
+      time,
+      duration: duration ?? "",
+      amount_due: amountDueEur != null ? String(amountDueEur) : "",
+      cancel_url: cancelUrl ?? "",
+      consent_url: consentUrl ?? "",
+    },
+    fixedHtml: () =>
+      fixedBlocksHtml(messageKey[event], {
+        locale,
+        service,
+        sessionType,
+        date,
+        time,
+        duration,
+        dateIso: payload.date,
+        cancelUrl,
+        consentUrl,
+        amountDueEur,
+      }),
+  });
+
   await sendAndRecord({
     bookingId,
     event,
     to: clientEmail,
-    subject: clientSubjects[event],
-    html: clientTemplates[event](),
+    subject: custom.kind === "custom" ? custom.subject : clientSubjects[event],
+    html: custom.kind === "custom" ? custom.html : clientTemplates[event](),
     ...actor,
   });
 

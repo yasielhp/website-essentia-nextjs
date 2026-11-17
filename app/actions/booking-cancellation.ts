@@ -5,6 +5,8 @@ import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
 import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import { formatLongDate } from "@/lib/format-date";
@@ -143,30 +145,68 @@ export async function cancelBookingByToken(
     // `sendEmail` throws on an address the provider rejects, and the swallowed
     // catch this replaces left the cancellation looking silent. It is still
     // never allowed to undo a cancellation that already happened.
+    // What the client really sees in their inbox, which is the admin's subject
+    // when they edited the message.
+    let sentSubject = subject;
     try {
+      const date = formatLongDate(booking.date, locale);
+      const sessionType = booking.service_tiers?.label ?? null;
+      // The admin's version of the message, if they edited it; otherwise (or
+      // if reading it fails) `legacy` and the email goes out as it always has.
+      const custom = await renderMessageEmail({
+        key: "booking_cancelled",
+        locale,
+        vars: {
+          first_name: booking.first_name ?? "",
+          service,
+          session_type: sessionType ?? "",
+          date,
+          time: booking.time ?? "",
+          duration: booking.duration ?? "",
+        },
+        fixedHtml: () =>
+          fixedBlocksHtml("booking_cancelled", {
+            locale,
+            service,
+            sessionType,
+            date,
+            time: booking.time ?? "",
+            duration: booking.duration,
+          }),
+      });
+      if (custom.kind === "custom") sentSubject = custom.subject;
       const { error: sendError, id } = await sendEmail({
         to: booking.email,
-        subject,
-        html: bookingCancelledEmail({
-          name: booking.first_name ?? "",
-          service,
-          sessionType: booking.service_tiers?.label ?? null,
-          date: formatLongDate(booking.date, locale),
-          time: booking.time ?? "",
-          duration: booking.duration,
-          locale,
-        }),
+        subject: sentSubject,
+        html:
+          custom.kind === "custom"
+            ? custom.html
+            : bookingCancelledEmail({
+                name: booking.first_name ?? "",
+                service,
+                sessionType,
+                date,
+                time: booking.time ?? "",
+                duration: booking.duration,
+                locale,
+              }),
       });
       await recordBookingEvent(
         sendError
-          ? { ...entry, status: "failed", error: sendError.message }
+          ? {
+              ...entry,
+              summary: sentSubject,
+              status: "failed",
+              error: sendError.message,
+            }
           : // Resend's id, so its webhook can advance this row when the message
             // is delivered, opened or bounces.
-            { ...entry, status: "sent", providerId: id },
+            { ...entry, summary: sentSubject, status: "sent", providerId: id },
       );
     } catch (err) {
       await recordBookingEvent({
         ...entry,
+        summary: sentSubject,
         status: "failed",
         error: err instanceof Error ? err.message : String(err),
       });

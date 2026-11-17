@@ -3,6 +3,8 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
+import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
 
 /**
@@ -121,24 +123,75 @@ async function handle(request: NextRequest) {
     const dateIso = booking.date.slice(0, 10);
     const service = booking.service_title ?? "Essentia";
 
+    const date = formatDate(dateIso, locale);
+    const time = booking.time.slice(0, 5);
+    const sessionType = tierLabel(booking);
+    const cancelUrl = booking.cancel_token
+      ? `${getAppUrl()}/es/reserva/cancelar?token=${booking.cancel_token}`
+      : null;
+
+    // The admin's version of the reminder, if they edited or switched it off;
+    // otherwise (or if reading it fails) `legacy` and the email goes out as it
+    // always has.
+    const custom = await renderMessageEmail({
+      key: "booking_reminder",
+      locale,
+      vars: {
+        first_name: booking.first_name ?? "",
+        service,
+        session_type: sessionType ?? "",
+        date,
+        time,
+        duration: booking.duration ?? "",
+        cancel_url: cancelUrl ?? "",
+      },
+      fixedHtml: () =>
+        fixedBlocksHtml("booking_reminder", {
+          locale,
+          service,
+          sessionType,
+          date,
+          time,
+          duration: booking.duration,
+          dateIso,
+          cancelUrl,
+        }),
+    });
+
+    // Switched off: nothing is sent and the booking is not stamped, so turning
+    // the reminder back on still reaches whoever is inside the window then.
+    // The booking history has no entry for reminders today, so the omission is
+    // only logged.
+    if (custom.kind === "skip") {
+      console.info(
+        `[cron/booking-reminders] reminder switched off, skipped booking ${booking.id}`,
+      );
+      skipped++;
+      continue;
+    }
+
     due.push({
       id: booking.id,
       email: {
         to: booking.email,
-        subject: `Tu sesión del ${formatDate(dateIso, locale)} — ${service}`,
-        html: bookingReminderEmail({
-          name: booking.first_name ?? "",
-          service,
-          sessionType: tierLabel(booking),
-          date: formatDate(dateIso, locale),
-          time: booking.time.slice(0, 5),
-          duration: booking.duration,
-          dateIso,
-          cancelUrl: booking.cancel_token
-            ? `${getAppUrl()}/es/reserva/cancelar?token=${booking.cancel_token}`
-            : null,
-          locale,
-        }),
+        subject:
+          custom.kind === "custom"
+            ? custom.subject
+            : `Tu sesión del ${date} — ${service}`,
+        html:
+          custom.kind === "custom"
+            ? custom.html
+            : bookingReminderEmail({
+                name: booking.first_name ?? "",
+                service,
+                sessionType,
+                date,
+                time,
+                duration: booking.duration,
+                dateIso,
+                cancelUrl,
+                locale,
+              }),
       },
     });
   }
