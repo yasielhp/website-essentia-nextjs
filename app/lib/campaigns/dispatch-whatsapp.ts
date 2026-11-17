@@ -387,9 +387,12 @@ export async function sendQueuedWhatsApp(
         ? { kind: "sent" }
         : { kind: "unrecorded", error: "row not recorded" };
     }
-    return fail(
-      result.ambiguous ? `${UNCONFIRMED_PREFIX}${result.error}` : result.error,
-    );
+    // Meta's code first, so a row's error says which of its refusals it was.
+    const text =
+      result.code !== undefined
+        ? `${result.code}: ${result.error}`
+        : result.error;
+    return fail(result.ambiguous ? `${UNCONFIRMED_PREFIX}${text}` : text);
   }
 
   let sent = 0;

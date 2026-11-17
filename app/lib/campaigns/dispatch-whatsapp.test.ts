@@ -230,6 +230,33 @@ describe("sendQueuedWhatsApp", () => {
     expect(result.failed).toBe(1);
   });
 
+  test("Meta's error code leads the stored text", async () => {
+    const mem = memoryDb(rowsOf(1));
+    await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+      db: mem.db,
+      send: fakeSend(() => ({
+        status: "failed",
+        error: "Message undeliverable",
+        code: 131026,
+      })).send,
+    });
+    expect(mem.error("row-1")).toBe("131026: Message undeliverable");
+  });
+
+  test("an ambiguous failure with a code keeps both, the prefix first", async () => {
+    const mem = memoryDb(rowsOf(1));
+    await sendQueuedWhatsApp(campaign(), rowsOf(1), {
+      db: mem.db,
+      send: fakeSend(() => ({
+        status: "failed",
+        error: "Service unavailable",
+        code: 2,
+        ambiguous: true,
+      })).send,
+    });
+    expect(mem.error("row-1")).toBe("[unconfirmed] 2: Service unavailable");
+  });
+
   test("a send that throws is treated as unconfirmed, not as a clean failure", async () => {
     const mem = memoryDb(rowsOf(1));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
