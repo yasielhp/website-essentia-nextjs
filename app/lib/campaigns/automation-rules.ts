@@ -63,6 +63,27 @@ function visitVars(
 const withVars = (vars: Record<string, string> | undefined) =>
   vars ? { vars } : {};
 
+/**
+ * How late an appointment notice may still go, past its moment. The cron runs
+ * every 15 minutes, so a notice is normally at most one tick late.
+ *
+ * Without a bound the rule would send whatever it found "due": a booking
+ * confirmed 30 minutes before it starts would set off every 48 h, 24 h and 2 h
+ * campaign at once (three messages in a row with three different deadlines),
+ * and a campaign paused for three days would send three days of arrears the
+ * moment it was resumed (`activated_at` is kept on resume).
+ *
+ * The compromise: if the cron is down for longer than the bound, that notice
+ * is LOST rather than sent out of time. A reminder that arrives after the
+ * moment it was for is worse than none, and the instant confirmation covers
+ * the last-minute bookings.
+ *
+ * Before the visit: 45 minutes, three ticks of the cron. After it: 3 hours,
+ * enough to ride out an outage without sending a thank-you a day late.
+ */
+export const GRACE_BEFORE_MS = 45 * 60_000;
+export const GRACE_AFTER_MS = 3 * 3_600_000;
+
 /** A whole number of hours, at least one, or null: what the engine can time. */
 const whole = (hours: number | undefined): number | null =>
   Number.isInteger(hours) && (hours as number) >= 1 ? (hours as number) : null;
@@ -212,10 +233,11 @@ export function dueRecipients({
     }
 
     // An appointment notice: one per booking, N hours before it starts. Every
-    // confirmed booking of the client counts, not only the next one. Due from
-    // the moment it is N hours away until it starts, and only when that moment
-    // is not older than the campaign: switching it on does not message the
-    // bookings that were already inside the window.
+    // confirmed booking of the client counts, not only the next one. Due in the
+    // `GRACE_BEFORE_MS` after the moment it is N hours away (and never once the
+    // visit has started), and only when that moment is not older than the
+    // campaign: switching it on does not message the bookings that were already
+    // inside the window.
     case "before_visit":
       return appointmentsDue(recipients, services, (a) => {
         if (a.status !== "confirmed") return null;
@@ -224,6 +246,7 @@ export function dueRecipients({
         if (hours === null) return null;
         const notice = starts - hours * 3_600_000;
         return notice <= now.getTime() &&
+          now.getTime() - notice <= GRACE_BEFORE_MS &&
           now.getTime() < starts &&
           notice >= Date.parse(activatedAt)
           ? a
@@ -231,14 +254,17 @@ export function dueRecipients({
       });
 
     // N hours after a booking ends (confirmed, or completed once it is over),
-    // under the same rule about not reaching back before activation.
+    // due in the `GRACE_AFTER_MS` after that moment, under the same rule about
+    // not reaching back before activation.
     case "after_visit":
       return appointmentsDue(recipients, services, (a) => {
         if (a.status !== "confirmed" && a.status !== "completed") return null;
         const hours = whole(trigger.hours);
         if (hours === null) return null;
         const notice = Date.parse(a.endsAt) + hours * 3_600_000;
-        return notice <= now.getTime() && notice >= Date.parse(activatedAt)
+        return notice <= now.getTime() &&
+          now.getTime() - notice <= GRACE_AFTER_MS &&
+          notice >= Date.parse(activatedAt)
           ? a
           : null;
       });

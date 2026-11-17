@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { dueRecipients, localDay } from "./automation-rules";
+import {
+  GRACE_AFTER_MS,
+  GRACE_BEFORE_MS,
+  dueRecipients,
+  localDay,
+} from "./automation-rules";
 import type { Appointment, Recipient } from "./audience-filter";
 
 const NOW = new Date("2026-09-05T12:00:00Z"); // 2026-09-05 in the Canaries
@@ -579,15 +584,12 @@ describe("appointment notices", () => {
   describe("before_visit", () => {
     const bookings = [person([appt("b1")])];
 
-    it("is due from N hours before the start until the start", () => {
+    it("is due from N hours before the start, for a short while", () => {
       expect(
         ids(run("before_visit", 24, bookings, "2026-12-10T09:00:00Z")),
       ).toEqual(["p1:b1"]);
       expect(
-        ids(run("before_visit", 24, bookings, "2026-12-10T20:00:00Z")),
-      ).toEqual(["p1:b1"]);
-      expect(
-        ids(run("before_visit", 24, bookings, "2026-12-11T08:59:59Z")),
+        ids(run("before_visit", 24, bookings, "2026-12-10T09:44:59Z")),
       ).toEqual(["p1:b1"]);
     });
 
@@ -598,10 +600,17 @@ describe("appointment notices", () => {
     });
 
     it("is not due once the visit has started: a reminder after the fact is no reminder", () => {
-      expect(run("before_visit", 24, bookings, "2026-12-11T09:00:00Z")).toEqual(
+      // A short notice, so the bound does not hide the start.
+      const nearly = [
+        person([appt("b1", { startsAt: "2026-12-11T09:00:00.000Z" })]),
+      ];
+      expect(
+        run("before_visit", 1, nearly, "2026-12-11T08:30:00Z"),
+      ).toHaveLength(1);
+      expect(run("before_visit", 1, nearly, "2026-12-11T09:00:00Z")).toEqual(
         [],
       );
-      expect(run("before_visit", 24, bookings, "2026-12-11T12:00:00Z")).toEqual(
+      expect(run("before_visit", 1, nearly, "2026-12-11T12:00:00Z")).toEqual(
         [],
       );
     });
@@ -609,8 +618,8 @@ describe("appointment notices", () => {
     it("does not reach back before the campaign was switched on", () => {
       // The moment to tell her (Dec 10, 09:00) passed before activation.
       expect(
-        run("before_visit", 24, bookings, "2026-12-10T12:00:00Z", {
-          activatedAt: "2026-12-10T10:00:00Z",
+        run("before_visit", 24, bookings, "2026-12-10T09:40:00Z", {
+          activatedAt: "2026-12-10T09:10:00Z",
         }),
       ).toEqual([]);
     });
@@ -618,7 +627,7 @@ describe("appointment notices", () => {
     it("but a moment that falls exactly on the activation counts", () => {
       expect(
         ids(
-          run("before_visit", 24, bookings, "2026-12-10T12:00:00Z", {
+          run("before_visit", 24, bookings, "2026-12-10T09:40:00Z", {
             activatedAt: "2026-12-10T09:00:00Z",
           }),
         ),
@@ -631,8 +640,8 @@ describe("appointment notices", () => {
       ];
       // 24 h before 15:00 was yesterday 15:00; activation is today at noon.
       expect(
-        run("before_visit", 24, soon, "2026-12-10T12:00:00Z", {
-          activatedAt: "2026-12-10T12:00:00Z",
+        run("before_visit", 24, soon, "2026-12-10T09:40:00Z", {
+          activatedAt: "2026-12-10T09:40:00Z",
         }),
       ).toEqual([]);
     });
@@ -642,19 +651,19 @@ describe("appointment notices", () => {
         person([
           appt("b1"),
           appt("b2", {
-            startsAt: "2026-12-11T10:00:00.000Z",
+            startsAt: "2026-12-11T09:30:00.000Z",
             visit: {
               service: "Masaje",
               sessionType: null,
               date: WINTER,
-              time: "10:00",
+              time: "09:30",
             },
           }),
           appt("b3", { startsAt: "2026-12-20T09:00:00.000Z" }),
         ]),
       ];
       expect(
-        ids(run("before_visit", 24, many, "2026-12-10T12:00:00Z")),
+        ids(run("before_visit", 24, many, "2026-12-10T09:40:00Z")),
       ).toEqual(["p1:b1", "p1:b2"]);
     });
 
@@ -669,21 +678,21 @@ describe("appointment notices", () => {
             appt("x3", { status: "completed" }),
           ]),
         ],
-        "2026-12-10T12:00:00Z",
+        "2026-12-10T09:40:00Z",
       );
       expect(out).toEqual([]);
     });
 
     it("the cycle is the booking: one notice per booking, the same every time it is asked", () => {
-      const first = run("before_visit", 24, bookings, "2026-12-10T12:00:00Z");
-      const again = run("before_visit", 24, bookings, "2026-12-10T12:15:00Z");
+      const first = run("before_visit", 24, bookings, "2026-12-10T09:40:00Z");
+      const again = run("before_visit", 24, bookings, "2026-12-10T09:41:00Z");
       expect(ids(first)).toEqual(ids(again));
       expect(first[0]?.cycle).toBe("b1");
     });
 
     it("two bookings of one client are two cycles", () => {
       const two = [person([appt("b1"), appt("b2")])];
-      const cycles = run("before_visit", 24, two, "2026-12-10T12:00:00Z").map(
+      const cycles = run("before_visit", 24, two, "2026-12-10T09:40:00Z").map(
         (d) => d.cycle,
       );
       expect(cycles).toEqual(["b1", "b2"]);
@@ -711,14 +720,14 @@ describe("appointment notices", () => {
     it("hours that are not a whole number of at least one owe nothing", () => {
       for (const hours of [undefined, 0, -2, 1.5]) {
         expect(
-          run("before_visit", hours, bookings, "2026-12-10T12:00:00Z"),
+          run("before_visit", hours, bookings, "2026-12-10T09:40:00Z"),
         ).toEqual([]);
       }
     });
 
     it("a client with no appointments is owed nothing", () => {
       expect(
-        run("before_visit", 24, [r({ id: "p1" })], "2026-12-10T12:00:00Z"),
+        run("before_visit", 24, [r({ id: "p1" })], "2026-12-10T09:40:00Z"),
       ).toEqual([]);
     });
   });
@@ -739,15 +748,16 @@ describe("appointment notices", () => {
     });
 
     it("does not reach back before the campaign was switched on", () => {
+      // End 10:00 plus two hours: the moment is 12:00 on the 11th.
       expect(
-        run("after_visit", 2, bookings, "2026-12-12T09:00:00Z", {
-          activatedAt: "2026-12-12T00:00:00Z",
+        run("after_visit", 2, bookings, "2026-12-11T13:00:00Z", {
+          activatedAt: "2026-12-11T12:30:00Z",
         }),
       ).toEqual([]);
       expect(
         ids(
-          run("after_visit", 2, bookings, "2026-12-12T09:00:00Z", {
-            activatedAt: "2026-12-11T12:00:00Z",
+          run("after_visit", 2, bookings, "2026-12-11T13:00:00Z", {
+            activatedAt: "2026-12-11T11:00:00Z",
           }),
         ),
       ).toEqual(["p1:b1"]);
@@ -829,7 +839,7 @@ describe("appointment notices", () => {
     ];
 
     it("with services chosen, only the bookings of those services, not the whole client", () => {
-      const out = run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+      const out = run("before_visit", 24, mixed, "2026-12-10T09:40:00Z", {
         services: ["svc-2"],
       });
       expect(out.map((d) => d.cycle)).toEqual(["b"]);
@@ -837,14 +847,14 @@ describe("appointment notices", () => {
 
     it("with none chosen, every booking", () => {
       expect(
-        run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+        run("before_visit", 24, mixed, "2026-12-10T09:40:00Z", {
           services: [],
         }).map((d) => d.cycle),
       ).toEqual(["a", "b", "c"]);
     });
 
     it("a booking with no service is not one of the chosen services", () => {
-      const out = run("before_visit", 24, mixed, "2026-12-10T12:00:00Z", {
+      const out = run("before_visit", 24, mixed, "2026-12-10T09:40:00Z", {
         services: ["svc-1", "svc-2"],
       });
       expect(out.map((d) => d.cycle)).toEqual(["a", "b"]);
@@ -857,7 +867,7 @@ describe("appointment notices", () => {
         "before_visit",
         24,
         [person([appt("b1")], { language: "es" })],
-        "2026-12-10T12:00:00Z",
+        "2026-12-10T09:40:00Z",
       );
       expect(es?.vars).toEqual({
         service: "Drenaje linfático",
@@ -869,7 +879,7 @@ describe("appointment notices", () => {
         "before_visit",
         24,
         [person([appt("b1")], { language: "en" })],
-        "2026-12-10T12:00:00Z",
+        "2026-12-10T09:40:00Z",
       );
       expect(en?.vars?.date).toBe("Friday, 11 December 2026");
     });
@@ -882,17 +892,17 @@ describe("appointment notices", () => {
           person([
             appt("b1"),
             appt("b2", {
-              startsAt: "2026-12-11T10:00:00.000Z",
+              startsAt: "2026-12-11T09:30:00.000Z",
               visit: {
                 service: "Masaje",
                 sessionType: null,
                 date: WINTER,
-                time: "10:00",
+                time: "09:30",
               },
             }),
           ]),
         ],
-        "2026-12-10T12:00:00Z",
+        "2026-12-10T09:40:00Z",
       );
       expect(out.map((d) => d.vars?.service)).toEqual([
         "Drenaje linfático",
@@ -912,7 +922,7 @@ describe("appointment notices", () => {
             }),
           ]),
         ],
-        "2026-12-10T12:00:00Z",
+        "2026-12-10T09:40:00Z",
       );
       expect(out?.vars).not.toHaveProperty("time");
       expect(out?.vars).not.toHaveProperty("service");
@@ -926,8 +936,129 @@ describe("appointment notices", () => {
         trigger: { event: "segment_entry" },
         recipients: [person([appt("b1")])],
         activatedAt: ACTIVATED_AT,
-        now: new Date("2026-12-10T12:00:00Z"),
+        now: new Date("2026-12-10T09:40:00Z"),
       }).map((d) => d.cycle),
     ).toEqual([""]);
+  });
+});
+
+describe("appointment notices: how late one may still go", () => {
+  const ACTIVATED = "2026-11-01T00:00:00Z";
+  const MIN = 60_000;
+  const HOUR = 3_600_000;
+  const iso = (ms: number) => new Date(ms).toISOString();
+
+  const START = Date.parse("2026-12-11T09:00:00.000Z");
+  const END = START + HOUR;
+  const appt = (id: string, startsAt = START, endsAt = END): Appointment => ({
+    id,
+    serviceId: "svc-1",
+    status: "confirmed",
+    startsAt: iso(startsAt),
+    endsAt: iso(endsAt),
+    visit: {
+      service: "Drenaje",
+      sessionType: null,
+      date: "2026-12-11",
+      time: "09:00",
+    },
+  });
+  const person = (...appointments: Appointment[]): Recipient =>
+    r({ id: "p1", language: "es", appointments });
+  const due = (
+    event: "before_visit" | "after_visit",
+    hours: number,
+    recipients: Recipient[],
+    nowMs: number,
+  ) =>
+    dueRecipients({
+      trigger: { event, hours },
+      recipients,
+      activatedAt: ACTIVATED,
+      now: new Date(nowMs),
+    }).map((d) => d.cycle);
+
+  it("the bounds are 45 minutes before and 3 hours after", () => {
+    expect(GRACE_BEFORE_MS).toBe(45 * MIN);
+    expect(GRACE_AFTER_MS).toBe(3 * HOUR);
+  });
+
+  describe("before_visit", () => {
+    const moment = START - 24 * HOUR;
+
+    it("goes out in the 45 minutes after its moment, and no later", () => {
+      const who = [person(appt("b1"))];
+      expect(due("before_visit", 24, who, moment - 1)).toEqual([]);
+      expect(due("before_visit", 24, who, moment)).toEqual(["b1"]);
+      expect(due("before_visit", 24, who, moment + 45 * MIN)).toEqual(["b1"]);
+      expect(due("before_visit", 24, who, moment + 45 * MIN + 1)).toEqual([]);
+    });
+
+    it("a booking confirmed 30 minutes before it starts sets off none of the 48, 24 and 2 hour campaigns", () => {
+      const lastMinute = [person(appt("late"))];
+      const now = START - 30 * MIN;
+      for (const hours of [48, 24, 2]) {
+        expect(due("before_visit", hours, lastMinute, now)).toEqual([]);
+      }
+    });
+
+    it("and one confirmed an hour and a half before sets off only the 2 hour one's own moment, which has passed too", () => {
+      const now = START - 90 * MIN;
+      // 2 hours before was 30 minutes ago: still inside the bound.
+      expect(due("before_visit", 2, [person(appt("late"))], now)).toEqual([
+        "late",
+      ]);
+      expect(due("before_visit", 24, [person(appt("late"))], now)).toEqual([]);
+    });
+
+    it("a cron that was down for longer than the bound loses the reminder rather than sending it late", () => {
+      const who = [person(appt("b1"))];
+      expect(due("before_visit", 24, who, moment + 2 * HOUR)).toEqual([]);
+    });
+
+    it("is the bound on the moment, not on the hours: it is the same for a 2 and a 300 hour notice", () => {
+      for (const hours of [2, 300]) {
+        const m = START - hours * HOUR;
+        expect(
+          due("before_visit", hours, [person(appt("b1"))], m + 45 * MIN),
+        ).toEqual(["b1"]);
+        expect(
+          due("before_visit", hours, [person(appt("b1"))], m + 46 * MIN),
+        ).toEqual([]);
+      }
+    });
+  });
+
+  describe("after_visit", () => {
+    const moment = END + 2 * HOUR;
+
+    it("goes out in the 3 hours after its moment, and no later", () => {
+      const who = [person(appt("b1"))];
+      expect(due("after_visit", 2, who, moment - 1)).toEqual([]);
+      expect(due("after_visit", 2, who, moment)).toEqual(["b1"]);
+      expect(due("after_visit", 2, who, moment + 3 * HOUR)).toEqual(["b1"]);
+      expect(due("after_visit", 2, who, moment + 3 * HOUR + 1)).toEqual([]);
+    });
+
+    it("a campaign paused for three days and resumed does not send three days of arrears", () => {
+      const who = [person(appt("b1"))];
+      const resumedAt = moment + 3 * 24 * HOUR;
+      expect(due("after_visit", 2, who, resumedAt)).toEqual([]);
+    });
+
+    it("tolerates a cron that was down for an hour or two", () => {
+      const who = [person(appt("b1"))];
+      expect(due("after_visit", 2, who, moment + 2 * HOUR)).toEqual(["b1"]);
+    });
+
+    it("is still bound by the activation: nothing from before it", () => {
+      const out = dueRecipients({
+        trigger: { event: "after_visit", hours: 2 },
+        recipients: [person(appt("b1"))],
+        activatedAt: iso(moment + 1),
+        now: new Date(moment + HOUR),
+      });
+      expect(out).toEqual([]);
+    });
   });
 });

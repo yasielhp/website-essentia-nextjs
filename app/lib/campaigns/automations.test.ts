@@ -150,13 +150,14 @@ describe("runAutomation for an appointment notice", () => {
     id,
     serviceId: "svc-1",
     status: "confirmed" as const,
-    startsAt: "2026-11-18T09:00:00.000Z",
-    endsAt: "2026-11-18T10:00:00.000Z",
+    // 24 hours before this is 11:30 on the 17th: 30 minutes before NOW.
+    startsAt: "2026-11-18T11:30:00.000Z",
+    endsAt: "2026-11-18T12:30:00.000Z",
     visit: {
       service: "Drenaje linfático",
       sessionType: "Sesión individual",
       date: "2026-11-18",
-      time: "09:00",
+      time: "11:30",
     },
     ...over,
   });
@@ -205,12 +206,12 @@ describe("runAutomation for an appointment notice", () => {
         withAppointments(1, [
           appt("b1"),
           appt("b2", {
-            startsAt: "2026-11-18T11:00:00.000Z",
+            startsAt: "2026-11-18T11:45:00.000Z",
             visit: {
               service: "Masaje",
               sessionType: null,
               date: "2026-11-18",
-              time: "11:00",
+              time: "11:45",
             },
           }),
         ]),
@@ -225,7 +226,7 @@ describe("runAutomation for an appointment notice", () => {
     );
     expect(rows[0]?.vars).toMatchObject({
       service: "Drenaje linfático",
-      time: "09:00",
+      time: "11:30",
     });
     expect(rows[1]?.vars).toMatchObject({ service: "Masaje" });
     expect(options).toEqual({
@@ -251,16 +252,16 @@ describe("runAutomation for an appointment notice", () => {
     const mem = memoryDb(rowsOf(0), { campaign: notice() });
     const result = await runAutomation(notice(), NOW, {
       db: mem.db,
-      // 09:00 tomorrow is 21 hours away; the notice is due 24 hours before.
+      // The visit is at 11:30 tomorrow: the notice was due at 11:30 today.
       resolveAudience: async () =>
         [
           withAppointments(1, [
-            appt("b1", { startsAt: "2026-11-18T09:00:00.000Z" }),
+            appt("b1", { startsAt: "2026-11-18T11:30:00.000Z" }),
           ]),
         ].map((r) => r),
     });
-    // NOW is 12:00 on the 17th: 24 h before 09:00 on the 18th was 09:00 on the
-    // 17th, three hours ago, after activation: due.
+    // NOW is 12:00 on the 17th: 24 h before 11:30 on the 18th was 11:30 on the
+    // 17th, half an hour ago, after activation and inside the bound: due.
     expect(result.queued).toBe(1);
     const far = memoryDb(rowsOf(0), { campaign: notice() });
     const none = await runAutomation(notice(), NOW, {
@@ -278,14 +279,14 @@ describe("runAutomation for an appointment notice", () => {
   test("does not reach back before it was switched on", async () => {
     const mem = memoryDb(rowsOf(0), { campaign: notice() });
     const result = await runAutomation(
-      notice({ activated_at: "2026-11-17T11:00:00Z" }),
+      notice({ activated_at: "2026-11-17T11:40:00Z" }),
       NOW,
       {
         db: mem.db,
         resolveAudience: async () => [withAppointments(1, [appt("b1")])],
       },
     );
-    // The moment (09:00 on the 17th) is before the activation (11:00).
+    // The moment (11:30 on the 17th) is before the activation (11:40).
     expect(result.queued).toBe(0);
   });
 
