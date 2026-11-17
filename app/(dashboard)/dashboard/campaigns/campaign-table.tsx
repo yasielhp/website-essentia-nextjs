@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
+import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { Pagination } from "@/components/dashboard/pagination";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
 import type { CampaignChannel, CampaignRow } from "@/types/campaign";
@@ -152,42 +153,58 @@ export function CampaignTable({
           </div>
 
           {/* Mobile cards */}
-          <div className="divide-sand-100 divide-y md:hidden">
+          <ul className="divide-sand-100 divide-y md:hidden">
             {campaigns.map((campaign) => {
               const sent = sentCount(campaign);
               return (
-                <button
+                <MobileRowCard
                   key={campaign.id}
-                  type="button"
-                  onClick={() => onOpen(campaign)}
-                  className="hover:bg-sand-50 flex w-full items-center justify-between px-5 py-4 text-left transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-petroleum-700 flex items-center gap-2 font-medium">
-                      <span className="truncate">{campaign.name}</span>
-                      <ChannelChip channel={campaign.channel} />
-                    </p>
+                  title={
+                    // The card opens the campaign: the name is the button, as
+                    // tall as a thumb needs, and it wraps instead of cutting.
+                    <button
+                      type="button"
+                      onClick={() => onOpen(campaign)}
+                      className="focus-visible:ring-petroleum-500 min-h-11 w-full rounded text-left break-words focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      {campaign.name}
+                    </button>
+                  }
+                  description={
                     <CampaignKindLine
                       kind={campaign.kind}
                       trigger={campaign.trigger}
                     />
-                    <p className="text-petroleum-400 text-xs">
-                      {formatMediumDate(dateOf(campaign), locale)}
-                      {sent > 0 && (
-                        <>
-                          {" · "}
-                          {sent} · {rate(campaign.delivered_count, sent)}
-                        </>
-                      )}
-                    </p>
+                  }
+                  facts={[
+                    {
+                      label: t("table.status"),
+                      value: <CampaignStatusBadge status={campaign.status} />,
+                    },
+                    {
+                      label: t("table.date"),
+                      value: formatMediumDate(dateOf(campaign), locale),
+                    },
+                    {
+                      label: t("table.recipients"),
+                      value:
+                        campaign.recipients_count > 0
+                          ? campaign.recipients_count
+                          : "—",
+                    },
+                    {
+                      label: t("table.delivered"),
+                      value: rate(campaign.delivered_count, sent),
+                    },
+                  ]}
+                >
+                  <div>
+                    <ChannelChip channel={campaign.channel} />
                   </div>
-                  <div className="ml-4 shrink-0">
-                    <CampaignStatusBadge status={campaign.status} />
-                  </div>
-                </button>
+                </MobileRowCard>
               );
             })}
-          </div>
+          </ul>
 
           <Pagination
             page={page}
