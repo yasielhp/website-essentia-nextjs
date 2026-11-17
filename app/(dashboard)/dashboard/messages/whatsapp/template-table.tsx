@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
 import { hasStaleSync } from "@/lib/whatsapp/template-ui";
@@ -132,42 +133,51 @@ export function TemplateTable({
           </div>
 
           {/* Mobile cards */}
-          <div className="divide-sand-100 divide-y md:hidden">
+          <ul className="divide-sand-100 divide-y md:hidden">
             {templates.map((template) => (
-              <div
+              <MobileRowCard
                 key={template.id}
-                onClick={() => onOpen(template)}
-                className="hover:bg-sand-50 flex w-full cursor-pointer items-start justify-between gap-4 px-5 py-4 transition-colors"
-              >
-                <div className="min-w-0">
+                title={
+                  // The card opens the template: the name is the button, as tall
+                  // as a thumb needs.
                   <button
                     type="button"
-                    className="text-petroleum-700 text-left font-medium break-all"
+                    onClick={() => onOpen(template)}
+                    className="text-petroleum-700 focus-visible:ring-petroleum-500 min-h-11 w-full rounded text-left font-medium break-all focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {template.name}
                   </button>
-                  <p className="text-petroleum-400 text-xs">
-                    {languageLabel(template.language)} ·{" "}
-                    {categoryLabel(template.category)} ·{" "}
-                    {formatMediumDate(template.updated_at, locale)}
-                  </p>
-                  {template.unsupported_reason && (
-                    <UnsupportedNote
-                      reason={template.unsupported_reason}
-                      className="mt-1.5"
-                    />
-                  )}
-                </div>
-                <div className="shrink-0 text-right">
-                  <TemplateStatusBadge status={template.status} />
-                  <StatusNotes
-                    template={template}
-                    stale={hasStaleSync(template, lastSync, configured)}
-                  />
-                </div>
-              </div>
+                }
+                facts={[
+                  {
+                    label: t("table.language"),
+                    value: languageLabel(template.language),
+                  },
+                  {
+                    label: t("table.category"),
+                    value: categoryLabel(template.category),
+                  },
+                  { label: t("table.params"), value: template.param_count },
+                  {
+                    label: t("table.updated"),
+                    value: formatMediumDate(template.updated_at, locale),
+                  },
+                  {
+                    label: t("table.status"),
+                    value: <TemplateStatusBadge status={template.status} />,
+                  },
+                ]}
+              >
+                <StatusNotes
+                  template={template}
+                  stale={hasStaleSync(template, lastSync, configured)}
+                />
+                {template.unsupported_reason && (
+                  <UnsupportedNote reason={template.unsupported_reason} />
+                )}
+              </MobileRowCard>
             ))}
-          </div>
+          </ul>
         </>
       )}
     </div>
