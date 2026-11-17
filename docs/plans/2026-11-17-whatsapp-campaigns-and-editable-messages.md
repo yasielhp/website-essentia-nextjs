@@ -28,7 +28,7 @@
 **Restricciones de Meta que fijan el diseño** (no negociables, ver https://developers.facebook.com/docs/whatsapp/cloud-api):
 
 1. Fuera de la ventana de 24 h tras el último mensaje del cliente, **solo** se pueden enviar plantillas aprobadas. Una campaña es siempre una plantilla. El texto se escribe en el dashboard, se sube a Meta por API y hay que esperar la aprobación (minutos a días).
-2. Las plantillas de categoría `MARKETING` exigen opt-in explícito del destinatario. Lo guardamos en `contacts.whatsapp_opted_in_at`. Sin opt-in, la audiencia excluye al contacto.
+2. Las plantillas de categoría `MARKETING` exigen opt-in explícito del destinatario. Lo guardamos en `contacts.whatsapp_marketing_opted_in_at` (los avisos de cita usan `whatsapp_opted_in_at`, ver "Decisiones tomadas durante la ejecución"). Sin opt-in, la audiencia excluye al contacto.
 3. Cada mensaje de plantilla tiene coste por país y categoría. No se inventan cifras en el dashboard: se enlaza a la página de precios de Meta y se muestra el recuento de destinatarios antes de enviar.
 4. Un "STOP" o "BAJA" entrante debe respetarse. El webhook lo procesa y estampa `whatsapp_opted_out_at`.
 
@@ -65,6 +65,15 @@ Este bloque manda sobre cualquier tarea de abajo que lo contradiga. Salió de re
 6. Task 13: `startsAt` se construye en Atlantic/Canary, no en UTC. `before_visit` y el recordatorio de la Task 21 se solapan: se avisa en el formulario.
 7. Task 18: los templates antiguos quedan como respaldo hasta el final. Solo `booking_reminder` se puede apagar.
 8. Task 3: se extrae el constructor del cuerpo y un test fija la forma que usa hoy el aviso a staff.
+
+**Decisiones tomadas durante la ejecución (2026-11-17)**
+
+- **Dos consentimientos de WhatsApp, no uno.** La revisión de la Task 7 vio que el texto de la casilla solo cubre confirmación y recordatorio de la cita, y que usar esa misma columna para marketing no estaría amparado ni por el RGPD (finalidades separadas) ni por Meta (opt-in específico para plantillas de marketing). Por tanto:
+  - `contacts.whatsapp_opted_in_at`: avisos **transaccionales** de la cita (confirmación y recordatorio, Task 21).
+  - `contacts.whatsapp_marketing_opted_in_at` (columna nueva, Task 7b): **campañas y automatizaciones** (Tasks 10, 12, 15). Casilla propia, sin marcar por defecto.
+  - `contacts.whatsapp_opted_out_at` es una sola baja para todo: STOP o BAJA bloquea ambos usos. Marcar cualquiera de las casillas la limpia, igual que la regla actual.
+  - El webhook (Task 5) busca contactos con CUALQUIERA de los dos opt-in vigentes al procesar una baja.
+- **Se elimina el trigger `before_visit` de la Task 13.** Solapaba con el recordatorio transaccional de la Task 21 (doble mensaje) y el recordatorio de cita es transaccional, no marketing. La Task 13 se queda con las variables de reserva (`vars`) en `after_booking` y `first_visit`.
 
 ---
 
@@ -1385,6 +1394,8 @@ git commit -m "feat(campaigns): a campaign has a channel; a WhatsApp one is a te
 
 ### Task 10: Audiencia por canal (puro + resolver)
 
+> **Corrección (ejecución):** la audiencia de WhatsApp exige `whatsapp_marketing_opted_in_at` puesto (no `whatsapp_opted_in_at`) y `whatsapp_opted_out_at` vacío. El resto de la tarea no cambia. `loadCandidates` selecciona `whatsapp_marketing_opted_in_at` y `whatsapp_opted_out_at`.
+
 Para `whatsapp`: solo contactos con teléfono E.164 válido, `whatsapp_opted_in_at` puesto y `whatsapp_opted_out_at` vacío. El email deja de ser obligatorio.
 
 **Files:**
@@ -1674,6 +1685,8 @@ git commit -m "feat(campaigns): a WhatsApp campaign sends its template to every 
 ---
 
 ### Task 13: Reglas de automatización — variables de la reserva y un trigger "antes de la cita"
+
+> **Corrección (ejecución): NO se implementa `before_visit`.** Se omiten el trigger, su test, su regla, su opción en el paso del trigger, su esquema y su i18n, y el aviso de solape. Se hace solo lo demás: `vars` de la última visita (`service`, `session_type`, `date`, `time`) en `after_booking` y `first_visit`, la siguiente reserva no hace falta, y la corrección de zona horaria Atlantic/Canary para fecha y hora. El recordatorio de cita es la Task 21.
 
 Para que una automatización de WhatsApp pueda decir "tu sesión de {{2}} es el {{3}} a las {{4}}", las reglas `after_booking` y `first_visit` deben poner `vars`. Y el caso de uso número uno de WhatsApp es el recordatorio, así que se añade `before_visit` (horas antes).
 
@@ -2041,6 +2054,8 @@ Commit: `feat(dashboard): transactional emails are edited, previewed and tested 
 
 ### Task 21: Enviar la plantilla elegida en los eventos de reserva
 
+> **Corrección (ejecución):** estos avisos son transaccionales: exigen `whatsapp_opted_in_at` puesto y `whatsapp_opted_out_at` vacío (no el consentimiento de marketing).
+
 Con `message_templates` (channel `whatsapp`) el admin asocia, por ejemplo, `booking_confirmed/es` a la plantilla aprobada `cita_confirmada` y mapea `{{1}}`→nombre, `{{2}}`→servicio, `{{3}}`→fecha, `{{4}}`→hora.
 
 **Files:**
@@ -2083,7 +2098,7 @@ Commit: `docs: campaigns by channel, editable messages and the WhatsApp go-live 
 | Riesgo                                                      | Mitigación                                                                                                                          |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Plantilla rechazada o pausada por Meta en mitad de un envío | `sendQueuedWhatsApp` solo envía con `APPROVED`; el webhook actualiza el estado; la campaña queda `failed` con `last_error` legible. |
-| Enviar marketing sin opt-in (bloqueo de la cuenta por Meta) | La audiencia excluye sin `whatsapp_opted_in_at`; STOP/BAJA estampa la baja; categoría visible al crear la plantilla.                |
+| Enviar marketing sin opt-in (bloqueo de la cuenta por Meta) | La audiencia excluye sin `whatsapp_marketing_opted_in_at`; STOP/BAJA estampa la baja; categoría visible al crear la plantilla.      |
 | Doble envío al reanudar                                     | Mismo mecanismo que email: solo filas `queued`; índice único `(campaign_id, phone, cycle)`.                                         |
 | Un admin edita un email y rompe el HTML                     | El cuerpo es un documento Maily, no HTML; los bloques con lógica (tarjeta, botones) son fijos; "Restablecer" vuelve al default.     |
 | Variables desconocidas en un texto                          | `unknownVariables` en validación; chips con las permitidas.                                                                         |
