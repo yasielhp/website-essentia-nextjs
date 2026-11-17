@@ -1270,7 +1270,9 @@
         "body": "<name></name> and all their associated bookings and registrations will be permanently deleted."
       },
       "errors": {
-        "saveFailed": "Failed to save contact."
+        "saveFailed": "The contact could not be saved.",
+        "saveInvalid": "The contact details are not valid.",
+        "emailTaken": "Another contact already has this email."
       },
       "campaigns": {
         "tab": "Campaigns",

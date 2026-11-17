@@ -1270,7 +1270,9 @@
         "body": "<name></name> y todas sus reservas e inscripciones asociadas se eliminarán permanentemente."
       },
       "errors": {
-        "saveFailed": "No se pudo guardar el contacto."
+        "saveFailed": "No se pudo guardar el contacto.",
+        "saveInvalid": "Los datos del contacto no son válidos.",
+        "emailTaken": "Otro contacto ya tiene ese correo."
       },
       "campaigns": {
         "tab": "Campañas",

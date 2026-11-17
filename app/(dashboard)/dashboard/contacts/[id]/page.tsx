@@ -34,6 +34,7 @@ import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
 import { BonusesSection } from "./bonuses-section";
 import { ConsentSection } from "./consent-section";
+import { contactSaveError } from "./save-error";
 import { WhatsAppConsentRows } from "./whatsapp-consent-rows";
 import type { ContactConsentColumns } from "@/lib/whatsapp/consent";
 import { fetchContactConsent } from "@/actions/consent";
@@ -330,10 +331,22 @@ function ContactDetailPageInner() {
     dispatchForm({ type: "SAVING_END" });
 
     if (updateErrorMsg) {
-      dispatchForm({
-        type: "SET_ERROR",
-        error: updateErrorMsg ?? t("errors.saveFailed"),
-      });
+      // The action answers in one of three fixed English sentences; the panel
+      // says them in its own language, and a repeated address goes by its field.
+      const kind = contactSaveError(updateErrorMsg);
+      if (kind === "emailTaken") {
+        dispatchForm({
+          type: "SET_FIELD_ERRORS",
+          errors: { email: t("errors.emailTaken") },
+        });
+      } else {
+        dispatchForm({
+          type: "SET_ERROR",
+          error: t(
+            kind === "invalid" ? "errors.saveInvalid" : "errors.saveFailed",
+          ),
+        });
+      }
       return;
     }
 
