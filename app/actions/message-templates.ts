@@ -18,6 +18,8 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type { MessageRow } from "@/lib/messages/compose";
 import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
+import { editorIds, editorNames, withEditors } from "@/lib/messages/editors";
+import { buildPreviewEmail } from "@/lib/messages/preview";
 import { readRows } from "@/lib/messages/rows";
 import { rehearseRender } from "@/lib/messages/rehearsal";
 import { toRowPayload, validateMessageTemplate } from "@/lib/messages/schema";
@@ -72,7 +74,7 @@ const addressSchema = z.object({
 });
 
 const ROW_COLUMNS =
-  "key, channel, locale, enabled, subject, preheader, title, doc, whatsapp_template_id, whatsapp_params, updated_at";
+  "key, channel, locale, enabled, subject, preheader, title, doc, whatsapp_template_id, whatsapp_params, updated_at, updated_by";
 
 /**
  * Every saved message, what the editor opens with when nothing is saved (the
@@ -117,11 +119,31 @@ export async function listMessageTemplates(accessToken: string | null): Promise<
       key,
       ...MESSAGE_CATALOG[key],
     }));
+    // Who saved each row, by name. A profile that cannot be read leaves the
+    // name out; the list is still worth showing.
+    const raw = (data ?? []) as Record<string, unknown>[];
+    let names = new Map<string, string>();
+    const ids = editorIds(raw);
+    if (ids.length > 0) {
+      const profiles = await getAdminClient()
+        .database.from("profiles")
+        .select("id, first_name, full_name")
+        .in("id", ids);
+      if (!profiles.error) {
+        names = editorNames(
+          (profiles.data ?? []) as {
+            id: string;
+            first_name: string | null;
+            full_name: string | null;
+          }[],
+        );
+      }
+    }
     return {
       ok: true,
       // Rows are read, not trusted: a corrupt body is flagged and a row for a
       // key the catalogue does not know is left out.
-      rows: readRows((data ?? []) as unknown[]),
+      rows: withEditors(readRows(raw), raw, names),
       defaults,
       catalog,
     };
@@ -252,6 +274,75 @@ export async function saveMessageTemplate(
   } catch (err) {
     console.error("[messages] save failed:", err);
     return { ok: false, error: "db" };
+  }
+}
+
+/**
+ * The whole email as it would go out with a draft that is not saved, for the
+ * editor's live preview: the default text for what the draft leaves out, the
+ * admin's for what it carries, the fixed blocks with an example booking. Built
+ * by the very function the test email uses, so the two cannot differ.
+ *
+ * Writes nothing and reads nothing from the database. The draft is validated
+ * like a save (what the renderer would refuse, it refuses), and `draft` takes
+ * only the four text fields: the switch and the channel are not the preview's.
+ * The booking is made up; no personal data is in the answer.
+ */
+export async function previewMessage(
+  accessToken: string | null,
+  key: string,
+  locale: string,
+  draft: unknown,
+): Promise<{ ok: true; subject: string; html: string } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+  const address = addressSchema
+    .pick({ key: true, locale: true })
+    .safeParse({ key, locale });
+  if (!address.success) return { ok: false, error: "invalid" };
+
+  const fields =
+    typeof draft === "object" && draft !== null && !Array.isArray(draft)
+      ? (draft as Record<string, unknown>)
+      : {};
+  const parsed = validateMessageTemplate({
+    key: address.data.key,
+    channel: "email",
+    locale: address.data.locale,
+    subject: fields.subject,
+    preheader: fields.preheader,
+    title: fields.title,
+    doc: fields.doc,
+  });
+  if (!parsed.ok) {
+    return {
+      ok: false,
+      error: "invalid",
+      fieldErrors: parsed.fieldErrors,
+      ...(parsed.unknownVariables
+        ? { detail: parsed.unknownVariables.join(", ").slice(0, DETAIL_MAX) }
+        : {}),
+    };
+  }
+  if (parsed.data.channel !== "email") return { ok: false, error: "invalid" };
+
+  try {
+    const built = await buildPreviewEmail(
+      address.data.key,
+      address.data.locale,
+      parsed.data.content,
+    );
+    return { ok: true, ...built };
+  } catch (err) {
+    console.error("[messages] preview could not be built:", err);
+    return {
+      ok: false,
+      error: "invalid",
+      fieldErrors: { doc: "docNotRenderable" },
+    };
   }
 }
 

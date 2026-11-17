@@ -21,6 +21,8 @@ export type MessageTemplateRowView = {
   whatsapp_template_id: string | null;
   whatsapp_params: WhatsAppParamSource[];
   updated_at: string;
+  /** Who saved it, by name; null when unknown (or the profile is gone). */
+  updated_by_name?: string | null;
   /**
    * The saved body was not a document: `doc` is null and the editor should say
    * so instead of showing an empty message as if it were the admin's.
