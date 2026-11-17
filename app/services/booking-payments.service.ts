@@ -10,6 +10,7 @@ import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { notifyStaffOfPaidBooking } from "@/lib/bookings/notify-staff-paid";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
+import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
 
 /**
  * Records money received through Redsys and notifies the client.
@@ -209,6 +210,26 @@ export async function handleBookingPaid(
 
   if (error) {
     console.error("[handleBookingPaid] email failed:", error);
+  }
+
+  // The WhatsApp confirmation, last and only for the FIRST payment: unlike the
+  // email, a deposit followed by the balance must not message the client twice.
+  // It needs a saved WhatsApp row for this message and the client's
+  // booking-notice consent, costs one read when there is none, and never
+  // throws.
+  if (firstPayment) {
+    try {
+      await notifyClientOnWhatsApp({
+        bookingId,
+        key: "booking_paid",
+        event: "paid",
+        locale,
+        actorRole: "system",
+      });
+    } catch (err) {
+      // It does not throw; this is for the day it does.
+      console.error("[handleBookingPaid] client WhatsApp failed:", err);
+    }
   }
 }
 

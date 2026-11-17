@@ -13,6 +13,7 @@ import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
+import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
 
 export type BookingNotificationEvent =
   "received" | "confirmed" | "cancelled" | "rescheduled";
@@ -374,6 +375,29 @@ export async function notifyBookingCore(
         }),
         ...actor,
       });
+    }
+  }
+
+  // ── Client WhatsApp ──────────────────────────────────────────────
+  // Last, after everything above has been done and recorded: it is a second
+  // channel for the same confirmation, and it only goes out for a client who
+  // gave the booking-notice consent, to a template the admin chose for this
+  // message. With none saved it costs one read. It never throws.
+  if (event === "confirmed") {
+    try {
+      await notifyClientOnWhatsApp({
+        bookingId,
+        key: "booking_confirmed",
+        event: "confirmed",
+        // Only the caller's own word: when it did not say (the dashboard's
+        // edit form), the client's stored language decides, not the `"en"`
+        // the email falls back to.
+        locale: payload.locale,
+        ...actor,
+      });
+    } catch (err) {
+      // It does not throw; this is for the day it does.
+      console.error("[notifyBooking] client WhatsApp failed:", err);
     }
   }
 }
