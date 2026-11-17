@@ -14,8 +14,25 @@ import type { Recipient } from "./audience-filter";
 export const MAX_PARAM_LENGTH = 1000;
 const EMPTY = "—";
 
-function clean(value: string | null | undefined): string {
-  const flat = (value ?? "").replace(/\s+/g, " ").trim();
+// Zero-width characters and the byte order mark: invisible, so a value made of
+// them would pass for text and reach Meta as an empty parameter.
+const INVISIBLE = /[\u200B-\u200D\uFEFF]/g;
+const CONTROL = /\p{Cc}/gu;
+
+/**
+ * Takes `unknown` on purpose: `vars` and the recipient come out of jsonb
+ * columns, and a number or a null stored there must not throw and abort the
+ * whole send.
+ */
+function clean(value: unknown): string {
+  const flat = String(value ?? "")
+    .replace(INVISIBLE, "")
+    // Whitespace (newlines, tabs, NBSP, U+2028…) becomes a space before the
+    // remaining control characters are deleted, so "a\nb" stays two words.
+    .replace(/\s+/g, " ")
+    .replace(CONTROL, "")
+    .replace(/\s+/g, " ")
+    .trim();
   // Counted in characters, not UTF-16 units, so an emoji is never cut in two.
   const cut = Array.from(flat).slice(0, MAX_PARAM_LENGTH).join("").trimEnd();
   return cut === "" ? EMPTY : cut;
