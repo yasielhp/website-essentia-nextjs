@@ -371,12 +371,7 @@ export function MessageEditor({
   };
   const docLines = docErrorLines(problems.fieldErrors);
 
-  const textInput = (
-    field: TextField,
-    label: string,
-    hint?: string,
-    autoFocus = false,
-  ) => {
+  const textInput = (field: TextField, label: string, hint?: string) => {
     const id = `message-${field}`;
     const error = fieldError(field);
     return (
@@ -392,7 +387,6 @@ export function MessageEditor({
           type="text"
           value={current[field]}
           disabled={saving}
-          data-autofocus={autoFocus ? "" : undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={
             [error ? `${id}-error` : null, hint ? `${id}-hint` : null]

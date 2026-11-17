@@ -1686,7 +1686,6 @@
         "localeEn": "Inglés",
         "template": "Plantilla",
         "templatePlaceholder": "Elige una plantilla",
-        "loading": "Cargando plantillas…",
         "loadFailed": "No se pudieron cargar las plantillas.",
         "notConfigured": "WhatsApp Business no está configurado en el servidor: la prueba y el envío no funcionarán hasta que se configure.",
         "noneTitle": "Todavía no hay ninguna plantilla que se pueda usar en esta campaña.",

@@ -263,12 +263,7 @@ export function ResetControl({
       />
     );
   }
-  return (
-    <ResetButton
-      label={busy ? labels.working : labels.button}
-      onClick={() => setAsking(true)}
-    />
-  );
+  return <ResetButton label={labels.button} onClick={() => setAsking(true)} />;
 }
 
 /**

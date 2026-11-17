@@ -3,7 +3,8 @@ import { getSessionUser } from "@/actions/auth";
 import { MessagesTabs } from "./messages-tabs";
 
 /**
- * The texts the centre sends: WhatsApp templates today, editable emails later.
+ * The texts the centre sends: the messages that go out on their own (emails, and
+ * the WhatsApp notice of some) and the WhatsApp templates they and the campaigns use.
  *
  * Admin only, decided here rather than in the browser for the same reason as
  * Settings: the session cookie is readable on the server, so staff are sent

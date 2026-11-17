@@ -1686,7 +1686,6 @@
         "localeEn": "English",
         "template": "Template",
         "templatePlaceholder": "Choose a template",
-        "loading": "Loading templates…",
         "loadFailed": "The templates could not be loaded.",
         "notConfigured": "WhatsApp Business is not set up on the server: the test and the send will not work until it is.",
         "noneTitle": "There is no template yet that can be used in this campaign.",

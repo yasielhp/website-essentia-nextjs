@@ -526,3 +526,13 @@ describe("what the team is told about a WhatsApp account that is not connected",
     );
   });
 });
+
+describe("dead strings", () => {
+  test("the WhatsApp step's 'loading' text, which nothing read, is gone", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(
+        locales[locale]["campaigns.form.whatsapp.loading"],
+      ).toBeUndefined();
+    }
+  });
+});
