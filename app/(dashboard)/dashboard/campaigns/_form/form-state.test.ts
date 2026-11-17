@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CampaignRow } from "@/types/campaign";
+import type { CampaignRow, SegmentConditions } from "@/types/campaign";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 import {
   AVAILABLE_KINDS,
@@ -454,7 +454,7 @@ describe("leaving a hand-made list for another segment", () => {
   const filter = { ...base, language: "es" as const };
   const choose = (
     state: FormState,
-    conditions: typeof list | typeof filter,
+    conditions: SegmentConditions,
     id: string | null = "seg",
   ) =>
     formReducer(state, {
