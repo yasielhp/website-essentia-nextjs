@@ -24,6 +24,27 @@ import { pruneAuthEvents } from "@/lib/auth-security";
 const WINDOW_START_HOURS = 40;
 const WINDOW_END_HOURS = 56;
 
+// Stated like the other crons', so the one-by-one resend below has a limit to
+// stay inside of.
+export const maxDuration = 60;
+
+/**
+ * No email of a one-by-one resend starts later than this after the run began:
+ * it leaves the last request, the stamps to take back and the answer their
+ * time before the function is cut off.
+ */
+const ONE_BY_ONE_DEADLINE_MS = 45_000;
+/** Comfortably under Resend's two requests a second. */
+const ONE_BY_ONE_PAUSE_MS = 600;
+/** Refusals in a row after which a one-by-one resend stops asking. */
+const STOP_AFTER_REFUSALS = 3;
+
+/** A booking whose reminder is owed, with the email written for it. */
+type Due = {
+  id: string;
+  email: Parameters<typeof sendEmailBatch>[0][number];
+};
+
 type Row = {
   id: string;
   email: string | null;
@@ -92,10 +113,7 @@ async function handle(request: NextRequest) {
   }
 
   let skipped = 0;
-  const due: {
-    id: string;
-    email: Parameters<typeof sendEmailBatch>[0][number];
-  }[] = [];
+  const due: Due[] = [];
 
   // The saved reminder, read once for the whole run: every booking in it gets
   // the same message. A failed read is the same as no saved reminder.
@@ -280,52 +298,125 @@ async function handle(request: NextRequest) {
     rejected,
   } = await sendEmailBatch(toSend.map((item) => item.email));
 
-  // A send that failed after the stamp is not a quiet loss either way.
-  if (sendError) {
-    const unsent = toSend.filter((_, index) => !ids[index]).map((b) => b.id);
+  if (!sendError) {
+    return NextResponse.json({ ok: true, sent, skipped });
+  }
 
-    // Resend itself turned the emails down (a 4xx): nothing of them left, so
-    // the stamp of the bookings with no email is taken back and the next run
-    // tries them again, while they are still inside the window.
-    if (rejected && unsent.length > 0) {
-      const { error: unstampError } = await db
-        .from("bookings")
-        .update({ reminder_sent_at: null })
-        .in("id", unsent);
-      if (!unstampError) {
-        console.error(
-          "[cron/booking-reminders] batch refused:",
-          sendError,
-          "- stamp taken back, to be tried again:",
-          unsent.join(", "),
-        );
-        return NextResponse.json(
-          { error: "Send refused", sent, skipped, retry: unsent },
-          { status: 500 },
-        );
-      }
+  // A send that failed after the stamp is not a quiet loss, whichever way.
+  const noId = toSend.filter((_, index) => !ids[index]);
+  let delivered = sent;
+  /** Resend refused them, or they were not tried: nothing left, the stamp goes. */
+  let refused: string[] = [];
+  /** May have left all the same: the stamp stays. */
+  let doubtful: string[] = [];
+
+  if (!rejected) {
+    // A request with no answer, a 5xx: Resend may have sent the lot.
+    doubtful = noId.map((item) => item.id);
+  } else if (toSend.length === 1) {
+    refused = noId.map((item) => item.id);
+  } else {
+    // Resend validates a lot as a whole, so ONE address it does not like
+    // turns the whole lot down, every hour that booking spends in the window,
+    // and everybody in its slot goes without a reminder. Nothing of a refused
+    // lot left, so it is sent again here, one email at a time: whoever goes out
+    // keeps the stamp, and the one Resend refuses alone is the one to name.
+    const alone = await sendOneByOne(noId, now + ONE_BY_ONE_DEADLINE_MS);
+    delivered += alone.sent;
+    refused = alone.refused;
+    doubtful = alone.doubtful;
+  }
+
+  // The stamp of whoever certainly got nothing is taken back: the next run
+  // tries them again, while they are still inside the window.
+  if (refused.length > 0) {
+    const { error: unstampError } = await db
+      .from("bookings")
+      .update({ reminder_sent_at: null })
+      .in("id", refused);
+    if (unstampError) {
       console.error(
         "[cron/booking-reminders] stamp could not be taken back:",
         unstampError,
       );
+      doubtful = [...doubtful, ...refused];
+      refused = [];
+    } else {
+      console.error(
+        "[cron/booking-reminders] refused:",
+        sendError,
+        "- stamp taken back, to be tried again:",
+        refused.join(", "),
+      );
     }
+  }
 
-    // Anything else (a request with no answer, a 5xx) may have been sent all
-    // the same, so the stamp is kept: a duplicate is worse than a missing
-    // reminder. The bookings are named in the log and the run answers a 500.
+  // Anything that may have been sent keeps its stamp: a duplicate is worse
+  // than a missing reminder. Those bookings are named in the log.
+  if (doubtful.length > 0) {
     console.error(
       "[cron/booking-reminders] batch failed:",
       sendError,
       "- stamped but not confirmed sent:",
-      unsent.join(", "),
-    );
-    return NextResponse.json(
-      { error: "Send failed", sent, skipped, unsent },
-      { status: 500 },
+      doubtful.join(", "),
     );
   }
 
-  return NextResponse.json({ ok: true, sent, skipped });
+  if (refused.length === 0 && doubtful.length === 0) {
+    return NextResponse.json({ ok: true, sent: delivered, skipped });
+  }
+  return NextResponse.json(
+    {
+      error: doubtful.length > 0 ? "Send failed" : "Send refused",
+      sent: delivered,
+      skipped,
+      ...(doubtful.length > 0 ? { unsent: doubtful } : {}),
+      ...(refused.length > 0 ? { retry: refused } : {}),
+    },
+    { status: 500 },
+  );
+}
+
+/**
+ * Sends each email of a lot Resend refused, alone, and says what became of
+ * each booking: sent, refused (nothing left: also the ones it did not get to),
+ * or doubtful (no answer, so it may have left).
+ *
+ * Bounded twice. By the clock: no email is started after `deadlineAt`, and
+ * what is left counts as refused, for the next hour. And by the answers: three
+ * refusals in a row are not one bad address but the account (a key Resend no
+ * longer takes, a limit), and asking for the rest would only repeat it.
+ */
+async function sendOneByOne(
+  items: Due[],
+  deadlineAt: number,
+): Promise<{ sent: number; refused: string[]; doubtful: string[] }> {
+  let sent = 0;
+  let refusedInARow = 0;
+  const refused: string[] = [];
+  const doubtful: string[] = [];
+  for (const [index, item] of items.entries()) {
+    if (refusedInARow >= STOP_AFTER_REFUSALS || Date.now() > deadlineAt) {
+      refused.push(item.id);
+      continue;
+    }
+    // Resend takes two requests a second.
+    if (index > 0) {
+      await new Promise((resolve) => setTimeout(resolve, ONE_BY_ONE_PAUSE_MS));
+    }
+    const one = await sendEmailBatch([item.email]);
+    if (one.ids[0]) {
+      sent += 1;
+      refusedInARow = 0;
+    } else if (one.error && !one.rejected) {
+      doubtful.push(item.id);
+      refusedInARow = 0;
+    } else {
+      refused.push(item.id);
+      refusedInARow += 1;
+    }
+  }
+  return { sent, refused, doubtful };
 }
 
 export async function POST(request: NextRequest) {

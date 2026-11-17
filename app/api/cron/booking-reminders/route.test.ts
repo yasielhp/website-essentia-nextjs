@@ -445,26 +445,26 @@ describe("booking reminders", () => {
     expect(unstamped).toEqual([]);
   });
 
-  test("a send Resend refused: the stamp of whoever got no email is taken back, for the next run to try again", async () => {
+  test("a lot of one that Resend refused: its stamp is taken back, for the next run to try again", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
-    bookingsInRun = [BOOKING, SECOND];
     mailer = (emails) => ({
-      sent: 1,
-      ids: [`re_${emails[0]!.to}`, null],
+      sent: 0,
+      ids: emails.map(() => null),
       error: "Too many requests",
       rejected: true,
     });
     const res = await run();
     const logged = quiet.mock.calls.length;
     quiet.mockRestore();
-    // Only the booking with no email: the other one has its reminder.
-    expect(unstamped).toEqual([["b-2"]]);
+    // Asked once: with nobody else in the lot there is nothing to tell apart.
+    expect(batches).toHaveLength(1);
+    expect(unstamped).toEqual([["b-1"]]);
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({
       error: "Send refused",
-      sent: 1,
+      sent: 0,
       skipped: 0,
-      retry: ["b-2"],
+      retry: ["b-1"],
     });
     expect(logged).toBeGreaterThan(0);
   });
@@ -497,5 +497,163 @@ describe("booking reminders", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, sent: 2, skipped: 0 });
     expect(bookingUpdates).toHaveLength(1);
+  });
+
+  describe("a lot Resend refused whole is sent again one by one", () => {
+    const THIRD = {
+      ...BOOKING,
+      id: "b-3",
+      email: "marta@example.test",
+      first_name: "Marta",
+      cancel_token: "tok-789",
+    };
+    const BAD = { ...SECOND, email: "luis@example" };
+    const refusal = (emails: Email[], error: string): Sent => ({
+      sent: 0,
+      ids: emails.map(() => null),
+      error,
+      rejected: true,
+    });
+    /** Resend validates a lot as a whole: one bad address and none of it goes. */
+    const strict =
+      (bad: string[]) =>
+      (emails: Email[]): Sent =>
+        emails.some((e) => bad.includes(e.to))
+          ? refusal(emails, "Invalid `to` field")
+          : takesAll(emails);
+
+    let timers: ReturnType<typeof spyOn>;
+    let quiet: ReturnType<typeof spyOn>;
+    beforeEach(() => {
+      // The pause between one email and the next, without the wait.
+      timers = spyOn(globalThis, "setTimeout").mockImplementation(((
+        fn: () => void,
+      ) => {
+        fn();
+        return 0;
+      }) as never);
+      quiet = spyOn(console, "error").mockImplementation(() => {});
+    });
+    const done = () => {
+      const lines = quiet.mock.calls.map((c: unknown[]) =>
+        c.map(String).join(" "),
+      );
+      timers.mockRestore();
+      quiet.mockRestore();
+      return lines;
+    };
+
+    test("three bookings and one bad address: two reminders go out, and the third is named and left to try again", async () => {
+      bookingsInRun = [BOOKING, BAD, THIRD];
+      mailer = strict([BAD.email]);
+      const res = await run();
+      const lines = done();
+      // The lot, then each of the three alone, in their order.
+      expect(batches.map((b) => b.map((e) => e.to))).toEqual([
+        [BOOKING.email, BAD.email, THIRD.email],
+        [BOOKING.email],
+        [BAD.email],
+        [THIRD.email],
+      ]);
+      // What went out alone is the very email of the lot.
+      expect(batches[1]).toEqual([legacy(BOOKING)]);
+      // Only the refused one loses its stamp; the two that left keep theirs.
+      expect(unstamped).toEqual([["b-2"]]);
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({
+        error: "Send refused",
+        sent: 2,
+        skipped: 0,
+        retry: ["b-2"],
+      });
+      expect(lines.some((l) => l.includes("b-2") && !l.includes("b-1"))).toBe(
+        true,
+      );
+    });
+
+    test("a lot refused for a moment (a rate limit) that then goes out one by one: everybody has their reminder", async () => {
+      bookingsInRun = [BOOKING, SECOND, THIRD];
+      let first = true;
+      mailer = (emails) => {
+        if (!first) return takesAll(emails);
+        first = false;
+        return refusal(emails, "Too many requests");
+      };
+      const res = await run();
+      done();
+      expect(unstamped).toEqual([]);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true, sent: 3, skipped: 0 });
+    });
+
+    test("one that gets no answer when sent alone keeps its stamp: it may have left", async () => {
+      bookingsInRun = [BOOKING, BAD, THIRD];
+      mailer = (emails) => {
+        if (emails.length === 1 && emails[0]!.to === THIRD.email) {
+          return {
+            sent: 0,
+            ids: [null],
+            error: "fetch failed",
+            rejected: false,
+          };
+        }
+        return strict([BAD.email])(emails);
+      };
+      const res = await run();
+      done();
+      expect(unstamped).toEqual([["b-2"]]);
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({
+        error: "Send failed",
+        sent: 1,
+        skipped: 0,
+        unsent: ["b-3"],
+        retry: ["b-2"],
+      });
+    });
+
+    test("three refused in a row is not one bad address: it stops asking and leaves the rest for the next run", async () => {
+      const FOURTH = { ...BOOKING, id: "b-4", email: "eva@example.test" };
+      const FIFTH = { ...BOOKING, id: "b-5", email: "sol@example.test" };
+      bookingsInRun = [BOOKING, SECOND, THIRD, FOURTH, FIFTH];
+      mailer = (emails) => refusal(emails, "API key is invalid");
+      const res = await run();
+      done();
+      // The lot and three alone; the other two are not asked for.
+      expect(batches).toHaveLength(4);
+      expect(unstamped).toEqual([["b-1", "b-2", "b-3", "b-4", "b-5"]]);
+      expect(await res.json()).toEqual({
+        error: "Send refused",
+        sent: 0,
+        skipped: 0,
+        retry: ["b-1", "b-2", "b-3", "b-4", "b-5"],
+      });
+    });
+
+    test("out of time half way: what was not tried loses its stamp too, for the next hour", async () => {
+      bookingsInRun = [BOOKING, BAD, THIRD];
+      const realNow = Date.now.bind(Date);
+      let ahead = 0;
+      const clock = spyOn(Date, "now").mockImplementation(
+        () => realNow() + ahead,
+      );
+      mailer = (emails) => {
+        const answer = strict([BAD.email])(emails);
+        // The first email alone takes the rest of the function's time.
+        if (emails.length === 1) ahead = 60_000;
+        return answer;
+      };
+      const res = await run();
+      clock.mockRestore();
+      done();
+      expect(batches).toHaveLength(2);
+      expect(unstamped).toEqual([["b-2", "b-3"]]);
+      expect(await res.json()).toEqual({
+        error: "Send refused",
+        sent: 1,
+        skipped: 0,
+        retry: ["b-2", "b-3"],
+      });
+    });
   });
 });
