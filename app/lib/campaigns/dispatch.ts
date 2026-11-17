@@ -45,22 +45,28 @@ export type DispatchResult =
       detail?: string;
     };
 
+type QueuedContact = {
+  first_name: string | null;
+  last_name: string | null;
+  unsubscribe_token: string | null;
+};
+
 export type QueuedRow = {
   id: string;
   contact_id: string | null;
-  email: string;
+  /** Null on a WhatsApp row, whose address is the phone. */
+  email: string | null;
+  /** E.164; null on an email row. */
+  phone: string | null;
   language: CampaignLocale;
   variant: "a" | "b" | null;
   vars: Record<string, string> | null;
   // The SDK types an embedded relation as an array even when it is one row.
-  contacts:
-    | { first_name: string | null; unsubscribe_token: string | null }
-    | { first_name: string | null; unsubscribe_token: string | null }[]
-    | null;
+  contacts: QueuedContact | QueuedContact[] | null;
 };
 
 export const QUEUED_FIELDS =
-  "id, contact_id, email, language, variant, vars, contacts(first_name, unsubscribe_token)";
+  "id, contact_id, email, phone, language, variant, vars, contacts(first_name, last_name, unsubscribe_token)";
 
 const one = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;
@@ -148,7 +154,8 @@ export async function sendQueued(
           locale: row.language,
         });
         return {
-          to: row.email,
+          // An email campaign's rows always carry the address.
+          to: row.email as string,
           subject,
           html,
           blindCopy: false,
