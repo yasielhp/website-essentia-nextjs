@@ -76,6 +76,7 @@ export function toE164(raw: string | null | undefined): string | null {
 }
 
 type MetaError = {
+  code?: number;
   message?: string;
   error_user_msg?: string;
   error_data?: { details?: string };
@@ -293,9 +294,11 @@ export async function sendTemplateMessage(
         failure?.error?.error_data?.details ??
         failure?.error?.message ??
         `HTTP ${response.status}`;
+      const code = failure?.error?.code;
       return {
         status: "failed",
         error: detail,
+        ...(typeof code === "number" ? { code } : {}),
         // A server error says nothing about whether the message was queued.
         ...(response.status >= 500 ? { ambiguous: true } : {}),
       };

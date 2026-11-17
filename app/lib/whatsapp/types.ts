@@ -33,6 +33,8 @@ export type WhatsAppSendResult =
   | {
       status: "failed";
       error: string;
+      /** Meta's numeric `error.code` when it sent one (131026, 132018…). */
+      code?: number;
       /**
        * True when Meta may have accepted the message anyway: the request threw
        * (timeout, dropped connection) or Meta answered 5xx. Retrying such a

@@ -382,8 +382,62 @@ describe("sending", () => {
         json({ error: { message: "Template not found", code: 132001 } }, 404),
       ]);
       const result = await sendTemplateMessage(send);
-      expect(result).toEqual({ status: "failed", error: "Template not found" });
+      expect(result).toEqual({
+        status: "failed",
+        error: "Template not found",
+        code: 132001,
+      });
       expect(result).not.toHaveProperty("ambiguous");
+    }));
+
+  test("carries Meta's numeric error code and leaves the text as it was", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([
+        json(
+          {
+            error: {
+              message: "generic",
+              code: 131026,
+              error_data: { details: "Message undeliverable" },
+            },
+          },
+          400,
+        ),
+      ]);
+      expect(await sendTemplateMessage(send)).toEqual({
+        status: "failed",
+        error: "Message undeliverable",
+        code: 131026,
+      });
+    }));
+
+  test("a 5xx with a code is both ambiguous and coded", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([json({ error: { message: "Oops", code: 2 } }, 500)]);
+      expect(await sendTemplateMessage(send)).toEqual({
+        status: "failed",
+        error: "Oops",
+        code: 2,
+        ambiguous: true,
+      });
+    }));
+
+  test("no code in the body, or one that is not a number, leaves the field out", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([
+        json({ error: { message: "m" } }, 400),
+        json({ error: { message: "m", code: "131026" } }, 400),
+        text("<html>", 400),
+      ]);
+      for (let i = 0; i < 3; i += 1) {
+        expect(await sendTemplateMessage(send)).not.toHaveProperty("code");
+      }
+    }));
+
+  test("a network failure has no code", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([new Error("socket hang up")]);
+      expect(await sendTemplateMessage(send)).not.toHaveProperty("code");
     }));
 
   test("a 4xx whose body is not JSON is still a refusal", () =>
