@@ -477,7 +477,7 @@ describe("dispatchCampaign: a few refusals do not stop a one-off send", () => {
     expect(mem.campaign.last_error).toBe("190: Access token expired");
     expect(
       mem.log.filter(
-        (q) => q.table === "campaign_recipients" && has(q.chain, "order"),
+        (q) => q.table === "campaign_recipients" && has(q.chain, "limit"),
       ),
     ).toHaveLength(0);
   });

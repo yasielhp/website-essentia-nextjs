@@ -25,6 +25,7 @@ import {
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
 import { conflictTarget, recipientRow } from "./recipient-rows";
 
@@ -437,19 +438,28 @@ export async function sendQueued(
   };
 }
 
-/** The rows of a campaign still waiting to go out. */
+/**
+ * The rows of a campaign still waiting to go out: all of them, or an error.
+ *
+ * Read a page at a time (the database answers at most a thousand rows whatever
+ * range is asked for, and a queue cut there was sent as if it were whole), in
+ * one total order: when the row was queued, then its id. A page that fails
+ * fails the read, so nobody mistakes the first thousand for the queue.
+ */
 export async function loadQueued(
   campaignId: string,
   db: Db = getAdminClient().database,
 ): Promise<QueuedRow[]> {
-  const { data, error } = await db
-    .from("campaign_recipients")
-    .select(QUEUED_FIELDS)
-    .eq("campaign_id", campaignId)
-    .eq("status", "queued")
-    .range(0, 9_999);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as QueuedRow[];
+  return readAllPages<QueuedRow>("[loadQueued] queue", (from, to) =>
+    db
+      .from("campaign_recipients")
+      .select(QUEUED_FIELDS)
+      .eq("campaign_id", campaignId)
+      .eq("status", "queued")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  ) as Promise<QueuedRow[]>;
 }
 
 /** Recounts the campaign's totals from its rows. */
@@ -674,12 +684,15 @@ export async function dispatchCampaign(
     }
   }
 
+  // A queue that cannot be read to its end is not sent in part, and the
+  // campaign is neither done nor failed: its audience is frozen and whole, so
+  // it stays `sending` with the reason and the cron's resume reads it again.
   let rows: QueuedRow[];
   try {
     rows = await loadQueued(campaignId, db);
   } catch (err) {
     const detail = (err as Error).message;
-    await markFailed(campaignId, detail, db);
+    await refreshCounts(campaignId, { last_error: `db: ${detail}` }, db);
     return { ok: false, error: "db", detail };
   }
 
@@ -767,25 +780,38 @@ export async function retryFailed(
     // Read first, update by id: PostgREST rejects an `or` filter on an UPDATE
     // ("column campaign_recipients.error does not exist"), but accepts it on a
     // read.
-    const [retryable, pending] = await Promise.all([
-      db
-        .from("campaign_recipients")
-        .select("id")
-        .eq("campaign_id", campaignId)
-        .eq("status", "failed")
-        .or(RETRYABLE_FAILURE_FILTER)
-        .range(0, 9_999),
-      db
-        .from("campaign_recipients")
-        .select("id", { count: "exact", head: true })
-        .eq("campaign_id", campaignId)
-        .eq("status", "queued"),
-    ]);
-    const readError = retryable.error ?? pending.error;
-    if (readError) return { ok: false, error: "db", detail: readError.message };
-    retryableIds = ((retryable.data ?? []) as { id: string }[]).map(
-      (row) => row.id,
-    );
+    //
+    // All of them, a page at a time, or none: the database answers at most a
+    // thousand rows, and a retry that saw only those would requeue a part and
+    // call it the whole. Nothing has been reopened yet, so a read that fails
+    // (or a list past the reader's cap) leaves the campaign exactly as it was
+    // and says why.
+    let retryable: { id: string }[];
+    try {
+      retryable = await readAllPages<{ id: string }>(
+        "[retryFailed] failures",
+        (from, to) =>
+          db
+            .from("campaign_recipients")
+            .select("id")
+            .eq("campaign_id", campaignId)
+            .eq("status", "failed")
+            .or(RETRYABLE_FAILURE_FILTER)
+            .order("id", { ascending: true })
+            .range(from, to),
+      );
+    } catch (err) {
+      return { ok: false, error: "db", detail: (err as Error).message };
+    }
+    const pending = await db
+      .from("campaign_recipients")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .eq("status", "queued");
+    if (pending.error) {
+      return { ok: false, error: "db", detail: pending.error.message };
+    }
+    retryableIds = retryable.map((row) => row.id);
     if (whatsapp && retryableIds.length === 0 && (pending.count ?? 0) === 0) {
       return { ok: false, error: "nothing_to_retry" };
     }

@@ -208,7 +208,7 @@ function withFinishedRows(mem: ReturnType<typeof memoryDb>) {
   return chainDb((table, chain) => {
     if (
       table === "campaign_recipients" &&
-      has(chain, "order") &&
+      has(chain, "limit") &&
       !has(chain, "update")
     ) {
       const limit = Number(argsOf(chain, "limit")?.[0] ?? Infinity);
@@ -386,7 +386,7 @@ describe("runAutomation: an automation Meta refuses a few rows at a time", () =>
     expect(mem.campaign.status).toBe("active");
     expect(
       mem.log.filter(
-        (q) => q.table === "campaign_recipients" && has(q.chain, "order"),
+        (q) => q.table === "campaign_recipients" && has(q.chain, "limit"),
       ),
     ).toHaveLength(0);
   });
