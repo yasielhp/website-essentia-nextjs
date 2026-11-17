@@ -1,12 +1,15 @@
+import {
+  REMINDER_WINDOW_END_HOURS,
+  REMINDER_WINDOW_START_HOURS,
+} from "@/lib/bookings/reminder-window";
 import { getAdminClient } from "@/lib/insforge-admin";
 import {
   CLIENT_BOOKING_COLUMNS,
   CONTACT_COLUMNS,
   bookingLocale,
   clientBookingOf,
-  clientPhone,
+  clientRecipient,
   deliverClientWhatsApp,
-  hasClientConsent,
   loadClientMessageRows,
   loadClientTemplate,
   makeClientDeps,
@@ -34,8 +37,8 @@ import type { WhatsAppTemplateRow } from "./types";
  */
 
 /** The same window as the email reminder: a session roughly two days away. */
-const WINDOW_START_HOURS = 40;
-const WINDOW_END_HOURS = 56;
+const WINDOW_START_HOURS = REMINDER_WINDOW_START_HOURS;
+const WINDOW_END_HOURS = REMINDER_WINDOW_END_HOURS;
 
 /**
  * The cron's whole run is `maxDuration` (60 s, as its siblings declare). What
@@ -170,8 +173,7 @@ export async function sendWhatsAppReminders(
         if (
           !row ||
           !reachesBack(booking.reminder_sent_at, row.updated_at) ||
-          !hasClientConsent(contact) ||
-          !clientPhone(contact, facts)
+          !clientRecipient(contact, facts)
         ) {
           result.none += 1;
           continue;

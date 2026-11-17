@@ -7,6 +7,7 @@ import type { TemplateSend } from "./client";
 import {
   bookingLocale,
   clientPhone,
+  clientRecipient,
   decideClientWhatsApp,
   deliverClientWhatsApp,
   hasClientConsent,
@@ -130,6 +131,31 @@ describe("clientPhone", () => {
       clientPhone({ ...CONTACT, phone: "123" }, { ...BOOKING, phone: "" }),
     ).toBeNull();
     expect(clientPhone(null, { ...BOOKING, phone: null })).toBeNull();
+  });
+});
+
+describe("clientRecipient", () => {
+  it("is the number when the client may be written to, and null when she may not", () => {
+    expect(clientRecipient(CONTACT, BOOKING)).toBe("+34611222333");
+    expect(clientRecipient(null, BOOKING)).toBeNull();
+    expect(
+      clientRecipient({ ...CONTACT, whatsapp_opted_in_at: null }, BOOKING),
+    ).toBeNull();
+    expect(
+      clientRecipient(
+        { ...CONTACT, whatsapp_opted_out_at: "2026-11-02T00:00:00Z" },
+        BOOKING,
+      ),
+    ).toBeNull();
+    expect(
+      clientRecipient(
+        { ...CONTACT, whatsapp_unreachable_at: "2026-11-02T00:00:00Z" },
+        BOOKING,
+      ),
+    ).toBeNull();
+    expect(
+      clientRecipient({ ...CONTACT, phone: null }, { ...BOOKING, phone: null }),
+    ).toBeNull();
   });
 });
 
@@ -720,6 +746,8 @@ type Answers = {
   suppressed?: string[];
   /** The list cannot be read (the table does not exist yet). */
   suppressedError?: boolean;
+  /** Reading the contact fails. */
+  contactError?: boolean;
 };
 
 function loaderHarness(
@@ -740,6 +768,9 @@ function loaderHarness(
     if (table === "bookings")
       return { data: answers.booking ?? null, error: null };
     if (table === "contacts") {
+      if (answers.contactError) {
+        return { data: null, error: { message: "boom" } };
+      }
       const f = filters(chain);
       return {
         data:
@@ -842,6 +873,19 @@ describe("notifyClientOnWhatsApp", () => {
     await notifyClientOnWhatsApp(input, h.deps);
     const contacts = h.log.filter((q) => q.table === "contacts");
     expect(filters(contacts[0]!.chain)).toEqual({ email: "ana@example.test" });
+  });
+
+  it("a contact read that fails is logged, and nothing is sent on a guess", async () => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    const h = loaderHarness({ ...full, contactError: true });
+    await notifyClientOnWhatsApp(input, h.deps);
+    const logs = logged.mock.calls.filter((c) =>
+      String(c[0]).includes("contact read failed"),
+    );
+    logged.mockRestore();
+    expect(logs.length).toBeGreaterThan(0);
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
   });
 
   it("a number on the STOP list is not written to, whatever the consent says", async () => {

@@ -7,6 +7,10 @@ import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
 import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
 import {
+  REMINDER_WINDOW_END_HOURS,
+  REMINDER_WINDOW_START_HOURS,
+} from "@/lib/bookings/reminder-window";
+import {
   reminderBudgetMs,
   sendWhatsAppReminders,
 } from "@/lib/whatsapp/reminders";
@@ -25,8 +29,8 @@ import {
  * repeatedly could flood a client's inbox, so the stamp on the row is both a
  * de-duplicator and a rate limit.
  */
-const WINDOW_START_HOURS = 40;
-const WINDOW_END_HOURS = 56;
+const WINDOW_START_HOURS = REMINDER_WINDOW_START_HOURS;
+const WINDOW_END_HOURS = REMINDER_WINDOW_END_HOURS;
 
 type Row = {
   id: string;

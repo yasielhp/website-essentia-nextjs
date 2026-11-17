@@ -1,12 +1,8 @@
-import { whatsappTemplateEligibility } from "@/lib/campaigns/whatsapp-eligibility";
-import type { TemplateIssue } from "@/lib/campaigns/whatsapp-eligibility";
-import { resolveParams } from "@/lib/campaigns/whatsapp-params";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type {
   BookingEventActorRole,
   BookingEventInput,
 } from "@/lib/booking-events/types";
-import { formatLongDate } from "@/lib/format-date";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, type MessageKey } from "@/lib/messages/catalog";
 import type { CampaignLocale } from "@/types/campaign";
@@ -15,15 +11,18 @@ import {
   sendTemplateMessage,
   type TemplateSend,
 } from "./client";
-import { toCampaignPhone } from "./phone";
+import {
+  bookingLocale,
+  clientRecipient,
+  decideClientWhatsApp,
+  type ClientBooking,
+  type ClientContact,
+  type ClientMessageRow,
+  type ClientSkipReason,
+  type ClientWhatsAppEvent,
+} from "./client-decision";
 import { isPhoneSuppressed } from "./suppression";
-import { renderPreview } from "./templates";
-import type {
-  WhatsAppParamField,
-  WhatsAppParamSource,
-  WhatsAppSendResult,
-  WhatsAppTemplateRow,
-} from "./types";
+import type { WhatsAppSendResult, WhatsAppTemplateRow } from "./types";
 
 /**
  * WhatsApp to the CLIENT about her own booking: the confirmation, the paid
@@ -53,214 +52,9 @@ import type {
  * carries no role check and writes the history.
  */
 
-export type ClientWhatsAppEvent = "confirmed" | "paid" | "reminded";
-
-/** The saved `message_templates` row of a WhatsApp message, as it is read. */
-export type ClientMessageRow = {
-  locale?: string | null;
-  /** When the admin last saved it. The reminder does not reach back before it. */
-  updated_at?: string | null;
-  enabled: boolean | null;
-  whatsapp_template_id: string | null;
-  /** jsonb: whatever is stored. It is checked before it is used. */
-  whatsapp_params: unknown;
-};
-
-export type ClientContact = {
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  preferred_language: string | null;
-  whatsapp_opted_in_at: string | null;
-  whatsapp_opted_out_at: string | null;
-  whatsapp_unreachable_at: string | null;
-};
-
-export type ClientBooking = {
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  service_title: string | null;
-  /** The session type's label, when the booking has one. */
-  tier_label: string | null;
-  /** YYYY-MM-DD, as stored. */
-  date: string;
-  /** `HH:MM`, or `HH:MM:SS` as Postgres hands it back. */
-  time: string;
-};
-
-/** Why a chosen template could not be sent, beyond the template's own state. */
-export type ClientSkipReason =
-  | TemplateIssue
-  | "params_invalid"
-  /** A URL button with a `{{n}}` suffix: nothing here fills it. */
-  | "button_params";
-
-export type ClientWhatsAppDecision =
-  | { kind: "none" }
-  | { kind: "skip"; reason: ClientSkipReason; to: string }
-  | {
-      kind: "send";
-      to: string;
-      send: TemplateSend;
-      params: string[];
-      /** The body as the client reads it. */
-      preview: string;
-      template: WhatsAppTemplateRow;
-    };
-
-/**
- * The language of a booking: the one the caller knows, else the contact's
- * stored preference, else Spanish, the house default.
- */
-export function bookingLocale(
-  payloadLocale: string | null | undefined,
-  contactLanguage: string | null | undefined,
-): CampaignLocale {
-  for (const candidate of [payloadLocale, contactLanguage]) {
-    if (candidate === "en" || candidate === "es") return candidate;
-  }
-  return "es";
-}
-
-/** The booking-notice consent, with neither the opt-out nor the unreachable stamp. */
-export function hasClientConsent(contact: ClientContact | null): boolean {
-  return Boolean(
-    contact &&
-    contact.whatsapp_opted_in_at &&
-    !contact.whatsapp_opted_out_at &&
-    !contact.whatsapp_unreachable_at,
-  );
-}
-
-/**
- * The number to write to: the one typed on the booking when it is valid, else
- * the contact's. Null when neither is a number the database accepts.
- */
-export function clientPhone(
-  contact: Pick<ClientContact, "phone"> | null,
-  booking: Pick<ClientBooking, "phone">,
-): string | null {
-  return toCampaignPhone(booking.phone) ?? toCampaignPhone(contact?.phone);
-}
-
-// Every field a source may name; a field added to the type is a type error here.
-const PARAM_FIELDS: Record<WhatsAppParamField, true> = {
-  first_name: true,
-  last_name: true,
-  service: true,
-  session_type: true,
-  date: true,
-  time: true,
-  post_title: true,
-  post_url: true,
-};
-
-/** The stored parameter list as sources, or null when it is not one. */
-function readSources(value: unknown): WhatsAppParamSource[] | null {
-  if (!Array.isArray(value)) return null;
-  const sources: WhatsAppParamSource[] = [];
-  for (const item of value) {
-    if (typeof item !== "object" || item === null) return null;
-    const source = item as Record<string, unknown>;
-    if (
-      source.kind === "field" &&
-      typeof source.field === "string" &&
-      source.field in PARAM_FIELDS
-    ) {
-      sources.push({
-        kind: "field",
-        field: source.field as WhatsAppParamField,
-      });
-    } else if (source.kind === "static" && typeof source.value === "string") {
-      sources.push({ kind: "static", value: source.value });
-    } else {
-      return null;
-    }
-  }
-  return sources;
-}
-
-export function decideClientWhatsApp(input: {
-  key: MessageKey;
-  locale: CampaignLocale;
-  row: ClientMessageRow | null;
-  template: WhatsAppTemplateRow | null;
-  contact: ClientContact | null;
-  booking: ClientBooking;
-  /**
-   * The number said STOP at some point (`whatsapp_suppressed_phones`), on any
-   * contact or none. It beats any consent: the consent is on a contact, and
-   * the number may belong to somebody else.
-   */
-  phoneSuppressed: boolean;
-}): ClientWhatsAppDecision {
-  const { key, locale, row, template, contact, booking } = input;
-  const definition = MESSAGE_CATALOG[key];
-  if (!definition.whatsappEligible) return { kind: "none" };
-  if (!row || !row.whatsapp_template_id) return { kind: "none" };
-  // Only a message that can be switched off can be switched off: for the rest
-  // the switch is ignored, as it is for the email.
-  if (row.enabled === false && definition.canDisable) return { kind: "none" };
-
-  if (!hasClientConsent(contact)) return { kind: "none" };
-  const to = clientPhone(contact, booking);
-  if (!to) return { kind: "none" };
-  if (input.phoneSuppressed) return { kind: "none" };
-
-  // From here the client would have been messaged: a template that cannot be
-  // sent is the admin's to fix, and shows.
-  const sources = readSources(row.whatsapp_params);
-  if (!sources) return { kind: "skip", reason: "params_invalid", to };
-  const issue = whatsappTemplateEligibility(template, locale, sources);
-  if (issue || !template) {
-    return { kind: "skip", reason: issue ?? "template_missing", to };
-  }
-
-  // Our send fills the body and no button. A button whose address ends in a
-  // `{{n}}` would be refused by Meta every time, so it is a misconfiguration
-  // to show, not a message to try.
-  if (
-    template.buttons.some(
-      (button) => button.type === "URL" && button.url.includes("{{"),
-    )
-  ) {
-    return { kind: "skip", reason: "button_params", to };
-  }
-
-  const clean = (value: string | null | undefined) => (value ?? "").trim();
-  const vars: Record<string, string> = {
-    service: clean(booking.service_title),
-    session_type: clean(booking.tier_label),
-    // The same long date, with the weekday, the staff notice uses.
-    date: formatLongDate(booking.date, locale),
-    time: clean(booking.time).slice(0, 5),
-  };
-  const params = resolveParams(
-    sources,
-    {
-      id: "",
-      email: "",
-      language: locale,
-      firstName: clean(contact?.first_name) || clean(booking.first_name),
-      lastName: clean(contact?.last_name) || clean(booking.last_name),
-    },
-    vars,
-  );
-  return {
-    kind: "send",
-    to,
-    params,
-    preview: renderPreview(template.body, params),
-    template,
-    send: {
-      to,
-      name: template.name,
-      language: template.language,
-      bodyParams: params,
-    },
-  };
-}
+// The decision half lives in `client-decision.ts`; everything is re-exported
+// from here so callers and tests keep one import.
+export * from "./client-decision";
 
 // ── effects ────────────────────────────────────────────────────────────────
 
@@ -314,8 +108,11 @@ const SKIP_TEXT: Record<ClientSkipReason, string> = {
  *
  * `claim` is for the reminder: it must stamp the booking with a conditional
  * update and answer whether THIS run won it. It is taken after the decision
- * (a booking that would get nothing is not stamped) and before anything is
- * sent or written, so two overlapping runs cannot both send. One that throws
+ * and before anything is sent or written, so two overlapping runs cannot both
+ * send. A booking that would get NOTHING (no consent, no number, a number that
+ * said STOP, a row switched off) is not claimed and so not stamped. One whose
+ * template cannot be sent IS claimed: its single `skipped` entry is written
+ * once, and the booking is not looked at again every hour. One that throws
  * counts as lost: better no message than two.
  */
 export async function deliverClientWhatsApp(
@@ -524,20 +321,24 @@ async function loadClientContact(
   email: string | null,
   contactId: string | null,
 ): Promise<ClientContact | null> {
+  // A read that fails is logged and treated as "no contact": nobody is written
+  // to on a guess, and the reason is in the log instead of nowhere.
   if (email) {
-    const { data } = await db
+    const { data, error } = await db
       .from("contacts")
       .select(CONTACT_COLUMNS)
       .eq("email", email.trim().toLowerCase())
       .maybeSingle();
+    if (error) console.error("[whatsapp/client] contact read failed:", error);
     if (data) return data as ClientContact;
   }
   if (contactId) {
-    const { data } = await db
+    const { data, error } = await db
       .from("contacts")
       .select(CONTACT_COLUMNS)
       .eq("id", contactId)
       .maybeSingle();
+    if (error) console.error("[whatsapp/client] contact read failed:", error);
     if (data) return data as ClientContact;
   }
   return null;
@@ -596,7 +397,7 @@ export async function notifyClientOnWhatsApp(
 
     // Consent and a number first: a template is not even read for a client
     // who would not be messaged.
-    if (!hasClientConsent(contact) || !clientPhone(contact, booking)) return;
+    if (!clientRecipient(contact, booking)) return;
     const template = await loadClientTemplate(
       deps.db,
       row.whatsapp_template_id,
