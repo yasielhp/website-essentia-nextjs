@@ -118,6 +118,12 @@ const STATE_RANK: Record<string, number> = {
 };
 
 /**
+ * Ceiling for the contacts read when looking for the person behind a STOP.
+ * `range(0, n)` is inclusive, so a full page holds n + 1 rows.
+ */
+const OPT_OUT_MAX_ROWS = 9_999;
+
+/**
  * The elements of `value` that are objects, or none when it is not an array.
  *
  * The body is signed, not trusted to have the shape the types promise: a `null`
@@ -215,7 +221,7 @@ export async function POST(req: NextRequest) {
       const language = value?.message_template_language;
       if (!name || !language) continue;
 
-      const { error } = await db
+      const { data: written, error } = await db
         .from("whatsapp_templates")
         .update({
           status,
@@ -225,8 +231,16 @@ export async function POST(req: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("name", name)
-        .eq("language", language);
+        .eq("language", language)
+        .select("id");
       if (error) throw error;
+      // One line, not an error: the account may hold templates this site never
+      // created, and Meta reports on all of them.
+      if (!written || written.length === 0) {
+        console.warn(
+          `[webhooks/whatsapp] template review for an unknown template: ${name}/${language}`,
+        );
+      }
     } catch (err) {
       console.error(
         "[webhooks/whatsapp] could not record template review:",
@@ -238,35 +252,45 @@ export async function POST(req: NextRequest) {
   // Opt-outs. The centre answers WhatsApp by hand, but a STOP has to be
   // honoured by the machine: it stamps the contact and every audience from now
   // on leaves them out. Only text is read, and nothing inbound is stored.
-  const optOutSenders = new Set<string>();
-  for (const change of changes) {
-    for (const message of objectsIn<MetaInboundMessage>(
-      change.value?.messages,
-    )) {
-      if (message.type !== "text" || !message.from) continue;
-      if (isOptOutText(message.text?.body)) optOutSenders.add(message.from);
+  // Everything from here to the `statuses` block must not be able to throw: a
+  // STOP that blows up would cost the delivery states in the same payload.
+  try {
+    const optOutSenders = new Set<string>();
+    for (const change of changes) {
+      for (const message of objectsIn<MetaInboundMessage>(
+        change.value?.messages,
+      )) {
+        if (message.type !== "text" || typeof message.from !== "string") {
+          continue;
+        }
+        if (isOptOutText(message.text?.body)) optOutSenders.add(message.from);
+      }
     }
-  }
-  if (optOutSenders.size > 0) {
-    try {
+
+    if (optOutSenders.size > 0) {
       // Phones are stored however a form wrote them, so they are compared in
       // code. Only contacts that can still be unsubscribed are read: an
       // opted-out contact keeps their original date, and a contact who never
       // opted in has nothing to withdraw. At this centre's volume reading them
       // all once per payload is cheap.
+      //
+      // The SDK cuts a read short without saying so, which here would mean a
+      // STOP silently ignored. The range is the same ceiling `audience.ts`
+      // uses; hitting it is logged so it is noticed long before it matters.
       const { data, error } = await db
         .from("contacts")
         .select("id, phone")
         .not("whatsapp_opted_in_at", "is", null)
-        .is("whatsapp_opted_out_at", null);
+        .is("whatsapp_opted_out_at", null)
+        .range(0, OPT_OUT_MAX_ROWS);
       if (error) throw error;
 
       const optedIn = (data ?? []) as { id: string; phone: string | null }[];
-      const ids = [
-        ...new Set(
-          [...optOutSenders].flatMap((from) => matchOptOut(from, optedIn)),
-        ),
-      ];
+      if (optedIn.length > OPT_OUT_MAX_ROWS) {
+        console.warn("[webhooks/whatsapp] opt-out contact list hit the cap");
+      }
+
+      const ids = matchOptOut([...optOutSenders], optedIn);
       if (ids.length > 0) {
         const { error: updateError } = await db
           .from("contacts")
@@ -276,9 +300,9 @@ export async function POST(req: NextRequest) {
           .is("whatsapp_opted_out_at", null);
         if (updateError) throw updateError;
       }
-    } catch (err) {
-      console.error("[webhooks/whatsapp] could not record opt-outs:", err);
     }
+  } catch (err) {
+    console.error("[webhooks/whatsapp] could not record opt-outs:", err);
   }
 
   const statuses = changes.flatMap((change) =>

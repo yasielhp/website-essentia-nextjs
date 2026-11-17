@@ -25,6 +25,16 @@ describe("isOptOutText", () => {
     expect(isOptOutText("dar de baja")).toBe(false);
     expect(isOptOutText("stop please")).toBe(false);
   });
+  test("a body that is not a string never throws and is not an opt-out", () => {
+    for (const body of [123, {}, [], ["STOP"], true, null, undefined]) {
+      expect(isOptOutText(body)).toBe(false);
+    }
+  });
+  test("a long text is never an opt-out, even when it wraps the word", () => {
+    expect(isOptOutText(`${" ".repeat(30)}STOP`)).toBe(false);
+    expect(isOptOutText("STOP".padEnd(21, "."))).toBe(false);
+    expect(isOptOutText("STOP".padEnd(20, "."))).toBe(true);
+  });
   test("empty or missing text is not an opt-out", () => {
     expect(isOptOutText("")).toBe(false);
     expect(isOptOutText("   ")).toBe(false);
@@ -69,6 +79,17 @@ describe("matchOptOut", () => {
   test("a sender that is not a usable number matches nothing", () => {
     expect(matchOptOut("", contacts)).toEqual([]);
     expect(matchOptOut("abc", contacts)).toEqual([]);
+  });
+  test("several senders at once, each one's contacts exactly once", () => {
+    expect(
+      matchOptOut(
+        ["34611998877", "34600112233", "34611998877"],
+        contacts,
+      ).sort(),
+    ).toEqual(["a", "b", "c", "d", "e", "f"]);
+  });
+  test("a sender that is not a string matches nothing", () => {
+    expect(matchOptOut([123 as never, "34611998877"], contacts)).toEqual(["f"]);
   });
   test("accepts a sender that already carries a plus sign", () => {
     expect(matchOptOut("+34600112233", contacts)).toHaveLength(5);
