@@ -8,6 +8,7 @@ import {
 } from "@/lib/whatsapp/failure";
 import { inBatches } from "@/lib/whatsapp/batch";
 import { matchByPhone } from "@/lib/whatsapp/match";
+import { recordOptOutSuppression } from "@/lib/whatsapp/suppression";
 import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
 import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 
@@ -338,6 +339,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (optOutSenders.size > 0) {
+      // The NUMBER is remembered first and whether or not any contact matches
+      // it: the opt-out below is per contact, and a number that a stranger put
+      // on someone else's booking has no contact of its own to withdraw. A
+      // failure here (the table is created by a migration) is logged and does
+      // not stop the contacts' opt-out or the delivery states.
+      await recordOptOutSuppression(db, [...optOutSenders]);
+
       // Phones are stored however a form wrote them, so they are compared in
       // code. Only contacts that can still be unsubscribed are read: one who
       // already opted out keeps their original date, and one who holds neither
