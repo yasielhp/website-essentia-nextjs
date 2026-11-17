@@ -9,14 +9,16 @@ import type {
   CampaignRow,
 } from "@/types/campaign";
 import { isWhatsAppConfigured } from "@/lib/whatsapp/client";
-import { sendLocaleOf } from "@/lib/schemas";
-import { resolveAudience } from "./audience";
+import { resolveAudience as defaultResolveAudience } from "./audience";
 import {
   UNCONFIRMED_PREFIX,
   campaignTemplateIssue,
   loadWhatsAppTemplate,
   sendQueuedWhatsApp,
+  type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { pause } from "./pause";
+import { conflictTarget, recipientRow } from "./recipient-rows";
 
 /**
  * Sends one campaign, or finishes sending it.
@@ -45,6 +47,21 @@ import {
  */
 
 const CHUNK = 100;
+
+type Db = ReturnType<typeof getAdminClient>["database"];
+
+/**
+ * What a dispatch reads and calls out to. Every field defaults to the real
+ * thing; a test passes doubles. The email path always uses the real database
+ * and Resend.
+ */
+export type DispatchDeps = {
+  db?: Db;
+  resolveAudience?: typeof defaultResolveAudience;
+  isWhatsAppConfigured?: () => boolean;
+  /** Reaches `sendQueuedWhatsApp`: the sender, the clock and the sleeper. */
+  whatsapp?: Pick<WhatsAppDeps, "send" | "now" | "sleep" | "budgetMs">;
+};
 
 /** A send that has held the row this long without finishing is presumed stuck. */
 export const STUCK_AFTER_MS = 10 * 60_000;
@@ -98,11 +115,13 @@ export const QUEUED_FIELDS =
 const one = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;
 
-const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function markFailed(campaignId: string, error: string): Promise<void> {
-  await getAdminClient()
-    .database.from("campaigns")
+async function markFailed(
+  campaignId: string,
+  error: string,
+  db: Db = getAdminClient().database,
+): Promise<void> {
+  await db
+    .from("campaigns")
     .update({
       status: "failed",
       last_error: error,
@@ -119,8 +138,8 @@ async function claim(
   campaignId: string,
   resume: boolean,
   now: Date,
+  db: Db = getAdminClient().database,
 ): Promise<CampaignRow | null> {
-  const db = getAdminClient().database;
   let query = db
     .from("campaigns")
     .update({
@@ -154,6 +173,7 @@ async function claim(
 export async function sendQueued(
   campaign: CampaignRow,
   rows: QueuedRow[],
+  whatsapp: WhatsAppDeps = {},
 ): Promise<{
   sent: number;
   failed: number;
@@ -162,7 +182,7 @@ export async function sendQueued(
   remaining?: number;
 }> {
   if (campaign.channel === "whatsapp") {
-    return sendQueuedWhatsApp(campaign, rows);
+    return sendQueuedWhatsApp(campaign, rows, whatsapp);
   }
   const db = getAdminClient().database;
   const content = campaign.content as CampaignContent;
@@ -240,9 +260,12 @@ export async function sendQueued(
 }
 
 /** The rows of a campaign still waiting to go out. */
-export async function loadQueued(campaignId: string): Promise<QueuedRow[]> {
-  const { data, error } = await getAdminClient()
-    .database.from("campaign_recipients")
+export async function loadQueued(
+  campaignId: string,
+  db: Db = getAdminClient().database,
+): Promise<QueuedRow[]> {
+  const { data, error } = await db
+    .from("campaign_recipients")
     .select(QUEUED_FIELDS)
     .eq("campaign_id", campaignId)
     .eq("status", "queued")
@@ -255,8 +278,8 @@ export async function loadQueued(campaignId: string): Promise<QueuedRow[]> {
 export async function refreshCounts(
   campaignId: string,
   extra: Record<string, unknown> = {},
+  db: Db = getAdminClient().database,
 ): Promise<void> {
-  const db = getAdminClient().database;
   const [{ count: total }, { count: failedTotal }] = await Promise.all([
     db
       .from("campaign_recipients")
@@ -291,8 +314,11 @@ type Preflight =
  *
  * It reads the campaign to learn its channel; an email campaign passes at once.
  */
-async function preflight(campaignId: string): Promise<Preflight> {
-  const db = getAdminClient().database;
+async function preflight(
+  campaignId: string,
+  db: Db,
+  configured: () => boolean,
+): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
     .select("id, channel, audience, content")
@@ -310,7 +336,7 @@ async function preflight(campaignId: string): Promise<Preflight> {
     return { ok: true, channel: campaign.channel };
   }
 
-  if (!isWhatsAppConfigured()) {
+  if (!configured()) {
     return { ok: false, error: "whatsapp_not_configured" };
   }
   try {
@@ -330,19 +356,22 @@ async function preflight(campaignId: string): Promise<Preflight> {
 export async function dispatchCampaign(
   campaignId: string,
   opts: { resume?: boolean; preflighted?: boolean } = {},
+  deps: DispatchDeps = {},
 ): Promise<DispatchResult> {
-  const db = getAdminClient().database;
+  const db = deps.db ?? getAdminClient().database;
+  const resolveAudience = deps.resolveAudience ?? defaultResolveAudience;
+  const configured = deps.isWhatsAppConfigured ?? isWhatsAppConfigured;
   const now = new Date();
   const resume = opts.resume === true;
 
   if (!opts.preflighted) {
-    const checked = await preflight(campaignId);
+    const checked = await preflight(campaignId, db, configured);
     if (!checked.ok) return checked;
   }
 
   let campaign: CampaignRow | null;
   try {
-    campaign = await claim(campaignId, resume, now);
+    campaign = await claim(campaignId, resume, now, db);
   } catch (err) {
     return { ok: false, error: "db", detail: (err as Error).message };
   }
@@ -353,7 +382,7 @@ export async function dispatchCampaign(
   // sit in the list as "sent".
   const whatsapp = campaign.channel === "whatsapp";
   if (!whatsapp && !process.env.RESEND_API_KEY) {
-    await markFailed(campaignId, "RESEND_API_KEY is not set");
+    await markFailed(campaignId, "RESEND_API_KEY is not set", db);
     return { ok: false, error: "no_api_key" };
   }
 
@@ -368,11 +397,11 @@ export async function dispatchCampaign(
       );
     } catch (err) {
       const detail = (err as Error).message;
-      await markFailed(campaignId, detail);
+      await markFailed(campaignId, detail, db);
       return { ok: false, error: "db", detail };
     }
     if (recipients.length === 0) {
-      await markFailed(campaignId, "empty_audience");
+      await markFailed(campaignId, "empty_audience", db);
       return { ok: false, error: "empty_audience" };
     }
 
@@ -380,63 +409,63 @@ export async function dispatchCampaign(
     // the unique index on (campaign_id, email, cycle) relies on. An A/B test
     // deals its recipients out alternately, so both halves are the same size.
     //
-    // A WhatsApp row has no email: NULL, never "", which would collide with
-    // every other row on that index and silently drop all but one. Its phone
-    // (E.164, deduped by the resolver) takes the email's place in the conflict
-    // target, and its language is the campaign's: one template, one language.
+    // See `recipientRow` for what a WhatsApp row holds.
     const split = campaign.kind === "split";
     const { error: insertError } = await db.from("campaign_recipients").upsert(
-      recipients.map((r, index) => ({
-        campaign_id: campaignId,
-        contact_id: r.id,
-        email: r.email || null,
-        ...(whatsapp ? { phone: r.phone } : {}),
-        language: whatsapp ? sendLocaleOf(campaign.audience) : r.language,
-        status: "queued",
-        cycle: "",
-        variant: split ? (index % 2 === 0 ? "a" : "b") : null,
-      })),
-      {
-        onConflict: whatsapp
-          ? "campaign_id,phone,cycle"
-          : "campaign_id,email,cycle",
-        ignoreDuplicates: true,
-      },
+      recipients.map((r, index) =>
+        recipientRow({
+          campaignId,
+          recipient: r,
+          channel: campaign.channel,
+          audience: campaign.audience,
+          cycle: "",
+          extra: { variant: split ? (index % 2 === 0 ? "a" : "b") : null },
+        }),
+      ),
+      { onConflict: conflictTarget(campaign.channel), ignoreDuplicates: true },
     );
     if (insertError) {
-      await markFailed(campaignId, insertError.message);
+      await markFailed(campaignId, insertError.message, db);
       return { ok: false, error: "db", detail: insertError.message };
     }
   }
 
   let rows: QueuedRow[];
   try {
-    rows = await loadQueued(campaignId);
+    rows = await loadQueued(campaignId, db);
   } catch (err) {
     const detail = (err as Error).message;
-    await markFailed(campaignId, detail);
+    await markFailed(campaignId, detail, db);
     return { ok: false, error: "db", detail };
   }
 
   const { sent, failed, lastError, remaining } = await sendQueued(
     campaign,
     rows,
+    {
+      db,
+      ...deps.whatsapp,
+    },
   );
 
   // A WhatsApp send that ran out of time (or credentials) is not finished.
   // Leaving the campaign `sending` is what lets the cron resume it: it claims
   // a `sending` row once it has been quiet for `STUCK_AFTER_MS`.
   if (remaining) {
-    await refreshCounts(campaignId, { last_error: lastError });
+    await refreshCounts(campaignId, { last_error: lastError }, db);
     return { ok: true, sent, failed, remaining };
   }
 
   const finishedAt = new Date().toISOString();
-  await refreshCounts(campaignId, {
-    status: "sent",
-    sent_at: finishedAt,
-    last_error: lastError,
-  });
+  await refreshCounts(
+    campaignId,
+    {
+      status: "sent",
+      sent_at: finishedAt,
+      last_error: lastError,
+    },
+    db,
+  );
 
   return { ok: true, sent, failed };
 }
@@ -447,12 +476,19 @@ export async function dispatchCampaign(
  * The campaign is re-opened as a stale `sending` so the ordinary resume claim
  * picks it up, which keeps one code path for "send whatever is still queued".
  */
-export async function retryFailed(campaignId: string): Promise<DispatchResult> {
-  const db = getAdminClient().database;
+export async function retryFailed(
+  campaignId: string,
+  deps: DispatchDeps = {},
+): Promise<DispatchResult> {
+  const db = deps.db ?? getAdminClient().database;
 
   // Before anything is reopened: a WhatsApp campaign whose template can no
   // longer go out must not be left `sending` with its rows already requeued.
-  const checked = await preflight(campaignId);
+  const checked = await preflight(
+    campaignId,
+    db,
+    deps.isWhatsAppConfigured ?? isWhatsAppConfigured,
+  );
   if (!checked.ok) return checked;
 
   // Reopen first, requeue second: if the campaign is not a finished send the
@@ -488,9 +524,13 @@ export async function retryFailed(campaignId: string): Promise<DispatchResult> {
   }
   const { error: requeueError } = await requeue;
   if (requeueError) {
-    await markFailed(campaignId, requeueError.message);
+    await markFailed(campaignId, requeueError.message, db);
     return { ok: false, error: "db", detail: requeueError.message };
   }
 
-  return dispatchCampaign(campaignId, { resume: true, preflighted: true });
+  return dispatchCampaign(
+    campaignId,
+    { resume: true, preflighted: true },
+    deps,
+  );
 }

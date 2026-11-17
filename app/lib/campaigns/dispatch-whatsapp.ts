@@ -8,6 +8,7 @@ import type {
 import { sendLocaleOf } from "@/lib/schemas";
 import type { CampaignLocale, CampaignRow } from "@/types/campaign";
 import type { QueuedRow } from "./dispatch";
+import { pause } from "./pause";
 import { paramsMatchTemplate, resolveParams } from "./whatsapp-params";
 
 /**
@@ -118,8 +119,6 @@ export function campaignTemplateIssue(
     campaign.content.whatsapp?.params ?? [],
   );
 }
-
-const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 type RowOutcome =
   | { kind: "sent" }

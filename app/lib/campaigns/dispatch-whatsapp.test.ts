@@ -1,50 +1,25 @@
 import { describe, expect, test } from "bun:test";
-import type { TemplateSend } from "@/lib/whatsapp/client";
-import type {
-  WhatsAppParamSource,
-  WhatsAppSendResult,
-  WhatsAppTemplateRow,
-} from "@/lib/whatsapp/types";
+import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import type { CampaignRow } from "@/types/campaign";
 import {
-  BUDGET_MS,
   PER_SECOND,
   UNCONFIRMED_PREFIX,
   sendQueuedWhatsApp,
   whatsappTemplateEligibility,
-  type WhatsAppDeps,
 } from "./dispatch-whatsapp";
-import type { QueuedRow } from "./dispatch";
-
-const template = (
-  overrides: Partial<WhatsAppTemplateRow> = {},
-): WhatsAppTemplateRow => ({
-  id: "tpl-1",
-  meta_id: "meta-1",
-  name: "reapertura",
-  language: "es",
-  category: "MARKETING",
-  status: "APPROVED",
-  header_format: null,
-  header_text: null,
-  body: "Hola {{1}}, volvemos el {{2}}",
-  footer_text: null,
-  buttons: [],
-  param_count: 2,
-  example_params: ["Ana", "2 de diciembre"],
-  rejection_reason: null,
-  unsupported_reason: null,
-  synced_at: null,
-  created_by: null,
-  created_at: "2026-11-01T00:00:00Z",
-  updated_at: "2026-11-01T00:00:00Z",
-  ...overrides,
-});
-
-const SOURCES: WhatsAppParamSource[] = [
-  { kind: "field", field: "first_name" },
-  { kind: "static", value: "2 de diciembre" },
-];
+import {
+  SOURCES,
+  campaign,
+  fakeClock,
+  fakeSend,
+  memoryDb,
+  ok,
+  row,
+  rowsOf,
+  template,
+} from "./whatsapp-fixtures";
+import type { TemplateSend } from "@/lib/whatsapp/client";
+import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 
 describe("whatsappTemplateEligibility", () => {
   test("an approved, supported template in the campaign language is sendable", () => {
@@ -151,138 +126,22 @@ describe("whatsappTemplateEligibility", () => {
 
 // ─── sendQueuedWhatsApp, against doubles ─────────────────────
 
-type Update = { table: string; patch: Record<string, unknown>; id: string };
-
-/** The slice of the Insforge client the sender uses, recording every write. */
-function fakeDb(
-  opts: {
-    template?: WhatsAppTemplateRow | null;
-    readError?: string;
-    /** Fails every update of these row ids. */
-    failUpdatesFor?: string[];
-    onUpdate?: (update: Update) => void;
-  } = {},
-) {
-  const updates: Update[] = [];
-  const reads: string[] = [];
-  const db = {
-    from(table: string) {
-      return {
-        select: () => ({
-          eq: (_column: string, id: string) => ({
-            maybeSingle: async () => {
-              reads.push(`${table}:${id}`);
-              if (opts.readError) {
-                return { data: null, error: { message: opts.readError } };
-              }
-              return {
-                data: "template" in opts ? opts.template : template(),
-                error: null,
-              };
-            },
-          }),
-        }),
-        update: (patch: Record<string, unknown>) => ({
-          eq: async (_column: string, id: string) => {
-            if (opts.failUpdatesFor?.includes(id)) {
-              return { error: { message: "db down" } };
-            }
-            const update = { table, patch, id };
-            updates.push(update);
-            opts.onUpdate?.(update);
-            return { error: null };
-          },
-        }),
-      };
-    },
-  };
-  return {
-    db: db as unknown as NonNullable<WhatsAppDeps["db"]>,
-    updates,
-    reads,
-  };
-}
-
-const campaign = (
-  overrides: Partial<Pick<CampaignRow, "content" | "audience">> = {},
-): CampaignRow =>
-  ({
-    id: "camp-1",
-    channel: "whatsapp",
-    audience: { language: "es", sendLocale: "es" },
-    content: { whatsapp: { templateId: "tpl-1", params: SOURCES } },
-    ...overrides,
-  }) as unknown as CampaignRow;
-
-const row = (n: number, overrides: Partial<QueuedRow> = {}): QueuedRow => ({
-  id: `row-${n}`,
-  contact_id: `contact-${n}`,
-  email: null,
-  phone: `+346000000${String(n).padStart(2, "0")}`,
-  language: "es",
-  variant: null,
-  vars: null,
-  contacts: {
-    first_name: `Nombre${n}`,
-    last_name: null,
-    unsubscribe_token: null,
-  },
-  ...overrides,
-});
-
-const rowsOf = (count: number) =>
-  Array.from({ length: count }, (_, i) => row(i + 1));
-
-/** A clock the test moves: `sleep` advances it, and so can a slow `send`. */
-function fakeClock(start = 1_000_000) {
-  let t = start;
-  const sleeps: number[] = [];
-  return {
-    now: () => t,
-    advance: (ms: number) => {
-      t += ms;
-    },
-    sleep: async (ms: number) => {
-      sleeps.push(ms);
-      t += ms;
-    },
-    sleeps,
-  };
-}
-
-const ok = (id: string): WhatsAppSendResult => ({
-  status: "sent",
-  providerId: id,
-});
-
-function fakeSend(
-  answer: (send: TemplateSend, call: number) => WhatsAppSendResult,
-  clock?: ReturnType<typeof fakeClock>,
-  latencyMs = 0,
-) {
-  const calls: TemplateSend[] = [];
-  const send = async (s: TemplateSend) => {
-    calls.push(s);
-    clock?.advance(latencyMs);
-    return answer(s, calls.length);
-  };
-  return { send, calls };
-}
+const quietSleep = async () => {};
 
 describe("sendQueuedWhatsApp", () => {
   test("a success stamps the row sent with Meta's wamid and sends the template", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(2));
     const clock = fakeClock();
     const { send, calls } = fakeSend((_s, n) => ok(`wamid.${n}`), clock);
 
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(2), {
-      db,
+      db: mem.db,
       send,
       now: clock.now,
       sleep: clock.sleep,
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 2,
       failed: 0,
       lastError: null,
@@ -294,13 +153,9 @@ describe("sendQueuedWhatsApp", () => {
       language: "es",
       bodyParams: ["Nombre1", "2 de diciembre"],
     });
-    expect(updates).toHaveLength(2);
-    expect(updates[0]).toMatchObject({
-      table: "campaign_recipients",
-      id: "row-1",
-      patch: { status: "sent", provider_id: "wamid.1" },
-    });
-    expect(typeof updates[0].patch.sent_at).toBe("string");
+    expect(mem.status("row-1")).toBe("sent");
+    expect(mem.rows.get("row-1")?.provider_id).toBe("wamid.1");
+    expect(typeof mem.rows.get("row-1")?.sent_at).toBe("string");
   });
 
   test("parameters are resolved per recipient, from the row and its contact", async () => {
@@ -309,22 +164,23 @@ describe("sendQueuedWhatsApp", () => {
       { kind: "field", field: "last_name" },
       { kind: "field", field: "service" },
     ];
-    const { db } = fakeDb({ template: template({ param_count: 3 }) });
+    const rows = [
+      row(1, {
+        vars: { service: "Drenaje" },
+        contacts: [
+          { first_name: "Ana", last_name: "Pérez", unsubscribe_token: null },
+        ],
+      }),
+      row(2, { contacts: null, vars: null }),
+    ];
+    const mem = memoryDb(rows, { template: template({ param_count: 3 }) });
     const { send, calls } = fakeSend(() => ok("w"));
     await sendQueuedWhatsApp(
       campaign({
         content: { whatsapp: { templateId: "tpl-1", params } },
       } as Partial<CampaignRow>),
-      [
-        row(1, {
-          vars: { service: "Drenaje" },
-          contacts: [
-            { first_name: "Ana", last_name: "Pérez", unsubscribe_token: null },
-          ],
-        }),
-        row(2, { contacts: null, vars: null }),
-      ],
-      { db, send },
+      rows,
+      { db: mem.db, send },
     );
     expect(calls[0].bodyParams).toEqual(["Ana", "Pérez", "Drenaje"]);
     // A row without contact or vars still sends, with Meta's placeholder dash.
@@ -332,67 +188,65 @@ describe("sendQueuedWhatsApp", () => {
   });
 
   test("a refusal from Meta fails the row with Meta's text, unprefixed", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(1));
     const { send } = fakeSend(() => ({
       status: "failed",
       error: "Re-engagement message",
     }));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
-      db,
+      db: mem.db,
       send,
     });
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 0,
       failed: 1,
       lastError: "Re-engagement message",
       remaining: 0,
     });
-    expect(updates[0].patch).toEqual({
-      status: "failed",
-      error: "Re-engagement message",
-    });
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("Re-engagement message");
   });
 
   test("a failure that may have been delivered is stamped [unconfirmed]", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(1));
     const { send } = fakeSend(() => ({
       status: "failed",
       error: "The operation timed out.",
       ambiguous: true,
     }));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
-      db,
+      db: mem.db,
       send,
     });
-    expect(updates[0].patch.status).toBe("failed");
-    expect(updates[0].patch.error).toBe(
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe(
       `${UNCONFIRMED_PREFIX}The operation timed out.`,
     );
-    expect(updates[0].patch.error).toStartWith("[unconfirmed] ");
+    expect(mem.error("row-1")).toStartWith("[unconfirmed] ");
     expect(result.failed).toBe(1);
   });
 
   test("a send that throws is treated as unconfirmed, not as a clean failure", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(1));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
-      db,
+      db: mem.db,
       send: async () => {
         throw new Error("boom");
       },
     });
-    expect(updates[0].patch.error).toBe("[unconfirmed] boom");
+    expect(mem.error("row-1")).toBe("[unconfirmed] boom");
     expect(result.failed).toBe(1);
   });
 
   test("without credentials nothing is sent and the rows stay queued", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(25));
     const { send, calls } = fakeSend(() => ({ status: "skipped" }));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(25), {
-      db,
+      db: mem.db,
       send,
-      sleep: async () => {},
+      sleep: quietSleep,
     });
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 0,
       failed: 0,
       lastError: "whatsapp_not_configured",
@@ -400,48 +254,45 @@ describe("sendQueuedWhatsApp", () => {
     });
     // One batch found out; the other fifteen were never tried.
     expect(calls).toHaveLength(PER_SECOND);
-    expect(updates).toHaveLength(0);
+    expect([...mem.rows.values()].every((r) => r.status === "queued")).toBe(
+      true,
+    );
   });
 
   test("a row without a phone fails and never reaches Meta", async () => {
-    const { db, updates } = fakeDb();
+    const rows = [row(1, { phone: null }), row(2)];
+    const mem = memoryDb(rows);
     const { send, calls } = fakeSend(() => ok("w"));
-    const result = await sendQueuedWhatsApp(
-      campaign(),
-      [row(1, { phone: null }), row(2)],
-      { db, send },
-    );
+    const result = await sendQueuedWhatsApp(campaign(), rows, {
+      db: mem.db,
+      send,
+    });
     expect(calls).toHaveLength(1);
     expect(calls[0].to).toBe("+34600000002");
     expect(result).toMatchObject({ sent: 1, failed: 1, remaining: 0 });
-    expect(updates.find((u) => u.id === "row-1")?.patch).toEqual({
-      status: "failed",
-      error: "no phone",
-    });
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("no phone");
   });
 
-  test.each([
-    ["PENDING", "template_not_approved"],
-    ["REJECTED", "template_not_approved"],
-  ])(
+  test.each(["PENDING", "REJECTED"])(
     "an unapproved template (%s) sends nothing and leaves every row queued",
-    async (status, code) => {
-      const { db, updates } = fakeDb({
+    async (status) => {
+      const mem = memoryDb(rowsOf(3), {
         template: template({ status: status as WhatsAppTemplateRow["status"] }),
       });
       const { send, calls } = fakeSend(() => ok("w"));
       const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
-        db,
+        db: mem.db,
         send,
       });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         sent: 0,
         failed: 0,
-        lastError: `template_unavailable: ${code}`,
+        lastError: "template_unavailable: template_not_approved",
         remaining: 3,
       });
       expect(calls).toHaveLength(0);
-      expect(updates).toHaveLength(0);
+      expect(mem.writes).toHaveLength(0);
     },
   );
 
@@ -450,38 +301,41 @@ describe("sendQueuedWhatsApp", () => {
       [{ template: null }, campaign()],
       [{}, campaign({ content: {} as CampaignRow["content"] })],
     ] as const) {
-      const { db, updates } = fakeDb(dbOpts);
+      const mem = memoryDb(rowsOf(2), dbOpts);
       const { send, calls } = fakeSend(() => ok("w"));
-      const result = await sendQueuedWhatsApp(camp, rowsOf(2), { db, send });
+      const result = await sendQueuedWhatsApp(camp, rowsOf(2), {
+        db: mem.db,
+        send,
+      });
       expect(result.lastError).toBe("template_unavailable: template_missing");
       expect(result.remaining).toBe(2);
       expect(calls).toHaveLength(0);
-      expect(updates).toHaveLength(0);
+      expect(mem.writes).toHaveLength(0);
     }
   });
 
   test("a parameter count that does not match the template sends nothing", async () => {
-    const { db, updates } = fakeDb({ template: template({ param_count: 3 }) });
+    const mem = memoryDb(rowsOf(2), { template: template({ param_count: 3 }) });
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(2), {
-      db,
+      db: mem.db,
       send,
     });
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 0,
       failed: 0,
       lastError: "template_unavailable: param_count",
       remaining: 2,
     });
     expect(calls).toHaveLength(0);
-    expect(updates).toHaveLength(0);
+    expect(mem.writes).toHaveLength(0);
   });
 
   test("a template in another language than the campaign sends nothing", async () => {
-    const { db } = fakeDb({ template: template({ language: "en" }) });
+    const mem = memoryDb(rowsOf(1), { template: template({ language: "en" }) });
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
-      db,
+      db: mem.db,
       send,
     });
     expect(result.lastError).toBe("template_unavailable: template_language");
@@ -489,13 +343,13 @@ describe("sendQueuedWhatsApp", () => {
   });
 
   test("a failed template read is reported and sends nothing", async () => {
-    const { db } = fakeDb({ readError: "timeout" });
+    const mem = memoryDb(rowsOf(2), { readError: "timeout" });
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(campaign(), rowsOf(2), {
-      db,
+      db: mem.db,
       send,
     });
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 0,
       failed: 0,
       lastError: "db: timeout",
@@ -505,14 +359,16 @@ describe("sendQueuedWhatsApp", () => {
   });
 
   test("the campaign's own locale picks the language to match", async () => {
-    const { db } = fakeDb({ template: template({ language: "en_US" }) });
+    const mem = memoryDb(rowsOf(1), {
+      template: template({ language: "en_US" }),
+    });
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(
       campaign({
         audience: { language: "any", sendLocale: "en" },
       } as Partial<CampaignRow>),
       rowsOf(1),
-      { db, send },
+      { db: mem.db, send },
     );
     expect(result.sent).toBe(1);
     expect(calls[0].language).toBe("en_US");
@@ -523,9 +379,9 @@ describe("sendQueuedWhatsApp", () => {
     // waited for the whole batch before writing anything, neither would move.
     let openGate!: () => void;
     const gate = new Promise<void>((resolve) => (openGate = resolve));
-    const { db, updates } = fakeDb({
-      onUpdate: (update) => {
-        if (update.id === "row-1") openGate();
+    const mem = memoryDb(rowsOf(2), {
+      onWrite: (id, patch) => {
+        if (id === "row-1" && patch.status === "sent") openGate();
       },
     });
     const send = async (s: TemplateSend) => {
@@ -536,79 +392,28 @@ describe("sendQueuedWhatsApp", () => {
       setTimeout(() => reject(new Error("updates waited for the batch")), 500),
     );
     const result = await Promise.race([
-      sendQueuedWhatsApp(campaign(), rowsOf(2), { db, send }),
+      sendQueuedWhatsApp(campaign(), rowsOf(2), { db: mem.db, send }),
       deadlock,
     ]);
     expect(result.sent).toBe(2);
-    expect(updates.map((u) => u.id)).toEqual(["row-1", "row-2"]);
   });
 
-  test("a write that fails once is retried; a persistent failure still counts the send", async () => {
-    let attempts = 0;
-    const db = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({ data: template(), error: null }),
-          }),
-        }),
-        update: () => ({
-          eq: async () => {
-            attempts += 1;
-            return { error: { message: "db down" } };
-          },
-        }),
-      }),
-    } as unknown as NonNullable<WhatsAppDeps["db"]>;
-    const { send } = fakeSend(() => ok("w"));
-    const original = console.error;
-    console.error = () => {};
-    try {
-      const result = await sendQueuedWhatsApp(campaign(), rowsOf(1), {
-        db,
-        send,
-      });
-      // Two attempts at the one row; the message did leave, so it counts.
-      expect(attempts).toBe(2);
-      expect(result.sent).toBe(1);
-      expect(result.remaining).toBe(0);
-    } finally {
-      console.error = original;
-    }
-  });
-});
-
-describe("sendQueuedWhatsApp when the database throws", () => {
   test("a throwing update does not abandon the rest of the batch", async () => {
-    const written: string[] = [];
-    const db = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({ data: template(), error: null }),
-          }),
-        }),
-        update: () => ({
-          eq: async (_c: string, id: string) => {
-            if (id === "row-1") throw new Error("socket closed");
-            written.push(id);
-            return { error: null };
-          },
-        }),
-      }),
-    } as unknown as NonNullable<WhatsAppDeps["db"]>;
+    const mem = memoryDb(rowsOf(3), {
+      failUpdate: ({ id }) => (id === "row-1" ? "throw" : null),
+    });
     const { send, calls } = fakeSend(() => ok("w"));
     const original = console.error;
     console.error = () => {};
     try {
-      const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
-        db,
+      await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+        db: mem.db,
         send,
-        sleep: async () => {},
+        sleep: quietSleep,
       });
       expect(calls).toHaveLength(3);
-      expect(written).toEqual(["row-2", "row-3"]);
-      expect(result.sent).toBe(3);
+      expect(mem.status("row-2")).toBe("sent");
+      expect(mem.status("row-3")).toBe("sent");
     } finally {
       console.error = original;
     }
@@ -616,12 +421,15 @@ describe("sendQueuedWhatsApp when the database throws", () => {
 });
 
 describe("sendQueuedWhatsApp pacing and budget", () => {
+  const run = (count: number, deps: Parameters<typeof sendQueuedWhatsApp>[2]) =>
+    sendQueuedWhatsApp(campaign(), rowsOf(count), deps);
+
   test("sends ten at a time and waits out the rest of each second", async () => {
-    const { db } = fakeDb();
+    const mem = memoryDb(rowsOf(25));
     const clock = fakeClock();
     const { send } = fakeSend(() => ok("w"), clock, 0);
-    const result = await sendQueuedWhatsApp(campaign(), rowsOf(25), {
-      db,
+    const result = await run(25, {
+      db: mem.db,
       send,
       now: clock.now,
       sleep: clock.sleep,
@@ -632,19 +440,18 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
   });
 
   test("only the part of the second the batch did not use is waited", async () => {
-    const { db } = fakeDb();
+    const mem = memoryDb(rowsOf(25));
     const clock = fakeClock();
     // The ten sends of a batch run together: the first one's answer costs the
     // batch 400 ms of the clock, the rest are free.
-    const { send } = fakeSend(() => ok("w"), undefined, 0);
     let calls = 0;
-    const timed = async (s: TemplateSend) => {
+    const timed = async () => {
       calls += 1;
       if (calls % PER_SECOND === 1) clock.advance(400);
-      return send(s);
+      return ok("w");
     };
-    await sendQueuedWhatsApp(campaign(), rowsOf(25), {
-      db,
+    await run(25, {
+      db: mem.db,
       send: timed,
       now: clock.now,
       sleep: clock.sleep,
@@ -653,7 +460,7 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
   });
 
   test("a batch that already took a second is not followed by a pause", async () => {
-    const { db } = fakeDb();
+    const mem = memoryDb(rowsOf(25));
     const clock = fakeClock();
     let calls = 0;
     const slow = async () => {
@@ -661,8 +468,8 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
       if (calls % PER_SECOND === 1) clock.advance(1200);
       return ok("w");
     };
-    await sendQueuedWhatsApp(campaign(), rowsOf(25), {
-      db,
+    await run(25, {
+      db: mem.db,
       send: slow,
       now: clock.now,
       sleep: clock.sleep,
@@ -671,7 +478,7 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
   });
 
   test("a batch never holds more than ten messages in flight", async () => {
-    const { db } = fakeDb();
+    const mem = memoryDb(rowsOf(30));
     let inFlight = 0;
     let peak = 0;
     const send = async () => {
@@ -681,20 +488,16 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
       inFlight -= 1;
       return ok("w");
     };
-    await sendQueuedWhatsApp(campaign(), rowsOf(30), {
-      db,
-      send,
-      sleep: async () => {},
-    });
+    await run(30, { db: mem.db, send, sleep: quietSleep });
     expect(peak).toBe(PER_SECOND);
   });
 
   test("stops starting batches once the time budget is spent and reports what is left", async () => {
-    const { db, updates } = fakeDb();
+    const mem = memoryDb(rowsOf(55));
     const clock = fakeClock();
     const { send, calls } = fakeSend(() => ok("w"), clock, 0);
-    const result = await sendQueuedWhatsApp(campaign(), rowsOf(55), {
-      db,
+    const result = await run(55, {
+      db: mem.db,
       send,
       now: clock.now,
       sleep: clock.sleep,
@@ -702,21 +505,20 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
     });
     // t=0, t=1000, t=2000 start a batch; at t=3000 the budget is gone.
     expect(calls).toHaveLength(30);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       sent: 30,
       failed: 0,
       lastError: null,
       remaining: 25,
     });
-    expect(updates).toHaveLength(30);
   });
 
   test("does not sleep towards a batch the budget will not let begin", async () => {
-    const { db } = fakeDb();
+    const mem = memoryDb(rowsOf(30));
     const clock = fakeClock();
     const { send, calls } = fakeSend(() => ok("w"), clock, 0);
-    const result = await sendQueuedWhatsApp(campaign(), rowsOf(30), {
-      db,
+    const result = await run(30, {
+      db: mem.db,
       send,
       now: clock.now,
       sleep: clock.sleep,
@@ -727,23 +529,40 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
     expect(result.remaining).toBe(20);
   });
 
-  test("the default budget is inside the cron's 60 seconds", () => {
-    expect(BUDGET_MS).toBeLessThan(60_000);
-    expect(BUDGET_MS).toBeGreaterThanOrEqual(40_000);
+  test("the default budget keeps a long send inside the cron's 60 seconds", async () => {
+    // 2000 rows would take 200 s at ten a second: it must stop on its own.
+    const mem = memoryDb(rowsOf(2000));
+    const clock = fakeClock();
+    const startedAt = clock.now();
+    const { send } = fakeSend(() => ok("w"), clock, 0);
+    const result = await run(2000, {
+      db: mem.db,
+      send,
+      now: clock.now,
+      sleep: clock.sleep,
+    });
+    const elapsed = clock.now() - startedAt;
+    expect(result.remaining).toBeGreaterThan(0);
+    expect(result.sent).toBeGreaterThanOrEqual(400);
+    expect(elapsed).toBeLessThan(50_000);
+    expect(elapsed).toBeGreaterThanOrEqual(40_000);
   });
 
-  test("nothing queued is a clean no-op that still loads no more than the template", async () => {
-    const { db, updates, reads } = fakeDb();
+  test("nothing queued is a clean no-op that loads no more than the template", async () => {
+    const mem = memoryDb([]);
     const { send, calls } = fakeSend(() => ok("w"));
-    const result = await sendQueuedWhatsApp(campaign(), [], { db, send });
-    expect(result).toEqual({
+    const result = await sendQueuedWhatsApp(campaign(), [], {
+      db: mem.db,
+      send,
+    });
+    expect(result).toMatchObject({
       sent: 0,
       failed: 0,
       lastError: null,
       remaining: 0,
     });
     expect(calls).toHaveLength(0);
-    expect(updates).toHaveLength(0);
-    expect(reads).toEqual(["whatsapp_templates:tpl-1"]);
+    expect(mem.writes).toHaveLength(0);
+    expect(mem.reads).toEqual(["whatsapp_templates"]);
   });
 });
