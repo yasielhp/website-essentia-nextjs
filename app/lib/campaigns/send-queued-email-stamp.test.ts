@@ -38,6 +38,11 @@ let batches: Email[][] = [];
 let answer: (email: Email) => string | null;
 /** Runs when the mailer is called, before it answers: a process dying there throws. */
 let onSend: (emails: Email[]) => void | Promise<void>;
+/**
+ * Whole-chunk failures, one per call to the mailer, before `answer` is asked:
+ * `rejected` is Resend saying no (nothing left); without it, nobody knows.
+ */
+let failures: { error: string; rejected: boolean }[] = [];
 
 const real = {
   send: { ...(await import("@/emails/send")) },
@@ -61,11 +66,16 @@ beforeAll(async () => {
     sendEmailBatch: async (emails: Email[]) => {
       batches.push(emails);
       await onSend(emails);
+      const failure = failures.shift();
+      if (failure) {
+        return { sent: 0, ids: emails.map(() => null), ...failure };
+      }
       const ids = emails.map(answer);
       return {
         sent: ids.filter(Boolean).length,
         ids,
         error: null,
+        rejected: false,
       };
     },
   }));
@@ -92,6 +102,7 @@ beforeEach(() => {
   batches = [];
   answer = (email) => `re_${email.to}`;
   onSend = () => {};
+  failures = [];
 });
 
 const emailCampaign = (over: Record<string, unknown> = {}) =>
@@ -292,6 +303,111 @@ describe("sendQueued on email: the stamp of an email that already left", () => {
     });
     expect(mem.status("row-1")).toBe("failed");
     expect(mem.error("row-1")).toBe("no id returned");
+  });
+});
+
+describe("sendQueued on email: a chunk that fails", () => {
+  const rows = () => [mailRow(1), mailRow(2)];
+
+  test("refused by Resend: the chunk is tried once more, as it always was", async () => {
+    failures = [{ error: "Too many requests", rejected: true }];
+    const queued = rows();
+    const mem = memoryDb(queued);
+    const sleeps: number[] = [];
+    const result = await sendQueued(emailCampaign(), queued, {
+      db: mem.db,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+    expect(batches).toHaveLength(2);
+    expect(batches[1]).toEqual(batches[0]!);
+    expect(sleeps).toEqual([2000]);
+    expect(result).toEqual({ sent: 2, failed: 0, lastError: null });
+    expect(mem.status("row-1")).toBe("sent");
+  });
+
+  test("refused twice: the rows fail with what Resend said, and a retry may send them again", async () => {
+    failures = [
+      { error: "Too many requests", rejected: true },
+      { error: "Too many requests", rejected: true },
+    ];
+    const queued = rows();
+    const mem = memoryDb(queued);
+    const result = await sendQueued(emailCampaign(), queued, {
+      db: mem.db,
+      sleep: noSleep,
+    });
+    expect(batches).toHaveLength(2);
+    expect(result).toEqual({
+      sent: 0,
+      failed: 2,
+      lastError: "Too many requests",
+    });
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("Too many requests");
+  });
+
+  test("nobody knows whether it left: it is NOT sent again, and the rows fail as unconfirmed", async () => {
+    failures = [{ error: "socket hang up", rejected: false }];
+    const queued = rows();
+    const mem = memoryDb(queued);
+    const sleeps: number[] = [];
+    const result = await sendQueued(emailCampaign(), queued, {
+      db: mem.db,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+    // One call: a second would write to whoever the first did reach.
+    expect(batches).toHaveLength(1);
+    expect(sleeps).toEqual([]);
+    expect(result).toEqual({
+      sent: 0,
+      failed: 2,
+      lastError: "[unconfirmed] socket hang up",
+    });
+    expect(mem.status("row-1")).toBe("failed");
+    expect(mem.error("row-1")).toBe("[unconfirmed] socket hang up");
+    expect(mem.error("row-2")).toBe("[unconfirmed] socket hang up");
+  });
+
+  test("a retry that nobody knows the fate of ends unconfirmed too", async () => {
+    failures = [
+      { error: "Too many requests", rejected: true },
+      { error: "socket hang up", rejected: false },
+    ];
+    const queued = rows();
+    const mem = memoryDb(queued);
+    await sendQueued(emailCampaign(), queued, { db: mem.db, sleep: noSleep });
+    expect(batches).toHaveLength(2);
+    expect(mem.error("row-1")).toBe("[unconfirmed] socket hang up");
+  });
+
+  test('the unconfirmed rows are not what "retry the failed ones" sends', async () => {
+    failures = [{ error: "socket hang up", rejected: false }];
+    const queued = rows();
+    const mem = memoryDb(queued, {
+      campaign: emailCampaign({ status: "draft" }),
+    });
+    const deps = {
+      db: mem.db,
+      resolveAudience: async (): Promise<Recipient[]> =>
+        [1, 2].map((n) => ({
+          id: `contact-${n}`,
+          email: `c${n}@example.test`,
+          firstName: `Nombre${n}`,
+          language: "es" as const,
+        })),
+      whatsapp: { sleep: noSleep },
+    };
+    const first = await dispatchCampaign("camp-1", {}, deps);
+    expect(first).toEqual({ ok: true, sent: 0, failed: 2 });
+    expect(mem.campaign.last_error).toBe("[unconfirmed] socket hang up");
+
+    await retryFailed("camp-1", {}, deps);
+    expect(batches).toHaveLength(1);
+    expect(mem.status("row-1")).toBe("failed");
   });
 });
 

@@ -16,6 +16,7 @@ import {
   INTERRUPTED_ERROR,
   RETRYABLE_FAILURE_FILTER,
   SKIPPED_PREFIX,
+  UNCONFIRMED_PREFIX,
   WRITE_RETRY_MS,
   campaignTemplateIssue,
   haltMessage,
@@ -273,6 +274,9 @@ async function stamp(
  * the one WhatsApp already pays: a row claimed by a process that died before
  * Resend was called is not mailed at all.
  *
+ * A chunk Resend refused is tried once more; one whose fate nobody knows is
+ * not, and its rows fail as `[unconfirmed]` for the same reason.
+ *
  * A claim that cannot be made stops the send with the rest still `queued` and
  * says how many are left, so a one-off campaign stays `sending` for the cron
  * to resume instead of closing with a queue nobody comes back for.
@@ -383,15 +387,25 @@ export async function sendQueued(
     // chunk, so the pacing between calls is ours to keep.
     if (start > 0) await pause(600);
     let result = await sendEmailBatch(outgoing);
-    if (result.error && result.sent === 0) {
-      // One retry for a whole-chunk rejection (a 429, a blip); a second
+    if (result.rejected && result.sent === 0) {
+      // One retry for a chunk Resend itself turned down (a 429, say): nothing
+      // of it left, so sending it again writes to nobody twice. A second
       // failure is recorded and the run moves on.
-      await pause(2000);
+      await sleep(2000);
       result = await sendEmailBatch(outgoing);
     }
 
+    // A failure nobody knows the fate of (the socket dropped, a 5xx: Resend
+    // may have taken the chunk) is neither tried again nor a plain `failed`,
+    // which "retry the failed ones" would mail a second time. Its rows fail
+    // as unconfirmed, the marker no retry requeues.
     const at = new Date().toISOString();
-    const chunkError = result.error ?? "no id returned";
+    const chunkError =
+      result.error === null
+        ? "no id returned"
+        : result.rejected
+          ? result.error
+          : `${UNCONFIRMED_PREFIX}${result.error}`;
     await Promise.all(
       owned.map(async ({ row }, index) => {
         const providerId = result.ids[index] ?? null;
