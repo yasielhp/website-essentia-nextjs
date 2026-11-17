@@ -25,6 +25,8 @@ type Answer = {
 /** What Resend answers to each chunk, in order; a function may throw. */
 let answers: (() => Answer)[] = [];
 let calls = 0;
+/** The arguments of every call to Resend's batch endpoint. */
+let sends: unknown[][] = [];
 
 const taken = (count: number) => (): Answer => ({
   data: { data: Array.from({ length: count }, (_, i) => ({ id: `re_${i}` })) },
@@ -62,7 +64,8 @@ beforeAll(async () => {
     ...real.resend,
     Resend: class {
       batch = {
-        send: async () => {
+        send: async (...args: unknown[]) => {
+          sends.push(args);
           const answer = answers[calls] ?? taken(0);
           calls += 1;
           return answer();
@@ -89,6 +92,7 @@ afterAll(() => {
 beforeEach(() => {
   answers = [];
   calls = 0;
+  sends = [];
   process.env.RESEND_API_KEY = "test-key";
   quiet?.mockRestore();
   quiet = spyOn(console, "error").mockImplementation(() => {});
@@ -195,4 +199,50 @@ describe("sendEmailBatch: `rejected`", () => {
     });
     expect(calls).toBe(0);
   });
+});
+
+describe("sendEmailBatch: an idempotency key", () => {
+  const named = (name: string) => (): Answer => ({
+    data: null,
+    error: { message: name, statusCode: 409, name },
+  });
+
+  test("with none, Resend is called exactly as it always was: the emails and nothing else", async () => {
+    answers = [taken(1)];
+    await sendEmailBatch(emails(1));
+    quiet.mockRestore();
+    expect(sends).toHaveLength(1);
+    expect(sends[0]).toHaveLength(1);
+  });
+
+  test("with one, it travels with the chunk, and the emails are the same", async () => {
+    answers = [taken(2), taken(2)];
+    await sendEmailBatch(emails(2));
+    await sendEmailBatch(emails(2), { idempotencyKey: "campaign-1/abc" });
+    quiet.mockRestore();
+    expect(sends[1]).toEqual([
+      sends[0]![0],
+      { idempotencyKey: "campaign-1/abc" },
+    ]);
+  });
+
+  test("a second chunk never reuses the key of the first: a key is one request", async () => {
+    answers = [taken(100), taken(1)];
+    await sendEmailBatch(emails(101), { idempotencyKey: "k" });
+    quiet.mockRestore();
+    expect(sends.map((args) => args[1])).toEqual([
+      { idempotencyKey: "k" },
+      { idempotencyKey: "k/1" },
+    ]);
+  });
+
+  test.each(["concurrent_idempotent_requests", "invalid_idempotent_request"])(
+    "a 409 %s is not a refusal: the request with that key may have been sent",
+    async (name) => {
+      answers = [named(name)];
+      const result = await sendEmailBatch(emails(1), { idempotencyKey: "k" });
+      quiet.mockRestore();
+      expect(result).toMatchObject({ sent: 0, error: name, rejected: false });
+    },
+  );
 });

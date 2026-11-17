@@ -153,7 +153,19 @@ const RESEND_BATCH_LIMIT = 100;
 /** Comfortably under Resend's two requests a second. */
 const RESEND_BATCH_PAUSE_MS = 600;
 
-export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
+export async function sendEmailBatch(
+  emails: SendEmailParams[],
+  options: {
+    /**
+     * Resend's `Idempotency-Key` for the request: sent again with the same key
+     * and the same emails inside 24 hours, Resend answers what it answered the
+     * first time and sends nothing twice. Meant for a call of one chunk (a
+     * hundred emails at most); a further chunk gets the key with its position
+     * appended, because a key stands for one request. Absent, nothing changes.
+     */
+    idempotencyKey?: string;
+  } = {},
+): Promise<{
   sent: number;
   ids: (string | null)[];
   error: string | null;
@@ -161,7 +173,8 @@ export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
    * True only when every chunk that failed was turned down by Resend itself,
    * with a 4xx: nothing of those chunks left. False when nothing failed, and
    * whenever one may have been sent all the same (a request with no answer, an
-   * exception, a 5xx).
+   * exception, a 5xx, or a 409 about the idempotency key, which speaks of
+   * another request with that key that may have gone out).
    */
   rejected: boolean;
 }> {
@@ -201,6 +214,12 @@ export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
       );
     }
     const chunk = valid.slice(start, start + RESEND_BATCH_LIMIT);
+    const idempotencyKey =
+      options.idempotencyKey === undefined
+        ? undefined
+        : start === 0
+          ? options.idempotencyKey
+          : `${options.idempotencyKey}/${start / RESEND_BATCH_LIMIT}`;
 
     try {
       const { data, error: chunkError } = await resend.batch.send(
@@ -219,6 +238,7 @@ export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
             ...(email.headers ? { headers: email.headers } : {}),
           };
         }),
+        ...(idempotencyKey === undefined ? [] : [{ idempotencyKey }]),
       );
 
       if (chunkError || !data) {
@@ -227,7 +247,13 @@ export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
         error ??= message;
         failedChunks += 1;
         const status = chunkError?.statusCode;
-        if (typeof status === "number" && status >= 400 && status < 500) {
+        if (
+          typeof status === "number" &&
+          status >= 400 &&
+          status < 500 &&
+          chunkError?.name !== "concurrent_idempotent_requests" &&
+          chunkError?.name !== "invalid_idempotent_request"
+        ) {
           refusedChunks += 1;
         }
         continue;
