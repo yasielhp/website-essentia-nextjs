@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { composeMessageEmail } from "./compose";
+import { linkButtonNode } from "./editor-state";
 import { buildPreviewEmail } from "./preview";
 import { legacySampleEmail } from "./samples";
 
@@ -33,6 +35,42 @@ describe("buildPreviewEmail", () => {
     expect(out.html.indexOf("Un texto mío")).toBeLessThan(
       out.html.indexOf("example.com/cancel"),
     );
+  });
+
+  it("the button of a link variable is shown with the example link, though a client with no link gets no button", async () => {
+    const body = {
+      type: "doc",
+      content: [
+        ...doc("Firma antes de venir.").content,
+        linkButtonNode("consent_url", "es"),
+      ],
+    } as never;
+    const label = (
+      linkButtonNode("consent_url", "es").attrs as { text: string }
+    ).text;
+    // The preview always has an example link, so the admin sees the button.
+    const preview = await buildPreviewEmail("booking_confirmed", "es", {
+      doc: body,
+    });
+    expect(preview.html).toContain(label);
+    expect(preview.html).toContain('href="https://example.com/consent');
+    // A client who has already signed has no link: the button is not sent.
+    const signed = await composeMessageEmail({
+      key: "booking_confirmed",
+      locale: "es",
+      row: {
+        subject: null,
+        preheader: null,
+        title: null,
+        doc: body,
+        enabled: true,
+      },
+      vars: { first_name: "Ana", service: "Drenaje", consent_url: "" },
+      fixedHtml: "",
+    });
+    expect(signed.html).toContain("Firma antes de venir.");
+    expect(signed.html).not.toContain(label);
+    expect(signed.html).not.toContain('href="#"');
   });
 
   it("is the same email the test sends: the preview and the test cannot differ", async () => {
