@@ -31,8 +31,13 @@ export type BlogPostSummary = {
  * left out, so it reads as empty (an email) or a dash (WhatsApp).
  *
  * The date is localised to the recipient with the same helper the booking
- * notices use; the time is the saved `HH:MM`. Nothing here converts between
- * time zones: these are the wall-clock strings the centre's clients booked.
+ * notices use; the time is the saved `HH:MM` (already cut by `foldVisits`).
+ * Nothing here converts between time zones: these are the wall-clock strings
+ * the centre's clients booked.
+ *
+ * Note: `{{service}}`, `{{session_type}}`, `{{date}}` and `{{time}}` in an
+ * email body are therefore filled in `after_booking` and `first_visit`
+ * campaigns; before, a token of those names rendered as empty.
  */
 function visitVars(
   visit: VisitInfo | null | undefined,
@@ -46,8 +51,11 @@ function visitVars(
   };
   set("service", visit.service);
   set("session_type", visit.sessionType);
-  set("date", formatLongDate(visit.date, locale));
-  set("time", visit.time.slice(0, 5));
+  const date = formatLongDate(visit.date, locale);
+  // `formatLongDate` answers "Invalid Date" for a malformed day: better no
+  // date than that on a client's phone.
+  if (date !== "Invalid Date") set("date", date);
+  set("time", visit.time);
   return Object.keys(vars).length > 0 ? vars : undefined;
 }
 

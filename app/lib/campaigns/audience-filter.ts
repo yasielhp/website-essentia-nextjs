@@ -1,3 +1,4 @@
+import { sendLocaleOf } from "@/lib/schemas";
 import { toCampaignPhone } from "@/lib/whatsapp/phone";
 import type {
   CampaignAudience,
@@ -230,10 +231,15 @@ export function filterAudience(
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.
+      // A WhatsApp campaign is one template in one language, so there the
+      // contact's own language never counts, and the visit date is written
+      // in the template's.
       language:
-        audience.language !== "any"
-          ? audience.language
-          : (audience.sendLocale ?? toLocale(candidate.language)),
+        channel === "whatsapp"
+          ? sendLocaleOf(audience)
+          : audience.language !== "any"
+            ? audience.language
+            : (audience.sendLocale ?? toLocale(candidate.language)),
     });
   }
 

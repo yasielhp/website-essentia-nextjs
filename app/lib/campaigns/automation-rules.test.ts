@@ -409,4 +409,24 @@ describe("visit variables for the message", () => {
     expect(cycles(afterBooking(visitor()))).toEqual(["v:2026-12-10"]);
     expect(cycles(firstVisit(visitor()))).toEqual(["v:"]);
   });
+
+  it("leaves out a date that cannot be formatted", () => {
+    const [due] = afterBooking(
+      visitor({ lastVisit: { ...visit, date: "2026-xx-10" } }),
+    );
+    expect(due.vars).not.toHaveProperty("date");
+    expect(due.vars?.service).toBe("Drenaje linfático");
+  });
+
+  it("first_visit with a tierId is due without vars when the type has no visit data", () => {
+    const [due] = firstVisit(
+      visitor({
+        firstVisitEndsAtByTier: { t1: "2026-12-10T11:00:00Z" },
+        firstVisitByTier: {},
+      }),
+      "t1",
+    );
+    expect(due.recipient.id).toBe("v");
+    expect(due.vars).toBeUndefined();
+  });
 });

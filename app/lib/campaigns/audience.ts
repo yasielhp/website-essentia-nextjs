@@ -1,11 +1,10 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import type { CampaignAudience, CampaignChannel } from "@/types/campaign";
-import { visitEndsAtIso } from "./visit-time";
+import { foldVisits, type VisitBooking } from "./visits";
 import {
   filterAudience,
   type ContactCandidate,
   type Recipient,
-  type VisitInfo,
 } from "./audience-filter";
 
 /**
@@ -46,6 +45,7 @@ type ContactRow = {
 };
 
 type BookingRow = {
+  id: string;
   contact_id: string | null;
   email: string | null;
   service_id: string | null;
@@ -63,17 +63,9 @@ type BookingSummary = {
   first: string | null;
   services: Set<string>;
   count: number;
-  /** ISO end of the earliest confirmed/completed visit. */
-  firstVisitEndsAt: string | null;
-  /** The same, per session type. */
-  firstVisitEndsAtByTier: Map<string, string>;
   confirmedCount: number;
-  /** The latest booking by date then time, and its sort key. */
-  lastVisit: VisitInfo | null;
-  lastVisitKey: string;
-  /** Alongside `firstVisitEndsAt`: the booking that earliest end belongs to. */
-  firstVisit: VisitInfo | null;
-  firstVisitByTier: Map<string, VisitInfo>;
+  /** Every booking of the contact, for `foldVisits` to choose among. */
+  bookings: VisitBooking[];
 };
 
 /** Rows above what the centre could plausibly hold; only a guard, not paging. */
@@ -115,7 +107,7 @@ export async function loadCandidates(
     db
       .from("bookings")
       .select(
-        "contact_id, email, service_id, service_title, tier_id, date, time, duration, status",
+        "id, contact_id, email, service_id, service_title, tier_id, date, time, duration, status",
       )
       .neq("status", "cancelled")
       .range(0, MAX_ROWS),
@@ -135,8 +127,13 @@ export async function loadCandidates(
     );
   }
 
-  // A label is a nicety for the message: if the read failed, the booking
-  // still goes out without it.
+  // A label is a nicety for the message: if the read failed, the send goes
+  // out without it rather than not at all.
+  if (tiersResult.error) {
+    console.error(
+      `[loadCandidates] service_tiers read failed: ${tiersResult.error.message}`,
+    );
+  }
   const tierLabels = new Map<string, string>();
   for (const tier of (tiersResult.data ?? []) as {
     id: string;
@@ -174,24 +171,9 @@ export async function loadCandidates(
       first: null,
       services: new Set<string>(),
       count: 0,
-      firstVisitEndsAt: null,
-      firstVisitEndsAtByTier: new Map<string, string>(),
       confirmedCount: 0,
-      lastVisit: null,
-      lastVisitKey: "",
-      firstVisit: null,
-      firstVisitByTier: new Map<string, VisitInfo>(),
+      bookings: [],
     };
-    const visit: VisitInfo | null = booking.date
-      ? {
-          service: booking.service_title ?? "",
-          sessionType: booking.tier_id
-            ? (tierLabels.get(booking.tier_id) ?? null)
-            : null,
-          date: booking.date.slice(0, 10),
-          time: (booking.time ?? "").slice(0, 5),
-        }
-      : null;
     // A booking without a date still proves the contact booked, and which
     // service, but cannot be "the last one". `date` is a Postgres date, but
     // sliced anyway so a timestamp would still compare as YYYY-MM-DD, which
@@ -200,42 +182,11 @@ export async function loadCandidates(
       const day = booking.date.slice(0, 10);
       if (summary.last === null || day > summary.last) summary.last = day;
       if (summary.first === null || day < summary.first) summary.first = day;
-      // The latest by date, then by time: two bookings on the same day are
-      // told apart by the later one. Same set as `last` (non-cancelled).
-      const key = `${day} ${(booking.time ?? "").slice(0, 5)}`;
-      if (visit && key > summary.lastVisitKey) {
-        summary.lastVisitKey = key;
-        summary.lastVisit = visit;
-      }
     }
-    // Only visits that really happened (or will) start the post-visit flow;
-    // the earliest end wins, compared as ISO strings in the same base (UTC).
     if (booking.status === "confirmed" || booking.status === "completed") {
       summary.confirmedCount += 1;
-      const endsAt = visitEndsAtIso(
-        booking.date,
-        booking.time,
-        booking.duration,
-      );
-      if (
-        endsAt &&
-        (summary.firstVisitEndsAt === null || endsAt < summary.firstVisitEndsAt)
-      ) {
-        summary.firstVisitEndsAt = endsAt;
-        // The booking that earliest end belongs to, so the message talks
-        // about the visit the rule is waiting for.
-        summary.firstVisit = visit;
-      }
-      // And the earliest of this session type, so a campaign for one type is
-      // not decided by what the client booked first of another.
-      if (endsAt && booking.tier_id) {
-        const earlier = summary.firstVisitEndsAtByTier.get(booking.tier_id);
-        if (earlier === undefined || endsAt < earlier) {
-          summary.firstVisitEndsAtByTier.set(booking.tier_id, endsAt);
-          if (visit) summary.firstVisitByTier.set(booking.tier_id, visit);
-        }
-      }
     }
+    summary.bookings.push(booking);
     if (booking.service_id) summary.services.add(booking.service_id);
     summary.count += 1;
     byContact.set(contactId, summary);
@@ -243,6 +194,7 @@ export async function loadCandidates(
 
   const candidates: ContactCandidate[] = contacts.map((row) => {
     const bookings = byContact.get(row.id);
+    const visits = foldVisits(bookings?.bookings ?? [], tierLabels);
     return {
       id: row.id,
       email: row.email ?? "",
@@ -259,16 +211,12 @@ export async function loadCandidates(
       phone: row.phone,
       serviceIds: bookings ? [...bookings.services] : [],
       bookingsCount: bookings?.count ?? 0,
-      firstVisitEndsAt: bookings?.firstVisitEndsAt ?? null,
-      firstVisitEndsAtByTier: bookings
-        ? Object.fromEntries(bookings.firstVisitEndsAtByTier)
-        : {},
+      firstVisitEndsAt: visits.firstVisitEndsAt,
+      firstVisitEndsAtByTier: visits.firstVisitEndsAtByTier,
       confirmedBookingsCount: bookings?.confirmedCount ?? 0,
-      lastVisit: bookings?.lastVisit ?? null,
-      firstVisit: bookings?.firstVisit ?? null,
-      firstVisitByTier: bookings
-        ? Object.fromEntries(bookings.firstVisitByTier)
-        : {},
+      lastVisit: visits.lastVisit,
+      firstVisit: visits.firstVisit,
+      firstVisitByTier: visits.firstVisitByTier,
       whatsappMarketingOptedInAt: row.whatsapp_marketing_opted_in_at,
       whatsappOptedOutAt: row.whatsapp_opted_out_at,
       whatsappUnreachableAt: row.whatsapp_unreachable_at,

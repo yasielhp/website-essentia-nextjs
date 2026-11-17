@@ -425,6 +425,14 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(ids(run([ok]))).toEqual([ok.id]);
   });
 
+  it("keeps the contact's own language on the email channel", () => {
+    const en = c({ language: "en" });
+    const es = c({ language: "es" });
+    expect(
+      filterAudience([en, es], EMPTY_AUDIENCE, NOW).map((r) => r.language),
+    ).toEqual(["en", "es"]);
+  });
+
   it("leaves the phone as stored on an email recipient", () => {
     const person = c({ phone: "600 11 22 33" });
     expect(filterAudience([person], EMPTY_AUDIENCE, NOW)[0].phone).toBe(
@@ -443,6 +451,21 @@ describe("filterAudience — WhatsApp channel", () => {
     expect(ids(run([rejected, kept], audience({ language: "es" })))).toEqual([
       kept.id,
     ]);
+  });
+
+  it("writes in the campaign's language, never the contact's, even without a send locale", () => {
+    const en = wa({ language: "en" });
+    const es = wa({ language: "es", phone: "600112244" });
+    // `any` and no `sendLocale` (old data): the house default, Spanish.
+    expect(run([en, es]).map((r) => r.language)).toEqual(["es", "es"]);
+    expect(
+      run([es], audience({ sendLocale: "en" })).map((r) => r.language),
+    ).toEqual(["en"]);
+    expect(
+      run([en], audience({ language: "es", manualIds: [en.id] })).map(
+        (r) => r.language,
+      ),
+    ).toEqual(["es"]);
   });
 
   it("collapses two contacts sharing a number, however it is written", () => {
