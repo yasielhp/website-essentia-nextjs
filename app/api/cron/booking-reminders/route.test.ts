@@ -44,6 +44,16 @@ const BOOKING = {
   service_tiers: { label: "Sesión individual" },
 };
 
+const SECOND = {
+  ...BOOKING,
+  id: "b-2",
+  email: "luis@example.test",
+  first_name: "Luis",
+  cancel_token: "tok-456",
+};
+let bookingsInRun: (typeof BOOKING)[] = [BOOKING];
+let templateReads = 0;
+
 function chain(result: () => unknown, onIn?: (ids: string[]) => void): unknown {
   const proxy: unknown = new Proxy(() => {}, {
     get(_t, prop) {
@@ -73,10 +83,15 @@ const fakeAdmin = {
   getAdminClient: () => ({
     database: {
       from: (table: string) => {
-        if (table === "message_templates") return chain(() => templates());
+        if (table === "message_templates") {
+          return chain(() => {
+            templateReads++;
+            return templates();
+          });
+        }
         if (table === "bookings") {
           return chain(
-            () => ({ data: [BOOKING], error: null }),
+            () => ({ data: bookingsInRun, error: null }),
             (ids) => stamped.push(ids),
           );
         }
@@ -122,6 +137,8 @@ beforeEach(() => {
   batches = [];
   stamped = [];
   templates = () => ({ data: null, error: null });
+  bookingsInRun = [BOOKING];
+  templateReads = 0;
 });
 
 const run = () =>
@@ -131,7 +148,7 @@ const run = () =>
     }),
   );
 
-function legacy(): Email {
+function legacy(b: typeof BOOKING = BOOKING): Email {
   const date = new Date(
     startsAt.getFullYear(),
     startsAt.getMonth(),
@@ -143,17 +160,17 @@ function legacy(): Email {
     year: "numeric",
   });
   return {
-    to: "ana@example.test",
+    to: b.email,
     subject: `Tu sesión del ${date} — Drenaje linfático`,
     html: bookingReminderEmail({
-      name: "Ana",
+      name: b.first_name,
       service: "Drenaje linfático",
       sessionType: "Sesión individual",
       date,
       time: TIME,
       duration: "60 min",
       dateIso: DATE,
-      cancelUrl: "https://app.example.test/es/reserva/cancelar?token=tok-123",
+      cancelUrl: `https://app.example.test/es/reserva/cancelar?token=${b.cancel_token}`,
       locale: "es",
     }),
   };
@@ -226,5 +243,56 @@ describe("booking reminders", () => {
     expect(await res.json()).toMatchObject({ sent: 0, skipped: 1 });
     expect(batches).toEqual([]);
     expect(stamped).toEqual([]);
+  });
+
+  test("two bookings in one run: the message is read once, each gets the legacy email", async () => {
+    bookingsInRun = [BOOKING, SECOND];
+    await run();
+    expect(templateReads).toBe(1);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toEqual([legacy(BOOKING), legacy(SECOND)]);
+    expect(stamped).toEqual([["b-1", "b-2"]]);
+  });
+
+  test("an unreadable message is read once and every booking still gets the legacy email", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    bookingsInRun = [BOOKING, SECOND];
+    templates = () => {
+      throw new Error("db down");
+    };
+    await run();
+    quiet.mockRestore();
+    expect(templateReads).toBe(1);
+    expect(batches[0]).toEqual([legacy(BOOKING), legacy(SECOND)]);
+  });
+
+  test("switched off with two bookings: one log line with the count, nothing sent or stamped", async () => {
+    const info = spyOn(console, "info").mockImplementation(() => {});
+    bookingsInRun = [BOOKING, SECOND];
+    templates = () => ({
+      data: {
+        subject: null,
+        preheader: null,
+        title: null,
+        doc: null,
+        enabled: false,
+      },
+      error: null,
+    });
+    const res = await run();
+    const lines = info.mock.calls.map((c) => String(c[0]));
+    info.mockRestore();
+    expect(templateReads).toBe(1);
+    expect(await res.json()).toMatchObject({ sent: 0, skipped: 2 });
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("2 not sent");
+    expect(batches).toEqual([]);
+    expect(stamped).toEqual([]);
+  });
+
+  test("no bookings in the window: the message is not read at all", async () => {
+    bookingsInRun = [];
+    await run();
+    expect(templateReads).toBe(0);
   });
 });

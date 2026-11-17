@@ -4,7 +4,7 @@ import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
 import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
-import { renderMessageEmail } from "@/lib/messages/render";
+import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
 
 /**
@@ -97,6 +97,20 @@ async function handle(request: NextRequest) {
     email: Parameters<typeof sendEmailBatch>[0][number];
   }[] = [];
 
+  // The saved reminder, read once for the whole run: every booking in it gets
+  // the same message. A failed read is the same as no saved reminder.
+  const savedReminder =
+    (data ?? []).length === 0
+      ? null
+      : await loadMessageRow("booking_reminder", "es").catch((err) => {
+          console.error(
+            "[cron/booking-reminders] could not read the message:",
+            err,
+          );
+          return null;
+        });
+  let switchedOff = 0;
+
   // The loop only decides who is due and writes their email; nothing is sent
   // or stamped inside it, so there is no request waiting on the one before.
   for (const booking of (data ?? []) as Row[]) {
@@ -133,39 +147,40 @@ async function handle(request: NextRequest) {
     // The admin's version of the reminder, if they edited or switched it off;
     // otherwise (or if reading it fails) `legacy` and the email goes out as it
     // always has.
-    const custom = await renderMessageEmail({
-      key: "booking_reminder",
-      locale,
-      vars: {
-        first_name: booking.first_name ?? "",
-        service,
-        session_type: sessionType ?? "",
-        date,
-        time,
-        duration: booking.duration ?? "",
-        cancel_url: cancelUrl ?? "",
-      },
-      fixedHtml: () =>
-        fixedBlocksHtml("booking_reminder", {
-          locale,
+    const custom = await renderMessageEmail(
+      {
+        key: "booking_reminder",
+        locale,
+        vars: {
+          first_name: booking.first_name ?? "",
           service,
-          sessionType,
+          session_type: sessionType ?? "",
           date,
           time,
-          duration: booking.duration,
-          dateIso,
-          cancelUrl,
-        }),
-    });
+          duration: booking.duration ?? "",
+          cancel_url: cancelUrl ?? "",
+        },
+        fixedHtml: () =>
+          fixedBlocksHtml("booking_reminder", {
+            locale,
+            service,
+            sessionType,
+            date,
+            time,
+            duration: booking.duration,
+            dateIso,
+            cancelUrl,
+          }),
+      },
+      async () => savedReminder,
+    );
 
     // Switched off: nothing is sent and the booking is not stamped, so turning
     // the reminder back on still reaches whoever is inside the window then.
     // The booking history has no entry for reminders today, so the omission is
-    // only logged.
+    // logged once, after the loop.
     if (custom.kind === "skip") {
-      console.info(
-        `[cron/booking-reminders] reminder switched off, skipped booking ${booking.id}`,
-      );
+      switchedOff++;
       skipped++;
       continue;
     }
@@ -194,6 +209,12 @@ async function handle(request: NextRequest) {
               }),
       },
     });
+  }
+
+  if (switchedOff > 0) {
+    console.info(
+      `[cron/booking-reminders] reminder switched off: ${switchedOff} not sent`,
+    );
   }
 
   if (due.length === 0) {
