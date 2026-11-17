@@ -68,6 +68,45 @@ type MetaResponse = {
   error?: { message?: string; error_data?: { details?: string } };
 };
 
+/** What one template message needs, whichever template it is. */
+export type TemplateSend = {
+  to: string;
+  name: string;
+  /** Meta language code: `es`, `en`, `en_US`… */
+  language: string;
+  bodyParams: string[];
+  /** One entry per URL button with a dynamic suffix, by button index. */
+  buttonUrlParams?: { index: number; text: string }[];
+};
+
+/**
+ * The JSON Meta receives for one template message. Pure, so a test can pin the
+ * exact shape the staff notification has always sent.
+ */
+export function buildTemplateBody(send: TemplateSend) {
+  return {
+    messaging_product: "whatsapp",
+    to: send.to,
+    type: "template",
+    template: {
+      name: send.name,
+      language: { code: send.language },
+      components: [
+        {
+          type: "body",
+          parameters: send.bodyParams.map((text) => ({ type: "text", text })),
+        },
+        ...(send.buttonUrlParams ?? []).map((button) => ({
+          type: "button",
+          sub_type: "url",
+          index: String(button.index),
+          parameters: [{ type: "text", text: button.text }],
+        })),
+      ],
+    },
+  };
+}
+
 /**
  * Sends one approved template message.
  *
@@ -85,27 +124,13 @@ export async function sendTemplate(opts: {
   const version = process.env.WHATSAPP_API_VERSION || DEFAULT_API_VERSION;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
-  const body = {
-    messaging_product: "whatsapp",
+  const body = buildTemplateBody({
     to: opts.to,
-    type: "template",
-    template: {
-      name: whatsAppTemplateName(),
-      language: { code: WHATSAPP_TEMPLATE_LANGUAGE },
-      components: [
-        {
-          type: "body",
-          parameters: opts.params.map((text) => ({ type: "text", text })),
-        },
-        {
-          type: "button",
-          sub_type: "url",
-          index: "0",
-          parameters: [{ type: "text", text: opts.buttonUrlParam }],
-        },
-      ],
-    },
-  };
+    name: whatsAppTemplateName(),
+    language: WHATSAPP_TEMPLATE_LANGUAGE,
+    bodyParams: opts.params,
+    buttonUrlParams: [{ index: 0, text: opts.buttonUrlParam }],
+  });
 
   try {
     const response = await fetch(
