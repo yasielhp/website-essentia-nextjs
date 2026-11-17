@@ -8,6 +8,8 @@ export const bookingReceived: MessageDefaults = {
     [
       "Solicitud recibida",
       "Estamos revisando tu solicitud y confirmaremos tu reserva en breve. Si tienes alguna pregunta, no dudes en contactarnos.",
+    ],
+    [
       "Si necesitas cancelar o modificar tu solicitud, por favor contáctanos con al menos 24 horas de antelación.",
     ],
   ),
@@ -18,6 +20,8 @@ export const bookingReceived: MessageDefaults = {
     [
       "Request received",
       "We are reviewing your request and will confirm your booking shortly. If you have any questions, feel free to contact us.",
+    ],
+    [
       "If you need to cancel or modify your request, please contact us at least 24 hours in advance.",
     ],
   ),

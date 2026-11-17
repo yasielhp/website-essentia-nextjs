@@ -303,3 +303,141 @@ describe("renderMessageEmail", () => {
     expect(asked).toEqual([["booking_confirmed", "en"]]);
   });
 });
+
+describe("a body that is not a document is not an edit", () => {
+  const bare = (doc: unknown): MessageRow => ({
+    subject: null,
+    preheader: null,
+    title: null,
+    doc: doc as MessageRow["doc"],
+    enabled: true,
+  });
+
+  for (const [label, doc] of [
+    ["a string", "hola"],
+    ["an empty object", {}],
+    ["an array", []],
+    ["a number", 7],
+    ["a document with no content", { type: "doc" }],
+    ["an empty document", { type: "doc", content: [] }],
+    [
+      "a document of empty paragraphs",
+      { type: "doc", content: [{ type: "paragraph", content: [] }] },
+    ],
+  ] as const) {
+    test(`${label}: nothing edited, so legacy`, () => {
+      expect(chooseDelivery("booking_confirmed", bare(doc))).toBe("legacy");
+    });
+  }
+
+  test("and with a subject beside it, the default body goes out", async () => {
+    const { html } = await composeMessageEmail({
+      key: "booking_confirmed",
+      locale: "es",
+      row: { ...bare("hola"), subject: "Asunto" },
+      vars: { first_name: "Ana" },
+      fixedHtml: "",
+    });
+    expect(html).toContain("Estamos deseando verte.");
+  });
+
+  test("only a switch that is exactly false turns the reminder off", () => {
+    for (const enabled of [null, undefined, 0, "false", ""]) {
+      const row = { ...bare(null), enabled } as unknown as MessageRow;
+      expect(chooseDelivery("booking_reminder", row)).not.toBe("skip");
+    }
+    const off = { ...bare(null), enabled: false };
+    expect(chooseDelivery("booking_reminder", off)).toBe("skip");
+  });
+});
+
+describe("links in the admin's body", () => {
+  const paragraphWithLink = (href: string) => ({
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: "pulsa aquí",
+            marks: [{ type: "link", attrs: { href, target: "_blank" } }],
+          },
+        ],
+      },
+      {
+        type: "button",
+        attrs: {
+          text: "Botón",
+          url: href,
+          alignment: "center",
+          variant: "filled",
+          borderRadius: "round",
+          buttonColor: "#103838",
+          textColor: "#f0ede6",
+        },
+      },
+    ],
+  });
+
+  const send = (href: string, vars = {}) =>
+    composeMessageEmail({
+      key: "booking_confirmed",
+      locale: "es",
+      row: row({ doc: paragraphWithLink(href) }),
+      vars,
+      fixedHtml: "",
+    });
+
+  const hrefs = (html: string) =>
+    [...html.matchAll(/href="([^"]*)"/g)]
+      .map((m) => m[1]!)
+      .filter((h) => !h.includes("fonts.googleapis"));
+
+  for (const bad of [
+    "javascript:alert(1)",
+    " JaVaScRiPt:alert(1)",
+    "data:text/html;base64,PHNjcmlwdD4=",
+    "vbscript:msgbox(1)",
+    "file:///etc/passwd",
+    "//evil.example/x",
+    "",
+  ]) {
+    test(`${JSON.stringify(bad)} leaves for nowhere`, async () => {
+      const { html } = await send(bad);
+      expect(hrefs(html)).not.toEqual([]);
+      for (const href of hrefs(html)) expect(href).toBe("#");
+      expect(html.toLowerCase()).not.toContain("javascript:");
+      expect(html.toLowerCase()).not.toContain("data:text");
+    });
+  }
+
+  for (const good of [
+    "https://example.test/a?b=1",
+    "http://example.test/",
+    "mailto:info@example.test",
+  ]) {
+    test(`${good} is kept`, async () => {
+      const { html } = await send(good);
+      expect(hrefs(html).every((h) => h.replace(/&amp;/g, "&") === good)).toBe(
+        true,
+      );
+    });
+  }
+
+  test("a variable that holds a link works as a link", async () => {
+    const { html } = await send("{{cancel_url}}", {
+      cancel_url: "https://example.test/cancel?token=abc",
+    });
+    expect(
+      hrefs(html).every((h) => h.startsWith("https://example.test/cancel")),
+    ).toBe(true);
+  });
+
+  test("a variable that holds something else does not", async () => {
+    const { html } = await send("{{cancel_url}}", {
+      cancel_url: "javascript:alert(1)",
+    });
+    for (const href of hrefs(html)) expect(href).toBe("#");
+  });
+});

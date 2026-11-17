@@ -2,7 +2,9 @@ import { defaultContent } from "@/emails/defaults";
 import { EMAIL_ADDRESS, emailBase } from "@/emails/templates/_base";
 import { renderBodyFragment } from "@/emails/templates/campaign";
 import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
+import { docIsEmpty } from "@/lib/campaigns/doc";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
+import { OUTRO_MARKER } from "./fixed-blocks";
 import {
   MESSAGE_CATALOG,
   type MessageKey,
@@ -39,15 +41,77 @@ export function chooseDelivery(
   row: MessageRow | null,
 ): Delivery {
   if (!row) return "legacy";
-  if (!row.enabled && MESSAGE_CATALOG[key].canDisable) return "skip";
+  // Strictly false: a null or an odd value in the column is not "off".
+  if (row.enabled === false && MESSAGE_CATALOG[key].canDisable) return "skip";
   // A row that only carries the switch (the reminder turned off and on again)
   // has no text of its own to send: the legacy email is still the right one.
   const edited =
-    row.doc != null ||
+    usableDoc(row.doc) != null ||
     row.title != null ||
     row.preheader != null ||
     (row.subject ?? "").trim() !== "";
   return edited ? "custom" : "legacy";
+}
+
+/**
+ * The body document of a row, or null when it does not hold one worth sending:
+ * not a document at all (a string, `{}`, an array), or one with nothing in it.
+ * Such a row's body is "not edited" and the default one is used.
+ */
+export function usableDoc(doc: unknown): EmailDoc | null {
+  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+    return null;
+  }
+  const candidate = doc as EmailDoc;
+  if (candidate.type !== "doc" || !Array.isArray(candidate.content)) {
+    return null;
+  }
+  return docIsEmpty(candidate) ? null : candidate;
+}
+
+const SAFE_URL = /^(?:https?:|mailto:)/i;
+
+/**
+ * Every link in the document leaves for `https:`, `http:` or `mailto:`, or
+ * for nowhere: any other scheme (`javascript:`, `data:`, `vbscript:`…) becomes
+ * `#`. The editor lets an admin type any address, and React's own filtering of
+ * `javascript:` in an href is not something a mail template should lean on.
+ * Variables inside a link are filled first, so `{{cancel_url}}` still works.
+ */
+export function safeDoc(
+  doc: EmailDoc,
+  values: Record<string, string>,
+): EmailDoc {
+  const clean = (url: unknown): unknown => {
+    if (typeof url !== "string") return url;
+    const filled = renderVariables(url, values, { escape: false }).trim();
+    return SAFE_URL.test(filled) ? filled : "#";
+  };
+  const walk = (node: EmailDoc): EmailDoc => {
+    const next: EmailDoc = { ...node };
+    if (node.attrs) {
+      next.attrs = { ...node.attrs };
+      if (node.type === "button" && "url" in node.attrs) {
+        next.attrs.url = clean(node.attrs.url);
+      }
+      if (node.type === "image") {
+        if ("externalLink" in node.attrs) {
+          next.attrs.externalLink = clean(node.attrs.externalLink);
+        }
+        if ("src" in node.attrs) next.attrs.src = clean(node.attrs.src);
+      }
+    }
+    if (node.marks) {
+      next.marks = node.marks.map((mark) =>
+        mark.type === "link" && mark.attrs && "href" in mark.attrs
+          ? { ...mark, attrs: { ...mark.attrs, href: clean(mark.attrs.href) } }
+          : mark,
+      );
+    }
+    if (node.content) next.content = node.content.map(walk);
+    return next;
+  };
+  return walk(doc);
 }
 
 export type MessageVars = Partial<Record<MessageVariable, string>>;
@@ -152,8 +216,6 @@ export async function composeMessageEmail({
     (row.subject ?? "").trim() !== "" ? row.subject! : fallback.subject;
   const rawTitle = row.title ?? fallback.title;
   const rawPreheader = row.preheader ?? fallback.preheader;
-  const doc = row.doc ?? fallback.doc;
-
   const title = renderVariables(escapeHtml(rawTitle), values);
   const preheader = renderVariables(
     escapeHtml(rawPreheader || rawTitle),
@@ -162,15 +224,36 @@ export async function composeMessageEmail({
   // The paid confirmation has never had a preheader, so it only prints one the
   // admin wrote rather than borrowing the title.
   const paidPreheader = renderVariables(escapeHtml(rawPreheader), values);
-  const fragment = renderVariables(
-    await renderBodyFragment(doc, values),
-    values,
-  );
+
+  const fragment = async (doc: EmailDoc | null): Promise<string> =>
+    doc
+      ? renderVariables(
+          await renderBodyFragment(safeDoc(doc, values), values),
+          values,
+        )
+      : "";
+
+  // The fixed blocks carry a marker where the legacy email prints its closing
+  // sentence. Without a body of the admin's own the default intro, the blocks
+  // and the default closing go out in the legacy order. With one, their
+  // document goes first, whole (its closing included), and then the blocks.
+  const at = fixedHtml.indexOf(OUTRO_MARKER);
+  const blocksBefore = at === -1 ? fixedHtml : fixedHtml.slice(0, at);
+  const blocksAfter =
+    at === -1 ? "" : fixedHtml.slice(at + OUTRO_MARKER.length);
+  const edited = usableDoc(row.doc);
+  const content = edited
+    ? `${await fragment(edited)}
+      ${blocksBefore}
+      ${blocksAfter}`
+    : `${await fragment(fallback.intro)}
+      ${blocksBefore}
+      ${await fragment(fallback.outro)}
+      ${blocksAfter}`;
 
   const body = `
       ${title ? `<h1 style="${H1_STYLE}">${title}</h1>` : ""}
-      ${fragment}
-      ${fixedHtml}`;
+      ${content}`;
 
   return {
     subject: renderVariables(subject, values, { escape: false }),

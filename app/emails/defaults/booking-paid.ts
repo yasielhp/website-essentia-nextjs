@@ -10,6 +10,8 @@ export const bookingPaid: MessageDefaults = {
     [
       "Reserva confirmada",
       "Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión.",
+    ],
+    [
       "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
     ],
   ),
@@ -20,6 +22,8 @@ export const bookingPaid: MessageDefaults = {
     [
       "Booking Confirmed",
       "We look forward to seeing you. Here are the details of your upcoming session.",
+    ],
+    [
       "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
     ],
   ),

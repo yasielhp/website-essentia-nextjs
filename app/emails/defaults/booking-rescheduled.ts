@@ -8,6 +8,8 @@ export const bookingRescheduled: MessageDefaults = {
     [
       "Sesión reprogramada",
       "Hemos actualizado la fecha y/o la hora de tu sesión. Aquí tienes los nuevos detalles:",
+    ],
+    [
       "Si esta fecha no te viene bien, llámanos al **+34 634 09 12 95** y estaremos encantados de ayudarte.",
     ],
   ),
@@ -18,6 +20,8 @@ export const bookingRescheduled: MessageDefaults = {
     [
       "Booking rescheduled",
       "We have updated the date and/or time of your session. Here are the new details:",
+    ],
+    [
       "If this date does not work for you, please call us at **+34 634 09 12 95** and we will be happy to help.",
     ],
   ),

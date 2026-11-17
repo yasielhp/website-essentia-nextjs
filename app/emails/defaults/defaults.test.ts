@@ -4,7 +4,12 @@ import {
   MESSAGE_KEYS,
   type MessageKey,
 } from "@/lib/messages/catalog";
-import { fixedBlocks } from "@/lib/messages/fixed-blocks";
+import { composeMessageEmail } from "@/lib/messages/compose";
+import {
+  fixedBlocks,
+  fixedBlocksHtml,
+  fixedBlocksSplit,
+} from "@/lib/messages/fixed-blocks";
 import type { CampaignLocale } from "@/types/campaign";
 import { emailBase } from "../templates/_base";
 import {
@@ -152,5 +157,148 @@ describe("the defaults themselves", () => {
         expect(defaultContent(key, locale).subject.trim()).not.toBe("");
       }
     }
+  });
+});
+
+// ── order ──────────────────────────────────────────────────────────────────
+
+/**
+ * The visible phrases of a message, in the order they must appear: the
+ * preheader, the kicker line, the title, the rest of the intro, the fixed
+ * blocks the legacy email prints before its closing sentence, the closing
+ * sentence, and whatever the legacy email prints after it.
+ *
+ * The one place the custom email differs from the legacy one is the kicker:
+ * the legacy email prints it above the title, the custom one has it as the
+ * first line of the body, under the title. `kickerFirst` picks which.
+ */
+function expectedSequence(
+  key: MessageKey,
+  locale: CampaignLocale,
+  c: ReturnType<typeof casesFor>[number],
+  kickerFirst: boolean,
+): string[] {
+  const def = defaultContent(key, locale);
+  const intro = docParagraphs(def.intro).map((p) => fill(p, c.values));
+  const hasKicker = key !== "consent_request";
+  const kicker = hasKicker ? [intro[0]!] : [];
+  const rest = hasKicker ? intro.slice(1) : intro;
+  const title = fill(def.title, c.values);
+  const { before, after } = fixedBlocksSplit(key, c.fixed);
+  return [
+    ...(def.preheader ? [fill(def.preheader, c.values)] : []),
+    ...(kickerFirst ? [...kicker, title] : [title, ...kicker]),
+    ...rest,
+    ...before.map(visibleText),
+    ...docParagraphs(def.outro).map((p) => fill(p, c.values)),
+    ...after.map(visibleText),
+  ];
+}
+
+/** Every phrase appears, each after the one before it. */
+function expectInOrder(text: string, phrases: string[]) {
+  let from = 0;
+  for (const phrase of phrases) {
+    const at = text.indexOf(phrase, from);
+    expect({ phrase, found: at >= 0 }).toEqual({ phrase, found: true });
+    from = at + phrase.length;
+  }
+}
+
+describe("intro, fixed blocks and closing sentence are in the legacy order", () => {
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of LOCALES) {
+      for (const c of casesFor(key, locale)) {
+        test(`${key}/${locale} (${c.label}): the legacy email prints them in this sequence`, () => {
+          expectInOrder(
+            visibleText(c.legacy),
+            expectedSequence(key, locale, c, true),
+          );
+        });
+      }
+    }
+  }
+
+  test("only messages with a closing sentence have an outro", () => {
+    const withOutro = MESSAGE_KEYS.filter(
+      (key) => defaultContent(key, "es").outro !== null,
+    );
+    expect(withOutro.sort()).toEqual([
+      "bonus_purchase",
+      "booking_cancelled",
+      "booking_confirmed",
+      "booking_paid",
+      "booking_received",
+      "booking_rescheduled",
+    ]);
+  });
+
+  test("the editor's document is the intro and the closing together", () => {
+    for (const key of MESSAGE_KEYS) {
+      for (const locale of LOCALES) {
+        const def = defaultContent(key, locale);
+        expect(docParagraphs(def.doc)).toEqual([
+          ...docParagraphs(def.intro),
+          ...docParagraphs(def.outro),
+        ]);
+      }
+    }
+  });
+});
+
+describe("a saved row with no body of its own sends the default body in the legacy order", () => {
+  // The admin only changed the subject: the body is still the default one.
+  const subjectOnly = {
+    subject: "Asunto del centro",
+    preheader: null,
+    title: null,
+    doc: null,
+    enabled: true,
+  };
+
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of LOCALES) {
+      for (const c of casesFor(key, locale)) {
+        test(`${key}/${locale} (${c.label}): the custom email follows the same sequence`, async () => {
+          const { html } = await composeMessageEmail({
+            key,
+            locale,
+            row: subjectOnly,
+            vars: c.values,
+            fixedHtml: fixedBlocksHtml(key, c.fixed),
+          });
+          expect(html).not.toContain("<!--outro-->");
+          expectInOrder(
+            visibleText(html),
+            expectedSequence(key, locale, c, false),
+          );
+        });
+      }
+    }
+  }
+
+  test("a body of the admin's own replaces the closing sentence too, and goes before the blocks", async () => {
+    const [c] = casesFor("booking_confirmed", "es");
+    const { html } = await composeMessageEmail({
+      key: "booking_confirmed",
+      locale: "es",
+      row: {
+        ...subjectOnly,
+        doc: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Texto propio del centro." }],
+            },
+          ],
+        },
+      },
+      vars: c!.values,
+      fixedHtml: fixedBlocksHtml("booking_confirmed", c!.fixed),
+    });
+    const text = visibleText(html);
+    expect(text).not.toContain("Si necesitas cancelar o cambiar la fecha");
+    expectInOrder(text, ["Texto propio del centro.", "Detalles de la sesión"]);
   });
 });

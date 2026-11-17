@@ -1,6 +1,6 @@
 import type { MessageKey } from "@/lib/messages/catalog";
-import type { CampaignLocale, CampaignLocaleContent } from "@/types/campaign";
-import type { MessageDefaults } from "./_content";
+import type { CampaignLocale } from "@/types/campaign";
+import type { MessageDefault, MessageDefaults } from "./_content";
 import { bonusPurchase } from "./bonus-purchase";
 import { bookingCancelled } from "./booking-cancelled";
 import { bookingConfirmed } from "./booking-confirmed";
@@ -30,6 +30,6 @@ const DEFAULTS: Record<MessageKey, MessageDefaults> = {
 export function defaultContent(
   key: MessageKey,
   locale: CampaignLocale,
-): CampaignLocaleContent {
+): MessageDefault {
   return DEFAULTS[key][locale];
 }
