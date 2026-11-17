@@ -24,6 +24,7 @@ import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
+import { templateGate } from "@/lib/campaigns/template-gate";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
 import { prepareTestSend } from "@/lib/campaigns/whatsapp-test-send";
 import { sendTemplateMessage } from "@/lib/whatsapp/client";
@@ -964,8 +965,24 @@ export async function scheduleCampaign(
     return { ok: false, error: "past" };
   }
 
-  const { data, error } = await getAdminClient()
-    .database.from("campaigns")
+  // A WhatsApp campaign's template may have been paused since it was saved.
+  const db = getAdminClient().database;
+  const { data: saved, error: readError } = await db
+    .from("campaigns")
+    .select("channel, audience, content")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { ok: false, error: "db" };
+  if (saved) {
+    const gate = await templateGate(
+      saved as Pick<CampaignRow, "channel" | "audience" | "content">,
+      db,
+    );
+    if (gate) return gate;
+  }
+
+  const { data, error } = await db
+    .from("campaigns")
     .update({
       status: "scheduled",
       scheduled_at: when.toISOString(),
@@ -1016,6 +1033,11 @@ export async function activateCampaign(
     content: row.content,
   });
   if (!check.ok) return { ok: false, error: "invalid" };
+
+  // The campaign sheet switches a saved campaign on without a save, so the
+  // template is checked again here.
+  const gate = await templateGate(row, db);
+  if (gate) return gate;
 
   const now = new Date().toISOString();
   const { data: updated, error: updateError } = await db
