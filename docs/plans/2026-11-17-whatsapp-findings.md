@@ -140,3 +140,13 @@ El recordatorio fijo de WhatsApp se sustituyó por el tipo de campaña **aviso d
 - **Las reservas del equipo no registran consentimiento**, así que esas clientas no reciben avisos de cita hasta que se active "Avisos de la cita" en su ficha.
 - **La columna `bookings.whatsapp_reminder_sent_at` está obsoleta.** Se creó para el recordatorio fijo (migración `20261117k`, ya aplicada). Quitarla es una migración aparte que decide el usuario; mientras tanto no cuesta nada.
 - **La vista previa de la audiencia** de un aviso de cita cuenta a las clientas con el consentimiento de avisos de la cita, no las citas. Cuántas citas se avisarán depende de cuándo se activa.
+
+---
+
+## (xi) Los consentimientos no tienen un registro persistente
+
+**Qué pasa.** Un consentimiento es hoy una fecha en la ficha (`whatsapp_opted_in_at`, `whatsapp_marketing_opted_in_at`, `newsletter_subscribed_at`) y el último estado de cada baja. No queda **quién** lo cambió, **cuándo exactamente**, **desde dónde** (formulario público, ficha, STOP, enlace del correo) ni **con qué texto** se pidió. Si se activa y se desactiva, la fecha anterior se pierde.
+
+**Qué hay ahora.** Una traza mínima en el registro del servidor, sin migración: cada cambio hecho desde la ficha (`setWhatsAppConsent`, `setMarketingConsent`, quitar un número de la lista de bajas) escribe `console.info` con el id de quien actúa, el id del contacto, el uso y el sentido, sin correo ni teléfono. Vive lo que vivan los registros del servidor (días), no es consultable desde el dashboard.
+
+**Mejora de fondo.** Una tabla de eventos de consentimiento (contacto, uso, acción, origen, quién, cuándo, versión del texto mostrado), escrita por el mismo código que hoy estampa las fechas, con RLS sin políticas como el resto. Es lo que pediría una inspección o una reclamación del RGPD para probar que alguien consintió, y lo que permitiría mostrar el historial en la ficha. Requiere una migración y decidir cuánto tiempo se conserva: queda para decisión del usuario.
