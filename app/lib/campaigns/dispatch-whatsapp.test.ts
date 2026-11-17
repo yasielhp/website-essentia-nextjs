@@ -578,6 +578,43 @@ describe("sendQueuedWhatsApp", () => {
   });
 });
 
+describe("sendQueuedWhatsApp when the database throws", () => {
+  test("a throwing update does not abandon the rest of the batch", async () => {
+    const written: string[] = [];
+    const db = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: template(), error: null }),
+          }),
+        }),
+        update: () => ({
+          eq: async (_c: string, id: string) => {
+            if (id === "row-1") throw new Error("socket closed");
+            written.push(id);
+            return { error: null };
+          },
+        }),
+      }),
+    } as unknown as NonNullable<WhatsAppDeps["db"]>;
+    const { send, calls } = fakeSend(() => ok("w"));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const result = await sendQueuedWhatsApp(campaign(), rowsOf(3), {
+        db,
+        send,
+        sleep: async () => {},
+      });
+      expect(calls).toHaveLength(3);
+      expect(written).toEqual(["row-2", "row-3"]);
+      expect(result.sent).toBe(3);
+    } finally {
+      console.error = original;
+    }
+  });
+});
+
 describe("sendQueuedWhatsApp pacing and budget", () => {
   test("sends ten at a time and waits out the rest of each second", async () => {
     const { db } = fakeDb();

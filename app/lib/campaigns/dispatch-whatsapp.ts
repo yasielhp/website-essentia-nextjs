@@ -175,15 +175,22 @@ export async function sendQueuedWhatsApp(
     patch: Record<string, unknown>,
   ): Promise<void> {
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const { error } = await db
-        .from("campaign_recipients")
-        .update(patch)
-        .eq("id", row.id);
-      if (!error) return;
+      let failure: string | null = null;
+      try {
+        const { error } = await db
+          .from("campaign_recipients")
+          .update(patch)
+          .eq("id", row.id);
+        failure = error ? error.message : null;
+      } catch (err) {
+        // A throw here would escape the batch and abandon the rest of it.
+        failure = err instanceof Error ? err.message : "update threw";
+      }
+      if (failure === null) return;
       if (attempt === 1) {
         console.error(
           `[campaigns] row ${row.id} could not be updated after its WhatsApp answer:`,
-          error.message,
+          failure,
         );
       }
     }
