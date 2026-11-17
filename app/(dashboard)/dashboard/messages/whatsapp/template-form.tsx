@@ -664,7 +664,7 @@ export function TemplateForm({
                       aria-label={t("form.removeButton")}
                       title={t("form.removeButton")}
                       disabled={state.submitting}
-                      className="text-petroleum-400/50 transition-colors hover:text-red-500"
+                      className="text-petroleum-400/50 -mr-2 flex size-11 items-center justify-center transition-colors hover:text-red-500 sm:size-8"
                     >
                       <IconTrash />
                     </button>

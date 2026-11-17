@@ -143,7 +143,7 @@ export function Modal({
             onClick={onClose}
             disabled={busy}
             aria-label={tCommon("close")}
-            className="text-petroleum-400/50 hover:text-petroleum-500 ml-4 shrink-0 transition-colors disabled:opacity-40"
+            className="text-petroleum-400/50 hover:text-petroleum-500 -mr-2 ml-4 flex size-11 shrink-0 items-center justify-center transition-colors disabled:opacity-40 sm:size-8"
           >
             <IconX />
           </button>

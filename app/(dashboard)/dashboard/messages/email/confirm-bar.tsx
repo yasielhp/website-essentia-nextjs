@@ -38,10 +38,22 @@ export function ConfirmBar({
     >
       <p className="text-petroleum-700 text-xs">{message}</p>
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" disabled={busy} onClick={onCancel}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onCancel}
+        >
           {noLabel}
         </Button>
-        <Button size="sm" variant="danger" disabled={busy} onClick={onConfirm}>
+        <Button
+          size="sm"
+          variant="danger"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onConfirm}
+        >
           {yesLabel}
         </Button>
       </div>
