@@ -31,3 +31,49 @@ export type WhatsAppSendResult =
   | { status: "sent"; providerId: string | null }
   | { status: "skipped" }
   | { status: "failed"; error: string };
+
+export type WhatsAppTemplateStatus =
+  "draft" | "PENDING" | "APPROVED" | "REJECTED" | "PAUSED" | "DISABLED";
+
+export type WhatsAppTemplateCategory = "MARKETING" | "UTILITY";
+
+export type WhatsAppTemplateButton =
+  | { type: "URL"; text: string; url: string }
+  | { type: "QUICK_REPLY"; text: string };
+
+export type WhatsAppTemplateRow = {
+  id: string;
+  meta_id: string | null;
+  name: string;
+  language: string;
+  category: WhatsAppTemplateCategory;
+  status: WhatsAppTemplateStatus;
+  header_text: string | null;
+  body: string;
+  footer_text: string | null;
+  buttons: WhatsAppTemplateButton[];
+  param_count: number;
+  example_params: string[];
+  rejection_reason: string | null;
+  synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * De dónde sale cada {{n}} al enviar. `field` lee del contacto o de la
+ * reserva; `static` es texto fijo escrito por el admin.
+ */
+export type WhatsAppParamSource =
+  | { kind: "field"; field: WhatsAppParamField }
+  | { kind: "static"; value: string };
+
+export type WhatsAppParamField =
+  | "first_name"
+  | "last_name"
+  | "service"
+  | "session_type"
+  | "date"
+  | "time"
+  | "post_title"
+  | "post_url";
