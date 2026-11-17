@@ -30,7 +30,16 @@ export type StaffWhatsAppInput = {
 export type WhatsAppSendResult =
   | { status: "sent"; providerId: string | null }
   | { status: "skipped" }
-  | { status: "failed"; error: string };
+  | {
+      status: "failed";
+      error: string;
+      /**
+       * True when Meta may have accepted the message anyway: the request threw
+       * (timeout, dropped connection) or Meta answered 5xx. Retrying such a
+       * send can deliver it twice. Absent when Meta refused it outright.
+       */
+      ambiguous?: boolean;
+    };
 
 /**
  * `draft` is ours; the rest are Meta's, stored exactly as it sends them.

@@ -255,18 +255,32 @@ export function buildTemplateBody(send: TemplateSend): TemplateMessageBody {
  * Never throws: a WhatsApp outage must not take a booking down with it, so
  * every failure comes back as a value the caller stores and moves on from.
  *
- * A `failed` caused by a timeout or a dropped connection does not prove Meta
- * did not send the message, so a caller that retries can deliver it twice.
+ * A `failed` caused by a timeout, a dropped connection or a 5xx does not prove
+ * Meta did not send the message, so a caller that retries can deliver it
+ * twice; those carry `ambiguous: true`. A 4xx with Meta's error body is a
+ * refusal and carries nothing.
  */
 export async function sendTemplateMessage(
   send: TemplateSend,
 ): Promise<WhatsAppSendResult> {
   if (!isWhatsAppConfigured()) return { status: "skipped" };
 
+  // Built outside the request's `try`: a body that cannot be built (a bad
+  // button index) fails before anything is sent, so it is never ambiguous.
+  let body: string;
+  try {
+    body = JSON.stringify(buildTemplateBody(send));
+  } catch (err) {
+    return {
+      status: "failed",
+      error: err instanceof Error ? err.message : "Unknown WhatsApp error",
+    };
+  }
+
   try {
     const response = await graphFetch(
       `${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      { method: "POST", body: JSON.stringify(buildTemplateBody(send)) },
+      { method: "POST", body },
     );
 
     // Status first: `fetch` resolves on 4xx, and Meta answers both cases with
@@ -279,7 +293,12 @@ export async function sendTemplateMessage(
         failure?.error?.error_data?.details ??
         failure?.error?.message ??
         `HTTP ${response.status}`;
-      return { status: "failed", error: detail };
+      return {
+        status: "failed",
+        error: detail,
+        // A server error says nothing about whether the message was queued.
+        ...(response.status >= 500 ? { ambiguous: true } : {}),
+      };
     }
 
     const payload = (await response
@@ -288,9 +307,11 @@ export async function sendTemplateMessage(
 
     return { status: "sent", providerId: payload?.messages?.[0]?.id ?? null };
   } catch (err) {
+    // The request left and no answer came back: Meta may have the message.
     return {
       status: "failed",
       error: err instanceof Error ? err.message : "Unknown WhatsApp error",
+      ambiguous: true,
     };
   }
 }

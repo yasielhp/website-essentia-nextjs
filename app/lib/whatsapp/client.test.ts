@@ -320,6 +320,7 @@ describe("sending", () => {
       expect(await sendTemplateMessage(send)).toEqual({
         status: "failed",
         error: "HTTP 502",
+        ambiguous: true,
       });
     }));
 
@@ -338,6 +339,7 @@ describe("sending", () => {
       expect(await sendTemplateMessage(send)).toEqual({
         status: "failed",
         error: "socket hang up",
+        ambiguous: true,
       });
     }));
 
@@ -347,6 +349,7 @@ describe("sending", () => {
       expect(await sendTemplateMessage(send)).toEqual({
         status: "failed",
         error: "The operation timed out.",
+        ambiguous: true,
       });
     }));
 
@@ -358,7 +361,43 @@ describe("sending", () => {
         buttonUrlParams: [{ index: -1, text: "x" }],
       });
       expect(result.status).toBe("failed");
+      // Nothing left the process, so it is not a doubt about delivery.
+      expect(result).not.toHaveProperty("ambiguous");
       expect(calls).toHaveLength(0);
+    }));
+
+  test("a 5xx carrying Meta's error body is still ambiguous", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([json({ error: { message: "Service unavailable" } }, 503)]);
+      expect(await sendTemplateMessage(send)).toEqual({
+        status: "failed",
+        error: "Service unavailable",
+        ambiguous: true,
+      });
+    }));
+
+  test("a 4xx refusal is definitive: no ambiguous flag at all", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([
+        json({ error: { message: "Template not found", code: 132001 } }, 404),
+      ]);
+      const result = await sendTemplateMessage(send);
+      expect(result).toEqual({ status: "failed", error: "Template not found" });
+      expect(result).not.toHaveProperty("ambiguous");
+    }));
+
+  test("a 4xx whose body is not JSON is still a refusal", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([text("Bad request", 400)]);
+      const result = await sendTemplateMessage(send);
+      expect(result).toEqual({ status: "failed", error: "HTTP 400" });
+      expect(result).not.toHaveProperty("ambiguous");
+    }));
+
+  test("sent and skipped results never carry the flag", () =>
+    withEnv(CONFIGURED, async () => {
+      mockFetch([json({ messages: [{ id: "wamid.9" }] })]);
+      expect(await sendTemplateMessage(send)).not.toHaveProperty("ambiguous");
     }));
 });
 
