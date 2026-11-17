@@ -152,3 +152,13 @@ El recordatorio fijo de WhatsApp se sustituyó por el tipo de campaña **aviso d
 **Qué hay ahora.** Una traza mínima en el registro del servidor, sin migración: cada cambio hecho desde la ficha (`setWhatsAppConsent`, `setMarketingConsent`, quitar un número de la lista de bajas) escribe `console.info` con el id de quien actúa, el id del contacto, el uso y el sentido, sin correo ni teléfono. Vive lo que vivan los registros del servidor (días), no es consultable desde el dashboard.
 
 **Mejora de fondo.** Una tabla de eventos de consentimiento (contacto, uso, acción, origen, quién, cuándo, versión del texto mostrado), escrita por el mismo código que hoy estampa las fechas, con RLS sin políticas como el resto. Es lo que pediría una inspección o una reclamación del RGPD para probar que alguien consintió, y lo que permitiría mostrar el historial en la ficha. Requiere una migración y decidir cuánto tiempo se conserva: queda para decisión del usuario.
+
+---
+
+## (xii) El `wa_id` de Meta puede no coincidir con el número guardado (México, Argentina)
+
+**Qué pasa.** Un STOP se casa con el contacto y con la lista de bajas (`whatsapp_suppressed_phones`) comparando el `from` del mensaje entrante con el teléfono guardado, ambos normalizados a E.164 (`matchByPhone`, `suppressionRows`). En algunos países el identificador de WhatsApp (`wa_id`, que es lo que llega en `from`) no es el número tal como se marca: México añade un `1` tras el prefijo (`521…` para un número guardado como `+52…`) y Argentina un `9` (`549…` frente a `+54…` con o sin el `15`). Un STOP enviado desde uno de esos números **no encontraría al contacto**, y el número que entra en la lista **no sería el que buscan los envíos**, así que la baja no tendría efecto.
+
+**A quién afecta.** A clientas con móvil mexicano o argentino. **Para España no aplica** (el `wa_id` es `34` más el número), ni para el resto de prefijos habituales aquí. No se ha comprobado contra Meta con un número real de esos países.
+
+**Arreglo futuro.** Guardar el `wa_id` que Meta devuelve en cada envío (`contacts[].wa_id` de la respuesta de `/messages`) junto al contacto o al destinatario, y casar los STOP y la lista de bajas por ese valor en vez de por el teléfono tecleado. Requiere una columna nueva (migración) y escribirla en `sendTemplateMessage` y sus llamadores: queda para decisión del usuario.
