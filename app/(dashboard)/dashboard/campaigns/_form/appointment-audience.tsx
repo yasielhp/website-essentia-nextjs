@@ -8,6 +8,7 @@ import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import type { CampaignLanguage } from "@/types/campaign";
 import type { FormAction, FormState } from "./form-state";
 import { SERVICE_OPTIONS } from "./service-options";
+import { ReachFailed } from "./reach-failed";
 import { useAudienceReach } from "./use-audience-reach";
 
 /**
@@ -29,7 +30,7 @@ export function AppointmentAudience({
   const t = useTranslations("dashboard.campaigns.audience");
   const ta = useTranslations("dashboard.campaigns.audience.appointment");
   const { audience, reach, submitting } = state;
-  const counting = useAudienceReach(state, dispatch);
+  const { counting, failed, retry } = useAudienceReach(state, dispatch);
 
   const languageOptions: SelectOption<CampaignLanguage>[] = [
     { value: "any", label: t("languageAny") },
@@ -90,7 +91,7 @@ export function AppointmentAudience({
             aria-live="polite"
             className="text-petroleum-700 text-sm font-medium"
           >
-            {reach && !counting ? (
+            {failed ? null : reach && !counting ? (
               <>
                 {ta("reach", { count: reach.count })}
                 <span className="text-petroleum-400 font-normal">
@@ -102,6 +103,7 @@ export function AppointmentAudience({
               "…"
             )}
           </p>
+          {failed && <ReachFailed onRetry={retry} />}
           <p className="text-petroleum-500 text-xs">{ta("note")}</p>
         </div>
 
@@ -110,7 +112,11 @@ export function AppointmentAudience({
         </p>
 
         <div className="flex items-center justify-end gap-3">
-          <Button size="md" disabled={submitting || counting} onClick={onDone}>
+          <Button
+            size="md"
+            disabled={submitting || counting || failed || !reach}
+            onClick={onDone}
+          >
             {t("confirm")}
           </Button>
         </div>

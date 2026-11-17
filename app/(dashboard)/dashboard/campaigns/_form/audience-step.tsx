@@ -19,6 +19,7 @@ import {
 import { AppointmentAudience } from "./appointment-audience";
 import { SERVICE_OPTIONS } from "./service-options";
 import type { FormAction, FormState } from "./form-state";
+import { ReachFailed } from "./reach-failed";
 import { useAudienceReach } from "./use-audience-reach";
 
 const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
@@ -264,7 +265,7 @@ function ListAudienceStep({
   const { reach, submitting, segmentId, channel } = state;
 
   const [list, setList] = useState<SegmentList | null>(null);
-  const counting = useAudienceReach(state, dispatch);
+  const { counting, failed, retry } = useAudienceReach(state, dispatch);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,7 +370,12 @@ function ListAudienceStep({
           <p className="text-petroleum-400 mt-1">{t("reachWhatsAppNote")}</p>
         </div>
       )}
-      {!counting && reach && reach.count === 0 && (
+      {failed && (
+        <div className="mt-3">
+          <ReachFailed onRetry={retry} />
+        </div>
+      )}
+      {!counting && !failed && reach && reach.count === 0 && (
         <p className="mt-3 text-xs font-medium text-red-600">
           {t("reachNone")}
         </p>

@@ -3,6 +3,7 @@
 import { useEffect, useState, type Dispatch } from "react";
 import { getAccessToken } from "@/lib/client-session";
 import { previewAudience } from "@/actions/campaigns";
+import { reachOutcome } from "@/lib/campaigns/audience-reach";
 import type { FormAction, FormState } from "./form-state";
 
 /**
@@ -10,13 +11,19 @@ import type { FormAction, FormState } from "./form-state";
  * Every change re-counts after a short pause, so a quick succession of picks
  * costs one request rather than one each. The kind goes along because an
  * appointment notice is counted with its own consent.
+ *
+ * A query that fails is not a count of zero: the reach is cleared (so the
+ * audience cannot be confirmed on it) and `failed` says so, with `retry` to ask
+ * again.
  */
 export function useAudienceReach(
   state: Pick<FormState, "audience" | "channel" | "kind">,
   dispatch: Dispatch<FormAction>,
-): boolean {
+): { counting: boolean; failed: boolean; retry: () => void } {
   const { audience, channel, kind } = state;
   const [counting, setCounting] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const audienceKey = JSON.stringify(audience);
 
   useEffect(() => {
@@ -29,20 +36,15 @@ export function useAudienceReach(
         channel,
         kind,
       )
-        .catch(() => ({ ok: false as const, error: "generic" }))
+        .catch(() => null)
         .then((result) => {
           if (cancelled) return;
           setCounting(false);
+          const outcome = reachOutcome(result);
+          setFailed(!outcome.ok);
           dispatch({
             type: "SET_REACH",
-            reach:
-              "count" in result
-                ? {
-                    count: result.count,
-                    en: result.byLanguage.en,
-                    es: result.byLanguage.es,
-                  }
-                : { count: 0, en: 0, es: 0 },
+            reach: outcome.ok ? outcome.reach : null,
           });
         });
     }, 400);
@@ -50,7 +52,7 @@ export function useAudienceReach(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [audienceKey, channel, kind, dispatch]);
+  }, [audienceKey, channel, kind, attempt, dispatch]);
 
-  return counting;
+  return { counting, failed, retry: () => setAttempt((n) => n + 1) };
 }

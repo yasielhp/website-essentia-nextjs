@@ -196,6 +196,8 @@ describe("the appointment notice strings", () => {
     "campaigns.trigger.appointment.rules",
     "campaigns.trigger.appointment.delay",
     "campaigns.trigger.appointment.grace",
+    "campaigns.audience.reachFailed",
+    "campaigns.audience.reachRetry",
     "validation.invalidInput",
     "campaigns.trigger.appointment.shortBefore",
     "campaigns.trigger.appointment.shortAfter",

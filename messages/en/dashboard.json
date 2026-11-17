@@ -1786,7 +1786,9 @@
         "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on the client's contact page, in the WhatsApp consent.",
         "services": "Appointment services",
         "anyService": "Any service"
-      }
+      },
+      "reachFailed": "The audience could not be calculated; please try again.",
+      "reachRetry": "Try again"
     },
     "content": {
       "title": "What it says",

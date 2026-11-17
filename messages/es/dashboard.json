@@ -1786,7 +1786,9 @@
         "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp.",
         "services": "Servicios de la cita",
         "anyService": "Cualquier servicio"
-      }
+      },
+      "reachFailed": "No se pudo calcular la audiencia; vuelve a intentarlo.",
+      "reachRetry": "Reintentar"
     },
     "content": {
       "title": "Qué dice",
