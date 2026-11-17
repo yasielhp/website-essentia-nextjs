@@ -295,3 +295,118 @@ describe("first_visit", () => {
     });
   });
 });
+
+describe("visit variables for the message", () => {
+  const visit = {
+    service: "Drenaje linfático",
+    sessionType: "Sesión larga",
+    date: "2026-12-10",
+    time: "09:30",
+  };
+  const NOW_AFTER = new Date("2026-12-13T12:00:00Z");
+  const ACTIVE = "2026-12-01T00:00:00Z";
+
+  const afterBooking = (recipient: Recipient) =>
+    dueRecipients({
+      trigger: { event: "after_booking", days: 3 },
+      recipients: [recipient],
+      activatedAt: ACTIVE,
+      now: NOW_AFTER,
+    });
+
+  const firstVisit = (recipient: Recipient, tierId?: string) =>
+    dueRecipients({
+      trigger: { event: "first_visit", hours: 0, tierId },
+      recipients: [recipient],
+      activatedAt: ACTIVE,
+      now: NOW_AFTER,
+    });
+
+  const visitor = (over: Partial<Recipient> = {}): Recipient =>
+    r({
+      id: "v",
+      lastBookingDate: "2026-12-10",
+      confirmedBookingsCount: 1,
+      firstVisitEndsAt: "2026-12-10T11:00:00Z",
+      lastVisit: visit,
+      firstVisit: visit,
+      ...over,
+    });
+
+  it("after_booking carries the last visit, the date in Spanish", () => {
+    const [due] = afterBooking(visitor({ language: "es" }));
+    expect(due.vars).toEqual({
+      service: "Drenaje linfático",
+      session_type: "Sesión larga",
+      date: "jueves, 10 de diciembre de 2026",
+      time: "09:30",
+    });
+  });
+
+  it("after_booking carries it in English with the English date", () => {
+    const [due] = afterBooking(visitor({ language: "en" }));
+    expect(due.vars?.date).toBe("Thursday, 10 December 2026");
+    expect(due.vars?.service).toBe("Drenaje linfático");
+    expect(due.vars?.time).toBe("09:30");
+  });
+
+  it("first_visit carries the first visit, in the recipient's language", () => {
+    const es = firstVisit(visitor({ language: "es" }))[0];
+    const en = firstVisit(visitor({ language: "en" }))[0];
+    expect(es.vars).toEqual({
+      service: "Drenaje linfático",
+      session_type: "Sesión larga",
+      date: "jueves, 10 de diciembre de 2026",
+      time: "09:30",
+    });
+    expect(en.vars?.date).toBe("Thursday, 10 December 2026");
+  });
+
+  it("first_visit with a tierId carries the first visit of that type", () => {
+    const other = { ...visit, service: "Masaje", sessionType: "Corta" };
+    const [due] = firstVisit(
+      visitor({
+        firstVisit: other,
+        firstVisitByTier: { t1: visit },
+        firstVisitEndsAtByTier: { t1: "2026-12-10T11:00:00Z" },
+      }),
+      "t1",
+    );
+    expect(due.vars?.service).toBe("Drenaje linfático");
+    expect(due.vars?.session_type).toBe("Sesión larga");
+  });
+
+  it("first_visit without a tierId ignores the per-type visits", () => {
+    const other = { ...visit, service: "Masaje" };
+    const [due] = firstVisit(
+      visitor({ firstVisit: other, firstVisitByTier: { t1: visit } }),
+    );
+    expect(due.vars?.service).toBe("Masaje");
+  });
+
+  it("brings no such keys when the contact has no visit data", () => {
+    const [a] = afterBooking(visitor({ lastVisit: undefined }));
+    const [f] = firstVisit(visitor({ firstVisit: undefined }));
+    expect(a.vars).toBeUndefined();
+    expect(f.vars).toBeUndefined();
+  });
+
+  it("leaves out the service when the booking has none", () => {
+    const [due] = afterBooking(
+      visitor({ lastVisit: { ...visit, service: "", sessionType: null } }),
+    );
+    expect(due.vars).not.toHaveProperty("service");
+    expect(due.vars).not.toHaveProperty("session_type");
+    expect(due.vars?.time).toBe("09:30");
+  });
+
+  it("leaves out a time the booking does not carry", () => {
+    const [due] = afterBooking(visitor({ lastVisit: { ...visit, time: "" } }));
+    expect(due.vars).not.toHaveProperty("time");
+  });
+
+  it("keeps the campaign's own cycle", () => {
+    expect(cycles(afterBooking(visitor()))).toEqual(["v:2026-12-10"]);
+    expect(cycles(firstVisit(visitor()))).toEqual(["v:"]);
+  });
+});

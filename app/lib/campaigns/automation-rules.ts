@@ -1,5 +1,6 @@
 import type { CampaignTrigger } from "@/types/campaign";
-import type { Recipient } from "./audience-filter";
+import { formatLongDate } from "@/lib/format-date";
+import type { Recipient, VisitInfo } from "./audience-filter";
 
 /**
  * Which recipients an automated campaign owes an email to today, and under
@@ -23,6 +24,36 @@ export type BlogPostSummary = {
   excerpt: Record<"en" | "es", string>;
   url: Record<"en" | "es", string>;
 };
+
+/**
+ * The variables a message can use to talk about a visit: `{{service}}`,
+ * `{{session_type}}`, `{{date}}` and `{{time}}`. A piece the booking lacks is
+ * left out, so it reads as empty (an email) or a dash (WhatsApp).
+ *
+ * The date is localised to the recipient with the same helper the booking
+ * notices use; the time is the saved `HH:MM`. Nothing here converts between
+ * time zones: these are the wall-clock strings the centre's clients booked.
+ */
+function visitVars(
+  visit: VisitInfo | null | undefined,
+  locale: Recipient["language"],
+): Record<string, string> | undefined {
+  if (!visit) return undefined;
+  const vars: Record<string, string> = {};
+  const set = (key: string, value: string | null | undefined) => {
+    const text = (value ?? "").trim();
+    if (text) vars[key] = text;
+  };
+  set("service", visit.service);
+  set("session_type", visit.sessionType);
+  set("date", formatLongDate(visit.date, locale));
+  set("time", visit.time.slice(0, 5));
+  return Object.keys(vars).length > 0 ? vars : undefined;
+}
+
+/** `vars` only when there is something to say, so the field stays absent. */
+const withVars = (vars: Record<string, string> | undefined) =>
+  vars ? { vars } : {};
 
 /** YYYY-MM-DD in Atlantic/Canary, where the centre and its clients live. */
 export function localDay(now: Date): string {
@@ -82,6 +113,7 @@ export function dueRecipients({
         .map((recipient) => ({
           recipient,
           cycle: recipient.lastBookingDate ?? "",
+          ...withVars(visitVars(recipient.lastVisit, recipient.language)),
         }));
     }
 
@@ -103,7 +135,18 @@ export function dueRecipients({
             ends >= Date.parse(activatedAt) && ends + delayMs <= now.getTime()
           );
         })
-        .map((recipient) => ({ recipient, cycle: "" }));
+        .map((recipient) => ({
+          recipient,
+          cycle: "",
+          ...withVars(
+            visitVars(
+              tierId
+                ? recipient.firstVisitByTier?.[tierId]
+                : recipient.firstVisit,
+              recipient.language,
+            ),
+          ),
+        }));
     }
 
     case "birthday":

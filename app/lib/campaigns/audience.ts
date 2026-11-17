@@ -5,6 +5,7 @@ import {
   filterAudience,
   type ContactCandidate,
   type Recipient,
+  type VisitInfo,
 } from "./audience-filter";
 
 /**
@@ -48,6 +49,7 @@ type BookingRow = {
   contact_id: string | null;
   email: string | null;
   service_id: string | null;
+  service_title: string | null;
   tier_id: string | null;
   /** Nullable in the live table: some imported rows carry no date. */
   date: string | null;
@@ -66,6 +68,12 @@ type BookingSummary = {
   /** The same, per session type. */
   firstVisitEndsAtByTier: Map<string, string>;
   confirmedCount: number;
+  /** The latest booking by date then time, and its sort key. */
+  lastVisit: VisitInfo | null;
+  lastVisitKey: string;
+  /** Alongside `firstVisitEndsAt`: the booking that earliest end belongs to. */
+  firstVisit: VisitInfo | null;
+  firstVisitByTier: Map<string, VisitInfo>;
 };
 
 /** Rows above what the centre could plausibly hold; only a guard, not paging. */
@@ -92,7 +100,7 @@ export async function loadCandidates(
 ): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
-  const [contactsResult, bookingsResult] = await Promise.all([
+  const [contactsResult, bookingsResult, tiersResult] = await Promise.all([
     db
       .from("contacts")
       .select(
@@ -107,10 +115,13 @@ export async function loadCandidates(
     db
       .from("bookings")
       .select(
-        "contact_id, email, service_id, tier_id, date, time, duration, status",
+        "contact_id, email, service_id, service_title, tier_id, date, time, duration, status",
       )
       .neq("status", "cancelled")
       .range(0, MAX_ROWS),
+    // A handful of rows: read apart rather than embedded, so it does not
+    // depend on the foreign key being declared.
+    db.from("service_tiers").select("id, label"),
   ]);
 
   if (contactsResult.error) {
@@ -122,6 +133,16 @@ export async function loadCandidates(
     throw new Error(
       `[resolveAudience] bookings read failed: ${bookingsResult.error.message}`,
     );
+  }
+
+  // A label is a nicety for the message: if the read failed, the booking
+  // still goes out without it.
+  const tierLabels = new Map<string, string>();
+  for (const tier of (tiersResult.data ?? []) as {
+    id: string;
+    label: string | null;
+  }[]) {
+    if (tier.label) tierLabels.set(tier.id, tier.label);
   }
 
   const contacts = (contactsResult.data ?? []) as ContactRow[];
@@ -156,7 +177,21 @@ export async function loadCandidates(
       firstVisitEndsAt: null,
       firstVisitEndsAtByTier: new Map<string, string>(),
       confirmedCount: 0,
+      lastVisit: null,
+      lastVisitKey: "",
+      firstVisit: null,
+      firstVisitByTier: new Map<string, VisitInfo>(),
     };
+    const visit: VisitInfo | null = booking.date
+      ? {
+          service: booking.service_title ?? "",
+          sessionType: booking.tier_id
+            ? (tierLabels.get(booking.tier_id) ?? null)
+            : null,
+          date: booking.date.slice(0, 10),
+          time: (booking.time ?? "").slice(0, 5),
+        }
+      : null;
     // A booking without a date still proves the contact booked, and which
     // service, but cannot be "the last one". `date` is a Postgres date, but
     // sliced anyway so a timestamp would still compare as YYYY-MM-DD, which
@@ -165,6 +200,13 @@ export async function loadCandidates(
       const day = booking.date.slice(0, 10);
       if (summary.last === null || day > summary.last) summary.last = day;
       if (summary.first === null || day < summary.first) summary.first = day;
+      // The latest by date, then by time: two bookings on the same day are
+      // told apart by the later one. Same set as `last` (non-cancelled).
+      const key = `${day} ${(booking.time ?? "").slice(0, 5)}`;
+      if (visit && key > summary.lastVisitKey) {
+        summary.lastVisitKey = key;
+        summary.lastVisit = visit;
+      }
     }
     // Only visits that really happened (or will) start the post-visit flow;
     // the earliest end wins, compared as ISO strings in the same base (UTC).
@@ -180,6 +222,9 @@ export async function loadCandidates(
         (summary.firstVisitEndsAt === null || endsAt < summary.firstVisitEndsAt)
       ) {
         summary.firstVisitEndsAt = endsAt;
+        // The booking that earliest end belongs to, so the message talks
+        // about the visit the rule is waiting for.
+        summary.firstVisit = visit;
       }
       // And the earliest of this session type, so a campaign for one type is
       // not decided by what the client booked first of another.
@@ -187,6 +232,7 @@ export async function loadCandidates(
         const earlier = summary.firstVisitEndsAtByTier.get(booking.tier_id);
         if (earlier === undefined || endsAt < earlier) {
           summary.firstVisitEndsAtByTier.set(booking.tier_id, endsAt);
+          if (visit) summary.firstVisitByTier.set(booking.tier_id, visit);
         }
       }
     }
@@ -218,6 +264,11 @@ export async function loadCandidates(
         ? Object.fromEntries(bookings.firstVisitEndsAtByTier)
         : {},
       confirmedBookingsCount: bookings?.confirmedCount ?? 0,
+      lastVisit: bookings?.lastVisit ?? null,
+      firstVisit: bookings?.firstVisit ?? null,
+      firstVisitByTier: bookings
+        ? Object.fromEntries(bookings.firstVisitByTier)
+        : {},
       whatsappMarketingOptedInAt: row.whatsapp_marketing_opted_in_at,
       whatsappOptedOutAt: row.whatsapp_opted_out_at,
       whatsappUnreachableAt: row.whatsapp_unreachable_at,

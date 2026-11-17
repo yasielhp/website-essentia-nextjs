@@ -14,6 +14,20 @@ import type {
  * admin sees is the list the send uses.
  */
 
+/**
+ * One booking, as a message talks about it. `date` and `time` are the local
+ * wall-clock strings the booking was saved with (`YYYY-MM-DD`, `HH:MM`): they
+ * are shown as they are and never turned into an instant here.
+ */
+export type VisitInfo = {
+  /** The booked service's title; empty when the booking carries none. */
+  service: string;
+  /** The session type's label (`service_tiers.label`), when it has one. */
+  sessionType: string | null;
+  date: string;
+  time: string;
+};
+
 export type ContactCandidate = {
   id: string;
   /** Empty for a contact that only has a phone; the email channel drops those. */
@@ -46,6 +60,12 @@ export type ContactCandidate = {
   firstVisitEndsAtByTier?: Record<string, string>;
   /** How many bookings are confirmed or completed. */
   confirmedBookingsCount?: number;
+  /** The latest non-cancelled booking, for `after_booking`. */
+  lastVisit?: VisitInfo | null;
+  /** The earliest confirmed or completed booking, for `first_visit`. */
+  firstVisit?: VisitInfo | null;
+  /** The same, per session type (`tier_id`). */
+  firstVisitByTier?: Record<string, VisitInfo>;
   /**
    * Consent to WhatsApp *campaigns*. Not `whatsapp_opted_in_at`, which only
    * covers booking notices: the two purposes are consented separately.
@@ -80,6 +100,10 @@ export type Recipient = {
   firstVisitEndsAt?: string | null;
   firstVisitEndsAtByTier?: Record<string, string>;
   confirmedBookingsCount?: number;
+  /** What the automation rules put in the message; see `ContactCandidate`. */
+  lastVisit?: VisitInfo | null;
+  firstVisit?: VisitInfo | null;
+  firstVisitByTier?: Record<string, VisitInfo>;
 };
 
 const DAY_MS = 86_400_000;
@@ -200,6 +224,9 @@ export function filterAudience(
       firstVisitEndsAt: candidate.firstVisitEndsAt ?? null,
       firstVisitEndsAtByTier: candidate.firstVisitEndsAtByTier ?? {},
       confirmedBookingsCount: candidate.confirmedBookingsCount ?? 0,
+      lastVisit: candidate.lastVisit ?? null,
+      firstVisit: candidate.firstVisit ?? null,
+      firstVisitByTier: candidate.firstVisitByTier ?? {},
       // A campaign written in one language is sent in that language to
       // everyone on it, hand-picked contacts included: the other block is
       // allowed to be empty, and an empty email is worse than a foreign one.
