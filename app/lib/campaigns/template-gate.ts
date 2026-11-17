@@ -4,12 +4,12 @@ import {
   campaignTemplateIssue,
   loadWhatsAppTemplate,
 } from "./dispatch-whatsapp";
-import type { TemplateIssue } from "./whatsapp-eligibility";
+import type { CampaignTemplateIssue } from "./whatsapp-eligibility";
 
 type Db = ReturnType<typeof getAdminClient>["database"];
 
 export type TemplateGateFailure =
-  | { ok: false; error: "template_unavailable"; detail: TemplateIssue }
+  | { ok: false; error: "template_unavailable"; detail: CampaignTemplateIssue }
   | { ok: false; error: "db" };
 
 /**
@@ -22,7 +22,7 @@ export type TemplateGateFailure =
  * eligibility code and nothing else, so it is safe to show.
  */
 export async function templateGate(
-  campaign: Pick<CampaignRow, "channel" | "audience" | "content">,
+  campaign: Pick<CampaignRow, "channel" | "audience" | "content" | "kind">,
   db: Db = getAdminClient().database,
 ): Promise<TemplateGateFailure | null> {
   if (campaign.channel !== "whatsapp") return null;

@@ -13,8 +13,8 @@ import type {
   WhatsAppTemplateUnsupportedReason,
 } from "@/lib/whatsapp/types";
 import {
-  templateChoiceIssue,
-  type TemplateChoiceIssue,
+  campaignTemplateChoiceIssue,
+  type CampaignTemplateChoiceIssue,
 } from "./whatsapp-eligibility";
 import { resolveParams } from "./whatsapp-params";
 
@@ -165,7 +165,7 @@ export type TemplateChoices = {
   /** Approved, supported and in the campaign's language. */
   eligible: WhatsAppTemplateRow[];
   /** How many of the others there are, by the first reason that rules each out. */
-  excluded: Partial<Record<TemplateChoiceIssue, number>>;
+  excluded: Partial<Record<CampaignTemplateChoiceIssue, number>>;
   /** Why the unsupported ones are, without repeats. */
   unsupportedReasons: WhatsAppTemplateUnsupportedReason[];
 };
@@ -174,12 +174,13 @@ export type TemplateChoices = {
 export function partitionTemplates(
   templates: WhatsAppTemplateRow[],
   sendLocale: CampaignLocale,
+  kind?: CampaignKind,
 ): TemplateChoices {
   const eligible: WhatsAppTemplateRow[] = [];
   const excluded: TemplateChoices["excluded"] = {};
   const reasons = new Set<WhatsAppTemplateUnsupportedReason>();
   for (const template of templates) {
-    const issue = templateChoiceIssue(template, sendLocale);
+    const issue = campaignTemplateChoiceIssue(template, sendLocale, kind);
     if (issue === null) {
       eligible.push(template);
       continue;

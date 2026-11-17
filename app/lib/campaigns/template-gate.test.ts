@@ -100,4 +100,30 @@ describe("templateGate", () => {
     const failure = await templateGate(whatsapp(), db);
     expect(failure).toEqual({ ok: false, error: "db" });
   });
+
+  test("an appointment notice with a Marketing template is refused, with its code", async () => {
+    const { db } = dbWith({ data: template(), error: null });
+    expect(await templateGate(whatsapp({ kind: "appointment" }), db)).toEqual({
+      ok: false,
+      error: "template_unavailable",
+      detail: "template_category",
+    });
+  });
+
+  test("the same notice with a Utility template passes, and a marketing campaign never looked", async () => {
+    const utility = dbWith({
+      data: template({ category: "UTILITY" }),
+      error: null,
+    });
+    expect(
+      await templateGate(whatsapp({ kind: "appointment" }), utility.db),
+    ).toBeNull();
+    const marketing = dbWith({ data: template(), error: null });
+    expect(
+      await templateGate(whatsapp({ kind: "standard" }), marketing.db),
+    ).toBeNull();
+    expect(
+      await templateGate(whatsapp({ kind: "automated" }), marketing.db),
+    ).toBeNull();
+  });
 });

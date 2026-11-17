@@ -22,13 +22,19 @@ import {
 } from "./error-markers";
 import { pause } from "./pause";
 import {
+  campaignTemplateEligibility,
   whatsappTemplateEligibility,
+  type CampaignTemplateIssue,
   type TemplateIssue,
 } from "./whatsapp-eligibility";
 import { resolveParams } from "./whatsapp-params";
 
 // The rule lives in a module the browser can import; the send path keeps its name.
-export { whatsappTemplateEligibility, type TemplateIssue };
+export {
+  whatsappTemplateEligibility,
+  type CampaignTemplateIssue,
+  type TemplateIssue,
+};
 export {
   HALTED_PREFIX,
   INTERRUPTED_ERROR,
@@ -199,13 +205,14 @@ export async function loadWhatsAppTemplate(
 
 /** Eligibility of the template a campaign has chosen, for its own content and audience. */
 export function campaignTemplateIssue(
-  campaign: Pick<CampaignRow, "content" | "audience">,
+  campaign: Pick<CampaignRow, "content" | "audience" | "kind">,
   template: WhatsAppTemplateRow | null,
-): TemplateIssue | null {
-  return whatsappTemplateEligibility(
+): CampaignTemplateIssue | null {
+  return campaignTemplateEligibility(
     template,
     sendLocaleOf(campaign.audience),
     campaign.content.whatsapp?.params ?? [],
+    campaign.kind,
   );
 }
 

@@ -16,6 +16,7 @@ import {
 } from "./whatsapp-form";
 import { BUDGET_MS, PER_SECOND } from "./dispatch-whatsapp";
 import { template } from "./whatsapp-fixtures";
+import { campaignTemplateChoiceIssue } from "./whatsapp-eligibility";
 
 const field = (f: WhatsAppParamSource & { kind: "field" }) => f;
 const first: WhatsAppParamSource = field({
@@ -362,5 +363,40 @@ describe("kindGridClass", () => {
     expect(kindGridClass(6)).toBe("grid-cols-1 sm:grid-cols-2 xl:grid-cols-3");
     for (const n of [4, 5, 6])
       expect(kindGridClass(n).startsWith("grid-cols-1")).toBe(true);
+  });
+});
+
+describe("partitionTemplates for an appointment notice", () => {
+  const marketing = template({ id: "mkt" });
+  const utility = template({ id: "utl", category: "UTILITY" });
+  const pending = template({
+    id: "pending",
+    category: "UTILITY",
+    status: "PENDING",
+  });
+
+  test("leaves the Marketing ones out, counted under their own reason", () => {
+    const out = partitionTemplates(
+      [marketing, utility, pending],
+      "es",
+      "appointment",
+    );
+    expect(out.eligible.map((t) => t.id)).toEqual(["utl"]);
+    expect(out.excluded).toEqual({
+      template_category: 1,
+      template_not_approved: 1,
+    });
+  });
+  test("for any other kind, or none, a Marketing template is offered as before", () => {
+    for (const kind of [undefined, "standard", "automated"] as const) {
+      const out = partitionTemplates([marketing, utility], "es", kind);
+      expect(out.eligible.map((t) => t.id)).toEqual(["mkt", "utl"]);
+      expect(out.excluded).toEqual({});
+    }
+  });
+  test("a saved choice that is Marketing is reported, not dropped: the issue names it", () => {
+    expect(campaignTemplateChoiceIssue(marketing, "es", "appointment")).toBe(
+      "template_category",
+    );
   });
 });

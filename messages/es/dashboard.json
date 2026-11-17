@@ -1107,7 +1107,8 @@
     "paramFieldNotOffered": "Ese dato no está disponible en este mensaje.",
     "docTooDeep": "El mensaje tiene demasiados niveles anidados.",
     "docNotRenderable": "Este contenido no se puede mostrar en un email. Revisa los títulos y los bloques.",
-    "manualNotAllowed": "Un aviso de cita se envía a quien tiene la cita: no admite contactos añadidos a mano"
+    "manualNotAllowed": "Un aviso de cita se envía a quien tiene la cita: no admite contactos añadidos a mano",
+    "templateCategoryNotAllowed": "Esta plantilla es de Marketing: los avisos de cita solo pueden usar plantillas de Utilidad."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1693,13 +1694,15 @@
           "template_not_approved": "{count, plural, one {# plantilla sin aprobar por Meta (en revisión, rechazada o desactivada)} other {# plantillas sin aprobar por Meta (en revisión, rechazadas o desactivadas)}}",
           "template_unsupported": "{count, plural, one {# plantilla que no se puede enviar desde aquí} other {# plantillas que no se pueden enviar desde aquí}}",
           "template_language": "{count, plural, one {# plantilla en otro idioma} other {# plantillas en otro idioma}}: la campaña se envía en {language}",
-          "template_missing": "{count, plural, one {# plantilla que ya no existe} other {# plantillas que ya no existen}}"
+          "template_missing": "{count, plural, one {# plantilla que ya no existe} other {# plantillas que ya no existen}}",
+          "template_category": "{count, plural, one {# plantilla de Marketing} other {# plantillas de Marketing}}: los avisos de cita solo pueden usar plantillas de Utilidad"
         },
         "issue": {
           "template_missing": "ya no existe",
           "template_not_approved": "no está aprobada",
           "template_unsupported": "no se puede enviar desde aquí",
-          "template_language": "no está en el idioma de envío"
+          "template_language": "no está en el idioma de envío",
+          "template_category": "es de Marketing, y los avisos de cita solo pueden usar plantillas de Utilidad"
         },
         "selectedUnavailable": "La plantilla elegida ya no se puede usar: {reason}. Elige otra.",
         "paramsTitle": "De dónde sale cada dato",
@@ -1727,7 +1730,7 @@
         "previewNote": "Con datos de ejemplo.",
         "confirm": "Confirmar mensaje",
         "chosen": "Plantilla elegida",
-        "appointmentCategoryHint": "Para avisos de cita lo recomendable es la categoría Utilidad: Marketing cuesta más por mensaje.",
+        "appointmentCategoryHint": "Los avisos de cita solo admiten plantillas de Utilidad. Una petición de reseña o una oferta cuenta como marketing: usa una campaña normal.",
         "languageHintAppointment": "Las clientas de la audiencia son de los dos idiomas. Cada plantilla es de un solo idioma: elige en cuál se envía el aviso.",
         "sentInAppointment": "Se envía en {language}, el idioma de las clientas elegido."
       }
@@ -1978,7 +1981,7 @@
       "channelHint": "WhatsApp solo escribe a quien aceptó recibir novedades y ofertas por ese canal, con una plantilla aprobada por Meta.",
       "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro.",
       "appointment": "Aviso de cita",
-      "appointmentDesc": "Un mensaje de WhatsApp antes o después de cada cita: recordatorio, cuidados, reseña. Solo a quien aceptó los avisos de la cita.",
+      "appointmentDesc": "Un mensaje de WhatsApp antes o después de cada cita: recordatorio o seguimiento. Solo a quien aceptó los avisos de la cita.",
       "kindLocked": "Una campaña guardada no puede pasar a ser un Aviso de cita ni dejar de serlo: cuenta citas, no listas."
     },
     "segment": {

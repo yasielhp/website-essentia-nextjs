@@ -2,7 +2,7 @@ import type {
   WhatsAppParamSource,
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
-import type { CampaignLocale } from "@/types/campaign";
+import type { CampaignKind, CampaignLocale } from "@/types/campaign";
 import { paramsMatchTemplate } from "./whatsapp-params";
 
 /**
@@ -75,6 +75,56 @@ export function whatsappTemplateEligibility(
 }
 
 /**
+ * What an appointment notice adds to the choice: the consent to appointment
+ * notices covers the confirmation and the reminder of the client's own
+ * appointment, not marketing, so only a Utility template can carry it. Every
+ * other kind (and no kind at all, as in Messages) is not looked at, so for them
+ * nothing changes.
+ */
+export type CampaignTemplateChoiceIssue =
+  TemplateChoiceIssue | "template_category";
+export type CampaignTemplateIssue = TemplateIssue | "template_category";
+
+/** Every reason a template can be left out of a campaign's choice. */
+export const CAMPAIGN_TEMPLATE_CHOICE_ISSUES: CampaignTemplateChoiceIssue[] = [
+  ...TEMPLATE_CHOICE_ISSUES,
+  "template_category",
+];
+
+export function templateCategoryIssue(
+  template: WhatsAppTemplateRow | null | undefined,
+  kind: CampaignKind | undefined,
+): "template_category" | null {
+  if (kind !== "appointment" || !template) return null;
+  return template.category === "UTILITY" ? null : "template_category";
+}
+
+/** `templateChoiceIssue`, then the category rule of the campaign's kind. */
+export function campaignTemplateChoiceIssue(
+  template: WhatsAppTemplateRow | null | undefined,
+  sendLocale: CampaignLocale,
+  kind: CampaignKind | undefined,
+): CampaignTemplateChoiceIssue | null {
+  return (
+    templateChoiceIssue(template, sendLocale) ??
+    templateCategoryIssue(template, kind)
+  );
+}
+
+/** `whatsappTemplateEligibility`, with the category rule of the campaign's kind. */
+export function campaignTemplateEligibility(
+  template: WhatsAppTemplateRow | null | undefined,
+  sendLocale: CampaignLocale,
+  sources: WhatsAppParamSource[],
+  kind: CampaignKind | undefined,
+): CampaignTemplateIssue | null {
+  return (
+    campaignTemplateChoiceIssue(template, sendLocale, kind) ??
+    whatsappTemplateEligibility(template, sendLocale, sources)
+  );
+}
+
+/**
  * The field errors a save reports for a WhatsApp campaign's template, keyed
  * like the form's own validation, or null when it can go out. A parameter
  * mismatch sits on the parameters; every other reason on the template field.
@@ -83,11 +133,20 @@ export function whatsappContentErrors(
   template: WhatsAppTemplateRow | null | undefined,
   sendLocale: CampaignLocale,
   sources: WhatsAppParamSource[],
+  kind?: CampaignKind,
 ): Record<string, string> | null {
-  const issue = whatsappTemplateEligibility(template, sendLocale, sources);
+  const issue = campaignTemplateEligibility(
+    template,
+    sendLocale,
+    sources,
+    kind,
+  );
   if (issue === null) return null;
   if (issue === "param_count") {
     return { "content.whatsapp.params": "paramCountMismatch" };
+  }
+  if (issue === "template_category") {
+    return { "content.whatsapp.templateId": "templateCategoryNotAllowed" };
   }
   return { "content.whatsapp.templateId": "templateUnavailable" };
 }

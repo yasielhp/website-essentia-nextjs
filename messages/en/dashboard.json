@@ -1107,7 +1107,8 @@
     "paramFieldNotOffered": "That detail is not available in this message.",
     "docTooDeep": "The message has too many nested levels.",
     "docNotRenderable": "This content cannot be shown in an email. Check the headings and the blocks.",
-    "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts"
+    "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts",
+    "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates."
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1693,13 +1694,15 @@
           "template_not_approved": "{count, plural, one {# template not approved by Meta (in review, rejected or disabled)} other {# templates not approved by Meta (in review, rejected or disabled)}}",
           "template_unsupported": "{count, plural, one {# template that cannot be sent from here} other {# templates that cannot be sent from here}}",
           "template_language": "{count, plural, one {# template in another language} other {# templates in another language}}: the campaign is sent in {language}",
-          "template_missing": "{count, plural, one {# template that no longer exists} other {# templates that no longer exist}}"
+          "template_missing": "{count, plural, one {# template that no longer exists} other {# templates that no longer exist}}",
+          "template_category": "{count, plural, one {# Marketing template} other {# Marketing templates}}: appointment notices can only use Utility templates"
         },
         "issue": {
           "template_missing": "it no longer exists",
           "template_not_approved": "it is not approved",
           "template_unsupported": "it cannot be sent from here",
-          "template_language": "it is not in the sending language"
+          "template_language": "it is not in the sending language",
+          "template_category": "is a Marketing template, and appointment notices can only use Utility templates"
         },
         "selectedUnavailable": "The chosen template can no longer be used: {reason}. Choose another one.",
         "paramsTitle": "Where each value comes from",
@@ -1727,7 +1730,7 @@
         "previewNote": "With example data.",
         "confirm": "Confirm message",
         "chosen": "Template chosen",
-        "appointmentCategoryHint": "For appointment notices the Utility category is the sensible one: Marketing costs more per message.",
+        "appointmentCategoryHint": "Appointment notices only take Utility templates. A review request or an offer counts as marketing: use a regular campaign.",
         "languageHintAppointment": "The clients in the audience speak both languages. Each template is in a single language: choose the one the notice is sent in.",
         "sentInAppointment": "Sent in {language}, the clients' language you chose."
       }
@@ -1978,7 +1981,7 @@
       "channelHint": "WhatsApp only writes to people who agreed to receive news and offers there, using a template approved by Meta.",
       "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one.",
       "appointment": "Appointment notice",
-      "appointmentDesc": "A WhatsApp message before or after each appointment: reminder, aftercare, review. Only to clients who accepted appointment notices.",
+      "appointmentDesc": "A WhatsApp message before or after each appointment: reminder or follow-up. Only to clients who accepted appointment notices.",
       "kindLocked": "A saved campaign cannot become an Appointment notice or stop being one: it counts appointments, not lists."
     },
     "segment": {

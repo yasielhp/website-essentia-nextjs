@@ -4,7 +4,7 @@ import { formatsCleanly } from "@/lib/icu-sample";
 import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
 import { REPORT_NOTE_KEYS } from "./report";
-import { TEMPLATE_CHOICE_ISSUES } from "./whatsapp-eligibility";
+import { CAMPAIGN_TEMPLATE_CHOICE_ISSUES } from "./whatsapp-eligibility";
 import { PARAM_FIELDS } from "./whatsapp-form";
 
 type Tree = { [key: string]: string | Tree };
@@ -60,7 +60,7 @@ describe("the campaign form strings", () => {
 
   test("every reason a template is left out has a line and a word", () => {
     for (const messages of [locales.es, locales.en]) {
-      for (const issue of TEMPLATE_CHOICE_ISSUES) {
+      for (const issue of CAMPAIGN_TEMPLATE_CHOICE_ISSUES) {
         expect(
           messages[`campaigns.form.whatsapp.excluded.${issue}`],
         ).toBeTruthy();
@@ -210,6 +210,7 @@ describe("the appointment notice strings", () => {
     "campaigns.audience.appointment.note",
     "campaigns.audience.appointment.panelNote",
     "campaigns.form.whatsapp.appointmentCategoryHint",
+    "validation.templateCategoryNotAllowed",
     "campaigns.review.noConditionsAppointment",
     "campaigns.review.appointmentPace",
     "campaigns.review.emptyAppointment",
@@ -297,6 +298,30 @@ describe("the appointment notice talks of no segment", () => {
     }
     expect(locales.es["campaigns.steps.appointmentAudience"]).toBe(
       "Servicios y clientas",
+    );
+  });
+});
+
+describe("the Utility-only rule and the card, in words", () => {
+  test("the card promises a reminder or a follow-up, not a review or aftercare, which are marketing", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(locales[locale]["campaigns.type.appointmentDesc"]).not.toMatch(
+        /rese[ñn]a|review|cuidados|aftercare/i,
+      );
+      expect(
+        locales[locale]["campaigns.form.whatsapp.appointmentCategoryHint"],
+      ).toMatch(/Utilidad|Utility/);
+    }
+    expect(locales.es["campaigns.type.appointmentDesc"]).toBe(
+      "Un mensaje de WhatsApp antes o después de cada cita: recordatorio o seguimiento. Solo a quien aceptó los avisos de la cita.",
+    );
+  });
+  test("the refusal names the category in both languages", () => {
+    expect(locales.es["validation.templateCategoryNotAllowed"]).toContain(
+      "Marketing",
+    );
+    expect(locales.en["validation.templateCategoryNotAllowed"]).toContain(
+      "Marketing",
     );
   });
 });

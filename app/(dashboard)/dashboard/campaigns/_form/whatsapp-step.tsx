@@ -8,7 +8,7 @@ import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { WhatsAppParamRow } from "@/components/dashboard/whatsapp-param-mapper";
 import { useFieldError } from "@/hooks/use-field-error";
 import { sendLocaleOf } from "@/lib/schemas";
-import { templateChoiceIssue } from "@/lib/campaigns/whatsapp-eligibility";
+import { campaignTemplateChoiceIssue } from "@/lib/campaigns/whatsapp-eligibility";
 import {
   PARAM_FIELDS,
   fieldAvailable,
@@ -58,11 +58,11 @@ export function WhatsAppStep({
   const [today] = useState(() => new Date());
 
   const all = templates.status === "ready" ? templates.templates : [];
-  const choices = partitionTemplates(all, sendLocale);
+  const choices = partitionTemplates(all, sendLocale, kind);
   const selected = all.find((tpl) => tpl.id === block?.templateId) ?? null;
   const selectedIssue =
     selected && templates.status === "ready"
-      ? templateChoiceIssue(selected, sendLocale)
+      ? campaignTemplateChoiceIssue(selected, sendLocale, kind)
       : null;
   const usable = selected && !selectedIssue ? selected : null;
 

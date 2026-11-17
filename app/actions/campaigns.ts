@@ -607,6 +607,7 @@ export async function saveCampaign(
       template,
       sendLocaleOf(validated.data.audience),
       block?.params ?? [],
+      validated.data.kind,
     );
     if (templateErrors) {
       return { ok: false, error: "invalid", fieldErrors: templateErrors };
@@ -1098,7 +1099,7 @@ export async function scheduleCampaign(
       return { ok: false, error: "locked" };
     }
     const gate = await templateGate(
-      saved as Pick<CampaignRow, "channel" | "audience" | "content">,
+      saved as Pick<CampaignRow, "channel" | "audience" | "content" | "kind">,
       db,
     );
     if (gate) return gate;

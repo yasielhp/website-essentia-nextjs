@@ -900,6 +900,7 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
 
   test("an appointment notice goes to a client with only the appointment consent", async () => {
     const mem = memoryDb(rowsOf(2), {
+      template: template({ category: "UTILITY" }),
       contacts: [noticesOnly("contact-1"), noticesOnly("contact-2")],
     });
     const { send, calls } = fakeSend(() => ok("w"));
@@ -913,6 +914,7 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
 
   test("and skips, as no consent, the one who agreed to news only", async () => {
     const mem = memoryDb(rowsOf(2), {
+      template: template({ category: "UTILITY" }),
       contacts: [noticesOnly("contact-1"), consenting("contact-2")],
     });
     const { send, calls } = fakeSend(() => ok("w"));
@@ -933,6 +935,7 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
 
   test("a notice still honours an opt-out that came after the audience was frozen", async () => {
     const mem = memoryDb(rowsOf(2), {
+      template: template({ category: "UTILITY" }),
       contacts: [
         noticesOnly("contact-1"),
         {
@@ -949,6 +952,7 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
 
   test("and the STOP list, whatever the consent", async () => {
     const mem = memoryDb(rowsOf(2), {
+      template: template({ category: "UTILITY" }),
       contacts: [noticesOnly("contact-1"), noticesOnly("contact-2")],
       suppressed: ["+34600000002"],
     });
@@ -956,6 +960,33 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
     await sendQueuedWhatsApp(notice(), rowsOf(2), { db: mem.db, send });
     expect(calls).toHaveLength(1);
     expect(mem.error("row-2")).toBe(`${SKIPPED_PREFIX}suppressed`);
+  });
+
+  test("a notice with a Marketing template is skipped, rows left queued, and a marketing campaign with the same template sends", async () => {
+    const mem = memoryDb(rowsOf(2), {
+      contacts: [noticesOnly("contact-1"), noticesOnly("contact-2")],
+    });
+    const blocked = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(notice(), rowsOf(2), {
+      db: mem.db,
+      send: blocked.send,
+    });
+    expect(blocked.calls).toHaveLength(0);
+    expect(result).toMatchObject({
+      sent: 0,
+      failed: 0,
+      remaining: 2,
+      lastError: "template_unavailable: template_category",
+    });
+    const news = memoryDb(rowsOf(2), {
+      contacts: [consenting("contact-1"), consenting("contact-2")],
+    });
+    const open = fakeSend(() => ok("w"));
+    await sendQueuedWhatsApp(campaign(), rowsOf(2), {
+      db: news.db,
+      send: open.send,
+    });
+    expect(open.calls).toHaveLength(2);
   });
 });
 
