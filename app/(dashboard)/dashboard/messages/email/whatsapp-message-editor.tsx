@@ -256,7 +256,7 @@ export function WhatsAppMessageEditor({
       <MessagePageHeader
         title={tEd("title", { name: tKeys(messageKey), language })}
         status={{
-          text: hasSaved ? tEmail("status.custom") : tEmail("status.default"),
+          text: hasSaved ? t("pageStatus.set") : t("pageStatus.none"),
           tone: hasSaved ? "custom" : "default",
         }}
         help={{

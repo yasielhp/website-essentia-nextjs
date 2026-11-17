@@ -77,3 +77,13 @@ describe("the page of a message's WhatsApp notice", () => {
     );
   });
 });
+
+describe("the state beside the title", () => {
+  test("nothing configured says so, since nothing is sent: not 'by default'", () => {
+    const html = render("es");
+    const top = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+    expect(top).toContain("Sin configurar");
+    expect(top).not.toContain("Por defecto");
+    expect(render("en")).toContain("Not set up");
+  });
+});

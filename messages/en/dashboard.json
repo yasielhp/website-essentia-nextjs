@@ -2523,7 +2523,11 @@
         },
         "templatesFailed": "The WhatsApp templates could not be read, so they cannot be set up or checked.",
         "campaignNote": "Reminders and notices after the appointment are set up in Campaigns > Appointment notice.",
-        "campaignLink": "Create an Appointment notice"
+        "campaignLink": "Create an Appointment notice",
+        "pageStatus": {
+          "none": "Not set up",
+          "set": "Set up"
+        }
       },
       "page": {
         "loading": "Loading…"

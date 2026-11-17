@@ -2523,7 +2523,11 @@
         },
         "templatesFailed": "No se pudieron leer las plantillas de WhatsApp, así que no se pueden configurar ni comprobar.",
         "campaignNote": "Los recordatorios y avisos posteriores a la cita se configuran en Campañas > Aviso de cita.",
-        "campaignLink": "Crear un Aviso de cita"
+        "campaignLink": "Crear un Aviso de cita",
+        "pageStatus": {
+          "none": "Sin configurar",
+          "set": "Configurado"
+        }
       },
       "page": {
         "loading": "Cargando…"
