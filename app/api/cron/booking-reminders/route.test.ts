@@ -55,13 +55,19 @@ let bookingsInRun: (typeof BOOKING)[] = [BOOKING];
 let templateReads = 0;
 
 /** What a chain was asked: whether it is an UPDATE, the ids it names, its steps. */
-type Asked = { update: boolean; ids: string[]; steps: string[] };
+type Asked = {
+  update: boolean;
+  /** What an UPDATE sets. */
+  patch: Record<string, unknown>;
+  ids: string[];
+  steps: string[];
+};
 
 function chain(
   result: (asked: Asked) => unknown,
   onIn?: (ids: string[]) => void,
 ): unknown {
-  const asked: Asked = { update: false, ids: [], steps: [] };
+  const asked: Asked = { update: false, patch: {}, ids: [], steps: [] };
   const proxy: unknown = new Proxy(() => {}, {
     get(_t, prop) {
       if (prop === "then") {
@@ -74,7 +80,13 @@ function chain(
         };
       }
       asked.steps.push(String(prop));
-      if (prop === "update") asked.update = true;
+      if (prop === "update") {
+        return (patch: Record<string, unknown>) => {
+          asked.update = true;
+          asked.patch = patch;
+          return proxy;
+        };
+      }
       if (prop === "in") {
         return (col: string, ids: string[]) => {
           if (col === "id") {
@@ -99,13 +111,25 @@ let stamp: (ids: string[]) => { data: unknown; error: unknown } = (ids) => ({
 let stampSteps: string[] = [];
 /** Every UPDATE of `bookings`, with the ids it named. */
 let bookingUpdates: { ids: string[]; steps: string[] }[] = [];
+/** The stamps taken back, and what taking them back answers. */
+let unstamped: string[][] = [];
+let unstamp: () => { data: unknown; error: unknown } = () => ({
+  data: null,
+  error: null,
+});
 
-type Sent = { sent: number; ids: (string | null)[]; error: string | null };
+type Sent = {
+  sent: number;
+  ids: (string | null)[];
+  error: string | null;
+  rejected: boolean;
+};
 /** What Resend answers: by default it takes every email. */
 const takesAll = (emails: Email[]): Sent => ({
   sent: emails.length,
   ids: emails.map((email) => `re_${email.to}`),
   error: null,
+  rejected: false,
 });
 let mailer: (emails: Email[]) => Sent = takesAll;
 const KEY = process.env.RESEND_API_KEY;
@@ -121,15 +145,17 @@ const fakeAdmin = {
           });
         }
         if (table === "bookings") {
-          return chain(
-            (asked) => {
-              if (!asked.update) return { data: bookingsInRun, error: null };
-              stampSteps = asked.steps;
-              bookingUpdates.push({ ids: asked.ids, steps: asked.steps });
-              return stamp(asked.ids);
-            },
-            (ids) => stamped.push(ids),
-          );
+          return chain((asked) => {
+            if (!asked.update) return { data: bookingsInRun, error: null };
+            bookingUpdates.push({ ids: asked.ids, steps: asked.steps });
+            if (asked.patch.reminder_sent_at === null) {
+              unstamped.push(asked.ids);
+              return unstamp();
+            }
+            stampSteps = asked.steps;
+            stamped.push(asked.ids);
+            return stamp(asked.ids);
+          });
         }
         return chain(() => ({ data: null, error: null }));
       },
@@ -182,6 +208,8 @@ beforeEach(() => {
   stamp = (ids) => ({ data: ids.map((id) => ({ id })), error: null });
   stampSteps = [];
   bookingUpdates = [];
+  unstamped = [];
+  unstamp = () => ({ data: null, error: null });
   mailer = takesAll;
   process.env.RESEND_API_KEY = "test-key";
 });
@@ -397,6 +425,7 @@ describe("booking reminders", () => {
       sent: 1,
       ids: [`re_${emails[0]!.to}`, null],
       error: "fetch failed",
+      rejected: false,
     });
     const res = await run();
     const lines = quiet.mock.calls.map((c) => c.map(String).join(" "));
@@ -413,6 +442,53 @@ describe("booking reminders", () => {
     );
     // The stamp stays: mailing somebody twice is worse than not at all.
     expect(bookingUpdates).toHaveLength(1);
+    expect(unstamped).toEqual([]);
+  });
+
+  test("a send Resend refused: the stamp of whoever got no email is taken back, for the next run to try again", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    bookingsInRun = [BOOKING, SECOND];
+    mailer = (emails) => ({
+      sent: 1,
+      ids: [`re_${emails[0]!.to}`, null],
+      error: "Too many requests",
+      rejected: true,
+    });
+    const res = await run();
+    const logged = quiet.mock.calls.length;
+    quiet.mockRestore();
+    // Only the booking with no email: the other one has its reminder.
+    expect(unstamped).toEqual([["b-2"]]);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Send refused",
+      sent: 1,
+      skipped: 0,
+      retry: ["b-2"],
+    });
+    expect(logged).toBeGreaterThan(0);
+  });
+
+  test("a refused send whose stamps cannot be taken back says who is left without a reminder", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    mailer = () => ({
+      sent: 0,
+      ids: [null],
+      error: "API key is invalid",
+      rejected: true,
+    });
+    unstamp = () => ({ data: null, error: { message: "connection reset" } });
+    const res = await run();
+    const lines = quiet.mock.calls.map((c) => c.map(String).join(" "));
+    quiet.mockRestore();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Send failed",
+      sent: 0,
+      skipped: 0,
+      unsent: ["b-1"],
+    });
+    expect(lines.some((l) => l.includes("b-1"))).toBe(true);
   });
 
   test("a send that takes every email answers as before", async () => {

@@ -277,16 +277,42 @@ async function handle(request: NextRequest) {
     sent,
     ids,
     error: sendError,
+    rejected,
   } = await sendEmailBatch(toSend.map((item) => item.email));
 
-  // A send that failed after the stamp. `sendEmailBatch` hands back one text
-  // for a refusal by Resend and for a request that never got an answer, so
-  // which of the two it was is not known here, and an email with no id may
-  // still have left. The stamp is therefore kept (a duplicate is worse than a
-  // missing reminder), but the loss is not a quiet one: the bookings are named
-  // in the log and the run answers a 500.
+  // A send that failed after the stamp is not a quiet loss either way.
   if (sendError) {
     const unsent = toSend.filter((_, index) => !ids[index]).map((b) => b.id);
+
+    // Resend itself turned the emails down (a 4xx): nothing of them left, so
+    // the stamp of the bookings with no email is taken back and the next run
+    // tries them again, while they are still inside the window.
+    if (rejected && unsent.length > 0) {
+      const { error: unstampError } = await db
+        .from("bookings")
+        .update({ reminder_sent_at: null })
+        .in("id", unsent);
+      if (!unstampError) {
+        console.error(
+          "[cron/booking-reminders] batch refused:",
+          sendError,
+          "- stamp taken back, to be tried again:",
+          unsent.join(", "),
+        );
+        return NextResponse.json(
+          { error: "Send refused", sent, skipped, retry: unsent },
+          { status: 500 },
+        );
+      }
+      console.error(
+        "[cron/booking-reminders] stamp could not be taken back:",
+        unstampError,
+      );
+    }
+
+    // Anything else (a request with no answer, a 5xx) may have been sent all
+    // the same, so the stamp is kept: a duplicate is worse than a missing
+    // reminder. The bookings are named in the log and the run answers a 500.
     console.error(
       "[cron/booking-reminders] batch failed:",
       sendError,
