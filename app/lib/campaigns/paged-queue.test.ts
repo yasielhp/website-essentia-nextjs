@@ -2,7 +2,6 @@ import { describe, expect, spyOn, test } from "bun:test";
 import type { Recipient } from "./audience-filter";
 import { dispatchCampaign, loadQueued, retryFailed } from "./dispatch";
 import { argsOf, chainDb, has, type Step } from "./fake-db";
-import { PAGE_SIZE } from "./paged-read";
 import {
   campaign,
   fakeClock,
@@ -30,7 +29,11 @@ function paged(mem: Mem, failPage?: (from: number) => string | null) {
   const reads: { from: number; to: number; chain: Step[] }[] = [];
   const replay = (table: string, chain: Step[]) => {
     let query = mem.db.from(table) as unknown as Chain;
-    for (const step of chain) query = query[step.name]!(...step.args);
+    // The in-memory database is a `chainDb` too, and would cut to the range
+    // itself: only the outer one does, so a page is cut once.
+    for (const step of chain) {
+      if (step.name !== "range") query = query[step.name]!(...step.args);
+    }
     return query as unknown as PromiseLike<{ data: unknown[] | null }>;
   };
   const { db } = chainDb(async (table, chain) => {
@@ -43,19 +46,19 @@ function paged(mem: Mem, failPage?: (from: number) => string | null) {
     const failure = failPage?.(from);
     if (failure) return { data: null, error: { message: failure } };
     const all = (await replay(table, chain)).data ?? [];
-    return {
-      data: all.slice(from, Math.min(to + 1, from + PAGE_SIZE)),
-      error: null,
-    };
+    // The whole table: `chainDb` cuts it to the range, as the database does.
+    return { data: all, error: null };
   });
   return { db, reads };
 }
 
 const COUNT = 2_500;
+// Each page starts where the rows received ended, and the read ends on an empty one.
 const PAGES = [
   [0, 999],
   [1_000, 1_999],
   [2_000, 2_999],
+  [2_500, 3_499],
 ];
 
 const recipients = (count: number): Recipient[] =>

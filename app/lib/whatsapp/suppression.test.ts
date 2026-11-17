@@ -192,11 +192,12 @@ describe("the whole list, past a thousand numbers", () => {
   /** A table that answers like the real one: a page of at most a thousand. */
   const paged = (rows: { phone: string }[], failFrom?: number) =>
     db((_t, chain) => {
-      const [from, to] = (argsOf(chain, "range") ?? [0, PAGE - 1]) as number[];
+      const [from] = (argsOf(chain, "range") ?? [0, PAGE - 1]) as number[];
       if (failFrom !== undefined && from! >= failFrom) {
         return { error: { message: "connection reset" } };
       }
-      return { data: rows.slice(from!, Math.min(to!, from! + PAGE - 1) + 1) };
+      // The whole table: `chainDb` cuts it to the range, as the database does.
+      return { data: rows };
     });
 
   it("reads 2500 numbers to the last one: the 1001st and the 2500th are on it", async () => {
@@ -207,11 +208,14 @@ describe("the whole list, past a thousand numbers", () => {
     expect(list.has(phoneAt(1000))).toBe(true);
     expect(list.has(phoneAt(1001))).toBe(true);
     expect(list.has(phoneAt(2500))).toBe(true);
-    // Three pages, each asked for in a fixed order so none repeats or skips.
+    // Three pages of rows and one that comes back empty, which is what says the
+    // list ended; each asked for in a fixed order so none repeats or skips, and
+    // each starting where the rows received ended.
     expect(log.map((q) => argsOf(q.chain, "range"))).toEqual([
       [0, 999],
       [1000, 1999],
       [2000, 2999],
+      [2500, 3499],
     ]);
     for (const query of log) {
       expect(argsOf(query.chain, "order")?.[0]).toBe("phone");
@@ -232,7 +236,7 @@ describe("the whole list, past a thousand numbers", () => {
   });
 
   it("a list longer than can be read is an error, not a silent cut", async () => {
-    const { db: client } = paged(many(10_000));
+    const { db: client } = paged(many(10_001));
     await expect(loadAllSuppressedPhones(client)).rejects.toThrow();
   });
 });

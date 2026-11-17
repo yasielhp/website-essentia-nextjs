@@ -18,6 +18,36 @@ export type Respond = (
   chain: Step[],
 ) => unknown | Promise<unknown>;
 
+/**
+ * What the real database does with a `range(from, to)`: the rows of that span,
+ * and never more than `SERVER_LIMIT` of them. A test's answer is the whole table
+ * and this cuts it, so a read that goes page by page (`readAllPages`) sees what
+ * it would see in production, and a read that does not shows up as short.
+ * Only an answer carrying a `data` array is cut. A test answers with the WHOLE
+ * table and does no paging of its own: cut twice, a page would come back empty.
+ */
+export const SERVER_LIMIT = 1_000;
+
+function pageOf(answer: unknown, chain: Step[]): unknown {
+  const range = chain.find((step) => step.name === "range")?.args;
+  if (
+    !range ||
+    typeof range[0] !== "number" ||
+    typeof range[1] !== "number" ||
+    typeof answer !== "object" ||
+    answer === null ||
+    !Array.isArray((answer as { data?: unknown }).data)
+  ) {
+    return answer;
+  }
+  const rows = (answer as { data: unknown[] }).data;
+  const [from, to] = range;
+  return {
+    ...(answer as object),
+    data: rows.slice(from, Math.min(to + 1, from + SERVER_LIMIT)),
+  };
+}
+
 export function chainDb(respond: Respond): {
   db: FakeDbClient;
   log: Query[];
@@ -36,6 +66,7 @@ export function chainDb(respond: Respond): {
               log.push({ table, chain: [...chain] });
               Promise.resolve()
                 .then(() => respond(table, chain))
+                .then((answer) => pageOf(answer, chain))
                 .then(resolve, reject);
             };
           }

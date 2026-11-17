@@ -46,13 +46,9 @@ beforeAll(async () => {
           if (contactsReadError) {
             return { data: null, error: { message: contactsReadError } };
           }
-          // Like the real database: at most a thousand rows a request,
-          // whatever range was asked for.
-          const [from, to] = (argsOf(chain, "range") ?? [0, 999]) as number[];
-          return {
-            data: contacts.slice(from!, Math.min(to!, from! + 999) + 1),
-            error: null,
-          };
+          // The whole table: `chainDb` cuts it to the range, at most a thousand
+          // rows a request, as the real database does.
+          return { data: contacts, error: null };
         }
         if (table === "booking_events" && bookingEventsError) {
           return { data: null, error: { message: bookingEventsError } };
@@ -650,6 +646,7 @@ describe("more than a thousand contacts", () => {
       [0, 999],
       [1000, 1999],
       [2000, 2999],
+      [2500, 3499],
     ]);
     for (const read of reads) {
       expect(argsOf(read.chain, "order")?.[0]).toBe("id");

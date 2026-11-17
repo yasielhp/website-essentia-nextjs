@@ -78,27 +78,24 @@ beforeAll(async () => {
         }
         const range = chain.find((step) => step.name === "range")?.args as
           [number, number] | undefined;
-        const page = <T>(rows: T[]) =>
-          range
-            ? rows.slice(range[0], Math.min(range[1] + 1, range[0] + 1_000))
-            : rows;
         if (table === "contacts") {
-          return {
-            data: bigContacts ? page(bigContacts) : [contact],
-            error: null,
-          };
+          // The whole table: `chainDb` cuts it to the range, as the database does.
+          return { data: bigContacts ?? [contact], error: null };
         }
         if (table === "bookings") {
           bookingReads++;
           if (bookingPageError !== null && range?.[0] === bookingPageError) {
             return { data: null, error: { message: "timeout" } };
           }
-          return { data: page(bookings), error: null };
+          return { data: bookings, error: null };
         }
         if (table === "whatsapp_suppressed_phones") {
           return suppressedError
             ? { data: null, error: { message: suppressedError } }
-            : { data: suppressed.map((phone) => ({ phone })), error: null };
+            : {
+                data: suppressed.map((phone) => ({ phone })),
+                error: null,
+              };
         }
         return { data: [], error: null };
       }).db,
@@ -320,7 +317,8 @@ describe("a table longer than a page", () => {
       "email",
     );
     expect(out).toHaveLength(N);
-    expect(bookingReads).toBe(3);
+    // Three pages of rows and the empty one that says the table ended.
+    expect(bookingReads).toBe(4);
   });
 
   test("a page of bookings that fails fails the whole read, with no partial audience", async () => {
