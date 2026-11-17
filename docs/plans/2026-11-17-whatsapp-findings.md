@@ -126,3 +126,17 @@ El cambio de dirección del centro (Rambla de Santa Cruz, 83, ya en pies de corr
 - **Dependencia de la versión de Maily.** `ALLOWED_NODES` (`app/lib/messages/safe-doc.ts`) se derivó de `@maily-to/core` 0.3.7 y `@maily-to/render` 0.2.3. Al actualizar cualquiera de los dos hay que releer qué tipos de nodo producen y despachan, porque el renderizador ejecuta cualquier `type` que sea un método de su clase.
 - **Recordatorio por correo siempre en español.** El cron fija `locale = "es"` (`app/api/cron/booking-reminders/route.ts`), así que el correo del recordatorio en inglés y su asunto en inglés (el único default sin texto legacy detrás) no se usan hoy.
 - **Bloques fijos tras el texto.** En un correo personalizado los bloques de datos (tarjeta de detalles, botones) salen después del texto del cuerpo, y un cuerpo editado sustituye también a la frase de cierre. El editor debería avisarlo. Y la etiqueta en mayúsculas que algunos correos legacy ponen sobre el título pasa a ser el primer párrafo del cuerpo, debajo del título.
+
+---
+
+## (x) Avisos de cita: lo que conviene saber
+
+El recordatorio fijo de WhatsApp se sustituyó por el tipo de campaña **aviso de cita** (`kind = 'appointment'`, solo WhatsApp). Nada de esto es un fallo; son los bordes del diseño, por si alguien los encuentra.
+
+- **Un aviso puede llegar con hasta 15 minutos de retraso**, porque lo evalúa el cron de campañas (cada 15 minutos). No sirve para avisos de menos de unos pocos minutos.
+- **Una reserva hecha después del momento de aviso se avisa en el siguiente pase.** Con un aviso "24 horas antes" y una reserva hecha 3 horas antes, el momento de aviso (hace 21 horas) es posterior a la activación y anterior a ahora, así que recibe el aviso enseguida. Las plantillas no deberían decir "faltan 24 horas" sino la fecha y la hora (`{{date}}`, `{{time}}`). Si molestara, se corta exigiendo que la reserva existiera antes del momento de aviso (necesita `bookings.created_at` en el candidato).
+- **Una reserva sin hora** empieza a medianoche en Canarias (`foldAppointments`), así que su aviso "antes" cae la noche anterior. El formulario siempre pide hora; solo podría darse en reservas importadas.
+- **Dos contactos con el mismo teléfono** comparten audiencia: el primero gana y las reservas del segundo no se avisan (el índice único es por teléfono y ciclo).
+- **Las reservas del equipo no registran consentimiento**, así que esas clientas no reciben avisos de cita hasta que se active "Avisos de la cita" en su ficha.
+- **La columna `bookings.whatsapp_reminder_sent_at` está obsoleta.** Se creó para el recordatorio fijo (migración `20261117k`, ya aplicada). Quitarla es una migración aparte que decide el usuario; mientras tanto no cuesta nada.
+- **La vista previa de la audiencia** de un aviso de cita cuenta a las clientas con el consentimiento de avisos de la cita, no las citas. Cuántas citas se avisarán depende de cuándo se activa.
