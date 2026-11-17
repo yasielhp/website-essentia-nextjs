@@ -1,0 +1,348 @@
+import { describe, expect, test } from "bun:test";
+import {
+  BOOKING_CONSENT_DEADLINE_MS,
+  answerWithin,
+  writeBookingConsents,
+  type BookingConsentEffects,
+} from "@/lib/whatsapp/booking-consents";
+
+/**
+ * Every consent write of the booking form's details step, as ONE action with
+ * ONE deadline. The stamping rules themselves (a fresh contact, no STOP) are in
+ * `self-consent.test.ts`; here it is who is written, in what order, and that a
+ * slow database costs the client a few seconds at most and never an error.
+ */
+
+const INPUT = {
+  email: " Ana@Example.com ",
+  firstName: "Ana",
+  lastName: "García",
+  phone: "600000000",
+  language: "es" as const,
+  marketing: false,
+  termsAccepted: true,
+};
+
+type Session = { userId: string; email: string | null };
+
+function effects(over: Partial<BookingConsentEffects> = {}) {
+  const calls: { name: string; args: unknown[] }[] = [];
+  const spy =
+    <R>(name: string, result: R) =>
+    (...args: unknown[]) => {
+      calls.push({ name, args });
+      return Promise.resolve(result);
+    };
+  const fx: BookingConsentEffects = {
+    authenticate: spy<Session>("authenticate", {
+      userId: "u1",
+      email: "Session@Example.com",
+    }),
+    saveOwnContact: spy("contact", { ok: true }),
+    stampNotice: spy("notice", { ok: true, stamped: true }),
+    subscribeNewsletter: spy("newsletter", { ok: true }),
+    ...over,
+  };
+  return { fx, calls, names: () => calls.map((c) => c.name) };
+}
+
+/** A timer the test fires by hand, so nothing waits three real seconds. */
+function fakeTimer() {
+  const pending: { fn: () => void; ms: number; cancelled: boolean }[] = [];
+  return {
+    startTimer: (fn: () => void, ms: number) => {
+      const timer = { fn, ms, cancelled: false };
+      pending.push(timer);
+      return () => {
+        timer.cancelled = true;
+      };
+    },
+    fire: () => pending.forEach((t) => !t.cancelled && t.fn()),
+    pending,
+  };
+}
+
+const never = () => new Promise<never>(() => undefined);
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+describe("writeBookingConsents, a guest", () => {
+  test("accepting the terms stamps the notice consent on the address of the step", async () => {
+    const { fx, calls, names } = effects();
+    const result = await writeBookingConsents(null, INPUT, fx);
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(names()).toEqual(["notice"]);
+    expect(calls[0].args).toEqual(["ana@example.com"]);
+  });
+
+  test("without the terms nothing is written, and that is not an error", async () => {
+    const { fx, names } = effects();
+    const result = await writeBookingConsents(
+      null,
+      { ...INPUT, termsAccepted: false },
+      fx,
+    );
+    expect(result).toEqual({ ok: true, stamped: false });
+    expect(names()).toEqual([]);
+  });
+
+  test("an input that is not what the form sends is refused before anything is read", async () => {
+    for (const input of [
+      null,
+      {},
+      { email: "ana@example.com" },
+      { ...INPUT, termsAccepted: "true" },
+      { ...INPUT, marketing: "yes" },
+      { ...INPUT, language: "fr" },
+    ]) {
+      const { fx, names } = effects();
+      expect(await writeBookingConsents(null, input, fx)).toEqual({
+        ok: false,
+        stamped: false,
+        error: "invalid",
+      });
+      expect(names()).toEqual([]);
+    }
+  });
+
+  test("an address that is not one stamps nobody", async () => {
+    for (const email of [undefined, "", "not an address", 42]) {
+      const { fx, names } = effects();
+      expect(await writeBookingConsents(null, { ...INPUT, email }, fx)).toEqual(
+        { ok: false, stamped: false, error: "noEmail" },
+      );
+      expect(names()).toEqual([]);
+    }
+  });
+
+  test("a failing or throwing write answers ok:false and never throws", async () => {
+    for (const stampNotice of [
+      () => Promise.resolve({ ok: false }),
+      () => Promise.reject(new Error("raw database text")),
+      () => {
+        throw new Error("raw database text");
+      },
+    ]) {
+      const { fx } = effects({ stampNotice });
+      const result = await writeBookingConsents(null, INPUT, fx);
+      expect(result).toEqual({ ok: false, stamped: false, error: "db" });
+      expect(JSON.stringify(result)).not.toContain("raw");
+    }
+  });
+});
+
+describe("writeBookingConsents, a signed-in client", () => {
+  test("her contact is written first, on her session's address, then the notice consent", async () => {
+    const { fx, calls, names } = effects();
+    const result = await writeBookingConsents("token", INPUT, fx);
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(names()).toEqual(["authenticate", "contact", "notice"]);
+    expect(calls[1].args).toEqual([
+      "session@example.com",
+      {
+        firstName: "Ana",
+        lastName: "García",
+        phone: "600000000",
+        language: "es",
+        marketing: false,
+      },
+    ]);
+    expect(calls[2].args).toEqual(["session@example.com"]);
+  });
+
+  test("the news and offers box also puts her on the list, last, with her own id and address", async () => {
+    const { fx, calls, names } = effects();
+    await writeBookingConsents("token", { ...INPUT, marketing: true }, fx);
+    expect(names()).toEqual([
+      "authenticate",
+      "contact",
+      "notice",
+      "newsletter",
+    ]);
+    expect(calls[1].args[1]).toMatchObject({ marketing: true });
+    expect(calls[3].args).toEqual(["u1", "session@example.com"]);
+  });
+
+  test("without the terms her contact is still written but no notice is stamped", async () => {
+    const { fx, names } = effects();
+    const result = await writeBookingConsents(
+      "token",
+      { ...INPUT, termsAccepted: false },
+      fx,
+    );
+    expect(result).toEqual({ ok: true, stamped: false });
+    expect(names()).toEqual(["authenticate", "contact"]);
+  });
+
+  test("a token that does not verify writes nothing and never falls back to the guest's address", async () => {
+    const { fx, names } = effects({
+      authenticate: () => Promise.reject(new Error("Invalid session")),
+    });
+    const result = await writeBookingConsents("stale", INPUT, fx);
+    expect(result).toEqual({ ok: false, stamped: false, error: "auth" });
+    expect(names()).toEqual([]);
+  });
+
+  test("a session with no address writes nobody", async () => {
+    const { fx, names } = effects({
+      authenticate: () => Promise.resolve({ userId: "u1", email: null }),
+    });
+    const result = await writeBookingConsents("token", INPUT, fx);
+    expect(result).toEqual({ ok: false, stamped: false, error: "noEmail" });
+    expect(names()).toEqual([]);
+  });
+
+  test("a contact that cannot be saved does not stop the notice step", async () => {
+    for (const saveOwnContact of [
+      () => Promise.resolve({ ok: false }),
+      () => Promise.reject(new Error("boom")),
+    ]) {
+      const { fx, names } = effects({ saveOwnContact });
+      const result = await writeBookingConsents("token", INPUT, fx);
+      expect(result).toEqual({ ok: false, stamped: true, error: "db" });
+      expect(names()).toEqual(["authenticate", "notice"]);
+    }
+  });
+
+  test("details the contact cannot take are refused, and the notice step still runs", async () => {
+    const { fx, names } = effects();
+    const result = await writeBookingConsents(
+      "token",
+      { ...INPUT, firstName: "", phone: "1" },
+      fx,
+    );
+    expect(result).toEqual({ ok: false, stamped: true, error: "invalid" });
+    expect(names()).toEqual(["authenticate", "notice"]);
+  });
+
+  test("a list that cannot be updated is reported, with everything else done", async () => {
+    const { fx } = effects({
+      subscribeNewsletter: () => Promise.resolve({ ok: false }),
+    });
+    const result = await writeBookingConsents(
+      "token",
+      { ...INPUT, marketing: true },
+      fx,
+    );
+    expect(result).toEqual({ ok: false, stamped: true, error: "newsletter" });
+  });
+});
+
+describe("writeBookingConsents: one deadline for all of it", () => {
+  test("the deadline is three seconds, and one timer covers the whole action", async () => {
+    expect(BOOKING_CONSENT_DEADLINE_MS).toBe(3000);
+    const timer = fakeTimer();
+    const { fx } = effects();
+    await writeBookingConsents(
+      "token",
+      { ...INPUT, marketing: true },
+      fx,
+      timer,
+    );
+    expect(timer.pending).toHaveLength(1);
+    expect(timer.pending[0].ms).toBe(BOOKING_CONSENT_DEADLINE_MS);
+    // Finished in time: the timer is cancelled, so nothing keeps the function alive.
+    expect(timer.pending[0].cancelled).toBe(true);
+  });
+
+  for (const [hung, started] of [
+    ["authenticate", []],
+    ["saveOwnContact", ["authenticate"]],
+    ["stampNotice", ["authenticate", "contact"]],
+    ["subscribeNewsletter", ["authenticate", "contact", "notice"]],
+  ] as const) {
+    test(`a ${hung} that never answers is given up on, and nothing is started after it`, async () => {
+      const timer = fakeTimer();
+      const { fx, names } = effects({ [hung]: never });
+      let result: unknown = "pending";
+      const run = writeBookingConsents(
+        "token",
+        { ...INPUT, marketing: true },
+        fx,
+        timer,
+      ).then((r) => {
+        result = r;
+      });
+
+      await tick();
+      expect(result).toBe("pending");
+
+      timer.fire();
+      await run;
+      expect(result).toEqual({
+        ok: false,
+        stamped: hung === "subscribeNewsletter",
+        error: "timeout",
+      });
+      await tick();
+      expect(names()).toEqual([...started]);
+    });
+  }
+
+  test("a write that answers after the deadline does not start the next one", async () => {
+    const timer = fakeTimer();
+    let release: (value: { ok: boolean }) => void = () => undefined;
+    const { fx, names } = effects({
+      saveOwnContact: () =>
+        new Promise<{ ok: boolean }>((resolve) => {
+          release = resolve;
+        }),
+    });
+    const run = writeBookingConsents("token", INPUT, fx, timer);
+    await tick();
+    timer.fire();
+    expect(await run).toEqual({ ok: false, stamped: false, error: "timeout" });
+    release({ ok: true });
+    await tick();
+    expect(names()).toEqual(["authenticate"]);
+  });
+
+  test("a write that fails after the deadline is nobody's unhandled rejection", async () => {
+    const timer = fakeTimer();
+    let fail: (reason: Error) => void = () => undefined;
+    const { fx } = effects({
+      stampNotice: () =>
+        new Promise((_resolve, reject) => {
+          fail = reject;
+        }),
+    });
+    const run = writeBookingConsents(null, INPUT, fx, timer);
+    await tick();
+    timer.fire();
+    expect(await run).toEqual({ ok: false, stamped: false, error: "timeout" });
+    fail(new Error("late"));
+    await tick();
+  });
+
+  test("with a real clock, a database that hangs is answered on time and without throwing", async () => {
+    const { fx } = effects({ stampNotice: never });
+    const startedAt = Date.now();
+    const result = await writeBookingConsents(null, INPUT, fx, {
+      deadlineMs: 40,
+    });
+    expect(result).toEqual({ ok: false, stamped: false, error: "timeout" });
+    expect(Date.now() - startedAt).toBeLessThan(1000);
+  });
+});
+
+describe("answerWithin: a consent read under the same deadline", () => {
+  test("the answer, when it comes in time", async () => {
+    const timer = fakeTimer();
+    expect(await answerWithin(() => Promise.resolve(true), false, timer)).toBe(
+      true,
+    );
+    expect(timer.pending[0].ms).toBe(BOOKING_CONSENT_DEADLINE_MS);
+    expect(timer.pending[0].cancelled).toBe(true);
+  });
+
+  test("the fallback when the read hangs, on time and without throwing", async () => {
+    const startedAt = Date.now();
+    expect(await answerWithin(never, false, { deadlineMs: 40 })).toBe(false);
+    expect(Date.now() - startedAt).toBeLessThan(1000);
+  });
+
+  test("the fallback when the read throws", async () => {
+    expect(
+      await answerWithin(() => Promise.reject(new Error("boom")), false),
+    ).toBe(false);
+  });
+});

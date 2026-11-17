@@ -51,7 +51,6 @@ const real = {
   session: { ...(await import("@/lib/client-session")) },
   draft: { ...(await import("@/actions/booking-draft")) },
   notifications: { ...(await import("@/actions/booking-notifications")) },
-  newsletter: { ...(await import("@/actions/newsletter")) },
   consent: { ...(await import("@/actions/whatsapp-consent")) },
 };
 
@@ -73,15 +72,11 @@ beforeAll(async () => {
     ...real.notifications,
     notifyBooking: record("notifyBooking"),
   }));
-  mock.module("@/actions/newsletter", () => ({
-    ...real.newsletter,
-    updateNewsletterForUser: record("updateNewsletterForUser", { ok: true }),
-  }));
   mock.module("@/actions/whatsapp-consent", () => ({
     ...real.consent,
-    saveOwnWhatsAppConsent: record("saveOwnWhatsAppConsent", { ok: true }),
-    recordBookingNoticeConsent: record("recordBookingNoticeConsent", {
+    saveBookingConsents: record("saveBookingConsents", {
       ok: true,
+      stamped: true,
     }),
   }));
   ({ saveDetailsStep } = await import("./booking-submit"));
@@ -91,7 +86,6 @@ afterAll(() => {
   mock.module("@/lib/client-session", () => real.session);
   mock.module("@/actions/booking-draft", () => real.draft);
   mock.module("@/actions/booking-notifications", () => real.notifications);
-  mock.module("@/actions/newsletter", () => real.newsletter);
   mock.module("@/actions/whatsapp-consent", () => real.consent);
 });
 
@@ -150,7 +144,7 @@ describe("saveDetailsStep, a guest", () => {
       "rpc:upsert_contact",
       "rpc:create_draft_booking",
       "updateDraftBookingMeta",
-      "recordBookingNoticeConsent",
+      "saveBookingConsents",
     ]);
     expect(argsOf("rpc:upsert_contact")).toMatchObject({
       p_email: "ana@example.com",
@@ -161,6 +155,19 @@ describe("saveDetailsStep, a guest", () => {
       p_contact_id: "contact-1",
       p_email: "ana@example.com",
     });
+    // One consent action, with no token: a guest has no session.
+    expect(calls.at(-1)?.args).toEqual([
+      null,
+      {
+        email: "ana@example.com",
+        firstName: "Ana",
+        lastName: "García",
+        phone: "600000000",
+        language: "es",
+        marketing: true,
+        termsAccepted: true,
+      },
+    ]);
   });
 
   test("an address that belongs to a member stops at the notice, with nothing written", async () => {
@@ -199,12 +206,41 @@ describe("saveDetailsStep, a member who goes on as a guest", () => {
       "rpc:upsert_contact",
       "rpc:create_draft_booking",
       "updateDraftBookingMeta",
-      "recordBookingNoticeConsent",
+      "saveBookingConsents",
     ]);
     // Her "news and offers" tick is not lost on the way.
     expect(argsOf("rpc:upsert_contact")).toMatchObject({
       p_newsletter: true,
       p_whatsapp_marketing: true,
+    });
+  });
+});
+
+describe("saveDetailsStep, a signed-in client", () => {
+  test("the browser writes no contact: her own is the server's to find, in one action with her token", async () => {
+    const result = await saveDetailsStep({
+      user: { id: "u1" },
+      locale: "en",
+      draft: draft(),
+      contactId: null,
+      bookingId: null,
+    });
+    await settle();
+    expect(result).toEqual({
+      kind: "saved",
+      contactId: null,
+      bookingId: "booking-1",
+    });
+    expect(names()).toEqual([
+      "rpc:create_draft_booking",
+      "updateDraftBookingMeta",
+      "saveBookingConsents",
+    ]);
+    expect(calls.at(-1)?.args[0]).toBe("token");
+    expect(calls.at(-1)?.args[1]).toMatchObject({
+      language: "en",
+      marketing: true,
+      termsAccepted: true,
     });
   });
 });

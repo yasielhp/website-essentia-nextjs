@@ -1,30 +1,19 @@
 "use server";
 
-import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
-import { AuthError, authenticate } from "@/lib/auth-guard";
-import { pickNoticeEmail } from "@/lib/whatsapp/consent";
+import { authenticate } from "@/lib/auth-guard";
+import { setNewsletterState } from "@/lib/newsletter";
+import {
+  answerWithin,
+  writeBookingConsents,
+  type BookingConsentResult,
+} from "@/lib/whatsapp/booking-consents";
 import {
   readOwnMarketing,
   recordOwnWhatsAppConsent,
   stampBookingNoticeConsent,
 } from "@/lib/whatsapp/self-consent";
 import { normalizeEmail } from "@/utils/contact";
-
-const inputSchema = z.object({
-  firstName: z.string().trim().min(1).max(120),
-  lastName: z.string().trim().max(120),
-  phone: z.string().trim().min(6).max(40),
-  language: z.enum(["en", "es"]),
-  marketing: z.boolean(),
-});
-
-const noticeSchema = z.object({
-  // A literal, not a boolean: the call only means something when she did.
-  termsAccepted: z.literal(true),
-  // Only a guest's address. A signed-in caller's is the session's, always.
-  email: z.unknown().optional(),
-});
 
 /**
  * Whether the signed-in client already has "news and offers" on for email and
@@ -35,97 +24,69 @@ const noticeSchema = z.object({
 export async function fetchOwnMarketingOn(
   accessToken: string | null,
 ): Promise<boolean> {
-  try {
+  // Under the same deadline as the writes: it takes a turn of the page's
+  // action queue too, and a read that hangs must not hold the booking up.
+  return answerWithin(async () => {
     const email = normalizeEmail((await authenticate(accessToken)).email);
     if (!email) return false;
-    return await readOwnMarketing(getAdminClient().database, email);
-  } catch {
-    return false;
-  }
+    return readOwnMarketing(getAdminClient().database, email);
+  }, false);
 }
 
 /**
- * A signed-in client's contact, written from the booking form.
+ * The consent writes of the booking form's details step, all of them in this
+ * one action: a guest's notice consent; a signed-in client's contact, her
+ * notice consent and, when she ticked "news and offers", the newsletter list.
  *
- * A guest's details reach `upsert_contact` straight from the browser; a client
- * with a session never had a contact written there, so without this she would
- * have no row for her choice on "news and offers", nor for the booking notices
- * that accepting the Terms allows. The contact is found by the address on the
- * verified session, not by anything the browser sends: the action can only
- * ever change the caller's own record. Any signed-in role may call it, since
- * staff book appointments too.
- */
-export async function saveOwnWhatsAppConsent(
-  accessToken: string | null,
-  input: unknown,
-): Promise<{ ok: boolean; error?: string }> {
-  let email: string | null;
-  try {
-    email = normalizeEmail((await authenticate(accessToken)).email);
-  } catch (err) {
-    if (err instanceof AuthError) return { ok: false, error: err.message };
-    throw err;
-  }
-  if (!email) return { ok: false, error: "noEmail" };
-
-  const parsed = inputSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "invalid" };
-
-  try {
-    return await recordOwnWhatsAppConsent(
-      getAdminClient().database,
-      email,
-      parsed.data,
-    );
-  } catch {
-    return { ok: false, error: "db" };
-  }
-}
-
-/**
- * Accepting the Terms and the Privacy Policy on the booking form is what allows
- * the confirmation and the reminder of the appointment on WhatsApp. This
- * records it on the contact the details step has just saved.
+ * One action because Next runs a page's actions one after another: three
+ * consent actions were three turns of that queue ahead of the calendar and the
+ * confirmation. And it answers within `BOOKING_CONSENT_DEADLINE_MS` whatever
+ * the database does (see `writeBookingConsents`), which a timer in the browser
+ * could never guarantee.
  *
  * Public on purpose, like the form it serves: a guest has no session. What
  * bounds it is `stampBookingNoticeConsent` (a contact written in the last 15
- * minutes, with no consent and no STOP yet) and that a signed-in caller's
- * address comes from her verified session, never from the browser. It never
- * lifts a STOP and never throws: if it fails the booking goes on and the only
- * loss is the WhatsApp notice. Bookings the team makes from the dashboard do
- * not come through here, so they record no consent.
+ * minutes, with no consent and no STOP yet) and that a signed-in caller's own
+ * contact is found by the address of her verified session, never by anything
+ * the browser sends. It never lifts a STOP and never throws: if it fails or
+ * runs out of time the booking goes on and the only loss is the WhatsApp
+ * notice. Bookings the team makes from the dashboard do not come through here,
+ * so they record no consent.
  */
 // react-doctor-disable-next-line react-doctor/server-auth-actions
-export async function recordBookingNoticeConsent(
+export async function saveBookingConsents(
   accessToken: string | null,
   input: unknown,
-): Promise<{ ok: boolean; stamped?: boolean; error?: string }> {
-  const parsed = noticeSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "terms" };
-
-  let sessionEmail: string | null = null;
-  if (accessToken) {
-    try {
-      sessionEmail = normalizeEmail((await authenticate(accessToken)).email);
-    } catch {
-      return { ok: false, error: "auth" };
-    }
-  }
-
-  const email = pickNoticeEmail({
-    hasToken: Boolean(accessToken),
-    sessionEmail,
-    inputEmail: parsed.data.email,
-  });
-  if (!email) return { ok: false, error: "noEmail" };
-
+): Promise<BookingConsentResult> {
   try {
-    return await stampBookingNoticeConsent(
-      getAdminClient().database,
-      email,
-      new Date(),
-    );
+    const result = await writeBookingConsents(accessToken, input, {
+      authenticate,
+      saveOwnContact: (sessionEmail, contact) =>
+        recordOwnWhatsAppConsent(
+          getAdminClient().database,
+          sessionEmail,
+          contact,
+        ),
+      stampNotice: (email) =>
+        stampBookingNoticeConsent(getAdminClient().database, email, new Date()),
+      subscribeNewsletter: async (userId, sessionEmail) => {
+        const listed = await setNewsletterState(sessionEmail, true);
+        if (!listed.ok) return { ok: false };
+        const { error } = await getAdminClient()
+          .database.from("profiles")
+          .update({ newsletter_subscribed: true })
+          .eq("id", userId);
+        return { ok: !error };
+      },
+    });
+    if (result.error === "timeout") {
+      // One line, with no name, address or phone.
+      console.error(
+        "[booking] consent writes took too long; answered without them",
+      );
+    }
+    return result;
   } catch {
-    return { ok: false, error: "db" };
+    return { ok: false, stamped: false, error: "db" };
   }
 }

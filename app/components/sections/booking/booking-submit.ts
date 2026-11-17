@@ -8,15 +8,8 @@ import {
   confirmDraftBooking,
 } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
-import { updateNewsletterForUser } from "@/actions/newsletter";
-import {
-  recordBookingNoticeConsent,
-  saveOwnWhatsAppConsent,
-} from "@/actions/whatsapp-consent";
-import {
-  contactConsentArgs,
-  writeBookingConsentsWithin,
-} from "./booking-consent";
+import { saveBookingConsents } from "@/actions/whatsapp-consent";
+import { contactConsentArgs, sendBookingConsents } from "./booking-consent";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -168,23 +161,22 @@ export async function saveDetailsStep({
 
   // What follows the contact: for a guest the notice consent, for a signed-in
   // client her contact, her choice on news and offers, and the notice consent.
+  // All of it is ONE server action, which answers within three seconds
+  // whatever the database does (`saveBookingConsents`).
   //
   // It goes LAST and is not awaited, on purpose. Next runs a page's server
-  // actions one at a time, in the order they were called: an action that is slow
-  // or never answers holds up every action queued behind it, whatever deadline
-  // this code puts on its own wait. Called last, it can only delay what comes
-  // after the step (the calendar's availability), never the draft above or the
-  // step itself, and the client moves on at once. The only cost of a lost write
-  // is a WhatsApp notice that is not sent; nothing here may fail the booking.
-  void writeBookingConsentsWithin({
+  // actions one at a time, in the order they were called, so this one takes a
+  // single turn of that queue, after the draft above, and can hold up what
+  // comes after the step (the calendar's availability) for those three seconds
+  // at most. The client moves on at once. The only cost of a lost write is a
+  // WhatsApp notice that is not sent; nothing here may fail the booking.
+  void sendBookingConsents({
     user,
     locale,
     details,
     effects: {
       getAccessToken,
-      updateNewsletterForUser,
-      saveOwnWhatsAppConsent,
-      recordBookingNoticeConsent,
+      saveBookingConsents,
       log: (message, detail) => console.error(message, detail),
     },
   });

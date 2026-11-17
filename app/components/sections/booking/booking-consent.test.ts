@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  CONSENT_DEADLINE_MS,
   contactConsentArgs,
-  writeBookingConsents,
-  writeBookingConsentsWithin,
+  sendBookingConsents,
   type ConsentEffects,
 } from "./booking-consent";
 import type { DetailsState } from "@/types";
@@ -19,17 +17,12 @@ const DETAILS: DetailsState = {
 
 function effects(over: Partial<ConsentEffects> = {}) {
   const calls: { name: string; args: unknown[] }[] = [];
-  const spy =
-    <A extends unknown[]>(name: string, ret: unknown = { ok: true }) =>
-    (...args: A) => {
-      calls.push({ name, args });
-      return Promise.resolve(ret) as never;
-    };
   const fx: ConsentEffects = {
     getAccessToken: () => "token",
-    updateNewsletterForUser: spy("newsletter"),
-    saveOwnWhatsAppConsent: spy("contact"),
-    recordBookingNoticeConsent: spy("notice"),
+    saveBookingConsents: (...args) => {
+      calls.push({ name: "consents", args });
+      return Promise.resolve({ ok: true, stamped: true });
+    },
     log: (message, detail) =>
       calls.push({ name: "log", args: [message, detail] }),
     ...over,
@@ -55,25 +48,32 @@ describe("contactConsentArgs", () => {
   });
 });
 
-describe("writeBookingConsents, a guest", () => {
-  test("accepting the terms records the notice consent on the address of the step", async () => {
+describe("sendBookingConsents: every consent write of the step is one action", () => {
+  const INPUT = {
+    email: "ana@example.com",
+    firstName: "Ana",
+    lastName: "G",
+    phone: "600000000",
+    language: "es",
+    marketing: false,
+    termsAccepted: true,
+  };
+
+  test("a guest sends one action, with no token and the address of the step", async () => {
     const { fx, calls, names } = effects();
-    await writeBookingConsents({
+    await sendBookingConsents({
       user: null,
       locale: "es",
       details: DETAILS,
       effects: fx,
     });
-    expect(names()).toEqual(["notice"]);
-    expect(calls[0].args).toEqual([
-      null,
-      { termsAccepted: true, email: "ana@example.com" },
-    ]);
+    expect(names()).toEqual(["consents"]);
+    expect(calls[0].args).toEqual([null, INPUT]);
   });
 
-  test("without the terms accepted nothing is recorded", async () => {
+  test("a guest who did not accept the terms sends nothing", async () => {
     const { fx, names } = effects();
-    await writeBookingConsents({
+    await sendBookingConsents({
       user: null,
       locale: "es",
       details: { ...DETAILS, consent: false },
@@ -82,200 +82,76 @@ describe("writeBookingConsents, a guest", () => {
     expect(names()).toEqual([]);
   });
 
-  test("a failing or throwing action is logged and never thrown", async () => {
-    for (const recordBookingNoticeConsent of [
-      () => Promise.resolve({ ok: false, error: "db" }),
+  test("a signed-in client sends one action too, with her token", async () => {
+    const { fx, calls, names } = effects();
+    await sendBookingConsents({
+      user: { id: "u1" },
+      locale: "en",
+      details: { ...DETAILS, newsletter: true },
+      effects: fx,
+    });
+    expect(names()).toEqual(["consents"]);
+    expect(calls[0].args).toEqual([
+      "token",
+      { ...INPUT, language: "en", marketing: true },
+    ]);
+  });
+
+  test("without the terms a signed-in client's contact is still sent, with the terms as not accepted", async () => {
+    const { fx, calls, names } = effects();
+    await sendBookingConsents({
+      user: { id: "u1" },
+      locale: "es",
+      details: { ...DETAILS, consent: false },
+      effects: fx,
+    });
+    expect(names()).toEqual(["consents"]);
+    expect(calls[0].args[1]).toMatchObject({ termsAccepted: false });
+  });
+
+  test("an action that answers 'not done', or throws, is logged and never thrown", async () => {
+    for (const saveBookingConsents of [
+      () =>
+        Promise.resolve({
+          ok: false,
+          stamped: false,
+          error: "timeout" as const,
+        }),
       () => Promise.reject(new Error("raw database text")),
     ]) {
-      const { fx, names } = effects({ recordBookingNoticeConsent });
-      await writeBookingConsents({
+      const { fx, names } = effects({ saveBookingConsents });
+      await sendBookingConsents({
         user: null,
         locale: "es",
         details: DETAILS,
         effects: fx,
       });
-      expect(names()).toContain("log");
+      expect(names()).toEqual(["log"]);
     }
   });
-});
 
-describe("writeBookingConsents, a signed-in client", () => {
-  const USER = { id: "u1" };
-
-  test("her contact is written first, then the notice consent with her token and no address", async () => {
-    const { fx, calls, names } = effects();
-    await writeBookingConsents({
-      user: USER,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-    });
-    expect(names()).toEqual(["contact", "notice"]);
-    expect(calls[0].args[1]).toMatchObject({
-      marketing: false,
-      language: "es",
-    });
-    expect(calls[1].args).toEqual(["token", { termsAccepted: true }]);
-  });
-
-  test("the news and offers box turns on the list and her marketing in one go", async () => {
-    const { fx, calls, names } = effects();
-    await writeBookingConsents({
-      user: USER,
-      locale: "en",
-      details: { ...DETAILS, newsletter: true },
-      effects: fx,
-    });
-    expect(names()).toEqual(["newsletter", "contact", "notice"]);
-    expect(calls[0].args).toEqual(["token", "u1", "ana@example.com", true]);
-    expect(calls[1].args[1]).toMatchObject({ marketing: true, language: "en" });
-  });
-
-  test("without the terms her contact is still written but no notice is recorded", async () => {
-    const { fx, names } = effects();
-    await writeBookingConsents({
-      user: USER,
-      locale: "es",
-      details: { ...DETAILS, consent: false },
-      effects: fx,
-    });
-    expect(names()).toEqual(["contact"]);
-  });
-
-  test("a contact that cannot be saved does not stop the notice step or throw", async () => {
-    const { fx, names } = effects({
-      saveOwnWhatsAppConsent: () => Promise.reject(new Error("boom")),
-    });
-    await writeBookingConsents({
-      user: USER,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-    });
-    expect(names()).toEqual(["log", "notice"]);
-  });
-});
-
-describe("writeBookingConsentsWithin: a consent write never holds the booking up", () => {
-  /** A timer the test fires by hand, so nothing waits four real seconds. */
-  function fakeTimer() {
-    const pending: { fn: () => void; ms: number; cancelled: boolean }[] = [];
-    return {
-      startTimer: (fn: () => void, ms: number) => {
-        const timer = { fn, ms, cancelled: false };
-        pending.push(timer);
-        return () => {
-          timer.cancelled = true;
-        };
-      },
-      fire: () => pending.forEach((t) => !t.cancelled && t.fn()),
-      pending,
-    };
-  }
-
-  const never = () => new Promise<{ ok: boolean }>(() => undefined);
-
-  test("an action that never answers lets the booking go on once the deadline fires", async () => {
-    const timer = fakeTimer();
-    const { fx, calls } = effects({ recordBookingNoticeConsent: never });
-    let done = false;
-    const run = writeBookingConsentsWithin({
-      user: null,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-      startTimer: timer.startTimer,
-    }).then(() => {
-      done = true;
-    });
-
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(done).toBe(false);
-    expect(timer.pending).toHaveLength(1);
-    expect(timer.pending[0].ms).toBe(CONSENT_DEADLINE_MS);
-
-    timer.fire();
-    await run;
-    expect(done).toBe(true);
-    const logged = calls.filter((c) => c.name === "log");
-    expect(logged).toHaveLength(1);
-  });
-
-  test("the log of a late write carries no name, address or phone", async () => {
-    const timer = fakeTimer();
-    const { fx, calls } = effects({ recordBookingNoticeConsent: never });
-    const run = writeBookingConsentsWithin({
-      user: null,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-      startTimer: timer.startTimer,
-    });
-    await Promise.resolve();
-    timer.fire();
-    await run;
-    const text = JSON.stringify(calls.filter((c) => c.name === "log"));
-    for (const personal of [
-      DETAILS.email,
-      DETAILS.phone,
-      DETAILS.firstName,
-      DETAILS.lastName,
+  test("the log carries no name, address or phone, nor the raw error", async () => {
+    for (const saveBookingConsents of [
+      () =>
+        Promise.resolve({ ok: false, stamped: false, error: "db" as const }),
+      () => Promise.reject(new Error(`boom ${DETAILS.email} ${DETAILS.phone}`)),
     ]) {
-      expect(text).not.toContain(personal);
+      const { fx, calls } = effects({ saveBookingConsents });
+      await sendBookingConsents({
+        user: { id: "u1" },
+        locale: "es",
+        details: DETAILS,
+        effects: fx,
+      });
+      const text = JSON.stringify(calls.filter((c) => c.name === "log"));
+      for (const personal of [
+        DETAILS.email,
+        DETAILS.phone,
+        DETAILS.firstName,
+        "boom",
+      ]) {
+        expect(text).not.toContain(personal);
+      }
     }
-  });
-
-  test("a signed-in client whose contact write hangs is let through too", async () => {
-    const timer = fakeTimer();
-    const { fx, names } = effects({ saveOwnWhatsAppConsent: never });
-    const run = writeBookingConsentsWithin({
-      user: { id: "u1" },
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-      startTimer: timer.startTimer,
-    });
-    await Promise.resolve();
-    await Promise.resolve();
-    timer.fire();
-    await run;
-    // The notice consent never started: it waits for the contact. That is the
-    // price of not stamping a row that is not there, and the booking is safe.
-    expect(names()).toEqual(["log"]);
-    expect(names()).not.toContain("notice");
-  });
-
-  test("when the writes finish in time the timer is cancelled and nothing is logged", async () => {
-    const timer = fakeTimer();
-    const { fx, names } = effects();
-    await writeBookingConsentsWithin({
-      user: null,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-      startTimer: timer.startTimer,
-    });
-    expect(names()).toEqual(["notice"]);
-    expect(timer.pending.every((t) => t.cancelled)).toBe(true);
-  });
-
-  test("a throwing write is swallowed and the deadline is still cancelled", async () => {
-    const timer = fakeTimer();
-    const { fx } = effects({
-      recordBookingNoticeConsent: () => Promise.reject(new Error("boom")),
-    });
-    await writeBookingConsentsWithin({
-      user: null,
-      locale: "es",
-      details: DETAILS,
-      effects: fx,
-      startTimer: timer.startTimer,
-    });
-    expect(timer.pending.every((t) => t.cancelled)).toBe(true);
-  });
-
-  test("the deadline is about four seconds", () => {
-    expect(CONSENT_DEADLINE_MS).toBe(4000);
   });
 });
