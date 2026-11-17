@@ -30,7 +30,7 @@ export function fakeDb(
             const hit = rows.filter((r) => filters.every((f) => f(r)));
             for (const r of hit) Object.assign(r, patch);
             return Promise.resolve({
-              data: hit.map((r) => ({ id: r.id })),
+              data: hit.map((r) => ({ ...r })),
               error: null,
             });
           }

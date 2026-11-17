@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { OptionSelect } from "@/components/ui/option-select";
 import { EmailInput } from "@/components/ui/email-input";
 import { useGenderOptions } from "@/hooks/use-gender-options";
@@ -20,7 +19,6 @@ export function ContactDetailsCard({
   language,
   birthdate,
   gender,
-  newsletterSubscribed,
   fieldErrors,
   loading,
   saving,
@@ -33,7 +31,6 @@ export function ContactDetailsCard({
   language: string;
   birthdate: string;
   gender: GenderValue;
-  newsletterSubscribed: boolean;
   fieldErrors: ContactErrors;
   loading: boolean;
   saving: boolean;
@@ -217,22 +214,6 @@ export function ContactDetailsCard({
             />
           )}
         </div>
-
-        {loading ? (
-          <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
-        ) : (
-          <ToggleRow
-            checked={newsletterSubscribed}
-            disabled={saving}
-            label={t("newsletter.label")}
-            hint={
-              newsletterSubscribed
-                ? t("newsletter.subscribed")
-                : t("newsletter.notSubscribed")
-            }
-            onToggle={() => dispatchForm({ type: "TOGGLE_NEWSLETTER" })}
-          />
-        )}
       </div>
     </div>
   );

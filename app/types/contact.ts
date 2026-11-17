@@ -31,6 +31,8 @@ export type ContactDetail = {
   phone: string | null;
   gender: Gender | null;
   newsletter_subscribed: boolean | null;
+  /** Set when the CONTACT unsubscribed (the link in an email); cleared when they are subscribed again. */
+  newsletter_unsubscribed_at: string | null;
   preferred_language: string | null;
   /** Set by the Resend webhook on a hard bounce; cleared by staff. */
   email_bounced_at: string | null;
@@ -110,7 +112,6 @@ export type UpdateContactPayload = {
   phone: string | null;
   gender: Gender | null;
   preferred_language: string;
-  newsletter_subscribed: boolean;
   birthdate: string | null;
 };
 
@@ -134,3 +135,18 @@ export type OwnWhatsAppConsentInput = {
   /** The single "news and offers by email and WhatsApp" box. */
   marketing: boolean;
 };
+
+/** The columns of a contact that "news and offers" reads and writes, as stored. */
+export type MarketingContactRow = {
+  email: string | null;
+  newsletter_subscribed: boolean | null;
+  newsletter_subscribed_at: string | null;
+  newsletter_unsubscribed_at: string | null;
+  whatsapp_opted_in_at: string | null;
+  whatsapp_marketing_opted_in_at: string | null;
+  whatsapp_opted_out_at: string | null;
+};
+
+/** What `setMarketingConsent` hands back. */
+export type MarketingConsentResult =
+  ({ ok: true } & MarketingContactRow) | { ok: false; error: string };

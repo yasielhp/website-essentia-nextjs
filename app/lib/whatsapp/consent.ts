@@ -82,6 +82,61 @@ export function marketingConsentActive(contact: MarketingColumns): boolean {
 }
 
 /**
+ * What the contact page's single "news and offers" switch shows. It is ONE
+ * consent for two channels, so it can be in a state neither of them is alone:
+ *
+ *  - `on`: email AND WhatsApp are on and nobody sent a STOP;
+ *  - `off`: neither is;
+ *  - `email_only` / `whatsapp_only`: older data, from when they were two
+ *    switches. The switch shows off and turning it on completes the other one;
+ *  - `opted_out`: the contact's own global STOP, which wins over everything
+ *    stored. The switch shows off and turning it on asks first.
+ */
+export type MarketingRowState =
+  "on" | "off" | "email_only" | "whatsapp_only" | "opted_out";
+
+export function marketingRowState(
+  contact: MarketingColumns,
+): MarketingRowState {
+  if (contact.whatsapp_opted_out_at) return "opted_out";
+  const email =
+    contact.newsletter_subscribed === true &&
+    !contact.newsletter_unsubscribed_at;
+  const whatsapp = Boolean(contact.whatsapp_marketing_opted_in_at);
+  if (email && whatsapp) return "on";
+  if (email) return "email_only";
+  if (whatsapp) return "whatsapp_only";
+  return "off";
+}
+
+/** Everything the contact page's consent rows read about one contact. */
+export type ContactConsentColumns = MarketingColumns & {
+  email?: string | null;
+  email_bounced_at?: string | null;
+};
+
+/** Why the email half of "news and offers" may not reach this contact. */
+export type MarketingNote = "no_email" | "bounced" | "email_unsubscribed";
+
+export function marketingNotes(contact: {
+  email?: string | null;
+  email_bounced_at?: string | null;
+  newsletter_subscribed?: boolean | null;
+  newsletter_unsubscribed_at?: string | null;
+}): MarketingNote[] {
+  if (!contact.email?.trim()) return ["no_email"];
+  const notes: MarketingNote[] = [];
+  if (contact.email_bounced_at) notes.push("bounced");
+  if (
+    contact.newsletter_unsubscribed_at &&
+    contact.newsletter_subscribed !== true
+  ) {
+    notes.push("email_unsubscribed");
+  }
+  return notes;
+}
+
+/**
  * How recently a contact must have been written for the booking form to stamp
  * the notice consent on it. The details step has just upserted it; an older row
  * is somebody else's, and a stranger typing an address must not be able to

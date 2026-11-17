@@ -17,6 +17,7 @@ import type {
   ContactRow,
   UpdateContactPayload,
   WhatsAppConsentColumnsRow,
+  MarketingConsentResult,
   WhatsAppConsentResult,
 } from "@/types/contact";
 import { toCampaignPhone } from "@/lib/whatsapp/phone";
@@ -29,6 +30,8 @@ import {
   whatsappConsentColumn,
   type WhatsAppPurpose,
 } from "@/lib/whatsapp/consent";
+import { applyMarketingConsent } from "@/lib/whatsapp/marketing-consent";
+import { setResendSubscription } from "@/lib/newsletter";
 
 /**
  * Contact directory. Every function here reads or writes personal data with the
@@ -120,7 +123,7 @@ export async function fetchContactDetail(
   const { data: contacts, error: contactError } = await db
     .from("contacts")
     .select(
-      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+      "id, first_name, last_name, email, phone, gender, newsletter_subscribed, preferred_language, email_bounced_at, birthdate, newsletter_unsubscribed_at, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
     )
     .eq("id", id)
     .limit(1);
@@ -281,7 +284,7 @@ export async function updateContact(
 export async function setWhatsAppConsent(
   accessToken: string | null,
   contactId: string,
-  purpose: WhatsAppPurpose,
+  purpose: Extract<WhatsAppPurpose, "appointments">,
   enabled: boolean,
 ): Promise<WhatsAppConsentResult> {
   try {
@@ -292,7 +295,9 @@ export async function setWhatsAppConsent(
   }
   if (
     !z.uuid().safeParse(contactId).success ||
-    !z.enum(["appointments", "marketing"]).safeParse(purpose).success
+    // "News and offers" is one consent for two channels and goes through
+    // `setMarketingConsent`; WhatsApp alone has no marketing switch any more.
+    purpose !== "appointments"
   ) {
     return { ok: false, error: "invalid" };
   }
@@ -338,6 +343,62 @@ export async function setWhatsAppConsent(
   } catch {
     return { ok: false, error: "db" };
   }
+}
+
+/**
+ * Staff recording, on a contact's behalf, that they do or do not take "news and
+ * offers": ONE consent for email AND WhatsApp, the same as the single box of
+ * the public booking form.
+ *
+ * Turning it on subscribes the email and consents WhatsApp marketing together,
+ * with `whatsappActivationPatch`'s rule for a STOP (a new date, the STOP
+ * cleared, the booking-notice consent withdrawn). Turning it off withdraws both
+ * and stamps neither the contact's email unsubscribe nor the global STOP: those
+ * mean the CONTACT asked, through the link in an email or a BAJA reply. The
+ * Resend list follows, best effort and without touching the contact's own
+ * columns again.
+ *
+ * Takes a uuid and a boolean and nothing else; never throws and never returns
+ * the database's text.
+ */
+export async function setMarketingConsent(
+  accessToken: string | null,
+  contactId: string,
+  enabled: boolean,
+): Promise<MarketingConsentResult> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.message };
+    throw err;
+  }
+  if (!z.uuid().safeParse(contactId).success || typeof enabled !== "boolean") {
+    return { ok: false, error: "invalid" };
+  }
+
+  let result: Awaited<ReturnType<typeof applyMarketingConsent>>;
+  try {
+    result = await applyMarketingConsent(
+      getAdminClient().database,
+      contactId,
+      enabled,
+      new Date().toISOString(),
+    );
+  } catch {
+    return { ok: false, error: "db" };
+  }
+  if (!result.ok) return { ok: false, error: result.error };
+
+  // A contact with no address has no place on the list.
+  const email = result.contact.email?.trim().toLowerCase();
+  if (email) {
+    try {
+      await setResendSubscription(email, enabled);
+    } catch {
+      // fail-open: the list can be put right later; the consent is recorded.
+    }
+  }
+  return { ok: true, ...result.contact };
 }
 
 /** How many contacts sit at each point of the lifecycle. */

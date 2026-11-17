@@ -52,7 +52,13 @@ async function syncContactNewsletter(
   }
 }
 
-export async function setNewsletterState(
+/**
+ * Puts an address on or off Resend's newsletter list and touches nothing else.
+ * For the caller that records the contact's side itself and must not have an
+ * unsubscribe stamped on it (staff withdrawing a consent is not the contact
+ * asking to be left alone).
+ */
+export async function setResendSubscription(
   email: string,
   subscribed: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
@@ -70,6 +76,15 @@ export async function setNewsletterState(
     console.error("[newsletter] Resend error:", error);
     return { ok: false, error: error.message };
   }
+  return { ok: true };
+}
+
+export async function setNewsletterState(
+  email: string,
+  subscribed: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const resend = await setResendSubscription(email, subscribed);
+  if (!resend.ok) return resend;
 
   await syncContactNewsletter(email, subscribed);
   return { ok: true };

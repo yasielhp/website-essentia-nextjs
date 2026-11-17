@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, useEffect, useReducer, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { Button } from "@/components/ui/button";
-import { setContactNewsletter } from "@/actions/newsletter";
 import { IconCheckmark, IconTrash } from "@/components/ui/icons";
 import { deleteContact } from "@/actions/delete-contact";
 import { getAccessToken } from "@/lib/client-session";
@@ -36,7 +35,7 @@ import type { ContactBonus } from "@/types/bonus";
 import { BonusesSection } from "./bonuses-section";
 import { ConsentSection } from "./consent-section";
 import { WhatsAppConsentRows } from "./whatsapp-consent-rows";
-import type { WhatsAppConsentColumns } from "@/lib/whatsapp/consent";
+import type { ContactConsentColumns } from "@/lib/whatsapp/consent";
 import { fetchContactConsent } from "@/actions/consent";
 import type { ContactConsent } from "@/types/consent";
 
@@ -69,7 +68,7 @@ type LoadState = {
   bonuses: ContactBonus[];
   consent: ContactConsent | null;
   bouncedAt: string | null;
-  whatsapp: WhatsAppConsentColumns;
+  whatsapp: ContactConsentColumns;
 };
 
 type LoadAction =
@@ -83,7 +82,7 @@ type LoadAction =
       bonuses: ContactBonus[];
       consent: ContactConsent | null;
       bouncedAt: string | null;
-      whatsapp: WhatsAppConsentColumns;
+      whatsapp: ContactConsentColumns;
     }
   | { type: "BONUSES_LOADED"; bonuses: ContactBonus[] }
   | { type: "BOUNCE_CLEARED" }
@@ -226,15 +225,12 @@ function ContactDetailPageInner() {
     language,
     birthdate,
     gender,
-    newsletterSubscribed,
     fieldErrors,
     error,
     saving,
     deleting,
     deleteOpen,
   } = form;
-
-  const originalNewsletter = useRef<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -248,8 +244,6 @@ function ContactDetailPageInner() {
       }
 
       const { contact, bookings, memberships, raceRegs, eduRegs } = result;
-      const initialNewsletter = contact.newsletter_subscribed ?? false;
-      originalNewsletter.current = initialNewsletter;
       dispatchForm({
         type: "INIT",
         firstName: contact.first_name ?? "",
@@ -259,7 +253,6 @@ function ContactDetailPageInner() {
         language: contact.preferred_language ?? "en",
         birthdate: contact.birthdate ?? "",
         gender: contact.gender ?? "",
-        newsletterSubscribed: initialNewsletter,
       });
 
       const [campaignRows, bonusRows, consentRow] = await Promise.all([
@@ -284,6 +277,10 @@ function ContactDetailPageInner() {
             contact.whatsapp_marketing_opted_in_at,
           whatsapp_opted_out_at: contact.whatsapp_opted_out_at,
           whatsapp_unreachable_at: contact.whatsapp_unreachable_at ?? null,
+          newsletter_subscribed: contact.newsletter_subscribed,
+          newsletter_unsubscribed_at: contact.newsletter_unsubscribed_at,
+          email: contact.email,
+          email_bounced_at: contact.email_bounced_at,
         },
       });
     }
@@ -325,7 +322,6 @@ function ContactDetailPageInner() {
         phone: normalizePhone(phone),
         preferred_language: language === "es" ? "es" : "en",
         gender: toStoredGender(gender),
-        newsletter_subscribed: newsletterSubscribed,
         birthdate: birthdate || null,
       },
     );
@@ -338,21 +334,6 @@ function ContactDetailPageInner() {
         error: updateErrorMsg ?? t("errors.saveFailed"),
       });
       return;
-    }
-
-    // Sync Resend audience only when the newsletter status actually changed
-    const trimmedEmail = email.trim();
-    if (trimmedEmail && newsletterSubscribed !== originalNewsletter.current) {
-      try {
-        await setContactNewsletter(
-          getAccessToken(),
-          trimmedEmail,
-          newsletterSubscribed,
-        );
-        originalNewsletter.current = newsletterSubscribed;
-      } catch {
-        // fail-open: Resend sync failure must not block navigation
-      }
     }
 
     notifySuccess(tToasts("contactSaved"));
@@ -454,7 +435,6 @@ function ContactDetailPageInner() {
               language={language}
               birthdate={birthdate}
               gender={gender}
-              newsletterSubscribed={newsletterSubscribed}
               fieldErrors={fieldErrors}
               loading={loading}
               saving={saving}

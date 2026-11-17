@@ -1156,15 +1156,29 @@
           "label": "Avisos de la cita"
         },
         "marketing": {
-          "label": "Novedades y ofertas"
+          "label": "Novedades y ofertas",
+          "hint": {
+            "on": "Email y WhatsApp, desde {date}",
+            "off": "Email y WhatsApp · sin consentimiento",
+            "emailOnly": "Solo email. Al activarlo se completa WhatsApp.",
+            "whatsappOnly": "Solo WhatsApp. Al activarlo se completa el email.",
+            "optedOut": "Email y WhatsApp · en pausa por la baja de WhatsApp (STOP)"
+          },
+          "notes": {
+            "noEmail": "Este contacto no tiene email: las novedades solo pueden llegar por WhatsApp.",
+            "bounced": "El email de este contacto rebotó: las novedades no llegan por correo.",
+            "emailUnsubscribed": "Se dio de baja de los correos el {date}. Activarlo la vuelve a suscribir."
+          }
         },
         "accepted": "Acepta desde {date}",
         "none": "Sin consentimiento",
         "optedOutNote": "Se dio de baja (STOP) el {date}. No recibirá mensajes de ningún tipo, aunque conserve fechas de consentimiento antiguas, hasta que se active uno de los dos usos.",
-        "error": "No se pudo guardar el consentimiento de WhatsApp.",
+        "error": "No se pudo guardar el consentimiento.",
         "dialog": {
-          "title": "Activar WhatsApp",
+          "title": "Registrar consentimiento",
           "body": "Vas a registrar que esta persona acepta recibir por WhatsApp: {use}.",
+          "bodyMarketing": "Vas a registrar que esta persona acepta recibir novedades y ofertas por email y WhatsApp.",
+          "emailUnsubscribedBody": "Esta persona se dio de baja de los correos. Actívalo solo si ha pedido volver a recibirlos.",
           "optedOutBody": "Esta persona pidió no recibir mensajes. Actívalo solo si ha pedido volver a recibirlos.",
           "optedOutScope": "La baja es global: al activar este uso se retiran los consentimientos anteriores del otro uso, y habrá que volver a pedirlos.",
           "confirm": "Activar",

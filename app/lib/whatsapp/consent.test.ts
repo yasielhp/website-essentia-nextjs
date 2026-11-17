@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   NOTICE_CONSENT_WINDOW_MS,
+  marketingNotes,
+  marketingRowState,
   isContactFresh,
   marketingConsentActive,
   pickNoticeEmail,
@@ -228,5 +230,93 @@ describe("whatsappActivationPatch", () => {
       whatsapp_opted_in_at: null,
       whatsapp_opted_out_at: null,
     });
+  });
+});
+
+describe("marketingRowState", () => {
+  const both = {
+    newsletter_subscribed: true,
+    newsletter_unsubscribed_at: null,
+    whatsapp_marketing_opted_in_at: IN,
+    whatsapp_opted_out_at: null,
+  };
+
+  test("on only when email AND WhatsApp are on and there is no STOP", () => {
+    expect(marketingRowState(both)).toBe("on");
+  });
+
+  test("off when neither channel is", () => {
+    expect(marketingRowState({})).toBe("off");
+    expect(
+      marketingRowState({
+        newsletter_subscribed: false,
+        whatsapp_marketing_opted_in_at: null,
+      }),
+    ).toBe("off");
+  });
+
+  test("only the email channel is email_only, and the switch is not on", () => {
+    expect(
+      marketingRowState({ ...both, whatsapp_marketing_opted_in_at: null }),
+    ).toBe("email_only");
+  });
+
+  test("only the WhatsApp channel is whatsapp_only", () => {
+    expect(marketingRowState({ ...both, newsletter_subscribed: false })).toBe(
+      "whatsapp_only",
+    );
+    expect(marketingRowState({ ...both, newsletter_subscribed: null })).toBe(
+      "whatsapp_only",
+    );
+  });
+
+  test("an email unsubscribe counts as the email channel being off", () => {
+    expect(
+      marketingRowState({ ...both, newsletter_unsubscribed_at: OUT }),
+    ).toBe("whatsapp_only");
+  });
+
+  test("a global STOP wins over every other state, however many dates are stored", () => {
+    expect(marketingRowState({ ...both, whatsapp_opted_out_at: OUT })).toBe(
+      "opted_out",
+    );
+    expect(marketingRowState({ whatsapp_opted_out_at: OUT })).toBe("opted_out");
+  });
+});
+
+describe("marketingNotes", () => {
+  test("a contact the email can reach has no notes", () => {
+    expect(
+      marketingNotes({
+        email: "a@b.co",
+        email_bounced_at: null,
+        newsletter_subscribed: true,
+      }),
+    ).toEqual([]);
+  });
+
+  test("no email, a bounce and the contact's own unsubscribe each explain themselves", () => {
+    expect(marketingNotes({ email: null })).toEqual(["no_email"]);
+    expect(marketingNotes({ email: "  " })).toEqual(["no_email"]);
+    expect(marketingNotes({ email: "a@b.co", email_bounced_at: OUT })).toEqual([
+      "bounced",
+    ]);
+    expect(
+      marketingNotes({
+        email: "a@b.co",
+        newsletter_subscribed: false,
+        newsletter_unsubscribed_at: OUT,
+      }),
+    ).toEqual(["email_unsubscribed"]);
+  });
+
+  test("an unsubscribe date on a contact who is subscribed again is not a note", () => {
+    expect(
+      marketingNotes({
+        email: "a@b.co",
+        newsletter_subscribed: true,
+        newsletter_unsubscribed_at: OUT,
+      }),
+    ).toEqual([]);
   });
 });

@@ -18,7 +18,6 @@ export type FormState = {
   /** YYYY-MM-DD or "". */
   birthdate: string;
   gender: GenderValue;
-  newsletterSubscribed: boolean;
   fieldErrors: ContactErrors;
   error: string | null;
   saving: boolean;
@@ -36,7 +35,6 @@ export type FormAction =
       language: string;
       birthdate: string;
       gender: GenderValue;
-      newsletterSubscribed: boolean;
     }
   | {
       type: "SET_FIELD";
@@ -45,7 +43,6 @@ export type FormAction =
       value: string;
     }
   | { type: "SET_GENDER"; gender: GenderValue }
-  | { type: "TOGGLE_NEWSLETTER" }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_FIELD_ERRORS"; errors: ContactErrors }
   | { type: "SAVING_START" }
@@ -62,7 +59,6 @@ export const initialFormState: FormState = {
   language: "en",
   birthdate: "",
   gender: "",
-  newsletterSubscribed: false,
   fieldErrors: {},
   error: null,
   saving: false,
@@ -82,12 +78,9 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         language: action.language,
         birthdate: action.birthdate,
         gender: action.gender,
-        newsletterSubscribed: action.newsletterSubscribed,
       };
     case "SET_GENDER":
       return { ...state, gender: action.gender };
-    case "TOGGLE_NEWSLETTER":
-      return { ...state, newsletterSubscribed: !state.newsletterSubscribed };
     case "SET_FIELD":
       return {
         ...state,

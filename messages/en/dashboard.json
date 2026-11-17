@@ -1156,15 +1156,29 @@
           "label": "Appointment notices"
         },
         "marketing": {
-          "label": "News and offers"
+          "label": "News and offers",
+          "hint": {
+            "on": "Email and WhatsApp, since {date}",
+            "off": "Email and WhatsApp · no consent",
+            "emailOnly": "Email only. Turning it on completes WhatsApp.",
+            "whatsappOnly": "WhatsApp only. Turning it on completes the email.",
+            "optedOut": "Email and WhatsApp · paused by the WhatsApp opt-out (STOP)"
+          },
+          "notes": {
+            "noEmail": "This contact has no email: news and offers can only reach them on WhatsApp.",
+            "bounced": "This contact's email bounced: news and offers do not reach them by email.",
+            "emailUnsubscribed": "They unsubscribed from the emails on {date}. Turning it on subscribes them again."
+          }
         },
         "accepted": "Accepts since {date}",
         "none": "No consent",
         "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind, even if old consent dates are still stored, until one of the two uses is turned on.",
-        "error": "Could not save the WhatsApp consent.",
+        "error": "Could not save the consent.",
         "dialog": {
-          "title": "Turn on WhatsApp",
+          "title": "Record consent",
           "body": "You are about to record that this person accepts WhatsApp for: {use}.",
+          "bodyMarketing": "You are about to record that this person accepts news and offers by email and WhatsApp.",
+          "emailUnsubscribedBody": "This person unsubscribed from the emails. Turn it on only if they have asked to receive them again.",
           "optedOutBody": "This person asked not to receive messages. Turn it on only if they have asked to receive them again.",
           "optedOutScope": "The opt-out is global: turning this use on withdraws the earlier consent for the other use, and it will have to be asked for again.",
           "confirm": "Turn on",

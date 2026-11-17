@@ -16,6 +16,7 @@ import type { WhatsAppPurpose } from "@/lib/whatsapp/consent";
 export function WhatsAppConsentDialog({
   purpose,
   optedOut,
+  emailUnsubscribed = false,
   busy,
   onConfirm,
   onCancel,
@@ -23,6 +24,8 @@ export function WhatsAppConsentDialog({
   purpose: WhatsAppPurpose;
   /** The contact replied STOP: the warning is the stronger one. */
   optedOut: boolean;
+  /** The contact unsubscribed from the emails themselves: say so before turning them back on. */
+  emailUnsubscribed?: boolean;
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -83,7 +86,12 @@ export function WhatsAppConsentDialog({
           id="whatsapp-consent-body"
           className="text-petroleum-400 mt-2 flex flex-col gap-2 text-sm"
         >
-          <p>{t("dialog.body", { use: t(`${purpose}.label`) })}</p>
+          <p>
+            {purpose === "marketing"
+              ? t("dialog.bodyMarketing")
+              : t("dialog.body", { use: t(`${purpose}.label`) })}
+          </p>
+          {emailUnsubscribed && <p>{t("dialog.emailUnsubscribedBody")}</p>}
           {optedOut && (
             <>
               <p className="text-petroleum-700 font-medium">

@@ -7,6 +7,7 @@ import {
   clearWhatsAppSuppression,
   clearWhatsAppUnreachable,
   fetchWhatsAppSuppression,
+  setMarketingConsent,
   setWhatsAppConsent,
 } from "@/actions/contacts";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
@@ -17,31 +18,48 @@ import {
 import { Button } from "@/components/ui/button";
 import { getAccessToken } from "@/lib/client-session";
 import {
-  whatsappConsentColumn,
+  marketingNotes,
+  marketingRowState,
   whatsappConsentState,
-  type WhatsAppConsentColumns,
+  type ContactConsentColumns,
+  type MarketingRowState,
   type WhatsAppPurpose,
 } from "@/lib/whatsapp/consent";
 import { shortDate } from "./consent-date";
 import { WhatsAppConsentDialog } from "./whatsapp-consent-dialog";
 
-const PURPOSES: WhatsAppPurpose[] = ["appointments", "marketing"];
+/** The hint under "News and offers" for each state, as keys of `whatsapp.marketing.hint`. */
+const MARKETING_HINT: Record<MarketingRowState, string> = {
+  on: "marketing.hint.on",
+  off: "marketing.hint.off",
+  email_only: "marketing.hint.emailOnly",
+  whatsapp_only: "marketing.hint.whatsappOnly",
+  opted_out: "marketing.hint.optedOut",
+};
+
+const MARKETING_NOTE = {
+  no_email: "marketing.notes.noEmail",
+  bounced: "marketing.notes.bounced",
+  email_unsubscribed: "marketing.notes.emailUnsubscribed",
+} as const;
 
 /**
- * What this contact accepts on WhatsApp, one row per purpose, and the switches
- * staff use to record it.
+ * What this contact accepts, two switches: "Appointment notices" (WhatsApp)
+ * and "News and offers", which is ONE consent for email AND WhatsApp, as it is
+ * on the public booking form.
  *
- * Unlike the newsletter switch, these do not wait for Save: a consent is an
+ * Unlike the contact's details these do not wait for Save: a consent is an
  * event with a date. Turning one off is immediate. Turning one on asks first,
- * because it clears the contact's own STOP. Mounted only once the contact has
- * loaded, so the first state is the stored one.
+ * because it is the team speaking for the client and it clears the contact's
+ * own STOP. Mounted only once the contact has loaded, so the first state is the
+ * stored one.
  */
 export function WhatsAppConsentRows({
   contactId,
   initial,
 }: {
   contactId: string;
-  initial: WhatsAppConsentColumns;
+  initial: ContactConsentColumns;
 }) {
   const t = useTranslations("dashboard.contacts.detail.whatsapp");
   const tCommon = useTranslations("dashboard.common");
@@ -77,23 +95,26 @@ export function WhatsAppConsentRows({
   }, [contactId]);
 
   const state = whatsappConsentState(columns);
+  const marketing = marketingRowState(columns);
+  const notes = marketingNotes(columns);
 
   async function save(purpose: WhatsAppPurpose, enabled: boolean) {
     setSaving(true);
     setFailed(false);
     try {
-      const result = await setWhatsAppConsent(
-        getAccessToken(),
-        contactId,
-        purpose,
-        enabled,
-      );
+      const result =
+        purpose === "marketing"
+          ? await setMarketingConsent(getAccessToken(), contactId, enabled)
+          : await setWhatsAppConsent(
+              getAccessToken(),
+              contactId,
+              "appointments",
+              enabled,
+            );
       if (result.ok) {
-        setColumns({
-          whatsapp_opted_in_at: result.whatsapp_opted_in_at,
-          whatsapp_marketing_opted_in_at: result.whatsapp_marketing_opted_in_at,
-          whatsapp_opted_out_at: result.whatsapp_opted_out_at,
-        });
+        const { ok: _ok, ...stored } = result;
+        void _ok;
+        setColumns((prev) => ({ ...prev, ...stored }));
       } else {
         setFailed(true);
       }
@@ -243,26 +264,46 @@ export function WhatsAppConsentRows({
         </p>
       )}
 
-      {PURPOSES.map((purpose) => {
-        const accepted = state[purpose] === "accepted";
-        const since = columns[whatsappConsentColumn(purpose)];
-        return (
-          <ToggleRow
-            key={purpose}
-            checked={accepted}
-            disabled={saving}
-            label={t(`${purpose}.label`)}
-            hint={
-              accepted && since
-                ? t("accepted", { date: shortDate(since) })
-                : t("none")
-            }
-            onToggle={() =>
-              accepted ? void save(purpose, false) : setAsking(purpose)
-            }
-          />
-        );
-      })}
+      <ToggleRow
+        checked={state.appointments === "accepted"}
+        disabled={saving}
+        label={t("appointments.label")}
+        hint={
+          state.appointments === "accepted" && columns.whatsapp_opted_in_at
+            ? t("accepted", { date: shortDate(columns.whatsapp_opted_in_at) })
+            : t("none")
+        }
+        onToggle={() =>
+          state.appointments === "accepted"
+            ? void save("appointments", false)
+            : setAsking("appointments")
+        }
+      />
+
+      <ToggleRow
+        checked={marketing === "on"}
+        disabled={saving}
+        label={t("marketing.label")}
+        hint={t(MARKETING_HINT[marketing], {
+          date: columns.whatsapp_marketing_opted_in_at
+            ? shortDate(columns.whatsapp_marketing_opted_in_at)
+            : "",
+        })}
+        onToggle={() =>
+          marketing === "on"
+            ? void save("marketing", false)
+            : setAsking("marketing")
+        }
+      />
+      {notes.map((note) => (
+        <p key={note} className="text-petroleum-400 px-1 text-xs">
+          {t(MARKETING_NOTE[note], {
+            date: columns.newsletter_unsubscribed_at
+              ? shortDate(columns.newsletter_unsubscribed_at)
+              : "",
+          })}
+        </p>
+      ))}
 
       {failed && (
         <p role="alert" className="px-1 text-xs text-red-500">
@@ -274,6 +315,9 @@ export function WhatsAppConsentRows({
         <WhatsAppConsentDialog
           purpose={asking}
           optedOut={state.optedOut}
+          emailUnsubscribed={
+            asking === "marketing" && notes.includes("email_unsubscribed")
+          }
           busy={saving}
           onConfirm={() => void save(asking, true)}
           onCancel={() => setAsking(null)}
