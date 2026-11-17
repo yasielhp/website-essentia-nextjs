@@ -55,7 +55,11 @@ export type WhatsAppTemplateStatus =
 export type WhatsAppTemplateUnsupportedReason =
   "media_header" | "header_variable" | "named_params" | "button_type";
 
-export type WhatsAppTemplateCategory = "MARKETING" | "UTILITY";
+/** The categories the dashboard can show and send; one source for all uses. */
+export const WHATSAPP_TEMPLATE_CATEGORIES = ["MARKETING", "UTILITY"] as const;
+
+export type WhatsAppTemplateCategory =
+  (typeof WHATSAPP_TEMPLATE_CATEGORIES)[number];
 
 export type WhatsAppTemplateButton =
   | { type: "URL"; text: string; url: string }

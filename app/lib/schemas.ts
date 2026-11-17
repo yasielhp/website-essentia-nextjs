@@ -9,6 +9,7 @@ import type {
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { countParams, paramIssues } from "@/lib/whatsapp/templates";
+import { WHATSAPP_TEMPLATE_CATEGORIES } from "@/lib/whatsapp/types";
 
 /**
  * Message KEYS, not sentences: this form is on the bilingual public site, and
@@ -551,7 +552,7 @@ export const whatsappTemplateSchema = z
       .max(512, "templateNameTooLong")
       .regex(/^[a-z0-9_]+$/, "templateNameFormat"),
     language: z.enum(["es", "en"], "templateLanguageInvalid"),
-    category: z.enum(["MARKETING", "UTILITY"], "templateCategoryInvalid"),
+    category: z.enum(WHATSAPP_TEMPLATE_CATEGORIES, "templateCategoryInvalid"),
     headerText: z
       .string()
       .trim()
@@ -583,6 +584,7 @@ export const whatsappTemplateSchema = z
               .string()
               .trim()
               .url("urlInvalid")
+              .max(2000, "urlTooLong")
               .startsWith("https://", "urlMustBeHttps")
               .refine((v) => !v.includes("{{"), "urlNoVariables"),
           }),
@@ -597,7 +599,11 @@ export const whatsappTemplateSchema = z
         ]),
       )
       .max(3, "tooManyButtons"),
-    exampleParams: z.array(z.string().trim().min(1, "exampleRequired")),
+    exampleParams: z
+      .array(
+        z.string().trim().min(1, "exampleRequired").max(200, "exampleTooLong"),
+      )
+      .max(20, "exampleTooLong"),
   })
   .superRefine((value, ctx) => {
     for (const issue of paramIssues(value.body)) {
@@ -613,6 +619,60 @@ export const whatsappTemplateSchema = z
   });
 
 export type WhatsAppTemplateInput = z.infer<typeof whatsappTemplateSchema>;
+
+/** Every key the template schema can raise; anything else is `invalidInput`. */
+const TEMPLATE_MESSAGE_KEYS = new Set([
+  "templateNameRequired",
+  "templateNameTooLong",
+  "templateNameFormat",
+  "templateLanguageInvalid",
+  "templateCategoryInvalid",
+  "templateBodyRequired",
+  "templateBodyTooLong",
+  "headerTooLong",
+  "headerNoVariables",
+  "footerTooLong",
+  "footerNoVariables",
+  "buttonTextRequired",
+  "buttonTextTooLong",
+  "urlInvalid",
+  "urlTooLong",
+  "urlMustBeHttps",
+  "urlNoVariables",
+  "tooManyButtons",
+  "exampleRequired",
+  "exampleTooLong",
+  "exampleCountMismatch",
+  "paramMalformed",
+  "paramGap",
+  "paramAtEdge",
+]);
+
+export type WhatsAppTemplateValidation =
+  | { ok: true; data: WhatsAppTemplateInput }
+  | { ok: false; fieldErrors: Record<string, string> };
+
+/**
+ * Validates anything a client sent. A Server Action is a public endpoint, so
+ * the payload may not even be an object; every issue Zod words in its own
+ * English (a wrong type, a missing field) becomes `invalidInput`, and a
+ * payload with no path lands under `"_"`.
+ */
+export function validateWhatsAppTemplate(
+  input: unknown,
+): WhatsAppTemplateValidation {
+  const parsed = whatsappTemplateSchema.safeParse(input);
+  if (parsed.success) return { ok: true, data: parsed.data };
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of parsed.error.issues) {
+    const key = issue.path.map(String).join(".") || "_";
+    if (fieldErrors[key]) continue;
+    fieldErrors[key] = TEMPLATE_MESSAGE_KEYS.has(issue.message)
+      ? issue.message
+      : "invalidInput";
+  }
+  return { ok: false, fieldErrors };
+}
 
 export const paymentSettingsSchema = z.object({
   depositPercent: z.number().int().min(10).max(100),

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import {
   ADMIN_ROLES,
   AuthError,
@@ -14,16 +15,19 @@ import {
   listRemoteTemplates,
 } from "@/lib/whatsapp/client";
 import { countParams, templateSupport } from "@/lib/whatsapp/templates";
-import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import {
-  whatsappTemplateSchema,
+  WHATSAPP_TEMPLATE_CATEGORIES,
+  type WhatsAppTemplateRow,
+} from "@/lib/whatsapp/types";
+import {
+  validateWhatsAppTemplate,
   type WhatsAppTemplateInput,
 } from "@/lib/schemas";
 
 const PATH = "/dashboard/messages";
 
 /** The only categories the dashboard knows how to show and send. */
-const KNOWN_CATEGORIES = ["MARKETING", "UTILITY"];
+const KNOWN_CATEGORIES: readonly string[] = WHATSAPP_TEMPLATE_CATEGORIES;
 
 /**
  * `error` is always a key the UI translates. Whatever Meta or the network said
@@ -166,14 +170,10 @@ export async function createWhatsAppTemplate(
   } catch (err) {
     return authFailure(err);
   }
-  const parsed = whatsappTemplateSchema.safeParse(input);
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path.map(String).join(".") || "_";
-      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
-    }
-    return { ok: false, error: "invalid", fieldErrors };
+  // Typed as the input, but it came over the wire: validate it as unknown.
+  const parsed = validateWhatsAppTemplate(input as unknown);
+  if (!parsed.ok) {
+    return { ok: false, error: "invalid", fieldErrors: parsed.fieldErrors };
   }
   const value = parsed.data;
   const db = getAdminClient().database;
@@ -265,6 +265,7 @@ export async function deleteWhatsAppTemplate(
   } catch (err) {
     return authFailure(err);
   }
+  if (!z.uuid().safeParse(id).success) return { ok: false, error: "invalid" };
   try {
     const { error } = await getAdminClient()
       .database.from("whatsapp_templates")
