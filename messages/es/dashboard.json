@@ -2197,7 +2197,7 @@
       "syncing": "Sincronizando…",
       "syncUnavailable": "Falta configurar WhatsApp Business en el servidor",
       "new": "Nueva plantilla",
-      "notConfigured": "Falta configurar WhatsApp Business en el servidor (WHATSAPP_BUSINESS_ACCOUNT_ID). Las plantillas se guardan como borrador y no se envían a revisión.",
+      "notConfigured": "WhatsApp Business aún no está conectado; avisa a quien administra la web. Las plantillas se guardan como borrador.",
       "loadFailed": "No se pudieron cargar las plantillas.",
       "retry": "Reintentar",
       "empty": "Todavía no hay plantillas. Crea la primera o sincroniza las que ya tengas en Meta.",

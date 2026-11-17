@@ -509,3 +509,20 @@ describe("texts that read the wrong way before", () => {
     );
   });
 });
+
+describe("what the team is told about a WhatsApp account that is not connected", () => {
+  test("no name of a setting that only a developer knows", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(locales[locale]["messages.whatsapp.notConfigured"]).not.toMatch(
+        /WHATSAPP_|_ID\b/,
+      );
+      expect(locales[locale]["messages.whatsapp.notConfigured"]).toBeTruthy();
+    }
+    expect(locales.es["messages.whatsapp.notConfigured"]).toContain(
+      "avisa a quien administra la web",
+    );
+    expect(locales.en["messages.whatsapp.notConfigured"]).toContain(
+      "tell whoever manages the website",
+    );
+  });
+});

@@ -2197,7 +2197,7 @@
       "syncing": "Syncing…",
       "syncUnavailable": "WhatsApp Business is not set up on the server",
       "new": "New template",
-      "notConfigured": "WhatsApp Business is not set up on the server (WHATSAPP_BUSINESS_ACCOUNT_ID). Templates are saved as drafts and are not submitted for review.",
+      "notConfigured": "WhatsApp Business is not connected yet; tell whoever manages the website. Templates are saved as drafts.",
       "loadFailed": "The templates could not be loaded.",
       "retry": "Try again",
       "empty": "There are no templates yet. Create the first one or sync the ones you already have at Meta.",
