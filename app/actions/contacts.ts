@@ -268,6 +268,28 @@ export async function updateContact(
 }
 
 /**
+ * A minimal trail of who changed a consent, until consents have a table of
+ * their own: the staff member, the contact, the use and the direction. Never an
+ * email or a phone. A persistent record (who, when, from where) is the real fix
+ * and is noted in the findings.
+ */
+function logConsentChange(
+  actor: string,
+  contactId: string,
+  use: "appointments" | "marketing",
+  enabled: boolean,
+  extra: Record<string, unknown> = {},
+): void {
+  console.info("[contacts] consent changed", {
+    actor,
+    contact: contactId,
+    use,
+    action: enabled ? "on" : "off",
+    ...extra,
+  });
+}
+
+/**
  * Staff recording, on a contact's behalf, that they do or do not take WhatsApp
  * for one purpose: the booking notices or news and offers.
  *
@@ -287,8 +309,9 @@ export async function setWhatsAppConsent(
   purpose: Extract<WhatsAppPurpose, "appointments">,
   enabled: boolean,
 ): Promise<WhatsAppConsentResult> {
+  let actor: string;
   try {
-    await requireRole(accessToken);
+    actor = (await requireRole(accessToken)).userId;
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, error: err.message };
     throw err;
@@ -339,6 +362,7 @@ export async function setWhatsAppConsent(
     if (error) return { ok: false, error: "db" };
     const row = (data as WhatsAppConsentColumnsRow[] | null)?.[0];
     if (!row) return { ok: false, error: "notFound" };
+    logConsentChange(actor, contactId, purpose, enabled);
     return { ok: true, ...row };
   } catch {
     return { ok: false, error: "db" };
@@ -366,8 +390,9 @@ export async function setMarketingConsent(
   contactId: string,
   enabled: boolean,
 ): Promise<MarketingConsentResult> {
+  let actor: string;
   try {
-    await requireRole(accessToken);
+    actor = (await requireRole(accessToken)).userId;
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, error: err.message };
     throw err;
@@ -389,16 +414,20 @@ export async function setMarketingConsent(
   }
   if (!result.ok) return { ok: false, error: result.error };
 
-  // A contact with no address has no place on the list.
+  // A contact with no address has no place on the list, so there is nothing to
+  // be out of step. A list that fails does not undo the consent; it is reported
+  // so the page can say so, above all when the consent was withdrawn.
   const email = result.contact.email?.trim().toLowerCase();
+  let emailListSynced = true;
   if (email) {
     try {
-      await setResendSubscription(email, enabled);
+      emailListSynced = (await setResendSubscription(email, enabled)).ok;
     } catch {
-      // fail-open: the list can be put right later; the consent is recorded.
+      emailListSynced = false;
     }
   }
-  return { ok: true, ...result.contact };
+  logConsentChange(actor, contactId, "marketing", enabled, { emailListSynced });
+  return { ok: true, emailListSynced, ...result.contact };
 }
 
 /** How many contacts sit at each point of the lifecycle. */

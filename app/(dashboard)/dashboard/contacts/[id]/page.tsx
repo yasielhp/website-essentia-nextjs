@@ -280,6 +280,7 @@ function ContactDetailPageInner() {
           newsletter_subscribed: contact.newsletter_subscribed,
           newsletter_unsubscribed_at: contact.newsletter_unsubscribed_at,
           email: contact.email,
+          phone: contact.phone,
           email_bounced_at: contact.email_bounced_at,
         },
       });

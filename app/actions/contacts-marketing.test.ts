@@ -23,6 +23,7 @@ let rows: Row[] = [];
 let allowed = true;
 let dbFails: "read" | "write" | undefined;
 let resendThrows = false;
+let resendOk = true;
 let resend: { email: string; subscribed: boolean }[] = [];
 let adminCalls = 0;
 
@@ -47,7 +48,7 @@ beforeAll(async () => {
     requireRole: async () => {
       if (!allowed)
         throw new real.guard.AuthError("Insufficient permissions", 403);
-      return { userId: "u1", email: "staff@example.com", role: "staff" };
+      return { userId: "staff-1", email: "staff@example.com", role: "staff" };
     },
   }));
   mock.module("@/lib/newsletter", () => ({
@@ -55,7 +56,7 @@ beforeAll(async () => {
     setResendSubscription: async (email: string, subscribed: boolean) => {
       if (resendThrows) throw new Error("resend exploded");
       resend.push({ email, subscribed });
-      return { ok: true };
+      return resendOk ? { ok: true } : { ok: false, error: "provider text" };
     },
   }));
   ({ setMarketingConsent } = await import("@/actions/contacts"));
@@ -84,6 +85,7 @@ beforeEach(() => {
   allowed = true;
   dbFails = undefined;
   resendThrows = false;
+  resendOk = true;
   resend = [];
   adminCalls = 0;
 });
@@ -119,11 +121,34 @@ describe("setMarketingConsent", () => {
     expect(resend).toEqual([]);
   });
 
-  test("a list that fails does not fail the consent", async () => {
+  test("a list that throws does not fail the consent, and is reported as not synced", async () => {
     resendThrows = true;
     const result = await setMarketingConsent("token", ID, true);
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.emailListSynced).toBe(false);
     expect(rows[0].newsletter_subscribed).toBe(true);
+  });
+
+  test("a list that refuses is reported as not synced, with nothing of the provider's text", async () => {
+    resendOk = false;
+    rows[0] = contact({
+      newsletter_subscribed: true,
+      whatsapp_marketing_opted_in_at: "2026-01-01T00:00:00.000Z",
+    });
+    const result = await setMarketingConsent("token", ID, false);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.emailListSynced).toBe(false);
+    // The consent is withdrawn in the database all the same.
+    expect(rows[0].whatsapp_marketing_opted_in_at).toBeNull();
+    expect(JSON.stringify(result)).not.toContain("provider text");
+  });
+
+  test("a list that follows is reported as synced, and so is a contact with no address", async () => {
+    const synced = await setMarketingConsent("token", ID, true);
+    expect(synced.ok && synced.emailListSynced).toBe(true);
+    rows[0] = contact({ email: null });
+    const noAddress = await setMarketingConsent("token", ID, true);
+    expect(noAddress.ok && noAddress.emailListSynced).toBe(true);
   });
 
   test("somebody without a dashboard role touches nothing", async () => {
@@ -167,5 +192,71 @@ describe("setMarketingConsent", () => {
       expect(JSON.stringify(result)).not.toContain("boom");
     }
     expect(resend).toEqual([]);
+  });
+
+  test("it leaves a trace of who did what, with no email or phone", async () => {
+    const lines: unknown[][] = [];
+    const real = console.info;
+    console.info = (...args: unknown[]) => void lines.push(args);
+    try {
+      await setMarketingConsent("token", ID, true);
+      await setMarketingConsent("token", ID, false);
+    } finally {
+      console.info = real;
+    }
+    expect(lines).toHaveLength(2);
+    expect(lines[0][1]).toMatchObject({
+      actor: "staff-1",
+      contact: ID,
+      use: "marketing",
+      action: "on",
+    });
+    expect(lines[1][1]).toMatchObject({ action: "off" });
+    const text = JSON.stringify(lines);
+    expect(text).not.toContain("example.com");
+    expect(text).not.toContain("ana@");
+  });
+
+  test("a change that did not happen leaves no trace", async () => {
+    const lines: unknown[][] = [];
+    const real = console.info;
+    console.info = (...args: unknown[]) => void lines.push(args);
+    try {
+      dbFails = "read";
+      await setMarketingConsent("token", ID, true);
+      allowed = false;
+      await setMarketingConsent("token", ID, true);
+    } finally {
+      console.info = real;
+    }
+    expect(lines).toEqual([]);
+  });
+});
+
+describe("setWhatsAppConsent leaves the same trace", () => {
+  test("the actor, the contact, the use and the direction, and nothing personal", async () => {
+    const { setWhatsAppConsent } = await import("@/actions/contacts");
+    const lines: unknown[][] = [];
+    const real = console.info;
+    console.info = (...args: unknown[]) => void lines.push(args);
+    try {
+      const result = await setWhatsAppConsent(
+        "token",
+        ID,
+        "appointments",
+        true,
+      );
+      expect(result.ok).toBe(true);
+    } finally {
+      console.info = real;
+    }
+    expect(lines).toHaveLength(1);
+    expect(lines[0][1]).toMatchObject({
+      actor: "staff-1",
+      contact: ID,
+      use: "appointments",
+      action: "on",
+    });
+    expect(JSON.stringify(lines)).not.toContain("example.com");
   });
 });

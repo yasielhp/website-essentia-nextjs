@@ -25,6 +25,7 @@ import {
   type MarketingRowState,
   type WhatsAppPurpose,
 } from "@/lib/whatsapp/consent";
+import { toCampaignPhone } from "@/lib/whatsapp/phone";
 import { shortDate } from "./consent-date";
 import { WhatsAppConsentDialog } from "./whatsapp-consent-dialog";
 
@@ -66,6 +67,9 @@ export function WhatsAppConsentRows({
   const [columns, setColumns] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Saved, but the provider's email list did not follow: said under the row,
+  // never as a failure of the save.
+  const [listWarning, setListWarning] = useState<"on" | "off" | null>(null);
   const [asking, setAsking] = useState<WhatsAppPurpose | null>(null);
   // Meta's "this number has no WhatsApp", kept apart from the consents: a
   // save of a consent does not return it.
@@ -97,10 +101,20 @@ export function WhatsAppConsentRows({
   const state = whatsappConsentState(columns);
   const marketing = marketingRowState(columns);
   const notes = marketingNotes(columns);
+  // A consent is saved either way, but with no number a WhatsApp can reach
+  // there will be no message: say so rather than let the date look like a promise.
+  const noNumber = toCampaignPhone(columns.phone) === null;
+  const noteId = (name: string) => `consent-note-${name}`;
+  const marketingDescribedBy =
+    [
+      ...notes.map((note) => noteId(note)),
+      ...(noNumber ? [noteId("no-number")] : []),
+    ].join(" ") || undefined;
 
   async function save(purpose: WhatsAppPurpose, enabled: boolean) {
     setSaving(true);
     setFailed(false);
+    setListWarning(null);
     try {
       const result =
         purpose === "marketing"
@@ -114,7 +128,13 @@ export function WhatsAppConsentRows({
       if (result.ok) {
         const { ok: _ok, ...stored } = result;
         void _ok;
-        setColumns((prev) => ({ ...prev, ...stored }));
+        if ("emailListSynced" in stored) {
+          const { emailListSynced, ...columnsOnly } = stored;
+          setColumns((prev) => ({ ...prev, ...columnsOnly }));
+          if (!emailListSynced) setListWarning(enabled ? "on" : "off");
+        } else {
+          setColumns((prev) => ({ ...prev, ...stored }));
+        }
       } else {
         setFailed(true);
       }
@@ -268,6 +288,7 @@ export function WhatsAppConsentRows({
         checked={state.appointments === "accepted"}
         disabled={saving}
         label={t("appointments.label")}
+        describedBy={noNumber ? noteId("no-number") : undefined}
         hint={
           state.appointments === "accepted" && columns.whatsapp_opted_in_at
             ? t("accepted", { date: shortDate(columns.whatsapp_opted_in_at) })
@@ -284,6 +305,7 @@ export function WhatsAppConsentRows({
         checked={marketing === "on"}
         disabled={saving}
         label={t("marketing.label")}
+        describedBy={marketingDescribedBy}
         hint={t(MARKETING_HINT[marketing], {
           date: columns.whatsapp_marketing_opted_in_at
             ? shortDate(columns.whatsapp_marketing_opted_in_at)
@@ -295,8 +317,24 @@ export function WhatsAppConsentRows({
             : setAsking("marketing")
         }
       />
+      {listWarning && (
+        <p
+          role="status"
+          className="rounded-xl bg-yellow-50 px-4 py-3 text-xs text-yellow-800"
+        >
+          {t(
+            listWarning === "off"
+              ? "marketing.listNotSyncedOff"
+              : "marketing.listNotSynced",
+          )}
+        </p>
+      )}
       {notes.map((note) => (
-        <p key={note} className="text-petroleum-400 px-1 text-xs">
+        <p
+          key={note}
+          id={noteId(note)}
+          className="text-petroleum-400 px-1 text-xs"
+        >
           {t(MARKETING_NOTE[note], {
             date: columns.newsletter_unsubscribed_at
               ? shortDate(columns.newsletter_unsubscribed_at)
@@ -304,6 +342,12 @@ export function WhatsAppConsentRows({
           })}
         </p>
       ))}
+
+      {noNumber && (
+        <p id={noteId("no-number")} className="text-petroleum-400 px-1 text-xs">
+          {t("noNumber")}
+        </p>
+      )}
 
       {failed && (
         <p role="alert" className="px-1 text-xs text-red-500">

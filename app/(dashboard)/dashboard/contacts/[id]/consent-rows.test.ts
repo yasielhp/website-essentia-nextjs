@@ -150,3 +150,52 @@ describe("accessibility of the two switches", () => {
     expect(DIALOG).toContain("showModal()");
   });
 });
+
+describe("the unused newsletter action is gone", () => {
+  test("setContactNewsletter no longer exists, in any module or test but this one", () => {
+    expect(read("app/actions/newsletter.ts")).not.toContain(
+      "setContactNewsletter",
+    );
+    expect(PAGE).not.toContain("setContactNewsletter");
+  });
+});
+
+describe("what the rows say about a list that did not follow, and about a number", () => {
+  test("a save whose email list failed shows a warning that is not an error", () => {
+    expect(ROWS).toContain("emailListSynced");
+    expect(ROWS).toContain("marketing.listNotSyncedOff");
+    expect(ROWS).toContain("marketing.listNotSynced");
+    const warning = ROWS.slice(
+      ROWS.indexOf("{listWarning && ("),
+      ROWS.indexOf("{notes.map"),
+    );
+    expect(warning).toContain('role="status"');
+    expect(warning).not.toContain('role="alert"');
+  });
+
+  test("the warning is worded for withdrawing and for turning on, in both languages", () => {
+    for (const locale of ["es", "en"] as const) {
+      const marketing = dashboard(locale).whatsapp.marketing as Record<
+        string,
+        string
+      >;
+      expect(marketing.listNotSynced).toBeTruthy();
+      expect(marketing.listNotSyncedOff).toBeTruthy();
+      expect(marketing.listNotSyncedOff).not.toBe(marketing.listNotSynced);
+    }
+  });
+
+  test("the notes under the rows are tied to them with aria-describedby", () => {
+    const toggle = read("app/components/dashboard/toggle-row.tsx");
+    expect(toggle).toContain("aria-describedby={describedBy}");
+    expect(ROWS.match(/describedBy=/g)?.length).toBe(2);
+    expect(ROWS).toMatch(/id=\{noteId\(note\)\}/);
+    expect(ROWS).toContain('noteId("no-number")');
+  });
+
+  test("a contact with no number WhatsApp can reach is told so, in both languages", () => {
+    expect(ROWS).toContain("toCampaignPhone(columns.phone) === null");
+    expect(dashboard("es").whatsapp.noNumber).toMatch(/teléfono válido/);
+    expect(dashboard("en").whatsapp.noNumber).toMatch(/valid phone/);
+  });
+});

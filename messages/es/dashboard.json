@@ -1155,8 +1155,11 @@
         "appointments": {
           "label": "Avisos de la cita"
         },
+        "noNumber": "Este contacto no tiene un teléfono válido para WhatsApp: el consentimiento se guarda, pero no habrá mensajes por WhatsApp.",
         "marketing": {
           "label": "Novedades y ofertas",
+          "listNotSynced": "Se guardó, pero no se pudo actualizar la lista de correo; vuelve a intentarlo.",
+          "listNotSyncedOff": "Se retiró el consentimiento, pero no se pudo quitar a la persona de la lista de correo; vuelve a intentarlo.",
           "hint": {
             "on": "Email y WhatsApp, desde {date}",
             "off": "Email y WhatsApp · sin consentimiento",

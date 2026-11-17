@@ -11,6 +11,7 @@ export function ToggleRow({
   label,
   hint,
   disabled = false,
+  describedBy,
 }: {
   checked: boolean;
   onToggle: () => void;
@@ -18,12 +19,15 @@ export function ToggleRow({
   /** What the current state means, or what turning it on does. */
   hint?: string;
   disabled?: boolean;
+  /** Ids of notes under the row that explain it, read after its name and hint. */
+  describedBy?: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-describedby={describedBy}
       disabled={disabled}
       onClick={onToggle}
       className={[

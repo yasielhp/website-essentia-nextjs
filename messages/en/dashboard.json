@@ -1155,8 +1155,11 @@
         "appointments": {
           "label": "Appointment notices"
         },
+        "noNumber": "This contact has no valid phone number for WhatsApp: the consent is saved, but no WhatsApp messages will be sent.",
         "marketing": {
           "label": "News and offers",
+          "listNotSynced": "Saved, but the email list could not be updated; try again.",
+          "listNotSyncedOff": "The consent was withdrawn, but the person could not be taken off the email list; try again.",
           "hint": {
             "on": "Email and WhatsApp, since {date}",
             "off": "Email and WhatsApp · no consent",

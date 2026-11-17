@@ -1,21 +1,17 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
-import {
-  ADMIN_ROLES,
-  AuthError,
-  authenticate,
-  requireRole,
-} from "@/lib/auth-guard";
+import { ADMIN_ROLES, AuthError, authenticate } from "@/lib/auth-guard";
 import { emailForUnsubscribeToken, setNewsletterState } from "@/lib/newsletter";
 
 /**
- * Three doors onto the newsletter list, one per kind of caller.
+ * Doors onto the newsletter list, one per kind of caller.
  *
  * Signing up is public, because a signup form is. Coming off the list is done
  * with a token, because an email address is not a secret and the old action
- * took one straight from a query string. Staff changing someone else's
- * preference from the dashboard need a role.
+ * took one straight from a query string. A signed-in client changes her own
+ * preference with her session. Staff changing a contact's consent from the
+ * dashboard use `setMarketingConsent`, which also records the WhatsApp half.
  */
 
 /**
@@ -62,22 +58,6 @@ export async function unsubscribeByToken(
 
   const result = await setNewsletterState(email, false);
   return result.ok ? { ok: true } : { ok: false, error: "failed" };
-}
-
-/** Staff changing a contact's preference from the dashboard. */
-export async function setContactNewsletter(
-  accessToken: string | null,
-  email: string,
-  subscribe: boolean,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await requireRole(accessToken);
-  } catch (err) {
-    if (err instanceof AuthError) return { ok: false, error: err.message };
-    throw err;
-  }
-
-  return setNewsletterState(email.trim().toLowerCase(), subscribe);
 }
 
 /**

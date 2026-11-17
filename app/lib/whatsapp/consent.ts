@@ -112,6 +112,7 @@ export function marketingRowState(
 /** Everything the contact page's consent rows read about one contact. */
 export type ContactConsentColumns = MarketingColumns & {
   email?: string | null;
+  phone?: string | null;
   email_bounced_at?: string | null;
 };
 

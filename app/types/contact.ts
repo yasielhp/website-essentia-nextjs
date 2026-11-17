@@ -149,4 +149,13 @@ export type MarketingContactRow = {
 
 /** What `setMarketingConsent` hands back. */
 export type MarketingConsentResult =
-  ({ ok: true } & MarketingContactRow) | { ok: false; error: string };
+  | ({
+      ok: true;
+      /**
+       * False when the consent was saved but the email list at the provider
+       * could not be updated. A flag only: the provider's own text is never
+       * returned.
+       */
+      emailListSynced: boolean;
+    } & MarketingContactRow)
+  | { ok: false; error: string };
