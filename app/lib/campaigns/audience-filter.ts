@@ -1,5 +1,6 @@
 import { sendLocaleOf } from "@/lib/schemas";
 import { toCampaignPhone } from "@/lib/whatsapp/phone";
+import { conditionsMatch, toLocale } from "./conditions";
 import type {
   CampaignAudience,
   ConsentPurpose,
@@ -152,13 +153,6 @@ export type Recipient = {
   appointments?: Appointment[];
 };
 
-const DAY_MS = 86_400_000;
-
-/** Only Spanish is stored as a real preference; every other value means English. */
-function toLocale(language: string | null): CampaignLocale {
-  return language === "es" ? "es" : "en";
-}
-
 /**
  * The exclusions nobody can override, hand-picked contacts included. They are
  * per channel because consent is: the newsletter unsubscribe and an email
@@ -205,40 +199,6 @@ function contactPoint(
   return candidate.email.trim().toLowerCase();
 }
 
-function matchesConditions(
-  candidate: ContactCandidate,
-  audience: CampaignAudience,
-  now: Date,
-): boolean {
-  if (
-    audience.language !== "any" &&
-    toLocale(candidate.language) !== audience.language
-  ) {
-    return false;
-  }
-  if (audience.newsletter === true && !candidate.newsletter) return false;
-  if (
-    audience.services.length > 0 &&
-    !audience.services.some((id) => candidate.serviceIds.includes(id))
-  ) {
-    return false;
-  }
-  if (audience.neverBooked && candidate.bookingsCount !== 0) return false;
-  if (audience.hasBooked && candidate.bookingsCount === 0) return false;
-  if (audience.lastBooking) {
-    // A contact who never booked has no "last booking" to compare, so the
-    // condition cannot hold for them, whichever way it points.
-    if (!candidate.lastBookingDate) return false;
-    const bookedAt = Date.parse(`${candidate.lastBookingDate}T00:00:00Z`);
-    const ageDays = (now.getTime() - bookedAt) / DAY_MS;
-    const { op, days } = audience.lastBooking;
-    // Strict on both sides: "more than 30 days" and "less than 30 days" are
-    // both false at exactly 30, which is what the words say.
-    if (op === "gt" ? !(ageDays > days) : !(ageDays < days)) return false;
-  }
-  return true;
-}
-
 /** The instant as ISO in UTC, or null when it does not read as one. */
 function isoOrNull(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -280,7 +240,7 @@ export function filterAudience(
       manualOnly
         ? !manual.has(candidate.id)
         : !manual.has(candidate.id) &&
-          !matchesConditions(candidate, audience, now)
+          !conditionsMatch(candidate, audience, now)
     ) {
       continue;
     }

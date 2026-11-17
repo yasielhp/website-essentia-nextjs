@@ -203,6 +203,30 @@ export type SegmentMember = {
   newsletter: boolean;
 };
 
+/**
+ * One person on the screen where a segment is made: everyone with an email or a
+ * phone, with what the filters read and what already keeps a channel from
+ * reaching her. The reasons are the ones that block a channel whatever the
+ * campaign is (consent depends on what it is for, so it is not here).
+ */
+export type SegmentPerson = {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  email: string;
+  phone: string | null;
+  /** As stored; only Spanish is Spanish, anything else reads as English. */
+  language: string | null;
+  newsletter: boolean;
+  serviceIds: string[];
+  bookingsCount: number;
+  lastBookingDate: string | null;
+  /** Why an email would not reach her, or null. */
+  emailIssue: "unsubscribed" | "bounced" | null;
+  /** Why a WhatsApp message would not reach her, or null. */
+  whatsappIssue: "stopped" | "unreachable" | null;
+};
+
 /** What the segment picker shows: each saved segment with how many it reaches today. */
 export type SegmentList = {
   everyone: number;

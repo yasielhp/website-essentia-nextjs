@@ -29,6 +29,7 @@ import { SENT_STATUSES } from "@/lib/campaigns/report";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
 import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
 import { normalizeSegmentConditions } from "@/lib/campaigns/segment-conditions";
+import { toSegmentPerson } from "@/lib/campaigns/segment-people";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
@@ -45,6 +46,7 @@ import {
   EMPTY_LOCALE_CONTENT,
   type AudiencePreview,
   type CampaignAudience,
+  type SegmentPerson,
   type CampaignChannel,
   type CampaignContent,
   type CampaignInput,
@@ -549,6 +551,36 @@ export async function listSegmentMembers(
         `${b.first_name ?? ""} ${b.last_name ?? ""}`,
       ),
     );
+}
+
+/**
+ * Everyone a segment can be made of: every contact with an address or a phone,
+ * with what the filters read and what already keeps a channel from reaching her.
+ * One read, filtered on the screen with the engine's own rule. A read that fails
+ * says so: it is never an empty list, which would read as "nobody".
+ */
+export async function listSegmentPeople(
+  accessToken: string | null,
+): Promise<{ ok: true; people: SegmentPerson[] } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+  try {
+    const candidates = await loadCandidates("any");
+    const people = candidates
+      .map(toSegmentPerson)
+      .sort((a, b) =>
+        `${a.firstName} ${a.lastName ?? ""}`.localeCompare(
+          `${b.firstName} ${b.lastName ?? ""}`,
+        ),
+      );
+    return { ok: true, people };
+  } catch (err) {
+    console.error("[campaigns] segment people failed:", err);
+    return { ok: false, error: "db" };
+  }
 }
 
 /** Removes a segment; campaigns that used it keep their copied conditions. */

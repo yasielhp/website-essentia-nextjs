@@ -163,18 +163,26 @@ function appointmentBookings<
 }
 
 export async function loadCandidates(
-  channel: CampaignChannel = "email",
+  /**
+   * `any` is for the screen where a segment is made: everyone with an address
+   * OR a phone, since a segment serves both channels. A send always names one.
+   */
+  channel: CampaignChannel | "any" = "email",
   options: Pick<AudienceOptions, "appointments"> & { now?: Date } = {},
 ): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
+  const contactsBase = db
+    .from("contacts")
+    .select(
+      "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
+    );
+
   const [contactsResult, bookingsResult, tiersResult] = await Promise.all([
-    db
-      .from("contacts")
-      .select(
-        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_marketing_opted_in_at, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
-      )
-      .not(channel === "whatsapp" ? "phone" : "email", "is", null)
+    (channel === "any"
+      ? contactsBase.or("email.not.is.null,phone.not.is.null")
+      : contactsBase.not(channel === "whatsapp" ? "phone" : "email", "is", null)
+    )
       // A fixed order, so the contact kept when two share a phone (the first)
       // is the same in the preview and in the send.
       .order("created_at", { ascending: true })
