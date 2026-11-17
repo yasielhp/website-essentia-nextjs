@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { previewSrcDoc } from "@/lib/messages/preview-frame";
+import { previewWidth } from "./preview-width";
 
 /**
  * The email, drawn by the server, in an iframe that is sandboxed with nothing
@@ -77,7 +78,7 @@ export function EmailPreviewFrame({
             srcDoc={previewSrcDoc(html)}
             sandbox=""
             className="h-160 rounded-xl border-0 bg-white transition-[width]"
-            style={{ width: width === "mobile" ? 375 : "100%" }}
+            style={previewWidth(width)}
           />
         )}
       </div>
