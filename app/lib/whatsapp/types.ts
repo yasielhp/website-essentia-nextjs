@@ -56,6 +56,7 @@ export type WhatsAppTemplateRow = {
   example_params: string[];
   rejection_reason: string | null;
   synced_at: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 };

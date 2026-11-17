@@ -133,7 +133,7 @@ ALTER TABLE whatsapp_templates ENABLE ROW LEVEL SECURITY;
 Run: `npx @insforge/cli@latest db query "$(cat insforge/migrations/20261117a_whatsapp_consent_and_templates.sql)"`
 Expected: `Query executed successfully.`
 
-Verificar: `npx @insforge/cli@latest db query "select column_name from information_schema.columns where table_name='whatsapp_templates'"` → 19 filas.
+Verificar: `npx @insforge/cli@latest db query "select column_name from information_schema.columns where table_name='whatsapp_templates'"` → 17 filas.
 
 **Step 3: Documentar la variable de entorno**
 
@@ -737,7 +737,7 @@ export type WhatsAppTemplateInput = z.infer<typeof whatsappTemplateSchema>;
 
 Importar arriba del archivo: `import { countParams, paramIssues } from "@/lib/whatsapp/templates";`
 
-Añadir las claves nuevas a `CAMPAIGN_MESSAGE_KEYS` **no** (son de otro formulario); en su lugar añadir las traducciones en `dashboard.validation` (Task 6): `templateNameFormat`, `headerTooLong`, `footerTooLong`, `tooManyButtons`, `exampleRequired`, `exampleCountMismatch`, `paramGap`, `paramAtEdge`.
+Añadir las claves nuevas a `CAMPAIGN_MESSAGE_KEYS` **no** (son de otro formulario); en su lugar añadir las traducciones en `dashboard.validation` (Task 6): `templateNameFormat`, `headerTooLong`, `footerTooLong`, `tooManyButtons`, `exampleRequired`, `exampleCountMismatch`, `paramMalformed`, `paramGap`, `paramAtEdge`.
 
 **Step 2: Acciones**
 
@@ -1087,7 +1087,7 @@ Copiar la estructura de `app/(dashboard)/dashboard/campaigns/page.tsx` (cómo re
 
 **Step 5: i18n**
 
-`messages/es/dashboard.json` → `dashboard.nav.messages: "Mensajes"`, `dashboard.messages.title: "Mensajes"`, `dashboard.messages.tabs.{whatsapp,email}`, `dashboard.messages.whatsapp.{sync,new,notConfigured,status.*,fields.*,help.*,toasts.*}`. Equivalente en inglés. Validación: `templateNameFormat: "Solo minúsculas, números y guion bajo."`, `paramGap: "Los parámetros deben ir seguidos: {{1}}, {{2}}, {{3}}…"`, `paramAtEdge: "Meta no acepta un parámetro al principio o al final del texto."`, `exampleCountMismatch: "Falta un ejemplo por cada parámetro."`, `headerTooLong`, `footerTooLong`, `tooManyButtons`, `exampleRequired`.
+`messages/es/dashboard.json` → `dashboard.nav.messages: "Mensajes"`, `dashboard.messages.title: "Mensajes"`, `dashboard.messages.tabs.{whatsapp,email}`, `dashboard.messages.whatsapp.{sync,new,notConfigured,status.*,fields.*,help.*,toasts.*}`. Equivalente en inglés. Validación: `templateNameFormat: "Solo minúsculas, números y guion bajo."`, `paramMalformed: "Usa solo parámetros con la forma {{1}}, {{2}}… (de 1 a 50, sin espacios)."`, `paramGap: "Los parámetros deben ir seguidos: {{1}}, {{2}}, {{3}}…"`, `paramAtEdge: "Meta no acepta un parámetro al principio o al final del texto."`, `exampleCountMismatch: "Falta un ejemplo por cada parámetro."`, `headerTooLong`, `footerTooLong`, `tooManyButtons`, `exampleRequired`.
 
 **Step 6: Verificar en el navegador**
 
