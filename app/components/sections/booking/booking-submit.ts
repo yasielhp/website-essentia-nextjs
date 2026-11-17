@@ -222,6 +222,11 @@ export type ConfirmResult =
       kind: "incomplete";
       errors: Partial<Record<keyof DetailsState, string>>;
     }
+  /**
+   * The booking was already confirmed somewhere else (another tab, an earlier
+   * visit): no payment is opened on it from this form.
+   */
+  | { kind: "alreadyConfirmed" }
   /** Hand over to Redsys with this form. */
   | { kind: "redsys"; formData: RedsysFormData }
   /** Payment could not be started; the booking stands and is chased later. */
@@ -240,6 +245,7 @@ export async function confirmBooking({
   draft,
   contactId,
   bookingId,
+  promotedHere = false,
   paymentDescription,
 }: {
   user: Viewer;
@@ -247,6 +253,12 @@ export async function confirmBooking({
   draft: Draft;
   contactId: string | null;
   bookingId: string | null;
+  /**
+   * This visit has already turned `bookingId` from a draft into a booking (she
+   * closed the payment page and is confirming again). It is hers and it is
+   * pending, so it is not asked to be confirmed a second time.
+   */
+  promotedHere?: boolean;
   /** The service name as the card statement should read it. */
   paymentDescription: string;
 }): Promise<ConfirmResult> {
@@ -266,8 +278,8 @@ export async function confirmBooking({
   const timeStr = draft.time ?? null;
 
   let resolvedBookingId = bookingId;
-  if (resolvedBookingId) {
-    await confirmDraftBooking(
+  if (resolvedBookingId && !promotedHere) {
+    const answer = await confirmDraftBooking(
       resolvedBookingId,
       tierId,
       draft.tierPrice,
@@ -275,7 +287,20 @@ export async function confirmBooking({
       dateStr ?? "",
       timeStr ?? "",
     );
-  } else {
+    if (!answer.promoted) {
+      // It is a booking already, and this call is not the one that made it
+      // so: confirmed in another tab, or on an earlier visit. Opening a
+      // payment on it from here could charge for a day, an hour or a treatment
+      // that is not the one it was confirmed with.
+      if (answer.reason === "not_draft") return { kind: "alreadyConfirmed" };
+      // No such draft any more: this visit goes on as one that never had one.
+      if (answer.reason === "missing") resolvedBookingId = null;
+      // `failed`: the database did not answer, so nothing is known. On to the
+      // payment with the draft, as before; the checkout answers for itself.
+    }
+  }
+
+  if (!resolvedBookingId) {
     const composedNotes = details.notes?.trim() || null;
     const { data } = await insforge.database
       .from("bookings")

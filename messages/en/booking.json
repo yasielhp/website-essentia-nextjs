@@ -162,6 +162,7 @@
     "discountLabel": "Discount",
     "totalLabel": "Total",
     "cancellationNote": "Your booking is confirmed by the payment. To change it, write to us 24 h ahead.",
+    "alreadyConfirmed": "This booking was already confirmed. If you need to change it, please contact us.",
     "payDeposit": "Pay {percent}% now",
     "payDepositNote": "You pay {now} today and {later} on the day.",
     "payFull": "Pay in full now",

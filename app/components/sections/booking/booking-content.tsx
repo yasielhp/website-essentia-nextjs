@@ -60,6 +60,13 @@ type BookingLocalState = {
   draftRestoredFor: string | null;
   memberBlocker: boolean;
   checking: boolean;
+  /**
+   * The draft is a draft no more: `promoted` when this visit confirmed it (its
+   * payment may be opened again), `alreadyConfirmed` when it turned out to
+   * have been confirmed elsewhere. Either way nothing more is saved in the
+   * browser: there is no half-finished booking left to pick up.
+   */
+  settled: "promoted" | "alreadyConfirmed" | null;
 };
 
 const INITIAL_LOCAL_STATE: BookingLocalState = {
@@ -70,6 +77,7 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   draftRestoredFor: null,
   memberBlocker: false,
   checking: false,
+  settled: null,
 };
 
 /**
@@ -94,6 +102,7 @@ function BookingContentInner() {
   const locale = useLocale();
   const tSteps = useTranslations("booking.steps");
   const tServiceStep = useTranslations("booking.serviceStep");
+  const tConfirmStep = useTranslations("booking.confirmStep");
   const { push } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -129,6 +138,7 @@ function BookingContentInner() {
     draftRestoredFor,
     memberBlocker,
     checking,
+    settled,
   } = local;
 
   // Whether a signed-in client already has news and offers on for both
@@ -175,6 +185,9 @@ function BookingContentInner() {
   } = state;
 
   useEffect(() => {
+    // Once the booking is made there is nothing half-finished to keep, and
+    // what was cleared then must not be written back by a later change.
+    if (settled) return;
     writeStorage({
       step,
       serviceId: selectedService?.id ?? null,
@@ -209,6 +222,7 @@ function BookingContentInner() {
     bookingId,
     draftStartedAt,
     draftSavedFor,
+    settled,
   ]);
 
   const rawSteps = buildSteps();
@@ -324,20 +338,35 @@ function BookingContentInner() {
     dispatch({ type: "SET_STEP", step: step + 1 });
   };
 
+  // One confirmation at a time. The button is disabled while it works, but
+  // that is state, and two clicks can land before it is drawn: the second
+  // would find the booking the first has just confirmed, and be told it "was
+  // already confirmed" on top of the payment the first one opens.
+  const confirming = useRef(false);
+
   const handleConfirm = async () => {
     if (!selectedService || !selectedTierId) return;
+    if (confirming.current) return;
+    confirming.current = true;
     dispatch({ type: "CONFIRM_START" });
 
-    const result = await confirmBooking({
-      user: user ? { id: user.id } : null,
-      locale,
-      draft,
-      contactId,
-      bookingId,
-      paymentDescription: tServiceStep(`services.${selectedService.id}.title`),
-    });
-
-    dispatch({ type: "CONFIRM_SUCCESS" });
+    let result: Awaited<ReturnType<typeof confirmBooking>>;
+    try {
+      result = await confirmBooking({
+        user: user ? { id: user.id } : null,
+        locale,
+        draft,
+        contactId,
+        bookingId,
+        promotedHere: settled === "promoted",
+        paymentDescription: tServiceStep(
+          `services.${selectedService.id}.title`,
+        ),
+      });
+    } finally {
+      confirming.current = false;
+      dispatch({ type: "CONFIRM_SUCCESS" });
+    }
 
     // Nothing was written: her details are not in order, the terms box most
     // of all. Back to the details step, with each error under its field.
@@ -348,6 +377,15 @@ function BookingContentInner() {
     }
 
     clearStorage();
+
+    // Confirmed somewhere else, so no payment is opened from here: what was
+    // saved is gone and she is told, in a line that stays on the page.
+    if (result.kind === "alreadyConfirmed") {
+      updateLocal({ settled: "alreadyConfirmed" });
+      return;
+    }
+
+    updateLocal({ settled: "promoted" });
 
     if (result.kind === "redsys") {
       setRedsysForm(result.formData);
@@ -390,6 +428,15 @@ function BookingContentInner() {
         onPaymentModeChange={setPaymentMode}
         marketingOn={Boolean(user) && marketingOn}
       />
+
+      {settled === "alreadyConfirmed" && (
+        <p
+          role="alert"
+          className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600"
+        >
+          {tConfirmStep("alreadyConfirmed")}
+        </p>
+      )}
 
       <BookingNavigation
         step={step}

@@ -132,3 +132,28 @@ describe("booking.datetimeStep messages", () => {
     expect(DATETIME).toMatch(/role="alert"[^>]*>\s*\{t\("timeGone"\)\}/);
   });
 });
+
+describe("booking.confirmStep messages", () => {
+  const CONTENT = readFileSync(
+    join(import.meta.dir, "booking-content.tsx"),
+    "utf8",
+  );
+
+  test("Spanish and English have exactly the same keys", () => {
+    expect(Object.keys(es.confirmStep).sort()).toEqual(
+      Object.keys(en.confirmStep).sort(),
+    );
+  });
+
+  test("a booking that was already confirmed is said so, in a line a screen reader announces", () => {
+    expect(es.confirmStep.alreadyConfirmed).toBe(
+      "Esta reserva ya estaba confirmada. Si necesitas cambiarla, escríbenos.",
+    );
+    expect(en.confirmStep.alreadyConfirmed).toBe(
+      "This booking was already confirmed. If you need to change it, please contact us.",
+    );
+    expect(CONTENT).toMatch(
+      /role="alert"[^>]*>\s*\{tConfirmStep\("alreadyConfirmed"\)\}/,
+    );
+  });
+});

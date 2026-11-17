@@ -162,6 +162,7 @@
     "discountLabel": "Descuento",
     "totalLabel": "Total",
     "cancellationNote": "La reserva se confirma con el pago. Si necesitas cambiarla, escríbenos con 24 h de antelación.",
+    "alreadyConfirmed": "Esta reserva ya estaba confirmada. Si necesitas cambiarla, escríbenos.",
     "payDeposit": "Pagar el {percent}% ahora",
     "payDepositNote": "Pagas {now} hoy y {later} el día de la sesión.",
     "payFull": "Pagar todo ahora",

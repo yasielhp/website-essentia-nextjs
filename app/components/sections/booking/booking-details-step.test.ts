@@ -22,6 +22,8 @@ import type { DetailsState } from "@/types";
 type Call = { name: string; args: unknown[] };
 let calls: Call[] = [];
 let role: string | null = "lead";
+/** What the server says when the form asks it to confirm the draft. */
+let promotion: unknown = { promoted: true };
 
 const record =
   (name: string, result: unknown = undefined) =>
@@ -60,7 +62,21 @@ let saveDetailsStep: typeof import("./booking-submit").saveDetailsStep;
 let confirmBooking: typeof import("./booking-submit").confirmBooking;
 
 beforeAll(async () => {
-  mock.module("@/lib/insforge", () => ({ insforge: { database: { rpc } } }));
+  // `from` is the direct insert the form falls back on when it has no draft.
+  const from = (table: string) => ({
+    insert: (rows: unknown[]) => {
+      calls.push({ name: `insert:${table}`, args: rows });
+      return {
+        select: () => ({
+          single: () =>
+            Promise.resolve({ data: { id: "booking-new" }, error: null }),
+        }),
+      };
+    },
+  });
+  mock.module("@/lib/insforge", () => ({
+    insforge: { database: { rpc, from } },
+  }));
   mock.module("@/lib/client-session", () => ({
     ...real.session,
     getAccessToken: () => "token",
@@ -69,7 +85,10 @@ beforeAll(async () => {
     ...real.draft,
     updateDraftBookingMeta: record("updateDraftBookingMeta"),
     updateDraftBookingDetails: record("updateDraftBookingDetails"),
-    confirmDraftBooking: record("confirmDraftBooking"),
+    confirmDraftBooking: (...args: unknown[]) => {
+      calls.push({ name: "confirmDraftBooking", args });
+      return Promise.resolve(promotion);
+    },
   }));
   mock.module("@/actions/booking-notifications", () => ({
     ...real.notifications,
@@ -93,6 +112,7 @@ afterAll(() => {
 beforeEach(() => {
   calls = [];
   role = "lead";
+  promotion = { promoted: true };
   // The checkout: refused, so a confirmation that gets that far ends "unpaid".
   globalThis.fetch = ((...args: unknown[]) => {
     calls.push({ name: "fetch", args });
@@ -324,13 +344,14 @@ describe("saveDetailsStep, a signed-in client", () => {
 });
 
 describe("confirmBooking: the last gate before the payment", () => {
-  const confirm = (details: DetailsState) =>
+  const confirm = (details: DetailsState, promotedHere = false) =>
     confirmBooking({
       user: null,
       locale: "es",
       draft: { ...draft(details), service: SERVICE },
       contactId: "contact-1",
       bookingId: "booking-1",
+      promotedHere,
       paymentDescription: "Terapias manuales",
     });
 
@@ -356,6 +377,54 @@ describe("confirmBooking: the last gate before the payment", () => {
   test("with her details in order it goes on to confirm the draft and open the payment", async () => {
     const result = await confirm(DETAILS);
     await settle();
+    expect(result).toEqual({ kind: "unpaid" });
+    expect(names()).toEqual([
+      "confirmDraftBooking",
+      "rpc:promote_contact_to_client",
+      "fetch",
+    ]);
+  });
+
+  test("a booking that was already confirmed elsewhere gets no payment opened on it", async () => {
+    promotion = { promoted: false, reason: "not_draft" };
+    const result = await confirm(DETAILS);
+    await settle();
+    expect(result).toEqual({ kind: "alreadyConfirmed" });
+    // Asked, and stopped there: nobody is promoted, nothing is charged.
+    expect(names()).toEqual(["confirmDraftBooking"]);
+  });
+
+  test("the booking this visit itself confirmed can have its payment opened again", async () => {
+    // She closed the payment page and presses Confirm once more: the booking
+    // is hers and already pending, so the server is not asked to confirm it
+    // again and its "not a draft" does not turn her away.
+    promotion = { promoted: false, reason: "not_draft" };
+    const result = await confirm(DETAILS, true);
+    await settle();
+    expect(result).toEqual({ kind: "unpaid" });
+    expect(names()).toEqual(["rpc:promote_contact_to_client", "fetch"]);
+  });
+
+  test("a draft that is not there any more is booked afresh, as a visit that never had one", async () => {
+    promotion = { promoted: false, reason: "missing" };
+    const result = await confirm(DETAILS);
+    await settle();
+    expect(result).toEqual({ kind: "unpaid" });
+    expect(names()).toEqual([
+      "confirmDraftBooking",
+      "insert:bookings",
+      "rpc:promote_contact_to_client",
+      "fetch",
+    ]);
+    const body = JSON.parse(
+      (calls.at(-1)?.args[1] as { body: string }).body,
+    ) as { bookingId: string };
+    expect(body.bookingId).toBe("booking-new");
+  });
+
+  test("a database that could not answer changes nothing: it goes on to the payment as it always did", async () => {
+    promotion = { promoted: false, reason: "failed" };
+    const result = await confirm(DETAILS);
     expect(result).toEqual({ kind: "unpaid" });
     expect(names()).toEqual([
       "confirmDraftBooking",

@@ -219,7 +219,17 @@ export async function updateDraftBookingDetails(
     .eq("status", "draft");
 }
 
-/** Promotes a draft booking to `pending`. */
+/**
+ * Promotes a draft booking to `pending`, and says whether THIS call did it.
+ *
+ * The public form opens the payment on the answer. A booking that was already
+ * confirmed elsewhere (another tab, an earlier visit) must not have a payment
+ * opened on it from a form that may show another day, hour or treatment, so
+ * "nothing to do" is no longer silent: `not_draft` when the booking exists and
+ * is past being a draft, `missing` when there is no such booking at all, and
+ * `failed` when the database could not be read or written (nothing is known
+ * about the booking then, and nothing must be concluded from it).
+ */
 // Anonymous by design. The write is scoped to `status = 'draft'` and only the
 // actual draft → pending transition records anything, so a replay is a no-op.
 // react-doctor-disable-next-line react-doctor/server-auth-actions
@@ -231,26 +241,31 @@ export async function confirmDraftBooking(
   duration: string,
   date: string,
   time: string,
-): Promise<void> {
-  if (!bookingId) return;
+): Promise<
+  | { promoted: true }
+  | { promoted: false; reason: "not_draft" | "missing" | "failed" }
+> {
+  if (!bookingId) return { promoted: false, reason: "missing" };
 
   const db = getAdminClient().database;
 
   // Read the state first, and leave if this booking is no longer a draft, so a
   // replay of this public action records nothing a second time.
-  const { data: before } = await db
+  const { data: before, error: readError } = await db
     .from("bookings")
     .select("status, service_title")
     .eq("id", bookingId)
     .maybeSingle();
+  if (readError) return { promoted: false, reason: "failed" };
 
   const row = before as {
     status: string | null;
     service_title: string | null;
   } | null;
-  if (row?.status !== "draft") return;
+  if (!row) return { promoted: false, reason: "missing" };
+  if (row.status !== "draft") return { promoted: false, reason: "not_draft" };
 
-  await db
+  const { data: written, error: writeError } = await db
     .from("bookings")
     .update({
       status: "pending",
@@ -261,7 +276,16 @@ export async function confirmDraftBooking(
       time,
     })
     .eq("id", bookingId)
-    .eq("status", "draft");
+    .eq("status", "draft")
+    .select("id");
+  if (writeError) return { promoted: false, reason: "failed" };
+
+  // Somebody else's call promoted it between the read and the write (a second
+  // tab, a double submit): theirs is the one that confirmed, and the one that
+  // records it.
+  if (((written ?? []) as unknown[]).length === 0) {
+    return { promoted: false, reason: "not_draft" };
+  }
 
   // The visitor has no session, so nobody is named as the actor. `anonymous`
   // rather than `system` because a person did this: it is the public booking
@@ -282,6 +306,7 @@ export async function confirmDraftBooking(
   // The professional is not told here. A web booking has not been paid yet,
   // and one abandoned on the payment page is cancelled by the expiry cron; the
   // WhatsApp goes out from `handleBookingPaid` once the money is in.
+  return { promoted: true };
 }
 
 /**
