@@ -317,8 +317,10 @@ const states = (
 const bookingEventUpdates = () =>
   log.filter((q) => q.table === "booking_events" && has(q.chain, "update"));
 
-// 2099-03-01T10:00:00Z, in Meta's seconds.
+// 2099-03-01T10:00:00Z and one minute later, in Meta's seconds.
 const T_DELIVERED = "4076042400";
+const T_READ = "4076042460";
+const AT_READ = "2099-03-01T10:01:00.000Z";
 const AT_DELIVERED = "2099-03-01T10:00:00.000Z";
 
 describe("message states", () => {
@@ -392,5 +394,66 @@ describe("message states", () => {
     expect(res.status).toBe(200);
     expect(logged).toBe(1);
     expect(bookingEventUpdates()).toHaveLength(1);
+  });
+});
+
+describe("a read and the hour of delivery", () => {
+  test("a read does not rewrite a delivery already stamped: it only fills an empty one", async () => {
+    const res = await POST(
+      signed(states({ id: "wamid.1", status: "read", timestamp: T_READ })),
+    );
+    expect(res.status).toBe(200);
+    const updates = bookingEventUpdates();
+    expect(updates).toHaveLength(2);
+
+    // First the hour of delivery, and only where there is none.
+    const [fill, move] = updates;
+    expect(argsOf(fill!.chain, "update")?.[0]).toEqual({
+      delivered_at: AT_READ,
+    });
+    expect(argsOf(fill!.chain, "is")).toEqual(["delivered_at", null]);
+    expect(argsOf(fill!.chain, "eq")).toEqual(["provider_id", "wamid.1"]);
+    expect(argsOf(fill!.chain, "in")).toEqual([
+      "status",
+      ["sent", "delivered"],
+    ]);
+
+    // Then the state, which no longer carries `delivered_at` at all.
+    expect(argsOf(move!.chain, "update")?.[0]).toEqual({
+      status: "read",
+      read_at: AT_READ,
+    });
+    expect(has(move!.chain, "is")).toBe(false);
+    expect(argsOf(move!.chain, "in")).toEqual([
+      "status",
+      ["sent", "delivered"],
+    ]);
+  });
+
+  test("a delivery and a failure are one write each, as before", async () => {
+    await POST(
+      signed(
+        states(
+          { id: "wamid.1", status: "delivered", timestamp: T_DELIVERED },
+          { id: "wamid.2", status: "failed", timestamp: T_READ },
+        ),
+      ),
+    );
+    const updates = bookingEventUpdates();
+    expect(updates).toHaveLength(2);
+    expect(updates.some((q) => has(q.chain, "is"))).toBe(false);
+  });
+
+  test("an hour of delivery that could not be filled is logged and the read is still recorded", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    bookingEventsError = "connection refused";
+    const res = await POST(
+      signed(states({ id: "wamid.1", status: "read", timestamp: T_READ })),
+    );
+    const logged = loud.mock.calls.length;
+    loud.mockRestore();
+    expect(res.status).toBe(200);
+    expect(bookingEventUpdates()).toHaveLength(2);
+    expect(logged).toBe(1);
   });
 });

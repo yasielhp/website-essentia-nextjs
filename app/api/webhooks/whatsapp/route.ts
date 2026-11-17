@@ -518,20 +518,36 @@ export async function POST(req: NextRequest) {
           // without a line. Caught per message, so one refusal does not cost
           // the others of the run.
           try {
+            // Reading implies arrival, and the two callbacks are independent:
+            // a `read` that overtakes its `delivered` in a later request would
+            // otherwise leave the row claiming it was never delivered. So a
+            // read FILLS the hour of delivery, and only where there is none:
+            // written with the state, it replaced the real hour of a delivery
+            // already stamped with the hour of the reading. PostgREST has no
+            // COALESCE in an update, hence a write of its own, and first, so
+            // a row is never left read and not delivered.
+            let fillError: unknown = null;
+            if (next === "read") {
+              ({ error: fillError } = await db
+                .from("booking_events")
+                .update({ delivered_at: at })
+                .eq("provider_id", providerId)
+                .in("status", PRECEDING_STATES[next]!)
+                .is("delivered_at", null));
+            }
+
             const { error: writeError } = await db
               .from("booking_events")
               .update({
                 status: next,
                 ...(next === "delivered" ? { delivered_at: at } : {}),
-                // Reading implies arrival, and the two callbacks are independent: a
-                // `read` that overtakes its `delivered` in a later request would
-                // otherwise leave the row claiming it was never delivered.
-                ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
+                ...(next === "read" ? { read_at: at } : {}),
                 ...(next === "failed" ? { error } : {}),
               })
               .eq("provider_id", providerId)
               .in("status", PRECEDING_STATES[next]!);
-            if (writeError) throw writeError;
+            // The state was tried whatever the fill did; either failure is one.
+            if (writeError ?? fillError) throw writeError ?? fillError;
           } catch (err) {
             console.error(
               `[webhooks/whatsapp] could not record status ${next} of ${providerId}:`,

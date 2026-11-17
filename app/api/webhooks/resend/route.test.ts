@@ -10,7 +10,13 @@ import {
   test,
 } from "bun:test";
 import { NextRequest } from "next/server";
-import { argsOf, chainDb, has, type Step } from "@/lib/campaigns/fake-db";
+import {
+  argsOf,
+  chainDb,
+  filters,
+  has,
+  type Step,
+} from "@/lib/campaigns/fake-db";
 
 /**
  * The real Resend webhook, signed as Resend (Svix) signs it and checked by the
@@ -208,5 +214,57 @@ describe("a booking email's event", () => {
     const res = await POST(signed(bookingEvent("email.delivery_delayed")));
     expect(res.status).toBe(200);
     expect(log).toHaveLength(0);
+  });
+});
+
+describe("an open and the hour of delivery", () => {
+  test("an open does not rewrite a delivery already stamped: it only fills an empty one", async () => {
+    const res = await POST(signed(bookingEvent("email.opened")));
+    expect(res.status).toBe(200);
+    const updates = bookingUpdates();
+    expect(updates).toHaveLength(2);
+
+    // First the hour of delivery, and only where there is none.
+    const [fill, move] = updates;
+    expect(argsOf(fill!.chain, "update")?.[0]).toEqual({ delivered_at: AT });
+    expect(argsOf(fill!.chain, "is")).toEqual(["delivered_at", null]);
+    expect(filters(fill!.chain)).toEqual({
+      provider_id: "em-2",
+      channel: "email",
+    });
+    expect(argsOf(fill!.chain, "in")).toEqual([
+      "status",
+      ["sent", "delivered"],
+    ]);
+
+    // Then the state, which no longer carries `delivered_at` at all.
+    expect(argsOf(move!.chain, "update")?.[0]).toEqual({
+      status: "read",
+      read_at: AT,
+    });
+    expect(has(move!.chain, "is")).toBe(false);
+    expect(filters(move!.chain)).toEqual({
+      provider_id: "em-2",
+      channel: "email",
+    });
+  });
+
+  test("a bounce is one write, as before", async () => {
+    await POST(signed(bookingEvent("email.bounced")));
+    const updates = bookingUpdates();
+    expect(updates).toHaveLength(1);
+    expect(argsOf(updates[0]!.chain, "update")?.[0]).toEqual({
+      status: "failed",
+      error: "Rebotado",
+    });
+  });
+
+  test("an open the database refused is not acknowledged, and the state was still tried", async () => {
+    const loud = spyOn(console, "error").mockImplementation(() => {});
+    updateError = "connection refused";
+    const res = await POST(signed(bookingEvent("email.opened")));
+    loud.mockRestore();
+    expect(res.status).toBe(503);
+    expect(bookingUpdates()).toHaveLength(2);
   });
 });

@@ -187,21 +187,40 @@ export async function POST(req: NextRequest) {
   const at = event.created_at ?? new Date().toISOString();
 
   try {
-    const { error } = await getAdminClient()
-      .database.from("booking_events")
+    const db = getAdminClient().database;
+
+    // An open implies arrival, and the two callbacks are independent: an open
+    // that overtakes its delivery would otherwise leave the row claiming the
+    // message never got there. So an open FILLS the hour of delivery, and only
+    // where there is none: written with the state, it replaced the real hour
+    // of a delivery already stamped with the hour of the open. PostgREST has
+    // no COALESCE in an update, hence a write of its own, and first, so a row
+    // is never left read and not delivered.
+    let fillError: unknown = null;
+    if (next === "read") {
+      ({ error: fillError } = await db
+        .from("booking_events")
+        .update({ delivered_at: at })
+        .eq("provider_id", emailId)
+        .eq("channel", "email")
+        .in("status", PRECEDING_STATES[next]!)
+        .is("delivered_at", null));
+    }
+
+    const { error } = await db
+      .from("booking_events")
       .update({
         status: next,
         ...(next === "delivered" ? { delivered_at: at } : {}),
-        // An open implies arrival, and the two callbacks are independent: an
-        // open that overtakes its delivery would otherwise leave the row
-        // claiming the message never got there.
-        ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
+        ...(next === "read" ? { read_at: at } : {}),
         ...(next === "failed" ? { error: reasonFor(event) } : {}),
       })
       .eq("provider_id", emailId)
       .eq("channel", "email")
       .in("status", PRECEDING_STATES[next]!);
-    if (error) throw error;
+    // The state was tried whatever the fill did; either failure is one, and
+    // both writes can be repeated when Resend sends the event again.
+    if (error ?? fillError) throw error ?? fillError;
   } catch (err) {
     console.error("[webhooks/resend] could not record status:", err);
     return retryLater();
