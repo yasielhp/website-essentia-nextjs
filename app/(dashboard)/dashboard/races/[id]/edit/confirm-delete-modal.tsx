@@ -79,9 +79,13 @@ export function ConfirmDeleteModal({
         e.preventDefault();
         if (!deleting) onCancel();
       }}
-      className="bg-transparent p-0 backdrop:bg-black/40"
+      // `m-auto` and the width live here, not on the box inside: Tailwind's
+      // reset gives every element `margin: 0`, which cancels the browser's
+      // own centring of a modal dialog and pins it to the top left, and a
+      // `<dialog>` is as wide as its content unless told otherwise.
+      className="m-auto w-[calc(100vw-2rem)] max-w-sm bg-transparent p-0 backdrop:bg-black/40"
     >
-      <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full rounded-2xl bg-white p-6 shadow-xl">
         <h2
           id="delete-race-title"
           className="font-display text-petroleum-700 text-xl"
