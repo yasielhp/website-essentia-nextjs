@@ -76,6 +76,7 @@ describe("the campaign form strings", () => {
           [
             "toasts.sendPartial",
             "toasts.sendHalted",
+            "toasts.sendHaltedNoReason",
             "toasts.sendUnrecorded",
             "toasts.campaignTestSentPhone",
           ].includes(key);

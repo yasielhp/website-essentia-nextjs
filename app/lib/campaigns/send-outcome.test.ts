@@ -85,3 +85,21 @@ describe("sendOutcome", () => {
     ).toEqual({ ok: true, sent: 1, failed: 0 });
   });
 });
+
+describe("sendOutcome — a send that was halted", () => {
+  test("is reported even when the reason is empty", () => {
+    const result: DispatchResult = {
+      ok: true,
+      sent: 0,
+      failed: 30,
+      remaining: 70,
+      halted: "",
+    };
+    expect(sendOutcome(result)).toMatchObject({ ok: true, halted: "" });
+  });
+
+  test("a send that was not halted carries no halted at all", () => {
+    const result: DispatchResult = { ok: true, sent: 5, failed: 0 };
+    expect("halted" in (sendOutcome(result) as object)).toBe(false);
+  });
+});

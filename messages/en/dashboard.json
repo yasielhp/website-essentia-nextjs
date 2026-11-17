@@ -1552,6 +1552,7 @@
     "campaignTestSentPhone": "Test sent to {phone}",
     "sendPartial": "{sent} sent. {remaining} messages are still pending and will go out on their own.",
     "sendHalted": "Send stopped: Meta refused several batches in a row ({reason}). Nothing more will go out until you look into it.",
+    "sendHaltedNoReason": "Send stopped: Meta refused several batches in a row. Nothing more will go out until you look into it.",
     "sendUnrecorded": "{count, plural, one {# message went out but could not be recorded. Check the report before retrying.} other {# messages went out but could not be recorded. Check the report before retrying.}}"
   },
   "imageUpload": {

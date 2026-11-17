@@ -19,7 +19,11 @@ export function useSendNoticeToast() {
   return (outcome: SendOutcome, done: "campaignSent" | "campaignRetried") => {
     const notice = sendNotice(outcome);
     if (notice.kind === "halted") {
-      toast.error(t("sendHalted", { reason: notice.reason }));
+      toast.error(
+        notice.reason
+          ? t("sendHalted", { reason: notice.reason })
+          : t("sendHaltedNoReason"),
+      );
     } else if (notice.kind === "partial") {
       toast.info(
         t("sendPartial", { sent: notice.sent, remaining: notice.remaining }),

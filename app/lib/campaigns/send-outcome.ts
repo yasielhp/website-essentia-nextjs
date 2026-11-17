@@ -43,6 +43,8 @@ export function sendOutcome(result: DispatchResult): SendOutcome | SendFailure {
     failed: result.failed,
     ...(result.remaining ? { remaining: result.remaining } : {}),
     ...(result.unrecorded ? { unrecorded: result.unrecorded } : {}),
-    ...(result.halted ? { halted: result.halted } : {}),
+    // Present means halted, whatever the reason says: an empty text is
+    // Meta saying nothing, not a send that went well.
+    ...(typeof result.halted === "string" ? { halted: result.halted } : {}),
   };
 }

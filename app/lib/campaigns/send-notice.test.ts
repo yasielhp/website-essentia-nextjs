@@ -29,6 +29,11 @@ describe("sendNotice", () => {
       }),
     ).toEqual({ kind: "halted", reason: "Template paused", unrecorded: 0 });
   });
+  test("a halt with no reason is still a halt, never a success", () => {
+    expect(
+      sendNotice({ ok: true, sent: 0, failed: 30, remaining: 70, halted: "" }),
+    ).toEqual({ kind: "halted", reason: "", unrecorded: 0 });
+  });
   test("the halt wins over the rows left", () => {
     const notice = sendNotice({
       ok: true,

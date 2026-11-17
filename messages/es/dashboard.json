@@ -1552,6 +1552,7 @@
     "campaignTestSentPhone": "Prueba enviada a {phone}",
     "sendPartial": "Se enviaron {sent}. Quedan {remaining} mensajes pendientes y se enviarán solos.",
     "sendHalted": "Envío detenido: Meta rechazó varios lotes seguidos ({reason}). No saldrá nada más hasta que lo revises.",
+    "sendHaltedNoReason": "Envío detenido: Meta rechazó varios lotes seguidos. No saldrá nada más hasta que lo revises.",
     "sendUnrecorded": "{count, plural, one {# mensaje salió, pero no se pudo anotar. Revisa el informe antes de reintentar.} other {# mensajes salieron, pero no se pudieron anotar. Revisa el informe antes de reintentar.}}"
   },
   "imageUpload": {

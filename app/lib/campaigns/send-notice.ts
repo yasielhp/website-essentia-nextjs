@@ -2,7 +2,7 @@ import type { SendOutcome } from "./send-outcome";
 
 /**
  * What to tell the admin after a send or a retry. A WhatsApp send can stop
- * early, so "sent" is only true when nothing was left over: `halted` means
+ * early, so "sent" is only true when nothing was left over: `halted` (present, even with an empty reason) means
  * Meta kept refusing and nothing more will go out until someone looks,
  * `partial` means the cron will finish the remaining rows on its own.
  * `unrecorded` is separate because it can accompany any of them.
@@ -14,7 +14,7 @@ export type SendNotice =
 
 export function sendNotice(outcome: SendOutcome): SendNotice {
   const unrecorded = outcome.unrecorded ?? 0;
-  if (outcome.halted) {
+  if (outcome.halted !== undefined) {
     return { kind: "halted", reason: outcome.halted, unrecorded };
   }
   if (outcome.remaining && outcome.remaining > 0) {
