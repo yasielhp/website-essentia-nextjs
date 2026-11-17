@@ -10,6 +10,7 @@ import type {
   WhatsAppParamSource,
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
+import { hasDynamicUrlButton } from "@/lib/whatsapp/templates";
 import { MESSAGE_CATALOG, MESSAGE_KEYS, type MessageKey } from "./catalog";
 import { allowedParamFields } from "./param-fields";
 
@@ -30,15 +31,9 @@ export function messageParamFields(key: MessageKey): WhatsAppParamField[] {
   return allowedParamFields(key);
 }
 
-/**
- * Whether a button's address ends in a `{{n}}`. This send fills the body only,
- * never a button, so Meta would refuse a template that asks for one.
- */
-export function hasDynamicUrlButton(template: WhatsAppTemplateRow): boolean {
-  return (template.buttons ?? []).some(
-    (button) => button.type === "URL" && button.url.includes("{{"),
-  );
-}
+// The rule lives with the templates (`hasDynamicUrlButton`); this screen and the
+// save of a row read the same one.
+export { hasDynamicUrlButton };
 
 export type MessageTemplateChoices = {
   eligible: WhatsAppTemplateRow[];

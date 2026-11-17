@@ -1095,6 +1095,7 @@
     "footerNoVariables": "The footer cannot contain variables.",
     "urlNoVariables": "The button link cannot contain variables.",
     "templateUnavailable": "The chosen template is not approved or can no longer be sent in this language.",
+    "templateButtonValue": "That template has a button with a variable link, and messages do not fill buttons. Choose another.",
     "paramCountMismatch": "The values do not match what the template asks for.",
     "kindNotAllowedForChannel": "This campaign type is not available on WhatsApp.",
     "cannotDisable": "This message cannot be switched off: a client who has paid would be left without their email.",

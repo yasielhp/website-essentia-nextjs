@@ -13,6 +13,7 @@
  */
 
 import type {
+  WhatsAppTemplateButton,
   WhatsAppTemplateStatus,
   WhatsAppTemplateUnsupportedReason,
 } from "@/lib/whatsapp/types";
@@ -162,4 +163,19 @@ export function templateStatusFromEvent(
   return META_TEMPLATE_STATES.has(event)
     ? (event as WhatsAppTemplateStatus)
     : null;
+}
+
+/**
+ * Whether a template has a URL button whose address ends in a `{{n}}`. Our
+ * send fills the body and never a button, so Meta would refuse every message
+ * of such a template. The one statement of that rule: the sender (it records
+ * a skip), the save of a message's WhatsApp row (it refuses) and the Messages
+ * screen (it says why) all ask here.
+ */
+export function hasDynamicUrlButton(template: {
+  buttons: WhatsAppTemplateButton[];
+}): boolean {
+  return (template.buttons ?? []).some(
+    (button) => button.type === "URL" && button.url.includes("{{"),
+  );
 }

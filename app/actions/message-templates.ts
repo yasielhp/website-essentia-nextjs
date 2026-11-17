@@ -6,7 +6,6 @@ import { defaultContent } from "@/emails/defaults";
 import { sendEmail } from "@/emails/send";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
-import { whatsappTemplateEligibility } from "@/lib/campaigns/whatsapp-eligibility";
 import { prepareTestSend } from "@/lib/campaigns/whatsapp-test-send";
 import {
   ADMIN_ROLES,
@@ -23,6 +22,7 @@ import { buildPreviewEmail } from "@/lib/messages/preview";
 import { readRows } from "@/lib/messages/rows";
 import { rehearseRender } from "@/lib/messages/rehearsal";
 import { toRowPayload, validateMessageTemplate } from "@/lib/messages/schema";
+import { whatsappSaveIssue } from "@/lib/messages/template-save";
 import { buildTestEmail } from "@/lib/messages/test-email";
 import type {
   MESSAGE_ACTION_ERROR_KEYS,
@@ -228,16 +228,10 @@ export async function saveMessageTemplate(
         fieldErrors.whatsappTemplateId = "templateRequired";
       } else {
         const template = await loadWhatsAppTemplate(db, templateId);
-        const issue = whatsappTemplateEligibility(
-          template,
-          write.locale,
-          params,
-        );
-        if (issue === "param_count") {
-          fieldErrors.whatsappParams = "paramCountMismatch";
-        } else if (issue) {
-          fieldErrors.whatsappTemplateId = "templateUnavailable";
-        }
+        // One judgement, shared with the sender: the template, its buttons
+        // and its parameters.
+        const issue = whatsappSaveIssue(template, write.locale, params);
+        if (issue) fieldErrors[issue.field] = issue.key;
       }
     } catch (err) {
       console.error("[messages] template lookup failed:", err);

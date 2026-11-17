@@ -59,6 +59,7 @@ export const MESSAGE_VALIDATION_KEYS = [
   "paramFieldNotOffered",
   // From the action, after reading the template:
   "templateUnavailable",
+  "templateButtonValue",
   "paramCountMismatch",
 ] as const;
 

@@ -1095,6 +1095,7 @@
     "footerNoVariables": "El pie no admite variables.",
     "urlNoVariables": "El enlace del botón no admite variables.",
     "templateUnavailable": "La plantilla elegida no está aprobada o ya no se puede enviar en este idioma.",
+    "templateButtonValue": "Esa plantilla tiene un botón con un enlace variable, y los mensajes no rellenan botones. Elige otra.",
     "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla.",
     "kindNotAllowedForChannel": "Este tipo de campaña no está disponible por WhatsApp.",
     "cannotDisable": "Este mensaje no se puede desactivar: una clienta que ha pagado se quedaría sin su correo.",

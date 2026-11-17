@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  hasDynamicUrlButton,
   countParams,
   paramIssues,
   renderPreview,
@@ -118,6 +119,27 @@ describe("renderPreview", () => {
     expect(renderPreview("a {{0}} {{ 1 }} {{abc}} b", ["x"])).toBe(
       "a {{0}} {{ 1 }} {{abc}} b",
     );
+  });
+});
+
+describe("hasDynamicUrlButton", () => {
+  const button = (url: string) => ({ type: "URL" as const, text: "Ver", url });
+  test("a URL button whose address has a placeholder needs a value", () => {
+    expect(
+      hasDynamicUrlButton({ buttons: [button("https://x.test/{{1}}")] }),
+    ).toBe(true);
+  });
+  test("a fixed address, a quick reply and no buttons need nothing", () => {
+    expect(hasDynamicUrlButton({ buttons: [button("https://x.test/")] })).toBe(
+      false,
+    );
+    expect(
+      hasDynamicUrlButton({ buttons: [{ type: "QUICK_REPLY", text: "Vale" }] }),
+    ).toBe(false);
+    expect(hasDynamicUrlButton({ buttons: [] })).toBe(false);
+  });
+  test("a template read without its buttons is not judged by them", () => {
+    expect(hasDynamicUrlButton({ buttons: undefined as never })).toBe(false);
   });
 });
 

@@ -6,7 +6,7 @@ import { MESSAGE_CATALOG, type MessageKey } from "@/lib/messages/catalog";
 import type { CampaignLocale } from "@/types/campaign";
 import type { TemplateSend } from "./client";
 import { toCampaignPhone } from "./phone";
-import { renderPreview } from "./templates";
+import { hasDynamicUrlButton, renderPreview } from "./templates";
 import type {
   WhatsAppParamField,
   WhatsAppParamSource,
@@ -201,11 +201,7 @@ export function decideClientWhatsApp(input: {
   // Our send fills the body and no button. A button whose address ends in a
   // `{{n}}` would be refused by Meta every time, so it is a misconfiguration
   // to show, not a message to try.
-  if (
-    template.buttons.some(
-      (button) => button.type === "URL" && button.url.includes("{{"),
-    )
-  ) {
+  if (hasDynamicUrlButton(template)) {
     return { kind: "skip", reason: "button_params", to };
   }
 
