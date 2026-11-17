@@ -67,22 +67,32 @@ export async function saveDetailsStep({
   draft,
   contactId,
   bookingId,
+  asGuest = false,
 }: {
   user: Viewer;
   locale: string;
   draft: Draft;
   contactId: string | null;
   bookingId: string | null;
+  /**
+   * The visitor has already been told the address belongs to a member and
+   * chose to go on without signing in. She is not asked twice, and from here on
+   * she is saved like any other guest: her contact, her draft, her consents.
+   */
+  asGuest?: boolean;
 }): Promise<DetailsStepResult> {
   const { details, service } = draft;
   let resolvedContactId = contactId;
 
   if (!user) {
-    const { data: roleData } = await insforge.database.rpc("check_email_role", {
-      p_email: details.email,
-    });
+    if (!asGuest) {
+      const { data: roleData } = await insforge.database.rpc(
+        "check_email_role",
+        { p_email: details.email },
+      );
 
-    if (roleData === "member") return { kind: "member" };
+      if (roleData === "member") return { kind: "member" };
+    }
 
     const { data: contactUuid, error: contactError } =
       await insforge.database.rpc("upsert_contact", {

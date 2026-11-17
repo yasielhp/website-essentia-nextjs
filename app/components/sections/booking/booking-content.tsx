@@ -186,7 +186,7 @@ function BookingContentInner() {
     paymentMode,
   };
 
-  const handleNextFromDetails = async () => {
+  const handleNextFromDetails = async ({ asGuest = false } = {}) => {
     const errs = parseErrors(bookingDetailsSchema, details);
     if (Object.keys(errs).length > 0) {
       setDetailErrors(errs);
@@ -207,6 +207,7 @@ function BookingContentInner() {
       draft,
       contactId,
       bookingId,
+      asGuest,
     });
 
     if (result.kind === "member") {
@@ -303,9 +304,13 @@ function BookingContentInner() {
 
       <BookingModals
         memberBlocker={memberBlocker}
+        // The same save as any other guest, minus the question she has just
+        // answered. Only moving her on, as this once did, left her booking with
+        // no contact, no draft and no consent, and dropped her "news and
+        // offers" tick.
         onContinueAsGuest={() => {
           updateLocal({ memberBlocker: false });
-          dispatch({ type: "SET_STEP", step: step + 1 });
+          void handleNextFromDetails({ asGuest: true });
         }}
       />
 
