@@ -119,8 +119,7 @@ export default function SegmentsPage() {
                       <td className="text-petroleum-500 max-w-md truncate px-5 py-3.5 text-xs">
                         {segmentKindOf(segment.conditions) === "list"
                           ? t("listReach", {
-                              selected:
-                                segment.conditions.manualIds?.length ?? 0,
+                              selected: segment.picked ?? 0,
                               count: segment.count,
                             })
                           : conditions.length > 0

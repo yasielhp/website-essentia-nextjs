@@ -28,7 +28,11 @@ import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { SENT_STATUSES } from "@/lib/campaigns/report";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
 import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
-import { normalizeSegmentConditions } from "@/lib/campaigns/segment-conditions";
+import {
+  countPicked,
+  normalizeSegmentConditions,
+  segmentKindOf,
+} from "@/lib/campaigns/segment-conditions";
 import { toSegmentPerson } from "@/lib/campaigns/segment-people";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
@@ -486,11 +490,38 @@ export async function listSegments(
         now,
         channel,
       ).length;
+    const saved = (data ?? []) as CampaignSegment[];
+    // The people of a list that are still contacts, counted as the page of the
+    // list counts them (everyone with an address or a phone), not by the ids
+    // stored, which may include somebody deleted since. One light read, only
+    // when there is a list to count.
+    const existing = saved.some((s) => segmentKindOf(s.conditions) === "list")
+      ? new Set(
+          (
+            await readAllPages<{ id: string }>(
+              "[listSegments] contacts",
+              (from, to) =>
+                getAdminClient()
+                  .database.from("contacts")
+                  .select("id")
+                  .or("email.not.is.null,phone.not.is.null")
+                  .order("id", { ascending: true })
+                  .range(from, to) as unknown as PromiseLike<{
+                  data: { id: string }[] | null;
+                  error: { message: string } | null;
+                }>,
+            )
+          ).map((c) => c.id),
+        )
+      : null;
     return {
       everyone: count(EMPTY_AUDIENCE),
-      segments: ((data ?? []) as CampaignSegment[]).map((segment) => ({
+      segments: saved.map((segment) => ({
         ...segment,
         count: count(segment.conditions),
+        ...(existing && segmentKindOf(segment.conditions) === "list"
+          ? { picked: countPicked(segment.conditions.manualIds, existing) }
+          : {}),
       })),
     };
   } catch (err) {

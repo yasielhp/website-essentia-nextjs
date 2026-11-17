@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 import { segmentConditionsSchema, segmentSchema } from "@/lib/schemas";
 import {
+  countPicked,
   normalizeSegmentConditions,
   segmentKindOf,
 } from "./segment-conditions";
@@ -117,5 +118,17 @@ describe("the segment's schema", () => {
     expect(parsed.manualOnly).toBe(true);
     expect(parsed.manualIds).toEqual([A]);
     expect(EMPTY_AUDIENCE.manualIds).toEqual([]);
+  });
+});
+
+describe("countPicked: the people of a list that are still there", () => {
+  test("a contact deleted since is not counted, as the page of the list does not show her", () => {
+    expect(countPicked([A, B], new Set([A]))).toBe(1);
+    expect(countPicked([A, B], new Set([A, B, "other"]))).toBe(2);
+    expect(countPicked([A, B], new Set())).toBe(0);
+  });
+  test("no ids is zero", () => {
+    expect(countPicked(undefined, new Set([A]))).toBe(0);
+    expect(countPicked([], new Set([A]))).toBe(0);
   });
 });

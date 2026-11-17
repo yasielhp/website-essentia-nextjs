@@ -235,7 +235,15 @@ export type SegmentList = {
    */
   failed?: true;
   everyone: number;
-  segments: (CampaignSegment & { count: number })[];
+  segments: (CampaignSegment & {
+    count: number;
+    /**
+     * A list only: how many of the people picked are still contacts a segment can
+     * hold (the page of the list counts the same). The stored ids may include
+     * somebody deleted since.
+     */
+    picked?: number;
+  })[];
 };
 
 /**

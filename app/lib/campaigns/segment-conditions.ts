@@ -52,3 +52,17 @@ export function normalizeSegmentConditions(
   void _only;
   return filter;
 }
+
+/**
+ * How many of a list's stored people are still there: a contact deleted since
+ * stays in the ids until the list is next saved, and the page of the list does
+ * not show her, so the list of lists must not count her either.
+ */
+export function countPicked(
+  manualIds: readonly string[] | undefined,
+  existing: ReadonlySet<string>,
+): number {
+  let n = 0;
+  for (const id of manualIds ?? []) if (existing.has(id)) n++;
+  return n;
+}
