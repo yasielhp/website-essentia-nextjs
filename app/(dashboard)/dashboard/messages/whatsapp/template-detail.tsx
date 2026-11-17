@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { hasStaleSync } from "@/lib/whatsapp/template-ui";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import { Modal } from "./modal";
-import { TemplatePreview } from "./template-preview";
+import { TemplatePreview } from "@/components/dashboard/template-preview";
 import {
   RejectionNote,
   SyncLine,

@@ -24,17 +24,17 @@ import { resolveParams } from "./whatsapp-params";
  */
 
 /**
- * The kinds a template cannot be. An A/B test varies the subject, which a
- * template does not have; an RSS campaign needs the post's link in the message
- * and Meta takes a button's URL fixed.
- */
-/**
  * What one run of the cron sends at most: the rate times the time budget of
  * `dispatch-whatsapp.ts` (`PER_SECOND` * `BUDGET_MS` / 1000), which the browser
  * cannot import. A test keeps the two together.
  */
 export const WHATSAPP_MESSAGES_PER_RUN = 450;
 
+/**
+ * The kinds a template cannot be. An A/B test varies the subject, which a
+ * template does not have; an RSS campaign needs the post's link in the message
+ * and Meta takes a button's URL fixed.
+ */
 const BLOCKED_ON_WHATSAPP: ReadonlySet<CampaignKind> = new Set([
   "split",
   "rss",

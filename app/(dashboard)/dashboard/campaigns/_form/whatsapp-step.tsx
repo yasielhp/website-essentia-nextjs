@@ -21,7 +21,7 @@ import type {
   WhatsAppParamSource,
 } from "@/lib/whatsapp/types";
 import type { CampaignLocale } from "@/types/campaign";
-import { TemplatePreview } from "../../messages/whatsapp/template-preview";
+import { TemplatePreview } from "@/components/dashboard/template-preview";
 import type { FormAction, FormState } from "./form-state";
 import type { TemplatesState } from "./use-whatsapp-templates";
 

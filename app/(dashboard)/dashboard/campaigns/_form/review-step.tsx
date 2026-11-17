@@ -12,7 +12,7 @@ import {
   triggerEventKey,
 } from "@/lib/campaigns/whatsapp-form";
 import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
-import { TemplatePreview } from "../../messages/whatsapp/template-preview";
+import { TemplatePreview } from "@/components/dashboard/template-preview";
 import type { FormState } from "./form-state";
 import type { TemplatesState } from "./use-whatsapp-templates";
 

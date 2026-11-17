@@ -26,7 +26,7 @@ import {
 } from "@/lib/whatsapp/types";
 import { useActionToast } from "./action-error";
 import { Modal } from "./modal";
-import { TemplatePreview } from "./template-preview";
+import { TemplatePreview } from "@/components/dashboard/template-preview";
 
 /** `es` and `en` are the choices; a rewritten template may carry another. */
 type Language = string;
