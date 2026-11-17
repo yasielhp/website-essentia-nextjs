@@ -18,12 +18,25 @@ import { argsOf, chainDb, filters, type Query } from "@/lib/campaigns/fake-db";
  * Modules are put back afterwards: `mock.module` is process-wide.
  */
 
-type Caller = { userId: string; email: string | null; role: string };
+type Caller = {
+  userId: string;
+  /** The profile's address: hers to rewrite, so never proof of who she is. */
+  email: string | null;
+  /** The auth session's address, as the guard hands it: trimmed, lowercased. */
+  verifiedEmail: string | null;
+  role: string;
+};
 
-const ANA: Caller = { userId: "u-ana", email: "Ana@Example.com", role: "user" };
+const ANA: Caller = {
+  userId: "u-ana",
+  email: "Ana@Example.com",
+  verifiedEmail: "ana@example.com",
+  role: "user",
+};
 const ADMIN: Caller = {
   userId: "u-admin",
   email: "admin@x.test",
+  verifiedEmail: "admin@x.test",
   role: "admin",
 };
 
@@ -110,6 +123,19 @@ describe("updateNewsletterForUser", () => {
     expect(listed.some((l) => l.email.includes("victim"))).toBe(false);
   });
 
+  test("an address she wrote on her own profile is not hers either: the session's is used", async () => {
+    // `profiles.email` is a column she can update from the browser.
+    caller = { ...ANA, email: "victim@example.com" };
+    const result = await actions.updateNewsletterForUser(
+      "token",
+      "u-ana",
+      "victim@example.com",
+      false,
+    );
+    expect(result.ok).toBe(true);
+    expect(listed).toEqual([{ email: "ana@example.com", subscribed: false }]);
+  });
+
   test("nor resubscribe somebody else", async () => {
     await actions.updateNewsletterForUser(
       "token",
@@ -143,8 +169,8 @@ describe("updateNewsletterForUser", () => {
     expect(profileUpdates).toHaveLength(0);
   });
 
-  test("a session with no address changes nothing", async () => {
-    caller = { ...ANA, email: null };
+  test("a session with no address changes nothing, whatever the profile says", async () => {
+    caller = { ...ANA, email: "victim@example.com", verifiedEmail: null };
     const result = await actions.updateNewsletterForUser(
       "token",
       "u-ana",

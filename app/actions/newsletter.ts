@@ -77,10 +77,12 @@ export async function unsubscribeByToken(
  * The ADDRESS is not the caller's to choose either. Checking the user id and
  * then acting on the `email` argument let any signed-in client unsubscribe, or
  * subscribe again, whoever she named. So whoever changes her own preference
- * does it on the address her session resolves to, and the argument is ignored
- * (the account page and the booking form send her own, so nothing changes for
- * them). Only an administrator acting on ANOTHER user names the address, which
- * must be one.
+ * does it on the address of her auth session (`verifiedEmail`), and the
+ * argument is ignored; the account page sends her own, so nothing changes for
+ * it. Not `caller.email`: that one prefers `profiles.email`, a column she can
+ * rewrite from the browser, which would bring the same hole back in two steps.
+ * Only an administrator acting on ANOTHER user names the address, which must
+ * be one.
  */
 export async function updateNewsletterForUser(
   accessToken: string | null,
@@ -95,7 +97,7 @@ export async function updateNewsletterForUser(
     if (!own && !ADMIN_ROLES.includes(caller.role)) {
       return { ok: false, error: "Insufficient permissions" };
     }
-    const parsed = emailInput.safeParse(own ? caller.email : email);
+    const parsed = emailInput.safeParse(own ? caller.verifiedEmail : email);
     if (!parsed.success) return { ok: false, error: "invalid" };
     address = parsed.data;
   } catch (err) {
