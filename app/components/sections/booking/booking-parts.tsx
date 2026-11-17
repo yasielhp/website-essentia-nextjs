@@ -107,6 +107,8 @@ export type BookingStepRendererProps = {
   onStaffLoaded: (hasStaff: boolean) => void;
   selectedDate: Date | null;
   selectedTime: string | null;
+  /** This visit's draft booking, whose hour the calendar must not show as taken. */
+  draftId: string | null;
   details: DetailsState;
   detailErrors: DetailsErrors;
   dispatch: React.Dispatch<BookingAction>;
@@ -131,6 +133,7 @@ export function BookingStepRenderer({
   onStaffLoaded,
   selectedDate,
   selectedTime,
+  draftId,
   details,
   detailErrors,
   dispatch,
@@ -195,6 +198,7 @@ export function BookingStepRenderer({
           }
           selectedDate={selectedDate}
           selectedTime={selectedTime}
+          draftId={draftId}
           onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
           onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
         />

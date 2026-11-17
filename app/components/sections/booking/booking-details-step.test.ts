@@ -196,6 +196,35 @@ describe("saveDetailsStep, a guest", () => {
   });
 });
 
+describe("saveDetailsStep, a booking picked up again", () => {
+  test("with the draft this visit had started, that draft is rewritten and no second one is created", async () => {
+    const result = await saveDetailsStep({
+      user: null,
+      locale: "es",
+      draft: draft(),
+      contactId: null,
+      bookingId: "booking-0",
+    });
+    await settle();
+    expect(result).toEqual({
+      kind: "saved",
+      contactId: "contact-1",
+      bookingId: "booking-0",
+    });
+    expect(names()).toEqual([
+      "rpc:check_email_role",
+      "rpc:upsert_contact",
+      "updateDraftBookingDetails",
+      "updateDraftBookingMeta",
+      "saveBookingConsents",
+    ]);
+    expect(names()).not.toContain("rpc:create_draft_booking");
+    expect(
+      calls.find((c) => c.name === "updateDraftBookingDetails")?.args[0],
+    ).toBe("booking-0");
+  });
+});
+
 describe("saveDetailsStep, a member who goes on as a guest", () => {
   test("she is saved like any other guest and not asked again", async () => {
     role = "member";

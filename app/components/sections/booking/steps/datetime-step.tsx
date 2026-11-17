@@ -127,6 +127,7 @@ export function DateTimeStep({
   durationMinutes,
   selectedDate,
   selectedTime,
+  draftId,
   onSelectDate,
   onSelectTime,
 }: {
@@ -138,6 +139,8 @@ export function DateTimeStep({
   durationMinutes?: number;
   selectedDate: Date | null;
   selectedTime: string | null;
+  /** This visit's own draft: the hour it holds is still hers to pick. */
+  draftId?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectTime: (t: string) => void;
 }) {
@@ -177,6 +180,7 @@ export function DateTimeStep({
             from: `${viewYear}-${month}-01`,
             to: `${viewYear}-${month}-${String(lastDay).padStart(2, "0")}`,
             durationMinutes: sessionMinutes,
+            excludeDraftId: draftId ?? null,
           })
         : Promise.resolve({} as Availability)
     ).then((result) => {
@@ -188,7 +192,7 @@ export function DateTimeStep({
     return () => {
       cancelled = true;
     };
-  }, [tierId, staffId, viewYear, viewMonth, sessionMinutes]);
+  }, [tierId, staffId, draftId, viewYear, viewMonth, sessionMinutes]);
 
   // A day nobody works, or one whose hours are all taken, is not offered.
   const openDates = useMemo(

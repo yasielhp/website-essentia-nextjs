@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import {
   readStorage,
+  resumableDraft,
   writeStorage,
   type BookingStorage,
 } from "@/storage/booking-storage";
@@ -82,5 +83,50 @@ describe("readStorage", () => {
   test("a saved booking with no details yet stays without them", () => {
     store.set("essentia_booking:v1", JSON.stringify({ step: 1 }));
     expect(readStorage()).toEqual({ step: 1 });
+  });
+});
+
+describe("resumableDraft: the draft a restored booking goes on with", () => {
+  const NOW = Date.parse("2026-11-17T12:00:00.000Z");
+  const minutes = (m: number) => m * 60_000;
+  const withDraft = (draft: BookingStorage["draft"]) =>
+    writeStorage({ ...SAVED, draft });
+
+  test("a draft started a moment ago is the one to go on with", () => {
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(5) });
+    expect(resumableDraft(readStorage(), NOW)).toEqual({
+      bookingId: "b-1",
+      startedAt: NOW - minutes(5),
+    });
+  });
+
+  test("one older than the hour a draft holds its time is forgotten: it holds nothing any more", () => {
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(61) });
+    expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    withDraft({ bookingId: "b-1", startedAt: NOW - minutes(60) });
+    expect(resumableDraft(readStorage(), NOW)).not.toBeNull();
+  });
+
+  test("nothing saved, a booking saved before drafts were, or a date from the future, is no draft", () => {
+    expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    writeStorage(SAVED);
+    expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    withDraft({ bookingId: "b-1", startedAt: NOW + minutes(5) });
+    expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    withDraft({ bookingId: "", startedAt: NOW });
+    expect(resumableDraft(readStorage(), NOW)).toBeNull();
+  });
+
+  test("what is in storage is not trusted to have the right shape", () => {
+    for (const draft of [
+      "b-1",
+      42,
+      { bookingId: 7, startedAt: NOW },
+      { bookingId: "b-1", startedAt: "now" },
+      null,
+    ]) {
+      store.set("essentia_booking:v1", JSON.stringify({ step: 1, draft }));
+      expect(resumableDraft(readStorage(), NOW)).toBeNull();
+    }
   });
 });

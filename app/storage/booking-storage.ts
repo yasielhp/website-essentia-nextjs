@@ -1,4 +1,5 @@
 import type { DetailsState } from "@/types";
+import { DRAFT_HOLD_MS } from "@/lib/bookings/holds-slot";
 
 /**
  * The `:v1` is the contract, not decoration.
@@ -25,7 +26,36 @@ export type BookingStorage = {
   staffId: string | null;
   staffName: string | null;
   details: DetailsState;
+  /**
+   * The draft this visit started on the server, and when. Kept so that a
+   * reload goes on with the SAME draft: a second one would leave the first
+   * behind holding the hour she had picked, and she would find her own hour
+   * taken. Optional, so a booking saved before this existed still reads.
+   */
+  draft?: { bookingId: string; startedAt: number } | null;
 };
+
+/**
+ * The draft a restored booking goes on with, or null.
+ *
+ * Only for as long as a draft holds its hour (`DRAFT_HOLD_MS`). Past that the
+ * old draft holds nothing, so there is nothing to protect by reusing it, and a
+ * fresh one holds the hour again while she finishes. Whatever is in storage is
+ * checked rather than trusted: it is the browser's.
+ */
+export function resumableDraft(
+  saved: Partial<BookingStorage>,
+  now: number = Date.now(),
+): { bookingId: string; startedAt: number } | null {
+  const draft: unknown = saved.draft;
+  if (!draft || typeof draft !== "object") return null;
+  const { bookingId, startedAt } = draft as Record<string, unknown>;
+  if (typeof bookingId !== "string" || bookingId === "") return null;
+  if (typeof startedAt !== "number" || !Number.isFinite(startedAt)) return null;
+  const age = now - startedAt;
+  if (age < 0 || age > DRAFT_HOLD_MS) return null;
+  return { bookingId, startedAt };
+}
 
 /**
  * What an abandoned booking left behind, for the form to pick up again.

@@ -16,7 +16,12 @@ import {
   manualTherapyTreatments,
 } from "@/data/services-data";
 import { buildSteps } from "@/utils/calendar-helpers";
-import { writeStorage, clearStorage } from "@/storage/booking-storage";
+import {
+  clearStorage,
+  readStorage,
+  resumableDraft,
+  writeStorage,
+} from "@/storage/booking-storage";
 import { StepIndicator } from "./steps/step-indicator";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import type { DetailsErrors } from "./steps/details-step";
@@ -41,6 +46,8 @@ import {
 type BookingLocalState = {
   contactId: string | null;
   bookingId: string | null;
+  /** When this visit's draft was started; saved with it (see `resumableDraft`). */
+  draftStartedAt: number | null;
   memberBlocker: boolean;
   checking: boolean;
 };
@@ -48,9 +55,25 @@ type BookingLocalState = {
 const INITIAL_LOCAL_STATE: BookingLocalState = {
   contactId: null,
   bookingId: null,
+  draftStartedAt: null,
   memberBlocker: false,
   checking: false,
 };
+
+/**
+ * A reload goes on with the draft this visit had already started, instead of
+ * leaving it behind and starting another: the one left behind would go on
+ * holding the hour she had picked, and she would find her own hour taken. The
+ * contact is not kept: the details step she comes back to finds it again.
+ */
+function initLocalState(): BookingLocalState {
+  const draft = resumableDraft(readStorage());
+  return {
+    ...INITIAL_LOCAL_STATE,
+    bookingId: draft?.bookingId ?? null,
+    draftStartedAt: draft?.startedAt ?? null,
+  };
+}
 
 function BookingContentInner() {
   const { user } = useAuth();
@@ -70,7 +93,7 @@ function BookingContentInner() {
       )?.title ?? null)
     : null;
 
-  const [local, setLocal] = useState<BookingLocalState>(INITIAL_LOCAL_STATE);
+  const [local, setLocal] = useState<BookingLocalState>(initLocalState);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
   // Everything is paid at booking: a deposit, or the whole price at a discount.
@@ -79,7 +102,8 @@ function BookingContentInner() {
   // at the session-type step instead of walking the visitor to an empty
   // calendar and a booking nobody can honour.
   const [tierHasStaff, setTierHasStaff] = useState(false);
-  const { contactId, bookingId, memberBlocker, checking } = local;
+  const { contactId, bookingId, draftStartedAt, memberBlocker, checking } =
+    local;
 
   // Whether a signed-in client already has news and offers on for both
   // channels, so her box shows ticked rather than asking again. A guest has
@@ -138,6 +162,10 @@ function BookingContentInner() {
       selectedDate: selectedDate?.toISOString() ?? null,
       selectedTime,
       details,
+      draft:
+        bookingId && draftStartedAt
+          ? { bookingId, startedAt: draftStartedAt }
+          : null,
     });
   }, [
     step,
@@ -152,6 +180,8 @@ function BookingContentInner() {
     selectedDate,
     selectedTime,
     details,
+    bookingId,
+    draftStartedAt,
   ]);
 
   const rawSteps = buildSteps();
@@ -240,6 +270,12 @@ function BookingContentInner() {
       checking: false,
       contactId: result.contactId,
       bookingId: result.bookingId,
+      // The same draft keeps the moment it was started; a new one starts now.
+      draftStartedAt: !result.bookingId
+        ? null
+        : result.bookingId === bookingId && draftStartedAt
+          ? draftStartedAt
+          : Date.now(),
     });
     dispatch({ type: "SET_STEP", step: step + 1 });
   };
@@ -301,6 +337,7 @@ function BookingContentInner() {
         onStaffLoaded={setTierHasStaff}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
+        draftId={bookingId}
         details={details}
         detailErrors={detailErrors}
         dispatch={dispatch}
