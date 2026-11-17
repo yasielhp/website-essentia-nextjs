@@ -56,7 +56,11 @@ function EventTriggerStep({
   const options: SelectOption<TriggerEvent>[] = events.map((event) => ({
     value: event,
     label: t(`event.${event}`),
-    desc: t(`eventDesc.${event}`),
+    // "Now and as they come in" is a filter's; a hand-made list does not grow.
+    desc:
+      event === "segment_entry" && state.audience.manualOnly
+        ? t("eventDescList.segment_entry")
+        : t(`eventDesc.${event}`),
   }));
   const daysError = fieldErrors["trigger.days"];
 

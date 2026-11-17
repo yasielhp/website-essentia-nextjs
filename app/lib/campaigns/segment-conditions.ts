@@ -9,6 +9,9 @@ import type { SegmentConditions } from "@/types/campaign";
  */
 export type SegmentKind = "filter" | "list";
 
+/** The most people a hand-made list holds; the schema and the screen read this one number. */
+export const MAX_LIST_PEOPLE = 2000;
+
 export function segmentKindOf(
   conditions: Pick<SegmentConditions, "manualIds" | "manualOnly">,
 ): SegmentKind {

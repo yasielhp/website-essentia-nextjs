@@ -24,13 +24,17 @@ import {
   activeFilters,
   conditionsToSave,
   isDirty,
+  listIsFull,
   removeFilter,
   segmentSentence,
+  selectAllShown,
+  selectionBanner,
   toggleOne,
   toggleVisible,
   visiblePeople,
   type SegmentFilters,
 } from "@/lib/campaigns/segment-people";
+import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { UnsavedBar } from "../../../messages/email/page-parts";
 import { FilterChips } from "./filter-chips";
 import { SegmentFilterModal } from "./filter-modal";
@@ -159,6 +163,12 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     [people, filters, selected, now],
   );
   const sentence = segmentSentence(selectedCount, matching);
+  // After the header checkbox has taken a page: offer the rest of who matches.
+  const banner = selectionBanner({
+    pageIds: rows.map((p) => p.id),
+    shownIds: shown.map((p) => p.id),
+    selected,
+  });
   const filterCount = activeFilters(filters).length;
 
   function openFilters() {
@@ -198,7 +208,10 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
       setError(
         result.error === "nameTaken"
           ? fieldError("nameTaken")
-          : tSeg("saveFailed"),
+          : // A list too long is refused as invalid: say why, not "could not save".
+            result.error === "invalid" && keep.size > MAX_LIST_PEOPLE
+            ? tForm("listFull")
+            : tSeg("saveFailed"),
       );
       return;
     }
@@ -236,7 +249,9 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
               : tCommon("filters")}
           </Button>
           <Button
-            disabled={saving || name.trim() === ""}
+            disabled={
+              saving || name.trim() === "" || selected.size > MAX_LIST_PEOPLE
+            }
             onClick={() => void save()}
           >
             {saving ? tSeg("saving") : tCommon("save")}
@@ -311,6 +326,12 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
         </p>
       )}
 
+      {listIsFull(selected) && (
+        <p role="status" className="text-sm font-medium text-yellow-800">
+          {tForm("listFull")}
+        </p>
+      )}
+
       <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
         <div className="border-sand-100 flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <input
@@ -348,6 +369,45 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
             </button>
           </div>
         </div>
+
+        {banner && (
+          <p
+            aria-live="polite"
+            className="bg-sand-50 text-petroleum-700 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 text-sm"
+          >
+            <span>
+              {banner.kind === "page"
+                ? tForm("bannerPage", { count: banner.count })
+                : tForm("bannerAllDone", { count: banner.count })}
+            </span>
+            {banner.kind === "page" ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setSelected((s) =>
+                    selectAllShown(
+                      s,
+                      shown.map((p) => p.id),
+                    ),
+                  )
+                }
+                className="text-petroleum-700 min-h-8 font-medium underline underline-offset-2"
+              >
+                {tForm("bannerAll", { total: banner.total })}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setSelected(new Set());
+                setOnlySelected(false);
+              }}
+              className="text-petroleum-700 min-h-8 font-medium underline underline-offset-2"
+            >
+              {tForm("clearSelection")}
+            </button>
+          </p>
+        )}
 
         {loaded.status === "loading" ? (
           <TableSkeleton cols={6} />

@@ -536,3 +536,46 @@ describe("dead strings", () => {
     }
   });
 });
+
+describe("the segment screen's later strings", () => {
+  test("the limit, the page-to-all offer, and the filter dialog's own 'everyone'", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "campaigns.segments.form.listFull",
+        "campaigns.segments.form.bannerPage",
+        "campaigns.segments.form.bannerAll",
+        "campaigns.segments.form.bannerAllDone",
+        "campaigns.segments.form.subscriptionAny",
+        "campaigns.trigger.eventDescList.segment_entry",
+      ]) {
+        expect(locales[locale][key]).toBeTruthy();
+      }
+    }
+    expect(locales.es["campaigns.segments.form.listFull"]).toBe(
+      "Una lista admite hasta 2000 personas",
+    );
+    expect(locales.en["campaigns.segments.form.listFull"]).toBe(
+      "A list holds up to 2000 people",
+    );
+    expect(locales.es["campaigns.segments.form.subscriptionAny"]).toBe("Todos");
+  });
+  test("the checkbox of the header says it is of this page", () => {
+    expect(locales.es["campaigns.segments.form.selectVisible"]).toContain(
+      "de esta página",
+    );
+    expect(locales.en["campaigns.segments.form.selectVisible"]).toContain(
+      "on this page",
+    );
+  });
+  test("the strings of the old segment form are gone", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "campaigns.segments.everyoneHint",
+        "campaigns.segment.manualHint",
+        "campaigns.segment.createOption",
+      ]) {
+        expect(locales[locale][key]).toBeUndefined();
+      }
+    }
+  });
+});

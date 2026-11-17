@@ -33,6 +33,7 @@ export function SegmentFilterModal({
   onClose: () => void;
 }) {
   const t = useTranslations("dashboard.common");
+  const tForm = useTranslations("dashboard.campaigns.segments.form");
 
   // The controls speak the campaign form's action shape; only SET_AUDIENCE
   // ever arrives here.
@@ -52,6 +53,7 @@ export function SegmentFilterModal({
           fieldErrors={{}}
           disabled={false}
           dispatch={dispatch}
+          subscriptionAnyLabel={tForm("subscriptionAny")}
         />
       </div>
       <div className="border-sand-100 flex shrink-0 items-center justify-between border-t px-6 py-4">

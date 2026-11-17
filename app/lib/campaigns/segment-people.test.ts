@@ -1,15 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { EMPTY_AUDIENCE, type SegmentPerson } from "@/types/campaign";
+import { segmentConditionsSchema } from "@/lib/schemas";
+import { MAX_LIST_PEOPLE } from "./segment-conditions";
 import {
   activeFilters,
   applyFilterPatch,
   conditionsToSave,
   headerCheckState,
   isDirty,
+  listIsFull,
   personName,
   removeFilter,
   searchMatches,
   segmentSentence,
+  selectAllShown,
+  selectionBanner,
   toSegmentPerson,
   toggleOne,
   toggleVisible,
@@ -363,5 +368,130 @@ describe("names", () => {
     expect(searchMatches(p, "a@b")).toBe(true);
     expect(searchMatches(p, "600112")).toBe(true);
     expect(searchMatches(p, "zzz")).toBe(false);
+  });
+});
+
+describe("a list holds two thousand people, and no more", () => {
+  const many = (n: number, prefix = "p") =>
+    Array.from({ length: n }, (_, i) => `${prefix}${i}`);
+
+  test("the limit is the schema's, one number", () => {
+    expect(MAX_LIST_PEOPLE).toBe(2000);
+    const base = {
+      language: "any",
+      newsletter: null,
+      services: [],
+      lastBooking: null,
+      neverBooked: false,
+    };
+    const uuid = (i: number) =>
+      `6f1c2a3e-1111-4222-8333-${String(i).padStart(12, "0")}`;
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => uuid(i));
+    expect(
+      segmentConditionsSchema.safeParse({
+        ...base,
+        manualIds: ids(MAX_LIST_PEOPLE),
+        manualOnly: true,
+      }).success,
+    ).toBe(true);
+    expect(
+      segmentConditionsSchema.safeParse({
+        ...base,
+        manualIds: ids(MAX_LIST_PEOPLE + 1),
+        manualOnly: true,
+      }).success,
+    ).toBe(false);
+  });
+  test("a pick past the limit is not made; taking one off still works at the limit", () => {
+    const full = new Set(many(MAX_LIST_PEOPLE));
+    expect(listIsFull(full)).toBe(true);
+    expect(toggleOne(full, "extra").size).toBe(MAX_LIST_PEOPLE);
+    expect(toggleOne(full, "extra").has("extra")).toBe(false);
+    expect(toggleOne(full, "p0").size).toBe(MAX_LIST_PEOPLE - 1);
+    expect(listIsFull(new Set(many(MAX_LIST_PEOPLE - 1)))).toBe(false);
+  });
+  test("selecting what is seen fills only the room there is", () => {
+    const nearly = new Set(many(MAX_LIST_PEOPLE - 3));
+    const out = toggleVisible(nearly, ["a", "b", "c", "d", "e"]);
+    expect(out.size).toBe(MAX_LIST_PEOPLE);
+    expect(["a", "b", "c"].every((id) => out.has(id))).toBe(true);
+    expect(out.has("e")).toBe(false);
+  });
+  test("a selection under the limit is untouched by it", () => {
+    expect(toggleVisible(new Set(), ["a", "b"]).size).toBe(2);
+  });
+});
+
+describe("selecting everyone who matches, not only the page", () => {
+  const ids = (n: number, p = "s") =>
+    Array.from({ length: n }, (_, i) => `${p}${i}`);
+  const shown = ids(120);
+  const page = shown.slice(0, 50);
+
+  test("no banner until the whole page is selected", () => {
+    expect(
+      selectionBanner({ pageIds: page, shownIds: shown, selected: new Set() }),
+    ).toBeNull();
+    expect(
+      selectionBanner({
+        pageIds: page,
+        shownIds: shown,
+        selected: new Set(page.slice(1)),
+      }),
+    ).toBeNull();
+  });
+  test("a page selected, with more matching on other pages, offers the rest", () => {
+    expect(
+      selectionBanner({
+        pageIds: page,
+        shownIds: shown,
+        selected: new Set(page),
+      }),
+    ).toEqual({
+      kind: "page",
+      count: 50,
+      total: 120,
+    });
+  });
+  test("when everyone who matches is selected, it says so", () => {
+    expect(
+      selectionBanner({
+        pageIds: page,
+        shownIds: shown,
+        selected: new Set(shown),
+      }),
+    ).toEqual({
+      kind: "all",
+      count: 120,
+    });
+  });
+  test("when everyone matching fits on the page there is nothing to offer", () => {
+    expect(
+      selectionBanner({
+        pageIds: page,
+        shownIds: page,
+        selected: new Set(page),
+      }),
+    ).toBeNull();
+  });
+  test("selectAllShown adds them to what was picked out of sight", () => {
+    const out = selectAllShown(new Set(["hidden"]), shown);
+    expect(out.size).toBe(121);
+    expect(out.has("hidden")).toBe(true);
+  });
+  test("and stops at the limit of a list", () => {
+    const many = ids(MAX_LIST_PEOPLE + 500, "m");
+    const out = selectAllShown(new Set(), many);
+    expect(out.size).toBe(MAX_LIST_PEOPLE);
+    const capped = selectionBanner({
+      pageIds: many.slice(0, 50),
+      shownIds: many,
+      selected: out,
+    });
+    expect(capped).toEqual({
+      kind: "page",
+      count: 50,
+      total: MAX_LIST_PEOPLE + 500,
+    });
   });
 });

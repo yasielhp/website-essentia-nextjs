@@ -4,7 +4,10 @@ import type {
   SegmentPerson,
 } from "@/types/campaign";
 import { conditionsMatch } from "./conditions";
-import { normalizeSegmentConditions } from "./segment-conditions";
+import {
+  MAX_LIST_PEOPLE,
+  normalizeSegmentConditions,
+} from "./segment-conditions";
 import type { ContactCandidate } from "./audience-filter";
 
 /**
@@ -118,14 +121,24 @@ export function visiblePeople({
   });
 }
 
+/**
+ * One person picked or taken off. A list holds at most `MAX_LIST_PEOPLE`: past
+ * that the pick is not made (the screen says so), so the save can never be
+ * refused for a number the person had no way to see.
+ */
 export function toggleOne(
   selected: ReadonlySet<string>,
   id: string,
 ): Set<string> {
   const next = new Set(selected);
   if (next.has(id)) next.delete(id);
-  else next.add(id);
+  else if (next.size < MAX_LIST_PEOPLE) next.add(id);
   return next;
+}
+
+/** Whether the list is as big as it can be. */
+export function listIsFull(selected: ReadonlySet<string>): boolean {
+  return selected.size >= MAX_LIST_PEOPLE;
 }
 
 export type HeaderCheck = "none" | "some" | "all";
@@ -154,9 +167,58 @@ export function toggleVisible(
   if (headerCheckState(selected, visibleIds) === "all") {
     for (const id of visibleIds) next.delete(id);
   } else {
-    for (const id of visibleIds) next.add(id);
+    // Only as many as the list has room for; the rest are left unpicked.
+    for (const id of visibleIds) {
+      if (next.size >= MAX_LIST_PEOPLE) break;
+      next.add(id);
+    }
   }
   return next;
+}
+
+/**
+ * Everyone the table is showing, across its pages, added to what was already
+ * picked (and no more than the list holds).
+ */
+export function selectAllShown(
+  selected: ReadonlySet<string>,
+  shownIds: string[],
+): Set<string> {
+  const next = new Set(selected);
+  for (const id of shownIds) {
+    if (next.size >= MAX_LIST_PEOPLE) break;
+    next.add(id);
+  }
+  return next;
+}
+
+export type SelectionBanner =
+  /** The page is all selected and more people match: offer the rest. */
+  | { kind: "page"; count: number; total: number }
+  /** Everyone who matches is selected. */
+  | { kind: "all"; count: number }
+  | null;
+
+/**
+ * The line over the table after the header checkbox has selected a page (the
+ * pattern of a mail list): the page is selected, and there are more matching
+ * people on other pages that one click selects too.
+ */
+export function selectionBanner({
+  pageIds,
+  shownIds,
+  selected,
+}: {
+  pageIds: string[];
+  shownIds: string[];
+  selected: ReadonlySet<string>;
+}): SelectionBanner {
+  if (headerCheckState(selected, pageIds) !== "all") return null;
+  if (shownIds.length <= pageIds.length) return null;
+  const selectedShown = shownIds.filter((id) => selected.has(id)).length;
+  return selectedShown === shownIds.length
+    ? { kind: "all", count: shownIds.length }
+    : { kind: "page", count: pageIds.length, total: shownIds.length };
 }
 
 export type FilterId =

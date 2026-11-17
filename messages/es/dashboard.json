@@ -2005,8 +2005,6 @@
       "cancel": "Cancelar",
       "saveFailed": "No se pudo guardar el segmento.",
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
-      "manualHint": "Se añaden al segmento, solo para esta campaña.",
-      "createOption": "+ Nuevo segmento…",
       "manage": "Gestionar segmentos",
       "manualListHint": "Lista manual · llega a {count, plural, one {# persona} other {# personas}} (tras las exclusiones)",
       "listFailed": "No se pudieron cargar los segmentos."
@@ -2062,6 +2060,9 @@
         "shortBefore": "{hours} h antes de la cita",
         "shortAfter": "{hours} h después de la cita",
         "grace": "Las citas que se confirman cuando ya pasó ese momento no reciben el aviso (más de {minutes} minutos de margen si es antes de la cita, {hours, plural, one {# hora} other {# horas}} si es después). Si el aviso no puede salir a tiempo, por ejemplo porque el sistema estuvo parado, se pierde en lugar de enviarse tarde. Reprogramar una cita no repite el aviso."
+      },
+      "eventDescList": {
+        "segment_entry": "Se envía una vez a las personas de la lista."
       }
     },
     "segments": {
@@ -2071,7 +2072,6 @@
       "editTitle": "Editar segmento",
       "back": "Campañas",
       "empty": "Todavía no hay segmentos. Crea el primero.",
-      "everyoneHint": "Todos los contactos con email, sin rebotes ni bajas.",
       "count": "{count} personas",
       "confirmDelete": "¿Eliminar este segmento? Las campañas que lo usaron conservan su copia.",
       "delete": "Eliminar",
@@ -2103,7 +2103,7 @@
         "listSentence": "{count, plural, one {El segmento incluye solo a la persona seleccionada.} other {El segmento incluye solo a las # personas seleccionadas.}}",
         "clearSelection": "Quitar selección",
         "onlySelected": "Ver solo seleccionadas ({count})",
-        "selectVisible": "Seleccionar las personas que se ven",
+        "selectVisible": "Seleccionar las personas de esta página",
         "selectPerson": "Seleccionar a {name}",
         "shown": "{count, plural, one {Se ve # persona} other {Se ven # personas}}",
         "filteredEmpty": "Nadie cumple estos filtros",
@@ -2115,7 +2115,12 @@
         "chips": "Filtros activos",
         "chipRemove": "Quitar el filtro {name}",
         "chipServices": "Servicios: {value}",
-        "chipLastBooking": "Última reserva: {op, select, gt {hace más de} other {hace menos de}} {days} días"
+        "chipLastBooking": "Última reserva: {op, select, gt {hace más de} other {hace menos de}} {days} días",
+        "listFull": "Una lista admite hasta 2000 personas",
+        "bannerPage": "Seleccionadas las {count} de esta página.",
+        "bannerAll": "Seleccionar las {total} que cumplen los filtros",
+        "bannerAllDone": "Seleccionadas las {count} personas que cumplen los filtros.",
+        "subscriptionAny": "Todos"
       },
       "issue": {
         "unsubscribed": "Baja de email",

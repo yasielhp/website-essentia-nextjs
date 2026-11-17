@@ -52,11 +52,14 @@ export function AudienceConditions({
   fieldErrors,
   disabled,
   dispatch,
+  subscriptionAnyLabel,
 }: {
   audience: CampaignAudience;
   fieldErrors: Record<string, string>;
   disabled: boolean;
   dispatch: Dispatch<FormAction>;
+  /** Where "everyone" is not "everyone with an email" (a screen that lists people by phone too). */
+  subscriptionAnyLabel?: string;
 }) {
   const t = useTranslations("dashboard.campaigns.audience");
   const lastBooking = audience.lastBooking;
@@ -65,7 +68,7 @@ export function AudienceConditions({
     ({ value, key }) => ({ value, label: t(key) }),
   );
   const subscriptionOptions: SelectOption<"any" | "only">[] = [
-    { value: "any", label: t("subscriptionAny") },
+    { value: "any", label: subscriptionAnyLabel ?? t("subscriptionAny") },
     { value: "only", label: t("subscriptionOnly") },
   ];
   const bookingsOptions: SelectOption<"any" | "booked" | "never">[] = [

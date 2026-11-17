@@ -13,6 +13,7 @@ import type {
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { APPOINTMENT_HOURS } from "@/lib/campaigns/appointment-form";
+import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 import { countParams, paramIssues } from "@/lib/whatsapp/templates";
 import {
@@ -318,7 +319,7 @@ export const segmentConditionsSchema = campaignAudienceSchema
   .extend({
     manualIds: z
       .array(z.uuid("contactIdInvalid"))
-      .max(2000, "tooManyContacts")
+      .max(MAX_LIST_PEOPLE, "tooManyContacts")
       .optional(),
     manualOnly: z.literal(true).optional(),
   })
