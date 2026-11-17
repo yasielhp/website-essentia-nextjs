@@ -134,7 +134,23 @@ describe("the campaign form strings", () => {
     }
   });
 
-  test("every note the report can show is translated in both languages", () => {
+  test("every note the report can show exists in both files and formats with its values", () => {
+    const values = { reason: "r", detail: "d" };
+    for (const locale of ["es", "en"] as const) {
+      for (const key of REPORT_NOTE_KEYS) {
+        const text = locales[locale][`campaigns.detail.notes.${key}`];
+        expect([locale, key, Boolean(text)]).toEqual([locale, key, true]);
+        expect(() =>
+          new IntlMessageFormat(text, locale).format(values),
+        ).not.toThrow();
+      }
+    }
+    expect(locales.es["campaigns.detail.notes.haltedReason"]).toContain(
+      "{reason}",
+    );
+    expect(locales.en["campaigns.detail.notes.haltedReason"]).toContain(
+      "{reason}",
+    );
     for (const messages of [locales.es, locales.en]) {
       for (const key of REPORT_NOTE_KEYS) {
         expect(messages[`campaigns.detail.notes.${key}`]).toBeTruthy();
@@ -145,6 +161,7 @@ describe("the campaign form strings", () => {
         "campaigns.recipientStatusWhatsApp.opened",
         "campaigns.recipientStatusWhatsApp.bounced",
         "campaigns.detail.columnsPhone",
+        "campaigns.table.openedOrRead",
       ]) {
         expect(messages[key]).toBeTruthy();
       }
