@@ -8,10 +8,11 @@ import { TemplatesPanel } from "./whatsapp/templates-panel";
 
 export type TabKey = "whatsapp" | "email";
 
-const TABS: TabKey[] = ["whatsapp", "email"];
+/** The automatic messages come first: they are what most people come here to edit. */
+const TABS: TabKey[] = ["email", "whatsapp"];
 
 export function MessagesTabs({
-  initialTab = "whatsapp",
+  initialTab = "email",
 }: {
   initialTab?: TabKey;
 }) {
@@ -26,7 +27,8 @@ export function MessagesTabs({
   function select(key: TabKey) {
     setActive(key);
     const url = new URL(window.location.href);
-    if (key === "email") url.searchParams.set("tab", "email");
+    // The default tab needs nothing in the address; the other one says so.
+    if (key === "whatsapp") url.searchParams.set("tab", "whatsapp");
     else url.searchParams.delete("tab");
     window.history.replaceState(null, "", url);
   }

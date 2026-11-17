@@ -353,7 +353,7 @@ export function WhatsAppMessageEditor({
               {tEd("noneTitle", { language })}
             </p>
             <Link
-              href="/dashboard/messages"
+              href="/dashboard/messages?tab=whatsapp"
               className="text-petroleum-700 mt-2 inline-block text-sm font-medium underline underline-offset-2"
             >
               {tEd("create")}

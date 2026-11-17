@@ -23,5 +23,7 @@ export default async function MessagesPage({
   // The way back from a message's own page lands on the tab it came from.
   const { tab } = await searchParams;
 
-  return <MessagesTabs initialTab={tab === "email" ? "email" : "whatsapp"} />;
+  return (
+    <MessagesTabs initialTab={tab === "whatsapp" ? "whatsapp" : "email"} />
+  );
 }

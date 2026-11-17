@@ -2201,8 +2201,8 @@
     "description": "Los textos que el centro envía a sus clientes.",
     "tabsLabel": "Tipo de mensaje",
     "tabs": {
-      "whatsapp": "Plantillas de WhatsApp",
-      "email": "Emails"
+      "email": "Mensajes automáticos",
+      "whatsapp": "Plantillas de WhatsApp"
     },
     "whatsapp": {
       "intro": "Meta revisa cada plantilla antes de que se pueda enviar, y una campaña de WhatsApp solo puede usar plantillas aprobadas. La revisión tarda de minutos a días.",

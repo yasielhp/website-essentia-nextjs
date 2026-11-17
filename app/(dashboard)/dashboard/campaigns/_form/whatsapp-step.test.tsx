@@ -43,7 +43,9 @@ describe("when there is no template to use", () => {
   const html = render({ status: "ready", templates: [], configured: true });
   test("the link to create one opens in another tab, safely, so the campaign is not lost", () => {
     const link =
-      html.match(/<a [^>]*href="\/dashboard\/messages"[^>]*>/)?.[0] ?? "";
+      html.match(
+        /<a [^>]*href="\/dashboard\/messages\?tab=whatsapp"[^>]*>/,
+      )?.[0] ?? "";
     expect(link).toContain('target="_blank"');
     expect(link).toContain("noopener");
   });
