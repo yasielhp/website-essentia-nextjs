@@ -27,10 +27,24 @@ export type BookingStorage = {
   details: DetailsState;
 };
 
+/**
+ * What an abandoned booking left behind, for the form to pick up again.
+ *
+ * The two consent boxes never come back ticked. A tick is an act of whoever is
+ * in front of the form now, and the next person to open it on this device may
+ * be somebody else: accepting the Terms and asking for news and offers are
+ * hers to do, not something a previous visit can do for her.
+ */
 export function readStorage(): Partial<BookingStorage> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as BookingStorage) : {};
+    if (!raw) return {};
+    const saved = JSON.parse(raw) as Partial<BookingStorage>;
+    if (!saved.details) return saved;
+    return {
+      ...saved,
+      details: { ...saved.details, consent: false, newsletter: false },
+    };
   } catch {
     return {};
   }
