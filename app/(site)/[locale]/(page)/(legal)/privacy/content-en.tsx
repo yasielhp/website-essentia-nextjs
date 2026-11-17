@@ -32,8 +32,8 @@ export function PrivacyEN() {
         <br />
         Trading name: Essentia Social Wellness Club
         <br />
-        Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife, Islas
-        Canarias, España
+        Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife, Canary
+        Islands, Spain
         <br />
         <a href="mailto:info@essentiawellnessclub.com">
           info@essentiawellnessclub.com
@@ -244,7 +244,7 @@ export function PrivacyEN() {
           info@essentiawellnessclub.com
         </a>{" "}
         or by post to Calle Arure 29, San Isidro, 38611 Santa Cruz de Tenerife,
-        Islas Canarias, España.
+        Canary Islands, Spain.
       </p>
     </>
   );
