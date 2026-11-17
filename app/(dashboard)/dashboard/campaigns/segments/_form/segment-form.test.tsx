@@ -102,7 +102,9 @@ describe("the table of people", () => {
     const html = render([]);
     expect(html).toContain('aria-label="Seleccionar a Ana Pérez"');
     expect(html).toContain('aria-label="Seleccionar a Luis"');
-    expect(html).toContain('aria-label="Seleccionar las personas de esta página"');
+    expect(html).toContain(
+      'aria-label="Seleccionar las personas de esta página"',
+    );
   });
   test("a selected person is checked and the others are not", () => {
     const html = render(["a"]);
