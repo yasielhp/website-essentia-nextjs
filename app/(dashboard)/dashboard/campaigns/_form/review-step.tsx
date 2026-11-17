@@ -115,6 +115,8 @@ export function ReviewStep({
       : null;
   const automated = isAutomatedKind(kind);
   const [confirming, setConfirming] = useState(false);
+  // Activating starts messaging people on its own: it asks, like "Send now".
+  const [confirmingActivate, setConfirmingActivate] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
   const [busy, setBusy] = useState<
     "test" | "schedule" | "send" | "activate" | null
@@ -313,13 +315,49 @@ export function ReviewStep({
                 </>
               )}
             </div>
-            <Button
-              size="md"
-              disabled={disabled}
-              onClick={() => void run("activate", onActivate)}
-            >
-              {busy === "activate" ? t("activating") : t("activate")}
-            </Button>
+            {confirmingActivate ? (
+              <div className="bg-petroleum-50 flex flex-col gap-3 rounded-xl p-4 sm:max-w-sm">
+                <p
+                  role="alertdialog"
+                  aria-label={t("confirmActivate")}
+                  className="text-petroleum-700 text-sm font-medium"
+                >
+                  {t("confirmActivate")}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    disabled={disabled}
+                    onClick={() => setConfirmingActivate(false)}
+                  >
+                    {t("cancel")}
+                  </Button>
+                  <Button
+                    size="md"
+                    disabled={disabled}
+                    onClick={() =>
+                      void run("activate", async () => {
+                        await onActivate();
+                        setConfirmingActivate(false);
+                      })
+                    }
+                  >
+                    {busy === "activate"
+                      ? t("activating")
+                      : t("confirmActivateYes")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="md"
+                disabled={disabled}
+                onClick={() => setConfirmingActivate(true)}
+              >
+                {t("activate")}
+              </Button>
+            )}
           </div>
         ) : (
           <>

@@ -579,3 +579,16 @@ describe("the segment screen's later strings", () => {
     }
   });
 });
+
+describe("activating asks first", () => {
+  test("the question says what happens, in both languages", () => {
+    expect(locales.es["campaigns.review.confirmActivate"]).toBe(
+      "¿Activar? Empezará a escribir a quien cumpla las condiciones.",
+    );
+    expect(locales.en["campaigns.review.confirmActivate"]).toBe(
+      "Activate? It will start messaging whoever qualifies.",
+    );
+    expect(locales.es["campaigns.review.confirmActivateYes"]).toBeTruthy();
+    expect(locales.en["campaigns.review.confirmActivateYes"]).toBeTruthy();
+  });
+});

@@ -1893,7 +1893,9 @@
       "noConditionsAppointment": "Todas las clientas con los avisos de la cita activados",
       "appointmentPace": "Cada aviso sale con hasta 15 minutos de retraso sobre la hora indicada.",
       "emptyAppointment": "Ahora mismo ninguna clienta tiene los avisos de la cita activados. Puedes activar la campaña igualmente: avisará de las citas de quien los active después.",
-      "condManualList": "Lista manual de {count, plural, one {# persona} other {# personas}}"
+      "condManualList": "Lista manual de {count, plural, one {# persona} other {# personas}}",
+      "confirmActivate": "¿Activar? Empezará a escribir a quien cumpla las condiciones.",
+      "confirmActivateYes": "Sí, activar"
     },
     "detail": {
       "sent": "Enviados",

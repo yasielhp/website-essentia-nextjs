@@ -1893,7 +1893,9 @@
       "noConditionsAppointment": "Every client with appointment notices switched on",
       "appointmentPace": "Each notice goes out up to 15 minutes later than the time indicated.",
       "emptyAppointment": "No client has appointment notices switched on right now. You can still activate the campaign: it will notify the appointments of whoever switches them on later.",
-      "condManualList": "Manual list of {count, plural, one {# person} other {# people}}"
+      "condManualList": "Manual list of {count, plural, one {# person} other {# people}}",
+      "confirmActivate": "Activate? It will start messaging whoever qualifies.",
+      "confirmActivateYes": "Yes, activate"
     },
     "detail": {
       "sent": "Sent",
