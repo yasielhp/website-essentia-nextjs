@@ -361,3 +361,116 @@ describe("filterAudience — combined conditions", () => {
     expect(ids(result)).toEqual([hit.id]);
   });
 });
+
+describe("filterAudience — WhatsApp channel", () => {
+  const OPTED = "2026-11-01T00:00:00Z";
+  const wa = (overrides: Partial<ContactCandidate> = {}) =>
+    c({
+      email: "",
+      phone: "600112233",
+      whatsappMarketingOptedInAt: OPTED,
+      ...overrides,
+    });
+  const run = (
+    list: ContactCandidate[],
+    aud: CampaignAudience = EMPTY_AUDIENCE,
+  ) => filterAudience(list, aud, NOW, "whatsapp");
+
+  it("keeps a consenting contact and normalises the phone to E.164", () => {
+    const ok = wa();
+    const out = run([ok]);
+    expect(ids(out)).toEqual([ok.id]);
+    expect(out[0].phone).toBe("+34600112233");
+  });
+
+  it("needs no email, which the email channel does", () => {
+    const ok = wa();
+    expect(ids(run([ok]))).toEqual([ok.id]);
+    expect(ids(filterAudience([ok], EMPTY_AUDIENCE, NOW))).toEqual([]);
+  });
+
+  it("drops a contact without marketing consent, even with the booking-notice one", () => {
+    const onlyNotices = wa({
+      whatsappMarketingOptedInAt: null,
+      whatsappOptedInAt: OPTED,
+    });
+    expect(ids(run([onlyNotices]))).toEqual([]);
+  });
+
+  it("drops a contact who opted out", () => {
+    const out = wa({ whatsappOptedOutAt: "2026-11-10T00:00:00Z" });
+    expect(ids(run([out]))).toEqual([]);
+  });
+
+  it("drops a contact whose number is unreachable", () => {
+    const gone = wa({ whatsappUnreachableAt: "2026-11-10T00:00:00Z" });
+    expect(ids(run([gone]))).toEqual([]);
+  });
+
+  it("drops a contact without a phone or with one the database would refuse", () => {
+    const none = wa({ phone: null });
+    const short = wa({ phone: "1234567" });
+    const text = wa({ phone: "no phone" });
+    expect(ids(run([none, short, text]))).toEqual([]);
+  });
+
+  it("ignores the email-channel exclusions", () => {
+    const ok = wa({
+      email: "x@example.com",
+      bouncedAt: "2026-08-01T10:00:00Z",
+      unsubscribedAt: "2026-08-02T10:00:00Z",
+    });
+    expect(ids(run([ok]))).toEqual([ok.id]);
+  });
+
+  it("keeps the email exclusions for the email channel whatever the WhatsApp fields", () => {
+    const gone = c({ whatsappOptedOutAt: "2026-11-10T00:00:00Z" });
+    expect(ids(filterAudience([gone], EMPTY_AUDIENCE, NOW))).toEqual([gone.id]);
+  });
+
+  it("collapses two contacts sharing a number, however it is written", () => {
+    const first = wa({ phone: "600112233" });
+    const second = wa({ phone: "600 11 22 33" });
+    const third = wa({ phone: "+34600112233" });
+    expect(ids(run([first, second, third]))).toEqual([first.id]);
+  });
+
+  it("deduplicates a hand-picked contact against one the filter already kept", () => {
+    const first = wa({ phone: "600112233" });
+    const picked = wa({ phone: "+34 600 11 22 33" });
+    expect(
+      ids(run([first, picked], audience({ manualIds: [picked.id] }))),
+    ).toEqual([first.id]);
+  });
+
+  it("never sends to a hand-picked contact without consent", () => {
+    const noConsent = wa({ whatsappMarketingOptedInAt: null });
+    const optedOut = wa({
+      phone: "600112244",
+      whatsappOptedOutAt: "2026-11-10T00:00:00Z",
+    });
+    const unreachable = wa({
+      phone: "600112255",
+      whatsappUnreachableAt: "2026-11-10T00:00:00Z",
+    });
+    const noPhone = wa({ phone: null });
+    const out = run(
+      [noConsent, optedOut, unreachable, noPhone],
+      audience({
+        manualIds: [noConsent.id, optedOut.id, unreachable.id, noPhone.id],
+      }),
+    );
+    expect(ids(out)).toEqual([]);
+  });
+
+  it("still applies the filter conditions and unions the hand-picked", () => {
+    const es = wa({ language: "es", phone: "600112244" });
+    const en = wa({ language: "en", phone: "600112255" });
+    const picked = wa({ language: "en", phone: "600112266" });
+    const out = run(
+      [es, en, picked],
+      audience({ language: "es", manualIds: [picked.id] }),
+    );
+    expect(ids(out)).toEqual([es.id, picked.id]);
+  });
+});

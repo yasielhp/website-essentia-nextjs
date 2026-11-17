@@ -1,5 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
-import type { CampaignAudience } from "@/types/campaign";
+import type { CampaignAudience, CampaignChannel } from "@/types/campaign";
 import { visitEndsAtIso } from "./visit-time";
 import {
   filterAudience,
@@ -28,7 +28,8 @@ import {
 
 type ContactRow = {
   id: string;
-  email: string;
+  /** Nullable in the live table: a WhatsApp-only contact has none. */
+  email: string | null;
   first_name: string | null;
   preferred_language: string | null;
   newsletter_subscribed: boolean | null;
@@ -38,6 +39,10 @@ type ContactRow = {
   birthdate: string | null;
   last_name: string | null;
   phone: string | null;
+  whatsapp_opted_in_at: string | null;
+  whatsapp_marketing_opted_in_at: string | null;
+  whatsapp_opted_out_at: string | null;
+  whatsapp_unreachable_at: string | null;
 };
 
 type BookingRow = {
@@ -70,25 +75,31 @@ const MAX_ROWS = 9_999;
 export async function resolveAudience(
   audience: CampaignAudience,
   now = new Date(),
+  channel: CampaignChannel = "email",
 ): Promise<Recipient[]> {
-  return filterAudience(await loadCandidates(), audience, now);
+  return filterAudience(await loadCandidates(channel), audience, now, channel);
 }
 
 /**
  * Every contact with its booking history folded in, ready for the filter.
  * Separate from `resolveAudience` so a screen that counts several segments
  * at once reads the tables once, not once per segment.
+ *
+ * The channel only decides which contacts can possibly qualify: the email
+ * channel needs an address, WhatsApp needs a phone and may have no email.
  */
-export async function loadCandidates(): Promise<ContactCandidate[]> {
+export async function loadCandidates(
+  channel: CampaignChannel = "email",
+): Promise<ContactCandidate[]> {
   const db = getAdminClient().database;
 
   const [contactsResult, bookingsResult] = await Promise.all([
     db
       .from("contacts")
       .select(
-        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate",
+        "id, email, first_name, last_name, phone, preferred_language, newsletter_subscribed, email_bounced_at, newsletter_unsubscribed_at, newsletter_subscribed_at, birthdate, whatsapp_opted_in_at, whatsapp_marketing_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at",
       )
-      .not("email", "is", null)
+      .not(channel === "whatsapp" ? "phone" : "email", "is", null)
       .range(0, MAX_ROWS),
     db
       .from("bookings")
@@ -116,6 +127,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
   // so the booking side is normalised before the lookup.
   const contactIdByEmail = new Map<string, string>();
   for (const row of contacts) {
+    if (!row.email) continue;
     const email = row.email.trim().toLowerCase();
     if (!contactIdByEmail.has(email)) contactIdByEmail.set(email, row.id);
   }
@@ -184,7 +196,7 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
     const bookings = byContact.get(row.id);
     return {
       id: row.id,
-      email: row.email,
+      email: row.email ?? "",
       firstName: row.first_name ?? "",
       language: row.preferred_language,
       newsletter: row.newsletter_subscribed === true,
@@ -203,6 +215,10 @@ export async function loadCandidates(): Promise<ContactCandidate[]> {
         ? Object.fromEntries(bookings.firstVisitEndsAtByTier)
         : {},
       confirmedBookingsCount: bookings?.confirmedCount ?? 0,
+      whatsappOptedInAt: row.whatsapp_opted_in_at,
+      whatsappMarketingOptedInAt: row.whatsapp_marketing_opted_in_at,
+      whatsappOptedOutAt: row.whatsapp_opted_out_at,
+      whatsappUnreachableAt: row.whatsapp_unreachable_at,
     };
   });
 

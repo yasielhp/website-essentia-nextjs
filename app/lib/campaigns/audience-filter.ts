@@ -1,4 +1,9 @@
-import type { CampaignAudience, CampaignLocale } from "@/types/campaign";
+import { toCampaignPhone } from "@/lib/whatsapp/phone";
+import type {
+  CampaignAudience,
+  CampaignChannel,
+  CampaignLocale,
+} from "@/types/campaign";
 
 /**
  * Who a campaign reaches, decided over plain values.
@@ -11,6 +16,7 @@ import type { CampaignAudience, CampaignLocale } from "@/types/campaign";
 
 export type ContactCandidate = {
   id: string;
+  /** Empty for a contact that only has a phone; the email channel drops those. */
   email: string;
   firstName: string;
   language: string | null;
@@ -40,10 +46,26 @@ export type ContactCandidate = {
   firstVisitEndsAtByTier?: Record<string, string>;
   /** How many bookings are confirmed or completed. */
   confirmedBookingsCount?: number;
+  /**
+   * Consent to WhatsApp *campaigns*. Not `whatsapp_opted_in_at`, which only
+   * covers booking notices: the two purposes are consented separately.
+   */
+  whatsappMarketingOptedInAt?: string | null;
+  /** Booking-notice consent. Carried for completeness; campaigns ignore it. */
+  whatsappOptedInAt?: string | null;
+  /** STOP / BAJA: one opt-out that blocks both uses. */
+  whatsappOptedOutAt?: string | null;
+  /** Meta said the number has no WhatsApp; sending again only costs. */
+  whatsappUnreachableAt?: string | null;
 };
 
 export type Recipient = {
   id: string;
+  /**
+   * Lowercased address. Empty in a WhatsApp recipient, which may have none:
+   * the dispatch stores it as NULL there (the column is nullable, and two
+   * contacts sharing an email must not collide on the unique index).
+   */
   email: string;
   firstName: string;
   language: CampaignLocale;
@@ -53,6 +75,7 @@ export type Recipient = {
   subscribedAt?: string | null;
   birthdate?: string | null;
   lastName?: string | null;
+  /** In a WhatsApp recipient: the campaign phone, always E.164. */
   phone?: string | null;
   newsletter?: boolean;
   firstVisitEndsAt?: string | null;
@@ -68,16 +91,42 @@ function toLocale(language: string | null): CampaignLocale {
 }
 
 /**
- * The exclusions nobody can override: a hand-picked contact still needs a
- * deliverable address, and a bounced one would only bounce again and hurt
- * the sender reputation.
+ * The exclusions nobody can override, hand-picked contacts included. They are
+ * per channel because consent is: the newsletter unsubscribe and an email
+ * bounce say nothing about WhatsApp, and a WhatsApp opt-out nothing about
+ * email.
+ *
+ * Email: a hand-picked contact still needs a deliverable address, and a
+ * bounced one would only bounce again and hurt the sender reputation.
+ * WhatsApp: a marketing template needs the contact's own marketing consent,
+ * and never goes to one who opted out, to a number without WhatsApp, or to
+ * one the database would refuse.
+ *
+ * Returns the address the send goes to (the lowercased email, or the E.164
+ * phone), which is also what de-duplicates, or null when excluded.
  */
-function isSendable(candidate: ContactCandidate): boolean {
-  return (
-    candidate.bouncedAt === null &&
-    candidate.email.includes("@") &&
-    candidate.unsubscribedAt === null
-  );
+function contactPoint(
+  candidate: ContactCandidate,
+  channel: CampaignChannel,
+): string | null {
+  if (channel === "whatsapp") {
+    if (
+      !candidate.whatsappMarketingOptedInAt ||
+      candidate.whatsappOptedOutAt ||
+      candidate.whatsappUnreachableAt
+    ) {
+      return null;
+    }
+    return toCampaignPhone(candidate.phone);
+  }
+  if (
+    candidate.bouncedAt !== null ||
+    !candidate.email.includes("@") ||
+    candidate.unsubscribedAt !== null
+  ) {
+    return null;
+  }
+  return candidate.email.trim().toLowerCase();
 }
 
 function matchesConditions(
@@ -118,34 +167,36 @@ export function filterAudience(
   candidates: ContactCandidate[],
   audience: CampaignAudience,
   now: Date,
+  channel: CampaignChannel = "email",
 ): Recipient[] {
   const manual = new Set(audience.manualIds);
   const seen = new Set<string>();
   const recipients: Recipient[] = [];
 
   for (const candidate of candidates) {
-    if (!isSendable(candidate)) continue;
+    const point = contactPoint(candidate, channel);
+    if (point === null) continue;
     if (
       !manual.has(candidate.id) &&
       !matchesConditions(candidate, audience, now)
     ) {
       continue;
     }
-    // `campaign_recipients` is unique on (campaign_id, email), so two contacts
-    // sharing an address, whatever the casing, must collapse into one row.
-    const email = candidate.email.trim().toLowerCase();
-    if (seen.has(email)) continue;
-    seen.add(email);
+    // `campaign_recipients` is unique on (campaign_id, email) and on
+    // (campaign_id, phone), so two contacts sharing an address or a number,
+    // whatever the casing or the spacing, collapse into one row: the first.
+    if (seen.has(point)) continue;
+    seen.add(point);
     recipients.push({
       id: candidate.id,
-      email,
+      email: channel === "whatsapp" ? "" : point,
       firstName: candidate.firstName,
       lastBookingDate: candidate.lastBookingDate,
       firstBookingDate: candidate.firstBookingDate ?? null,
       subscribedAt: candidate.subscribedAt ?? null,
       birthdate: candidate.birthdate ?? null,
       lastName: candidate.lastName ?? null,
-      phone: candidate.phone ?? null,
+      phone: channel === "whatsapp" ? point : (candidate.phone ?? null),
       newsletter: candidate.newsletter,
       firstVisitEndsAt: candidate.firstVisitEndsAt ?? null,
       firstVisitEndsAtByTier: candidate.firstVisitEndsAtByTier ?? {},
