@@ -135,7 +135,7 @@ export default function CampaignsPage() {
                 setStatus(value === "all" ? "" : value);
                 setPage(0);
               }}
-              className={`min-w-28 shrink-0 snap-start scroll-mx-6 rounded-2xl border bg-white p-3 text-left transition-colors sm:min-w-0 sm:shrink sm:p-4 ${
+              className={`min-w-24 shrink-0 snap-start scroll-mx-6 rounded-2xl border bg-white p-3 text-left transition-colors sm:min-w-0 sm:shrink sm:p-4 ${
                 active
                   ? "border-petroleum-400 ring-petroleum-100 ring-2"
                   : "border-sand-200 hover:border-petroleum-400"
