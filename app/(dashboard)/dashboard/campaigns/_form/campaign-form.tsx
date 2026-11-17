@@ -104,7 +104,8 @@ export function CampaignForm({
   const whatsapp = state.channel === "whatsapp";
   // One read of the account's templates serves the step that picks one and
   // the review that shows it.
-  const templates = useWhatsAppTemplates(whatsapp);
+  const [templatesKey, setTemplatesKey] = useState(0);
+  const templates = useWhatsAppTemplates(whatsapp, templatesKey);
 
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
@@ -529,6 +530,7 @@ export function CampaignForm({
               state={state}
               dispatch={dispatch}
               templates={templates}
+              onRetryTemplates={() => setTemplatesKey((n) => n + 1)}
               onDone={confirmContent}
             />
           ) : (

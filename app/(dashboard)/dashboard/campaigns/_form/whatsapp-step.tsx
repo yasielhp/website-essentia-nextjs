@@ -37,15 +37,19 @@ export function WhatsAppStep({
   state,
   dispatch,
   templates,
+  onRetryTemplates,
   onDone,
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
   templates: TemplatesState;
+  /** Reads the templates again, without leaving the form (a reload would lose it). */
+  onRetryTemplates: () => void;
   /** Validates the choice and opens the review step. */
   onDone: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.form.whatsapp");
+  const tCommon = useTranslations("dashboard.common");
   const tUnsupported = useTranslations(
     "dashboard.messages.whatsapp.unsupported",
   );
@@ -175,9 +179,12 @@ export function WhatsAppStep({
         {templates.status === "idle" || templates.status === "loading" ? (
           <div className="bg-sand-100 h-14 animate-pulse rounded-xl" />
         ) : templates.status === "error" ? (
-          <p role="alert" className="text-xs text-red-600">
-            {t("loadFailed")}
-          </p>
+          <div role="alert" className="flex flex-col items-start gap-2">
+            <p className="text-xs text-red-600">{t("loadFailed")}</p>
+            <Button variant="outline" size="sm" onClick={onRetryTemplates}>
+              {tCommon("retry")}
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {choices.eligible.length > 0 && (
@@ -230,11 +237,14 @@ export function WhatsAppStep({
                     {templateError}
                   </p>
                 )}
+                {/* Another tab: leaving would lose the campaign half made. */}
                 <Link
                   href="/dashboard/messages"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-petroleum-700 mt-2 inline-block text-sm font-medium underline underline-offset-2"
                 >
-                  {t("create")}
+                  {t("create")} <span aria-hidden="true">↗</span>
                 </Link>
               </div>
             )}
