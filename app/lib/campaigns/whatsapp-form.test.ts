@@ -5,6 +5,7 @@ import {
   fieldAvailable,
   fitParams,
   kindAllowedForChannel,
+  kindsForChannel,
   partitionTemplates,
   sampleParams,
   triggerEventKey,
@@ -52,6 +53,48 @@ describe("kindAllowedForChannel", () => {
     ] as const) {
       expect(kindAllowedForChannel(kind, "whatsapp")).toBe(true);
     }
+  });
+});
+
+describe("kindsForChannel", () => {
+  const ALL = [
+    "standard",
+    "automated",
+    "autoresponder",
+    "split",
+    "rss",
+    "dateBased",
+  ] as const;
+
+  test("an email offers every kind, in the order given", () => {
+    expect(kindsForChannel(ALL, "email")).toEqual([...ALL]);
+  });
+
+  test("WhatsApp offers four: the two a template cannot be are not listed at all", () => {
+    expect(kindsForChannel(ALL, "whatsapp")).toEqual([
+      "standard",
+      "automated",
+      "autoresponder",
+      "dateBased",
+    ]);
+  });
+
+  test("is the same rule the server applies: nothing listed is refused, nothing refused is listed", () => {
+    for (const channel of ["email", "whatsapp"] as const) {
+      const listed = kindsForChannel(ALL, channel);
+      for (const kind of ALL) {
+        expect(listed.includes(kind)).toBe(
+          kindAllowedForChannel(kind, channel),
+        );
+      }
+    }
+  });
+
+  test("keeps whatever order and subset it is handed", () => {
+    expect(kindsForChannel(["rss", "standard"], "whatsapp")).toEqual([
+      "standard",
+    ]);
+    expect(kindsForChannel([], "whatsapp")).toEqual([]);
   });
 });
 

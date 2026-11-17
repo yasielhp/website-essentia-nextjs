@@ -5,7 +5,7 @@ import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
 import { REPORT_NOTE_KEYS } from "./report";
 import { TEMPLATE_CHOICE_ISSUES } from "./whatsapp-eligibility";
-import { PARAM_FIELDS, kindAllowedForChannel } from "./whatsapp-form";
+import { PARAM_FIELDS } from "./whatsapp-form";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -139,17 +139,13 @@ describe("the campaign form strings", () => {
     }
   });
 
-  test("every kind WhatsApp refuses says why on its card", () => {
-    const refused = (["split", "rss"] as const).filter(
-      (kind) => !kindAllowedForChannel(kind, "whatsapp"),
-    );
-    expect(refused).toEqual(["split", "rss"]);
+  test("the kinds WhatsApp refuses are hidden, so no string explains them any more", () => {
     for (const messages of [locales.es, locales.en]) {
-      for (const kind of refused) {
-        expect(
-          messages[`campaigns.type.whatsappUnavailable.${kind}`],
-        ).toBeTruthy();
-      }
+      expect(
+        Object.keys(messages).filter((key) =>
+          key.startsWith("campaigns.type.whatsappUnavailable"),
+        ),
+      ).toEqual([]);
     }
   });
 

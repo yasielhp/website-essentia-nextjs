@@ -1939,11 +1939,7 @@
       "channelEmail": "Email",
       "channelWhatsApp": "WhatsApp",
       "channelHint": "WhatsApp solo escribe a quien aceptó recibir novedades y ofertas por ese canal, con una plantilla aprobada por Meta.",
-      "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro.",
-      "whatsappUnavailable": {
-        "split": "No disponible por WhatsApp: una plantilla no tiene asunto que probar.",
-        "rss": "No disponible por WhatsApp: las plantillas no admiten un enlace distinto en cada envío."
-      }
+      "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro."
     },
     "segment": {
       "title": "Segmento",

@@ -1939,11 +1939,7 @@
       "channelEmail": "Email",
       "channelWhatsApp": "WhatsApp",
       "channelHint": "WhatsApp only writes to people who agreed to receive news and offers there, using a template approved by Meta.",
-      "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one.",
-      "whatsappUnavailable": {
-        "split": "Not available on WhatsApp: a template has no subject line to test.",
-        "rss": "Not available on WhatsApp: templates cannot carry a different link in every send."
-      }
+      "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one."
     },
     "segment": {
       "title": "Segment",

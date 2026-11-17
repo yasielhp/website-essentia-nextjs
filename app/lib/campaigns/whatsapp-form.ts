@@ -48,6 +48,19 @@ export function kindAllowedForChannel(
 }
 
 /**
+ * The kinds to show for a channel: the ones it can be, and no others. A kind a
+ * channel cannot be is not greyed out, it is not there. The rule is
+ * `kindAllowedForChannel`, which the server applies as well; this only filters
+ * the form's own list by it, in the order it is given.
+ */
+export function kindsForChannel(
+  kinds: readonly CampaignKind[],
+  channel: CampaignChannel,
+): CampaignKind[] {
+  return kinds.filter((kind) => kindAllowedForChannel(kind, channel));
+}
+
+/**
  * The contact fields the form offers for `{{n}}`. The post fields exist in the
  * type because the automation can supply them, but the RSS kind is off on
  * WhatsApp, so nothing could fill them.

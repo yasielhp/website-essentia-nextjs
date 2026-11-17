@@ -10,7 +10,7 @@ import {
   IconSettings,
   IconWorld,
 } from "@/components/ui/icons";
-import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
+import { kindsForChannel } from "@/lib/campaigns/whatsapp-form";
 import { radioTarget } from "@/lib/radio-nav";
 import type { CampaignChannel, CampaignKind } from "@/types/campaign";
 import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
@@ -48,6 +48,9 @@ export function TypeStep({
   // A saved campaign keeps its channel: its recipients and report only mean
   // something in one.
   const channelLocked = state.id !== null;
+  // Only the kinds this channel can be; the others are not shown at all.
+  const visible = kindsForChannel(AVAILABLE_KINDS, state.channel);
+  const shown = KINDS.filter(({ kind }) => visible.includes(kind));
   const radios = useRef<(HTMLButtonElement | null)[]>([]);
 
   /** Arrows move the choice and the focus together, as a radio group does. */
@@ -110,24 +113,21 @@ export function TypeStep({
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
         {t("title")}
       </h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {KINDS.map(({ kind, icon }) => {
+      <div
+        className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
+          // Four cards in three columns leave one alone on a second row.
+          shown.length === 4 ? "" : "xl:grid-cols-3"
+        }`}
+      >
+        {shown.map(({ kind, icon }) => {
           const available = AVAILABLE_KINDS.includes(kind);
-          // Greyed for the channel, not for lack of the feature: the note
-          // under the card says which.
-          const fits = kindAllowedForChannel(kind, state.channel);
           const active = state.kind === kind;
           return (
             <button
               key={kind}
               type="button"
-              disabled={!available || !fits || state.submitting}
+              disabled={!available || state.submitting}
               aria-pressed={active}
-              title={
-                fits
-                  ? undefined
-                  : t(`whatsappUnavailable.${kind as "split" | "rss"}`)
-              }
               onClick={() => {
                 dispatch({ type: "SET_KIND", kind });
                 onDone();
@@ -137,7 +137,7 @@ export function TypeStep({
                 active
                   ? "border-petroleum-700 bg-petroleum-50/50"
                   : "border-sand-200 bg-white",
-                available && fits
+                available
                   ? "hover:border-petroleum-400 cursor-pointer"
                   : "cursor-not-allowed opacity-55",
               ].join(" ")}
@@ -170,11 +170,6 @@ export function TypeStep({
                       ? t("autoresponderDescWhatsApp")
                       : t(`${kind}Desc`)}
                 </span>
-                {!fits && (
-                  <span className="text-xs leading-relaxed text-yellow-800">
-                    {t(`whatsappUnavailable.${kind as "split" | "rss"}`)}
-                  </span>
-                )}
               </span>
             </button>
           );
