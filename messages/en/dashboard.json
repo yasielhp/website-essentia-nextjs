@@ -1774,10 +1774,11 @@
         "title": "Which appointments",
         "servicesHelp": "Empty = all services.",
         "language": "Clients' language",
-        "languageHint": "With “All”, the language of the notice is chosen in the template step.",
+        "languageHint": "With “Both languages”, the language of the notice is chosen in the template step.",
         "reach": "{count} with appointment notices switched on",
         "note": "Only clients with appointment notices switched on and no opt-out receive the notice; the figure counts clients, not appointments.",
-        "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on her contact page, in the WhatsApp consent."
+        "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on her contact page, in the WhatsApp consent.",
+        "services": "Appointment services"
       }
     },
     "content": {
@@ -1871,7 +1872,8 @@
       "whatsappNoTemplate": "You have not chosen a template yet.",
       "whatsappConsentNote": "It also fires when the team records the consent from the contact's page (for example, when the client asked for it by phone).",
       "noConditionsAppointment": "Every client with appointment notices switched on",
-      "appointmentPace": "Each notice goes out up to 15 minutes later than the time indicated."
+      "appointmentPace": "Each notice goes out up to 15 minutes later than the time indicated.",
+      "emptyAppointment": "No client has appointment notices switched on right now. You can still activate the campaign: it will notify the appointments of whoever switches them on later."
     },
     "detail": {
       "sent": "Sent",

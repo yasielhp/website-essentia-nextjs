@@ -166,7 +166,7 @@ export function AppointmentWhen({
                   e.target.value === "" ? undefined : Number(e.target.value),
                 )
               }
-              className={`${INPUT_CLASS} w-28`}
+              className={`${INPUT_CLASS} max-w-28`}
             />
             <span className="text-petroleum-400 text-sm">{t("unit")}</span>
           </div>
@@ -185,7 +185,7 @@ export function AppointmentWhen({
           )}
         </div>
 
-        <div className="bg-petroleum-50 flex flex-col gap-2 rounded-xl px-4 py-3">
+        <div className="bg-sand-50 flex flex-col gap-2 rounded-xl px-4 py-3">
           <p
             id="campaign-appointment-sentence"
             aria-live="polite"

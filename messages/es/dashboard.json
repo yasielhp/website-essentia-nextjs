@@ -1774,10 +1774,11 @@
         "title": "A qué citas",
         "servicesHelp": "Vacío = todos los servicios.",
         "language": "Idioma de las clientas",
-        "languageHint": "Con «Todas», el idioma del aviso se elige en el paso de la plantilla.",
+        "languageHint": "Con «Ambos idiomas», el idioma del aviso se elige en el paso de la plantilla.",
         "reach": "{count} con avisos de la cita activados",
         "note": "Solo reciben el aviso las clientas con los avisos de la cita activados y sin baja; la cifra cuenta clientas, no citas.",
-        "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp."
+        "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp.",
+        "services": "Servicios de la cita"
       }
     },
     "content": {
@@ -1871,7 +1872,8 @@
       "whatsappNoTemplate": "Todavía no has elegido una plantilla.",
       "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono).",
       "noConditionsAppointment": "Todas las clientas con los avisos de la cita activados",
-      "appointmentPace": "Cada aviso sale con hasta 15 minutos de retraso sobre la hora indicada."
+      "appointmentPace": "Cada aviso sale con hasta 15 minutos de retraso sobre la hora indicada.",
+      "emptyAppointment": "Ahora mismo ninguna clienta tiene los avisos de la cita activados. Puedes activar la campaña igualmente: avisará de las citas de quien los active después."
     },
     "detail": {
       "sent": "Enviados",

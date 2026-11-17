@@ -49,7 +49,7 @@ export function AppointmentAudience({
             htmlFor="campaign-services"
             className="text-petroleum-500 text-xs font-medium"
           >
-            {t("services")}
+            {ta("services")}
           </label>
           <MultiOptionSelect
             id="campaign-services"
@@ -85,7 +85,7 @@ export function AppointmentAudience({
           <p className="text-petroleum-400 text-xs">{ta("languageHint")}</p>
         </div>
 
-        <div className="bg-petroleum-50 flex flex-col gap-2 rounded-xl px-4 py-3">
+        <div className="bg-sand-50 flex flex-col gap-2 rounded-xl px-4 py-3">
           <p
             aria-live="polite"
             className="text-petroleum-700 text-sm font-medium"

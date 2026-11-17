@@ -29,6 +29,7 @@ import { TypeStep } from "./type-step";
 import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
 import { ContentStep } from "./content-step";
+import { useAppointmentTrigger } from "../kind-line";
 import { TriggerStep, hasTriggerStep } from "./trigger-step";
 import { TemplateStep } from "./template-step";
 import { ReviewStep } from "./review-step";
@@ -69,6 +70,7 @@ export function CampaignForm({
   };
 }) {
   const t = useTranslations("dashboard.campaigns");
+  const appointmentTrigger = useAppointmentTrigger();
   const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
@@ -305,7 +307,10 @@ export function CampaignForm({
   }
 
   function confirmAudience() {
-    if (!state.reach || state.reach.count === 0) return;
+    if (!state.reach) return;
+    // An appointment notice may start with nobody: it notifies the
+    // appointments of whoever switches the notices on later.
+    if (state.reach.count === 0 && state.kind !== "appointment") return;
     complete(STEP_OF.audience);
   }
 
@@ -340,17 +345,23 @@ export function CampaignForm({
     state.step >= step && (editing === null || editing >= step);
   const folded = (step: Step) => state.step > step && editing !== step;
 
-  const audienceSummary = `${state.segmentName ?? t("segment.everyone")}${
-    state.reach ? ` (${state.reach.count})` : ""
-  }`;
+  const audienceSummary =
+    state.kind === "appointment"
+      ? state.reach
+        ? t("audience.appointment.reach", { count: state.reach.count })
+        : t("audience.appointment.title")
+      : `${state.segmentName ?? t("segment.everyone")}${
+          state.reach ? ` (${state.reach.count})` : ""
+        }`;
   const triggerSummary = state.trigger.event
-    ? `${t(`trigger.event.${triggerEventKey(state.trigger.event, state.channel)}`)}${
+    ? (appointmentTrigger(state.trigger) ??
+      `${t(`trigger.event.${triggerEventKey(state.trigger.event, state.channel)}`)}${
         state.trigger.event === "after_booking"
           ? ` · ${state.trigger.days ?? 0} ${t("trigger.daysAfter")}`
           : state.trigger.event === "first_visit"
             ? ` · ${t("trigger.hoursAfterFirstVisit", { hours: state.trigger.hours ?? 0 })}`
             : ""
-      }`
+      }`)
     : "";
   const chosenTemplateName =
     templates.status === "ready"

@@ -4,7 +4,7 @@ import { useRef, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconCalendar,
-  IconCalendarConnect,
+  IconBell,
   IconCheck,
   IconEdit,
   IconMail,
@@ -26,7 +26,7 @@ const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
   { kind: "split", icon: <IconEdit /> },
   { kind: "rss", icon: <IconWorld /> },
   { kind: "dateBased", icon: <IconCalendar /> },
-  { kind: "appointment", icon: <IconCalendarConnect /> },
+  { kind: "appointment", icon: <IconBell /> },
 ];
 
 /**

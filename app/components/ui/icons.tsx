@@ -779,3 +779,20 @@ export const IconChat = () => (
     />
   </svg>
 );
+
+export const IconBell = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15L6 17Z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10 21h4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
