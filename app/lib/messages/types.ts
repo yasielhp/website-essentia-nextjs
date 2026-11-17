@@ -21,6 +21,11 @@ export type MessageTemplateRowView = {
   whatsapp_template_id: string | null;
   whatsapp_params: WhatsAppParamSource[];
   updated_at: string;
+  /**
+   * The saved body was not a document: `doc` is null and the editor should say
+   * so instead of showing an empty message as if it were the admin's.
+   */
+  corrupt?: boolean;
 };
 
 /** What the code guarantees about one message (see `catalog.ts`). */

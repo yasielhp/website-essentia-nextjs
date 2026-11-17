@@ -10,6 +10,14 @@ import { findForbiddenNodes } from "./safe-doc";
 /**
  * What an admin may save for a message, over plain values.
  *
+ * SERVER ONLY. This module imports `safe-doc.ts` and, through the catalogue and
+ * the sample data, the email templates, which drag in the Maily renderer. Do
+ * NOT import it from a client component: it would put the renderer in the
+ * browser bundle. A client form that wants to validate validates the minimum
+ * (limits, the switch) with its own light functions, and the server action
+ * repeats the full check; if one needs this module's rules in the browser,
+ * extract a light version rather than importing this.
+ *
  * Pure, so the rules (and the exact error key each breach gets) are tested
  * rather than found out in the dashboard. Error values are keys under
  * `dashboard.validation`; the dashboard translates them. Anything the schema

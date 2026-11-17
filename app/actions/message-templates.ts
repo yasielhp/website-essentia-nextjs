@@ -17,6 +17,8 @@ import {
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type { MessageRow } from "@/lib/messages/compose";
+import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
+import { readRows } from "@/lib/messages/rows";
 import { toRowPayload, validateMessageTemplate } from "@/lib/messages/schema";
 import { buildTestEmail } from "@/lib/messages/test-email";
 import type {
@@ -106,8 +108,9 @@ export async function listMessageTemplates(accessToken: string | null): Promise<
     }));
     return {
       ok: true,
-      // The SDK types rows as `any`; the columns selected are the row type.
-      rows: (data ?? []) as MessageTemplateRowView[],
+      // Rows are read, not trusted: a corrupt body is flagged and a row for a
+      // key the catalogue does not know is left out.
+      rows: readRows((data ?? []) as unknown[]),
       defaults,
       catalog,
     };
@@ -229,36 +232,70 @@ export async function saveMessageTemplate(
 }
 
 /**
- * Deletes the saved version: the message goes back to the email (or the
- * default) it had before anyone edited it. Idempotent: resetting what was
- * never saved is a success.
+ * Restores a message to what it was before anyone edited it.
+ *
+ * A reminder the admin switched off stays off: its row is kept, emptied, with
+ * its switch (`kept: "disabled"`), because deleting it would turn the reminder
+ * back on without a word. Every other row is deleted. Idempotent: resetting
+ * what was never saved is a success with `removed: false`.
  */
 export async function resetMessageTemplate(
   accessToken: string | null,
   key: string,
   channel: string,
   locale: string,
-): Promise<{ ok: true } | Failure> {
+): Promise<{ ok: true; removed: boolean; kept: "disabled" | null } | Failure> {
+  let caller: AuthContext;
   try {
-    await admin(accessToken);
+    caller = await admin(accessToken);
   } catch (err) {
     return authFailure(err);
   }
   const address = addressSchema.safeParse({ key, channel, locale });
   if (!address.success) return { ok: false, error: "invalid" };
+  const target = address.data;
+  const db = getAdminClient().database;
+
   try {
-    const { error } = await getAdminClient()
-      .database.from("message_templates")
+    const found = await db
+      .from("message_templates")
+      .select("enabled")
+      .eq("key", target.key)
+      .eq("channel", target.channel)
+      .eq("locale", target.locale)
+      .maybeSingle();
+    if (found.error) return { ok: false, error: "db" };
+    const row = found.data as { enabled: boolean } | null;
+    const plan = resetPlan(target.key, target.channel, row);
+
+    if (plan === "none") return { ok: true, removed: false, kept: null };
+    if (plan === "clear") {
+      const { error } = await db
+        .from("message_templates")
+        .update({
+          ...CLEARED_COLUMNS,
+          updated_by: caller.userId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("key", target.key)
+        .eq("channel", target.channel)
+        .eq("locale", target.locale);
+      if (error) return { ok: false, error: "db" };
+      revalidatePath(PATH);
+      return { ok: true, removed: false, kept: "disabled" };
+    }
+    const { error } = await db
+      .from("message_templates")
       .delete()
-      .eq("key", address.data.key)
-      .eq("channel", address.data.channel)
-      .eq("locale", address.data.locale);
+      .eq("key", target.key)
+      .eq("channel", target.channel)
+      .eq("locale", target.locale);
     if (error) return { ok: false, error: "db" };
   } catch {
     return { ok: false, error: "db" };
   }
   revalidatePath(PATH);
-  return { ok: true };
+  return { ok: true, removed: true, kept: null };
 }
 
 /**
