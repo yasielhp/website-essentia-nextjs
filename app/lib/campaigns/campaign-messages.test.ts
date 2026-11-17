@@ -592,3 +592,14 @@ describe("activating asks first", () => {
     expect(locales.en["campaigns.review.confirmActivateYes"]).toBeTruthy();
   });
 });
+
+describe("saving an incomplete live campaign", () => {
+  test("the refusal asks for a pause, in both languages", () => {
+    expect(locales.es["campaigns.errors.pause_to_save"]).toBe(
+      "Pausa la campaña para guardarla incompleta.",
+    );
+    expect(locales.en["campaigns.errors.pause_to_save"]).toBe(
+      "Pause the campaign to save it incomplete.",
+    );
+  });
+});

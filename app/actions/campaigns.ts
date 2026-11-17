@@ -44,6 +44,7 @@ import {
   isSuppressionTableMissing,
   WHATSAPP_NOT_READY,
 } from "@/lib/campaigns/audience-reach";
+import { PAUSE_TO_SAVE, saveStrictness } from "@/lib/campaigns/save-mode";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import {
@@ -646,7 +647,21 @@ export async function saveCampaign(
     return authFailure(err);
   }
 
-  const check = options.draft ? validateCampaignDraft : validateCampaign;
+  // A loose "draft" save of a campaign that is active or scheduled would let
+  // it go out incomplete: for those the full rules apply, and a refusal asks
+  // for a pause. The state is read before validating, which is what decides.
+  let savedStatus: CampaignStatus | null = null;
+  if (options.draft && input.id) {
+    const { data } = await getAdminClient()
+      .database.from("campaigns")
+      .select("status")
+      .eq("id", input.id)
+      .maybeSingle();
+    savedStatus = (data as { status: CampaignStatus } | null)?.status ?? null;
+  }
+  const strictness = saveStrictness(options.draft === true, savedStatus);
+  const check =
+    strictness === "draft" ? validateCampaignDraft : validateCampaign;
   const validated = check({
     name: input.name,
     channel: input.channel,
@@ -656,7 +671,11 @@ export async function saveCampaign(
     content: input.content,
   });
   if (!validated.ok) {
-    return { ok: false, error: "invalid", fieldErrors: validated.errors };
+    return {
+      ok: false,
+      error: options.draft ? PAUSE_TO_SAVE : "invalid",
+      fieldErrors: validated.errors,
+    };
   }
 
   const db = getAdminClient().database;
@@ -675,7 +694,7 @@ export async function saveCampaign(
   // point at one that can be sent now, in the campaign's language, with the
   // parameters it declares. The form offers only such templates, but the
   // template may have been paused since, and the browser is not trusted.
-  if (!options.draft && validated.data.channel === "whatsapp") {
+  if (strictness === "full" && validated.data.channel === "whatsapp") {
     const block = validated.data.content.whatsapp;
     let template: Awaited<ReturnType<typeof loadWhatsAppTemplate>>;
     try {

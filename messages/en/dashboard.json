@@ -1975,7 +1975,8 @@
       "generic": "Something went wrong. Try again.",
       "no_phone": "Your profile has no phone number to send the test to.",
       "meta": "Meta rejected the request.",
-      "test_rate_limited": "You have sent too many tests; wait a little."
+      "test_rate_limited": "You have sent too many tests; wait a little.",
+      "pause_to_save": "Pause the campaign to save it incomplete."
     },
     "type": {
       "title": "Campaign type",

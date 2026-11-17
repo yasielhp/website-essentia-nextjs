@@ -1975,7 +1975,8 @@
       "generic": "Algo ha fallado. Inténtalo de nuevo.",
       "no_phone": "Tu perfil no tiene teléfono al que enviar la prueba.",
       "meta": "Meta rechazó la petición.",
-      "test_rate_limited": "Has enviado demasiadas pruebas; espera un poco."
+      "test_rate_limited": "Has enviado demasiadas pruebas; espera un poco.",
+      "pause_to_save": "Pausa la campaña para guardarla incompleta."
     },
     "type": {
       "title": "Tipo de campaña",
