@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { CampaignRow } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import {
+  ABANDON_AFTER_MS,
+  STUCK_AFTER_MS,
   abandonedMessage,
   dispatchCampaign,
   reconcileAllInterrupted,
@@ -560,6 +562,28 @@ describe("retryFailed", () => {
     expect(sender.calls).toHaveLength(12);
     expect(result).toMatchObject({ ok: true, sent: 12 });
     expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("reopens the campaign as a send just past the stuck window, never as one old enough to abandon", async () => {
+    const { mem, deps } = setup(2, {
+      campaign: campaign({ status: "sent" }),
+      rows: [{ id: "row-1", status: "failed", error: "Meta said no" }],
+    });
+    const before = Date.now();
+    await retryFailed("camp-1", {}, deps);
+    const reopen = mem.campaignWrites.find(
+      (patch) =>
+        patch.status === "sending" &&
+        typeof patch.sending_started_at === "string" &&
+        !("updated_at" in patch),
+    );
+    const reopenedAt = Date.parse(reopen?.sending_started_at as string);
+    // Stale enough for the resume claim that follows (and for the cron's, if
+    // this process dies before it)...
+    expect(reopenedAt).toBeLessThan(before - STUCK_AFTER_MS);
+    // ...and nowhere near the two hours after which the cron gives up on it.
+    expect(reopenedAt).toBeGreaterThan(before - STUCK_AFTER_MS - 5_000);
+    expect(Date.now() - reopenedAt).toBeLessThan(ABANDON_AFTER_MS);
   });
 
   test("an email campaign marked failed is still not retried", async () => {

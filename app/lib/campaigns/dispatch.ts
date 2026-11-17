@@ -647,11 +647,19 @@ export async function retryFailed(
   // Reopen first, requeue second: if the campaign is not a finished send the
   // reopen matches nothing, and requeued rows would otherwise sit in `queued`
   // with nobody coming back for them.
+  //
+  // Reopened as a send that went quiet a second past the stuck window: stale
+  // enough for the resume claim below, and for the cron's if this process dies
+  // before it, but two hours short of the age at which the cron gives up on a
+  // send. (The epoch, as it used to be, read as abandoned to a tick that looked
+  // in between.)
   const reopening = db
     .from("campaigns")
     .update({
       status: "sending",
-      sending_started_at: new Date(0).toISOString(),
+      sending_started_at: new Date(
+        Date.now() - STUCK_AFTER_MS - 1000,
+      ).toISOString(),
     })
     .eq("id", campaignId);
   // A WhatsApp send can also stop `failed` with rows still queued (Meta kept

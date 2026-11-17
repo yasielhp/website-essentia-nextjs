@@ -126,15 +126,32 @@ async function handle(request: NextRequest) {
         return dispatchCampaign(job.id, { resume: true, deadlineAt });
       case "abandon": {
         const row = stuckRows.find((r) => r.id === job.id);
-        await db
+        // Only the send this tick read: still `sending`, still unclaimed for
+        // two hours. One that a retry or a resume took in between, or that
+        // finished, matches nothing and is left as it is.
+        const { data: abandoned, error: abandonError } = await db
           .from("campaigns")
           .update({
             status: "failed",
             last_error: abandonedMessage(row?.last_error ?? null),
             updated_at: new Date().toISOString(),
           })
-          .eq("id", job.id);
-        return { abandoned: true };
+          .eq("id", job.id)
+          .eq("status", "sending")
+          .lt(
+            "sending_started_at",
+            new Date(now - ABANDON_AFTER_MS).toISOString(),
+          )
+          .select("id");
+        if (abandonError) {
+          console.error(
+            "[cron/campaigns] abandon failed:",
+            job.id,
+            abandonError,
+          );
+          return { abandoned: false, error: "update failed" };
+        }
+        return { abandoned: ((abandoned ?? []) as unknown[]).length > 0 };
       }
       case "automation": {
         const campaign = activeRows.find((c) => c.id === job.id) as CampaignRow;
