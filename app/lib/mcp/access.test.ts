@@ -53,6 +53,19 @@ describe("TOOL_ACCESS", () => {
     }
   });
 
+  it("has no tool that creates, changes, sends or activates a campaign", () => {
+    // WhatsApp campaigns spend money and the number's reputation and are run
+    // from the dashboard only; the assistant reads them. A tool added here
+    // for campaigns must be a reader.
+    const writers = Object.keys(TOOL_ACCESS).filter(
+      (name) =>
+        name.includes("campaign") &&
+        !name.startsWith("list_") &&
+        !name.startsWith("get_"),
+    );
+    expect(writers).toEqual([]);
+  });
+
   it("gives staff the day-to-day: bookings, services, contacts and the blog", () => {
     for (const name of [
       "list_services",

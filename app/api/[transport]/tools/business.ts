@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { json, defineTool, fail, type ToolServer } from "@/lib/mcp/tool";
 import { pagingShape, rangeOf } from "@/lib/mcp/paging";
+import { shapeCampaign, shapeCampaignListing } from "@/lib/mcp/campaign-shape";
 
 const db = () => getAdminClient().database;
 
@@ -69,7 +70,7 @@ export function registerBusinessTools(server: ToolServer): void {
     {
       title: "List Campaigns",
       description:
-        "List email campaigns, newest first: name, kind, status, schedule and the counters (recipients, delivered, opened, clicked, bounced). Use get_campaign for one in detail.",
+        "List campaigns, newest first: name, channel (email or whatsapp), kind, status, schedule and the counters (recipients, delivered, opened, clicked, bounced). For a WhatsApp campaign the opened counter is reported as read_count and there are no clicks. Use get_campaign for one in detail. Campaigns are read only here: WhatsApp campaigns are created, sent and activated from the dashboard.",
       inputSchema: {
         status: z.string().max(40).optional(),
         ...pagingShape,
@@ -79,7 +80,7 @@ export function registerBusinessTools(server: ToolServer): void {
       let query = db()
         .from("campaigns")
         .select(
-          "id, name, kind, status, scheduled_at, sent_at, recipients_count, delivered_count, opened_count, clicked_count, bounced_count",
+          "id, name, channel, kind, status, scheduled_at, sent_at, recipients_count, delivered_count, opened_count, clicked_count, bounced_count",
         );
       if (status) query = query.eq("status", status);
       const [from, to] = rangeOf(limit, offset);
@@ -87,7 +88,7 @@ export function registerBusinessTools(server: ToolServer): void {
         .order("created_at", { ascending: false })
         .range(from, to);
       if (error) return fail("Could not read the campaigns.");
-      return json(data ?? []);
+      return json(shapeCampaignListing(data ?? []));
     },
   );
 
@@ -97,60 +98,20 @@ export function registerBusinessTools(server: ToolServer): void {
     {
       title: "Get Campaign",
       description:
-        "One campaign: kind, status, schedule, trigger, audience filter, the full statistics with rates, and a summary of the content — the subject, preheader and title per language and how long the body is — not the body itself.",
+        "One campaign: channel (email or whatsapp), kind, status, schedule, trigger, audience filter and the full statistics with rates. An email has a summary of its content (the subject, preheader and title per language and how long the body is, not the body); a WhatsApp campaign has its template id and how many parameters it fills, never their values.",
       inputSchema: { id: z.string().uuid() },
     },
     async ({ id }) => {
       const { data, error } = await db()
         .from("campaigns")
         .select(
-          "id, name, kind, status, scheduled_at, sent_at, activated_at, last_run_at, trigger, audience, content, recipients_count, delivered_count, opened_count, clicked_count, bounced_count, complained_count, failed_count, last_error",
+          "id, name, channel, kind, status, scheduled_at, sent_at, activated_at, last_run_at, trigger, audience, content, recipients_count, delivered_count, opened_count, clicked_count, bounced_count, complained_count, failed_count, last_error",
         )
         .eq("id", id)
         .maybeSingle();
       if (error) return fail("Could not read the campaign.");
-      const c = data as unknown as {
-        content: Record<
-          string,
-          {
-            subject?: string;
-            preheader?: string;
-            title?: string;
-            doc?: unknown;
-          } | null
-        > | null;
-        recipients_count: number;
-        delivered_count: number;
-        opened_count: number;
-        clicked_count: number;
-        [key: string]: unknown;
-      } | null;
-      if (!c) return fail("No campaign has that id.");
-
-      const { content, ...rest } = c;
-      const rate = (n: number, of: number) =>
-        of > 0 ? Math.round((n / of) * 1000) / 10 : null;
-      return json({
-        ...rest,
-        rates_percent: {
-          delivered: rate(c.delivered_count, c.recipients_count),
-          opened: rate(c.opened_count, c.delivered_count),
-          clicked: rate(c.clicked_count, c.delivered_count),
-        },
-        content_summary: Object.fromEntries(
-          Object.entries(content ?? {}).map(([lang, block]) => [
-            lang,
-            {
-              subject: block?.subject ?? null,
-              preheader: block?.preheader ?? null,
-              title: block?.title ?? null,
-              body_characters: block?.doc
-                ? JSON.stringify(block.doc).length
-                : 0,
-            },
-          ]),
-        ),
-      });
+      if (!data) return fail("No campaign has that id.");
+      return json(shapeCampaign(data as Record<string, unknown>));
     },
   );
 
