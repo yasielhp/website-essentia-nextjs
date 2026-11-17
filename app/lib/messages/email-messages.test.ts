@@ -141,9 +141,7 @@ describe("the Emails tab strings", () => {
         "consent",
         "nothing",
         "languages",
-        "languagesReminder",
         "stop",
-        "reminderFirst",
         "noButtons",
       ]) {
         expect(messages[`messages.email.whatsapp.rules.${rule}`]).toBeTruthy();
@@ -160,9 +158,6 @@ describe("the Emails tab strings", () => {
     expect(LOCALES.en["messages.email.whatsapp.templatesFailed"]).toBeTruthy();
     expect(LOCALES.es["messages.email.whatsapp.rules.stop"]).toContain("BAJA");
     expect(LOCALES.en["messages.email.whatsapp.rules.stop"]).toContain("STOP");
-    expect(LOCALES.es["messages.email.whatsapp.rules.reminderFirst"]).toContain(
-      "40-56",
-    );
   });
 
   it("the card has no STOP-list string nothing reads", () => {

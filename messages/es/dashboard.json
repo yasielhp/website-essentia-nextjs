@@ -1725,7 +1725,8 @@
         "preview": "Así lo verá el cliente",
         "previewNote": "Con datos de ejemplo.",
         "confirm": "Confirmar mensaje",
-        "chosen": "Plantilla elegida"
+        "chosen": "Plantilla elegida",
+        "appointmentCategoryHint": "Para avisos de cita lo recomendable es la categoría Utilidad: Marketing cuesta más por mensaje."
       }
     },
     "audience": {
@@ -1768,7 +1769,16 @@
       "bookingsBooked": "Ha reservado al menos una vez",
       "bookingsNever": "Nunca ha reservado",
       "reachWhatsApp": "{count} con WhatsApp autorizado (novedades y ofertas)",
-      "reachWhatsAppNote": "Solo entran los contactos que aceptaron recibir novedades y ofertas por WhatsApp, con un teléfono válido y sin haberse dado de baja."
+      "reachWhatsAppNote": "Solo entran los contactos que aceptaron recibir novedades y ofertas por WhatsApp, con un teléfono válido y sin haberse dado de baja.",
+      "appointment": {
+        "title": "A qué citas",
+        "servicesHelp": "Vacío = todos los servicios.",
+        "language": "Idioma de las clientas",
+        "languageHint": "Con «Todas», el idioma del aviso se elige en el paso de la plantilla.",
+        "reach": "{count} con avisos de la cita activados",
+        "note": "Solo reciben el aviso las clientas con los avisos de la cita activados y sin baja; la cifra cuenta clientas, no citas.",
+        "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, en el consentimiento de WhatsApp."
+      }
     },
     "content": {
       "title": "Qué dice",
@@ -1859,7 +1869,9 @@
       "whatsappPace": "Se envían unos {count} mensajes por ejecución, una cada 15 minutos. Las listas grandes continúan solas.",
       "whatsappTestHint": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla.",
       "whatsappNoTemplate": "Todavía no has elegido una plantilla.",
-      "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono)."
+      "whatsappConsentNote": "También se dispara si el equipo marca el consentimiento desde la ficha del contacto (por ejemplo, cuando la clienta lo pidió por teléfono).",
+      "noConditionsAppointment": "Todas las clientas con los avisos de la cita activados",
+      "appointmentPace": "Cada aviso sale con hasta 15 minutos de retraso sobre la hora indicada."
     },
     "detail": {
       "sent": "Enviados",
@@ -1915,7 +1927,8 @@
         "skippedNoEmail": "Omitido: no tiene email",
         "skippedSuppressed": "Omitido: ese número escribió STOP",
         "skippedOther": "Omitido: {reason}"
-      }
+      },
+      "columnsAppointment": "Cita"
     },
     "errors": {
       "not_claimable": "Esta campaña ya se está enviando o ya se envió.",
@@ -1957,7 +1970,10 @@
       "channelEmail": "Email",
       "channelWhatsApp": "WhatsApp",
       "channelHint": "WhatsApp solo escribe a quien aceptó recibir novedades y ofertas por ese canal, con una plantilla aprobada por Meta.",
-      "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro."
+      "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro.",
+      "appointment": "Aviso de cita",
+      "appointmentDesc": "Un mensaje de WhatsApp antes o después de cada cita: recordatorio, cuidados, reseña. Solo a quien aceptó los avisos de la cita.",
+      "kindLocked": "Una campaña guardada no puede pasar a ser un Aviso de cita ni dejar de serlo: cuenta citas, no listas."
     },
     "segment": {
       "title": "Segmento",
@@ -1994,7 +2010,9 @@
         "first_booking_anniversary": "En el aniversario de la primera reserva",
         "new_blog_post": "Se publica una entrada nueva en el blog",
         "first_visit": "Tras la primera visita",
-        "newsletter_subscribedWhatsApp": "Cuando acepta recibir novedades por WhatsApp"
+        "newsletter_subscribedWhatsApp": "Cuando acepta recibir novedades por WhatsApp",
+        "before_visit": "Antes de cada cita",
+        "after_visit": "Después de cada cita"
       },
       "eventDesc": {
         "newsletter_subscribed": "Se envía una vez, poco después de apuntarse.",
@@ -2008,7 +2026,23 @@
       },
       "tier": "Tipo de sesión",
       "tierAny": "Cualquiera",
-      "tierHint": "Solo cuenta la primera visita de este tipo de sesión. Con \"Cualquiera\", la primera visita de cualquier tipo."
+      "tierHint": "Solo cuenta la primera visita de este tipo de sesión. Con \"Cualquiera\", la primera visita de cualquier tipo.",
+      "appointment": {
+        "side": "Cuándo",
+        "before": "Antes de la cita",
+        "after": "Después de la cita",
+        "hoursBefore": "Horas antes de que empiece la cita",
+        "hoursAfter": "Horas después de que termine la cita",
+        "unit": "h",
+        "shortcuts": "Atajos",
+        "sentenceBefore": "Se enviará {hours} h antes de cada cita.",
+        "sentenceAfter": "Se enviará {hours} h después de que termine cada cita.",
+        "sentenceInvalid": "Indica un número entero de horas entre {min} y {max}.",
+        "rules": "Una vez por cita. Solo a las citas confirmadas (antes) o confirmadas y completadas (después), y solo a las citas cuyo aviso llegue después de activar la campaña: no se avisa de citas pasadas ni de las que ya están dentro del plazo.",
+        "delay": "El aviso puede salir con hasta 15 minutos de retraso respecto a la hora indicada.",
+        "shortBefore": "{hours} h antes de la cita",
+        "shortAfter": "{hours} h después de la cita"
+      }
     },
     "segments": {
       "title": "Segmentos",
@@ -2283,9 +2317,10 @@
         "note": "Se envía siempre en español: la reserva no guarda el idioma del cliente.",
         "switch": "Activo",
         "hintOn": "Se envía un recordatorio por correo antes de cada cita.",
-        "hintOff": "Apagado: no se envía el recordatorio por correo. El de WhatsApp es independiente: se quita en su propia fila.",
+        "hintOff": "Apagado: no se envía el recordatorio por correo.",
         "turnedOn": "Recordatorio por correo activado",
-        "turnedOff": "Recordatorio por correo apagado. El de WhatsApp es independiente."
+        "turnedOff": "Recordatorio por correo apagado",
+        "forWhatsApp": "Para recordatorios por WhatsApp, crea un Aviso de cita en Campañas."
       },
       "corrupt": "El texto guardado está dañado y no se puede abrir. Restablécelo para empezar de nuevo.",
       "variables": {
@@ -2396,16 +2431,13 @@
         "removed": "WhatsApp quitado de este mensaje",
         "when": {
           "booking_confirmed": "Se envía cuando el equipo confirma la reserva.",
-          "booking_paid": "Se envía solo con el primer pago de la reserva.",
-          "booking_reminder": "Se envía una vez por reserva, de 40 a 56 horas antes de la cita."
+          "booking_paid": "Se envía solo con el primer pago de la reserva."
         },
         "rules": {
           "consent": "Solo reciben el mensaje las clientas que marcaron «avisos de la cita» y no han escrito BAJA. Quedan fuera los números a los que Meta no pudo entregar un mensaje y los que escribieron BAJA aunque otra ficha los tenga marcados: la lista de bajas es por número.",
           "nothing": "Si no hay plantilla configurada para el idioma de la reserva, no se envía nada.",
           "languages": "Hace falta una plantilla para cada idioma. Cada reserva se envía en el idioma con el que se hizo o, si no consta, en el de la ficha del contacto, y un contacto sin idioma elegido figura como inglés: conviene configurar también el inglés.",
-          "languagesReminder": "El recordatorio sale en el idioma de la ficha del contacto; si no hay ficha, en español. Un contacto sin idioma elegido figura como inglés: conviene configurar también el inglés.",
           "stop": "Incluye en el texto de la plantilla una frase como «Responde BAJA para dejar de recibir estos avisos».",
-          "reminderFirst": "Al guardar la primera plantilla de recordatorio de este idioma, las reservas de las próximas 40-56 horas cuyo recordatorio por correo todavía no salió también lo recibirán.",
           "noButtons": "No se ofrecen las plantillas con un botón de enlace variable: este envío no rellena botones."
         },
         "editor": {
@@ -2440,7 +2472,9 @@
           "discardYes": "Descartar cambios",
           "discardNo": "Seguir editando"
         },
-        "templatesFailed": "No se pudieron leer las plantillas de WhatsApp, así que no se pueden configurar ni comprobar."
+        "templatesFailed": "No se pudieron leer las plantillas de WhatsApp, así que no se pueden configurar ni comprobar.",
+        "campaignNote": "Los recordatorios y avisos posteriores a la cita se configuran en Campañas > Aviso de cita.",
+        "campaignLink": "Crear un Aviso de cita"
       }
     }
   },

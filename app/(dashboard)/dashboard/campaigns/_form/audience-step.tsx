@@ -9,7 +9,7 @@ import { bookableServices } from "@/data/services-data";
 import { MultiOptionSelect } from "@/components/ui/multi-option-select";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { Button } from "@/components/ui/button";
-import { listSegments, previewAudience } from "@/actions/campaigns";
+import { listSegments } from "@/actions/campaigns";
 import {
   EMPTY_AUDIENCE,
   type CampaignAudience,
@@ -17,7 +17,9 @@ import {
   type SegmentConditions,
   type SegmentList,
 } from "@/types/campaign";
+import { AppointmentAudience } from "./appointment-audience";
 import type { FormAction, FormState } from "./form-state";
+import { useAudienceReach } from "./use-audience-reach";
 
 const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
   { value: "any", key: "languageAny" },
@@ -25,7 +27,7 @@ const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
   { value: "es", key: "languageEs" },
 ];
 
-const SERVICE_OPTIONS = bookableServices.map((service) => ({
+export const SERVICE_OPTIONS = bookableServices.map((service) => ({
   value: service.id,
   label: service.title,
 }));
@@ -239,22 +241,35 @@ export function AudienceConditions({
  * The count comes from the same resolver the send uses, so the number the
  * admin reads here is the number of emails that will go out.
  */
-export function AudienceStep({
+export function AudienceStep(props: {
+  state: FormState;
+  dispatch: Dispatch<FormAction>;
+  /** Confirms the audience as it stands and opens the next step. */
+  onDone: () => void;
+}) {
+  // An appointment notice has no list to choose from: its own, simpler step.
+  return props.state.kind === "appointment" ? (
+    <AppointmentAudience {...props} />
+  ) : (
+    <ListAudienceStep {...props} />
+  );
+}
+
+function ListAudienceStep({
   state,
   dispatch,
   onDone,
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
-  /** Confirms the audience as it stands and opens the next step. */
   onDone: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.audience");
   const tSeg = useTranslations("dashboard.campaigns.segment");
-  const { audience, reach, submitting, segmentId, channel } = state;
+  const { reach, submitting, segmentId, channel } = state;
 
   const [list, setList] = useState<SegmentList | null>(null);
-  const [counting, setCounting] = useState(false);
+  const counting = useAudienceReach(state, dispatch);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,37 +284,6 @@ export function AudienceStep({
     // The counts are per channel: a WhatsApp campaign reaches only those who
     // consented to WhatsApp.
   }, [channel]);
-
-  // Every change re-counts, after a short pause so a quick succession of
-  // picks costs one request rather than one each.
-  const audienceKey = JSON.stringify(audience);
-  useEffect(() => {
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      setCounting(true);
-      void previewAudience(getAccessToken(), JSON.parse(audienceKey), channel)
-        .catch(() => ({ ok: false as const, error: "generic" }))
-        .then((result) => {
-          if (cancelled) return;
-          setCounting(false);
-          dispatch({
-            type: "SET_REACH",
-            reach:
-              "count" in result
-                ? {
-                    count: result.count,
-                    en: result.byLanguage.en,
-                    es: result.byLanguage.es,
-                  }
-                : { count: 0, en: 0, es: 0 },
-          });
-        });
-    }, 400);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [audienceKey, channel, dispatch]);
 
   const segments = list?.segments ?? [];
   const selected = segments.find((s) => s.id === segmentId) ?? null;

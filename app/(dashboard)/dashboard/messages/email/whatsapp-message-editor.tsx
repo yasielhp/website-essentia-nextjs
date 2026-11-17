@@ -19,7 +19,6 @@ import { fitParams, sampleParams } from "@/lib/campaigns/whatsapp-form";
 import type { MessageKey } from "@/lib/messages/catalog";
 import type { MessageTemplateRowView } from "@/lib/messages/types";
 import {
-  isFirstReminderSetup,
   messageParamFields,
   messageTemplateChoices,
   whatsappRowState,
@@ -80,7 +79,6 @@ export function WhatsAppMessageEditor({
   messageKey,
   locale,
   saved,
-  allRows,
   templates,
   canTest,
   onClose,
@@ -89,8 +87,6 @@ export function WhatsAppMessageEditor({
   messageKey: MessageKey;
   locale: Locale;
   saved: MessageTemplateRowView | null;
-  /** Every saved row, to know whether this would be the first reminder. */
-  allRows: MessageTemplateRowView[];
   templates: WhatsAppTemplateRow[];
   /** False when the server has no WhatsApp account to send through. */
   canTest: boolean;
@@ -144,17 +140,6 @@ export function WhatsAppMessageEditor({
   const dirty =
     templateId !== initial.templateId ||
     JSON.stringify(params) !== JSON.stringify(initial.params);
-  const firstReminder =
-    messageKey === "booking_reminder" &&
-    isFirstReminderSetup(
-      allRows.map((r) => ({
-        key: r.key,
-        channel: r.channel,
-        locale: r.locale,
-        whatsapp_template_id: r.whatsapp_template_id,
-      })),
-      locale,
-    );
   const language = tEmail(`locales.${locale}`);
 
   function pick(id: string) {
@@ -253,27 +238,10 @@ export function WhatsAppMessageEditor({
           </p>
           <p>{t("rules.consent")}</p>
           <p>{t("rules.nothing")}</p>
-          {/* The reminder reads the contact's language alone; the other two
-              also know the language the booking was made in. */}
-          <p>
-            {t(
-              messageKey === "booking_reminder"
-                ? "rules.languagesReminder"
-                : "rules.languages",
-            )}
-          </p>
+          <p>{t("rules.languages")}</p>
           <p>{t("rules.stop")}</p>
           <p>{t("rules.noButtons")}</p>
         </div>
-
-        {firstReminder && (
-          <p
-            role="note"
-            className="rounded-xl bg-yellow-50 px-4 py-3 text-xs text-yellow-800"
-          >
-            {t("rules.reminderFirst")}
-          </p>
-        )}
 
         <div className="flex flex-col gap-1.5">
           <label

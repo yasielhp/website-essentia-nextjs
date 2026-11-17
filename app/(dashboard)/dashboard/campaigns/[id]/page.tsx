@@ -30,6 +30,7 @@ import { CampaignStatusBadge, RecipientStatusBadge } from "../status-badge";
 import { rate, sentCount } from "../campaign-table";
 import { triggerEventKey } from "@/lib/campaigns/whatsapp-form";
 import { ChannelChip } from "../channel-chip";
+import { useAppointmentTrigger } from "../kind-line";
 import {
   describeLastError,
   reportTiles,
@@ -83,6 +84,7 @@ const POLL_WHILE_SENDING_MS = 5_000;
  */
 export default function CampaignDetailPage() {
   const t = useTranslations("dashboard.campaigns");
+  const appointmentTrigger = useAppointmentTrigger();
   const tToasts = useTranslations("dashboard.toasts");
   const notifySend = useSendNoticeToast();
   const locale = useDashboardLocale();
@@ -233,9 +235,11 @@ export default function CampaignDetailPage() {
             {isAutomatedKind(campaign.kind) && campaign.trigger.event
               ? [
                   t(`type.${campaign.kind}`),
-                  t(
-                    `trigger.event.${triggerEventKey(campaign.trigger.event, campaign.channel)}`,
-                  ),
+                  // An appointment notice says its own when: "48 h before".
+                  appointmentTrigger(campaign.trigger) ??
+                    t(
+                      `trigger.event.${triggerEventKey(campaign.trigger.event, campaign.channel)}`,
+                    ),
                   campaign.trigger.event === "after_booking"
                     ? `${campaign.trigger.days ?? 0} ${t("trigger.daysAfter")}`
                     : campaign.trigger.event === "first_visit"
@@ -527,6 +531,7 @@ export default function CampaignDetailPage() {
         recipients={recipients}
         locale={locale}
         channel={campaign.channel}
+        kind={campaign.kind}
       />
     </div>
   );

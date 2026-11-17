@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
@@ -150,6 +151,18 @@ export function WhatsAppRows({
           </tr>
         );
       })}
+      {/* The reminder and what follows an appointment are not set up here. */}
+      <tr className="border-sand-100 bg-sand-50/50 border-b last:border-0">
+        <td colSpan={4} className="text-petroleum-400 px-5 py-2.5 text-xs">
+          {tWa("campaignNote")}{" "}
+          <Link
+            href="/dashboard/campaigns/new"
+            className="text-petroleum-700 font-medium underline underline-offset-2"
+          >
+            {tWa("campaignLink")}
+          </Link>
+        </td>
+      </tr>
     </>
   );
 }

@@ -271,7 +271,6 @@ export function EmailPanel() {
                 r.locale === waEditing.locale,
             ) ?? null
           }
-          allRows={state.rows}
           templates={templateRows}
           canTest={waTemplates.status === "ready" && waTemplates.configured}
           onClose={() => setWaEditing(null)}

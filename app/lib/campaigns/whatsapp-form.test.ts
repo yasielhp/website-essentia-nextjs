@@ -5,6 +5,7 @@ import {
   fieldAvailable,
   fitParams,
   kindAllowedForChannel,
+  kindGridClass,
   kindsForChannel,
   partitionTemplates,
   sampleParams,
@@ -276,5 +277,90 @@ describe("triggerEventKey", () => {
     ] as const) {
       expect(triggerEventKey(event, "whatsapp")).toBe(event);
     }
+  });
+});
+
+describe("an appointment notice", () => {
+  const before = { event: "before_visit" as const, hours: 48 };
+  const after = { event: "after_visit" as const, hours: 2 };
+
+  test("is a kind only WhatsApp offers", () => {
+    expect(kindAllowedForChannel("appointment", "whatsapp")).toBe(true);
+    expect(kindAllowedForChannel("appointment", "email")).toBe(false);
+    const all = [
+      "standard",
+      "automated",
+      "autoresponder",
+      "split",
+      "rss",
+      "dateBased",
+      "appointment",
+    ] as const;
+    expect(kindsForChannel(all, "whatsapp")).toEqual([
+      "standard",
+      "automated",
+      "autoresponder",
+      "dateBased",
+      "appointment",
+    ]);
+    expect(kindsForChannel(all, "email")).not.toContain("appointment");
+  });
+
+  test("talks about THAT appointment: service, session type, date and time exist", () => {
+    for (const trigger of [before, after]) {
+      expect(visitFieldsExist("appointment", trigger)).toBe(true);
+      for (const field of [
+        "service",
+        "session_type",
+        "date",
+        "time",
+      ] as const) {
+        expect(fieldAvailable(field, "appointment", trigger)).toBe(true);
+      }
+    }
+  });
+
+  test("so none of its parameters reads as a dash", () => {
+    const params: WhatsAppParamSource[] = [
+      field({ kind: "field", field: "first_name" }),
+      field({ kind: "field", field: "service" }),
+      field({ kind: "field", field: "date" }),
+      field({ kind: "field", field: "time" }),
+    ];
+    expect(unavailableParams(params, "appointment", before)).toEqual([]);
+  });
+
+  test("the post's title and link are never offered, nor available", () => {
+    expect(PARAM_FIELDS).not.toContain("post_title");
+    expect(fieldAvailable("post_url", "appointment", before)).toBe(false);
+    expect(fieldAvailable("post_title", "appointment", after)).toBe(false);
+  });
+
+  test("the sample shows a real date and time, as it will send", () => {
+    const out = sampleParams(
+      [field({ kind: "field", field: "time" })],
+      "es",
+      "appointment",
+      before,
+      new Date(2026, 11, 14),
+    );
+    expect(out).toEqual(["10:30"]);
+  });
+});
+
+describe("kindGridClass", () => {
+  test("four cards split in two columns, never three with one alone", () => {
+    expect(kindGridClass(4)).toBe("grid-cols-1 sm:grid-cols-2");
+  });
+  test("five: the last card takes the row on two columns and a column on three", () => {
+    const cls = kindGridClass(5);
+    expect(cls).toContain("xl:grid-cols-3");
+    expect(cls).toContain("sm:[&>*:last-child]:col-span-2");
+    expect(cls).toContain("xl:[&>*:last-child]:col-span-1");
+  });
+  test("six are three by two, and every count is one column on a phone", () => {
+    expect(kindGridClass(6)).toBe("grid-cols-1 sm:grid-cols-2 xl:grid-cols-3");
+    for (const n of [4, 5, 6])
+      expect(kindGridClass(n).startsWith("grid-cols-1")).toBe(true);
   });
 });

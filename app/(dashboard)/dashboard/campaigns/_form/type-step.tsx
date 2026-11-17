@@ -4,13 +4,15 @@ import { useRef, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconCalendar,
+  IconCalendarConnect,
   IconCheck,
   IconEdit,
   IconMail,
   IconSettings,
   IconWorld,
 } from "@/components/ui/icons";
-import { kindsForChannel } from "@/lib/campaigns/whatsapp-form";
+import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
+import { kindGridClass, kindsForChannel } from "@/lib/campaigns/whatsapp-form";
 import { radioTarget } from "@/lib/radio-nav";
 import type { CampaignChannel, CampaignKind } from "@/types/campaign";
 import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
@@ -24,6 +26,7 @@ const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
   { kind: "split", icon: <IconEdit /> },
   { kind: "rss", icon: <IconWorld /> },
   { kind: "dateBased", icon: <IconCalendar /> },
+  { kind: "appointment", icon: <IconCalendarConnect /> },
 ];
 
 /**
@@ -51,6 +54,10 @@ export function TypeStep({
   // Only the kinds this channel can be; the others are not shown at all.
   const visible = kindsForChannel(AVAILABLE_KINDS, state.channel);
   const shown = KINDS.filter(({ kind }) => visible.includes(kind));
+  // And a saved campaign cannot become an appointment notice, or stop being one.
+  const kindLocked = (kind: CampaignKind) =>
+    state.id !== null && !kindSwitchAllowed(state.savedKind, kind);
+  const anyKindLocked = shown.some(({ kind }) => kindLocked(kind));
   const radios = useRef<(HTMLButtonElement | null)[]>([]);
 
   /** Arrows move the choice and the focus together, as a radio group does. */
@@ -113,14 +120,13 @@ export function TypeStep({
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
         {t("title")}
       </h2>
-      <div
-        className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
-          // Four cards in three columns leave one alone on a second row.
-          shown.length === 4 ? "" : "xl:grid-cols-3"
-        }`}
-      >
+      {anyKindLocked && (
+        <p className="text-petroleum-400 mb-3 text-xs">{t("kindLocked")}</p>
+      )}
+      <div className={`grid gap-3 ${kindGridClass(shown.length)}`}>
         {shown.map(({ kind, icon }) => {
-          const available = AVAILABLE_KINDS.includes(kind);
+          const implemented = AVAILABLE_KINDS.includes(kind);
+          const available = implemented && !kindLocked(kind);
           const active = state.kind === kind;
           return (
             <button
@@ -157,7 +163,7 @@ export function TypeStep({
                   <span className="text-petroleum-700 text-sm font-semibold">
                     {t(kind)}
                   </span>
-                  {!available && (
+                  {!implemented && (
                     <span className="bg-sand-100 text-petroleum-400 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
                       {t("comingSoon")}
                     </span>

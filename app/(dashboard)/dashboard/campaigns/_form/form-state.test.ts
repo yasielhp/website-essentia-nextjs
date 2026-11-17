@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { CampaignRow } from "@/types/campaign";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
 import {
+  AVAILABLE_KINDS,
   contentOf,
   formReducer,
   initialFormState,
@@ -248,5 +249,107 @@ describe("reachIn", () => {
   });
   test("no count is still no count", () => {
     expect(reachIn(null, EMPTY_AUDIENCE)).toBeNull();
+  });
+});
+
+describe("the appointment notice kind", () => {
+  const onWhatsApp: FormState = { ...initialFormState, channel: "whatsapp" };
+
+  test("is a kind the form can build", () => {
+    expect(AVAILABLE_KINDS).toContain("appointment");
+  });
+
+  test("choosing it starts from its own trigger", () => {
+    const after = formReducer(onWhatsApp, {
+      type: "SET_KIND",
+      kind: "appointment",
+    });
+    expect(after.kind).toBe("appointment");
+    expect(after.trigger).toEqual({ event: "before_visit", hours: 24 });
+  });
+
+  test("and from the simple audience: no segment, nobody by hand, no booking filters", () => {
+    const messy: FormState = {
+      ...onWhatsApp,
+      segmentId: "seg",
+      segmentName: "Antiguas",
+      pickedContacts: [{ id: "c1", name: "Ana", email: "a@x.com" }],
+      reach: { count: 9, en: 3, es: 6 },
+      audience: {
+        ...EMPTY_AUDIENCE,
+        language: "es",
+        newsletter: true,
+        services: ["yoga"],
+        lastBooking: { op: "gt", days: 30 },
+        neverBooked: false,
+        hasBooked: true,
+        manualIds: ["c1"],
+        sendLocale: "es",
+      },
+    };
+    const after = formReducer(messy, { type: "SET_KIND", kind: "appointment" });
+    expect(after.segmentId).toBeNull();
+    expect(after.segmentName).toBeNull();
+    expect(after.pickedContacts).toEqual([]);
+    expect(after.reach).toBeNull();
+    expect(after.audience).toEqual({
+      ...EMPTY_AUDIENCE,
+      language: "any",
+      sendLocale: "es",
+    });
+  });
+
+  test("is refused for an email", () => {
+    const email: FormState = { ...initialFormState, channel: "email" };
+    expect(formReducer(email, { type: "SET_KIND", kind: "appointment" })).toBe(
+      email,
+    );
+  });
+
+  test("switching the channel to email takes the form back to a kind an email can be", () => {
+    const state = formReducer(onWhatsApp, {
+      type: "SET_KIND",
+      kind: "appointment",
+    });
+    const after = formReducer(state, { type: "SET_CHANNEL", channel: "email" });
+    expect(after.kind).toBe("standard");
+    expect(after.trigger).toEqual({});
+  });
+
+  test("a saved campaign cannot become one", () => {
+    const saved = load(whatsappCampaign({ kind: "standard", trigger: {} }));
+    expect(formReducer(saved, { type: "SET_KIND", kind: "appointment" })).toBe(
+      saved,
+    );
+  });
+
+  test("a saved one cannot stop being one, but stays one", () => {
+    const saved = load(
+      whatsappCampaign({
+        kind: "appointment",
+        trigger: { event: "after_visit", hours: 2 },
+      }),
+    );
+    expect(saved.savedKind).toBe("appointment");
+    expect(formReducer(saved, { type: "SET_KIND", kind: "standard" })).toBe(
+      saved,
+    );
+    expect(
+      formReducer(saved, { type: "SET_KIND", kind: "appointment" }).trigger,
+    ).toEqual({
+      event: "after_visit",
+      hours: 2,
+    });
+  });
+
+  test("a saved ordinary campaign still changes among the ordinary kinds", () => {
+    const saved = load(whatsappCampaign({ kind: "standard", trigger: {} }));
+    expect(
+      formReducer(saved, { type: "SET_KIND", kind: "automated" }).kind,
+    ).toBe("automated");
+  });
+
+  test("a new campaign remembers no saved kind", () => {
+    expect(initialFormState.savedKind).toBeNull();
   });
 });

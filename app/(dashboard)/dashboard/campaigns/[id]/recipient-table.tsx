@@ -4,8 +4,13 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { formatMediumDate, type SupportedLocale } from "@/utils/format";
+import { appointmentLabel } from "@/lib/campaigns/appointment-form";
 import { describeRecipientError } from "@/lib/campaigns/report";
-import type { CampaignChannel, CampaignRecipientRow } from "@/types/campaign";
+import type {
+  CampaignChannel,
+  CampaignKind,
+  CampaignRecipientRow,
+} from "@/types/campaign";
 import { RecipientStatusBadge } from "../status-badge";
 
 /** The most recent thing that happened to this recipient. */
@@ -27,14 +32,19 @@ export function RecipientTable({
   recipients,
   locale,
   channel = "email",
+  kind,
 }: {
   recipients: CampaignRecipientRow[];
   locale: SupportedLocale;
   channel?: CampaignChannel;
+  kind?: CampaignKind;
 }) {
   const t = useTranslations("dashboard.campaigns.detail");
   const tNotes = useTranslations("dashboard.campaigns.detail.notes");
   const whatsapp = channel === "whatsapp";
+  // One client can get several notices from one campaign, one per appointment:
+  // the appointment is what tells the rows apart.
+  const appointment = kind === "appointment";
 
   /** The error column: our words for what the send marked, Meta's as they came. */
   const errorText = (error: string | null): string => {
@@ -92,6 +102,7 @@ export function RecipientTable({
                 {(
                   [
                     whatsapp ? "phone" : "email",
+                    ...(appointment ? (["appointment"] as const) : []),
                     "language",
                     "status",
                     "date",
@@ -104,7 +115,9 @@ export function RecipientTable({
                   >
                     {column === "phone"
                       ? t("columnsPhone")
-                      : t(`columns.${column}`)}
+                      : column === "appointment"
+                        ? t("columnsAppointment")
+                        : t(`columns.${column}`)}
                   </th>
                 ))}
               </tr>
@@ -118,6 +131,11 @@ export function RecipientTable({
                   <td className="text-petroleum-700 px-6 py-3 font-medium">
                     {whatsapp ? (row.phone ?? "—") : (row.email ?? row.phone)}
                   </td>
+                  {appointment && (
+                    <td className="text-petroleum-500 px-6 py-3 text-xs">
+                      {appointmentLabel(row.vars) ?? "—"}
+                    </td>
+                  )}
                   <td className="text-petroleum-500 px-6 py-3 uppercase">
                     {row.language}
                   </td>

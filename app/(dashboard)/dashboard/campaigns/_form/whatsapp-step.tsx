@@ -193,6 +193,11 @@ export function WhatsAppStep({
                     {templateError}
                   </p>
                 )}
+                {kind === "appointment" && (
+                  <p className="text-petroleum-400 text-xs">
+                    {t("appointmentCategoryHint")}
+                  </p>
+                )}
               </div>
             )}
 

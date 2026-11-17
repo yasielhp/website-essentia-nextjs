@@ -3,7 +3,6 @@ import { template } from "@/lib/campaigns/whatsapp-fixtures";
 import {
   WHATSAPP_MESSAGE_KEYS,
   hasDynamicUrlButton,
-  isFirstReminderSetup,
   messageParamFields,
   messageTemplateChoices,
   whatsappRowState,
@@ -174,55 +173,5 @@ describe("whatsappRowState", () => {
 
   it("when the templates could not be read the state is unknown, not invalid", () => {
     expect(whatsappRowState(saved(), null, "es")).toEqual({ kind: "unknown" });
-  });
-});
-
-describe("isFirstReminderSetup", () => {
-  const row = (
-    key: string,
-    id: string | null,
-    channel = "whatsapp",
-    locale = "es",
-  ) => ({
-    key,
-    channel,
-    locale,
-    whatsapp_template_id: id,
-  });
-
-  it("with no WhatsApp reminder saved, saving one is the first", () => {
-    expect(isFirstReminderSetup([], "es")).toBe(true);
-    expect(isFirstReminderSetup([row("booking_confirmed", "t")], "es")).toBe(
-      true,
-    );
-  });
-
-  it("with one already chosen, it is not", () => {
-    expect(isFirstReminderSetup([row("booking_reminder", "t")], "es")).toBe(
-      false,
-    );
-  });
-
-  it("an email row or an empty WhatsApp one does not count", () => {
-    expect(
-      isFirstReminderSetup([row("booking_reminder", "t", "email")], "es"),
-    ).toBe(true);
-    expect(isFirstReminderSetup([row("booking_reminder", null)], "es")).toBe(
-      true,
-    );
-  });
-
-  it("is counted per language: Spanish being set up says nothing about English", () => {
-    const rows = [row("booking_reminder", "t", "whatsapp", "es")];
-    expect(isFirstReminderSetup(rows, "es")).toBe(false);
-    expect(isFirstReminderSetup(rows, "en")).toBe(true);
-  });
-
-  it("and once English has its own, it is no longer the first", () => {
-    const rows = [
-      row("booking_reminder", "t", "whatsapp", "es"),
-      row("booking_reminder", "u", "whatsapp", "en"),
-    ];
-    expect(isFirstReminderSetup(rows, "en")).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
@@ -211,6 +212,12 @@ export function MessageList({
                           >
                             {off ? t("reminder.hintOff") : t("reminder.hintOn")}
                           </p>
+                          <Link
+                            href="/dashboard/campaigns/new"
+                            className="text-petroleum-700 mt-1 inline-block max-w-xs text-xs underline underline-offset-2"
+                          >
+                            {t("reminder.forWhatsApp")}
+                          </Link>
                         </div>
                       </div>
                     )}

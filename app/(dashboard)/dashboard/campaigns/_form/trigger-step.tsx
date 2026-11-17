@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { insforge } from "@/lib/insforge";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import type { TriggerEvent } from "@/types/campaign";
+import { AppointmentWhen } from "./appointment-when";
 import type { FormAction, FormState } from "./form-state";
 
 /** The kinds whose trigger the admin chooses; the others have one event only. */
 const CHOICES: Partial<Record<FormState["kind"], TriggerEvent[]>> = {
   automated: ["segment_entry", "after_booking", "first_visit"],
   dateBased: ["birthday", "first_booking_anniversary"],
+  // Before or after each appointment; the step draws its own controls for it.
+  appointment: ["before_visit", "after_visit"],
 };
 
 export function hasTriggerStep(kind: FormState["kind"]): boolean {
@@ -24,7 +27,20 @@ export function hasTriggerStep(kind: FormState["kind"]): boolean {
  * choice; an autoresponder or a blog announcement has exactly one event and
  * the review step just says so.
  */
-export function TriggerStep({
+export function TriggerStep(props: {
+  state: FormState;
+  dispatch: Dispatch<FormAction>;
+  onDone: () => void;
+}) {
+  // An appointment notice is timed in hours around each booking: its own step.
+  return props.state.kind === "appointment" ? (
+    <AppointmentWhen {...props} />
+  ) : (
+    <EventTriggerStep {...props} />
+  );
+}
+
+function EventTriggerStep({
   state,
   dispatch,
   onDone,

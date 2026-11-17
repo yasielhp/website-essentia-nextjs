@@ -294,6 +294,11 @@ export type CampaignRecipientRow = {
   cycle: string;
   variant: "a" | "b" | null;
   error: string | null;
+  /**
+   * What the rule stored for this row: for an appointment notice, the
+   * appointment it is about (service, date, time). Null for most rows.
+   */
+  vars: Record<string, unknown> | null;
   sent_at: string | null;
   delivered_at: string | null;
   opened_at: string | null;

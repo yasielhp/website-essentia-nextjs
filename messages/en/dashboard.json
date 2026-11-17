@@ -1725,7 +1725,8 @@
         "preview": "How the client will see it",
         "previewNote": "With example data.",
         "confirm": "Confirm message",
-        "chosen": "Template chosen"
+        "chosen": "Template chosen",
+        "appointmentCategoryHint": "For appointment notices the Utility category is the sensible one: Marketing costs more per message."
       }
     },
     "audience": {
@@ -1768,7 +1769,16 @@
       "bookingsBooked": "Has booked at least once",
       "bookingsNever": "Has never booked",
       "reachWhatsApp": "{count} with WhatsApp consent (news and offers)",
-      "reachWhatsAppNote": "Only contacts who agreed to receive news and offers on WhatsApp are included, with a valid phone number and no opt-out."
+      "reachWhatsAppNote": "Only contacts who agreed to receive news and offers on WhatsApp are included, with a valid phone number and no opt-out.",
+      "appointment": {
+        "title": "Which appointments",
+        "servicesHelp": "Empty = all services.",
+        "language": "Clients' language",
+        "languageHint": "With “All”, the language of the notice is chosen in the template step.",
+        "reach": "{count} with appointment notices switched on",
+        "note": "Only clients with appointment notices switched on and no opt-out receive the notice; the figure counts clients, not appointments.",
+        "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on her contact page, in the WhatsApp consent."
+      }
     },
     "content": {
       "title": "What it says",
@@ -1859,7 +1869,9 @@
       "whatsappPace": "About {count} messages go out per run, one run every 15 minutes. Large lists carry on by themselves.",
       "whatsappTestHint": "The test goes to the phone on your profile, with the template's example values.",
       "whatsappNoTemplate": "You have not chosen a template yet.",
-      "whatsappConsentNote": "It also fires when the team records the consent from the contact's page (for example, when the client asked for it by phone)."
+      "whatsappConsentNote": "It also fires when the team records the consent from the contact's page (for example, when the client asked for it by phone).",
+      "noConditionsAppointment": "Every client with appointment notices switched on",
+      "appointmentPace": "Each notice goes out up to 15 minutes later than the time indicated."
     },
     "detail": {
       "sent": "Sent",
@@ -1915,7 +1927,8 @@
         "skippedNoEmail": "Skipped: no email address",
         "skippedSuppressed": "Skipped: that number wrote STOP",
         "skippedOther": "Skipped: {reason}"
-      }
+      },
+      "columnsAppointment": "Appointment"
     },
     "errors": {
       "not_claimable": "This campaign is already being sent, or was sent.",
@@ -1957,7 +1970,10 @@
       "channelEmail": "Email",
       "channelWhatsApp": "WhatsApp",
       "channelHint": "WhatsApp only writes to people who agreed to receive news and offers there, using a template approved by Meta.",
-      "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one."
+      "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one.",
+      "appointment": "Appointment notice",
+      "appointmentDesc": "A WhatsApp message before or after each appointment: reminder, aftercare, review. Only to clients who accepted appointment notices.",
+      "kindLocked": "A saved campaign cannot become an Appointment notice or stop being one: it counts appointments, not lists."
     },
     "segment": {
       "title": "Segment",
@@ -1994,7 +2010,9 @@
         "first_booking_anniversary": "On the anniversary of the first booking",
         "new_blog_post": "A new blog post is published",
         "first_visit": "After the first visit",
-        "newsletter_subscribedWhatsApp": "When they agree to receive news on WhatsApp"
+        "newsletter_subscribedWhatsApp": "When they agree to receive news on WhatsApp",
+        "before_visit": "Before each appointment",
+        "after_visit": "After each appointment"
       },
       "eventDesc": {
         "newsletter_subscribed": "Sent once, shortly after they sign up.",
@@ -2008,7 +2026,23 @@
       },
       "tier": "Session type",
       "tierAny": "Any",
-      "tierHint": "Only the first visit of this session type counts. With \"Any\", the first visit of any type."
+      "tierHint": "Only the first visit of this session type counts. With \"Any\", the first visit of any type.",
+      "appointment": {
+        "side": "When",
+        "before": "Before the appointment",
+        "after": "After the appointment",
+        "hoursBefore": "Hours before the appointment starts",
+        "hoursAfter": "Hours after the appointment ends",
+        "unit": "h",
+        "shortcuts": "Shortcuts",
+        "sentenceBefore": "It will be sent {hours} h before each appointment.",
+        "sentenceAfter": "It will be sent {hours} h after each appointment ends.",
+        "sentenceInvalid": "Enter a whole number of hours between {min} and {max}.",
+        "rules": "Once per appointment. Only for confirmed appointments (before) or confirmed and completed ones (after), and only for appointments whose notice falls after the campaign is switched on: past appointments, and ones already inside the window, are not notified.",
+        "delay": "The notice can go out up to 15 minutes later than the time indicated.",
+        "shortBefore": "{hours} h before the appointment",
+        "shortAfter": "{hours} h after the appointment"
+      }
     },
     "segments": {
       "title": "Segments",
@@ -2283,9 +2317,10 @@
         "note": "Always sent in Spanish: a booking does not keep the client's language.",
         "switch": "Active",
         "hintOn": "An email reminder goes out before every appointment.",
-        "hintOff": "Switched off: the email reminder is not sent. The WhatsApp one is independent: remove it on its own row.",
+        "hintOff": "Switched off: the email reminder is not sent.",
         "turnedOn": "Email reminder switched on",
-        "turnedOff": "Email reminder switched off. The WhatsApp one is independent."
+        "turnedOff": "Email reminder switched off",
+        "forWhatsApp": "For WhatsApp reminders, create an Appointment notice in Campaigns."
       },
       "corrupt": "The saved text is damaged and cannot be opened. Reset it to start again.",
       "variables": {
@@ -2396,16 +2431,13 @@
         "removed": "WhatsApp removed from this message",
         "when": {
           "booking_confirmed": "Sent when the team confirms the booking.",
-          "booking_paid": "Sent only with the booking's first payment.",
-          "booking_reminder": "Sent once per booking, 40 to 56 hours before the appointment."
+          "booking_paid": "Sent only with the booking's first payment."
         },
         "rules": {
           "consent": "Only clients who ticked “appointment notices” and have not written STOP receive the message. Numbers Meta could not deliver to are left out, and so are numbers that wrote STOP even if another contact file has them ticked: the STOP list is by number.",
           "nothing": "If there is no template set up for the booking's language, nothing is sent.",
           "languages": "Each language needs its own template. Every booking is sent in the language it was made in or, when that is not known, in the one on the contact's file, and a contact with no language chosen is on file as English: it is worth setting up English too.",
-          "languagesReminder": "The reminder goes out in the language on the contact's file; with no file, in Spanish. A contact with no language chosen is on file as English: it is worth setting up English too.",
           "stop": "Include in the template's text a phrase such as “Reply STOP to stop receiving these notices”.",
-          "reminderFirst": "When you save the first reminder template for this language, bookings in the next 40-56 hours whose email reminder has not gone out yet will receive it too.",
           "noButtons": "Templates with a variable-link button are not offered: this send does not fill buttons."
         },
         "editor": {
@@ -2440,7 +2472,9 @@
           "discardYes": "Discard changes",
           "discardNo": "Keep editing"
         },
-        "templatesFailed": "The WhatsApp templates could not be read, so they cannot be set up or checked."
+        "templatesFailed": "The WhatsApp templates could not be read, so they cannot be set up or checked.",
+        "campaignNote": "Reminders and notices after the appointment are set up in Campaigns > Appointment notice.",
+        "campaignLink": "Create an Appointment notice"
       }
     }
   },

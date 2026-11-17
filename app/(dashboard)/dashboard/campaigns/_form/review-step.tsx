@@ -13,6 +13,7 @@ import {
 } from "@/lib/campaigns/whatsapp-form";
 import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
+import { useAppointmentTrigger } from "../kind-line";
 import type { FormState } from "./form-state";
 import type { TemplatesState } from "./use-whatsapp-templates";
 
@@ -96,6 +97,7 @@ export function ReviewStep({
   const tContent = useTranslations("dashboard.campaigns.content");
   const tTrigger = useTranslations("dashboard.campaigns.trigger");
   const tType = useTranslations("dashboard.campaigns.type");
+  const appointmentTrigger = useAppointmentTrigger();
   const { audience, content, reach, submitting, error, kind, trigger } = state;
   const whatsapp = state.channel === "whatsapp";
   const tWhatsApp = useTranslations("dashboard.campaigns.form.whatsapp");
@@ -148,7 +150,11 @@ export function ReviewStep({
           </h3>
           {conditions.length === 0 ? (
             <p className="text-petroleum-500 text-sm">
-              {whatsapp ? t("noConditionsWhatsApp") : t("noConditions")}
+              {kind === "appointment"
+                ? t("noConditionsAppointment")
+                : whatsapp
+                  ? t("noConditionsWhatsApp")
+                  : t("noConditions")}
             </p>
           ) : (
             <ul className="text-petroleum-500 list-disc pl-4 text-sm">
@@ -261,7 +267,11 @@ export function ReviewStep({
                 {t("whatsappCostLink")}
               </a>
             </p>
-            <p>{t("whatsappPace", { count: WHATSAPP_MESSAGES_PER_RUN })}</p>
+            <p>
+              {kind === "appointment"
+                ? t("appointmentPace")
+                : t("whatsappPace", { count: WHATSAPP_MESSAGES_PER_RUN })}
+            </p>
           </div>
         )}
 
@@ -270,11 +280,12 @@ export function ReviewStep({
             <div className="flex flex-col gap-1">
               <p className="text-petroleum-700 text-sm font-medium">
                 {tType(kind)} ·{" "}
-                {trigger.event
-                  ? tTrigger(
-                      `event.${triggerEventKey(trigger.event, state.channel)}`,
-                    )
-                  : ""}
+                {appointmentTrigger(trigger) ??
+                  (trigger.event
+                    ? tTrigger(
+                        `event.${triggerEventKey(trigger.event, state.channel)}`,
+                      )
+                    : "")}
                 {trigger.event === "after_booking"
                   ? ` (${trigger.days ?? 0} ${tTrigger("daysAfter")})`
                   : trigger.event === "first_visit"
@@ -282,6 +293,11 @@ export function ReviewStep({
                     : ""}
               </p>
               <p className="text-petroleum-400 text-xs">{t("activateHint")}</p>
+              {kind === "appointment" && (
+                <p className="text-petroleum-400 text-xs">
+                  {tTrigger("appointment.rules")}
+                </p>
+              )}
               {whatsapp && trigger.event === "newsletter_subscribed" && (
                 <>
                   <p className="text-petroleum-400 text-xs">

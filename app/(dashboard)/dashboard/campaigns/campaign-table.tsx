@@ -7,6 +7,7 @@ import { TableSkeleton } from "@/components/dashboard/skeletons";
 import type { CampaignChannel, CampaignRow } from "@/types/campaign";
 import { campaignSentCount } from "@/lib/campaigns/report";
 import { ChannelChip } from "./channel-chip";
+import { CampaignKindLine } from "./kind-line";
 import { CampaignStatusBadge } from "./status-badge";
 
 /** Where a row leads: a draft opens in the editor, anything sent in its report. */
@@ -108,6 +109,10 @@ export function CampaignTable({
                           {campaign.name}
                           <ChannelChip channel={campaign.channel} />
                         </span>
+                        <CampaignKindLine
+                          kind={campaign.kind}
+                          trigger={campaign.trigger}
+                        />
                       </td>
                       <td className="px-5 py-3.5">
                         <CampaignStatusBadge status={campaign.status} />
@@ -162,6 +167,10 @@ export function CampaignTable({
                       <span className="truncate">{campaign.name}</span>
                       <ChannelChip channel={campaign.channel} />
                     </p>
+                    <CampaignKindLine
+                      kind={campaign.kind}
+                      trigger={campaign.trigger}
+                    />
                     <p className="text-petroleum-400 text-xs">
                       {formatMediumDate(dateOf(campaign), locale)}
                       {sent > 0 && (

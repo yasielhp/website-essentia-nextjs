@@ -175,3 +175,104 @@ describe("the campaign form strings", () => {
     }
   });
 });
+
+describe("the appointment notice strings", () => {
+  const KEYS = [
+    "campaigns.type.appointment",
+    "campaigns.type.appointmentDesc",
+    "campaigns.type.kindLocked",
+    "campaigns.trigger.event.before_visit",
+    "campaigns.trigger.event.after_visit",
+    "campaigns.trigger.appointment.side",
+    "campaigns.trigger.appointment.before",
+    "campaigns.trigger.appointment.after",
+    "campaigns.trigger.appointment.hoursBefore",
+    "campaigns.trigger.appointment.hoursAfter",
+    "campaigns.trigger.appointment.unit",
+    "campaigns.trigger.appointment.shortcuts",
+    "campaigns.trigger.appointment.sentenceBefore",
+    "campaigns.trigger.appointment.sentenceAfter",
+    "campaigns.trigger.appointment.sentenceInvalid",
+    "campaigns.trigger.appointment.rules",
+    "campaigns.trigger.appointment.delay",
+    "campaigns.trigger.appointment.shortBefore",
+    "campaigns.trigger.appointment.shortAfter",
+    "campaigns.audience.appointment.title",
+    "campaigns.audience.appointment.servicesHelp",
+    "campaigns.audience.appointment.language",
+    "campaigns.audience.appointment.languageHint",
+    "campaigns.audience.appointment.reach",
+    "campaigns.audience.appointment.note",
+    "campaigns.audience.appointment.panelNote",
+    "campaigns.form.whatsapp.appointmentCategoryHint",
+    "campaigns.review.noConditionsAppointment",
+    "campaigns.review.appointmentPace",
+    "campaigns.detail.columnsAppointment",
+    "messages.email.reminder.forWhatsApp",
+    "messages.email.whatsapp.campaignNote",
+    "messages.email.whatsapp.campaignLink",
+  ];
+
+  test("every string the screens read is there, in both languages", () => {
+    for (const locale of ["es", "en"] as const) {
+      expect(KEYS.filter((key) => !locales[locale][key])).toEqual([]);
+    }
+  });
+
+  test("the sentences carry the hours and the error carries both limits", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "sentenceBefore",
+        "sentenceAfter",
+        "shortBefore",
+        "shortAfter",
+      ]) {
+        expect(
+          locales[locale][`campaigns.trigger.appointment.${key}`],
+        ).toContain("{hours}");
+      }
+      const invalid =
+        locales[locale]["campaigns.trigger.appointment.sentenceInvalid"];
+      expect(invalid).toContain("{min}");
+      expect(invalid).toContain("{max}");
+    }
+  });
+
+  test("the sentences read as the brief wrote them", () => {
+    const say = (key: string, hours: number) =>
+      new IntlMessageFormat(
+        locales.es[`campaigns.trigger.appointment.${key}`],
+        "es",
+      ).format({ hours });
+    expect(say("sentenceBefore", 48)).toBe(
+      "Se enviará 48 h antes de cada cita.",
+    );
+    expect(say("sentenceAfter", 2)).toBe(
+      "Se enviará 2 h después de que termine cada cita.",
+    );
+    expect(say("shortBefore", 48)).toBe("48 h antes de la cita");
+  });
+
+  test("the reminder switch points to the campaign and no longer talks of a WhatsApp reminder of its own", () => {
+    expect(locales.es["messages.email.reminder.forWhatsApp"]).toContain(
+      "Aviso de cita",
+    );
+    expect(locales.en["messages.email.reminder.forWhatsApp"]).toContain(
+      "Appointment notice",
+    );
+    for (const locale of ["es", "en"] as const) {
+      expect(locales[locale]["messages.email.reminder.turnedOff"]).not.toMatch(
+        /WhatsApp/,
+      );
+      expect(
+        locales[locale]["messages.email.whatsapp.when.booking_reminder"],
+      ).toBeUndefined();
+      expect(
+        locales[locale]["messages.email.whatsapp.rules.reminderFirst"],
+      ).toBeUndefined();
+      expect(
+        locales[locale]["messages.email.whatsapp.rules.languagesReminder"],
+      ).toBeUndefined();
+    }
+  });
+});

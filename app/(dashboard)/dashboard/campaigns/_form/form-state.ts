@@ -15,6 +15,7 @@ import {
   DEFAULT_TRIGGER,
 } from "@/types/campaign";
 import { sendLocaleOf } from "@/lib/schemas";
+import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 
 /**
@@ -65,6 +66,8 @@ export const AVAILABLE_KINDS: CampaignKind[] = [
   "split",
   "rss",
   "dateBased",
+  // Only the WhatsApp channel can be one: `kindsForChannel` decides.
+  "appointment",
 ];
 
 export type PickedContact = { id: string; name: string; email: string };
@@ -75,6 +78,8 @@ export type FormState = {
   /** Fixed once the campaign is saved: its report only makes sense in one. */
   channel: CampaignChannel;
   kind: CampaignKind;
+  /** The kind the campaign was saved with; null while it is new. */
+  savedKind: CampaignKind | null;
   trigger: CampaignTrigger;
   name: string;
   /** The saved segment the conditions came from; null means everyone or ad hoc. */
@@ -140,6 +145,7 @@ export const initialFormState: FormState = {
   step: 0,
   channel: "email",
   kind: "standard",
+  savedKind: null,
   trigger: {},
   name: "",
   segmentId: null,
@@ -223,6 +229,10 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     case "SET_KIND":
       if (!AVAILABLE_KINDS.includes(action.kind)) return state;
       if (!kindAllowedForChannel(action.kind, state.channel)) return state;
+      // A saved campaign cannot become an appointment notice, or stop being one.
+      if (state.id && !kindSwitchAllowed(state.savedKind, action.kind)) {
+        return state;
+      }
       return {
         ...state,
         kind: action.kind,
@@ -231,6 +241,22 @@ export function formReducer(state: FormState, action: FormAction): FormState {
           action.kind === state.kind
             ? state.trigger
             : { ...DEFAULT_TRIGGER[action.kind] },
+        // An appointment notice is aimed at bookings, not at a list: no
+        // segment, nobody by hand, none of the filters about past bookings.
+        // The send language and nothing else of the audience carries over.
+        ...(action.kind === "appointment" && state.kind !== "appointment"
+          ? {
+              segmentId: null,
+              segmentName: null,
+              pickedContacts: [],
+              reach: null,
+              audience: {
+                ...EMPTY_AUDIENCE,
+                language: "any" as const,
+                sendLocale: state.audience.sendLocale ?? "es",
+              },
+            }
+          : {}),
       };
     case "SET_TRIGGER":
       return { ...state, trigger: action.trigger };
@@ -346,6 +372,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         id: action.campaign.id,
         channel: action.campaign.channel ?? "email",
         kind: action.campaign.kind ?? "standard",
+        savedKind: action.campaign.kind ?? "standard",
         trigger: action.campaign.trigger ?? {},
         name: action.campaign.name,
         segmentId: action.campaign.segment_id ?? null,
