@@ -10,6 +10,7 @@ import {
   saveMessageTemplate,
   sendTestMessage,
 } from "@/actions/message-templates";
+import Link from "next/link";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
@@ -30,6 +31,7 @@ import type {
   MessageDefaultEntry,
   MessageTemplateRowView,
 } from "@/lib/messages/types";
+import { rowHasText, switchInput } from "@/lib/messages/reminder-switch";
 import type { EmailDoc } from "@/types/campaign";
 import { useEmailActionToast } from "./action-error";
 import { EmailPreviewFrame } from "./email-preview-frame";
@@ -109,7 +111,13 @@ export function MessageEditor({
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [hasSaved, setHasSaved] = useState(saved !== null);
+  // "Custom" is a text of the admin's own: a row that holds only the switch
+  // is still the default.
+  const [hasSaved, setHasSaved] = useState(rowHasText(saved));
+  // The reminder's switch is its own state: it saves at once and says nothing
+  // about the form, so it is not a change the form asks about.
+  const [enabled, setEnabled] = useState(saved ? saved.enabled : true);
+  const [switching, setSwitching] = useState(false);
 
   const editorRef = useRef<TiptapEditor | null>(null);
   const lastField = useRef<TextField | "body">("body");
@@ -237,6 +245,29 @@ export function MessageEditor({
     setSaving(false);
   }
 
+  /** Only the switch is sent: the text, saved or not, is not touched. */
+  async function toggle() {
+    if (inFlight.current || switching) return;
+    const next = !enabled;
+    setSwitching(true);
+    try {
+      const result = await saveMessageTemplate(
+        getAccessToken(),
+        switchInput(messageKey, locale, next),
+      );
+      if (result.ok) {
+        setEnabled(next);
+        notifySuccess(next ? t("reminder.turnedOn") : t("reminder.turnedOff"));
+      } else {
+        showError(result);
+      }
+    } catch {
+      showError({ error: "generic" });
+    } finally {
+      setSwitching(false);
+    }
+  }
+
   async function sendTest() {
     if (inFlight.current) return;
     // The test carries the saved version: with a change in the editor that
@@ -331,11 +362,61 @@ export function MessageEditor({
           text: hasSaved ? t("status.custom") : t("status.default"),
           tone: hasSaved ? "custom" : "default",
         }}
+        extraStatus={
+          catalog.canDisable && !enabled ? t("status.disabled") : undefined
+        }
         describedBy="message-notice"
       />
 
       {guard.pending && (
         <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
+      )}
+
+      {catalog.canDisable && (
+        <section
+          aria-label={t("reminder.switch")}
+          className="border-sand-200 flex items-start gap-3 rounded-xl border bg-white px-4 py-3"
+        >
+          <button
+            id="reminder-switch"
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-describedby="reminder-switch-hint"
+            disabled={switching || saving}
+            onClick={() => void toggle()}
+            className={`focus-visible:ring-petroleum-500 relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 ${
+              enabled ? "bg-petroleum-700" : "bg-sand-200"
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+                enabled ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+          <div>
+            <label
+              htmlFor="reminder-switch"
+              className="text-petroleum-700 text-sm font-medium"
+            >
+              {t("reminder.switch")}
+            </label>
+            <p
+              id="reminder-switch-hint"
+              className="text-petroleum-400 max-w-xl text-xs"
+            >
+              {enabled ? t("reminder.hintOn") : t("reminder.hintOff")}
+            </p>
+            <Link
+              href="/dashboard/campaigns/new"
+              className="text-petroleum-700 mt-1 inline-block text-xs underline underline-offset-2"
+            >
+              {t("reminder.forWhatsApp")}
+            </Link>
+          </div>
+        </section>
       )}
 
       <p
@@ -479,7 +560,7 @@ export function MessageEditor({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {hasSaved && (
+          {(hasSaved || !enabled) && (
             <ResetControl
               channel="email"
               messageKey={messageKey}
@@ -495,7 +576,7 @@ export function MessageEditor({
             />
           )}
           <Button
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || switching}
             onClick={() => void save()}
             title={dirty ? undefined : tEditor("unchanged")}
           >

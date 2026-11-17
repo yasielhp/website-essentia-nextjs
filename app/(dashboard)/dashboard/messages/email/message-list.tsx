@@ -1,72 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { editableLocales } from "@/lib/messages/editor-state";
 import { messageEditHref } from "@/lib/messages/message-route";
+import { isSwitchedOff, rowHasText } from "@/lib/messages/reminder-switch";
 import { WHATSAPP_MESSAGE_KEYS } from "@/lib/messages/whatsapp-row";
-import { MESSAGE_KEYS, type MessageKey } from "@/lib/messages/catalog";
+import { MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type {
   MessageCatalogEntry,
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import { formatMediumDate } from "@/utils/format";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
-import { ConfirmBar } from "./confirm-bar";
 import { WhatsAppRows } from "./whatsapp-rows";
-
-type Locale = "es" | "en";
-
-/** Whether the row carries any text of its own (a switch alone does not). */
-function hasText(row: MessageTemplateRowView | undefined): boolean {
-  return Boolean(
-    row &&
-    (row.doc ||
-      (row.subject ?? "").trim() ||
-      (row.preheader ?? "").trim() ||
-      (row.title ?? "").trim()),
-  );
-}
 
 const PILL =
   "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
 
 /**
  * One row per message and language the system really sends: its name, whether
- * it is the default or the admin's, and what can be done with it. The reminder
- * alone has a switch, because it is the one message nobody is owed.
+ * it is the default or the admin's (and, for the reminder, whether it is
+ * switched off), and one link to the page where it is edited. Testing, the
+ * reminder's switch and resetting are on that page.
  */
 export function MessageList({
   rows,
   catalog,
-  busyKey,
-  onTest,
-  onReset,
-  onToggle,
   templates,
-  onWaTest,
-  onWaRemove,
 }: {
   rows: MessageTemplateRowView[];
   catalog: MessageCatalogEntry[];
-  /** `key:locale` of the row an action is running on. */
-  busyKey: string | null;
-  onTest: (key: MessageKey, locale: Locale) => void;
-  onReset: (key: MessageKey, locale: Locale) => void;
-  onToggle: (key: MessageKey, locale: Locale, enabled: boolean) => void;
   /** The account's templates, for the WhatsApp rows; null when unreadable. */
   templates: WhatsAppTemplateRow[] | null;
-  onWaTest: (key: MessageKey, locale: Locale) => void;
-  onWaRemove: (key: MessageKey, locale: Locale) => void;
 }) {
   const t = useTranslations("dashboard.messages.email");
   const tKeys = useTranslations("dashboard.messages.keys");
   const tHints = useTranslations("dashboard.messages.keyHints");
   const dashboardLocale = useDashboardLocale();
-  const [confirming, setConfirming] = useState<string | null>(null);
 
   const emailRows = rows.filter((row) => row.channel === "email");
 
@@ -97,10 +69,8 @@ export function MessageList({
                 (r) => r.key === key && r.locale === locale,
               );
               const corrupt = row?.corrupt === true;
-              const custom = !corrupt && hasText(row);
-              const off = Boolean(entry?.canDisable && row && !row.enabled);
-              const busy = busyKey === id;
-              const switchId = `switch-${key}-${locale}`;
+              const custom = !corrupt && rowHasText(row);
+              const off = isSwitchedOff(Boolean(entry?.canDisable), row);
               return (
                 <tr
                   key={id}
@@ -175,103 +145,20 @@ export function MessageList({
                         {t("corrupt")}
                       </p>
                     )}
-                    {entry?.canDisable && !corrupt && (
-                      <div className="mt-2 flex items-start gap-3">
-                        <button
-                          id={switchId}
-                          type="button"
-                          role="switch"
-                          aria-checked={!off}
-                          aria-describedby={`${switchId}-hint`}
-                          disabled={busy}
-                          onClick={() => onToggle(key, locale, off)}
-                          className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                            off ? "bg-sand-200" : "bg-petroleum-700"
-                          }`}
-                        >
-                          <span
-                            aria-hidden="true"
-                            className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform ${
-                              off ? "" : "translate-x-5"
-                            }`}
-                          />
-                        </button>
-                        <div>
-                          <label
-                            htmlFor={switchId}
-                            className="text-petroleum-700 text-xs font-medium"
-                          >
-                            {t("reminder.switch")}
-                          </label>
-                          <p
-                            id={`${switchId}-hint`}
-                            className="text-petroleum-400 max-w-xs text-xs"
-                          >
-                            {off ? t("reminder.hintOff") : t("reminder.hintOn")}
-                          </p>
-                          <Link
-                            href="/dashboard/campaigns/new"
-                            className="text-petroleum-700 mt-1 inline-block max-w-xs text-xs underline underline-offset-2"
-                          >
-                            {t("reminder.forWhatsApp")}
-                          </Link>
-                        </div>
-                      </div>
-                    )}
                   </td>
                   <td className="px-5 py-3.5">
-                    {confirming === id ? (
-                      <ConfirmBar
-                        message={t("resetConfirm")}
-                        yesLabel={t("resetYes")}
-                        noLabel={t("resetNo")}
-                        returnTo={`reset-${key}-${locale}`}
-                        busy={busy}
-                        onCancel={() => setConfirming(null)}
-                        onConfirm={() => {
-                          setConfirming(null);
-                          onReset(key, locale);
-                        }}
-                      />
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {!corrupt && (
-                          <>
-                            {/* A page of its own: a link, so it opens in a new tab too. */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              href={messageEditHref("email", key, locale)}
-                              aria-label={t("actions.editRow", {
-                                name: tKeys(key),
-                                language: t(`locales.${locale}`),
-                              })}
-                            >
-                              {t("actions.edit")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={busy}
-                              onClick={() => onTest(key, locale)}
-                            >
-                              {busy ? t("actions.testing") : t("actions.test")}
-                            </Button>
-                          </>
-                        )}
-                        {(custom || corrupt || off) && (
-                          <Button
-                            id={`reset-${key}-${locale}`}
-                            size="sm"
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() => setConfirming(id)}
-                          >
-                            {t("actions.reset")}
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    {/* A page of its own: a link, so it opens in a new tab too. */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      href={messageEditHref("email", key, locale)}
+                      aria-label={t("actions.editRow", {
+                        name: tKeys(key),
+                        language: t(`locales.${locale}`),
+                      })}
+                    >
+                      {t("actions.edit")}
+                    </Button>
                   </td>
                 </tr>
               );
@@ -284,9 +171,6 @@ export function MessageList({
                     messageKey={key}
                     rows={rows}
                     templates={templates}
-                    busyKey={busyKey}
-                    onTest={(locale) => onWaTest(key, locale)}
-                    onRemove={(locale) => onWaRemove(key, locale)}
                   />,
                 ]
               : localeRows;

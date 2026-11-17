@@ -24,11 +24,14 @@ import { useEmailActionToast } from "./action-error";
 export function MessagePageHeader({
   title,
   status,
+  extraStatus,
   describedBy,
 }: {
   title: string;
   /** "Custom" or "Default", already in words; absent while unknown. */
   status?: { text: string; tone: "custom" | "default" } | null;
+  /** A second state beside it, such as "Switched off". */
+  extraStatus?: string;
   describedBy?: string;
 }) {
   const t = useTranslations("dashboard.messages.email.page");
@@ -64,6 +67,11 @@ export function MessagePageHeader({
             }`}
           >
             {status.text}
+          </span>
+        )}
+        {extraStatus && (
+          <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-yellow-800">
+            {extraStatus}
           </span>
         )}
       </div>
