@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { INPUT_CLASS } from "@/constants/form-styles";
-import { bookableServices } from "@/data/services-data";
 import { MultiOptionSelect } from "@/components/ui/multi-option-select";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import {
   type SegmentList,
 } from "@/types/campaign";
 import { AppointmentAudience } from "./appointment-audience";
+import { SERVICE_OPTIONS } from "./service-options";
 import type { FormAction, FormState } from "./form-state";
 import { useAudienceReach } from "./use-audience-reach";
 
@@ -26,11 +26,6 @@ const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
   { value: "en", key: "languageEn" },
   { value: "es", key: "languageEs" },
 ];
-
-export const SERVICE_OPTIONS = bookableServices.map((service) => ({
-  value: service.id,
-  label: service.title,
-}));
 
 /** The conditions half of an audience; the send language stays with the campaign. */
 export function conditionsOf(audience: CampaignAudience): SegmentConditions {

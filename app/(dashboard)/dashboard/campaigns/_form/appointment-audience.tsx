@@ -7,7 +7,7 @@ import { MultiOptionSelect } from "@/components/ui/multi-option-select";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import type { CampaignLanguage } from "@/types/campaign";
 import type { FormAction, FormState } from "./form-state";
-import { SERVICE_OPTIONS } from "./audience-step";
+import { SERVICE_OPTIONS } from "./service-options";
 import { useAudienceReach } from "./use-audience-reach";
 
 /**
