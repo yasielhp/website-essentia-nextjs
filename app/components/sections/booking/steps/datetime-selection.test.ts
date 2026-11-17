@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { selectionGone } from "./datetime-selection";
+import { selectionGone, selectionVerified } from "./datetime-selection";
 
 const AVAILABILITY = {
   "2026-12-03": ["10:00", "10:30", "12:00"],
@@ -63,5 +63,59 @@ describe("selectionGone: an hour chosen earlier that is no longer on offer", () 
         time: "10:30",
       }),
     ).toBe(false);
+  });
+});
+
+describe("selectionVerified: 'next' opens only on an hour the list has confirmed", () => {
+  const chosen = { date: day("2026-12-03"), time: "10:30" };
+
+  test("while no list has arrived, nothing is verified, however complete the choice", () => {
+    expect(
+      selectionVerified({ availability: {}, loaded: null, ...chosen }),
+    ).toBe(false);
+  });
+
+  test("once her day's list is here and has her hour, it is", () => {
+    expect(
+      selectionVerified({ availability: AVAILABILITY, loaded: DEC, ...chosen }),
+    ).toBe(true);
+  });
+
+  test("the list of another month verifies nothing about her day", () => {
+    expect(
+      selectionVerified({
+        availability: AVAILABILITY,
+        loaded: { year: 2026, month: 10 },
+        ...chosen,
+      }),
+    ).toBe(false);
+  });
+
+  test("an hour the list does not have is not verified", () => {
+    expect(
+      selectionVerified({
+        availability: AVAILABILITY,
+        loaded: DEC,
+        date: chosen.date,
+        time: "11:00",
+      }),
+    ).toBe(false);
+  });
+
+  test("with no day or no hour there is nothing to verify", () => {
+    for (const [date, time] of [
+      [null, "10:30"],
+      [chosen.date, null],
+      [chosen.date, ""],
+    ] as const) {
+      expect(
+        selectionVerified({
+          availability: AVAILABILITY,
+          loaded: DEC,
+          date,
+          time,
+        }),
+      ).toBe(false);
+    }
   });
 });

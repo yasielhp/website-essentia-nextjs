@@ -102,6 +102,11 @@ function BookingContentInner() {
   // at the session-type step instead of walking the visitor to an empty
   // calendar and a booking nobody can honour.
   const [tierHasStaff, setTierHasStaff] = useState(false);
+  // Whether the calendar's list for the chosen day has arrived and has the
+  // chosen hour. A restored booking brings a day and an hour with it, and the
+  // list queues behind the consent writes of the step before, so without this
+  // "next" would be open for seconds on an hour nobody has checked.
+  const [datetimeVerified, setDatetimeVerified] = useState(false);
   const { contactId, bookingId, draftStartedAt, memberBlocker, checking } =
     local;
 
@@ -204,7 +209,7 @@ function BookingContentInner() {
     // checks the fields, writes each error under its own and takes the focus to
     // the first one (`handleNextFromDetails`).
     details: true,
-    datetime: !!(selectedDate && selectedTime),
+    datetime: !!(selectedDate && selectedTime) && datetimeVerified,
     confirm: !!(selectedDate && selectedTime),
   };
 
@@ -338,6 +343,7 @@ function BookingContentInner() {
         selectedDate={selectedDate}
         selectedTime={selectedTime}
         draftId={bookingId}
+        onDatetimeVerified={setDatetimeVerified}
         details={details}
         detailErrors={detailErrors}
         dispatch={dispatch}
@@ -356,7 +362,15 @@ function BookingContentInner() {
         isLastStep={isLastStep}
         nextStepLabel={nextStepLabel}
         loading={loading}
-        checking={checking}
+        // On the date step, an hour that is chosen but not yet confirmed by
+        // the list reads "checking", the same word the details step uses
+        // while it saves, instead of a button greyed out without a reason.
+        checking={
+          checking ||
+          (currentStepId === "datetime" &&
+            !!(selectedDate && selectedTime) &&
+            !datetimeVerified)
+        }
         canProceed={!!canProceed[currentStepId]}
         onBack={() => dispatch({ type: "SET_STEP", step: step - 1 })}
         onNext={

@@ -109,6 +109,8 @@ export type BookingStepRendererProps = {
   selectedTime: string | null;
   /** This visit's draft booking, whose hour the calendar must not show as taken. */
   draftId: string | null;
+  /** Whether the list for the chosen day has confirmed the chosen hour. */
+  onDatetimeVerified: (verified: boolean) => void;
   details: DetailsState;
   detailErrors: DetailsErrors;
   dispatch: React.Dispatch<BookingAction>;
@@ -134,6 +136,7 @@ export function BookingStepRenderer({
   selectedDate,
   selectedTime,
   draftId,
+  onDatetimeVerified,
   details,
   detailErrors,
   dispatch,
@@ -199,6 +202,7 @@ export function BookingStepRenderer({
           selectedDate={selectedDate}
           selectedTime={selectedTime}
           draftId={draftId}
+          onVerifiedChange={onDatetimeVerified}
           onSelectDate={(d) => dispatch({ type: "SELECT_DATE", date: d })}
           onSelectTime={(t) => dispatch({ type: "SELECT_TIME", time: t })}
         />

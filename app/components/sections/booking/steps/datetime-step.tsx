@@ -15,7 +15,7 @@ import {
 import { fetchAvailability, type Availability } from "@/actions/availability";
 import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
 import { localDateStr } from "@/utils/format";
-import { selectionGone } from "./datetime-selection";
+import { selectionGone, selectionVerified } from "./datetime-selection";
 
 function CalendarView({
   selected,
@@ -131,6 +131,7 @@ export function DateTimeStep({
   draftId,
   onSelectDate,
   onSelectTime,
+  onVerifiedChange,
 }: {
   service: BookableService;
   /** The chosen session type: its assigned staff decide the hours. */
@@ -144,6 +145,11 @@ export function DateTimeStep({
   draftId?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectTime: (t: string) => void;
+  /**
+   * Told whenever the chosen day and hour become, or stop being, confirmed by
+   * the list for that day. "Next" waits for it.
+   */
+  onVerifiedChange?: (verified: boolean) => void;
 }) {
   const t = useTranslations("booking.datetimeStep");
   const locale = useLocale();
@@ -167,6 +173,10 @@ export function DateTimeStep({
   // which hours exist.
   const [availability, setAvailability] = useState<Availability>({});
   const [loadingMonth, setLoadingMonth] = useState(true);
+  // The month the list in `availability` is for; none until one arrives.
+  const [loaded, setLoaded] = useState<{ year: number; month: number } | null>(
+    null,
+  );
   // The hour she had chosen was no longer in the list when it arrived.
   const [timeGone, setTimeGone] = useState(false);
 
@@ -202,6 +212,7 @@ export function DateTimeStep({
     ).then((result) => {
       if (cancelled) return;
       setAvailability(result);
+      setLoaded({ year: viewYear, month: viewMonth });
       setLoadingMonth(false);
 
       // A day and an hour restored from an earlier visit are only a memory:
@@ -226,6 +237,21 @@ export function DateTimeStep({
       cancelled = true;
     };
   }, [tierId, staffId, draftId, viewYear, viewMonth, sessionMinutes]);
+
+  // "Next" is the parent's, and it opens only on an hour this list has
+  // confirmed: until the list for her day is here, a day and an hour in the
+  // form (a restored booking has both from the start) prove nothing.
+  const verified = selectionVerified({
+    availability,
+    loaded,
+    date: selectedDate,
+    time: selectedTime,
+  });
+  useEffect(() => {
+    onVerifiedChange?.(verified);
+  }, [verified, onVerifiedChange]);
+  // Leaving the step leaves nothing verified behind for the next visit to it.
+  useEffect(() => () => onVerifiedChange?.(false), [onVerifiedChange]);
 
   // A day nobody works, or one whose hours are all taken, is not offered.
   const openDates = useMemo(
