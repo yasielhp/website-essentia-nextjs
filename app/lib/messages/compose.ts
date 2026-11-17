@@ -81,6 +81,18 @@ export function usableDoc(doc: unknown): EmailDoc | null {
 
 export type MessageVars = Partial<Record<MessageVariable, string>>;
 
+// Every control character and Unicode's own line and paragraph separators.
+const BREAKS = /[\u0000-\u001f\u007f\u0085\u2028\u2029]+/g;
+
+/**
+ * A text as one line: line breaks, tabs and the like become a space, runs of
+ * spaces become one, the ends are trimmed. The subject is a mail header and
+ * the variables in it come from what a client typed, so it is cleaned AFTER
+ * they are filled in.
+ */
+export const oneLine = (text: string): string =>
+  text.replace(BREAKS, " ").replace(/ {2,}/g, " ").trim();
+
 const H1_STYLE =
   "margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;";
 
@@ -151,7 +163,14 @@ function paidShell({
  * Same shell as the email it replaces (`emailBase`, or `booking_paid`'s own),
  * the body the admin wrote, then the fixed blocks the code adds. Anything the
  * row leaves null falls back to the default text, so a half-filled row never
- * sends an empty subject.
+ * sends an empty subject. Nor does a subject that is nothing once its
+ * variables are filled (`{{session_type}}` on a booking that has none): the
+ * default subject goes out instead. The subject and the preheader are always
+ * one line.
+ *
+ * THROWS when even the default subject comes out empty (none does today):
+ * `renderMessageEmail` turns that into `legacy`, never into an email with no
+ * subject.
  *
  * Variables are escaped into the HTML and only the ones this message offers
  * exist: a token the catalogue does not list comes out empty, as in campaigns,
@@ -177,18 +196,24 @@ export async function composeMessageEmail({
     if (offered.has(name) && value != null) values[name] = value;
   }
 
+  const filledSubject = (raw: string) =>
+    oneLine(renderVariables(raw, values, { escape: false }));
   const subject =
-    (row.subject ?? "").trim() !== "" ? row.subject! : fallback.subject;
+    filledSubject(row.subject ?? "") || filledSubject(fallback.subject);
+  if (subject === "") {
+    throw new Error(`[messages] ${key}/${locale}: the subject is empty`);
+  }
   const rawTitle = row.title ?? fallback.title;
   const rawPreheader = row.preheader ?? fallback.preheader;
   const title = renderVariables(escapeHtml(rawTitle), values);
-  const preheader = renderVariables(
-    escapeHtml(rawPreheader || rawTitle),
-    values,
+  const preheader = oneLine(
+    renderVariables(escapeHtml(rawPreheader || rawTitle), values),
   );
   // The paid confirmation has never had a preheader, so it only prints one the
   // admin wrote rather than borrowing the title.
-  const paidPreheader = renderVariables(escapeHtml(rawPreheader), values);
+  const paidPreheader = oneLine(
+    renderVariables(escapeHtml(rawPreheader), values),
+  );
 
   const fragment = async (doc: EmailDoc | null): Promise<string> =>
     doc
@@ -224,7 +249,7 @@ export async function composeMessageEmail({
       ${content}`;
 
   return {
-    subject: renderVariables(subject, values, { escape: false }),
+    subject,
     html:
       key === "booking_paid"
         ? paidShell({ locale, preheader: paidPreheader, body })

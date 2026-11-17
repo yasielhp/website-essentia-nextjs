@@ -63,8 +63,23 @@ export const MESSAGE_VALIDATION_KEYS = [
   "paramCountMismatch",
 ] as const;
 
+// A line break of any kind (Unicode's included). The subject is a mail
+// header; the preheader and the title are one line by nature.
+const LINE_BREAK = /[\r\n\u000b\u000c\u0085\u2028\u2029]/;
+
+/**
+ * One line of text. A break at either end goes with the trim; one inside is
+ * refused (`invalidInput`: the dashboard's inputs cannot type one, so only a
+ * hand-made request carries it).
+ */
 const optionalText = (max: number, tooLong: string) =>
-  z.string().trim().max(max, tooLong).nullable().optional();
+  z
+    .string()
+    .trim()
+    .max(max, tooLong)
+    .refine((value) => !LINE_BREAK.test(value), "lineBreak")
+    .nullable()
+    .optional();
 
 /** The shape alone; what depends on the message is checked after it. */
 export const messageTemplateSchema = z.object({

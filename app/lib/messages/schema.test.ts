@@ -204,6 +204,29 @@ describe("validateMessageTemplate — limits", () => {
     ).toBe(true);
   });
 
+  it("a line break inside the subject, the preheader or the title is refused", () => {
+    for (const field of ["subject", "preheader", "title"]) {
+      for (const breakChar of [
+        "\n",
+        "\r",
+        "\r\n",
+        "\u2028",
+        "\u2029",
+        "\u0085",
+        "\v",
+        "\f",
+      ]) {
+        expect(
+          errorsOf(email({ [field]: `Hola${breakChar}Bcc: x@example.test` })),
+        ).toEqual({ [field]: "invalidInput" });
+      }
+      // One at either end is only white space, and goes with the trim.
+      expect(accepted(email({ [field]: "\nHola\r\n" }))).toMatchObject({
+        content: { [field]: "Hola" },
+      });
+    }
+  });
+
   it("a document just under the size limit passes, one over it does not", () => {
     const wrap = (n: number) => doc(para(text("x".repeat(n))));
     const overhead = JSON.stringify(wrap(0)).length;

@@ -112,6 +112,73 @@ describe("composeMessageEmail", () => {
     expect(html).not.toContain("{{");
   });
 
+  test("a subject that is only a variable with nothing in it is the default subject, never an empty one", async () => {
+    // The trial render passes it (the example booking fills everything); a
+    // real booking with no session type would have gone out with `subject: ""`.
+    for (const subject of [
+      "{{session_type}}",
+      " {{session_type}} {{duration}} ",
+    ]) {
+      const out = await compose({ subject });
+      expect(out.subject).toBe("Tu reserva ha sido confirmada — Drenaje");
+    }
+    const filled = await compose({ subject: "{{session_type}}" }, {
+      ...vars,
+      session_type: "Sesión individual",
+    } as typeof vars);
+    expect(filled.subject).toBe("Sesión individual");
+  });
+
+  test("a subject never carries a line break, its own or a variable's", async () => {
+    const hostile = {
+      ...vars,
+      first_name: "Ana\r\nBcc: intruso@example.test\n\tX-Otro: 1",
+      service: "Drenaje\u2028linfático",
+    };
+    const out = await compose(
+      { subject: "Hola {{first_name}}\r\n —  {{service}}\t" },
+      hostile,
+    );
+    expect(out.subject).toBe(
+      "Hola Ana Bcc: intruso@example.test X-Otro: 1 — Drenaje linfático",
+    );
+    expect(out.subject).not.toMatch(/[\u0000-\u001f\u007f\u0085\u2028\u2029]/);
+  });
+
+  test("the preheader is one line too", async () => {
+    const out = await compose(
+      { preheader: "Pre {{first_name}}\n  fin" },
+      { ...vars, first_name: "Ana\r\n\tLuis" },
+    );
+    expect(out.html).toContain(">Pre Ana Luis fin</div>");
+  });
+
+  test("with no subject left and no default one either, it refuses to compose", async () => {
+    // No default subject is empty; this is the answer if one ever were.
+    const defaults = defaultContent("booking_confirmed", "es");
+    const original = defaults.subject;
+    defaults.subject = "{{session_type}}";
+    try {
+      await expect(compose({ subject: "{{session_type}}" })).rejects.toThrow(
+        /subject/,
+      );
+      const quiet = spyOn(console, "error").mockImplementation(() => {});
+      const out = await renderMessageEmail(
+        {
+          key: "booking_confirmed",
+          locale: "es",
+          vars,
+          fixedHtml: fixed,
+        },
+        async () => row({ subject: "{{session_type}}" }),
+      );
+      quiet.mockRestore();
+      expect(out).toEqual({ kind: "legacy" });
+    } finally {
+      defaults.subject = original;
+    }
+  });
+
   test("it is wrapped in the same shell as the legacy emails", async () => {
     const { html } = await compose();
     expect(html).toContain(
