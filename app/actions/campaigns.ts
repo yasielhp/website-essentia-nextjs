@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth-guard";
 import {
   campaignAudienceSchema,
+  campaignChannelSchema,
   channelChangeAllowed,
   requiredLocales,
   segmentSchema,
@@ -226,7 +227,7 @@ export async function fetchCampaign(
     db
       .from("campaign_recipients")
       .select(
-        "id, contact_id, email, language, status, cycle, variant, error, sent_at, delivered_at, opened_at, clicked_at",
+        "id, contact_id, email, phone, language, status, cycle, variant, error, sent_at, delivered_at, opened_at, clicked_at, read_at",
       )
       .eq("campaign_id", id)
       .order("email", { ascending: true })
@@ -323,6 +324,7 @@ const SEGMENT_FIELDS = "id, name, conditions, created_at, updated_at";
  */
 export async function listSegments(
   accessToken: string | null,
+  channel: CampaignChannel = "email",
 ): Promise<SegmentList> {
   const empty: SegmentList = { everyone: 0, segments: [] };
   try {
@@ -331,6 +333,7 @@ export async function listSegments(
     if (err instanceof AuthError) return empty;
     throw err;
   }
+  if (!campaignChannelSchema.safeParse(channel).success) return empty;
   const { data, error } = await getAdminClient()
     .database.from("campaign_segments")
     .select(SEGMENT_FIELDS)
@@ -339,10 +342,11 @@ export async function listSegments(
   if (error) return empty;
 
   try {
-    const candidates = await loadCandidates();
+    const candidates = await loadCandidates(channel);
     const now = new Date();
     const count = (conditions: CampaignSegment["conditions"]) =>
-      filterAudience(candidates, { ...conditions, manualIds: [] }, now).length;
+      filterAudience(candidates, { ...conditions, manualIds: [] }, now, channel)
+        .length;
     return {
       everyone: count(EMPTY_AUDIENCE),
       segments: ((data ?? []) as CampaignSegment[]).map((segment) => ({
@@ -648,6 +652,7 @@ export async function duplicateCampaign(
 export async function previewAudience(
   accessToken: string | null,
   audience: CampaignAudience,
+  channel: CampaignChannel = "email",
 ): Promise<AudiencePreview | Failure> {
   try {
     await admin(accessToken);
@@ -656,10 +661,17 @@ export async function previewAudience(
   }
 
   const parsed = campaignAudienceSchema.safeParse(audience);
-  if (!parsed.success) return { ok: false, error: "invalid" };
+  const parsedChannel = campaignChannelSchema.safeParse(channel);
+  if (!parsed.success || !parsedChannel.success) {
+    return { ok: false, error: "invalid" };
+  }
 
   try {
-    const recipients = await resolveAudience(parsed.data);
+    const recipients = await resolveAudience(
+      parsed.data,
+      new Date(),
+      parsedChannel.data,
+    );
     return {
       count: recipients.length,
       byLanguage: {

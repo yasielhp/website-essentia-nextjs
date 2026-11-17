@@ -1782,6 +1782,8 @@
       "not_claimable": "Esta campaña ya se está enviando o ya se envió.",
       "empty_audience": "Nadie la recibiría.",
       "no_api_key": "El envío de email no está configurado en el servidor.",
+      "whatsapp_not_configured": "WhatsApp no está configurado en el servidor.",
+      "template_unavailable": "La plantilla elegida no está aprobada o ya no se puede enviar.",
       "db": "Algo falló al guardar en la base de datos.",
       "locked": "Esta campaña ya no se puede cambiar.",
       "past": "Elige una fecha futura.",

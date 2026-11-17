@@ -3,11 +3,20 @@ import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import type {
+  CampaignChannel,
   CampaignContent,
   CampaignLocale,
   CampaignRow,
 } from "@/types/campaign";
+import { isWhatsAppConfigured } from "@/lib/whatsapp/client";
+import { sendLocaleOf } from "@/lib/schemas";
 import { resolveAudience } from "./audience";
+import {
+  UNCONFIRMED_PREFIX,
+  campaignTemplateIssue,
+  loadWhatsAppTemplate,
+  sendQueuedWhatsApp,
+} from "./dispatch-whatsapp";
 
 /**
  * Sends one campaign, or finishes sending it.
@@ -28,6 +37,11 @@ import { resolveAudience } from "./audience";
  * Resend returned, which is what its webhook will quote. A resume — after a
  * function timeout, say — touches only the rows still `queued`, so nobody gets
  * the email twice.
+ *
+ * A WhatsApp campaign takes the same road with `sendQueuedWhatsApp` in place of
+ * the email batch. It may stop early (a time budget, no credentials) and say
+ * how many rows are left; the campaign then stays `sending`, and the cron's
+ * resume of stuck sends finishes it.
  */
 
 const CHUNK = 100;
@@ -38,10 +52,23 @@ export const STUCK_AFTER_MS = 10 * 60_000;
 export const ABANDON_AFTER_MS = 2 * 3_600_000;
 
 export type DispatchResult =
-  | { ok: true; sent: number; failed: number }
+  | {
+      ok: true;
+      sent: number;
+      failed: number;
+      /** WhatsApp only: rows left `queued` for the next run to finish. */
+      remaining?: number;
+    }
   | {
       ok: false;
-      error: "not_claimable" | "empty_audience" | "no_api_key" | "db";
+      error:
+        | "not_claimable"
+        | "empty_audience"
+        | "no_api_key"
+        | "whatsapp_not_configured"
+        | "template_unavailable"
+        | "db";
+      /** `template_unavailable`: why (a code from `whatsappTemplateEligibility`). */
       detail?: string;
     };
 
@@ -127,7 +154,16 @@ async function claim(
 export async function sendQueued(
   campaign: CampaignRow,
   rows: QueuedRow[],
-): Promise<{ sent: number; failed: number; lastError: string | null }> {
+): Promise<{
+  sent: number;
+  failed: number;
+  lastError: string | null;
+  /** Only a WhatsApp send can stop early; an email send always finishes. */
+  remaining?: number;
+}> {
+  if (campaign.channel === "whatsapp") {
+    return sendQueuedWhatsApp(campaign, rows);
+  }
   const db = getAdminClient().database;
   const content = campaign.content as CampaignContent;
   const appUrl = getAppUrl();
@@ -243,13 +279,66 @@ export async function refreshCounts(
     .eq("id", campaignId);
 }
 
+type Preflight =
+  | { ok: true; channel: CampaignChannel | null }
+  | Extract<DispatchResult, { ok: false }>;
+
+/**
+ * What must hold before a WhatsApp campaign is claimed or its audience frozen:
+ * Meta is reachable and the chosen template can go out. Both are problems of
+ * configuration, not of the campaign, so a failure here changes nothing: the
+ * campaign stays as it was and can be sent once the cause is fixed.
+ *
+ * It reads the campaign to learn its channel; an email campaign passes at once.
+ */
+async function preflight(campaignId: string): Promise<Preflight> {
+  const db = getAdminClient().database;
+  const { data, error } = await db
+    .from("campaigns")
+    .select("id, channel, audience, content")
+    .eq("id", campaignId)
+    .maybeSingle();
+  if (error) return { ok: false, error: "db", detail: error.message };
+
+  const campaign = data as Pick<
+    CampaignRow,
+    "channel" | "audience" | "content"
+  > | null;
+  // No such row: the claim that follows reports it as not claimable.
+  if (!campaign) return { ok: true, channel: null };
+  if (campaign.channel !== "whatsapp") {
+    return { ok: true, channel: campaign.channel };
+  }
+
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, error: "whatsapp_not_configured" };
+  }
+  try {
+    const template = await loadWhatsAppTemplate(
+      db,
+      campaign.content.whatsapp?.templateId,
+    );
+    const issue = campaignTemplateIssue(campaign, template);
+    if (issue)
+      return { ok: false, error: "template_unavailable", detail: issue };
+  } catch (err) {
+    return { ok: false, error: "db", detail: (err as Error).message };
+  }
+  return { ok: true, channel: "whatsapp" };
+}
+
 export async function dispatchCampaign(
   campaignId: string,
-  opts: { resume?: boolean } = {},
+  opts: { resume?: boolean; preflighted?: boolean } = {},
 ): Promise<DispatchResult> {
   const db = getAdminClient().database;
   const now = new Date();
   const resume = opts.resume === true;
+
+  if (!opts.preflighted) {
+    const checked = await preflight(campaignId);
+    if (!checked.ok) return checked;
+  }
 
   let campaign: CampaignRow | null;
   try {
@@ -262,7 +351,8 @@ export async function dispatchCampaign(
   // `sendEmail` shrugs when the key is missing, which is right for a booking
   // confirmation and wrong here: a campaign that silently went nowhere would
   // sit in the list as "sent".
-  if (!process.env.RESEND_API_KEY) {
+  const whatsapp = campaign.channel === "whatsapp";
+  if (!whatsapp && !process.env.RESEND_API_KEY) {
     await markFailed(campaignId, "RESEND_API_KEY is not set");
     return { ok: false, error: "no_api_key" };
   }
@@ -271,7 +361,11 @@ export async function dispatchCampaign(
   if (!resume) {
     let recipients;
     try {
-      recipients = await resolveAudience(campaign.audience, now);
+      recipients = await resolveAudience(
+        campaign.audience,
+        now,
+        campaign.channel,
+      );
     } catch (err) {
       const detail = (err as Error).message;
       await markFailed(campaignId, detail);
@@ -285,18 +379,29 @@ export async function dispatchCampaign(
     // Emails arrive lowercased and deduped from the resolver, which is what
     // the unique index on (campaign_id, email, cycle) relies on. An A/B test
     // deals its recipients out alternately, so both halves are the same size.
+    //
+    // A WhatsApp row has no email: NULL, never "", which would collide with
+    // every other row on that index and silently drop all but one. Its phone
+    // (E.164, deduped by the resolver) takes the email's place in the conflict
+    // target, and its language is the campaign's: one template, one language.
     const split = campaign.kind === "split";
     const { error: insertError } = await db.from("campaign_recipients").upsert(
       recipients.map((r, index) => ({
         campaign_id: campaignId,
         contact_id: r.id,
-        email: r.email,
-        language: r.language,
+        email: r.email || null,
+        ...(whatsapp ? { phone: r.phone } : {}),
+        language: whatsapp ? sendLocaleOf(campaign.audience) : r.language,
         status: "queued",
         cycle: "",
         variant: split ? (index % 2 === 0 ? "a" : "b") : null,
       })),
-      { onConflict: "campaign_id,email,cycle", ignoreDuplicates: true },
+      {
+        onConflict: whatsapp
+          ? "campaign_id,phone,cycle"
+          : "campaign_id,email,cycle",
+        ignoreDuplicates: true,
+      },
     );
     if (insertError) {
       await markFailed(campaignId, insertError.message);
@@ -313,7 +418,18 @@ export async function dispatchCampaign(
     return { ok: false, error: "db", detail };
   }
 
-  const { sent, failed, lastError } = await sendQueued(campaign, rows);
+  const { sent, failed, lastError, remaining } = await sendQueued(
+    campaign,
+    rows,
+  );
+
+  // A WhatsApp send that ran out of time (or credentials) is not finished.
+  // Leaving the campaign `sending` is what lets the cron resume it: it claims
+  // a `sending` row once it has been quiet for `STUCK_AFTER_MS`.
+  if (remaining) {
+    await refreshCounts(campaignId, { last_error: lastError });
+    return { ok: true, sent, failed, remaining };
+  }
 
   const finishedAt = new Date().toISOString();
   await refreshCounts(campaignId, {
@@ -334,6 +450,11 @@ export async function dispatchCampaign(
 export async function retryFailed(campaignId: string): Promise<DispatchResult> {
   const db = getAdminClient().database;
 
+  // Before anything is reopened: a WhatsApp campaign whose template can no
+  // longer go out must not be left `sending` with its rows already requeued.
+  const checked = await preflight(campaignId);
+  if (!checked.ok) return checked;
+
   // Reopen first, requeue second: if the campaign is not a finished send the
   // reopen matches nothing, and requeued rows would otherwise sit in `queued`
   // with nobody coming back for them.
@@ -353,15 +474,23 @@ export async function retryFailed(campaignId: string): Promise<DispatchResult> {
     return { ok: false, error: "not_claimable" };
   }
 
-  const { error: requeueError } = await db
+  let requeue = db
     .from("campaign_recipients")
     .update({ status: "queued", error: null })
     .eq("campaign_id", campaignId)
     .eq("status", "failed");
+  // A WhatsApp failure marked unconfirmed may have been delivered after all:
+  // resending it could message the same person twice, so it stays failed.
+  if (checked.channel === "whatsapp") {
+    requeue = requeue.or(
+      `error.is.null,error.not.like.${UNCONFIRMED_PREFIX.trim()}*`,
+    );
+  }
+  const { error: requeueError } = await requeue;
   if (requeueError) {
     await markFailed(campaignId, requeueError.message);
     return { ok: false, error: "db", detail: requeueError.message };
   }
 
-  return dispatchCampaign(campaignId, { resume: true });
+  return dispatchCampaign(campaignId, { resume: true, preflighted: true });
 }

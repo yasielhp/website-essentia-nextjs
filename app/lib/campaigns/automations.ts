@@ -1,5 +1,6 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
+import { sendLocaleOf } from "@/lib/schemas";
 import type { CampaignRow } from "@/types/campaign";
 import { resolveAudience } from "./audience";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
@@ -19,7 +20,11 @@ export async function runAutomation(
 ): Promise<{ queued: number; sent: number; failed: number }> {
   const db = getAdminClient().database;
 
-  const recipients = await resolveAudience(campaign.audience, now);
+  const recipients = await resolveAudience(
+    campaign.audience,
+    now,
+    campaign.channel,
+  );
   const posts =
     campaign.trigger.event === "new_blog_post" ? await recentPosts() : [];
 
@@ -31,19 +36,30 @@ export async function runAutomation(
     posts,
   });
 
+  // A WhatsApp row has no email (NULL, never ""), and its phone takes the
+  // email's place in the conflict target; see `dispatchCampaign`.
+  const whatsapp = campaign.channel === "whatsapp";
   let queued = 0;
   if (due.length > 0) {
     const { error } = await db.from("campaign_recipients").upsert(
       due.map(({ recipient, cycle, vars }) => ({
         campaign_id: campaign.id,
         contact_id: recipient.id,
-        email: recipient.email,
-        language: recipient.language,
+        email: recipient.email || null,
+        ...(whatsapp ? { phone: recipient.phone } : {}),
+        language: whatsapp
+          ? sendLocaleOf(campaign.audience)
+          : recipient.language,
         status: "queued",
         cycle,
         vars: vars ?? null,
       })),
-      { onConflict: "campaign_id,email,cycle", ignoreDuplicates: true },
+      {
+        onConflict: whatsapp
+          ? "campaign_id,phone,cycle"
+          : "campaign_id,email,cycle",
+        ignoreDuplicates: true,
+      },
     );
     if (error) throw new Error(error.message);
     queued = due.length;
