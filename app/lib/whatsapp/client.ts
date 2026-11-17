@@ -3,6 +3,10 @@ import type {
   WhatsAppTemplateButton,
 } from "@/lib/whatsapp/types";
 
+// `toE164` lives in `phone.ts`, which the browser may load; this file may not
+// be. It is handed on from here so the callers on the server need not change.
+export { toE164 } from "@/lib/whatsapp/phone";
+
 /**
  * The only place that talks to the Meta WhatsApp Cloud API.
  *
@@ -47,32 +51,6 @@ export function isWhatsAppConfigured(): boolean {
 
 export function whatsAppTemplateName(): string {
   return process.env.WHATSAPP_TEMPLATE_NAME || DEFAULT_TEMPLATE;
-}
-
-/**
- * Spanish mobile numbers are written half a dozen ways in a profile form —
- * `600 11 22 33`, `600-112-233`, `0034600112233`. Meta accepts only E.164, so
- * the number is reduced to digits and given the Spanish prefix when it carries
- * none. A number that is already international keeps its own country code.
- */
-export function toE164(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-
-  const hasPlus = trimmed.startsWith("+");
-  let digits = trimmed.replace(/\D/g, "");
-  if (!digits) return null;
-
-  if (!hasPlus) {
-    // `00` is the other way of writing `+` on this side of the Atlantic.
-    if (digits.startsWith("00")) digits = digits.slice(2);
-    else if (digits.length === 9) digits = `34${digits}`;
-  }
-
-  // Shorter than this is a landline extension or a typo, not a mobile.
-  if (digits.length < 8) return null;
-  return `+${digits}`;
 }
 
 type MetaError = {
