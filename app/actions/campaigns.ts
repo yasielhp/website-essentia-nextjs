@@ -27,6 +27,7 @@ import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { SENT_STATUSES } from "@/lib/campaigns/report";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
+import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
@@ -617,17 +618,23 @@ export async function saveCampaign(
     // draft or a scheduled one keeps its state, the schedule included.
     const { data, error } = await db
       .from("campaigns")
-      .select("status, channel")
+      .select("status, channel, kind")
       .eq("id", input.id)
       .maybeSingle();
     const saved = data as {
       status: CampaignStatus;
       channel: CampaignChannel;
+      kind: CampaignKind;
     } | null;
     const status = saved?.status;
     if (error || !saved || !status) return { ok: false, error: "not_found" };
     if (!EDITABLE.includes(status)) return { ok: false, error: "locked" };
     if (!channelChangeAllowed(saved.channel, validated.data.channel)) {
+      return { ok: false, error: "locked" };
+    }
+    // An appointment notice counts bookings under another consent: a saved
+    // campaign cannot become one, or stop being one.
+    if (!kindSwitchAllowed(saved.kind, validated.data.kind)) {
       return { ok: false, error: "locked" };
     }
 

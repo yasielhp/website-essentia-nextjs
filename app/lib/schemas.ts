@@ -12,6 +12,7 @@ import type {
   WhatsAppContent,
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
+import { APPOINTMENT_HOURS } from "@/lib/campaigns/appointment-form";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 import { countParams, paramIssues } from "@/lib/whatsapp/templates";
 import {
@@ -557,8 +558,9 @@ function addCampaignIssues(
   }
 
   if (visitEvent) {
-    const max = event === "before_visit" ? 336 : 720;
-    if (hours === undefined || hours < 1 || hours > max) {
+    // The limits are `appointment-form.ts`'s, which the form reads too.
+    const { min, max } = APPOINTMENT_HOURS[event];
+    if (hours === undefined || hours < min || hours > max) {
       ctx.addIssue({
         code: "custom",
         path: ["trigger", "hours"],
