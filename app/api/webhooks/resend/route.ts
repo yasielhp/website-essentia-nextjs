@@ -87,6 +87,25 @@ const PRECEDING_STATES: Record<string, string[]> = {
   failed: ["sent", "delivered", "read"],
 };
 
+/**
+ * The answer to an event the database did not take.
+ *
+ * Not a 2xx on purpose: Resend sends an unacknowledged event again (a few
+ * times over the following hours), and both writes of this route can be
+ * repeated safely. `record_campaign_event` moves a recipient forward only and
+ * counts once; the `booking_events` update is scoped to the states that precede
+ * the new one, so an event that already landed matches nothing. Acknowledging
+ * instead would lose the event for good, and a bounce that is never recorded
+ * is an address campaigns keep writing to.
+ *
+ * It is only for a write that FAILED. An event this route has no use for, or
+ * one about a message it does not know, is still a 200: sending those again
+ * changes nothing.
+ */
+function retryLater(): NextResponse {
+  return NextResponse.json({ received: false }, { status: 503 });
+}
+
 /** What went wrong, in Resend's own words where it gives them. */
 function reasonFor(event: ResendEvent): string {
   const bounce = event.data?.bounce?.message;
@@ -134,20 +153,27 @@ export async function POST(req: NextRequest) {
     const campaignEvent = event.type ? CAMPAIGN_EVENT[event.type] : undefined;
     if (campaignEvent) {
       try {
-        await getAdminClient().database.rpc("record_campaign_event", {
-          p_provider_id: emailId,
-          p_event: campaignEvent,
-          p_at: event.created_at ?? new Date().toISOString(),
-          p_error:
-            campaignEvent === "bounced" || campaignEvent === "complained"
-              ? reasonFor(event)
-              : null,
-        });
+        // The SDK answers `{ error }` instead of throwing, so the error has to
+        // be read: an unread one is an event lost behind a 200.
+        const { error } = await getAdminClient().database.rpc(
+          "record_campaign_event",
+          {
+            p_provider_id: emailId,
+            p_event: campaignEvent,
+            p_at: event.created_at ?? new Date().toISOString(),
+            p_error:
+              campaignEvent === "bounced" || campaignEvent === "complained"
+                ? reasonFor(event)
+                : null,
+          },
+        );
+        if (error) throw error;
       } catch (err) {
         console.error(
           "[webhooks/resend] could not record campaign event:",
           err,
         );
+        return retryLater();
       }
     }
     return NextResponse.json({ received: true });
@@ -161,7 +187,7 @@ export async function POST(req: NextRequest) {
   const at = event.created_at ?? new Date().toISOString();
 
   try {
-    await getAdminClient()
+    const { error } = await getAdminClient()
       .database.from("booking_events")
       .update({
         status: next,
@@ -175,10 +201,10 @@ export async function POST(req: NextRequest) {
       .eq("provider_id", emailId)
       .eq("channel", "email")
       .in("status", PRECEDING_STATES[next]!);
+    if (error) throw error;
   } catch (err) {
-    // Acknowledged all the same: Resend retries, and a webhook that keeps
-    // erroring is a webhook that ends up disabled.
     console.error("[webhooks/resend] could not record status:", err);
+    return retryLater();
   }
 
   return NextResponse.json({ received: true });
