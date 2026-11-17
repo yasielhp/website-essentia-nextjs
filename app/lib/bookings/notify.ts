@@ -302,7 +302,14 @@ export async function notifyBookingCore(
       date,
       time,
       duration: duration ?? "",
-      amount_due: amountDueEur != null ? String(amountDueEur) : "",
+      // Written the way the legacy email prints it: a bare number with the
+      // currency sign on the side the language puts it.
+      amount_due:
+        amountDueEur == null
+          ? ""
+          : locale === "es"
+            ? `${amountDueEur}\u00a0€`
+            : `€${amountDueEur}`,
       cancel_url: cancelUrl ?? "",
       consent_url: consentUrl ?? "",
     },

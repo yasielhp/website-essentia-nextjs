@@ -63,7 +63,7 @@ Regla de las variables de enlace: `cancel_url` solo donde hay bloque `cancel_lin
 | booking_paid        | `utils/format` `formatLongDate` (`booking-payments.service.ts:164`): día de dos cifras, sin día de la semana | `20 de agosto de 2026` (`05 de agosto de 2026`) |
 | bonus_purchase      | no lleva `date`; `expires_on` usa `utils/format` `formatLongDate` (`bonus-payments.service.ts:190`)          | `20 de agosto de 2026`                          |
 
-Importes: `amount_paid` y `amount_due` en `booking_paid` y `amount_paid` en `bonus_purchase` salen de `formatPrice` (`1.234,50 €` / `€1,234.50`). `amount_due` en `booking_received` es un número crudo dentro de la frase (`{importe} €`) y hoy no se usa (ver Hallazgos). `amount_paid` en `booking_paid` es lo cobrado en ESE pago (`received`), no lo acumulado en la reserva.
+Importes: `amount_paid` y `amount_due` en `booking_paid` y `amount_paid` en `bonus_purchase` salen de `formatPrice` (`1.234,50 €` / `€1,234.50`). `amount_due` en `booking_received` es un número crudo dentro de la frase del legacy (`45 €` en español, `€45` en inglés); la variable lo entrega con ese mismo formato y hoy no se usa (ver Hallazgos). `amount_paid` en `booking_paid` es lo cobrado en ESE pago (`received`), no lo acumulado en la reserva.
 
 ## Bloques fijos que añade el código
 

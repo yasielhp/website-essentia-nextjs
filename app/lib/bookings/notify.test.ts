@@ -277,6 +277,33 @@ describe("an edited message is what the client receives", () => {
     });
   }
 
+  for (const [locale, shown] of [
+    ["es", "45\u00a0€"],
+    ["en", "€45"],
+  ] as const) {
+    test(`received/${locale}: {{amount_due}} reads as the legacy email prints it`, async () => {
+      templates = () => ({
+        data: {
+          ...edited,
+          doc: {
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: "Pagarás {{amount_due}}." }],
+              },
+            ],
+          },
+        },
+        error: null,
+      });
+      await notifyBookingCore(payload("received", locale), actor);
+      expect(clientEmail().html).toContain(`Pagarás ${shown}.`);
+      // And the legacy email shows the same amount in the same form.
+      expect(legacyHtml("received", locale)).toContain(shown);
+    });
+  }
+
   test("a switched-off confirmation still goes out: only the reminder can be off", async () => {
     templates = () => ({ data: { ...edited, enabled: false }, error: null });
     await notifyBookingCore(payload("confirmed", "es"), actor);

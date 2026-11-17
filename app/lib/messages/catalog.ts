@@ -39,9 +39,11 @@ export type MessageVariable =
   | "time"
   | "duration"
   /**
-   * What is still owed at the centre. Empty when nothing is. In `booking_paid`
-   * it is formatted with the currency; in `booking_received` the caller passes
-   * a bare number (and passes null today, so it is always empty).
+   * What is still owed at the centre. Empty when nothing is. Both messages
+   * print it as their legacy email does: `booking_paid` through `formatPrice`
+   * ("25,00 €"), `booking_received` as the bare number with the sign on the
+   * language's side ("45 €" / "€45"). In `booking_received` the caller passes
+   * null today, so it is always empty.
    */
   | "amount_due"
   /**
