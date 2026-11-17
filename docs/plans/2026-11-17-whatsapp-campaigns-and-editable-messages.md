@@ -42,6 +42,32 @@ WHATSAPP_BUSINESS_ACCOUNT_ID=   # WABA id: lista y crea plantillas en /{WABA_ID}
 
 ---
 
+## Reglas de ejecución y correcciones (revisión del 2026-11-17)
+
+Este bloque manda sobre cualquier tarea de abajo que lo contradiga. Salió de revisar el plan contra la base de datos viva.
+
+**Reglas de ejecución**
+
+- **Solo rama.** Todo el trabajo va en `feat/whatsapp-campaigns`. Nadie hace merge ni push a `main` sin que el usuario lo pida: Vercel despliega desde ahí.
+- **Un implementador a la vez.** Las tareas comparten `messages/{es,en}/dashboard.json`, `schemas.ts`, `types/campaign.ts`, `nav.tsx` y el reducer del formulario. Fases en paralelo solo con worktrees y ramas separadas.
+- **La BD es producción.** `insforge db query` golpea la única BD viva. Backup previo hecho: `pre-whatsapp-campaigns-2026-11-17` (id `5cd59c5b-acf7-4230-82a2-1584c88d6773`, `completed`). Las migraciones son aditivas, van dentro de `BEGIN; … COMMIT;` y las que reemplazan funciones parten de la definición **viva** (`pg_get_functiondef`), no de la de este plan.
+- **Revisión spec → calidad** tras cada tarea. En las tareas 3, 8, 12, 18 y 21 (rutas vivas) es obligatoria y por separado.
+- **Verificación.** El centro no tiene número ni WABA registrados: todo paso que diga "llega al móvil" no se puede ejecutar y se informa como **no verificado**, nunca como hecho. Lo mismo para cualquier llamada real a Meta.
+- Cada implementador recibe las reglas del repo: `bun run format && bun run lint` sin avisos, mensajes de commit en inglés, claves i18n en ES y EN con reinicio del dev server, y que `bun run build` solo no valida lo que cuelga de `app/actions/`.
+
+**Defectos del plan, ya corregidos en las tareas**
+
+1. Task 8: el índice único era parcial y `onConflict` del SDK solo nombra columnas. Pasa a no parcial (los NULL no colisionan).
+2. Task 8: `record_campaign_event` marcaba `email_bounced_at` en un fallo de WhatsApp. Solo se marca en campañas de email.
+3. Task 7: la `upsert_contact` viva ya maneja `newsletter_unsubscribed_at`. La versión del plan lo perdía. Se conserva.
+4. Task 5: la baja por `ilike` a nueve dígitos no encuentra teléfonos guardados como `600 11 22 33`. Se compara `toE164(phone)` en código.
+5. Task 10: la audiencia de WhatsApp se deduplica por teléfono E.164, o dos contactos con el mismo número rompen el índice único.
+6. Task 13: `startsAt` se construye en Atlantic/Canary, no en UTC. `before_visit` y el recordatorio de la Task 21 se solapan: se avisa en el formulario.
+7. Task 18: los templates antiguos quedan como respaldo hasta el final. Solo `booking_reminder` se puede apagar.
+8. Task 3: se extrae el constructor del cuerpo y un test fija la forma que usa hoy el aviso a staff.
+
+---
+
 ## Fases
 
 | Fase | Entrega                                                                                                   | Depende de |
@@ -416,6 +442,69 @@ export async function sendTemplate(opts: {
     buttonUrlParams: [{ index: 0, text: opts.buttonUrlParam }],
   });
 }
+```
+
+**Step 1b: Fijar la forma que usa hoy el aviso a staff (antes de tocar nada)**
+
+Extraer el cuerpo de la petición a una función pura `buildTemplateBody(send: TemplateSend)` exportada de `app/lib/whatsapp/client.ts` (devuelve el objeto que se serializa), y que `sendTemplateMessage` la use. Escribir **antes** el test `app/lib/whatsapp/client.test.ts` contra el comportamiento antiguo y comprobar que pasa con `sendTemplate` tal como está en `main`:
+
+```ts
+import { describe, expect, test } from "bun:test";
+import { buildTemplateBody } from "@/lib/whatsapp/client";
+
+describe("buildTemplateBody", () => {
+  test("keeps the shape the staff notification has always sent", () => {
+    const body = buildTemplateBody({
+      to: "+34600112233",
+      name: "essentia_booking_update",
+      language: "es",
+      bodyParams: [
+        "Yuli",
+        "Se te ha asignado una sesión",
+        "Ana",
+        "Drenaje",
+        "lunes, 09:00",
+      ],
+      buttonUrlParams: [{ index: 0, text: "booking-id" }],
+    });
+    expect(body).toEqual({
+      messaging_product: "whatsapp",
+      to: "+34600112233",
+      type: "template",
+      template: {
+        name: "essentia_booking_update",
+        language: { code: "es" },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              "Yuli",
+              "Se te ha asignado una sesión",
+              "Ana",
+              "Drenaje",
+              "lunes, 09:00",
+            ].map((text) => ({ type: "text", text })),
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [{ type: "text", text: "booking-id" }],
+          },
+        ],
+      },
+    });
+  });
+  test("a template without parameters sends no body component", () => {
+    const body = buildTemplateBody({
+      to: "+34600112233",
+      name: "hola",
+      language: "es",
+      bodyParams: [],
+    });
+    expect(body.template.components).toEqual([]);
+  });
+});
 ```
 
 **Step 2: Añadir lectura y creación de plantillas en la WABA**
@@ -921,15 +1010,29 @@ const inbound = (payload.entry ?? []).flatMap((entry) =>
 for (const message of inbound) {
   const text = message.text?.body?.trim().toUpperCase() ?? "";
   if (!message.from || !["STOP", "BAJA", "CANCELAR"].includes(text)) continue;
-  const digits = message.from.replace(/\D/g, "");
-  await db
+  // Phones are stored however a form wrote them (`600 11 22 33`, `600-112-233`),
+  // so SQL cannot match them reliably. Load the opted-in contacts and compare
+  // the normalised numbers in code.
+  const from = toE164(`+${message.from.replace(/\D/g, "")}`);
+  if (!from) continue;
+  const { data: optedIn } = await db
     .from("contacts")
-    .update({ whatsapp_opted_out_at: new Date().toISOString() })
-    .or(`phone.ilike.%${digits.slice(-9)}`); // Spanish numbers: last nine digits match any format
+    .select("id, phone")
+    .not("whatsapp_opted_in_at", "is", null)
+    .is("whatsapp_opted_out_at", null);
+  const ids = ((optedIn ?? []) as { id: string; phone: string | null }[])
+    .filter((c) => toE164(c.phone) === from)
+    .map((c) => c.id);
+  if (ids.length > 0) {
+    await db
+      .from("contacts")
+      .update({ whatsapp_opted_out_at: new Date().toISOString() })
+      .in("id", ids);
+  }
 }
 ```
 
-Mover la línea `const db = getAdminClient().database;` que ya existía más abajo (quitar la duplicada).
+Mover la línea `const db = getAdminClient().database;` que ya existía más abajo (quitar la duplicada). Importar `toE164` de `@/lib/whatsapp/client`. Añadir un test puro `app/lib/whatsapp/optout.test.ts` si la comparación se extrae a una función (`matchOptOut(from, contacts)`): `600 11 22 33`, `600-112-233` y `+34600112233` deben coincidir con `34600112233`.
 
 **Step 3: Comprobar en local con un payload firmado**
 
@@ -1013,7 +1116,10 @@ Misma regla que la newsletter: la casilla marcada pone `whatsapp_opted_in_at = n
 
 **Step 1: Migración de la función**
 
+**Parte de la definición viva**, que ya incluye `newsletter_unsubscribed_at` (volcado en el scratchpad `fn-upsert_contact.txt`). Solo se añade `p_whatsapp`; nada de lo existente se quita. Va dentro de una transacción.
+
 ```sql
+BEGIN;
 DROP FUNCTION IF EXISTS public.upsert_contact(text, text, text, text, text, text, boolean);
 CREATE OR REPLACE FUNCTION public.upsert_contact(
   p_email text, p_first_name text, p_last_name text, p_phone text,
@@ -1035,6 +1141,8 @@ BEGIN
     newsletter_subscribed = CASE WHEN p_newsletter THEN true ELSE contacts.newsletter_subscribed END,
     newsletter_subscribed_at = CASE WHEN p_newsletter AND NOT COALESCE(contacts.newsletter_subscribed, false)
                                     THEN now() ELSE contacts.newsletter_subscribed_at END,
+    newsletter_unsubscribed_at = CASE WHEN p_newsletter THEN NULL
+                                      ELSE contacts.newsletter_unsubscribed_at END,
     whatsapp_opted_in_at = CASE WHEN p_whatsapp AND contacts.whatsapp_opted_in_at IS NULL
                                 THEN now() ELSE contacts.whatsapp_opted_in_at END,
     whatsapp_opted_out_at = CASE WHEN p_whatsapp THEN NULL ELSE contacts.whatsapp_opted_out_at END,
@@ -1042,9 +1150,10 @@ BEGIN
   RETURNING id INTO v_id;
   RETURN v_id;
 END; $function$;
+COMMIT;
 ```
 
-Aplicar con el CLI como en Task 1. Buscar todos los `rpc("upsert_contact"` del repo (`grep -rn upsert_contact app`) y pasar `p_whatsapp` donde haya casilla.
+Aplicar con el CLI como en Task 1. Después comprobar que la firma vieja de siete argumentos sigue funcionando: `select public.upsert_contact('plan-test@example.com','A','B',null,'es',null,null)` y borrar esa fila de prueba. Buscar todos los `rpc("upsert_contact"` del repo (`grep -rn upsert_contact app`) y pasar `p_whatsapp` donde haya casilla.
 
 **Step 2: Casilla en el formulario público de reserva**
 
@@ -1071,6 +1180,8 @@ git commit -am "feat(contacts): WhatsApp consent — booking checkbox, contact c
 - Create: `insforge/migrations/20261117c_campaign_channel.sql`
 
 ```sql
+BEGIN;
+
 ALTER TABLE campaigns
   ADD COLUMN IF NOT EXISTS channel text NOT NULL DEFAULT 'email'; -- email | whatsapp
 
@@ -1080,40 +1191,81 @@ ALTER TABLE campaign_recipients
   ADD COLUMN IF NOT EXISTS phone text,
   ADD COLUMN IF NOT EXISTS read_at timestamptz;
 
+-- Not partial on purpose: the SDK's onConflict names columns only and cannot
+-- target a partial index. Postgres never treats two NULLs as equal, so the
+-- email rows (phone NULL) are not affected.
 CREATE UNIQUE INDEX IF NOT EXISTS campaign_recipients_unique_phone_cycle
-  ON campaign_recipients (campaign_id, phone, cycle) WHERE phone IS NOT NULL;
+  ON campaign_recipients (campaign_id, phone, cycle);
 
--- `read` from Meta maps onto `opened` so the report's columns stay the same;
--- `failed` from Meta (no WhatsApp on that number) is terminal like a bounce.
+-- Written from the LIVE definition (scratchpad fn-record_campaign_event.txt).
+-- Two changes: Meta's `read`/`failed` map onto `opened`/`bounced` for WhatsApp
+-- campaigns, and `email_bounced_at` is stamped only for email campaigns: a
+-- number without WhatsApp says nothing about the inbox.
 CREATE OR REPLACE FUNCTION public.record_campaign_event(
   p_provider_id text, p_event text, p_at timestamptz, p_error text DEFAULT NULL
 ) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $function$
-DECLARE v_row campaign_recipients%ROWTYPE; v_rank_now int; v_rank_new int; v_event text;
+DECLARE
+  v_row campaign_recipients%ROWTYPE;
+  v_channel text;
+  v_event text;
+  v_rank_now int;
+  v_rank_new int;
 BEGIN
-  v_event := CASE p_event WHEN 'read' THEN 'opened' WHEN 'failed' THEN 'bounced' ELSE p_event END;
   SELECT * INTO v_row FROM campaign_recipients WHERE provider_id = p_provider_id FOR UPDATE;
   IF NOT FOUND THEN RETURN false; END IF;
+
+  SELECT channel INTO v_channel FROM campaigns WHERE id = v_row.campaign_id;
+  v_event := CASE
+    WHEN v_channel = 'whatsapp' AND p_event = 'read'   THEN 'opened'
+    WHEN v_channel = 'whatsapp' AND p_event = 'failed' THEN 'bounced'
+    ELSE p_event END;
+
+  -- Terminal states never move again.
   IF v_row.status IN ('bounced', 'complained', 'failed') THEN RETURN false; END IF;
-  v_rank_now := CASE v_row.status WHEN 'queued' THEN 0 WHEN 'sent' THEN 1 WHEN 'delivered' THEN 2
+
+  v_rank_now := CASE v_row.status
+    WHEN 'queued' THEN 0 WHEN 'sent' THEN 1 WHEN 'delivered' THEN 2
     WHEN 'opened' THEN 3 WHEN 'clicked' THEN 4 ELSE 0 END;
-  v_rank_new := CASE v_event WHEN 'delivered' THEN 2 WHEN 'opened' THEN 3 WHEN 'clicked' THEN 4
+  v_rank_new := CASE v_event
+    WHEN 'delivered' THEN 2 WHEN 'opened' THEN 3 WHEN 'clicked' THEN 4
     WHEN 'bounced' THEN 9 WHEN 'complained' THEN 9 ELSE 0 END;
+
   IF v_rank_new = 0 OR v_rank_new <= v_rank_now THEN RETURN false; END IF;
+
   UPDATE campaign_recipients SET
     status = v_event,
     error = COALESCE(p_error, error),
     delivered_at = CASE WHEN v_event IN ('delivered','opened','clicked') THEN COALESCE(delivered_at, p_at) ELSE delivered_at END,
     opened_at    = CASE WHEN v_event IN ('opened','clicked') THEN COALESCE(opened_at, p_at) ELSE opened_at END,
-    read_at      = CASE WHEN p_event = 'read' THEN COALESCE(read_at, p_at) ELSE read_at END,
+    read_at      = CASE WHEN v_channel = 'whatsapp' AND p_event = 'read' THEN COALESCE(read_at, p_at) ELSE read_at END,
     clicked_at   = CASE WHEN v_event = 'clicked' THEN COALESCE(clicked_at, p_at) ELSE clicked_at END
   WHERE id = v_row.id;
-  -- (copiar aquí, sin cambios, el bloque de contadores de la función actual:
-  --  ver insforge/migrations/20260905_campaigns.sql, UPDATE campaigns SET …)
+
+  -- Counters are "reached at least this state": a click implies an open and a
+  -- delivery, so an opened row that jumps to clicked bumps only clicked, while
+  -- a sent row that jumps straight to clicked bumps all three.
+  UPDATE campaigns SET
+    delivered_count  = delivered_count  + CASE WHEN v_rank_new >= 2 AND v_rank_now < 2 AND v_rank_new < 9 THEN 1 ELSE 0 END,
+    opened_count     = opened_count     + CASE WHEN v_rank_new >= 3 AND v_rank_now < 3 AND v_rank_new < 9 THEN 1 ELSE 0 END,
+    clicked_count    = clicked_count    + CASE WHEN v_rank_new >= 4 AND v_rank_now < 4 AND v_rank_new < 9 THEN 1 ELSE 0 END,
+    bounced_count    = bounced_count    + CASE WHEN v_event = 'bounced' THEN 1 ELSE 0 END,
+    complained_count = complained_count + CASE WHEN v_event = 'complained' THEN 1 ELSE 0 END
+  WHERE id = v_row.campaign_id;
+
+  IF v_event IN ('bounced', 'complained')
+     AND v_channel IS DISTINCT FROM 'whatsapp'
+     AND v_row.contact_id IS NOT NULL THEN
+    UPDATE contacts SET email_bounced_at = COALESCE(email_bounced_at, p_at)
+    WHERE id = v_row.contact_id;
+  END IF;
+
   RETURN true;
 END; $function$;
+
+COMMIT;
 ```
 
-**Importante:** antes de escribir la función, leer la versión vigente con `npx @insforge/cli@latest db query "select pg_get_functiondef('public.record_campaign_event'::regproc)"` y conservar el bloque de contadores tal cual. Aplicar y commitear:
+**Antes de aplicar:** probar el índice con un upsert real dentro de una transacción que se deshace (`BEGIN; INSERT … ON CONFLICT (campaign_id, phone, cycle) DO NOTHING …; ROLLBACK;`) y comprobar que una fila de email (teléfono NULL) sigue insertándose. Después del `COMMIT`, comprobar que el webhook de Resend sigue funcionando: la función de email se comporta igual porque el canal por defecto es `email`. Aplicar y commitear:
 
 ```bash
 git add insforge/migrations/20261117c_campaign_channel.sql
@@ -1288,6 +1440,8 @@ if (channel === "whatsapp") {
 ```
 
 y el `Recipient` resultante lleva `phone` normalizado. `toE164` se importa de `@/lib/whatsapp/client` — ese módulo lee `process.env` solo dentro de funciones, así que es seguro en un test.
+
+**Deduplicar por teléfono.** Con canal `whatsapp`, dos contactos con el mismo número E.164 (una madre y su hija, un fijo compartido) dejan solo el primero. Sin esto chocan con el índice único `(campaign_id, phone, cycle)` y pueden tumbar un envío único entero. Test: dos candidatos con `600112233` y `600 11 22 33` devuelven uno.
 
 **Step 3: Pasar, commit**
 
@@ -1605,6 +1759,12 @@ case "before_visit": {
 
 y `after_booking` / `first_visit` añaden `vars: visitVars(...)` con la última visita. `visitVars` usa `formatLongDate(date, locale)` de `@/lib/format-date` (ya existe, lo usa `whatsapp/messages.ts`).
 
+**Correcciones obligatorias de esta tarea**
+
+- `startsAt` se construye en **Atlantic/Canary**, igual que la regla `first_visit`, nunca con `new Date(date + "T" + time)`: en Vercel eso es UTC y se desfasa una hora en verano. Reutilizar el helper que ya usa `first_visit` para convertir fecha local + hora a instante, o `Intl` con `timeZone: "Atlantic/Canary"`.
+- Los fixtures de los tests deben ser coherentes: 09:00 hora de Canarias en diciembre es `09:00Z`; en julio es `08:00Z`. Añadir un caso de verano.
+- Solape: `before_visit` por WhatsApp y el recordatorio de la Task 21 mandan ambos un WhatsApp antes de la cita. En el paso del trigger, si el canal es WhatsApp y el evento `before_visit`, mostrar un aviso: "Si también tienes el recordatorio de WhatsApp activo en Mensajes, la clienta recibirá los dos."
+
 **Step 3:** pasar tests, cablear `loadCandidates` (la siguiente reserva confirmada ≥ now por contacto), UI del trigger, i18n. Commit:
 
 ```bash
@@ -1839,12 +1999,14 @@ export async function renderMessageEmail(opts: {
 }): Promise<{ subject: string; html: string } | null>;
 ```
 
-que lee `message_templates` (fila `enabled`), cae a `DEFAULTS[key][locale]` si no hay fila, y devuelve `null` si la fila existe con `enabled = false` (el admin apagó ese mensaje). Las variables se rellenan con el mecanismo de `vars` que `campaignEmail` ya tiene (escapadas).
+que lee `message_templates` (fila `enabled`), cae a `DEFAULTS[key][locale]` si no hay fila, y devuelve `null` si la fila existe con `enabled = false`. **Solo `booking_reminder` se puede apagar**: para las demás claves el renderizador ignora `enabled` (apagar la confirmación dejaría a una clienta que ha pagado sin su correo). Las variables se rellenan con el mecanismo de `vars` que `campaignEmail` ya tiene (escapadas).
 
 - Modify: `app/lib/bookings/notify.ts`, `app/api/cron/booking-reminders/route.ts`, `app/actions/*` que llamen a `consentRequestEmail` / `bonusPurchaseEmail`: sustituir la llamada al template por `renderMessageEmail` + los helpers de `_base.ts` para `fixedHtml`.
 - Modify: `app/emails/templates/campaign.test.ts` (caso `footer: "transactional"` sin enlace de baja).
 
-**Verificación obligatoria:** `bun run build` **y** probar una reserva en local (recibido + confirmado) comprobando que el email se ve igual que antes. Las funciones antiguas de `app/emails/templates/booking-*.ts` se borran solo cuando ningún `grep` las encuentre. Commit:
+**Respaldo obligatorio:** cada llamador envuelve `renderMessageEmail` en `try/catch` y, si lanza o devuelve nada, usa la función antigua de `app/emails/templates/booking-*.ts`. Esas funciones **no se borran en esta tarea**: se retiran al final, en una tarea aparte, cuando el nuevo camino lleve probado en local de principio a fin.
+
+**Verificación obligatoria:** `bun run build`, `bun run test` y probar una reserva en local (recibido + confirmado + recordatorio) comprobando que el HTML se ve igual que antes. Es el camino de una reserva ya pagada: si algo no se puede probar, se informa como no verificado. Commit:
 
 ```bash
 git commit -am "refactor(emails): transactional bodies are Maily documents with code defaults and fixed blocks"
@@ -1867,7 +2029,7 @@ Commit: `feat(messages): admin actions to edit, reset and test every transaction
 
 **Files:**
 
-- Create: `app/(dashboard)/dashboard/messages/email/message-list.tsx` (una fila por `MessageKey` × idioma: nombre legible, "Personalizado" / "Por defecto", interruptor Activo, Editar, Enviarme prueba)
+- Create: `app/(dashboard)/dashboard/messages/email/message-list.tsx` (una fila por `MessageKey` × idioma: nombre legible, "Personalizado" / "Por defecto", interruptor Activo **solo en `booking_reminder`**, Editar, Enviarme prueba)
 - Create: `app/(dashboard)/dashboard/messages/email/message-editor.tsx` (reutiliza el editor Maily del `content-step` de campañas — extraer el componente a `app/components/dashboard/maily-editor.tsx` si aún está incrustado; chips con las variables disponibles del catálogo que insertan `{{var}}`; previsualización `email-preview.tsx` reutilizada; botón "Restablecer por defecto")
 - Modify: `messages-tabs.tsx`, i18n `dashboard.messages.email.*` y nombres legibles `dashboard.messages.keys.*`
 
