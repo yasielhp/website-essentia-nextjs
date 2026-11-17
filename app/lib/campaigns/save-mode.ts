@@ -27,3 +27,15 @@ export function saveStrictness(
  * for a pause, the one way to keep half a message without it going out.
  */
 export const PAUSE_TO_SAVE = "pause_to_save";
+
+/**
+ * The error a save that failed validation answers with. Only a "draft" save
+ * that was held to the FULL rules (the campaign is live) asks for a pause; a new
+ * or quiet draft that is invalid is simply `invalid`, with its fields marked.
+ */
+export function refusalOfSave(
+  draftRequested: boolean,
+  strictness: SaveStrictness,
+): string {
+  return draftRequested && strictness === "full" ? PAUSE_TO_SAVE : "invalid";
+}

@@ -49,7 +49,7 @@ import {
   WHATSAPP_NOT_READY,
 } from "@/lib/campaigns/audience-reach";
 import { readAllPages } from "@/lib/campaigns/paged-read";
-import { PAUSE_TO_SAVE, saveStrictness } from "@/lib/campaigns/save-mode";
+import { refusalOfSave, saveStrictness } from "@/lib/campaigns/save-mode";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
 import {
@@ -724,11 +724,14 @@ export async function saveCampaign(
   // for a pause. The state is read before validating, which is what decides.
   let savedStatus: CampaignStatus | null = null;
   if (options.draft && input.id) {
-    const { data } = await getAdminClient()
+    const { data, error } = await getAdminClient()
       .database.from("campaigns")
       .select("status")
       .eq("id", input.id)
       .maybeSingle();
+    // Without the state there is no knowing how strict to be: a campaign that
+    // may be live must not be validated loosely on a guess.
+    if (error) return { ok: false, error: "db" };
     savedStatus = (data as { status: CampaignStatus } | null)?.status ?? null;
   }
   const strictness = saveStrictness(options.draft === true, savedStatus);
@@ -745,7 +748,7 @@ export async function saveCampaign(
   if (!validated.ok) {
     return {
       ok: false,
-      error: options.draft ? PAUSE_TO_SAVE : "invalid",
+      error: refusalOfSave(options.draft === true, strictness),
       fieldErrors: validated.errors,
     };
   }
