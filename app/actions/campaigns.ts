@@ -17,6 +17,7 @@ import {
   segmentSchema,
   validateCampaign,
   validateCampaignDraft,
+  whatsappContentSchema,
 } from "@/lib/schemas";
 import { loadCandidates, resolveAudience } from "@/lib/campaigns/audience";
 import { docIsEmpty } from "@/lib/campaigns/doc";
@@ -24,6 +25,7 @@ import { filterAudience } from "@/lib/campaigns/audience-filter";
 import { deadlineFrom } from "@/lib/campaigns/deadline";
 import { dispatchCampaign, retryFailed } from "@/lib/campaigns/dispatch";
 import { loadWhatsAppTemplate } from "@/lib/campaigns/dispatch-whatsapp";
+import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
 import { prepareTestSend } from "@/lib/campaigns/whatsapp-test-send";
@@ -866,6 +868,17 @@ export async function sendTestCampaign(
 }
 
 /**
+ * Five WhatsApp tests an hour per administrator. Each one is a real message
+ * from the centre's number, so a stuck button must not be able to send dozens.
+ * Best-effort: it lives in this process's memory, and every serverless
+ * instance has its own, so it is a brake and not a guarantee.
+ */
+const whatsappTestLimiter = createRateLimiter({
+  max: 5,
+  windowMs: 60 * 60 * 1000,
+});
+
+/**
  * Sends the campaign's template, as it would go out, to the administrator who
  * asked: the template's own example values, to the phone on that admin's
  * profile. Nothing is recorded and no campaign is needed.
@@ -889,7 +902,15 @@ export async function sendTestWhatsAppCampaign(
   const parsed = campaignAudienceSchema
     .pick({ language: true, sendLocale: true })
     .safeParse(audience);
-  if (!parsed.success) return { ok: false, error: "invalid" };
+  // The template id comes from the browser: it must be a uuid (or nothing,
+  // which is then "no template") before it reaches a query.
+  const block = whatsappContentSchema.safeParse(
+    content?.whatsapp ?? {
+      templateId: null,
+      params: [],
+    },
+  );
+  if (!parsed.success || !block.success) return { ok: false, error: "invalid" };
 
   const db = getAdminClient().database;
   let phone: string | null = null;
@@ -902,10 +923,7 @@ export async function sendTestWhatsAppCampaign(
       .maybeSingle();
     if (error) return { ok: false, error: "db" };
     phone = (data as { phone: string | null } | null)?.phone ?? null;
-    template = await loadWhatsAppTemplate(
-      db,
-      content?.whatsapp?.templateId ?? null,
-    );
+    template = await loadWhatsAppTemplate(db, block.data.templateId);
   } catch (err) {
     console.error("[campaigns] whatsapp test lookup failed:", err);
     return { ok: false, error: "db" };
@@ -919,6 +937,17 @@ export async function sendTestWhatsAppCampaign(
       ...(plan.detail ? { detail: plan.detail } : {}),
     };
   }
+
+  // Counted only here, once everything that could be refused without costing
+  // a message has been: a profile with no phone does not use up the hour.
+  if (!whatsappTestLimiter.take(caller.userId)) {
+    return { ok: false, error: "test_rate_limited" };
+  }
+  // The admin and the template, never the phone.
+  console.info("[campaigns] whatsapp test", {
+    admin: caller.userId,
+    template: template?.id,
+  });
 
   const result = await sendTemplateMessage(plan.send);
   if (result.status === "sent") return { ok: true, to: plan.to };

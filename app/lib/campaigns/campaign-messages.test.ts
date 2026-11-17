@@ -136,6 +136,7 @@ describe("the campaign form strings", () => {
   test("every error the actions and the save can return is translated", () => {
     const keys = [
       "no_phone",
+      "test_rate_limited",
       "meta",
       "whatsapp_not_configured",
       "template_unavailable",

@@ -422,7 +422,7 @@ const whatsappParamSchema = z.discriminatedUnion("kind", [
  *
  * Error keys: `content.whatsapp.templateId` and `content.whatsapp.params.N`.
  */
-const whatsappContentSchema = z.object({
+export const whatsappContentSchema = z.object({
   templateId: z.uuid("templateRequired").nullable(),
   params: z.array(whatsappParamSchema).max(20),
 }) satisfies z.ZodType<WhatsAppContent>;

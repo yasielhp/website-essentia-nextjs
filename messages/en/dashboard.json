@@ -1865,7 +1865,8 @@
       "no_email": "Your account has no email address to send the test to.",
       "generic": "Something went wrong. Try again.",
       "no_phone": "Your profile has no phone number to send the test to.",
-      "meta": "Meta rejected the request."
+      "meta": "Meta rejected the request.",
+      "test_rate_limited": "You have sent too many tests; wait a little."
     },
     "type": {
       "title": "Campaign type",
