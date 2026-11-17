@@ -1,5 +1,6 @@
 import type {
   CampaignChannel,
+  CampaignKind,
   CampaignRecipientRow,
   RecipientStatus,
 } from "@/types/campaign";
@@ -43,6 +44,8 @@ export const REPORT_NOTE_KEYS = [
   "skippedOptedOut",
   "skippedUnreachable",
   "skippedNoConsent",
+  "skippedNoConsentAppointment",
+  "skippedLate",
   "skippedNoContact",
   "skippedNoEmail",
   "skippedSuppressed",
@@ -53,14 +56,20 @@ const SKIP_KEYS: Record<string, string> = {
   opted_out: "skippedOptedOut",
   unreachable: "skippedUnreachable",
   no_consent: "skippedNoConsent",
+  late: "skippedLate",
   no_contact: "skippedNoContact",
   no_email: "skippedNoEmail",
   suppressed: "skippedSuppressed",
 };
 
-/** The `error` of one recipient. */
+/**
+ * The `error` of one recipient. `kind` is the campaign's: a recipient of an
+ * appointment notice who is left out for consent lacks the consent to
+ * appointment notices, not the one to news and offers, and the note says so.
+ */
 export function describeRecipientError(
   error: string | null | undefined,
+  kind?: CampaignKind,
 ): ReportNote | null {
   if (!error) return null;
   if (error === INTERRUPTED_ERROR) {
@@ -75,6 +84,9 @@ export function describeRecipientError(
   }
   if (error.startsWith(SKIPPED_PREFIX)) {
     const reason = error.slice(SKIPPED_PREFIX.length);
+    if (reason === "no_consent" && kind === "appointment") {
+      return { kind: "note", key: "skippedNoConsentAppointment" };
+    }
     return Object.hasOwn(SKIP_KEYS, reason)
       ? { kind: "note", key: SKIP_KEYS[reason] }
       : { kind: "note", key: "skippedOther", values: { reason } };

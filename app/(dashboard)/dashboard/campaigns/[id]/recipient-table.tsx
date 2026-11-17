@@ -42,7 +42,7 @@ export function RecipientTable({
 
   /** The error column: our words for what the send marked, Meta's as they came. */
   const errorText = (error: string | null): string => {
-    const note = describeRecipientError(error);
+    const note = describeRecipientError(error, kind);
     if (!note) return "";
     return note.kind === "raw"
       ? note.text

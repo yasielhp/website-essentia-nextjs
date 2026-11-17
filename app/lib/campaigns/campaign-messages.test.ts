@@ -426,3 +426,20 @@ describe("a read that failed has its words", () => {
     }
   });
 });
+
+describe("the notes of a notice's report", () => {
+  test("say which consent is missing and that a late notice is not sent", () => {
+    expect(
+      locales.es["campaigns.detail.notes.skippedNoConsentAppointment"],
+    ).toBe("Omitido: no tiene activados los avisos de la cita");
+    expect(
+      locales.en["campaigns.detail.notes.skippedNoConsentAppointment"],
+    ).toBe("Skipped: appointment notices are not switched on");
+    expect(locales.es["campaigns.detail.notes.skippedLate"]).toBe(
+      "Omitido: el aviso ya no llegaba a tiempo o la cita cambió",
+    );
+    expect(locales.en["campaigns.detail.notes.skippedLate"]).toContain(
+      "no longer on time",
+    );
+  });
+});

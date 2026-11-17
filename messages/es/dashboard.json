@@ -1937,6 +1937,8 @@
         "skippedOptedOut": "Omitido: se dio de baja",
         "skippedUnreachable": "Omitido: su número no tiene WhatsApp",
         "skippedNoConsent": "Omitido: sin consentimiento de novedades",
+        "skippedNoConsentAppointment": "Omitido: no tiene activados los avisos de la cita",
+        "skippedLate": "Omitido: el aviso ya no llegaba a tiempo o la cita cambió",
         "skippedNoContact": "Omitido: el contacto ya no existe",
         "skippedNoEmail": "Omitido: no tiene email",
         "skippedSuppressed": "Omitido: ese número escribió STOP",

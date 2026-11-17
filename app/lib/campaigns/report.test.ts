@@ -196,11 +196,13 @@ describe("REPORT_NOTE_KEYS", () => {
         "no_contact",
         "no_email",
         "suppressed",
+        "late",
         "other",
       ].map((reason) => describeRecipientError(`[skipped] ${reason}`)),
+      describeRecipientError("[skipped] no_consent", "appointment"),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(11);
+    expect(keys.length).toBe(13);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }
@@ -256,5 +258,35 @@ describe("every reason a send can skip a row for is one the report words", () =>
       expect(note).toMatchObject({ kind: "note" });
       expect(note && note.kind === "note" && note.key).not.toBe("skippedOther");
     }
+  });
+});
+
+describe("a recipient left out for consent", () => {
+  test("lacks the consent of what the campaign is: news and offers, or appointment notices", () => {
+    expect(describeRecipientError("[skipped] no_consent")).toEqual({
+      kind: "note",
+      key: "skippedNoConsent",
+    });
+    expect(describeRecipientError("[skipped] no_consent", "standard")).toEqual({
+      kind: "note",
+      key: "skippedNoConsent",
+    });
+    expect(
+      describeRecipientError("[skipped] no_consent", "appointment"),
+    ).toEqual({
+      kind: "note",
+      key: "skippedNoConsentAppointment",
+    });
+  });
+  test("an appointment notice's other reasons read as everybody's", () => {
+    expect(
+      describeRecipientError("[skipped] opted_out", "appointment"),
+    ).toEqual({ kind: "note", key: "skippedOptedOut" });
+  });
+  test("a notice that arrived too late says so", () => {
+    expect(describeRecipientError("[skipped] late", "appointment")).toEqual({
+      kind: "note",
+      key: "skippedLate",
+    });
   });
 });

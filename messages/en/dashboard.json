@@ -1937,6 +1937,8 @@
         "skippedOptedOut": "Skipped: they opted out",
         "skippedUnreachable": "Skipped: their number has no WhatsApp",
         "skippedNoConsent": "Skipped: no consent to news",
+        "skippedNoConsentAppointment": "Skipped: appointment notices are not switched on",
+        "skippedLate": "Skipped: the notice was no longer on time or the booking changed",
         "skippedNoContact": "Skipped: the contact no longer exists",
         "skippedNoEmail": "Skipped: no email address",
         "skippedSuppressed": "Skipped: that number wrote STOP",
