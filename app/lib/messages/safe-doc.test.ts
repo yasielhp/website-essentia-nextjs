@@ -438,3 +438,316 @@ describe("findForbiddenNodes, for saving", () => {
     expect(out).not.toContain("<script");
   });
 });
+
+// ── the allow-list ─────────────────────────────────────────────────────────
+
+describe("node types are an allow-list", () => {
+  const BAD_TYPES = [
+    "render",
+    "markup",
+    "children",
+    "constructor",
+    "toString",
+    "__proto__",
+    "hasOwnProperty",
+    "valueOf",
+    "for",
+    "foo",
+    "codeBlock",
+    "htmlCodeBlock",
+    "",
+  ];
+
+  for (const type of BAD_TYPES) {
+    test(`${JSON.stringify(type)} is dropped, with its children, and refused at saving`, async () => {
+      const d = doc(p(text("visible")), {
+        type,
+        content: [p(text("oculto"))],
+      });
+      const clean = sanitizeDoc(d, {});
+      expect(JSON.stringify(clean)).not.toContain("oculto");
+      expect(JSON.stringify(clean)).toContain("visible");
+      expect(findForbiddenNodes(d)).toEqual([
+        { kind: "blockNotAllowed", path: "content[1]", node: type },
+      ]);
+    });
+  }
+
+  test("a node with no type, or a type that is not text, is dropped", () => {
+    for (const bad of [{}, { type: 7 }, { type: null }, null, "x", 3]) {
+      const d = doc(p(text("visible")), bad as never);
+      expect(JSON.stringify(sanitizeDoc(d, {}))).toBe(
+        JSON.stringify(doc(p(text("visible")))),
+      );
+      expect(findForbiddenNodes(d)).toHaveLength(1);
+    }
+  });
+
+  test("an unknown node deep inside is found and dropped", () => {
+    const d = doc({
+      type: "section",
+      content: [{ type: "columns", content: [{ type: "render" }] }],
+    });
+    expect(findForbiddenNodes(d)).toEqual([
+      {
+        kind: "blockNotAllowed",
+        path: "content[0].content[0].content[0]",
+        node: "render",
+      },
+    ]);
+  });
+
+  test("a mark that is not a known one loses the mark, not the text", () => {
+    const d = doc(
+      p({
+        type: "text",
+        text: "hola",
+        marks: [{ type: "render" }, { type: "bold" }, { type: "constructor" }],
+      }),
+    );
+    expect(JSON.stringify(sanitizeDoc(d, {}))).toBe(
+      JSON.stringify(
+        doc(p({ type: "text", text: "hola", marks: [{ type: "bold" }] })),
+      ),
+    );
+    expect(findForbiddenNodes(d).map((x) => [x.kind, x.node, x.path])).toEqual([
+      ["blockNotAllowed", "render", "content[0].content[0].marks[0]"],
+      ["blockNotAllowed", "constructor", "content[0].content[0].marks[2]"],
+    ]);
+  });
+
+  // One of every type the editor can produce, as a document that must save
+  // and must render.
+  const LEGIT: EmailDoc = doc(
+    p(
+      text("a", [{ type: "bold" }, { type: "italic" }, { type: "underline" }]),
+      text("b", [{ type: "strike" }, { type: "code" }]),
+      text("c", [{ type: "textStyle", attrs: { color: "#103838" } }]),
+      text("d", [{ type: "link", attrs: { href: "https://example.test/" } }]),
+      { type: "hardBreak" },
+      { type: "variable", attrs: { id: "first_name", fallback: "x" } },
+      { type: "inlineImage", attrs: { src: "https://example.test/i.png" } },
+    ),
+    { type: "heading", attrs: { level: 2 }, content: [text("h")] },
+    {
+      type: "bulletList",
+      content: [{ type: "listItem", content: [p(text("li"))] }],
+    },
+    {
+      type: "orderedList",
+      content: [{ type: "listItem", content: [p(text("li"))] }],
+    },
+    { type: "blockquote", content: [p(text("q"))] },
+    button("https://example.test/"),
+    { type: "image", attrs: { src: "https://example.test/a.png", width: 100 } },
+    { type: "logo", attrs: { src: "https://example.test/l.png", size: "sm" } },
+    { type: "spacer", attrs: { height: 8 } },
+    { type: "horizontalRule" },
+    { type: "footer", content: [text("pie")] },
+    {
+      type: "linkCard",
+      attrs: { title: "t", description: "d", link: "https://example.test/" },
+    },
+    { type: "section", content: [p(text("s"))] },
+    {
+      type: "columns",
+      content: [
+        { type: "column", attrs: { width: 50 }, content: [p(text("c1"))] },
+        { type: "column", attrs: { width: 50 }, content: [p(text("c2"))] },
+      ],
+    },
+    { type: "repeat", attrs: { each: "items" }, content: [p(text("r"))] },
+  );
+
+  test("a document with one of every type the editor makes passes saving", () => {
+    expect(findForbiddenNodes(LEGIT)).toEqual([]);
+  });
+
+  test("and it renders, with every type still in it", async () => {
+    const out = await html(LEGIT, { first_name: "Ana" });
+    for (const word of ["a", "pie", "c1", "c2", "q"])
+      expect(out).toContain(word);
+    expect(out).toContain("<strong");
+    expect(out).toContain("<hr");
+    expect(out).toContain("<blockquote");
+    expect(out).toContain("<ul");
+    expect(out).toContain("<ol");
+    expect(out).toContain("<h2");
+    expect(out).toContain("https://example.test/a.png");
+  });
+
+  test("the default body of every message passes saving", async () => {
+    const { MESSAGE_KEYS } = await import("./catalog");
+    const { defaultContent } = await import("@/emails/defaults");
+    for (const key of MESSAGE_KEYS) {
+      for (const locale of ["es", "en"] as const) {
+        const d = defaultContent(key, locale);
+        expect(findForbiddenNodes(d.doc!)).toEqual([]);
+        expect(findForbiddenNodes(d.intro)).toEqual([]);
+        if (d.outro) expect(findForbiddenNodes(d.outro)).toEqual([]);
+      }
+    }
+  });
+
+  test("composing an email from node types that are method names of the renderer finishes", () => {
+    // In another process: with no allow-list, `render` never returns and a
+    // synchronous loop cannot be timed out from inside the test.
+    const run = Bun.spawnSync({
+      cmd: ["bun", "app/lib/messages/safe-doc.child.ts"],
+      cwd: process.cwd(),
+      timeout: 20_000,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(run.stdout.toString().trim()).toBe("done");
+    expect(run.exitCode).toBe(0);
+  }, 30_000);
+});
+
+describe("attributes that feed inline style", () => {
+  const section = (attrs: Record<string, unknown>): EmailDoc => ({
+    type: "section",
+    attrs,
+    content: [p(text("x"))],
+  });
+  const attrsOf = (d: EmailDoc) =>
+    (sanitizeDoc(doc(d), {}).content?.[0]?.attrs ?? {}) as Record<
+      string,
+      unknown
+    >;
+
+  for (const evil of [
+    "1px;background:url(//evil.com)",
+    "5px; position:fixed",
+    "url(//evil.com)",
+    "expression(alert(1))",
+    "10px 20px",
+    "",
+    "left;x:y",
+    {},
+    [],
+  ]) {
+    test(`${JSON.stringify(evil)} in a padding, a radius or a width is dropped`, () => {
+      const a = attrsOf(
+        section({
+          paddingTop: evil,
+          paddingLeft: evil,
+          borderRadius: evil,
+          borderWidth: evil,
+          marginTop: evil,
+          align: evil,
+          width: evil,
+        }),
+      );
+      for (const key of [
+        "paddingTop",
+        "paddingLeft",
+        "borderRadius",
+        "borderWidth",
+        "marginTop",
+        "align",
+        "width",
+      ]) {
+        expect(a).not.toHaveProperty(key);
+      }
+    });
+  }
+
+  test("numbers, numbers with a unit and the editor's own words pass", () => {
+    const a = attrsOf(
+      section({
+        paddingTop: 5,
+        paddingLeft: "12px",
+        borderRadius: "50%",
+        borderWidth: 1.5,
+        marginTop: "0",
+        align: "center",
+        width: "auto",
+      }),
+    );
+    expect(a).toEqual({
+      paddingTop: 5,
+      paddingLeft: "12px",
+      borderRadius: "50%",
+      borderWidth: 1.5,
+      marginTop: "0",
+      align: "center",
+      width: "auto",
+    });
+  });
+
+  test("a button's variant, radius and alignment keep the editor's words only", () => {
+    const keep = sanitizeDoc(
+      doc(
+        button("https://example.test/", {
+          borderRadius: "round",
+          alignment: "center",
+          variant: "outline",
+        }),
+      ),
+      {},
+    ).content![0]!.attrs!;
+    expect(keep).toMatchObject({
+      borderRadius: "round",
+      alignment: "center",
+      variant: "outline",
+    });
+    const drop = sanitizeDoc(
+      doc(
+        button("https://example.test/", {
+          borderRadius: "9px;x:y",
+          alignment: "x;y",
+          variant: "a;b",
+          paddingTop: "1px;background:url(//evil.com)",
+        }),
+      ),
+      {},
+    ).content![0]!.attrs!;
+    for (const key of ["borderRadius", "alignment", "variant", "paddingTop"]) {
+      expect(drop).not.toHaveProperty(key);
+    }
+  });
+
+  test("a paragraph's alignment and a logo's size", () => {
+    const para = sanitizeDoc(
+      doc({
+        type: "paragraph",
+        attrs: { textAlign: "left;x:y" },
+        content: [text("a")],
+      }),
+      {},
+    ).content![0]!.attrs!;
+    expect(para).not.toHaveProperty("textAlign");
+    const logo = sanitizeDoc(
+      doc({
+        type: "logo",
+        attrs: {
+          src: "https://example.test/l.png",
+          size: "9px;x:y",
+          alignment: "right",
+        },
+      }),
+      {},
+    ).content![0]!.attrs!;
+    expect(logo).not.toHaveProperty("size");
+    expect(logo).toMatchObject({ alignment: "right" });
+  });
+
+  test("it does not reach the HTML", async () => {
+    const out = await html(
+      doc(
+        {
+          type: "inlineImage",
+          attrs: {
+            src: "https://example.test/i.png",
+            width: "1px;background:url(//evil.com)",
+            height: 20,
+          },
+        } as EmailDoc,
+        { type: "spacer", attrs: { height: "1px;background:url(//evil.com)" } },
+        section({ paddingTop: "1px;background:url(//evil.com)" }),
+      ),
+    );
+    expect(out).not.toContain("evil.com");
+  });
+});

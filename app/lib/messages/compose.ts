@@ -5,7 +5,7 @@ import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
 import { OUTRO_MARKER } from "./fixed-blocks";
-import { sanitizeDoc } from "./safe-doc";
+import { ALLOWED_NODES, sanitizeDoc } from "./safe-doc";
 import {
   MESSAGE_CATALOG,
   type MessageKey,
@@ -67,7 +67,16 @@ export function usableDoc(doc: unknown): EmailDoc | null {
   if (candidate.type !== "doc" || !Array.isArray(candidate.content)) {
     return null;
   }
-  return docIsEmpty(candidate) ? null : candidate;
+  if (
+    candidate.content.some((node) => typeof node !== "object" || node === null)
+  ) {
+    return null;
+  }
+  // Nothing the renderer would draw (only unknown nodes, say) is not a body.
+  const drawable = candidate.content.some(
+    (node) => typeof node?.type === "string" && ALLOWED_NODES.has(node.type),
+  );
+  return drawable && !docIsEmpty(candidate) ? candidate : null;
 }
 
 export type MessageVars = Partial<Record<MessageVariable, string>>;
@@ -197,7 +206,10 @@ export async function composeMessageEmail({
   const blocksBefore = at === -1 ? fixedHtml : fixedHtml.slice(0, at);
   const blocksAfter =
     at === -1 ? "" : fixedHtml.slice(at + OUTRO_MARKER.length);
-  const edited = usableDoc(row.doc);
+  // The admin's body, if what is left of it after sanitising is worth sending.
+  const sanitised = usableDoc(row.doc);
+  const edited =
+    sanitised && !docIsEmpty(sanitizeDoc(sanitised, values)) ? sanitised : null;
   const content = edited
     ? `${await fragment(edited)}
       ${blocksBefore}

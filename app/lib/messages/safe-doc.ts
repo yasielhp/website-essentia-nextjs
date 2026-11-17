@@ -27,8 +27,78 @@ import type { EmailDoc } from "@/types/campaign";
  *    is dropped.
  */
 
-/** Nodes that write raw HTML into the email. The list in `@maily-to/render`. */
+/**
+ * Nodes that write raw HTML into the email: the one in `@maily-to/render`.
+ * Kept as a name for what it is; the allow-list below is what enforces it.
+ */
 export const FORBIDDEN_NODES: ReadonlySet<string> = new Set(["htmlCodeBlock"]);
+
+/**
+ * The node types a body may contain: an allow-list, because the renderer
+ * dispatches ANY `type` that happens to be a method of its class
+ * (`if (type in this) this[type](...)`). `{"type":"render"}` calls
+ * `Maily.render()` again and never returns; `markup` and `children` blow the
+ * stack; `constructor`, `toString` and the rest are not nodes at all. A deny
+ * list cannot name every method of a class; an allow-list needs no such list.
+ *
+ * Derived from two sources, then crossed:
+ *  - what the editor can produce (`@maily-to/core` 0.3.7): the nodes of
+ *    TipTap's StarterKit as `MailyKit` configures it (document, paragraph,
+ *    heading, blockquote, bulletList, orderedList, listItem, hardBreak,
+ *    horizontalRule, text), its own Footer, Spacer, Button, Image, Logo,
+ *    LinkCard, Section, Columns, Column and Repeat, and the editor's
+ *    InlineImage and Variable. Its slash menu (`DEFAULT_SLASH_COMMANDS`) adds
+ *    no other type. `htmlCodeBlock` is in it too and is left out on purpose.
+ *    StarterKit's `codeBlock` is left out as well: the renderer has no
+ *    method for it, so a document holding one could never be sent.
+ *  - what the renderer builds (`@maily-to/render` 0.2.3): the methods that
+ *    render a node are paragraph, text, heading, variable, horizontalRule,
+ *    orderedList, bulletList, listItem, button, spacer, hardBreak, logo,
+ *    image, footer, blockquote, linkCard, section, columns, column, repeat,
+ *    for, htmlCodeBlock and inlineImage. `for` is an alias of `repeat` the
+ *    editor never writes; `doc` is the root. `code` is a MARK (see below).
+ *
+ * Every node in the first list that the renderer can draw is here.
+ */
+export const ALLOWED_NODES: ReadonlySet<string> = new Set([
+  "doc",
+  "paragraph",
+  "heading",
+  "text",
+  "variable",
+  "hardBreak",
+  "bulletList",
+  "orderedList",
+  "listItem",
+  "blockquote",
+  "button",
+  "image",
+  "inlineImage",
+  "logo",
+  "linkCard",
+  "section",
+  "columns",
+  "column",
+  "spacer",
+  "horizontalRule",
+  "footer",
+  "repeat",
+]);
+
+/**
+ * The marks: they go through the same method dispatch in the renderer
+ * (`renderMark`), so they get the same allow-list. The editor's are bold,
+ * italic, underline, strike, code, textStyle (colour) and link.
+ */
+export const ALLOWED_MARKS: ReadonlySet<string> = new Set([
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "code",
+  "textStyle",
+  "link",
+]);
 
 export type DocProblem = {
   /** `blockNotAllowed`: a raw-HTML block. `linkNotAllowed`: a bad address. */
@@ -75,6 +145,56 @@ const safeLink = (url: string) => (LINK_OK.test(url) ? url : "#");
 
 // ── sanitising ──────────────────────────────────────────────────────────────
 
+// Attributes the renderer writes into inline `style`, some of them inside a
+// template (`${width}px`), where a string such as `1px;background:url(//x)`
+// would add declarations. They keep a number (with an optional unit) or one of
+// the words the editor offers, and lose anything else.
+const NUMBER = /^-?\d+(?:\.\d+)?(?:px|%|em|rem)?$/;
+const NUMERIC_ATTRS: ReadonlySet<string> = new Set([
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "marginTop",
+  "marginRight",
+  "marginBottom",
+  "marginLeft",
+  "borderRadius",
+  "borderWidth",
+  "width",
+  "height",
+  "gap",
+  "size",
+]);
+const LEFT_RIGHT = ["left", "center", "right"];
+const WORD_ATTRS: Record<string, ReadonlySet<string>> = {
+  alignment: new Set(LEFT_RIGHT),
+  align: new Set(LEFT_RIGHT),
+  textAlign: new Set([...LEFT_RIGHT, "justify"]),
+  verticalAlign: new Set(["top", "middle", "bottom"]),
+  textDirection: new Set(["ltr", "rtl"]),
+  variant: new Set(["filled", "outline"]),
+  borderRadius: new Set(["sharp", "smooth", "round"]),
+  size: new Set(["sm", "md", "lg"]),
+  width: new Set(["auto"]),
+  height: new Set(["auto"]),
+};
+
+function cleanStyleValues(attrs: Record<string, unknown>) {
+  for (const key of Object.keys(attrs)) {
+    const numeric = NUMERIC_ATTRS.has(key);
+    const words = WORD_ATTRS[key];
+    if (!numeric && !words) continue;
+    const value = attrs[key];
+    const ok =
+      (numeric &&
+        ((typeof value === "number" && Number.isFinite(value)) ||
+          (typeof value === "string" && NUMBER.test(value.trim())))) ||
+      (words !== undefined && typeof value === "string" && words.has(value));
+    if (!ok) delete attrs[key];
+  }
+}
+
 function cleanColours(attrs: Record<string, unknown>) {
   for (const key of Object.keys(attrs)) {
     if (key !== "color" && !key.endsWith("Color")) continue;
@@ -88,13 +208,22 @@ function cleanNode(
   node: EmailDoc,
   values: Record<string, string>,
 ): EmailDoc | null {
-  if (FORBIDDEN_NODES.has(node.type)) return null;
+  // Anything that is not a known node is dropped with everything under it.
+  if (
+    typeof node !== "object" ||
+    node === null ||
+    typeof node.type !== "string" ||
+    !ALLOWED_NODES.has(node.type)
+  ) {
+    return null;
+  }
 
   const next: EmailDoc = { ...node };
 
   if (node.attrs) {
     const attrs: Record<string, unknown> = { ...node.attrs };
     cleanColours(attrs);
+    cleanStyleValues(attrs);
 
     switch (node.type) {
       case "button":
@@ -137,16 +266,28 @@ function cleanNode(
   }
 
   if (node.marks) {
-    next.marks = node.marks.map((mark) => {
-      if (!mark.attrs) return mark;
-      const attrs: Record<string, unknown> = { ...mark.attrs };
-      cleanColours(attrs);
-      if (mark.type === "link") {
-        attrs.href = safeLink(resolve(attrs.href, attrs.isUrlVariable, values));
-        attrs.isUrlVariable = false;
-      }
-      return { ...mark, attrs };
-    });
+    // A mark that is not a known one is dropped; the text keeps showing.
+    next.marks = node.marks
+      .filter(
+        (mark) =>
+          typeof mark === "object" &&
+          mark !== null &&
+          typeof mark.type === "string" &&
+          ALLOWED_MARKS.has(mark.type),
+      )
+      .map((mark) => {
+        if (!mark.attrs) return mark;
+        const attrs: Record<string, unknown> = { ...mark.attrs };
+        cleanColours(attrs);
+        cleanStyleValues(attrs);
+        if (mark.type === "link") {
+          attrs.href = safeLink(
+            resolve(attrs.href, attrs.isUrlVariable, values),
+          );
+          attrs.isUrlVariable = false;
+        }
+        return { ...mark, attrs };
+      });
   }
 
   if (node.content) {
@@ -186,7 +327,8 @@ function literalOk(
 
 /**
  * Everything in the document that `sanitizeDoc` would remove or rewrite, with
- * where it is. Empty means the document is fine to save. A link whose address
+ * where it is: a node or mark that is not on the allow-list is a
+ * `blockNotAllowed`, an address that cannot leave a `linkNotAllowed`. Empty means the document is fine to save. A link whose address
  * is a variable (or starts with one) is not judged here: its value is only
  * known when the email is sent, where `sanitizeDoc` checks it.
  */
@@ -194,8 +336,20 @@ export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
   const problems: DocProblem[] = [];
 
   const visit = (node: EmailDoc, path: string) => {
-    if (FORBIDDEN_NODES.has(node.type)) {
-      problems.push({ kind: "blockNotAllowed", path, node: node.type });
+    // Not a known node: reported, and not looked into, because sending drops
+    // it with everything under it.
+    if (
+      typeof node !== "object" ||
+      node === null ||
+      typeof node.type !== "string" ||
+      !ALLOWED_NODES.has(node.type)
+    ) {
+      problems.push({
+        kind: "blockNotAllowed",
+        path,
+        node: String((node as { type?: unknown } | null)?.type ?? ""),
+      });
+      return;
     }
     const a = node.attrs ?? {};
     const bad = (value: unknown, where: string, nodeName: string) =>
@@ -230,6 +384,19 @@ export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
       if (!literalOk(a.image, false, IMAGE_OK)) bad(a.image, path, node.type);
     }
     (node.marks ?? []).forEach((mark, i) => {
+      if (
+        typeof mark !== "object" ||
+        mark === null ||
+        typeof mark.type !== "string" ||
+        !ALLOWED_MARKS.has(mark.type)
+      ) {
+        problems.push({
+          kind: "blockNotAllowed",
+          path: `${path}.marks[${i}]`,
+          node: String((mark as { type?: unknown } | null)?.type ?? ""),
+        });
+        return;
+      }
       if (
         mark.type === "link" &&
         !literalOk(mark.attrs?.href, mark.attrs?.isUrlVariable, LINK_OK)

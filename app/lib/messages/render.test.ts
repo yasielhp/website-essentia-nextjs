@@ -260,12 +260,13 @@ describe("renderMessageEmail", () => {
     expect(out).toEqual({ kind: "legacy" });
   });
 
-  test("a document the renderer rejects falls back to legacy", async () => {
+  test("a document of nothing but unknown nodes is not a body: the default one is sent", async () => {
     const out = await renderMessageEmail(opts, async () =>
       row({ doc: { type: "doc", content: [{ type: "nope" }] } }),
     );
-    // Maily rejects a node it does not know: the legacy email goes out.
-    expect(out).toEqual({ kind: "legacy" });
+    expect(out.kind).toBe("custom");
+    if (out.kind !== "custom") return;
+    expect(out.html).toContain("Estamos deseando verte.");
   });
 
   test("a saved row: the admin's version", async () => {
