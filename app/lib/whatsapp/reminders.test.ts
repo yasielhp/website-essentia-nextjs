@@ -34,9 +34,11 @@ const TEMPLATE = template({
   body: "Hola {{1}}, mañana tienes {{2}} a las {{3}}.",
   param_count: 3,
 });
+const CONFIGURED_AT = "2026-12-05T09:00:00Z";
 const ROW = {
   locale: "es",
   enabled: true,
+  updated_at: CONFIGURED_AT,
   whatsapp_template_id: "tpl-r",
   whatsapp_params: [
     { kind: "field", field: "first_name" },
@@ -453,6 +455,185 @@ describe("sendWhatsAppReminders — sending", () => {
     };
     const out = await sendWhatsAppReminders({ now: NOW }, deps);
     expect(out.sent).toBe(0);
+  });
+});
+
+describe("sendWhatsAppReminders — the first row does not reach back", () => {
+  // The email reminder is stamped in the same pass, just before this runs, so
+  // in normal running a booking's stamp is NEWER than the row. A stamp OLDER
+  // than the row means the client had her email reminder before the WhatsApp
+  // one was configured: a second reminder on a new channel, late, to everyone
+  // in the window at once, is what this refuses.
+  const stampedAt = (iso: string | null) => ({ reminder_sent_at: iso });
+
+  it("a booking whose email reminder went out BEFORE the row was saved is left out", async () => {
+    const w = world({
+      bookings: [booking("b-1", 48, stampedAt("2026-12-05T08:00:00Z"))],
+    });
+    const out = await run(w);
+    expect(w.sent).toHaveLength(0);
+    expect(w.stamped.size).toBe(0);
+    expect(out.none).toBe(1);
+  });
+
+  it("one stamped after it (the normal pass: the email just went out) is sent", async () => {
+    const w = world({
+      bookings: [booking("b-1", 48, stampedAt("2026-12-08T10:00:00Z"))],
+    });
+    await run(w);
+    expect(w.sent).toHaveLength(1);
+  });
+
+  it("one stamped at the very moment the row was saved is sent", async () => {
+    const w = world({
+      bookings: [booking("b-1", 48, stampedAt(CONFIGURED_AT))],
+    });
+    await run(w);
+    expect(w.sent).toHaveLength(1);
+  });
+
+  it("one with no email stamp (the email reminder is off) is sent", async () => {
+    const w = world({ bookings: [booking("b-1", 48, stampedAt(null))] });
+    await run(w);
+    expect(w.sent).toHaveLength(1);
+  });
+
+  it("a row with no date of its own cannot be compared, so only unstamped bookings go", async () => {
+    const { updated_at: _omit, ...undated } = ROW;
+    void _omit;
+    const w = world({
+      rows: [undated],
+      bookings: [
+        booking("old", 48, stampedAt("2026-12-08T10:00:00Z")),
+        booking("none", 47, stampedAt(null)),
+      ],
+    });
+    await run(w);
+    expect(w.stamped).toEqual(new Set(["none"]));
+  });
+
+  it("the cut is the saved row's date: saving the row again moves it", async () => {
+    const w = world({
+      rows: [{ ...ROW, updated_at: "2026-12-08T09:59:00Z" }],
+      bookings: [
+        booking("early", 48, stampedAt("2026-12-08T09:00:00Z")),
+        booking("late", 47, stampedAt("2026-12-08T10:00:00Z")),
+      ],
+    });
+    await run(w);
+    expect(w.stamped).toEqual(new Set(["late"]));
+  });
+
+  it("reads the email stamp along with the booking, in the one query", async () => {
+    const w = world({ bookings: [booking("b-1", 48)] });
+    await run(w);
+    expect(JSON.stringify(w.selects)).toContain("reminder_sent_at");
+  });
+});
+
+describe("sendWhatsAppReminders — it stops when Meta keeps refusing", () => {
+  const five = () =>
+    world({
+      bookings: [
+        booking("b-1", 48),
+        booking("b-2", 47),
+        booking("b-3", 46),
+        booking("b-4", 45),
+        booking("b-5", 44),
+      ],
+    });
+  const refuse = () => ({
+    status: "failed" as const,
+    error: "Message undeliverable",
+    code: 131026,
+  });
+
+  it("after three refusals in a row the run stops and the rest are left unclaimed", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = five();
+    w.setAnswer(refuse);
+    const out = await run(w);
+    expect(w.sent).toHaveLength(3);
+    expect(w.stamped).toEqual(new Set(["b-1", "b-2", "b-3"]));
+    expect(out.failed).toBe(3);
+    quiet.mockRestore();
+  });
+
+  it("says so once, with Meta's code", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = five();
+    w.setAnswer(refuse);
+    await run(w);
+    const stops = quiet.mock.calls.filter((c) =>
+      String(c[0]).includes("stopped"),
+    );
+    expect(stops).toHaveLength(1);
+    expect(String(stops[0]![0])).toContain("131026");
+    quiet.mockRestore();
+  });
+
+  it("the next run picks up where it stopped", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = five();
+    w.setAnswer(refuse);
+    await run(w);
+    w.setAnswer(() => ({ status: "sent", providerId: "ok" }));
+    await run(w);
+    expect(w.sent).toHaveLength(5);
+    quiet.mockRestore();
+  });
+
+  it("a success in between starts the count again", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = five();
+    let n = 0;
+    w.setAnswer(() => {
+      n += 1;
+      return n === 3 ? { status: "sent", providerId: "ok" } : refuse();
+    });
+    await run(w);
+    // refuse, refuse, SENT, refuse, refuse: never three in a row.
+    expect(w.sent).toHaveLength(5);
+    quiet.mockRestore();
+  });
+
+  it("ambiguous failures, throws and skipped templates do not count: they say nothing about Meta's mood", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    for (const answer of [
+      () => ({ status: "failed" as const, error: "timeout", ambiguous: true }),
+      () => {
+        throw new Error("socket closed");
+      },
+    ]) {
+      const w = five();
+      w.setAnswer(answer);
+      await run(w);
+      expect(w.sent).toHaveLength(5);
+    }
+    const skipped = world({
+      bookings: [
+        booking("b-1", 48),
+        booking("b-2", 47),
+        booking("b-3", 46),
+        booking("b-4", 45),
+      ],
+      template: { ...TEMPLATE, status: "PAUSED" },
+    });
+    const out = await run(skipped);
+    expect(out.skipped).toBe(4);
+    quiet.mockRestore();
+  });
+
+  it("two refusals are not enough", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = world({ bookings: [booking("b-1", 48), booking("b-2", 47)] });
+    w.setAnswer(refuse);
+    await run(w);
+    expect(w.sent).toHaveLength(2);
+    expect(quiet.mock.calls.some((c) => String(c[0]).includes("stopped"))).toBe(
+      false,
+    );
+    quiet.mockRestore();
   });
 });
 

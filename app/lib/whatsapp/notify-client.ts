@@ -58,6 +58,8 @@ export type ClientWhatsAppEvent = "confirmed" | "paid" | "reminded";
 /** The saved `message_templates` row of a WhatsApp message, as it is read. */
 export type ClientMessageRow = {
   locale?: string | null;
+  /** When the admin last saved it. The reminder does not reach back before it. */
+  updated_at?: string | null;
   enabled: boolean | null;
   whatsapp_template_id: string | null;
   /** jsonb: whatever is stored. It is checked before it is used. */
@@ -287,7 +289,13 @@ export function makeClientDeps(db: Db): ClientWhatsAppDeps {
   };
 }
 
-export type DeliverOutcome = "none" | "lost" | "skipped" | "sent" | "failed";
+/**
+ * `refused` is a failure Meta answered outright (a 4xx with its own error):
+ * the message did not leave. `failed` is one that may have (a timeout, a throw)
+ * or that never reached Meta, which says nothing about how Meta is feeling.
+ */
+export type DeliverOutcome =
+  "none" | "lost" | "skipped" | "sent" | "failed" | "refused";
 
 const SKIP_TEXT: Record<ClientSkipReason, string> = {
   template_missing: "la plantilla elegida ya no existe",
@@ -323,6 +331,8 @@ export async function deliverClientWhatsApp(
     actorId?: string | null;
     actorRole?: BookingEventActorRole | null;
     claim?: () => Promise<boolean>;
+    /** Told about a definitive refusal, with Meta's words and code. */
+    onRefused?: (failure: { error: string; code?: number }) => void;
   },
   deps: Pick<ClientWhatsAppDeps, "send" | "record" | "isSuppressed">,
 ): Promise<DeliverOutcome> {
@@ -420,11 +430,16 @@ export async function deliverClientWhatsApp(
     payload:
       result.ambiguous || thrown ? { ...payload, ambiguous: true } : payload,
   });
-  return "failed";
+  if (result.ambiguous || thrown) return "failed";
+  input.onRefused?.({
+    error: result.error,
+    ...(result.code === undefined ? {} : { code: result.code }),
+  });
+  return "refused";
 }
 
 const MESSAGE_ROW_COLUMNS =
-  "locale, enabled, whatsapp_template_id, whatsapp_params";
+  "locale, enabled, whatsapp_template_id, whatsapp_params, updated_at";
 export const CONTACT_COLUMNS =
   "first_name, last_name, phone, preferred_language, whatsapp_opted_in_at, whatsapp_opted_out_at, whatsapp_unreachable_at";
 

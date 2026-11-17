@@ -471,13 +471,23 @@ describe("deliverClientWhatsApp", () => {
     expect(h.recorded[0]?.summary).toContain("no se envió");
   });
 
-  it("a refusal is recorded as failed with Meta's words", async () => {
+  it("a refusal is recorded as failed with Meta's words, and reported to the caller", async () => {
     const h = harness(() => ({
       status: "failed",
       error: "Re-engagement",
       code: 131047,
     }));
-    expect(await deliverClientWhatsApp(args(), h.deps)).toBe("failed");
+    const refusals: { error: string; code?: number }[] = [];
+    expect(
+      await deliverClientWhatsApp(
+        args({
+          onRefused: (failure: { error: string; code?: number }) =>
+            refusals.push(failure),
+        }),
+        h.deps,
+      ),
+    ).toBe("refused");
+    expect(refusals).toEqual([{ error: "Re-engagement", code: 131047 }]);
     expect(h.recorded[0]).toMatchObject({
       status: "failed",
       error: "Re-engagement",

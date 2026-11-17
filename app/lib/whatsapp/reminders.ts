@@ -56,6 +56,14 @@ export function reminderBudgetMs(elapsedMs: number): number {
 
 const DEFAULT_BUDGET_MS = reminderBudgetMs(0);
 
+/**
+ * Meta refusing this many bookings in a row (not a timeout, not a bad
+ * template: its own answer) means the next ones will be refused too, and each
+ * refusal counts against the number's quality. The run stops and the bookings
+ * it did not reach stay unclaimed for the next hour.
+ */
+const MAX_CONSECUTIVE_REFUSALS = 3;
+
 export type ReminderRunResult = {
   sent: number;
   failed: number;
@@ -64,7 +72,11 @@ export type ReminderRunResult = {
   none: number;
 };
 
-type BookingRead = Parameters<typeof clientBookingOf>[0] & { id: string };
+type BookingRead = Parameters<typeof clientBookingOf>[0] & {
+  id: string;
+  /** The EMAIL reminder's stamp. Read, never written, here. */
+  reminder_sent_at?: string | null;
+};
 type ContactRead = ClientContact & { id: string; email: string | null };
 
 const empty = (): ReminderRunResult => ({
@@ -101,7 +113,7 @@ export async function sendWhatsAppReminders(
     // checked below, where the booking's own time is known.
     const { data, error } = await deps.db
       .from("bookings")
-      .select(`id, ${CLIENT_BOOKING_COLUMNS}`)
+      .select(`id, reminder_sent_at, ${CLIENT_BOOKING_COLUMNS}`)
       .in("status", ["confirmed", "paid"])
       .gte("date", dayOf(WINDOW_START_HOURS))
       .lte("date", dayOf(WINDOW_END_HOURS))
@@ -128,8 +140,22 @@ export async function sendWhatsAppReminders(
     const contacts = await loadContacts(deps.db, due);
     const templates = new Map<string, WhatsAppTemplateRow | null>();
 
+    let refusalsInARow = 0;
+    const lastRefusal: { current: { error: string; code?: number } | null } = {
+      current: null,
+    };
     for (const booking of due) {
       if (clock() - startedAt > budgetMs) break;
+      if (refusalsInARow >= MAX_CONSECUTIVE_REFUSALS) {
+        console.error(
+          `[whatsapp/reminders] stopped after ${MAX_CONSECUTIVE_REFUSALS} refusals in a row: ${
+            lastRefusal.current?.code === undefined
+              ? ""
+              : `${lastRefusal.current.code}: `
+          }${lastRefusal.current?.error ?? "unknown"}`,
+        );
+        break;
+      }
       try {
         const facts = clientBookingOf(booking);
         if (!facts) continue;
@@ -143,6 +169,7 @@ export async function sendWhatsAppReminders(
         // would not be messaged.
         if (
           !row ||
+          !reachesBack(booking.reminder_sent_at, row.updated_at) ||
           !hasClientConsent(contact) ||
           !clientPhone(contact, facts)
         ) {
@@ -170,10 +197,16 @@ export async function sendWhatsAppReminders(
             actorId: null,
             actorRole: "system",
             claim: () => claimBooking(deps.db, booking.id, now),
+            onRefused: (failure) => {
+              lastRefusal.current = failure;
+            },
           },
           deps,
         );
-        result[outcome] += 1;
+        // Only an outright refusal counts; anything else (a send, a skip, a
+        // timeout, a lost claim) breaks the run of them.
+        refusalsInARow = outcome === "refused" ? refusalsInARow + 1 : 0;
+        result[outcome === "refused" ? "failed" : outcome] += 1;
       } catch (err) {
         // One booking's trouble is not the next one's.
         result.failed += 1;
@@ -184,6 +217,31 @@ export async function sendWhatsAppReminders(
     console.error("[whatsapp/reminders] run failed:", err);
   }
   return result;
+}
+
+/**
+ * Whether a booking is still in time for the WhatsApp reminder, given when its
+ * EMAIL reminder went out and when the admin saved the WhatsApp row.
+ *
+ * Not "skip it if the email already went": in normal running the email is
+ * stamped in this very pass, just before this runs, so that would silence the
+ * WhatsApp reminder always. The test is the order of the two dates: a stamp at
+ * or after the row's date is the ordinary pass (or the email is off, no stamp),
+ * and one BEFORE it means the client had her reminder before the WhatsApp one
+ * existed. The first save of the row must not send a second, late reminder to
+ * everyone already reminded by email. A row with no date cannot be compared, so
+ * only a booking with no email stamp goes.
+ */
+function reachesBack(
+  emailStamp: string | null | undefined,
+  rowSavedAt: string | null | undefined,
+): boolean {
+  if (!emailStamp) return true;
+  if (!rowSavedAt) return false;
+  const stamp = Date.parse(emailStamp);
+  const saved = Date.parse(rowSavedAt);
+  if (Number.isNaN(stamp) || Number.isNaN(saved)) return false;
+  return stamp >= saved;
 }
 
 /**
