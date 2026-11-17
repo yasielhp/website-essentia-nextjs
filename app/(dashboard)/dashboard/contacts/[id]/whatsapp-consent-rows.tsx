@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ToggleRow } from "@/components/dashboard/toggle-row";
 import {
+  clearWhatsAppSuppression,
   clearWhatsAppUnreachable,
+  fetchWhatsAppSuppression,
   setWhatsAppConsent,
 } from "@/actions/contacts";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import {
+  suppressionView,
+  type SuppressionLookup,
+} from "@/lib/whatsapp/suppression-ui";
 import { Button } from "@/components/ui/button";
 import { getAccessToken } from "@/lib/client-session";
 import {
@@ -50,6 +57,24 @@ export function WhatsAppConsentRows({
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetFailed, setResetFailed] = useState(false);
+  // The STOP list is by number. What it says is read once; a list that cannot
+  // be read (its table may not exist yet) is the same as one that says nothing.
+  const [suppression, setSuppression] = useState<SuppressionLookup>(null);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removalFailed, setRemovalFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchWhatsAppSuppression(getAccessToken(), contactId)
+      .catch(() => null)
+      .then((result) => {
+        if (!cancelled) setSuppression(result);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [contactId]);
 
   const state = whatsappConsentState(columns);
 
@@ -80,6 +105,27 @@ export function WhatsAppConsentRows({
     }
   }
 
+  async function removeSuppression() {
+    setRemoving(true);
+    setRemovalFailed(false);
+    try {
+      const result = await clearWhatsAppSuppression(
+        getAccessToken(),
+        contactId,
+      );
+      if (result.ok) {
+        setSuppression({ ok: true, suppressed: false });
+        setConfirmingRemoval(false);
+      } else {
+        setRemovalFailed(true);
+      }
+    } catch {
+      setRemovalFailed(true);
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   async function resetUnreachable() {
     setResetting(true);
     setResetFailed(false);
@@ -103,6 +149,38 @@ export function WhatsAppConsentRows({
 
   return (
     <div className="flex flex-col gap-3">
+      {suppressionView(suppression) === "listed" && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          <p>{t("suppression.note")}</p>
+          {confirmingRemoval ? (
+            <RemovalConfirm
+              busy={removing}
+              onCancel={() => setConfirmingRemoval(false)}
+              onConfirm={() => void removeSuppression()}
+            />
+          ) : (
+            <div>
+              <Button
+                id="whatsapp-suppression-remove"
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmingRemoval(true)}
+              >
+                {t("suppression.removeLabel")}
+              </Button>
+            </div>
+          )}
+          {removalFailed && (
+            <p role="alert" className="text-xs text-red-600">
+              {t("suppression.error")}
+            </p>
+          )}
+        </div>
+      )}
+
       {unreachableAt && (
         <div
           role="status"
@@ -202,6 +280,41 @@ export function WhatsAppConsentRows({
           onCancel={() => setAsking(null)}
         />
       )}
+    </div>
+  );
+}
+
+/** "Take this number off the STOP list?"; focus to the safe answer and back. */
+function RemovalConfirm({
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations("dashboard.contacts.detail.whatsapp.suppression");
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, () =>
+    document.getElementById("whatsapp-suppression-remove"),
+  );
+  return (
+    <div
+      ref={ref}
+      role="alertdialog"
+      aria-label={t("removeConfirm")}
+      className="flex flex-col gap-2"
+    >
+      <p className="text-xs">{t("removeConfirm")}</p>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" disabled={busy} onClick={onCancel}>
+          {t("removeNo")}
+        </Button>
+        <Button size="sm" disabled={busy} onClick={onConfirm}>
+          {busy ? t("removing") : t("removeYes")}
+        </Button>
+      </div>
     </div>
   );
 }
