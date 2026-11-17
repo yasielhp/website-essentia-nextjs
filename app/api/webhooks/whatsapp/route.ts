@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
+import {
+  describeMetaFailure,
+  metaFailureKind,
+  type MetaFailure,
+} from "@/lib/whatsapp/failure";
 import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
 import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 
@@ -30,6 +35,8 @@ import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 // `crypto.timingSafeEqual` and the raw-body read need Node, not the edge.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type Database = ReturnType<typeof getAdminClient>["database"];
 
 type MetaStatus = {
   id?: string;
@@ -143,6 +150,59 @@ function isoFrom(timestamp: string | undefined): string {
   return new Date(seconds * 1000).toISOString();
 }
 
+/**
+ * Moves a campaign recipient forward when `providerId` is one of theirs.
+ *
+ * `record_campaign_event` does the ranking and the counters, and maps `read` to
+ * "opened" and `failed` to "bounced" for WhatsApp campaigns on its own, so the
+ * events go in exactly as Meta names them. True means the message belonged to a
+ * campaign and moved; false means unknown, repeated or not an advance.
+ *
+ * A failure that says the number cannot receive WhatsApp at all also stamps the
+ * contact, so no campaign tries it again. Limits and anything unrecognised do
+ * not: the number may be fine. The stamp can fail without taking the receipt
+ * with it, which is why it has its own try/catch.
+ */
+async function recordCampaignReceipt(
+  db: Database,
+  providerId: string,
+  { next, at, failure }: { next: string; at: string; failure?: MetaFailure },
+): Promise<boolean> {
+  const { data: moved, error } = await db.rpc("record_campaign_event", {
+    p_provider_id: providerId,
+    p_event: next,
+    p_at: at,
+    p_error: next === "failed" ? describeMetaFailure(failure) : null,
+  });
+  if (error) throw error;
+  if (moved !== true) return false;
+
+  if (next === "failed" && metaFailureKind(failure?.code) === "unreachable") {
+    try {
+      const { data: row, error: readError } = await db
+        .from("campaign_recipients")
+        .select("contact_id")
+        .eq("provider_id", providerId)
+        .maybeSingle();
+      if (readError) throw readError;
+      const contactId = (row as { contact_id: string | null } | null)
+        ?.contact_id;
+      if (contactId) {
+        const { error: stampError } = await db
+          .from("contacts")
+          .update({ whatsapp_unreachable_at: new Date().toISOString() })
+          .eq("id", contactId)
+          // The first time is the one worth keeping.
+          .is("whatsapp_unreachable_at", null);
+        if (stampError) throw stampError;
+      }
+    } catch (err) {
+      console.error("[webhooks/whatsapp] could not flag unreachable:", err);
+    }
+  }
+  return true;
+}
+
 /** The subscription handshake. Runs once, when the webhook is first saved. */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
@@ -182,7 +242,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  let db: ReturnType<typeof getAdminClient>["database"];
+  let db: Database;
   try {
     db = getAdminClient().database;
   } catch (err) {
@@ -320,7 +380,7 @@ export async function POST(req: NextRequest) {
   // removes the contest: every row is written at most once, whatever arrives.
   const furthest = new Map<
     string,
-    { next: string; at: string; error: string }
+    { next: string; at: string; error: string; failure?: MetaFailure }
   >();
 
   for (const status of statuses) {
@@ -344,6 +404,7 @@ export async function POST(req: NextRequest) {
         failure?.message ??
         failure?.title ??
         `WhatsApp error ${failure?.code ?? "desconocido"}`,
+      failure,
     });
   }
 
@@ -351,8 +412,30 @@ export async function POST(req: NextRequest) {
     // Different messages have nothing to say to each other, so their writes go
     // out together.
     await Promise.all(
-      [...furthest].map(([providerId, { next, at, error }]) =>
-        db
+      [...furthest].map(async ([providerId, { next, at, error, failure }]) => {
+        // A message sent by a campaign has its receipt in `campaign_recipients`
+        // and no row in `booking_events`. Ask the campaigns first; when it was
+        // not one of theirs (or nothing moved), the staff log below is a no-op
+        // or the update it always was.
+        try {
+          if (
+            typeof providerId === "string" &&
+            (await recordCampaignReceipt(db, providerId, {
+              next,
+              at,
+              failure,
+            }))
+          ) {
+            return;
+          }
+        } catch (err) {
+          console.error(
+            "[webhooks/whatsapp] could not record campaign receipt:",
+            err,
+          );
+        }
+
+        return db
           .from("booking_events")
           .update({
             status: next,
@@ -364,8 +447,8 @@ export async function POST(req: NextRequest) {
             ...(next === "failed" ? { error } : {}),
           })
           .eq("provider_id", providerId)
-          .in("status", PRECEDING_STATES[next]!),
-      ),
+          .in("status", PRECEDING_STATES[next]!);
+      }),
     );
   } catch (err) {
     // Acknowledged all the same: Meta disables a subscription that keeps
