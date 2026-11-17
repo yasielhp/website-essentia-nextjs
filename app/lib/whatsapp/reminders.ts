@@ -38,8 +38,24 @@ import type { WhatsAppTemplateRow } from "./types";
 const WINDOW_START_HOURS = 40;
 const WINDOW_END_HOURS = 56;
 
-/** Stops starting new sends past this, leaving the rest for the next hour. */
-const DEFAULT_BUDGET_MS = 45_000;
+/**
+ * The cron's whole run is `maxDuration` (60 s, as its siblings declare). What
+ * the WhatsApp reminders may spend is that, minus the time one send can take
+ * (the client's 10 s timeout) and a margin, minus whatever the email reminders
+ * already used. A booking is claimed before it is sent, so a run the platform
+ * kills after a claim loses that reminder for good: no new send may start
+ * unless it can finish inside the limit.
+ */
+export const CRON_MAX_MS = 60_000;
+const SEND_TIMEOUT_MS = 10_000;
+const MARGIN_MS = 5_000;
+
+/** What is left for the WhatsApp reminders after `elapsedMs` of the run. */
+export function reminderBudgetMs(elapsedMs: number): number {
+  return Math.max(0, CRON_MAX_MS - SEND_TIMEOUT_MS - MARGIN_MS - elapsedMs);
+}
+
+const DEFAULT_BUDGET_MS = reminderBudgetMs(0);
 
 export type ReminderRunResult = {
   sent: number;

@@ -6,7 +6,10 @@ import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
 import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
 import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
-import { sendWhatsAppReminders } from "@/lib/whatsapp/reminders";
+import {
+  reminderBudgetMs,
+  sendWhatsAppReminders,
+} from "@/lib/whatsapp/reminders";
 
 /**
  * POST/GET /api/cron/booking-reminders
@@ -67,7 +70,17 @@ function refusal(request: NextRequest): NextResponse | null {
   return null;
 }
 
+/**
+ * The email batch and the WhatsApp reminders share one run, and the WhatsApp
+ * ones claim a booking before they send it, so the limit is declared (the
+ * sibling crons do the same) instead of left to the platform's default.
+ */
+// A literal: Next reads it without running the module. A test keeps it equal
+// to `CRON_MAX_MS`, which the WhatsApp budget is computed from.
+export const maxDuration = 60;
+
 async function handle(request: NextRequest) {
+  const startedAt = Date.now();
   const refused = refusal(request);
   if (refused) return refused;
 
@@ -76,7 +89,9 @@ async function handle(request: NextRequest) {
   // has its own stamp, so what happened to the email changes nothing for it,
   // and nothing it does (it never throws) changes the answer below.
   try {
-    await sendWhatsAppReminders();
+    await sendWhatsAppReminders({
+      budgetMs: reminderBudgetMs(Date.now() - startedAt),
+    });
   } catch (err) {
     // It does not throw; this is for the day it does.
     console.error("[cron/booking-reminders] WhatsApp reminders failed:", err);

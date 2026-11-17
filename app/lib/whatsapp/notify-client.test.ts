@@ -229,6 +229,35 @@ describe("decideClientWhatsApp — a template that cannot be sent is a misconfig
     );
   });
 
+  it("a template whose button needs a value is a skip: this sender fills none, and Meta would refuse every send", () => {
+    expect(
+      reason({
+        template: {
+          ...TEMPLATE,
+          buttons: [
+            {
+              type: "URL",
+              text: "Ver cita",
+              url: "https://example.com/c/{{1}}",
+            },
+          ],
+        },
+      }),
+    ).toBe("button_params");
+    // A button with a fixed address, and a quick reply, need nothing.
+    expect(
+      decide({
+        template: {
+          ...TEMPLATE,
+          buttons: [
+            { type: "URL", text: "Web", url: "https://example.com/" },
+            { type: "QUICK_REPLY", text: "Vale" },
+          ],
+        },
+      }).kind,
+    ).toBe("send");
+  });
+
   it("a stored parameter list that is not one is a skip, not a throw", () => {
     expect(reason({ row: { ...ROW, whatsapp_params: "garbage" } })).toBe(
       "params_invalid",

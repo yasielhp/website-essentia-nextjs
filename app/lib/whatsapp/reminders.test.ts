@@ -10,7 +10,11 @@ import { template } from "@/lib/campaigns/whatsapp-fixtures";
 import type { BookingEventInput } from "@/lib/booking-events/types";
 import type { TemplateSend } from "./client";
 import type { ClientWhatsAppDeps } from "./notify-client";
-import { sendWhatsAppReminders } from "./reminders";
+import {
+  CRON_MAX_MS,
+  reminderBudgetMs,
+  sendWhatsAppReminders,
+} from "./reminders";
 import type { WhatsAppSendResult } from "./types";
 
 const NOW = Date.parse("2026-12-08T10:00:00");
@@ -396,5 +400,30 @@ describe("sendWhatsAppReminders — sending", () => {
     };
     const out = await sendWhatsAppReminders({ now: NOW }, deps);
     expect(out.sent).toBe(0);
+  });
+});
+
+describe("reminderBudgetMs", () => {
+  it("is what is left of the cron's 60 seconds after the send timeout and a margin", () => {
+    expect(reminderBudgetMs(0)).toBe(45_000);
+    expect(reminderBudgetMs(10_000)).toBe(35_000);
+  });
+  it("is never negative: a slow email run leaves the WhatsApp ones for the next hour", () => {
+    expect(reminderBudgetMs(60_000)).toBe(0);
+    expect(reminderBudgetMs(600_000)).toBe(0);
+  });
+  it("the route declares the limit the budget is computed from", async () => {
+    const route = await import("@/api/cron/booking-reminders/route");
+    expect(route.maxDuration * 1000).toBe(CRON_MAX_MS);
+  });
+  it("a run with no time left claims and sends nothing", async () => {
+    const w = world({ bookings: [booking("b-1", 48)] });
+    let t = 0;
+    const out = await sendWhatsAppReminders(
+      { now: NOW, budgetMs: 0, clock: () => (t += 1) },
+      w.deps,
+    );
+    expect(out.sent).toBe(0);
+    expect(w.stamped.size).toBe(0);
   });
 });

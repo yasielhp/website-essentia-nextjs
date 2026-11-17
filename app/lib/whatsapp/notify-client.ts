@@ -87,7 +87,11 @@ export type ClientBooking = {
 };
 
 /** Why a chosen template could not be sent, beyond the template's own state. */
-export type ClientSkipReason = TemplateIssue | "params_invalid";
+export type ClientSkipReason =
+  | TemplateIssue
+  | "params_invalid"
+  /** A URL button with a `{{n}}` suffix: nothing here fills it. */
+  | "button_params";
 
 export type ClientWhatsAppDecision =
   | { kind: "none" }
@@ -203,6 +207,17 @@ export function decideClientWhatsApp(input: {
     return { kind: "skip", reason: issue ?? "template_missing", to };
   }
 
+  // Our send fills the body and no button. A button whose address ends in a
+  // `{{n}}` would be refused by Meta every time, so it is a misconfiguration
+  // to show, not a message to try.
+  if (
+    template.buttons.some(
+      (button) => button.type === "URL" && button.url.includes("{{"),
+    )
+  ) {
+    return { kind: "skip", reason: "button_params", to };
+  }
+
   const clean = (value: string | null | undefined) => (value ?? "").trim();
   const vars: Record<string, string> = {
     service: clean(booking.service_title),
@@ -257,6 +272,8 @@ const SKIP_TEXT: Record<ClientSkipReason, string> = {
   template_language: "la plantilla elegida no está en el idioma de la clienta",
   param_count: "los datos elegidos no coinciden con los de la plantilla",
   params_invalid: "los datos elegidos para la plantilla no son válidos",
+  button_params:
+    "la plantilla tiene un botón con un dato que aquí no se rellena",
 };
 
 /**
