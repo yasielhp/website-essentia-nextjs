@@ -153,9 +153,18 @@ const RESEND_BATCH_LIMIT = 100;
 /** Comfortably under Resend's two requests a second. */
 const RESEND_BATCH_PAUSE_MS = 600;
 
-export async function sendEmailBatch(
-  emails: SendEmailParams[],
-): Promise<{ sent: number; ids: (string | null)[]; error: string | null }> {
+export async function sendEmailBatch(emails: SendEmailParams[]): Promise<{
+  sent: number;
+  ids: (string | null)[];
+  error: string | null;
+  /**
+   * True only when every chunk that failed was turned down by Resend itself,
+   * with a 4xx: nothing of those chunks left. False when nothing failed, and
+   * whenever one may have been sent all the same (a request with no answer, an
+   * exception, a 5xx).
+   */
+  rejected: boolean;
+}> {
   const ids: (string | null)[] = emails.map(() => null);
 
   // Positions into `emails`, so every id can be written back where its email
@@ -163,12 +172,12 @@ export async function sendEmailBatch(
   const valid = emails.flatMap((email, index) =>
     email.to.includes("@") ? [index] : [],
   );
-  if (valid.length === 0) return { sent: 0, ids, error: null };
+  if (valid.length === 0) return { sent: 0, ids, error: null, rejected: false };
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[sendEmailBatch] RESEND_API_KEY not set — emails skipped");
-    return { sent: 0, ids, error: null };
+    return { sent: 0, ids, error: null, rejected: false };
   }
 
   const resend = new Resend(apiKey);
@@ -180,6 +189,10 @@ export async function sendEmailBatch(
   const copies = copyList(await getAdminEmail());
 
   let error: string | null = null;
+  // For `rejected`: the chunks that failed, and how many of them Resend
+  // answered with a 4xx.
+  let failedChunks = 0;
+  let refusedChunks = 0;
 
   for (let start = 0; start < valid.length; start += RESEND_BATCH_LIMIT) {
     if (start > 0) {
@@ -212,6 +225,11 @@ export async function sendEmailBatch(
         const message = chunkError?.message ?? "Resend returned no ids";
         console.error("[sendEmailBatch] chunk failed:", message);
         error ??= message;
+        failedChunks += 1;
+        const status = chunkError?.statusCode;
+        if (typeof status === "number" && status >= 400 && status < 500) {
+          refusedChunks += 1;
+        }
         continue;
       }
 
@@ -222,9 +240,15 @@ export async function sendEmailBatch(
       const message = thrown instanceof Error ? thrown.message : String(thrown);
       console.error("[sendEmailBatch] chunk failed:", message);
       error ??= message;
+      failedChunks += 1;
     }
   }
 
   const sent = ids.filter((id) => id !== null).length;
-  return { sent, ids, error };
+  return {
+    sent,
+    ids,
+    error,
+    rejected: failedChunks > 0 && refusedChunks === failedChunks,
+  };
 }
