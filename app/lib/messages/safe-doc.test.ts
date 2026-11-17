@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 import { renderBodyFragment } from "@/emails/templates/campaign";
 import { renderVariables } from "@/lib/campaigns/body-html";
 import type { EmailDoc } from "@/types/campaign";
@@ -23,7 +24,9 @@ const p = (...content: EmailDoc[]): EmailDoc => ({
 });
 
 async function html(d: EmailDoc, values: Record<string, string> = {}) {
-  const fragment = await renderBodyFragment(sanitizeDoc(d, values), values);
+  // A bare node is the body's only content: the root is always a `doc`.
+  const root = d.type === "doc" ? d : doc(d);
+  const fragment = await renderBodyFragment(sanitizeDoc(root, values), values);
   return renderVariables(fragment, values);
 }
 
@@ -455,6 +458,8 @@ describe("node types are an allow-list", () => {
     "foo",
     "codeBlock",
     "htmlCodeBlock",
+    "repeat",
+    "doc",
     "",
   ];
 
@@ -472,6 +477,38 @@ describe("node types are an allow-list", () => {
       ]);
     });
   }
+
+  test("`doc` is the root and only the root", () => {
+    const nested = doc(p(text("visible")), doc(p(text("oculto"))));
+    expect(findForbiddenNodes(nested)).toEqual([
+      { kind: "blockNotAllowed", path: "content[1]", node: "doc" },
+    ]);
+    const clean = JSON.stringify(sanitizeDoc(nested, {}));
+    expect(clean).toContain("visible");
+    expect(clean).not.toContain("oculto");
+    // Deeper still, and a root that is not a doc at all.
+    const deep = doc({ type: "section", content: [doc(p(text("x")))] });
+    expect(findForbiddenNodes(deep).map((x) => x.path)).toEqual([
+      "content[0].content[0]",
+    ]);
+    expect(findForbiddenNodes(p(text("x")))).toEqual([
+      { kind: "blockNotAllowed", path: "", node: "paragraph" },
+    ]);
+    expect(sanitizeDoc(p(text("x")), {})).toEqual({ type: "doc", content: [] });
+  });
+
+  test("a repeat block is refused: it draws nothing here and throws on a hostile `each`", async () => {
+    const d = doc(p(text("visible")), {
+      type: "repeat",
+      attrs: { each: "__proto__" },
+      content: [p(text("x"))],
+    });
+    expect(findForbiddenNodes(d)).toEqual([
+      { kind: "blockNotAllowed", path: "content[1]", node: "repeat" },
+    ]);
+    const out = await html(d);
+    expect(out).toContain("visible");
+  });
 
   test("a node with no type, or a type that is not text, is dropped", () => {
     for (const bad of [{}, { type: 7 }, { type: null }, null, "x", 3]) {
@@ -556,7 +593,6 @@ describe("node types are an allow-list", () => {
         { type: "column", attrs: { width: 50 }, content: [p(text("c2"))] },
       ],
     },
-    { type: "repeat", attrs: { each: "items" }, content: [p(text("r"))] },
   );
 
   test("a document with one of every type the editor makes passes saving", () => {
@@ -593,9 +629,11 @@ describe("node types are an allow-list", () => {
     // In another process: with no allow-list, `render` never returns and a
     // synchronous loop cannot be timed out from inside the test.
     const run = Bun.spawnSync({
-      cmd: ["bun", "app/lib/messages/safe-doc.child.ts"],
-      cwd: process.cwd(),
+      cmd: ["bun", join(import.meta.dir, "safe-doc.child.ts")],
+      // The child resolves `@/` through the project's tsconfig.
+      cwd: join(import.meta.dir, "..", "..", ".."),
       timeout: 20_000,
+      killSignal: "SIGKILL",
       stdout: "pipe",
       stderr: "pipe",
     });

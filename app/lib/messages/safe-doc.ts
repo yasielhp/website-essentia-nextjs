@@ -47,7 +47,9 @@ export const FORBIDDEN_NODES: ReadonlySet<string> = new Set(["htmlCodeBlock"]);
  *    heading, blockquote, bulletList, orderedList, listItem, hardBreak,
  *    horizontalRule, text), its own Footer, Spacer, Button, Image, Logo,
  *    LinkCard, Section, Columns, Column and Repeat, and the editor's
- *    InlineImage and Variable. Its slash menu (`DEFAULT_SLASH_COMMANDS`) adds
+ *    InlineImage and Variable. `repeat` is the one left out of the list
+ *    below: it loops over a list the email's data never carries, so it draws
+ *    nothing here, and it throws when its `each` is not what it expects. Its slash menu (`DEFAULT_SLASH_COMMANDS`) adds
  *    no other type. `htmlCodeBlock` is in it too and is left out on purpose.
  *    StarterKit's `codeBlock` is left out as well: the renderer has no
  *    method for it, so a document holding one could never be sent.
@@ -56,9 +58,11 @@ export const FORBIDDEN_NODES: ReadonlySet<string> = new Set(["htmlCodeBlock"]);
  *    orderedList, bulletList, listItem, button, spacer, hardBreak, logo,
  *    image, footer, blockquote, linkCard, section, columns, column, repeat,
  *    for, htmlCodeBlock and inlineImage. `for` is an alias of `repeat` the
- *    editor never writes; `doc` is the root. `code` is a MARK (see below).
+ *    editor never writes; `doc` is the root and only the root. `code` is a
+ *    MARK (see below).
  *
- * Every node in the first list that the renderer can draw is here.
+ * Every node in the first list that the renderer can draw and an email can
+ * use is here.
  */
 export const ALLOWED_NODES: ReadonlySet<string> = new Set([
   "doc",
@@ -82,7 +86,6 @@ export const ALLOWED_NODES: ReadonlySet<string> = new Set([
   "spacer",
   "horizontalRule",
   "footer",
-  "repeat",
 ]);
 
 /**
@@ -204,19 +207,28 @@ function cleanColours(attrs: Record<string, unknown>) {
   }
 }
 
+/**
+ * A known node in a place it may be: `doc` is the root and only the root. A
+ * `doc` nested inside a document makes the renderer throw, and the whole
+ * email would fall back to the legacy one without a word.
+ */
+function isAllowedNode(node: unknown, isRoot: boolean): node is EmailDoc {
+  if (typeof node !== "object" || node === null) return false;
+  const type = (node as { type?: unknown }).type;
+  return (
+    typeof type === "string" &&
+    ALLOWED_NODES.has(type) &&
+    (type === "doc") === isRoot
+  );
+}
+
 function cleanNode(
   node: EmailDoc,
   values: Record<string, string>,
+  isRoot = false,
 ): EmailDoc | null {
   // Anything that is not a known node is dropped with everything under it.
-  if (
-    typeof node !== "object" ||
-    node === null ||
-    typeof node.type !== "string" ||
-    !ALLOWED_NODES.has(node.type)
-  ) {
-    return null;
-  }
+  if (!isAllowedNode(node, isRoot)) return null;
 
   const next: EmailDoc = { ...node };
 
@@ -292,7 +304,7 @@ function cleanNode(
 
   if (node.content) {
     next.content = node.content
-      .map((child) => cleanNode(child, values))
+      .map((child) => cleanNode(child, values, false))
       .filter((child): child is EmailDoc => child !== null);
   }
   return next;
@@ -307,7 +319,7 @@ export function sanitizeDoc(
   doc: EmailDoc,
   values: Record<string, string>,
 ): EmailDoc {
-  return cleanNode(doc, values) ?? { type: "doc", content: [] };
+  return cleanNode(doc, values, true) ?? { type: "doc", content: [] };
 }
 
 // ── checking, for saving ───────────────────────────────────────────────────
@@ -335,15 +347,10 @@ function literalOk(
 export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
   const problems: DocProblem[] = [];
 
-  const visit = (node: EmailDoc, path: string) => {
-    // Not a known node: reported, and not looked into, because sending drops
-    // it with everything under it.
-    if (
-      typeof node !== "object" ||
-      node === null ||
-      typeof node.type !== "string" ||
-      !ALLOWED_NODES.has(node.type)
-    ) {
+  const visit = (node: EmailDoc, path: string, isRoot: boolean) => {
+    // Not a known node (or a `doc` that is not the root): reported, and not
+    // looked into, because sending drops it with everything under it.
+    if (!isAllowedNode(node, isRoot)) {
       problems.push({
         kind: "blockNotAllowed",
         path,
@@ -405,10 +412,10 @@ export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
       }
     });
     (node.content ?? []).forEach((child, i) =>
-      visit(child, `${path ? `${path}.` : ""}content[${i}]`),
+      visit(child, `${path ? `${path}.` : ""}content[${i}]`, false),
     );
   };
 
-  visit(doc, "");
+  visit(doc, "", true);
   return problems;
 }
