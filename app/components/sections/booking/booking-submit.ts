@@ -14,6 +14,7 @@ import {
   contactConsentArgs,
   sendBookingConsents,
 } from "./booking-consent";
+import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -213,6 +214,14 @@ export async function saveDatetimeStep(
 }
 
 export type ConfirmResult =
+  /**
+   * Her details are not in order (the terms box unticked, most of all), so
+   * nothing was written: back to the details step with these errors.
+   */
+  | {
+      kind: "incomplete";
+      errors: Partial<Record<keyof DetailsState, string>>;
+    }
   /** Hand over to Redsys with this form. */
   | { kind: "redsys"; formData: RedsysFormData }
   /** Payment could not be started; the booking stands and is chased later. */
@@ -243,6 +252,15 @@ export async function confirmBooking({
 }): Promise<ConfirmResult> {
   const { service, tierId, details, paymentMode } = draft;
   if (!service || !tierId) return { kind: "unpaid" };
+
+  // The last gate. The details step checks this before letting her through,
+  // but the confirmation is where the booking and the payment happen, so it
+  // does not take that on trust: the required box is the acceptance of the
+  // Terms and the consent to the booking notices, and a form that reached this
+  // point some other way (a restored visit, a step skipped) must not go on to
+  // the payment without it.
+  const errors = parseErrors(bookingDetailsSchema, details);
+  if (Object.keys(errors).length > 0) return { kind: "incomplete", errors };
 
   const dateStr = draft.date ? localDateStr(draft.date) : null;
   const timeStr = draft.time ?? null;

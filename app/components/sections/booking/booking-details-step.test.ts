@@ -47,6 +47,8 @@ const rpc = (name: string, args: unknown) => {
 // The browser client is not among them: it cannot be loaded without the
 // project's keys, which the tests deliberately do not have, so there is no real
 // module to keep or to put back.
+const realFetch = globalThis.fetch;
+
 const real = {
   session: { ...(await import("@/lib/client-session")) },
   draft: { ...(await import("@/actions/booking-draft")) },
@@ -55,6 +57,7 @@ const real = {
 };
 
 let saveDetailsStep: typeof import("./booking-submit").saveDetailsStep;
+let confirmBooking: typeof import("./booking-submit").confirmBooking;
 
 beforeAll(async () => {
   mock.module("@/lib/insforge", () => ({ insforge: { database: { rpc } } }));
@@ -76,10 +79,11 @@ beforeAll(async () => {
     ...real.consent,
     saveBookingConsents: record("saveBookingConsents", { ok: true }),
   }));
-  ({ saveDetailsStep } = await import("./booking-submit"));
+  ({ saveDetailsStep, confirmBooking } = await import("./booking-submit"));
 });
 
 afterAll(() => {
+  globalThis.fetch = realFetch;
   mock.module("@/lib/client-session", () => real.session);
   mock.module("@/actions/booking-draft", () => real.draft);
   mock.module("@/actions/booking-notifications", () => real.notifications);
@@ -89,6 +93,11 @@ afterAll(() => {
 beforeEach(() => {
   calls = [];
   role = "lead";
+  // The checkout: refused, so a confirmation that gets that far ends "unpaid".
+  globalThis.fetch = ((...args: unknown[]) => {
+    calls.push({ name: "fetch", args });
+    return Promise.resolve(new Response("{}", { status: 500 }));
+  }) as unknown as typeof fetch;
 });
 
 const DETAILS: DetailsState = {
@@ -101,8 +110,13 @@ const DETAILS: DetailsState = {
   notes: "",
 };
 
+const SERVICE = {
+  id: "manual-therapies",
+  title: "Manual Therapies",
+} as NonNullable<Parameters<typeof confirmBooking>[0]["draft"]["service"]>;
+
 const draft = (details: DetailsState = DETAILS) => ({
-  service: null,
+  service: null as typeof SERVICE | null,
   tierId: "tier-1",
   tierLabel: "Drenaje",
   tierPrice: 60,
@@ -277,5 +291,47 @@ describe("saveDetailsStep, a signed-in client", () => {
     // verified session, that this is not her own contact.
     expect(calls.at(-1)?.args[0]).toBe("token");
     expect(calls.at(-1)?.args[1]).toMatchObject({ email: "ana@example.com" });
+  });
+});
+
+describe("confirmBooking: the last gate before the payment", () => {
+  const confirm = (details: DetailsState) =>
+    confirmBooking({
+      user: null,
+      locale: "es",
+      draft: { ...draft(details), service: SERVICE },
+      contactId: "contact-1",
+      bookingId: "booking-1",
+      paymentDescription: "Terapias manuales",
+    });
+
+  test("without the terms box ticked nothing is confirmed, promoted or charged", async () => {
+    const result = await confirm({ ...DETAILS, consent: false });
+    await settle();
+    expect(result).toEqual({
+      kind: "incomplete",
+      errors: { consent: "consentRequired" },
+    });
+    expect(names()).toEqual([]);
+  });
+
+  test("any other detail that is wrong stops it too, each with its own error", async () => {
+    const result = await confirm({ ...DETAILS, phone: "12", lastName: "" });
+    expect(result).toEqual({
+      kind: "incomplete",
+      errors: { phone: "phoneInvalid", lastName: "lastNameRequired" },
+    });
+    expect(names()).toEqual([]);
+  });
+
+  test("with her details in order it goes on to confirm the draft and open the payment", async () => {
+    const result = await confirm(DETAILS);
+    await settle();
+    expect(result).toEqual({ kind: "unpaid" });
+    expect(names()).toEqual([
+      "confirmDraftBooking",
+      "rpc:promote_contact_to_client",
+      "fetch",
+    ]);
   });
 });

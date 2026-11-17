@@ -1,6 +1,13 @@
 "use client";
 
-import { useReducer, useEffect, useState, Suspense, useCallback } from "react";
+import {
+  useReducer,
+  useEffect,
+  useRef,
+  useState,
+  Suspense,
+  useCallback,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -24,7 +31,7 @@ import {
   BookingNavigation,
   BookingStepRenderer,
 } from "./booking-parts";
-import { bookingReducer, initState } from "./booking-state";
+import { DETAILS_STEP_INDEX, bookingReducer, initState } from "./booking-state";
 import {
   confirmBooking,
   saveDatetimeStep,
@@ -186,16 +193,30 @@ function BookingContentInner() {
     paymentMode,
   };
 
+  // The field the focus is owed to. It is paid after the render, once the
+  // messages are on the page (so a screen reader that lands on the field finds
+  // the reason it is described by) and, when the errors send her back from the
+  // confirmation, once the details step is there to be focused.
+  const focusOwed = useRef<string | null>(null);
+  useEffect(() => {
+    const id = focusOwed.current;
+    if (!id) return;
+    const field = document.getElementById(id);
+    if (!field) return;
+    focusOwed.current = null;
+    field.focus();
+  }, [detailErrors, currentStepId]);
+
+  /** Writes each error under its field and sends the focus to the first one. */
+  const showDetailErrors = (errs: DetailsErrors) => {
+    focusOwed.current = firstInvalidFieldId(errs);
+    setDetailErrors(errs);
+  };
+
   const handleNextFromDetails = async ({ asGuest = false } = {}) => {
     const errs = parseErrors(bookingDetailsSchema, details);
     if (Object.keys(errs).length > 0) {
-      setDetailErrors(errs);
-      // Once the messages are on the page, so a screen reader that lands on
-      // the field finds the reason it is described by.
-      const firstId = firstInvalidFieldId(errs);
-      if (firstId) {
-        requestAnimationFrame(() => document.getElementById(firstId)?.focus());
-      }
+      showDetailErrors(errs);
       return;
     }
     setDetailErrors({});
@@ -242,6 +263,15 @@ function BookingContentInner() {
     });
 
     dispatch({ type: "CONFIRM_SUCCESS" });
+
+    // Nothing was written: her details are not in order, the terms box most
+    // of all. Back to the details step, with each error under its field.
+    if (result.kind === "incomplete") {
+      showDetailErrors(result.errors);
+      dispatch({ type: "SET_STEP", step: DETAILS_STEP_INDEX });
+      return;
+    }
+
     clearStorage();
 
     if (result.kind === "redsys") {
