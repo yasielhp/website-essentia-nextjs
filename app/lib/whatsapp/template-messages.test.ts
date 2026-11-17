@@ -7,7 +7,10 @@ import {
   TEMPLATE_STATUSES,
   UNSUPPORTED_REASONS,
 } from "@/lib/whatsapp/template-ui";
-import { WHATSAPP_TEMPLATE_CATEGORIES } from "@/lib/whatsapp/types";
+import {
+  WHATSAPP_ACTION_ERROR_KEYS,
+  WHATSAPP_TEMPLATE_CATEGORIES,
+} from "@/lib/whatsapp/types";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -23,16 +26,6 @@ function leaves(tree: Tree, prefix = ""): Record<string, string> {
 }
 
 const locales = { es: es as unknown as Tree, en: en as unknown as Tree };
-
-/** The error keys `app/actions/whatsapp-templates.ts` can answer with. */
-const ACTION_ERRORS = [
-  "db",
-  "invalid",
-  "templateExists",
-  "submittedNotSaved",
-  "whatsapp_not_configured",
-  "meta",
-];
 
 describe("the Messages screen strings", () => {
   const esMessages = leaves(locales.es.messages as Tree, "messages");
@@ -106,7 +99,7 @@ describe("the Messages screen strings", () => {
 
   test("every error key the actions return is translated", () => {
     for (const messages of [esMessages, enMessages]) {
-      for (const key of [...ACTION_ERRORS, "generic"]) {
+      for (const key of [...WHATSAPP_ACTION_ERROR_KEYS, "generic"]) {
         expect(messages[`messages.whatsapp.errors.${key}`]).toBeTruthy();
       }
     }

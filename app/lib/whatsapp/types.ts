@@ -61,6 +61,20 @@ export const WHATSAPP_TEMPLATE_CATEGORIES = ["MARKETING", "UTILITY"] as const;
 export type WhatsAppTemplateCategory =
   (typeof WHATSAPP_TEMPLATE_CATEGORIES)[number];
 
+/**
+ * The keys `Failure.error` in `app/actions/whatsapp-templates.ts` can carry
+ * besides an auth message. The screen translates each one under
+ * `dashboard.messages.whatsapp.errors`; the actions do not import this yet.
+ */
+export const WHATSAPP_ACTION_ERROR_KEYS = [
+  "db",
+  "invalid",
+  "templateExists",
+  "submittedNotSaved",
+  "whatsapp_not_configured",
+  "meta",
+] as const;
+
 export type WhatsAppTemplateButton =
   | { type: "URL"; text: string; url: string }
   | { type: "QUICK_REPLY"; text: string };

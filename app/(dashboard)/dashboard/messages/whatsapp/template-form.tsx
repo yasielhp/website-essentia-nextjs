@@ -1,6 +1,13 @@
 "use client";
 
-import { useReducer, useRef } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconTrash } from "@/components/ui/icons";
@@ -21,7 +28,8 @@ import { useActionToast } from "./action-error";
 import { Modal } from "./modal";
 import { TemplatePreview } from "./template-preview";
 
-type Language = "es" | "en";
+/** `es` and `en` are the choices; a rewritten template may carry another. */
+type Language = string;
 type ButtonType = "URL" | "QUICK_REPLY";
 
 /** A button as typed: both fields are kept so switching type loses nothing. */
@@ -133,7 +141,9 @@ function initialState(
 ): FormState {
   return {
     name,
-    language: seed?.language === "en" ? "en" : "es",
+    // Kept as it came: a template in another language is shown, and the
+    // schema says it cannot be sent from here, instead of becoming Spanish.
+    language: seed?.language ?? "es",
     category: seed?.category ?? "UTILITY",
     headerText: seed?.header_text ?? "",
     body: seed?.body ?? "",
@@ -176,46 +186,83 @@ function toInput(state: FormState) {
   };
 }
 
-function ErrorLine({ code }: { code: string }) {
+/** Whether anything was typed that the seed did not already hold. */
+function isDirty(state: FormState, initial: FormState): boolean {
+  return (
+    state.name !== initial.name ||
+    state.language !== initial.language ||
+    state.category !== initial.category ||
+    state.headerText !== initial.headerText ||
+    state.body !== initial.body ||
+    state.footerText !== initial.footerText ||
+    JSON.stringify(state.buttons) !== JSON.stringify(initial.buttons) ||
+    JSON.stringify(state.examples) !== JSON.stringify(initial.examples)
+  );
+}
+
+function ErrorLine({ code, id }: { code: string; id?: string }) {
   const tValidation = useTranslations("dashboard.validation");
   return (
-    <p role="alert" className="text-xs text-red-600">
+    <p id={id} role="alert" className="text-xs text-red-600">
       {tValidation.has(code) ? tValidation(code) : tValidation("invalidInput")}
     </p>
   );
 }
 
+/**
+ * A labelled field. Its help and error lines are tied to the control with
+ * `aria-describedby`, so a screen reader reads them with it; `describedBy`
+ * names other lines that belong to the same control.
+ */
 function Field({
   id,
   label,
   help,
   error,
+  describedBy = [],
   children,
 }: {
   id: string;
   label: string;
   help?: string;
   error?: string;
+  describedBy?: string[];
   children: React.ReactNode;
 }) {
+  const ids = [
+    error ? `${id}-error` : null,
+    help ? `${id}-help` : null,
+    ...describedBy,
+  ].filter(Boolean);
+  const described = ids.length > 0 ? ids.join(" ") : undefined;
+
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-petroleum-500 text-xs font-medium">
         {label}
       </label>
-      {children}
-      {error && <ErrorLine code={error} />}
-      {help && <p className="text-petroleum-400 text-xs">{help}</p>}
+      {Children.map(children, (child) =>
+        isValidElement<{ "aria-describedby"?: string }>(child) &&
+        (child.type === "input" || child.type === "textarea")
+          ? cloneElement(child, { "aria-describedby": described })
+          : child,
+      )}
+      {error && <ErrorLine id={`${id}-error`} code={error} />}
+      {help && (
+        <p id={`${id}-help`} className="text-petroleum-400 text-xs">
+          {help}
+        </p>
+      )}
     </div>
   );
 }
 
 /** What Meta would refuse in the body, said while the admin is still typing. */
-function LiveIssues({ issues }: { issues: string[] }) {
+function LiveIssues({ issues, id }: { issues: string[]; id: string }) {
   const tValidation = useTranslations("dashboard.validation");
   if (issues.length === 0) return null;
   return (
-    <ul className="flex flex-col gap-0.5">
+    <ul id={id} className="flex flex-col gap-0.5">
       {issues.map((issue) => (
         <li key={issue} className="text-xs text-yellow-700">
           {tValidation(issue)}
@@ -258,9 +305,10 @@ export function TemplateForm({
   const t = useTranslations("dashboard.messages.whatsapp");
   const tCommon = useTranslations("dashboard.common");
   const showError = useActionToast();
-  const [state, dispatch] = useReducer(reducer, undefined, () =>
+  const [initial] = useState(() =>
     initialState(seed, seed ? nextTemplateName(seed.name, takenNames) : ""),
   );
+  const [state, dispatch] = useReducer(reducer, initial);
   const formRef = useRef<HTMLFormElement>(null);
 
   const params = countParams(state.body);
@@ -271,6 +319,12 @@ export function TemplateForm({
     state.errors.body && !liveIssues.includes(state.errors.body)
       ? state.errors.body
       : undefined;
+  const languageOptions = ["es", "en", initial.language]
+    .filter((code, i, all) => all.indexOf(code) === i)
+    .map((code) => ({
+      value: code,
+      label: t.has(`languages.${code}`) ? t(`languages.${code}`) : code,
+    }));
   const suggestion = nextTemplateName(state.name || "plantilla", takenNames);
 
   async function handleSubmit(e: React.SyntheticEvent) {
@@ -288,7 +342,7 @@ export function TemplateForm({
 
     dispatch({ type: "submitting", value: true });
     try {
-      const result = await createWhatsAppTemplate(getAccessToken(), input);
+      const result = await createWhatsAppTemplate(getAccessToken(), check.data);
       if (result.ok) {
         notifySuccess(
           t(
@@ -314,7 +368,13 @@ export function TemplateForm({
   }
 
   return (
-    <Modal title={t("form.title")} onClose={onClose} wide>
+    <Modal
+      title={t(seed ? "form.rewriteTitle" : "form.title")}
+      onClose={onClose}
+      wide
+      dirty={isDirty(state, initial)}
+      busy={state.submitting}
+    >
       <form
         ref={formRef}
         onSubmit={handleSubmit}
@@ -338,6 +398,7 @@ export function TemplateForm({
               label={t("fields.name")}
               help={t("help.name")}
               error={state.errors.name}
+              describedBy={state.nameTaken ? ["wa-name-taken"] : []}
             >
               <input
                 id="wa-name"
@@ -353,13 +414,18 @@ export function TemplateForm({
                 }
                 disabled={state.submitting}
                 aria-invalid={Boolean(state.errors.name) || state.nameTaken}
+                data-autofocus
                 autoComplete="off"
                 spellCheck={false}
                 className={INPUT_CLASS}
               />
               {state.nameTaken && (
                 <div className="flex flex-wrap items-center gap-3">
-                  <p role="alert" className="text-xs text-red-600">
+                  <p
+                    id="wa-name-taken"
+                    role="alert"
+                    className="text-xs text-red-600"
+                  >
                     {t("form.nameTaken")}
                   </p>
                   <button
@@ -388,10 +454,7 @@ export function TemplateForm({
                 <OptionSelect<Language>
                   id="wa-language"
                   value={state.language}
-                  options={[
-                    { value: "es", label: t("languages.es") },
-                    { value: "en", label: t("languages.en") },
-                  ]}
+                  options={languageOptions}
                   onChange={(value) => dispatch({ type: "language", value })}
                   disabled={state.submitting}
                   ariaLabel={t("fields.language")}
@@ -443,7 +506,13 @@ export function TemplateForm({
               />
             </Field>
 
-            <Field id="wa-body" label={t("fields.body")} error={bodyError}>
+            <Field
+              id="wa-body"
+              label={t("fields.body")}
+              help={t("help.body")}
+              error={bodyError}
+              describedBy={liveIssues.length > 0 ? ["wa-body-issues"] : []}
+            >
               <textarea
                 id="wa-body"
                 name="body"
@@ -460,15 +529,12 @@ export function TemplateForm({
                 aria-invalid={Boolean(state.errors.body)}
                 className={TEXTAREA_CLASS}
               />
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="text-petroleum-400 text-xs">{t("help.body")}</p>
-                <p className="text-petroleum-500 text-xs font-medium whitespace-nowrap tabular-nums">
-                  {t("paramCount", { count: params })}
-                  {" · "}
-                  {state.body.length}/1024
-                </p>
-              </div>
-              <LiveIssues issues={liveIssues} />
+              <p className="text-petroleum-500 text-right text-xs font-medium tabular-nums">
+                {t("paramCount", { count: params })}
+                {" · "}
+                {state.body.length}/1024
+              </p>
+              <LiveIssues issues={liveIssues} id="wa-body-issues" />
             </Field>
 
             {params > 0 && (
@@ -555,7 +621,7 @@ export function TemplateForm({
                       aria-label={t("form.removeButton")}
                       title={t("form.removeButton")}
                       disabled={state.submitting}
-                      className="text-petroleum-300 transition-colors hover:text-red-500"
+                      className="text-petroleum-400/50 transition-colors hover:text-red-500"
                     >
                       <IconTrash />
                     </button>

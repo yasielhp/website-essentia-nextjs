@@ -38,7 +38,7 @@ export function MessagesTabs() {
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-controls={`messages-panel-${key}`}
+              aria-controls={enabled ? `messages-panel-${key}` : undefined}
               aria-disabled={!enabled}
               disabled={!enabled}
               tabIndex={selected ? 0 : -1}
@@ -48,7 +48,7 @@ export function MessagesTabs() {
                   ? "border-petroleum-700 text-petroleum-700"
                   : enabled
                     ? "text-petroleum-400 hover:text-petroleum-700 border-transparent"
-                    : "text-petroleum-300 cursor-not-allowed border-transparent"
+                    : "text-petroleum-400/50 cursor-not-allowed border-transparent"
               }`}
             >
               {t(`tabs.${key}`)}

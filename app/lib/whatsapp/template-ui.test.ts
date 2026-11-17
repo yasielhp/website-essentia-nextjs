@@ -8,17 +8,24 @@ import {
 } from "@/lib/whatsapp/template-ui";
 
 describe("statusTone", () => {
-  test("every state Meta can report has a tone", () => {
-    expect(TEMPLATE_STATUSES).toHaveLength(13);
-    for (const status of TEMPLATE_STATUSES) {
-      expect(typeof statusTone(status)).toBe("string");
-    }
+  test("green is only for a template that can be sent", () => {
+    const green = TEMPLATE_STATUSES.filter((s) => statusTone(s) === "success");
+    expect(green).toEqual(["APPROVED"]);
   });
-  test("approved is green and rejected is red", () => {
-    expect(statusTone("APPROVED")).toBe("success");
-    expect(statusTone("REJECTED")).toBe("danger");
+  test("red marks the states that need somebody to look", () => {
+    const red = TEMPLATE_STATUSES.filter((s) => statusTone(s) === "danger");
+    expect(red.sort()).toEqual(["DISABLED", "LOCKED", "REJECTED"]);
+  });
+  test("waiting and at-risk states are amber, inert ones grey", () => {
     expect(statusTone("PENDING")).toBe("warning");
+    expect(statusTone("PAUSED")).toBe("warning");
     expect(statusTone("draft")).toBe("neutral");
+    expect(statusTone("ARCHIVED")).toBe("neutral");
+  });
+  test("a state we know is told apart from one we do not", () => {
+    expect(statusTone("APPROVED")).not.toBe(statusTone("REJECTED"));
+    expect(TEMPLATE_STATUSES).toContain("APPROVED");
+    expect(TEMPLATE_STATUSES).not.toContain("SOMETHING_NEW");
   });
   test("an unknown state falls back to neutral, never undefined", () => {
     expect(statusTone("SOMETHING_NEW")).toBe("neutral");

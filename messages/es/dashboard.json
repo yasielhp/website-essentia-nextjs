@@ -1983,6 +1983,7 @@
       },
       "form": {
         "title": "Nueva plantilla de WhatsApp",
+        "rewriteTitle": "Reescribir plantilla",
         "submit": "Enviar a revisión",
         "saveDraft": "Guardar borrador",
         "sending": "Enviando…",
@@ -2020,7 +2021,7 @@
       "toasts": {
         "submitted": "Plantilla enviada a revisión",
         "draftSaved": "Plantilla guardada como borrador",
-        "synced": "{count, plural, =0 {No hay plantillas nuevas en Meta} one {# plantilla sincronizada} other {# plantillas sincronizadas}}",
+        "synced": "{count, plural, =0 {Ninguna plantilla sincronizada} one {Sincronizada # plantilla} other {Sincronizadas # plantillas}}",
         "skipped": "{count, plural, one {# plantilla omitida: su categoría no se puede usar aquí} other {# plantillas omitidas: su categoría no se puede usar aquí}}",
         "syncHint": "Sincroniza para ver si Meta la recibió."
       },

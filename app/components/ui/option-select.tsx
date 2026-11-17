@@ -80,7 +80,11 @@ export function OptionSelect<T extends string>({
       if (!containerRef.current?.contains(e.target as Node)) close();
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
+      if (e.key !== "Escape") return;
+      close();
+      // Marks the key as spent: a modal around this select closes on Escape
+      // too, and should leave that one to the list that was open.
+      e.preventDefault();
     }
 
     document.addEventListener("mousedown", handlePointerDown);

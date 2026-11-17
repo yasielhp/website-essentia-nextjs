@@ -1983,6 +1983,7 @@
       },
       "form": {
         "title": "New WhatsApp template",
+        "rewriteTitle": "Rewrite template",
         "submit": "Submit for review",
         "saveDraft": "Save draft",
         "sending": "Sending…",
@@ -2020,7 +2021,7 @@
       "toasts": {
         "submitted": "Template submitted for review",
         "draftSaved": "Template saved as a draft",
-        "synced": "{count, plural, =0 {No new templates at Meta} one {# template synced} other {# templates synced}}",
+        "synced": "{count, plural, =0 {No templates synced} one {Synced # template} other {Synced # templates}}",
         "skipped": "{count, plural, one {# template skipped: its category cannot be used here} other {# templates skipped: their category cannot be used here}}",
         "syncHint": "Sync to see whether Meta received it."
       },

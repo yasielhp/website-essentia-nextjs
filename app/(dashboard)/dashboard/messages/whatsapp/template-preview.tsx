@@ -31,7 +31,7 @@ export function TemplatePreview({
 
   return (
     <div className="bg-sand-100 rounded-2xl p-4">
-      <div className="ml-auto max-w-[320px] rounded-xl rounded-tr-none bg-[#e7fed6] px-3 py-2 text-sm text-neutral-900 shadow-sm">
+      <div className="ml-auto max-w-[320px] rounded-xl rounded-tr-none bg-[#e7fed6] px-3 py-2 text-sm text-[#111b21] shadow-sm">
         {headerText ? (
           <p className="mb-1 font-semibold break-words">{headerText}</p>
         ) : null}
@@ -39,11 +39,11 @@ export function TemplatePreview({
           {renderPreview(body, examples)}
         </p>
         {footerText ? (
-          <p className="mt-1 text-xs break-words text-neutral-500">
+          <p className="mt-1 text-xs break-words text-[#667781]">
             {footerText}
           </p>
         ) : null}
-        <p className="mt-1 text-right text-[11px] text-neutral-500">{time}</p>
+        <p className="mt-1 text-right text-[11px] text-[#667781]">{time}</p>
       </div>
       {buttons.length > 0 && (
         <div className="mt-1 ml-auto flex max-w-[320px] flex-col gap-1">
