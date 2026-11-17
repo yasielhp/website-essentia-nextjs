@@ -443,3 +443,10 @@ describe("the notes of a notice's report", () => {
     );
   });
 });
+
+describe("the report's actions", () => {
+  test("the retry says it is retrying while it lasts", () => {
+    expect(locales.es["campaigns.detail.retrying"]).toBe("Reintentando…");
+    expect(locales.en["campaigns.detail.retrying"]).toBe("Retrying…");
+  });
+});

@@ -39,9 +39,11 @@ import {
   type ReportTile,
 } from "@/lib/campaigns/report";
 import { RecipientTable } from "./recipient-table";
+import { LoadFailed } from "@/components/dashboard/load-failed";
 
 type State =
   | { kind: "loading" }
+  | { kind: "failed" }
   | { kind: "missing" }
   | {
       kind: "ready";
@@ -52,17 +54,23 @@ type State =
 
 type Action =
   | { type: "missing" }
+  | { type: "failed" }
   | {
       type: "loaded";
       campaign: CampaignRow;
       recipients: CampaignRecipientRow[];
     }
-  | { type: "refreshing" };
+  | { type: "refreshing" }
+  | { type: "loading" };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "missing":
       return { kind: "missing" };
+    // A read that threw is not "not found". While the page is open and
+    // following a send, a hiccup of the poll leaves what is on screen alone.
+    case "failed":
+      return state.kind === "ready" ? state : { kind: "failed" };
     case "loaded":
       return {
         kind: "ready",
@@ -72,6 +80,8 @@ function reducer(state: State, action: Action): State {
       };
     case "refreshing":
       return state.kind === "ready" ? { ...state, refreshing: true } : state;
+    case "loading":
+      return { kind: "loading" };
   }
 }
 
@@ -97,10 +107,12 @@ export default function CampaignDetailPage() {
   useDynamicBreadcrumb(state.kind === "ready" ? state.campaign.name : null);
 
   const load = useCallback(async () => {
-    const { campaign, recipients } = await fetchCampaign(
-      getAccessToken(),
-      id,
-    ).catch(() => ({ campaign: null, recipients: [] }));
+    const result = await fetchCampaign(getAccessToken(), id).catch(() => null);
+    if (result === null) {
+      dispatch({ type: "failed" });
+      return;
+    }
+    const { campaign, recipients } = result;
     if (!campaign) {
       dispatch({ type: "missing" });
       return;
@@ -135,6 +147,10 @@ export default function CampaignDetailPage() {
       const result = await action();
       if (result.ok) onOk(result);
       else toast.error(errorText(result.error ?? "generic"));
+    } catch {
+      // A request that threw (the network, a gateway that gave up on a long
+      // retry) must not leave the button as it was with nothing said.
+      toast.error(errorText("generic"));
     } finally {
       setBusy(null);
     }
@@ -159,6 +175,16 @@ export default function CampaignDetailPage() {
           <TableSkeleton cols={5} />
         </div>
       </div>
+    );
+  }
+  if (state.kind === "failed") {
+    return (
+      <LoadFailed
+        onRetry={() => {
+          dispatch({ type: "loading" });
+          void load();
+        }}
+      />
     );
   }
   if (state.kind === "missing") {
@@ -374,7 +400,9 @@ export default function CampaignDetailPage() {
                 )
               }
             >
-              {t("detail.retryFailed")}
+              {busy === "retry"
+                ? t("detail.retrying")
+                : t("detail.retryFailed")}
             </Button>
           )}
           {whatsapp &&

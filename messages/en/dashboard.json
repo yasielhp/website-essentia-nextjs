@@ -1944,7 +1944,8 @@
         "skippedSuppressed": "Skipped: that number wrote STOP",
         "skippedOther": "Skipped: {reason}"
       },
-      "columnsAppointment": "Appointment"
+      "columnsAppointment": "Appointment",
+      "retrying": "Retrying…"
     },
     "errors": {
       "not_claimable": "This campaign is already being sent, or was sent.",
