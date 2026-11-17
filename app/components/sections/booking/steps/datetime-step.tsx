@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import type { BookableService } from "@/data/services-data";
@@ -15,6 +15,7 @@ import {
 import { fetchAvailability, type Availability } from "@/actions/availability";
 import { formatCalendarDay, type SupportedLocale } from "@/utils/format";
 import { localDateStr } from "@/utils/format";
+import { selectionGone } from "./datetime-selection";
 
 function CalendarView({
   selected,
@@ -148,8 +149,14 @@ export function DateTimeStep({
   const locale = useLocale();
   const dateLocale = locale === "es" ? "es-ES" : "en-GB";
   const today = new Date();
-  const [viewYear, setViewYear] = useState(() => today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => today.getMonth());
+  // A booking picked up again opens on the month of the day it had chosen,
+  // not on this one: the hours shown below are that month's.
+  const [viewYear, setViewYear] = useState(() =>
+    (selectedDate ?? today).getFullYear(),
+  );
+  const [viewMonth, setViewMonth] = useState(() =>
+    (selectedDate ?? today).getMonth(),
+  );
 
   const [view, setView] = useState<"date" | "time">(
     selectedDate ? "time" : "date",
@@ -160,6 +167,15 @@ export function DateTimeStep({
   // which hours exist.
   const [availability, setAvailability] = useState<Availability>({});
   const [loadingMonth, setLoadingMonth] = useState(true);
+  // The hour she had chosen was no longer in the list when it arrived.
+  const [timeGone, setTimeGone] = useState(false);
+
+  // What is chosen right now, for the list to be checked against when it
+  // arrives (it arrives later, and must not judge a choice made since).
+  const chosen = useRef({ selectedDate, selectedTime, onSelectTime });
+  useEffect(() => {
+    chosen.current = { selectedDate, selectedTime, onSelectTime };
+  });
 
   const sessionMinutes =
     durationMinutes ??
@@ -187,6 +203,23 @@ export function DateTimeStep({
       if (cancelled) return;
       setAvailability(result);
       setLoadingMonth(false);
+
+      // A day and an hour restored from an earlier visit are only a memory:
+      // somebody may have taken the hour since, or it may have passed. If the
+      // list no longer has it the choice is dropped, so "next" closes, and she
+      // is told why.
+      const now = chosen.current;
+      if (
+        selectionGone({
+          availability: result,
+          loaded: { year: viewYear, month: viewMonth },
+          date: now.selectedDate,
+          time: now.selectedTime,
+        })
+      ) {
+        now.onSelectTime("");
+        setTimeGone(true);
+      }
     });
 
     return () => {
@@ -203,12 +236,19 @@ export function DateTimeStep({
   const handleDateSelect = (d: Date) => {
     onSelectDate(d);
     onSelectTime("");
+    setTimeGone(false);
     setView("time");
   };
 
   const handleChangeDate = () => {
     onSelectTime("");
+    setTimeGone(false);
     setView("date");
+  };
+
+  const handleTimeSelect = (time: string) => {
+    onSelectTime(time);
+    setTimeGone(false);
   };
 
   const handlePrevMonth = () => {
@@ -266,6 +306,11 @@ export function DateTimeStep({
 
       <div className="flex flex-col gap-3">
         <p className="text-petroleum-400 text-sm">{t("availableTimes")}</p>
+        {timeGone && (
+          <p role="alert" className="text-sm text-red-500">
+            {t("timeGone")}
+          </p>
+        )}
         {loadingMonth ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -295,7 +340,7 @@ export function DateTimeStep({
               <button
                 type="button"
                 key={time}
-                onClick={() => onSelectTime(time)}
+                onClick={() => handleTimeSelect(time)}
                 className={[
                   "rounded-xl border py-2.5 text-sm font-medium transition-colors",
                   selectedTime === time

@@ -109,3 +109,26 @@ describe("booking.detailsStep messages", () => {
     );
   });
 });
+
+describe("booking.datetimeStep messages", () => {
+  const DATETIME = readFileSync(
+    join(import.meta.dir, "steps", "datetime-step.tsx"),
+    "utf8",
+  );
+
+  test("Spanish and English have exactly the same keys", () => {
+    expect(Object.keys(es.datetimeStep).sort()).toEqual(
+      Object.keys(en.datetimeStep).sort(),
+    );
+  });
+
+  test("an hour that is no longer on offer is said in a line a screen reader announces", () => {
+    expect(es.datetimeStep.timeGone).toBe(
+      "Esa hora ya no está disponible. Elige otra.",
+    );
+    expect(en.datetimeStep.timeGone).toBe(
+      "That time is no longer available. Please choose another.",
+    );
+    expect(DATETIME).toMatch(/role="alert"[^>]*>\s*\{t\("timeGone"\)\}/);
+  });
+});

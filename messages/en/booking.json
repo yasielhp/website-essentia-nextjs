@@ -100,6 +100,7 @@
     "noAvailability": "No availability for this day",
     "tryAnother": "Please choose a different date.",
     "chooseAnother": "Choose another date",
+    "timeGone": "That time is no longer available. Please choose another.",
     "date": "Date",
     "prevMonth": "Previous month",
     "nextMonth": "Next month"

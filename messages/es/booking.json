@@ -100,6 +100,7 @@
     "noAvailability": "Sin disponibilidad para este día",
     "tryAnother": "Por favor, elige otra fecha.",
     "chooseAnother": "Elegir otra fecha",
+    "timeGone": "Esa hora ya no está disponible. Elige otra.",
     "date": "Fecha",
     "prevMonth": "Mes anterior",
     "nextMonth": "Mes siguiente"
