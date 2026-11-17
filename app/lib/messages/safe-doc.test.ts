@@ -375,14 +375,54 @@ describe("images and link cards", () => {
   }
 
   test("a link card named after a variable takes its value, judged", async () => {
-    const bad = await html(doc(card({ link: "where" })), {
-      where: "javascript:alert(1)",
-    });
-    for (const href of urls(bad)) expect(href).toBe("#");
     const good = await html(doc(card({ link: "where" })), {
       where: "https://example.test/d",
     });
     expect(urls(good).every((h) => h === "https://example.test/d")).toBe(true);
+    expect(urls(good)).not.toEqual([]);
+  });
+
+  // The same as a button: a card whose address is a variable and nothing else
+  // is not left pointing at `#` when the variable holds no address this time.
+  for (const link of ["consent_url", " consent_url ", "{{consent_url}}"]) {
+    for (const value of ["", "javascript:alert(1)", undefined]) {
+      test(`a link card to the variable ${JSON.stringify(link)} holding ${JSON.stringify(value)} is removed`, async () => {
+        const values: Record<string, string> =
+          value === undefined ? {} : { consent_url: value };
+        const out = await html(
+          doc(p(text("antes")), card({ link }), p(text("después"))),
+          values,
+        );
+        expect(urls(out)).toEqual([]);
+        expect(out).not.toContain("<a");
+        expect(out).toContain("antes");
+        expect(out).toContain("después");
+        expect(out.toLowerCase()).not.toContain("javascript:");
+      });
+    }
+
+    test(`a link card to the variable ${JSON.stringify(link)} holding an address is kept`, async () => {
+      const out = await html(doc(card({ link })), {
+        consent_url: "https://example.test/consent?token=abc",
+      });
+      expect(urls(out)).not.toEqual([]);
+      for (const href of urls(out)) {
+        expect(href).toBe("https://example.test/consent?token=abc");
+      }
+    });
+  }
+
+  test("a link card with a fixed address that does not hold still goes to #", async () => {
+    for (const link of [
+      "",
+      "{{consent_url}}/x",
+      "/relative",
+      "www.example.test",
+    ]) {
+      const out = await html(doc(card({ link })), { consent_url: "" });
+      expect(urls(out)).not.toEqual([]);
+      for (const href of urls(out)) expect(href).toBe("#");
+    }
   });
 
   test("a link card's picture must be https or http", async () => {

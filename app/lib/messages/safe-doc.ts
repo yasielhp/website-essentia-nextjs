@@ -16,10 +16,10 @@ import type { EmailDoc } from "@/types/campaign";
  *  - Links (text links, buttons, link cards, linked images) go into `href`.
  *    Only `https:`, `http:` and `mailto:` may leave; anything else, a
  *    `javascript:` or `data:` address above all, becomes `#`.
- *  - A button or a text link whose address is a VARIABLE and nothing else
- *    (`{{consent_url}}`, `{{cancel_url}}`) and whose value is not an address
- *    that may leave is not left pointing at `#`: the button is removed and
- *    the link's text stays without its link. `consent_url` is empty for every
+ *  - A button, a link card or a text link whose address is a VARIABLE and
+ *    nothing else (`{{consent_url}}`, `{{cancel_url}}`) and whose value is not
+ *    an address that may leave is not left pointing at `#`: the button or the
+ *    card is removed and the link's text stays without its link. `consent_url` is empty for every
  *    client who has already signed, and a "Sign the consent" button that goes
  *    nowhere is worse than none.
  *  - A link can be a variable (`isUrlVariable`, and a link card's `link`): the
@@ -160,6 +160,9 @@ function resolve(
 
 const safeLink = (url: string) => (LINK_OK.test(url) ? url : "#");
 
+// How a link card names a variable: the renderer looks its address up among
+// the variables by name before using it as an address.
+const BARE_NAME = /^[a-z_][a-z0-9_]*$/i;
 const ONLY_TOKEN = /^\{\{\s*[a-z_][a-z0-9_]*\s*\}\}$/i;
 
 /**
@@ -303,6 +306,15 @@ function cleanNode(
         const link = has(values, raw.trim())
           ? (values[raw.trim()] ?? "").trim()
           : resolve(raw, false, values);
+        // A card whose address is a variable and nothing else (its bare name,
+        // which is never an address by itself, or one token) goes the way of
+        // such a button when the variable holds no address this time.
+        if (
+          !LINK_OK.test(link) &&
+          (BARE_NAME.test(raw.trim()) || isVariableAddress(raw, false))
+        ) {
+          return null;
+        }
         attrs.link = safeLink(link);
         if (typeof attrs.image === "string" && attrs.image !== "") {
           const image = resolve(attrs.image, false, values);
@@ -435,8 +447,7 @@ export function findForbiddenNodes(doc: EmailDoc): DocProblem[] {
     if (node.type === "linkCard") {
       // A card's address may be the name of a variable: the renderer looks it
       // up before using it as an address.
-      const named =
-        typeof a.link === "string" && /^[a-z_][a-z0-9_]*$/i.test(a.link.trim());
+      const named = typeof a.link === "string" && BARE_NAME.test(a.link.trim());
       if (!named && !literalOk(a.link, false, LINK_OK)) {
         bad(a.link, path, node.type);
       }
