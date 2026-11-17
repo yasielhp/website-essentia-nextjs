@@ -9,11 +9,10 @@ import {
   hasClientConsent,
   loadClientMessageRows,
   loadClientTemplate,
+  makeClientDeps,
   type ClientContact,
   type ClientWhatsAppDeps,
 } from "./notify-client";
-import { isWhatsAppConfigured, sendTemplateMessage } from "./client";
-import { recordBookingEvent } from "@/lib/booking-events/record";
 import type { WhatsAppTemplateRow } from "./types";
 
 /**
@@ -84,12 +83,8 @@ export async function sendWhatsAppReminders(
   try {
     // Built inside the `try`: a database client that cannot be made must not
     // take the cron down.
-    const deps: ClientWhatsAppDeps = injected ?? {
-      db: getAdminClient().database,
-      send: sendTemplateMessage,
-      record: recordBookingEvent,
-      isConfigured: isWhatsAppConfigured,
-    };
+    const deps: ClientWhatsAppDeps =
+      injected ?? makeClientDeps(getAdminClient().database);
     if (!deps.isConfigured()) return result;
 
     const rows = await loadClientMessageRows(deps.db, "booking_reminder");

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import {
   chainDb,
   filters,
@@ -9,7 +9,7 @@ import {
 import { template } from "@/lib/campaigns/whatsapp-fixtures";
 import type { BookingEventInput } from "@/lib/booking-events/types";
 import type { TemplateSend } from "./client";
-import type { ClientWhatsAppDeps } from "./notify-client";
+import { makeClientDeps, type ClientWhatsAppDeps } from "./notify-client";
 import {
   CRON_MAX_MS,
   reminderBudgetMs,
@@ -81,6 +81,8 @@ type World = {
   /** Bookings whose email reminder was already sent: the WhatsApp one is independent. */
   emailStamped?: string[];
   stamped?: Set<string>;
+  /** E.164 phones on the STOP list; null makes the list unreadable. */
+  suppressed?: string[] | null;
 };
 
 function world(w: World = {}) {
@@ -126,10 +128,19 @@ function world(w: World = {}) {
         error: null,
       };
     }
+    if (table === "whatsapp_suppressed_phones") {
+      return w.suppressed === null
+        ? { data: null, error: { message: "relation does not exist" } }
+        : {
+            data: (w.suppressed ?? []).map((phone) => ({ phone })),
+            error: null,
+          };
+    }
     return { data: [], error: null };
   });
 
   const deps: ClientWhatsAppDeps = {
+    ...makeClientDeps(db),
     db,
     isConfigured: () => true,
     send: async (s) => {
@@ -224,6 +235,48 @@ describe("sendWhatsAppReminders — when there is nothing to do", () => {
     await run(w);
     expect(w.sent).toHaveLength(0);
     expect(w.stamped.size).toBe(0);
+  });
+});
+
+describe("sendWhatsAppReminders — numbers that said STOP", () => {
+  it("a suppressed number is neither claimed nor written to nor recorded", async () => {
+    const w = world({
+      bookings: [booking("b-1", 48)],
+      suppressed: ["+34600112233"],
+    });
+    const out = await run(w);
+    expect(w.sent).toHaveLength(0);
+    expect(w.recorded).toHaveLength(0);
+    expect(w.stamped.size).toBe(0);
+    expect(out.none).toBe(1);
+  });
+
+  it("with the list unreadable nobody is written to and nothing is stamped", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const w = world({ bookings: [booking("b-1", 48)], suppressed: null });
+    await run(w);
+    quiet.mockRestore();
+    expect(w.sent).toHaveLength(0);
+    expect(w.stamped.size).toBe(0);
+  });
+
+  it("the others in the run are not affected by one suppressed number", async () => {
+    const w = world({
+      bookings: [
+        booking("b-1", 48),
+        booking("b-2", 47, {
+          email: "luis@example.test",
+          phone: "611 22 33 44",
+        }),
+      ],
+      contacts: [
+        CONSENTING,
+        { ...CONSENTING, email: "luis@example.test", first_name: "Luis" },
+      ],
+      suppressed: ["+34611223344"],
+    });
+    await run(w);
+    expect(w.sent.map((s) => s.to)).toEqual(["+34600112233"]);
   });
 });
 

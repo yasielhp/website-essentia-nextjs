@@ -16,6 +16,7 @@ import {
   type TemplateSend,
 } from "./client";
 import { toCampaignPhone } from "./phone";
+import { isPhoneSuppressed } from "./suppression";
 import { renderPreview } from "./templates";
 import type {
   WhatsAppParamField,
@@ -185,6 +186,12 @@ export function decideClientWhatsApp(input: {
   template: WhatsAppTemplateRow | null;
   contact: ClientContact | null;
   booking: ClientBooking;
+  /**
+   * The number said STOP at some point (`whatsapp_suppressed_phones`), on any
+   * contact or none. It beats any consent: the consent is on a contact, and
+   * the number may belong to somebody else.
+   */
+  phoneSuppressed: boolean;
 }): ClientWhatsAppDecision {
   const { key, locale, row, template, contact, booking } = input;
   const definition = MESSAGE_CATALOG[key];
@@ -197,6 +204,7 @@ export function decideClientWhatsApp(input: {
   if (!hasClientConsent(contact)) return { kind: "none" };
   const to = clientPhone(contact, booking);
   if (!to) return { kind: "none" };
+  if (input.phoneSuppressed) return { kind: "none" };
 
   // From here the client would have been messaged: a template that cannot be
   // sent is the admin's to fix, and shows.
@@ -261,7 +269,23 @@ export type ClientWhatsAppDeps = {
   send: (send: TemplateSend) => Promise<WhatsAppSendResult>;
   record: (entry: BookingEventInput) => Promise<void>;
   isConfigured: () => boolean;
+  /**
+   * Whether a number is on the STOP list. Throws when the list cannot be read
+   * (the table may not exist yet); the caller treats that as "yes".
+   */
+  isSuppressed: (phone: string) => Promise<boolean>;
 };
+
+/** The real dependencies, over one database client. */
+export function makeClientDeps(db: Db): ClientWhatsAppDeps {
+  return {
+    db,
+    send: sendTemplateMessage,
+    record: recordBookingEvent,
+    isConfigured: isWhatsAppConfigured,
+    isSuppressed: (phone) => isPhoneSuppressed(db, phone),
+  };
+}
 
 export type DeliverOutcome = "none" | "lost" | "skipped" | "sent" | "failed";
 
@@ -300,9 +324,23 @@ export async function deliverClientWhatsApp(
     actorRole?: BookingEventActorRole | null;
     claim?: () => Promise<boolean>;
   },
-  deps: Pick<ClientWhatsAppDeps, "send" | "record">,
+  deps: Pick<ClientWhatsAppDeps, "send" | "record" | "isSuppressed">,
 ): Promise<DeliverOutcome> {
-  const decision = decideClientWhatsApp(input);
+  const first = decideClientWhatsApp({ ...input, phoneSuppressed: false });
+  if (first.kind === "none") return "none";
+
+  // The STOP list, read for the number this would go to and BEFORE anything is
+  // claimed or written. One that cannot be read counts as "suppressed": better
+  // no message than one to somebody who asked for none.
+  let suppressed = true;
+  try {
+    suppressed = await deps.isSuppressed(first.to);
+  } catch (err) {
+    console.error("[whatsapp/client] could not read the STOP list:", err);
+  }
+  const decision = suppressed
+    ? decideClientWhatsApp({ ...input, phoneSuppressed: true })
+    : first;
   if (decision.kind === "none") return "none";
 
   if (input.claim) {
@@ -491,12 +529,7 @@ async function loadClientContact(
 }
 
 function defaultDeps(): ClientWhatsAppDeps {
-  return {
-    db: getAdminClient().database,
-    send: sendTemplateMessage,
-    record: recordBookingEvent,
-    isConfigured: isWhatsAppConfigured,
-  };
+  return makeClientDeps(getAdminClient().database);
 }
 
 /**

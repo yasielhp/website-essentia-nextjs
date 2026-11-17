@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { chainDb, argsOf, filters, show } from "@/lib/campaigns/fake-db";
 import { template } from "@/lib/campaigns/whatsapp-fixtures";
 import type { BookingEventInput } from "@/lib/booking-events/types";
@@ -10,6 +10,7 @@ import {
   decideClientWhatsApp,
   deliverClientWhatsApp,
   hasClientConsent,
+  makeClientDeps,
   notifyClientOnWhatsApp,
   type ClientBooking,
   type ClientContact,
@@ -66,6 +67,7 @@ const decide = (over: Record<string, unknown> = {}) =>
     template: TEMPLATE,
     contact: CONTACT,
     booking: BOOKING,
+    phoneSuppressed: false,
     ...over,
   } as Parameters<typeof decideClientWhatsApp>[0]);
 
@@ -204,6 +206,14 @@ describe("decideClientWhatsApp — nothing to do", () => {
         template: { ...TEMPLATE, status: "REJECTED" },
       }).kind,
     ).toBe("none");
+  });
+});
+
+describe("decideClientWhatsApp — a number that said STOP", () => {
+  it("is never written to, whoever's contact it is on, and is not a recorded skip", () => {
+    expect(decide({ phoneSuppressed: true }).kind).toBe("none");
+    // Not even for a broken template: the client would not have been messaged.
+    expect(decide({ phoneSuppressed: true, template: null }).kind).toBe("none");
   });
 });
 
@@ -355,7 +365,8 @@ function harness(
 ) {
   const sent: TemplateSend[] = [];
   const recorded: BookingEventInput[] = [];
-  const deps: Pick<ClientWhatsAppDeps, "send" | "record"> = {
+  const deps: Pick<ClientWhatsAppDeps, "send" | "record" | "isSuppressed"> = {
+    isSuppressed: async () => false,
     send: async (s) => {
       sent.push(s);
       return answer(s);
@@ -515,6 +526,93 @@ describe("deliverClientWhatsApp", () => {
     expect(h.recorded).toHaveLength(0);
   });
 
+  it("a number on the STOP list gets nothing: no claim, no send, no history", async () => {
+    let claimed = 0;
+    const h = harness();
+    const deps = { ...h.deps, isSuppressed: async () => true };
+    expect(
+      await deliverClientWhatsApp(
+        args({
+          claim: async () => {
+            claimed += 1;
+            return true;
+          },
+        }),
+        deps,
+      ),
+    ).toBe("none");
+    expect(claimed).toBe(0);
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+  });
+
+  it("the list is asked about the number the message would go to, and before the claim", async () => {
+    const asked: string[] = [];
+    const order: string[] = [];
+    const h = harness();
+    const deps = {
+      ...h.deps,
+      isSuppressed: async (phone: string) => {
+        asked.push(phone);
+        order.push("suppression");
+        return false;
+      },
+    };
+    await deliverClientWhatsApp(
+      args({
+        claim: async () => {
+          order.push("claim");
+          return true;
+        },
+      }),
+      deps,
+    );
+    expect(asked).toEqual(["+34611222333"]);
+    expect(order).toEqual(["suppression", "claim"]);
+  });
+
+  it("a list that cannot be read means nothing is sent: it fails closed", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    let claimed = 0;
+    const h = harness();
+    const deps = {
+      ...h.deps,
+      isSuppressed: async () => {
+        throw new Error("relation does not exist");
+      },
+    };
+    expect(
+      await deliverClientWhatsApp(
+        args({
+          claim: async () => {
+            claimed += 1;
+            return true;
+          },
+        }),
+        deps,
+      ),
+    ).toBe("none");
+    quiet.mockRestore();
+    expect(claimed).toBe(0);
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+  });
+
+  it("the list is not read for a client who would not be messaged anyway", async () => {
+    let asked = 0;
+    const h = harness();
+    const deps = {
+      ...h.deps,
+      isSuppressed: async () => {
+        asked += 1;
+        return false;
+      },
+    };
+    await deliverClientWhatsApp(args({ contact: null }), deps);
+    await deliverClientWhatsApp(args({ row: null }), deps);
+    expect(asked).toBe(0);
+  });
+
   it("with a claim, only the run that wins it sends", async () => {
     const h = harness();
     let free = true;
@@ -541,6 +639,7 @@ describe("deliverClientWhatsApp", () => {
         return h.deps.send(s);
       },
       record: h.deps.record,
+      isSuppressed: h.deps.isSuppressed,
     };
     await deliverClientWhatsApp(
       args({
@@ -607,6 +706,10 @@ type Answers = {
   contactByEmail?: unknown;
   contactById?: unknown;
   template?: unknown;
+  /** E.164 phones on the suppression list. */
+  suppressed?: string[];
+  /** The list cannot be read (the table does not exist yet). */
+  suppressedError?: boolean;
 };
 
 function loaderHarness(
@@ -639,9 +742,18 @@ function loaderHarness(
     if (table === "whatsapp_templates") {
       return { data: answers.template ?? null, error: null };
     }
+    if (table === "whatsapp_suppressed_phones") {
+      return answers.suppressedError
+        ? { data: null, error: { message: "relation does not exist" } }
+        : {
+            data: (answers.suppressed ?? []).map((phone) => ({ phone })),
+            error: null,
+          };
+    }
     return { data: null, error: null };
   });
   const deps: ClientWhatsAppDeps = {
+    ...makeClientDeps(db),
     db,
     send: h.deps.send,
     record: h.deps.record,
@@ -720,6 +832,31 @@ describe("notifyClientOnWhatsApp", () => {
     await notifyClientOnWhatsApp(input, h.deps);
     const contacts = h.log.filter((q) => q.table === "contacts");
     expect(filters(contacts[0]!.chain)).toEqual({ email: "ana@example.test" });
+  });
+
+  it("a number on the STOP list is not written to, whatever the consent says", async () => {
+    const h = loaderHarness({ ...full, suppressed: ["+34611222333"] });
+    await notifyClientOnWhatsApp(input, h.deps);
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+    // The list was asked about that number and nothing else.
+    const read = h.log.find((q) => q.table === "whatsapp_suppressed_phones")!;
+    expect(argsOf(read.chain, "in")).toEqual(["phone", ["+34611222333"]]);
+  });
+
+  it("a STOP list that cannot be read (no table yet) sends nothing", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const h = loaderHarness({ ...full, suppressedError: true });
+    await notifyClientOnWhatsApp(input, h.deps);
+    quiet.mockRestore();
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+  });
+
+  it("a number that is not on the list is written to", async () => {
+    const h = loaderHarness({ ...full, suppressed: ["+34999999999"] });
+    await notifyClientOnWhatsApp(input, h.deps);
+    expect(h.sent).toHaveLength(1);
   });
 
   it("falls back to the contact the booking points at", async () => {
