@@ -23,6 +23,7 @@ import {
   pauseCampaign,
   retryFailedRecipients,
 } from "@/actions/campaigns";
+import { useSendNoticeToast } from "../send-notice-toast";
 import { isAutomatedKind } from "@/types/campaign";
 import type { CampaignRecipientRow, CampaignRow } from "@/types/campaign";
 import { CampaignStatusBadge } from "../status-badge";
@@ -74,6 +75,7 @@ const POLL_WHILE_SENDING_MS = 5_000;
 export default function CampaignDetailPage() {
   const t = useTranslations("dashboard.campaigns");
   const tToasts = useTranslations("dashboard.toasts");
+  const notifySend = useSendNoticeToast();
   const locale = useDashboardLocale();
   const { id } = useParams<{ id: string }>();
   const { push, replace } = useRouter();
@@ -112,15 +114,15 @@ export default function CampaignDetailPage() {
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
 
-  async function act(
+  async function act<R extends { ok: boolean; error?: string }>(
     name: string,
-    action: () => Promise<{ ok: boolean; error?: string }>,
-    onOk: () => void,
+    action: () => Promise<R>,
+    onOk: (result: R) => void,
   ) {
     setBusy(name);
     try {
       const result = await action();
-      if (result.ok) onOk();
+      if (result.ok) onOk(result);
       else toast.error(errorText(result.error ?? "generic"));
     } finally {
       setBusy(null);
@@ -330,8 +332,9 @@ export default function CampaignDetailPage() {
                 void act(
                   "retry",
                   () => retryFailedRecipients(getAccessToken(), campaign.id),
-                  () => {
-                    notifySuccess(tToasts("campaignRetried"));
+                  (result) => {
+                    // Not "retried" when the retry stopped half way.
+                    if (result.ok) notifySend(result, "campaignRetried");
                     void load();
                   },
                 )

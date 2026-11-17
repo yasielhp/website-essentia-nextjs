@@ -5,9 +5,18 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
-import { requiredLocales } from "@/lib/schemas";
+import { requiredLocales, sendLocaleOf } from "@/lib/schemas";
+import {
+  WHATSAPP_MESSAGES_PER_RUN,
+  sampleParams,
+} from "@/lib/campaigns/whatsapp-form";
 import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
+import { TemplatePreview } from "../../messages/whatsapp/template-preview";
 import type { FormState } from "./form-state";
+import type { TemplatesState } from "./use-whatsapp-templates";
+
+const META_PRICING_URL =
+  "https://developers.facebook.com/docs/whatsapp/pricing";
 
 /** The conditions as sentences, so the admin reads what they built. */
 export function describeAudience(
@@ -66,12 +75,15 @@ function defaultScheduleValue(): string {
  */
 export function ReviewStep({
   state,
+  templates,
   onTest,
   onSchedule,
   onSendNow,
   onActivate,
 }: {
   state: FormState;
+  /** The account's templates; only a WhatsApp campaign has one to show. */
+  templates: TemplatesState;
   onTest: () => Promise<void>;
   onSchedule: (iso: string) => Promise<void>;
   onSendNow: () => Promise<void>;
@@ -84,6 +96,16 @@ export function ReviewStep({
   const tTrigger = useTranslations("dashboard.campaigns.trigger");
   const tType = useTranslations("dashboard.campaigns.type");
   const { audience, content, reach, submitting, error, kind, trigger } = state;
+  const whatsapp = state.channel === "whatsapp";
+  const tWhatsApp = useTranslations("dashboard.campaigns.form.whatsapp");
+  const [today] = useState(() => new Date());
+  const sendLocale = sendLocaleOf(audience);
+  const chosenTemplate =
+    whatsapp && templates.status === "ready"
+      ? (templates.templates.find(
+          (tpl) => tpl.id === content.whatsapp?.templateId,
+        ) ?? null)
+      : null;
   const automated = isAutomatedKind(kind);
   const [confirming, setConfirming] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
@@ -124,7 +146,9 @@ export function ReviewStep({
             {t("conditions")}
           </h3>
           {conditions.length === 0 ? (
-            <p className="text-petroleum-500 text-sm">{t("noConditions")}</p>
+            <p className="text-petroleum-500 text-sm">
+              {whatsapp ? t("noConditionsWhatsApp") : t("noConditions")}
+            </p>
           ) : (
             <ul className="text-petroleum-500 list-disc pl-4 text-sm">
               {conditions.map((line) => (
@@ -138,29 +162,59 @@ export function ReviewStep({
           <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
             {t("contentSummary")}
           </h2>
-          <dl className="flex flex-col gap-3">
-            {requiredLocales(audience).map((locale) => (
-              <div key={locale}>
-                <dt className="text-petroleum-400 text-xs font-medium">
-                  {locale === "es"
-                    ? tContent("localeEs")
-                    : tContent("localeEn")}
-                </dt>
-                <dd className="text-petroleum-700 text-sm font-medium">
-                  {kind === "split" ? "A · " : ""}
-                  {content[locale].subject}
-                </dd>
-                {kind === "split" && (
-                  <dd className="text-petroleum-700 text-sm font-medium">
-                    B · {content[locale].subjectB}
-                  </dd>
-                )}
-                <dd className="text-petroleum-500 text-sm">
-                  {content[locale].title}
-                </dd>
+          {whatsapp ? (
+            chosenTemplate ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-petroleum-700 text-sm font-medium">
+                  {t("whatsappTemplate", { name: chosenTemplate.name })}
+                </p>
+                <TemplatePreview
+                  headerText={chosenTemplate.header_text}
+                  body={chosenTemplate.body}
+                  footerText={chosenTemplate.footer_text}
+                  buttons={chosenTemplate.buttons ?? []}
+                  examples={sampleParams(
+                    content.whatsapp?.params ?? [],
+                    sendLocale,
+                    kind,
+                    trigger,
+                    today,
+                  )}
+                />
+                <p className="text-petroleum-400 text-xs">
+                  {tWhatsApp("previewNote")}
+                </p>
               </div>
-            ))}
-          </dl>
+            ) : templates.status === "ready" ? (
+              <p className="text-sm text-red-600">{t("whatsappNoTemplate")}</p>
+            ) : (
+              <div className="bg-sand-100 h-24 animate-pulse rounded-xl" />
+            )
+          ) : (
+            <dl className="flex flex-col gap-3">
+              {requiredLocales(audience).map((locale) => (
+                <div key={locale}>
+                  <dt className="text-petroleum-400 text-xs font-medium">
+                    {locale === "es"
+                      ? tContent("localeEs")
+                      : tContent("localeEn")}
+                  </dt>
+                  <dd className="text-petroleum-700 text-sm font-medium">
+                    {kind === "split" ? "A · " : ""}
+                    {content[locale].subject}
+                  </dd>
+                  {kind === "split" && (
+                    <dd className="text-petroleum-700 text-sm font-medium">
+                      B · {content[locale].subjectB}
+                    </dd>
+                  )}
+                  <dd className="text-petroleum-500 text-sm">
+                    {content[locale].title}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </section>
       </div>
 
@@ -186,7 +240,29 @@ export function ReviewStep({
           >
             {busy === "test" ? t("sendingTest") : t("sendTest")}
           </Button>
+          {whatsapp && (
+            <p className="text-petroleum-400 text-xs">
+              {t("whatsappTestHint")}
+            </p>
+          )}
         </div>
+
+        {whatsapp && (
+          <div className="bg-sand-50 text-petroleum-500 flex flex-col gap-1 rounded-xl px-4 py-3 text-xs">
+            <p>
+              {t("whatsappCost")}{" "}
+              <a
+                href={META_PRICING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-petroleum-700 font-medium underline underline-offset-2"
+              >
+                {t("whatsappCostLink")}
+              </a>
+            </p>
+            <p>{t("whatsappPace", { count: WHATSAPP_MESSAGES_PER_RUN })}</p>
+          </div>
+        )}
 
         {automated ? (
           <div className="border-sand-100 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">

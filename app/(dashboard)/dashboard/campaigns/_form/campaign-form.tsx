@@ -19,9 +19,11 @@ import {
   scheduleCampaign,
   sendCampaignNow,
   sendTestCampaign,
+  sendTestWhatsAppCampaign,
 } from "@/actions/campaigns";
 import type { CampaignRow } from "@/types/campaign";
 import { CompletedRow } from "../../bookings/new/completed-row";
+import { useSendNoticeToast } from "../send-notice-toast";
 import { TypeStep } from "./type-step";
 import { NameStep } from "./name-step";
 import { AudienceStep } from "./audience-step";
@@ -29,25 +31,19 @@ import { ContentStep } from "./content-step";
 import { TriggerStep, hasTriggerStep } from "./trigger-step";
 import { TemplateStep } from "./template-step";
 import { ReviewStep } from "./review-step";
+import { WhatsAppStep } from "./whatsapp-step";
+import { useWhatsAppTemplates } from "./use-whatsapp-templates";
 import {
+  STEP_OF,
+  contentOf,
   firstErroredLocale,
   formReducer,
   initialFormState,
+  nextStep,
   type FormState,
   type PickedContact,
   type Step,
 } from "./form-state";
-
-/** Where an error sends the admin: the step that owns the field. */
-const STEP_OF = {
-  kind: 0,
-  name: 1,
-  audience: 2,
-  trigger: 3,
-  template: 4,
-  content: 5,
-  review: 6,
-} as const;
 
 /**
  * One form, the way the booking form works: each step is a card, a finished
@@ -75,6 +71,7 @@ export function CampaignForm({
   const tToasts = useTranslations("dashboard.toasts");
   const tCommon = useTranslations("dashboard.common");
   const { push } = useRouter();
+  const notifySend = useSendNoticeToast();
   const [state, dispatch] = useReducer(
     formReducer,
     initial,
@@ -89,6 +86,10 @@ export function CampaignForm({
         : initialFormState,
   );
   const [editing, setEditing] = useState<Step | null>(null);
+  const whatsapp = state.channel === "whatsapp";
+  // One read of the account's templates serves the step that picks one and
+  // the review that shows it.
+  const templates = useWhatsAppTemplates(whatsapp);
 
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
@@ -96,10 +97,7 @@ export function CampaignForm({
   /** Marks `step` done and opens the next one the kind actually has. */
   function complete(step: Step) {
     setEditing(null);
-    let next = (step + 1) as Step;
-    if (next === STEP_OF.trigger && !hasTriggerStep(state.kind)) {
-      next = STEP_OF.template;
-    }
+    const next = nextStep(step, state.channel, hasTriggerStep(state.kind));
     if (state.step <= step) dispatch({ type: "GO", step: next });
   }
 
@@ -122,16 +120,21 @@ export function CampaignForm({
       mode === "draft" ? validateCampaignDraft : validateCampaign;
     const check = validate({
       name: state.name,
+      channel: state.channel,
       kind: state.kind,
       trigger: state.trigger,
       audience: state.audience,
-      content: state.content,
+      content: contentOf(state),
     });
     if (!check.ok) {
       dispatch({ type: "SET_ERRORS", errors: check.errors });
       const locale = firstErroredLocale(check.errors);
       if (locale) {
         dispatch({ type: "SET_LOCALE", locale });
+        reopen(STEP_OF.content);
+      } else if (
+        Object.keys(check.errors).some((k) => k.startsWith("content.whatsapp"))
+      ) {
         reopen(STEP_OF.content);
       } else if (
         Object.keys(check.errors).some((k) => k.startsWith("audience"))
@@ -152,14 +155,12 @@ export function CampaignForm({
         {
           id: state.id,
           segmentId: state.segmentId,
-          // Task 15 picks the channel in the form; until then every campaign
-          // the form saves is an email.
-          channel: "email",
+          channel: state.channel,
           kind: state.kind,
           trigger: state.trigger,
           name: state.name,
           audience: state.audience,
-          content: state.content,
+          content: contentOf(state),
         },
         { draft: mode === "draft" },
       );
@@ -170,6 +171,14 @@ export function CampaignForm({
     if (!result.ok) {
       if (result.fieldErrors) {
         dispatch({ type: "SET_ERRORS", errors: result.fieldErrors });
+        // A template that cannot go out is fixed in the template step.
+        if (
+          Object.keys(result.fieldErrors).some((k) =>
+            k.startsWith("content.whatsapp"),
+          )
+        ) {
+          reopen(STEP_OF.content);
+        }
       }
       dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
       return null;
@@ -181,6 +190,7 @@ export function CampaignForm({
   async function handleTest() {
     const id = await persist();
     if (!id) return;
+    if (whatsapp) return handleWhatsAppTest();
     try {
       const result = await sendTestCampaign(
         getAccessToken(),
@@ -192,6 +202,31 @@ export function CampaignForm({
       } else {
         toast.error(errorText(result.error));
       }
+    } catch {
+      toast.error(errorText("generic"));
+    }
+  }
+
+  /** The test of a WhatsApp campaign: the template, to the admin's own phone. */
+  async function handleWhatsAppTest() {
+    try {
+      const result = await sendTestWhatsAppCampaign(
+        getAccessToken(),
+        contentOf(state),
+        state.audience,
+      );
+      if (result.ok) {
+        notifySuccess(tToasts("campaignTestSentPhone", { phone: result.to }));
+        return;
+      }
+      const issueKey = `form.whatsapp.issue.${result.detail}`;
+      const description =
+        result.error === "meta"
+          ? result.detail
+          : result.error === "template_unavailable" && t.has(issueKey)
+            ? t(issueKey)
+            : undefined;
+      toast.error(errorText(result.error), description ? { description } : {});
     } catch {
       toast.error(errorText("generic"));
     }
@@ -244,7 +279,8 @@ export function CampaignForm({
       dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
       return;
     }
-    notifySuccess(tToasts("campaignSent"));
+    // A WhatsApp send can stop early; the toast says what actually happened.
+    notifySend(result, "campaignSent");
     push(`/dashboard/campaigns/${id}`);
   }
 
@@ -275,16 +311,23 @@ export function CampaignForm({
   function confirmContent() {
     const check = validateCampaign({
       name: state.name,
+      channel: state.channel,
       kind: state.kind,
       trigger: state.trigger,
       audience: state.audience,
-      content: state.content,
+      content: contentOf(state),
     });
     if (!check.ok) {
       dispatch({ type: "SET_ERRORS", errors: check.errors });
       const locale = firstErroredLocale(check.errors);
       if (locale) {
         dispatch({ type: "SET_LOCALE", locale });
+        return;
+      }
+      // A WhatsApp campaign without its template stays on this step.
+      if (
+        Object.keys(check.errors).some((k) => k.startsWith("content.whatsapp"))
+      ) {
         return;
       }
     }
@@ -308,7 +351,15 @@ export function CampaignForm({
             : ""
       }`
     : "";
-  const contentSummary = state.content[sendLocaleOf(state.audience)].subject;
+  const chosenTemplateName =
+    templates.status === "ready"
+      ? templates.templates.find(
+          (tpl) => tpl.id === state.content.whatsapp?.templateId,
+        )?.name
+      : undefined;
+  const contentSummary = whatsapp
+    ? (chosenTemplateName ?? t("form.whatsapp.chosen"))
+    : state.content[sendLocaleOf(state.audience)].subject;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -342,7 +393,9 @@ export function CampaignForm({
         {folded(STEP_OF.kind) ? (
           <CompletedRow
             label={t("type.title")}
-            value={t(`type.${state.kind}`)}
+            value={`${
+              whatsapp ? t("type.channelWhatsApp") : t("type.channelEmail")
+            } · ${t(`type.${state.kind}`)}`}
             onEdit={() => reopen(STEP_OF.kind)}
           />
         ) : (
@@ -403,7 +456,8 @@ export function CampaignForm({
           ))}
 
         {/* ── Step 5: where the words start from ── */}
-        {visible(STEP_OF.template) &&
+        {!whatsapp &&
+          visible(STEP_OF.template) &&
           (folded(STEP_OF.template) ? (
             <CompletedRow
               label={t("template.title")}
@@ -426,6 +480,13 @@ export function CampaignForm({
               value={contentSummary}
               onEdit={() => reopen(STEP_OF.content)}
             />
+          ) : whatsapp ? (
+            <WhatsAppStep
+              state={state}
+              dispatch={dispatch}
+              templates={templates}
+              onDone={confirmContent}
+            />
           ) : (
             <ContentStep
               state={state}
@@ -438,6 +499,7 @@ export function CampaignForm({
         {visible(STEP_OF.review) && (
           <ReviewStep
             state={state}
+            templates={templates}
             onTest={handleTest}
             onSchedule={handleSchedule}
             onSendNow={handleSendNow}

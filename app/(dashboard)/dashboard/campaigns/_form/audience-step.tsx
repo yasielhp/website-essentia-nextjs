@@ -251,14 +251,14 @@ export function AudienceStep({
 }) {
   const t = useTranslations("dashboard.campaigns.audience");
   const tSeg = useTranslations("dashboard.campaigns.segment");
-  const { audience, reach, submitting, segmentId } = state;
+  const { audience, reach, submitting, segmentId, channel } = state;
 
   const [list, setList] = useState<SegmentList | null>(null);
   const [counting, setCounting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    void listSegments(getAccessToken())
+    void listSegments(getAccessToken(), channel)
       .catch(() => ({ everyone: 0, segments: [] }))
       .then((rows) => {
         if (!cancelled) setList(rows);
@@ -266,7 +266,9 @@ export function AudienceStep({
     return () => {
       cancelled = true;
     };
-  }, []);
+    // The counts are per channel: a WhatsApp campaign reaches only those who
+    // consented to WhatsApp.
+  }, [channel]);
 
   // Every change re-counts, after a short pause so a quick succession of
   // picks costs one request rather than one each.
@@ -275,7 +277,7 @@ export function AudienceStep({
     let cancelled = false;
     const timer = setTimeout(() => {
       setCounting(true);
-      void previewAudience(getAccessToken(), JSON.parse(audienceKey))
+      void previewAudience(getAccessToken(), JSON.parse(audienceKey), channel)
         .catch(() => ({ ok: false as const, error: "generic" }))
         .then((result) => {
           if (cancelled) return;
@@ -297,7 +299,7 @@ export function AudienceStep({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [audienceKey, dispatch]);
+  }, [audienceKey, channel, dispatch]);
 
   const segments = list?.segments ?? [];
   const selected = segments.find((s) => s.id === segmentId) ?? null;
@@ -373,6 +375,20 @@ export function AudienceStep({
         <p className="text-petroleum-400 mt-3 text-xs">
           {tSeg("selectedHint", { name: selected.name })}
         </p>
+      )}
+      {channel === "whatsapp" && (
+        <div className="mt-3 text-xs">
+          {reach && !counting && (
+            <p className="text-petroleum-700 text-sm font-medium">
+              {t("reachWhatsApp", { count: reach.count })}
+              <span className="text-petroleum-400 font-normal">
+                {" · "}
+                {t("reachByLanguage", { en: reach.en, es: reach.es })}
+              </span>
+            </p>
+          )}
+          <p className="text-petroleum-400 mt-1">{t("reachWhatsAppNote")}</p>
+        </div>
       )}
       {!counting && reach && reach.count === 0 && (
         <p className="mt-3 text-xs font-medium text-red-600">

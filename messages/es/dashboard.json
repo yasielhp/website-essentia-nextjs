@@ -1092,7 +1092,9 @@
     "paramAtEdge": "Meta no acepta un parámetro al principio o al final del texto.",
     "headerNoVariables": "La cabecera no admite variables.",
     "footerNoVariables": "El pie no admite variables.",
-    "urlNoVariables": "El enlace del botón no admite variables."
+    "urlNoVariables": "El enlace del botón no admite variables.",
+    "templateUnavailable": "La plantilla elegida no está aprobada o ya no se puede enviar en este idioma.",
+    "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla."
   },
   "gender": {
     "unspecified": "Sin especificar",
@@ -1545,7 +1547,11 @@
     "segmentSaved": "Segmento guardado",
     "campaignActivated": "Campaña activada",
     "campaignPaused": "Campaña pausada",
-    "segmentDeleted": "Segmento eliminado"
+    "segmentDeleted": "Segmento eliminado",
+    "campaignTestSentPhone": "Prueba enviada a {phone}",
+    "sendPartial": "Se enviaron {sent}. Quedan {remaining} mensajes pendientes y se enviarán solos.",
+    "sendHalted": "Envío detenido: Meta rechazó varios lotes seguidos ({reason}). No saldrá nada más hasta que lo revises.",
+    "sendUnrecorded": "{count, plural, one {# mensaje salió, pero no se pudo anotar. Revisa el informe antes de reintentar.} other {# mensajes salieron, pero no se pudieron anotar. Revisa el informe antes de reintentar.}}"
   },
   "imageUpload": {
     "prompt": "Haz clic o arrastra una imagen aquí",
@@ -1618,7 +1624,62 @@
       "notFound": "Campaña no encontrada",
       "locked": "Esta campaña ya se envió y no se puede editar.",
       "nameHint": "Interno, solo lo ve el equipo. Algo que reconozcas en la lista el mes que viene.",
-      "continue": "Continuar"
+      "continue": "Continuar",
+      "whatsapp": {
+        "title": "Mensaje de WhatsApp",
+        "intro": "Una campaña de WhatsApp envía una plantilla aprobada por Meta. Elige la plantilla y de dónde sale cada dato.",
+        "language": "Idioma de envío",
+        "languageHint": "El segmento incluye los dos idiomas. Cada plantilla es de un solo idioma, así que todos recibirán la de este.",
+        "sentIn": "Se envía en {language}, el idioma del segmento.",
+        "localeEs": "Español",
+        "localeEn": "Inglés",
+        "template": "Plantilla",
+        "templatePlaceholder": "Elige una plantilla",
+        "loading": "Cargando plantillas…",
+        "loadFailed": "No se pudieron cargar las plantillas. Recarga la página.",
+        "notConfigured": "WhatsApp Business no está configurado en el servidor: la prueba y el envío no funcionarán hasta que se configure.",
+        "noneTitle": "Todavía no hay ninguna plantilla que se pueda usar en esta campaña.",
+        "create": "Crea y envía a revisión una plantilla",
+        "excludedTitle": "No se ofrecen",
+        "excluded": {
+          "template_not_approved": "{count, plural, one {# plantilla sin aprobar por Meta (en revisión, rechazada o desactivada)} other {# plantillas sin aprobar por Meta (en revisión, rechazadas o desactivadas)}}",
+          "template_unsupported": "{count, plural, one {# plantilla que no se puede enviar desde aquí} other {# plantillas que no se pueden enviar desde aquí}}",
+          "template_language": "{count, plural, one {# plantilla en otro idioma} other {# plantillas en otro idioma}}: la campaña se envía en {language}",
+          "template_missing": "{count, plural, one {# plantilla que ya no existe} other {# plantillas que ya no existen}}"
+        },
+        "issue": {
+          "template_missing": "ya no existe",
+          "template_not_approved": "no está aprobada",
+          "template_unsupported": "no se puede enviar desde aquí",
+          "template_language": "no está en el idioma de envío"
+        },
+        "selectedUnavailable": "La plantilla elegida ya no se puede usar: {reason}. Elige otra.",
+        "paramsTitle": "De dónde sale cada dato",
+        "paramsHint": "{count, plural, =0 {La plantilla no lleva datos variables.} one {La plantilla lleva # dato variable. Elige un campo del contacto o escribe un texto fijo.} other {La plantilla lleva # datos variables. Elige para cada uno un campo del contacto o escribe un texto fijo.}}",
+        "param": "Dato '{{'{n}'}}'",
+        "paramExample": "Ejemplo en la plantilla: {example}",
+        "sourceKind": "Origen",
+        "sourceField": "Campo del contacto",
+        "sourceStatic": "Texto fijo",
+        "fieldLabel": "Campo",
+        "fields": {
+          "first_name": "Nombre",
+          "last_name": "Apellido",
+          "service": "Servicio de la reserva",
+          "session_type": "Tipo de sesión",
+          "date": "Fecha de la cita",
+          "time": "Hora de la cita"
+        },
+        "staticLabel": "Texto",
+        "staticPlaceholder": "Lo mismo para todos",
+        "staticCount": "{count}/200",
+        "staticEmpty": "Si queda vacío se enviará «—».",
+        "unavailable": "Este dato solo existe en las campañas automatizadas «Después de una reserva» y «Primera visita». En esta saldría «—»: usa un texto fijo.",
+        "preview": "Así lo verá el cliente",
+        "previewNote": "Con datos de ejemplo.",
+        "confirm": "Confirmar mensaje",
+        "chosen": "Plantilla elegida"
+      }
     },
     "audience": {
       "title": "Quién la recibe",
@@ -1658,7 +1719,9 @@
       "bookings": "Reservas",
       "bookingsAny": "Con o sin reserva",
       "bookingsBooked": "Ha reservado al menos una vez",
-      "bookingsNever": "Nunca ha reservado"
+      "bookingsNever": "Nunca ha reservado",
+      "reachWhatsApp": "{count} con WhatsApp autorizado (novedades y ofertas)",
+      "reachWhatsAppNote": "Solo entran los contactos que aceptaron recibir novedades y ofertas por WhatsApp, con un teléfono válido y sin haberse dado de baja."
     },
     "content": {
       "title": "Qué dice",
@@ -1741,7 +1804,14 @@
       "condHasBooked": "Ha reservado al menos una vez",
       "activate": "Activar",
       "activating": "Activando…",
-      "activateHint": "La campaña queda encendida y escribe a quien cumpla las condiciones, revisado cada 15 minutos. Puedes pausarla cuando quieras."
+      "activateHint": "La campaña queda encendida y escribe a quien cumpla las condiciones, revisado cada 15 minutos. Puedes pausarla cuando quieras.",
+      "noConditionsWhatsApp": "Todos los contactos con WhatsApp autorizado",
+      "whatsappTemplate": "Plantilla: {name}",
+      "whatsappCost": "Mensajes de plantilla: Meta cobra por cada mensaje según el país y la categoría.",
+      "whatsappCostLink": "Ver los precios de Meta",
+      "whatsappPace": "Se envían unos {count} mensajes por ejecución, una cada 15 minutos. Las listas grandes continúan solas.",
+      "whatsappTestHint": "La prueba va al teléfono de tu perfil, con los ejemplos de la plantilla.",
+      "whatsappNoTemplate": "Todavía no has elegido una plantilla."
     },
     "detail": {
       "sent": "Enviados",
@@ -1792,13 +1862,16 @@
       "not_found": "Campaña no encontrada.",
       "invalid": "Revisa los campos marcados.",
       "no_email": "Tu cuenta no tiene email al que enviar la prueba.",
-      "generic": "Algo ha fallado. Inténtalo de nuevo."
+      "generic": "Algo ha fallado. Inténtalo de nuevo.",
+      "no_phone": "Tu perfil no tiene teléfono al que enviar la prueba.",
+      "meta": "Meta rechazó la petición."
     },
     "type": {
       "title": "Tipo de campaña",
       "comingSoon": "Próximamente",
       "standard": "Estándar",
       "standardDesc": "Un email a la audiencia que elijas, enviado ahora o a una hora programada.",
+      "standardDescWhatsApp": "Un mensaje de WhatsApp a la audiencia que elijas, enviado ahora o a una hora programada.",
       "automated": "Automatizada",
       "automatedDesc": "Una secuencia que se dispara por lo que hace el cliente, como reservar o dejar de venir.",
       "autoresponder": "Autorespuesta",
@@ -1809,7 +1882,16 @@
       "dateBasedDesc": "Se envía alrededor de una fecha del contacto, como un cumpleaños o un aniversario.",
       "rss": "Se activa por RSS",
       "rssDesc": "Sale cada vez que el blog publica algo nuevo.",
-      "hint": "Elige uno para continuar."
+      "hint": "Elige uno para continuar.",
+      "channel": "Canal",
+      "channelEmail": "Email",
+      "channelWhatsApp": "WhatsApp",
+      "channelHint": "WhatsApp solo escribe a quien aceptó recibir novedades y ofertas por ese canal, con una plantilla aprobada por Meta.",
+      "channelLocked": "El canal no se puede cambiar en una campaña ya guardada. Crea una campaña nueva para usar el otro.",
+      "whatsappUnavailable": {
+        "split": "No disponible por WhatsApp: una plantilla no tiene asunto que probar.",
+        "rss": "No disponible por WhatsApp: las plantillas no admiten un enlace distinto en cada envío."
+      }
     },
     "segment": {
       "title": "Segmento",

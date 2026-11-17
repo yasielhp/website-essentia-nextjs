@@ -1092,7 +1092,9 @@
     "paramAtEdge": "Meta does not accept a parameter at the very start or end of the text.",
     "headerNoVariables": "The header cannot contain variables.",
     "footerNoVariables": "The footer cannot contain variables.",
-    "urlNoVariables": "The button link cannot contain variables."
+    "urlNoVariables": "The button link cannot contain variables.",
+    "templateUnavailable": "The chosen template is not approved or can no longer be sent in this language.",
+    "paramCountMismatch": "The values do not match what the template asks for."
   },
   "gender": {
     "unspecified": "Not specified",
@@ -1545,7 +1547,11 @@
     "segmentSaved": "Segment saved",
     "campaignActivated": "Campaign activated",
     "campaignPaused": "Campaign paused",
-    "segmentDeleted": "Segment deleted"
+    "segmentDeleted": "Segment deleted",
+    "campaignTestSentPhone": "Test sent to {phone}",
+    "sendPartial": "{sent} sent. {remaining} messages are still pending and will go out on their own.",
+    "sendHalted": "Send stopped: Meta refused several batches in a row ({reason}). Nothing more will go out until you look into it.",
+    "sendUnrecorded": "{count, plural, one {# message went out but could not be recorded. Check the report before retrying.} other {# messages went out but could not be recorded. Check the report before retrying.}}"
   },
   "imageUpload": {
     "prompt": "Click or drag an image here",
@@ -1618,7 +1624,62 @@
       "notFound": "Campaign not found",
       "locked": "This campaign has already been sent and cannot be edited.",
       "nameHint": "Internal, only the team sees it. Something you will recognise in the list next month.",
-      "continue": "Continue"
+      "continue": "Continue",
+      "whatsapp": {
+        "title": "WhatsApp message",
+        "intro": "A WhatsApp campaign sends a template approved by Meta. Choose the template and where each value comes from.",
+        "language": "Sending language",
+        "languageHint": "The segment includes both languages. Each template is in a single language, so everyone gets the one in this language.",
+        "sentIn": "Sent in {language}, the language of the segment.",
+        "localeEs": "Spanish",
+        "localeEn": "English",
+        "template": "Template",
+        "templatePlaceholder": "Choose a template",
+        "loading": "Loading templates…",
+        "loadFailed": "The templates could not be loaded. Reload the page.",
+        "notConfigured": "WhatsApp Business is not set up on the server: the test and the send will not work until it is.",
+        "noneTitle": "There is no template yet that can be used in this campaign.",
+        "create": "Create a template and submit it for review",
+        "excludedTitle": "Not offered",
+        "excluded": {
+          "template_not_approved": "{count, plural, one {# template not approved by Meta (in review, rejected or disabled)} other {# templates not approved by Meta (in review, rejected or disabled)}}",
+          "template_unsupported": "{count, plural, one {# template that cannot be sent from here} other {# templates that cannot be sent from here}}",
+          "template_language": "{count, plural, one {# template in another language} other {# templates in another language}}: the campaign is sent in {language}",
+          "template_missing": "{count, plural, one {# template that no longer exists} other {# templates that no longer exist}}"
+        },
+        "issue": {
+          "template_missing": "it no longer exists",
+          "template_not_approved": "it is not approved",
+          "template_unsupported": "it cannot be sent from here",
+          "template_language": "it is not in the sending language"
+        },
+        "selectedUnavailable": "The chosen template can no longer be used: {reason}. Choose another one.",
+        "paramsTitle": "Where each value comes from",
+        "paramsHint": "{count, plural, =0 {The template has no variable values.} one {The template has # variable value. Choose a contact field or write a fixed text.} other {The template has # variable values. For each one, choose a contact field or write a fixed text.}}",
+        "param": "Value '{{'{n}'}}'",
+        "paramExample": "Example in the template: {example}",
+        "sourceKind": "Source",
+        "sourceField": "Contact field",
+        "sourceStatic": "Fixed text",
+        "fieldLabel": "Field",
+        "fields": {
+          "first_name": "First name",
+          "last_name": "Last name",
+          "service": "Booked service",
+          "session_type": "Session type",
+          "date": "Appointment date",
+          "time": "Appointment time"
+        },
+        "staticLabel": "Text",
+        "staticPlaceholder": "The same for everyone",
+        "staticCount": "{count}/200",
+        "staticEmpty": "If left empty, “—” is sent.",
+        "unavailable": "This value only exists in automated campaigns triggered “After a booking” or “First visit”. Here it would be sent as “—”: use a fixed text.",
+        "preview": "How the client will see it",
+        "previewNote": "With example data.",
+        "confirm": "Confirm message",
+        "chosen": "Template chosen"
+      }
     },
     "audience": {
       "title": "Who receives it",
@@ -1658,7 +1719,9 @@
       "bookings": "Bookings",
       "bookingsAny": "Booked or not",
       "bookingsBooked": "Has booked at least once",
-      "bookingsNever": "Has never booked"
+      "bookingsNever": "Has never booked",
+      "reachWhatsApp": "{count} with WhatsApp consent (news and offers)",
+      "reachWhatsAppNote": "Only contacts who agreed to receive news and offers on WhatsApp are included, with a valid phone number and no opt-out."
     },
     "content": {
       "title": "What it says",
@@ -1741,7 +1804,14 @@
       "condHasBooked": "Has booked at least once",
       "activate": "Activate",
       "activating": "Activating…",
-      "activateHint": "The campaign stays on and mails whoever qualifies, checked every 15 minutes. You can pause it any time."
+      "activateHint": "The campaign stays on and mails whoever qualifies, checked every 15 minutes. You can pause it any time.",
+      "noConditionsWhatsApp": "Every contact with WhatsApp consent",
+      "whatsappTemplate": "Template: {name}",
+      "whatsappCost": "Template messages: Meta charges for each message, depending on the country and the category.",
+      "whatsappCostLink": "See Meta's pricing",
+      "whatsappPace": "About {count} messages go out per run, one run every 15 minutes. Large lists carry on by themselves.",
+      "whatsappTestHint": "The test goes to the phone on your profile, with the template's example values.",
+      "whatsappNoTemplate": "You have not chosen a template yet."
     },
     "detail": {
       "sent": "Sent",
@@ -1792,13 +1862,16 @@
       "not_found": "Campaign not found.",
       "invalid": "Check the highlighted fields.",
       "no_email": "Your account has no email address to send the test to.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "no_phone": "Your profile has no phone number to send the test to.",
+      "meta": "Meta rejected the request."
     },
     "type": {
       "title": "Campaign type",
       "comingSoon": "Coming soon",
       "standard": "Standard",
       "standardDesc": "One email to the audience you choose, sent now or at a scheduled time.",
+      "standardDescWhatsApp": "A WhatsApp message to the audience you choose, sent now or at a scheduled time.",
       "automated": "Automated",
       "automatedDesc": "A sequence triggered by what a client does, such as booking or going quiet.",
       "autoresponder": "Auto responder",
@@ -1809,7 +1882,16 @@
       "dateBasedDesc": "Sent around a date on the contact, such as a birthday or an anniversary.",
       "rss": "RSS triggered",
       "rssDesc": "Goes out whenever the blog publishes something new.",
-      "hint": "Pick one to continue."
+      "hint": "Pick one to continue.",
+      "channel": "Channel",
+      "channelEmail": "Email",
+      "channelWhatsApp": "WhatsApp",
+      "channelHint": "WhatsApp only writes to people who agreed to receive news and offers there, using a template approved by Meta.",
+      "channelLocked": "The channel cannot be changed on a campaign that is already saved. Create a new campaign to use the other one.",
+      "whatsappUnavailable": {
+        "split": "Not available on WhatsApp: a template has no subject line to test.",
+        "rss": "Not available on WhatsApp: templates cannot carry a different link in every send."
+      }
     },
     "segment": {
       "title": "Segment",

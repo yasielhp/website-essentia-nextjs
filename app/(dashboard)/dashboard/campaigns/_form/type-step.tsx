@@ -10,8 +10,11 @@ import {
   IconSettings,
   IconWorld,
 } from "@/components/ui/icons";
-import type { CampaignKind } from "@/types/campaign";
+import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
+import type { CampaignChannel, CampaignKind } from "@/types/campaign";
 import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
+
+const CHANNELS: CampaignChannel[] = ["email", "whatsapp"];
 
 const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
   { kind: "standard", icon: <IconMail /> },
@@ -41,21 +44,73 @@ export function TypeStep({
 }) {
   const t = useTranslations("dashboard.campaigns.type");
 
+  // A saved campaign keeps its channel: its recipients and report only mean
+  // something in one.
+  const channelLocked = state.id !== null;
+
   return (
     <section className="border-sand-200 animate-fade-in-up rounded-2xl border bg-white p-6">
+      <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
+        {t("channel")}
+      </h2>
+      <div
+        role="radiogroup"
+        aria-label={t("channel")}
+        aria-describedby="campaign-channel-note"
+        className="bg-sand-100 mb-2 inline-flex rounded-full p-1"
+      >
+        {CHANNELS.map((channel) => {
+          const active = state.channel === channel;
+          return (
+            <button
+              key={channel}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={channelLocked || state.submitting}
+              onClick={() => dispatch({ type: "SET_CHANNEL", channel })}
+              className={[
+                "rounded-full px-5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed",
+                active
+                  ? "bg-petroleum-700 text-white"
+                  : "text-petroleum-500 hover:text-petroleum-700",
+                channelLocked && !active ? "opacity-50" : "",
+              ].join(" ")}
+            >
+              {channel === "email" ? t("channelEmail") : t("channelWhatsApp")}
+            </button>
+          );
+        })}
+      </div>
+      <p id="campaign-channel-note" className="text-petroleum-400 mb-6 text-xs">
+        {channelLocked
+          ? t("channelLocked")
+          : state.channel === "whatsapp"
+            ? t("channelHint")
+            : ""}
+      </p>
+
       <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
         {t("title")}
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {KINDS.map(({ kind, icon }) => {
           const available = AVAILABLE_KINDS.includes(kind);
+          // Greyed for the channel, not for lack of the feature: the note
+          // under the card says which.
+          const fits = kindAllowedForChannel(kind, state.channel);
           const active = state.kind === kind;
           return (
             <button
               key={kind}
               type="button"
-              disabled={!available || state.submitting}
+              disabled={!available || !fits || state.submitting}
               aria-pressed={active}
+              title={
+                fits
+                  ? undefined
+                  : t(`whatsappUnavailable.${kind as "split" | "rss"}`)
+              }
               onClick={() => {
                 dispatch({ type: "SET_KIND", kind });
                 onDone();
@@ -65,7 +120,7 @@ export function TypeStep({
                 active
                   ? "border-petroleum-700 bg-petroleum-50/50"
                   : "border-sand-200 bg-white",
-                available
+                available && fits
                   ? "hover:border-petroleum-400 cursor-pointer"
                   : "cursor-not-allowed opacity-55",
               ].join(" ")}
@@ -92,8 +147,15 @@ export function TypeStep({
                   )}
                 </span>
                 <span className="text-petroleum-400 text-xs leading-relaxed">
-                  {t(`${kind}Desc`)}
+                  {kind === "standard" && state.channel === "whatsapp"
+                    ? t("standardDescWhatsApp")
+                    : t(`${kind}Desc`)}
                 </span>
+                {!fits && (
+                  <span className="text-xs leading-relaxed text-yellow-800">
+                    {t(`whatsappUnavailable.${kind as "split" | "rss"}`)}
+                  </span>
+                )}
               </span>
             </button>
           );
