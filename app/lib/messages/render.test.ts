@@ -322,6 +322,11 @@ describe("a body that is not a document is not an edit", () => {
     ["a document with no content", { type: "doc" }],
     ["an empty document", { type: "doc", content: [] }],
     [
+      "a document of nothing but unknown nodes",
+      { type: "doc", content: [{ type: "render" }, { type: "foo" }] },
+    ],
+    ["a document with a null in it", { type: "doc", content: [null] }],
+    [
       "a document of empty paragraphs",
       { type: "doc", content: [{ type: "paragraph", content: [] }] },
     ],
