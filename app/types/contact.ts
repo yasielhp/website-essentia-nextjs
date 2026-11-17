@@ -122,3 +122,15 @@ export type WhatsAppConsentColumnsRow = {
 /** What `setWhatsAppConsent` hands back: the columns as they now stand. */
 export type WhatsAppConsentResult =
   ({ ok: true } & WhatsAppConsentColumnsRow) | { ok: false; error: string };
+
+/** What a signed-in client sends from the booking form to record her WhatsApp consent. */
+export type OwnWhatsAppConsentInput = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  language: "en" | "es";
+  /** Booking notices: confirmation and reminder. */
+  appointments: boolean;
+  /** News and offers. */
+  marketing: boolean;
+};

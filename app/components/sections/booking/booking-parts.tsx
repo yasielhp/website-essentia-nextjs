@@ -114,8 +114,6 @@ export type BookingStepRendererProps = {
   preselectedLabel?: string | null;
   paymentMode: PaymentMode;
   onPaymentModeChange: (method: PaymentMode) => void;
-  /** Whether the details step asks about WhatsApp (guests only). */
-  offerWhatsapp: boolean;
 };
 
 export function BookingStepRenderer({
@@ -138,7 +136,6 @@ export function BookingStepRenderer({
   preselectedLabel,
   paymentMode,
   onPaymentModeChange,
-  offerWhatsapp,
 }: BookingStepRendererProps) {
   return (
     <div key={currentStepId} className="animate-fade-in-up h-full">
@@ -180,7 +177,6 @@ export function BookingStepRenderer({
           errors={detailErrors}
           onChange={(d) => dispatch({ type: "SET_DETAILS", details: d })}
           onClearError={onClearDetailError}
-          offerWhatsapp={offerWhatsapp}
         />
       )}
       {currentStepId === "datetime" && selectedService && (

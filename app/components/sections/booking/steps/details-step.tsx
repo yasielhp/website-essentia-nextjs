@@ -18,14 +18,11 @@ export function DetailsStep({
   errors = {},
   onChange,
   onClearError,
-  offerWhatsapp = true,
 }: {
   details: DetailsState;
   errors?: DetailsErrors;
   onChange: (d: DetailsState) => void;
   onClearError?: (key: keyof DetailsState) => void;
-  /** Off for a signed-in client: there is no contact row to record it on. */
-  offerWhatsapp?: boolean;
 }) {
   const validationMessage = useValidationMessage();
   const t = useTranslations("booking.detailsStep");
@@ -184,40 +181,38 @@ export function DetailsStep({
           does not withdraw a consent already given — an unticked box means
           "do not touch" — so a withdrawal is the STOP/BAJA reply the hint
           names, or the centre in the dashboard. */}
-      {offerWhatsapp && (
-        <>
-          <Checkbox
-            name="whatsapp"
-            checked={details.whatsapp ?? false}
-            onChange={(e) => {
-              onChange({ ...details, whatsapp: e.target.checked });
-            }}
-            label={
-              <span className="text-petroleum-400 text-sm">
-                {t("whatsappOptIn")}
-                <span className="mt-0.5 block text-xs">
-                  {t("whatsappOptInHint")}
-                </span>
+      <>
+        <Checkbox
+          name="whatsapp"
+          checked={details.whatsapp ?? false}
+          onChange={(e) => {
+            onChange({ ...details, whatsapp: e.target.checked });
+          }}
+          label={
+            <span className="text-petroleum-400 text-sm">
+              {t("whatsappOptIn")}
+              <span className="mt-0.5 block text-xs">
+                {t("whatsappOptInHint")}
               </span>
-            }
-          />
-          <Checkbox
-            name="whatsappMarketing"
-            checked={details.whatsappMarketing ?? false}
-            onChange={(e) => {
-              onChange({ ...details, whatsappMarketing: e.target.checked });
-            }}
-            label={
-              <span className="text-petroleum-400 text-sm">
-                {t("whatsappMarketingOptIn")}
-                <span className="mt-0.5 block text-xs">
-                  {t("whatsappMarketingOptInHint")}
-                </span>
+            </span>
+          }
+        />
+        <Checkbox
+          name="whatsappMarketing"
+          checked={details.whatsappMarketing ?? false}
+          onChange={(e) => {
+            onChange({ ...details, whatsappMarketing: e.target.checked });
+          }}
+          label={
+            <span className="text-petroleum-400 text-sm">
+              {t("whatsappMarketingOptIn")}
+              <span className="mt-0.5 block text-xs">
+                {t("whatsappMarketingOptInHint")}
               </span>
-            }
-          />
-        </>
-      )}
+            </span>
+          }
+        />
+      </>
 
       <Accordion className="border-sand-500 rounded-2xl border px-6">
         <Accordion.Header iconClassName="text-petroleum-400">

@@ -9,6 +9,7 @@ import {
 } from "@/actions/booking-draft";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { updateNewsletterForUser } from "@/actions/newsletter";
+import { saveOwnWhatsAppConsent } from "@/actions/whatsapp-consent";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -122,6 +123,29 @@ export async function saveDetailsStep({
       details.email,
       true,
     ).catch(() => undefined);
+  }
+
+  // Her WhatsApp boxes cannot go to `upsert_contact` from the browser as a
+  // guest's do, so a server action records them on the contact of her session's
+  // own address. Without this, a returning client could never be reached on
+  // WhatsApp at all. Best effort too, but a failure is logged: it is a lost
+  // consent, not a lost flag.
+  if (user && (details.whatsapp || details.whatsappMarketing)) {
+    try {
+      const saved = await saveOwnWhatsAppConsent(getAccessToken(), {
+        firstName: details.firstName,
+        lastName: details.lastName,
+        phone: details.phone,
+        language: locale === "es" ? "es" : "en",
+        appointments: details.whatsapp === true,
+        marketing: details.whatsappMarketing === true,
+      });
+      if (!saved.ok) {
+        console.error("[booking] WhatsApp consent not saved:", saved.error);
+      }
+    } catch (err) {
+      console.error("[booking] WhatsApp consent not saved:", err);
+    }
   }
 
   let draftId = bookingId;

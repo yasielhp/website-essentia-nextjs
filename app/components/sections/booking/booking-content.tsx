@@ -250,7 +250,6 @@ function BookingContentInner() {
         selectedTierLabel={selectedTierLabel}
         paymentMode={paymentMode}
         onPaymentModeChange={setPaymentMode}
-        offerWhatsapp={!user}
       />
 
       <BookingNavigation
