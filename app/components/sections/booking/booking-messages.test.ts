@@ -36,9 +36,6 @@ describe("booking.detailsStep messages", () => {
       "genderMale",
       "genderOther",
     ]);
-    // `notesPlaceholder` was already unused before the two consent boxes were
-    // merged; it is not this test's business.
-    viaHook.add("notesPlaceholder");
     const unused = keys(es).filter((k) => !used.has(k) && !viaHook.has(k));
     expect(unused).toEqual([]);
   });

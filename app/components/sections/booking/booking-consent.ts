@@ -13,6 +13,13 @@ import type { DetailsState } from "@/types";
  * never `false`: it means "do not touch", so it does not undo a yes given
  * before. A withdrawal is the unsubscribe link in an email, a BAJA/STOP reply on
  * WhatsApp, or the centre in the dashboard.
+ *
+ * After a STOP the order matters, on purpose. Ticking "news and offers" is an
+ * explicit new yes: `upsert_contact` clears the STOP and withdraws the booking
+ * notices (a STOP is global), and then the notice consent is stamped again, so a
+ * client who left gets her notices back together with the news she just asked
+ * for. Booking again WITHOUT the tick lifts nothing. Pinned in
+ * `self-consent.test.ts`.
  */
 
 /** The consent parameters of `upsert_contact` for a guest. */
@@ -125,4 +132,45 @@ export async function writeBookingConsents({
   } catch (err) {
     effects.log("[booking] notice consent not saved:", err);
   }
+}
+
+/** How long the consent writes may hold the booking up. */
+export const CONSENT_DEADLINE_MS = 4000;
+
+const realTimer = (fn: () => void, ms: number) => {
+  const id = setTimeout(fn, ms);
+  return () => clearTimeout(id);
+};
+
+/**
+ * `writeBookingConsents` with a deadline, so a slow or hung server action can
+ * never keep a client from reaching the next step. When the time is up the
+ * booking goes on (fail-open) and ONE line is logged with no name, address or
+ * phone; the write may still land later, or not, and the only cost is a
+ * WhatsApp notice that is not sent. The timer is injectable so a test fires it
+ * by hand instead of waiting.
+ */
+export async function writeBookingConsentsWithin({
+  deadlineMs = CONSENT_DEADLINE_MS,
+  startTimer = realTimer,
+  ...args
+}: Parameters<typeof writeBookingConsents>[0] & {
+  deadlineMs?: number;
+  startTimer?: (fn: () => void, ms: number) => () => void;
+}): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const cancel = startTimer(() => {
+      args.effects.log(
+        "[booking] consent writes took too long; the booking goes on",
+        undefined,
+      );
+      resolve();
+    }, deadlineMs);
+    writeBookingConsents(args)
+      .catch(() => undefined)
+      .finally(() => {
+        cancel();
+        resolve();
+      });
+  });
 }

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { whatsappActivationPatch } from "@/lib/whatsapp/consent";
 import { fakeDb, type Row } from "@/lib/whatsapp/fake-contacts-db";
 import {
   readOwnMarketing,
@@ -175,5 +176,69 @@ describe("readOwnMarketing", () => {
         "ana@example.com",
       ),
     ).toBe(false);
+  });
+});
+
+describe("the booking after a STOP: the order is intentional", () => {
+  /**
+   * A client who sent BAJA and books again, in the order the form does it:
+   * 1. `upsert_contact` from the browser. With "news and offers" ticked it
+   *    clears the STOP and, because a STOP is global, withdraws the OTHER use
+   *    (the booking notices). `whatsappActivationPatch("marketing")` is that
+   *    rule in TypeScript, kept in step with the SQL.
+   * 2. `recordBookingNoticeConsent`, which stamps the notices on a contact
+   *    with no consent and no STOP.
+   *
+   * So ticking news and offers is an explicit new yes: she gets her booking
+   * notices back along with it. Without the tick the STOP stays and nothing is
+   * stamped, so booking again alone never reactivates a BAJA. This is
+   * deliberate, not a leak: write it down if it ever changes.
+   */
+  const stopped = (): Row => ({
+    id: "c1",
+    email: "ana@example.com",
+    created_at: ago(900),
+    updated_at: ago(900),
+    newsletter_subscribed: true,
+    whatsapp_opted_in_at: ago(5000),
+    whatsapp_marketing_opted_in_at: ago(5000),
+    whatsapp_opted_out_at: ago(3000),
+  });
+
+  test("with news and offers ticked she gets the booking notices back, as a fresh consent", async () => {
+    const rows = [stopped()];
+    // 1. upsert_contact(p_newsletter, p_whatsapp_marketing) as the form sends it
+    Object.assign(
+      rows[0],
+      whatsappActivationPatch("marketing", rows[0], NOW.toISOString()),
+      {
+        updated_at: NOW.toISOString(),
+      },
+    );
+    expect(rows[0].whatsapp_opted_out_at).toBeNull();
+    expect(rows[0].whatsapp_opted_in_at).toBeNull();
+    expect(rows[0].whatsapp_marketing_opted_in_at).toBe(NOW.toISOString());
+    // 2. the notice consent after the Terms
+    const result = await stampBookingNoticeConsent(
+      fakeDb(rows).db,
+      "ana@example.com",
+      NOW,
+    );
+    expect(result).toEqual({ ok: true, stamped: true });
+    expect(rows[0].whatsapp_opted_in_at).toBe(NOW.toISOString());
+    expect(rows[0].whatsapp_opted_out_at).toBeNull();
+  });
+
+  test("without the tick the STOP stands and the notices are not stamped", async () => {
+    const rows = [stopped()];
+    Object.assign(rows[0], { updated_at: NOW.toISOString() }); // upsert with all nulls
+    const result = await stampBookingNoticeConsent(
+      fakeDb(rows).db,
+      "ana@example.com",
+      NOW,
+    );
+    expect(result).toEqual({ ok: true, stamped: false });
+    expect(rows[0].whatsapp_opted_out_at).toBe(ago(3000));
+    expect(rows[0].whatsapp_opted_in_at).toBe(ago(5000));
   });
 });

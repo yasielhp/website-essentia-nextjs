@@ -13,7 +13,10 @@ import {
   recordBookingNoticeConsent,
   saveOwnWhatsAppConsent,
 } from "@/actions/whatsapp-consent";
-import { contactConsentArgs, writeBookingConsents } from "./booking-consent";
+import {
+  contactConsentArgs,
+  writeBookingConsentsWithin,
+} from "./booking-consent";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
@@ -110,7 +113,8 @@ export async function saveDetailsStep({
 
   // What follows the contact: for a guest the notice consent, for a signed-in
   // client her contact, her choice on news and offers, and the notice consent.
-  await writeBookingConsents({
+  // With a deadline: none of it may hold the booking up.
+  await writeBookingConsentsWithin({
     user,
     locale,
     details,
