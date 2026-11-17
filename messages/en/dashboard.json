@@ -1068,6 +1068,8 @@
     "tooManyBlocks": "Too many blocks",
     "subjectBRequired": "The A/B test needs a second subject",
     "tierInvalid": "Choose a valid session type",
+    "templateRequired": "Choose an approved WhatsApp template",
+    "paramTooLong": "Fixed text can be 200 characters at most",
     "templateNameRequired": "Give the template a name",
     "templateNameTooLong": "The name can be 512 characters at most",
     "templateBodyRequired": "Write the body of the message",

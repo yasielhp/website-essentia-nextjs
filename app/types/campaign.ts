@@ -1,4 +1,9 @@
-/** Email campaigns, as the dashboard and its actions read them. */
+/** Campaigns, as the dashboard and its actions read them. */
+
+import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
+
+/** Where a campaign goes out. One channel per campaign. */
+export type CampaignChannel = "email" | "whatsapp";
 
 /**
  * `scheduled` waits for the cron; `sending` is claimed by a dispatch in
@@ -188,13 +193,27 @@ export type CampaignLocaleContent = {
   doc: EmailDoc | null;
 };
 
-/** The `content` jsonb column. */
-export type CampaignContent = Record<CampaignLocale, CampaignLocaleContent>;
+/** The `content.whatsapp` block: which approved template and what fills it. */
+export type WhatsAppContent = {
+  /** `whatsapp_templates.id`; null until the admin picks one. */
+  templateId: string | null;
+  /** One source per `{{n}}`, in order. */
+  params: WhatsAppParamSource[];
+};
+
+/**
+ * The `content` jsonb column. The language blocks are the email; `whatsapp`
+ * is the template of a WhatsApp campaign and is absent from older rows.
+ */
+export type CampaignContent = Record<CampaignLocale, CampaignLocaleContent> & {
+  whatsapp?: WhatsAppContent;
+};
 
 export type CampaignRow = {
   id: string;
   name: string;
   status: CampaignStatus;
+  channel: CampaignChannel;
   kind: CampaignKind;
   trigger: CampaignTrigger;
   activated_at: string | null;
@@ -223,7 +242,10 @@ export type CampaignRow = {
 export type CampaignRecipientRow = {
   id: string;
   contact_id: string | null;
-  email: string;
+  /** Null on a WhatsApp row: the address is the phone. */
+  email: string | null;
+  /** E.164; null on an email row. */
+  phone: string | null;
   language: CampaignLocale;
   status: RecipientStatus;
   /** "" for one-shot sends; the year, the post id… for repeating rules. */
@@ -234,6 +256,8 @@ export type CampaignRecipientRow = {
   delivered_at: string | null;
   opened_at: string | null;
   clicked_at: string | null;
+  /** WhatsApp only: when the contact read the message. */
+  read_at: string | null;
 };
 
 /** What the dashboard shows while the admin adjusts the conditions. */
@@ -296,6 +320,7 @@ export type ContactSearchHit = {
 export type CampaignInput = {
   id?: string | null;
   segmentId?: string | null;
+  channel: CampaignChannel;
   kind: CampaignKind;
   trigger: CampaignTrigger;
   name: string;

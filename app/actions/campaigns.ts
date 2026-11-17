@@ -487,6 +487,8 @@ export async function saveCampaign(
   const check = options.draft ? validateCampaignDraft : validateCampaign;
   const validated = check({
     name: input.name,
+    // Task 15: pass `input.channel` through. Left out, the schema defaults it
+    // to "email", which is all the form can send until then.
     kind: input.kind,
     trigger: input.trigger,
     audience: input.audience,
@@ -878,6 +880,8 @@ export async function activateCampaign(
 
   const check = validateCampaign({
     name: row.name,
+    // Task 15: add `channel: row.channel` here, or a WhatsApp campaign is
+    // checked as an email and refused for its empty email blocks.
     kind: row.kind,
     trigger: row.trigger,
     audience: row.audience,

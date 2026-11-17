@@ -1068,6 +1068,8 @@
     "tooManyBlocks": "Demasiados bloques",
     "subjectBRequired": "La prueba A/B necesita un segundo asunto",
     "tierInvalid": "Elige un tipo de sesión válido",
+    "templateRequired": "Elige una plantilla de WhatsApp aprobada",
+    "paramTooLong": "El texto fijo admite 200 caracteres como máximo",
     "templateNameRequired": "Ponle un nombre a la plantilla",
     "templateNameTooLong": "El nombre admite 512 caracteres como máximo",
     "templateBodyRequired": "Escribe el cuerpo del mensaje",

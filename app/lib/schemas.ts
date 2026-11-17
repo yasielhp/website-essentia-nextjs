@@ -6,10 +6,14 @@ import type {
   CampaignLocale,
   CampaignLocaleContent,
   EmailDoc,
+  WhatsAppContent,
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { countParams, paramIssues } from "@/lib/whatsapp/templates";
-import { WHATSAPP_TEMPLATE_CATEGORIES } from "@/lib/whatsapp/types";
+import {
+  WHATSAPP_TEMPLATE_CATEGORIES,
+  type WhatsAppParamSource,
+} from "@/lib/whatsapp/types";
 
 /**
  * Message KEYS, not sentences: this form is on the bilingual public site, and
@@ -270,6 +274,8 @@ const CAMPAIGN_MESSAGE_KEYS = new Set([
   "servicesTooMany",
   "contactIdInvalid",
   "tooManyContacts",
+  "templateRequired",
+  "paramTooLong",
   "invalidInput",
 ]);
 
@@ -376,23 +382,57 @@ function refineLocale(
 }
 
 /**
- * Both language blocks. A block is valid if EITHER every field is the empty
- * string (the campaign does not go out in that language) OR it passes
- * `campaignLocaleContentSchema`. Whether a given language may be left empty
- * depends on the audience filter, which `campaignSchema` checks.
+ * What a WhatsApp campaign fills `{{n}}` with. `field` reads from the contact
+ * or the booking, `static` is text the admin typed. The sources are the ones
+ * `WhatsAppParamSource` declares, so a field added there fails to compile here.
+ *
+ * A fixed text over 200 characters is reported on the parameter itself
+ * (`content.whatsapp.params.N`), the one key the form can attach to its input.
  */
-export const campaignContentSchema = z
-  .object({
-    en: z.object(localeContentShape),
-    es: z.object(localeContentShape),
-  })
-  .superRefine((value, ctx) => {
-    for (const locale of ["en", "es"] as const) {
-      if (!isEmptyLocale(value[locale])) {
-        refineLocale(locale, value[locale], ctx, []);
-      }
-    }
-  }) satisfies z.ZodType<CampaignContent>;
+const whatsappParamSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("field"),
+    field: z.enum([
+      "first_name",
+      "last_name",
+      "service",
+      "session_type",
+      "date",
+      "time",
+      "post_title",
+      "post_url",
+    ]),
+  }),
+  z
+    .object({
+      kind: z.literal("static"),
+      value: z.string().trim(),
+    })
+    .refine((param) => param.value.length <= 200, "paramTooLong"),
+]) satisfies z.ZodType<WhatsAppParamSource>;
+
+/**
+ * The `content.whatsapp` block. Even a draft keeps it well formed (a uuid or
+ * nothing, parameters of a known shape) so it always loads back into the form;
+ * only `campaignSchema` insists on a template.
+ *
+ * Error keys: `content.whatsapp.templateId` and `content.whatsapp.params.N`.
+ */
+const whatsappContentSchema = z.object({
+  templateId: z.uuid("templateRequired").nullable(),
+  params: z.array(whatsappParamSchema).max(20),
+}) satisfies z.ZodType<WhatsAppContent>;
+
+/**
+ * The `content` column: both language blocks plus the optional WhatsApp one.
+ * Only the per-field limits live here. What a block must contain depends on
+ * the channel and the audience, so `campaignSchema` checks that.
+ */
+export const campaignContentSchema = z.object({
+  en: z.object(localeContentShape),
+  es: z.object(localeContentShape),
+  whatsapp: whatsappContentSchema.optional(),
+}) satisfies z.ZodType<CampaignContent>;
 
 /**
  * The one language a campaign is written in: the segment's when it fixes one,
@@ -427,6 +467,8 @@ export const campaignKindSchema = z.enum([
   "dateBased",
 ]);
 
+export const campaignChannelSchema = z.enum(["email", "whatsapp"]);
+
 export const campaignTriggerSchema = z.object({
   event: z
     .enum([
@@ -457,18 +499,39 @@ export const campaignTriggerSchema = z.object({
 export const campaignSchema = z
   .object({
     name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+    // An older client that does not send it is sending an email.
+    channel: campaignChannelSchema.default("email"),
     kind: campaignKindSchema,
     trigger: campaignTriggerSchema,
     audience: campaignAudienceSchema,
     content: campaignContentSchema,
   })
   .superRefine((value, ctx) => {
-    for (const locale of requiredLocales(value.audience)) {
-      if (isEmptyLocale(value.content[locale])) {
+    if (value.channel === "whatsapp") {
+      // The email blocks are not sent, so nothing is asked of them. The
+      // template is the one thing a WhatsApp message cannot go without.
+      if (!value.content.whatsapp?.templateId) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["content", "whatsapp", "templateId"],
+          message: "templateRequired",
+        });
+      }
+      return;
+    }
+    const required = requiredLocales(value.audience);
+    for (const locale of ["en", "es"] as const) {
+      // A block somebody started must be complete; the one language the email
+      // goes out in must be there even if nobody touched it.
+      if (!isEmptyLocale(value.content[locale]) || required.includes(locale)) {
         refineLocale(locale, value.content[locale], ctx, ["content"]);
       }
       // An A/B test with one subject is not a test.
-      if (value.kind === "split" && !value.content[locale].subjectB?.trim()) {
+      if (
+        required.includes(locale) &&
+        value.kind === "split" &&
+        !value.content[locale].subjectB?.trim()
+      ) {
         ctx.addIssue({
           code: "custom",
           path: ["content", locale, "subjectB"],
@@ -488,13 +551,11 @@ export type CampaignInput = z.infer<typeof campaignSchema>;
  */
 export const campaignDraftSchema = z.object({
   name: z.string().trim().min(1, "nameRequired").max(120, "nameTooLong"),
+  channel: campaignChannelSchema.default("email"),
   kind: campaignKindSchema,
   trigger: campaignTriggerSchema,
   audience: campaignAudienceSchema,
-  content: z.object({
-    en: z.object(localeContentShape),
-    es: z.object(localeContentShape),
-  }),
+  content: campaignContentSchema,
 });
 
 /**

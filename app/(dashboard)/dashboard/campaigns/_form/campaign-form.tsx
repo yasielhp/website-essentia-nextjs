@@ -152,6 +152,9 @@ export function CampaignForm({
         {
           id: state.id,
           segmentId: state.segmentId,
+          // Task 15 picks the channel in the form; until then every campaign
+          // the form saves is an email.
+          channel: "email",
           kind: state.kind,
           trigger: state.trigger,
           name: state.name,

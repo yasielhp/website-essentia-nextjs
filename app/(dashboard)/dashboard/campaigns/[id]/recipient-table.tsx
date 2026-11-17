@@ -29,7 +29,14 @@ export function RecipientTable({
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return recipients;
-    return recipients.filter((r) => r.email.includes(term));
+    // A WhatsApp recipient has a phone and no email; typing "600 11" must
+    // still find +34600112233.
+    const digits = term.replace(/\s+/g, "");
+    return recipients.filter(
+      (r) =>
+        (r.email ?? "").includes(term) ||
+        (digits !== "" && (r.phone ?? "").includes(digits)),
+    );
   }, [recipients, query]);
 
   return (
@@ -79,7 +86,7 @@ export function RecipientTable({
                   className="border-sand-50 border-b last:border-0"
                 >
                   <td className="text-petroleum-700 px-6 py-3 font-medium">
-                    {row.email}
+                    {row.email ?? row.phone}
                   </td>
                   <td className="text-petroleum-500 px-6 py-3 uppercase">
                     {row.language}
