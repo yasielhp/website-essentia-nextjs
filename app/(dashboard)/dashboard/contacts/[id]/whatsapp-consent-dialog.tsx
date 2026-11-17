@@ -15,6 +15,7 @@ import type { WhatsAppPurpose } from "@/lib/whatsapp/consent";
  */
 export function WhatsAppConsentDialog({
   purpose,
+  enabled = true,
   optedOut,
   emailUnsubscribed = false,
   busy,
@@ -22,6 +23,8 @@ export function WhatsAppConsentDialog({
   onCancel,
 }: {
   purpose: WhatsAppPurpose;
+  /** Turning it on (asks about the STOP) or withdrawing it (says what is lost). */
+  enabled?: boolean;
   /** The contact replied STOP: the warning is the stronger one. */
   optedOut: boolean;
   /** The contact unsubscribed from the emails themselves: say so before turning them back on. */
@@ -84,19 +87,23 @@ export function WhatsAppConsentDialog({
           id="whatsapp-consent-title"
           className="font-display text-petroleum-700 text-xl"
         >
-          {t("dialog.title")}
+          {enabled ? t("dialog.title") : t("dialog.withdrawTitle")}
         </h2>
         <div
           id="whatsapp-consent-body"
           className="text-petroleum-400 mt-2 flex flex-col gap-2 text-sm"
         >
           <p>
-            {purpose === "marketing"
-              ? t("dialog.bodyMarketing")
-              : t("dialog.body", { use: t(`${purpose}.label`) })}
+            {!enabled
+              ? t("dialog.withdrawBody")
+              : purpose === "marketing"
+                ? t("dialog.bodyMarketing")
+                : t("dialog.body", { use: t(`${purpose}.label`) })}
           </p>
-          {emailUnsubscribed && <p>{t("dialog.emailUnsubscribedBody")}</p>}
-          {optedOut && (
+          {enabled && emailUnsubscribed && (
+            <p>{t("dialog.emailUnsubscribedBody")}</p>
+          )}
+          {enabled && optedOut && (
             <>
               <p className="text-petroleum-700 font-medium">
                 {t("dialog.optedOutBody")}
@@ -122,7 +129,13 @@ export function WhatsAppConsentDialog({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? t("dialog.confirming") : t("dialog.confirm")}
+            {busy
+              ? enabled
+                ? t("dialog.confirming")
+                : t("dialog.withdrawing")
+              : enabled
+                ? t("dialog.confirm")
+                : t("dialog.withdrawConfirm")}
           </Button>
         </div>
       </div>

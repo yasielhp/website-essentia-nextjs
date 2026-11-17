@@ -63,14 +63,17 @@ export function WhatsAppConsentRows({
   initial: ContactConsentColumns;
 }) {
   const t = useTranslations("dashboard.contacts.detail.whatsapp");
-  const tCommon = useTranslations("dashboard.common");
   const [columns, setColumns] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   // Saved, but the provider's email list did not follow: said under the row,
   // never as a failure of the save.
   const [listWarning, setListWarning] = useState<"on" | "off" | null>(null);
-  const [asking, setAsking] = useState<WhatsAppPurpose | null>(null);
+  // A consent being turned on or withdrawn, waiting for the answer to the question.
+  const [asking, setAsking] = useState<{
+    purpose: WhatsAppPurpose;
+    enabled: boolean;
+  } | null>(null);
   // Meta's "this number has no WhatsApp", kept apart from the consents: a
   // save of a consent does not return it.
   const [unreachableAt, setUnreachableAt] = useState(
@@ -208,6 +211,7 @@ export function WhatsAppConsentRows({
                 id="whatsapp-suppression-remove"
                 variant="outline"
                 size="sm"
+                className="h-11 sm:h-8"
                 onClick={() => setConfirmingRemoval(true)}
               >
                 {t("suppression.removeLabel")}
@@ -234,31 +238,18 @@ export function WhatsAppConsentRows({
             <p className="text-xs">{t("unreachableWhy")}</p>
           </div>
           {confirmingReset ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-xs">{t("unreachableConfirm")}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={resetting}
-                onClick={() => setConfirmingReset(false)}
-              >
-                {tCommon("cancel")}
-              </Button>
-              <Button
-                size="sm"
-                disabled={resetting}
-                onClick={() => void resetUnreachable()}
-              >
-                {resetting
-                  ? t("unreachableResetting")
-                  : t("unreachableConfirmYes")}
-              </Button>
-            </div>
+            <ResetConfirm
+              busy={resetting}
+              onCancel={() => setConfirmingReset(false)}
+              onConfirm={() => void resetUnreachable()}
+            />
           ) : (
             <div>
               <Button
+                id="whatsapp-unreachable-reset"
                 variant="outline"
                 size="sm"
+                className="h-11 sm:h-8"
                 onClick={() => setConfirmingReset(true)}
               >
                 {t("unreachableReset")}
@@ -291,13 +282,16 @@ export function WhatsAppConsentRows({
         describedBy={noNumber ? noteId("no-number") : undefined}
         hint={
           state.appointments === "accepted" && columns.whatsapp_opted_in_at
-            ? t("accepted", { date: shortDate(columns.whatsapp_opted_in_at) })
-            : t("none")
+            ? t("appointments.hintOn", {
+                date: shortDate(columns.whatsapp_opted_in_at),
+              })
+            : t("appointments.hintOff")
         }
         onToggle={() =>
-          state.appointments === "accepted"
-            ? void save("appointments", false)
-            : setAsking("appointments")
+          setAsking({
+            purpose: "appointments",
+            enabled: state.appointments !== "accepted",
+          })
         }
       />
 
@@ -312,9 +306,7 @@ export function WhatsAppConsentRows({
             : "",
         })}
         onToggle={() =>
-          marketing === "on"
-            ? void save("marketing", false)
-            : setAsking("marketing")
+          setAsking({ purpose: "marketing", enabled: marketing !== "on" })
         }
       />
       {listWarning && (
@@ -357,13 +349,15 @@ export function WhatsAppConsentRows({
 
       {asking && (
         <WhatsAppConsentDialog
-          purpose={asking}
+          purpose={asking.purpose}
+          enabled={asking.enabled}
           optedOut={state.optedOut}
           emailUnsubscribed={
-            asking === "marketing" && notes.includes("email_unsubscribed")
+            asking.purpose === "marketing" &&
+            notes.includes("email_unsubscribed")
           }
           busy={saving}
-          onConfirm={() => void save(asking, true)}
+          onConfirm={() => void save(asking.purpose, asking.enabled)}
           onCancel={() => setAsking(null)}
         />
       )}
@@ -395,11 +389,69 @@ function RemovalConfirm({
     >
       <p className="text-xs">{t("removeConfirm")}</p>
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" disabled={busy} onClick={onCancel}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onCancel}
+        >
           {t("removeNo")}
         </Button>
-        <Button size="sm" disabled={busy} onClick={onConfirm}>
+        <Button
+          size="sm"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onConfirm}
+        >
           {busy ? t("removing") : t("removeYes")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** "Let this number receive messages again?"; focus to the safe answer and back to the button. */
+function ResetConfirm({
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations("dashboard.contacts.detail.whatsapp");
+  const tCommon = useTranslations("dashboard.common");
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, () =>
+    document.getElementById("whatsapp-unreachable-reset"),
+  );
+  return (
+    <div
+      ref={ref}
+      role="alertdialog"
+      aria-label={t("unreachableConfirm")}
+      className="flex flex-col gap-2"
+    >
+      <p className="text-xs">{t("unreachableConfirm")}</p>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onCancel}
+        >
+          {tCommon("cancel")}
+        </Button>
+        <Button
+          size="sm"
+          className="h-11 sm:h-8"
+          disabled={busy}
+          onClick={onConfirm}
+        >
+          {busy ? t("unreachableResetting") : t("unreachableConfirmYes")}
         </Button>
       </div>
     </div>

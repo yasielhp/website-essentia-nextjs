@@ -1156,7 +1156,9 @@
       "saving": "Guardando…",
       "whatsapp": {
         "appointments": {
-          "label": "Avisos de la cita"
+          "label": "Avisos de la cita",
+          "hintOn": "WhatsApp · desde el {date}",
+          "hintOff": "WhatsApp · sin consentimiento"
         },
         "noNumber": "Este contacto no tiene un teléfono válido para WhatsApp: el consentimiento se guarda, pero no habrá mensajes por WhatsApp.",
         "marketing": {
@@ -1176,8 +1178,6 @@
             "emailUnsubscribed": "Se dio de baja de los correos el {date}. Activarlo la vuelve a suscribir."
           }
         },
-        "accepted": "Acepta desde {date}",
-        "none": "Sin consentimiento",
         "optedOutNote": "Se dio de baja (STOP) el {date}. No recibirá mensajes de ningún tipo, aunque conserve fechas de consentimiento antiguas, hasta que se active uno de los dos usos.",
         "error": "No se pudo guardar el consentimiento.",
         "dialog": {
@@ -1188,7 +1188,11 @@
           "optedOutBody": "Esta persona pidió no recibir mensajes. Actívalo solo si ha pedido volver a recibirlos.",
           "optedOutScope": "La baja es global: al activar este uso se retiran los consentimientos anteriores del otro uso, y habrá que volver a pedirlos.",
           "confirm": "Activar",
-          "confirming": "Activando…"
+          "confirming": "Activando…",
+          "withdrawTitle": "¿Retirar el consentimiento?",
+          "withdrawBody": "Se pierde la fecha en que se dio.",
+          "withdrawConfirm": "Retirar",
+          "withdrawing": "Retirando…"
         },
         "unreachable": "Número sin WhatsApp desde {date}",
         "unreachableWhy": "Meta lo marca cuando un mensaje no se pudo entregar. Se limpia solo si ese número escribe al centro.",
@@ -1352,7 +1356,10 @@
         }
       },
       "showAll": "Ver todas ({count})",
-      "showLess": "Ver menos"
+      "showLess": "Ver menos",
+      "communications": {
+        "heading": "Comunicaciones"
+      }
     }
   },
   "account": {

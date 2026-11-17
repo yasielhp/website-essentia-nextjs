@@ -1156,7 +1156,9 @@
       "saving": "Saving…",
       "whatsapp": {
         "appointments": {
-          "label": "Appointment notices"
+          "label": "Appointment notices",
+          "hintOn": "WhatsApp · since {date}",
+          "hintOff": "WhatsApp · no consent"
         },
         "noNumber": "This contact has no valid phone number for WhatsApp: the consent is saved, but no WhatsApp messages will be sent.",
         "marketing": {
@@ -1176,8 +1178,6 @@
             "emailUnsubscribed": "They unsubscribed from the emails on {date}. Turning it on subscribes them again."
           }
         },
-        "accepted": "Accepts since {date}",
-        "none": "No consent",
         "optedOutNote": "Opted out (STOP) on {date}. They will receive no messages of any kind, even if old consent dates are still stored, until one of the two uses is turned on.",
         "error": "Could not save the consent.",
         "dialog": {
@@ -1188,7 +1188,11 @@
           "optedOutBody": "This person asked not to receive messages. Turn it on only if they have asked to receive them again.",
           "optedOutScope": "The opt-out is global: turning this use on withdraws the earlier consent for the other use, and it will have to be asked for again.",
           "confirm": "Turn on",
-          "confirming": "Turning on…"
+          "confirming": "Turning on…",
+          "withdrawTitle": "Withdraw the consent?",
+          "withdrawBody": "The date it was given is lost.",
+          "withdrawConfirm": "Withdraw",
+          "withdrawing": "Withdrawing…"
         },
         "unreachable": "Number without WhatsApp since {date}",
         "unreachableWhy": "Meta flags it when a message could not be delivered. It clears by itself if that number writes to the centre.",
@@ -1352,7 +1356,10 @@
         }
       },
       "showAll": "See all ({count})",
-      "showLess": "See less"
+      "showLess": "See less",
+      "communications": {
+        "heading": "Communications"
+      }
     }
   },
   "account": {

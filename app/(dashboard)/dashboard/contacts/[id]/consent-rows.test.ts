@@ -69,7 +69,7 @@ describe("contact consent messages", () => {
     const have = new Set(leaves(dashboard("es").whatsapp));
     const read = [
       ...ROWS.matchAll(
-        /"((?:marketing|appointments)\.[A-Za-z.]+|accepted|none|optedOutNote|error)"/g,
+        /"((?:marketing|appointments)\.[A-Za-z.]+|optedOutNote|error)"/g,
       ),
     ].map((m) => m[1]);
     expect(read.filter((k) => !have.has(k))).toEqual([]);

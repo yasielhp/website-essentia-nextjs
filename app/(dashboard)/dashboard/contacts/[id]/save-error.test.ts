@@ -62,3 +62,28 @@ describe("the panel's words for them", () => {
     }
   });
 });
+
+describe("the communications card and the withdrawal question", () => {
+  test("have words in both languages, and the withdrawal says what is lost", () => {
+    expect(es.contacts.detail.communications.heading).toBe("Comunicaciones");
+    expect(en.contacts.detail.communications.heading).toBe("Communications");
+    expect(es.contacts.detail.whatsapp.dialog.withdrawTitle).toBe(
+      "¿Retirar el consentimiento?",
+    );
+    expect(es.contacts.detail.whatsapp.dialog.withdrawBody).toBe(
+      "Se pierde la fecha en que se dio.",
+    );
+    expect(en.contacts.detail.whatsapp.dialog.withdrawTitle).toBe(
+      "Withdraw the consent?",
+    );
+    expect(en.contacts.detail.whatsapp.dialog.withdrawBody).toBe(
+      "The date it was given is lost.",
+    );
+    for (const d of [es, en]) {
+      expect(d.contacts.detail.whatsapp.appointments.hintOn).toContain(
+        "{date}",
+      );
+      expect(d.contacts.detail.whatsapp.appointments.hintOff).toBeTruthy();
+    }
+  });
+});

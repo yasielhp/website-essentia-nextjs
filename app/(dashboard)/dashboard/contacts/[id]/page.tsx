@@ -43,6 +43,7 @@ import type { ContactConsent } from "@/types/consent";
 /** The sections of a contact's file, top to bottom. */
 type Section =
   | "details"
+  | "communications"
   | "consent"
   | "bonuses"
   | "bookings"
@@ -136,6 +137,7 @@ function loadReducer(state: LoadState, action: LoadAction): LoadState {
 
 const SECTIONS: Section[] = [
   "details",
+  "communications",
   "consent",
   "bonuses",
   "bookings",
@@ -454,13 +456,6 @@ function ContactDetailPageInner() {
               saving={saving}
               dispatchForm={dispatchForm}
             />
-            <div className="mt-4">
-              {loading ? (
-                <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
-              ) : (
-                <WhatsAppConsentRows contactId={id} initial={whatsapp} />
-              )}
-            </div>
             <div className="mt-6 flex justify-end">
               <Button
                 type="submit"
@@ -474,6 +469,16 @@ function ContactDetailPageInner() {
               </Button>
             </div>
           </form>
+        </SectionCard>
+
+        {/* Its own card: these switches save at once and do not wait for the
+            Save of the details above, which they must not look attached to. */}
+        <SectionCard id="communications" title={t("communications.heading")}>
+          {loading ? (
+            <div className="bg-sand-100 h-16 animate-pulse rounded-2xl" />
+          ) : (
+            <WhatsAppConsentRows contactId={id} initial={whatsapp} />
+          )}
         </SectionCard>
 
         <SectionCard id="consent" title={t("consent.heading")}>
