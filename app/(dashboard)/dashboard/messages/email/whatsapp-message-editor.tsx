@@ -309,8 +309,21 @@ export function WhatsAppMessageEditor({
         <DraftBanner onRecover={recoverDraft} onDiscard={draft.discard} />
       )}
 
+      {/* When it goes out, as the subtitle; the rules, as a list one can read. */}
+      <p className="text-petroleum-700 max-w-prose text-sm font-medium">
+        {t(`when.${messageKey}`)}
+      </p>
+
+      <ul className="bg-sand-50 text-petroleum-500 flex max-w-prose list-disc flex-col gap-2 rounded-xl py-3 pr-4 pl-8 text-xs">
+        <li>{t("rules.consent")}</li>
+        <li>{t("rules.nothing")}</li>
+        <li>{t("rules.languages")}</li>
+        <li>{t("rules.stop")}</li>
+        <li>{t("rules.noButtons")}</li>
+      </ul>
+
       {/* The reminder and what follows an appointment are set up as a campaign. */}
-      <p className="text-petroleum-400 text-xs">
+      <p className="text-petroleum-400 max-w-prose text-xs">
         {t("campaignNote")}{" "}
         <Link
           href={NEW_APPOINTMENT_NOTICE_HREF}
@@ -319,17 +332,6 @@ export function WhatsAppMessageEditor({
           {t("campaignLink")}
         </Link>
       </p>
-
-      <div className="bg-sand-50 text-petroleum-500 flex flex-col gap-1.5 rounded-xl px-4 py-3 text-xs">
-        <p className="text-petroleum-700 font-medium">
-          {t(`when.${messageKey}`)}
-        </p>
-        <p>{t("rules.consent")}</p>
-        <p>{t("rules.nothing")}</p>
-        <p>{t("rules.languages")}</p>
-        <p>{t("rules.stop")}</p>
-        <p>{t("rules.noButtons")}</p>
-      </div>
 
       <div className="flex flex-col gap-1.5">
         <label

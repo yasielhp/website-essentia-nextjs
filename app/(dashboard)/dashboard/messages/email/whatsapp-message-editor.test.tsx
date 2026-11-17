@@ -87,3 +87,15 @@ describe("the state beside the title", () => {
     expect(render("en")).toContain("Not set up");
   });
 });
+
+describe("the explanation of the page", () => {
+  test("the five rules are a list, after the line that says when it goes out and before the note on Campaigns", () => {
+    const html = render("es");
+    const list = html.slice(html.indexOf("<ul"), html.indexOf("</ul>"));
+    expect((list.match(/<li>/g) ?? []).length).toBe(5);
+    expect(html.indexOf("Se envía cuando")).toBeLessThan(html.indexOf("<ul"));
+    expect(html.indexOf("</ul>")).toBeLessThan(
+      html.indexOf("Los recordatorios y avisos posteriores"),
+    );
+  });
+});
