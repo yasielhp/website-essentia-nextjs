@@ -36,6 +36,8 @@ type Loaded =
       segment: CampaignSegment & { count: number };
       /** What the page lists: who a filter reaches today, or the people of a list. */
       members: Member[] | null;
+      /** Reading them failed: said as such, never an empty list. */
+      membersFailed?: boolean;
     };
 
 /** A person on the page, with what already keeps a channel from reaching her. */
@@ -87,7 +89,8 @@ export default function SegmentDetailPage() {
         return;
       }
       setLoaded({ kind: "ready", segment, members: null });
-      let members: Member[];
+      // A read of the people that failed is not an empty list.
+      let members: Member[] | null;
       if (segmentKindOf(segment.conditions) === "list") {
         // A list shows the people picked, with the reasons a channel would
         // not reach some of them, not only who is reached: the difference is
@@ -111,12 +114,22 @@ export default function SegmentDetailPage() {
                   emailIssue: p.emailIssue,
                   whatsappIssue: p.whatsappIssue,
                 }))
-            : [];
+            : null;
       } else {
         members = await listSegmentMembers(
           getAccessToken(),
           segment.conditions,
-        ).catch(() => []);
+        ).catch(() => null);
+      }
+      if (cancelled) return;
+      if (members === null) {
+        setLoaded({
+          kind: "ready",
+          segment,
+          members: null,
+          membersFailed: true,
+        });
+        return;
       }
       if (!cancelled) setLoaded({ kind: "ready", segment, members });
     })();
@@ -168,7 +181,7 @@ export default function SegmentDetailPage() {
     );
   }
 
-  const { segment, members } = loaded;
+  const { segment, members, membersFailed } = loaded;
   const conditions = describeAudience(
     { ...EMPTY_AUDIENCE, ...segment.conditions },
     tReview,
@@ -181,6 +194,8 @@ export default function SegmentDetailPage() {
       ? (segment.conditions.manualIds?.length ?? 0)
       : members.length
     : 0;
+  // Until the people are read (or if that failed) the stored ids are not a count.
+  const pickedKnown = isList && members !== null;
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -191,10 +206,12 @@ export default function SegmentDetailPage() {
           </h1>
           <p className="text-petroleum-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             <SegmentKindBadge conditions={segment.conditions} />
-            {isList ? (
+            {isList && pickedKnown ? (
               <span>
                 {t("listReach", { selected: picked, count: segment.count })}
               </span>
+            ) : isList ? (
+              <span>{t("count", { count: segment.count })}</span>
             ) : (
               <span>
                 {t("count", { count: segment.count })}
@@ -202,7 +219,7 @@ export default function SegmentDetailPage() {
               </span>
             )}
           </p>
-          {isList && picked !== segment.count && (
+          {isList && pickedKnown && picked !== segment.count && (
             <p className="text-petroleum-400 mt-1 text-xs">
               {t("listReachWhy")}
             </p>
@@ -250,7 +267,15 @@ export default function SegmentDetailPage() {
       </div>
 
       <section className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
-        {members === null ? (
+        {membersFailed ? (
+          <LoadFailed
+            className="px-6 py-12"
+            onRetry={() => {
+              setLoaded({ kind: "loading" });
+              setAttempt((n) => n + 1);
+            }}
+          />
+        ) : members === null ? (
           <TableSkeleton cols={5} />
         ) : members.length === 0 ? (
           <p className="text-petroleum-400 px-6 py-12 text-center text-sm">

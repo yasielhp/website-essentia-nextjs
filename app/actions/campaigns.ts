@@ -539,7 +539,9 @@ export async function listSegmentMembers(
 
   // Everything the page shows travels with the recipient: a second query
   // filtered by a hundred ids is the kind of URL the gateway refuses.
-  const recipients = await resolveAudience(parsed.data).catch(() => []);
+  // A read that fails throws: the page says so, instead of an empty list that
+  // would read as "nobody".
+  const recipients = await resolveAudience(parsed.data);
   return recipients
     .map((r) => ({
       id: r.id,
