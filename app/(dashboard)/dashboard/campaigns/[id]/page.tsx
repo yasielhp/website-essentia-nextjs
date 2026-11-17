@@ -28,6 +28,7 @@ import { isAutomatedKind } from "@/types/campaign";
 import type { CampaignRecipientRow, CampaignRow } from "@/types/campaign";
 import { CampaignStatusBadge, RecipientStatusBadge } from "../status-badge";
 import { rate, sentCount } from "../campaign-table";
+import { triggerEventKey } from "@/lib/campaigns/whatsapp-form";
 import { ChannelChip } from "../channel-chip";
 import {
   describeLastError,
@@ -232,7 +233,9 @@ export default function CampaignDetailPage() {
             {isAutomatedKind(campaign.kind) && campaign.trigger.event
               ? [
                   t(`type.${campaign.kind}`),
-                  t(`trigger.event.${campaign.trigger.event}`),
+                  t(
+                    `trigger.event.${triggerEventKey(campaign.trigger.event, campaign.channel)}`,
+                  ),
                   campaign.trigger.event === "after_booking"
                     ? `${campaign.trigger.days ?? 0} ${t("trigger.daysAfter")}`
                     : campaign.trigger.event === "first_visit"

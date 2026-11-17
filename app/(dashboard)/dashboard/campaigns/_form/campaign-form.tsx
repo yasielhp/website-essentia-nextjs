@@ -23,6 +23,7 @@ import {
 } from "@/actions/campaigns";
 import type { CampaignRow } from "@/types/campaign";
 import { CompletedRow } from "../../bookings/new/completed-row";
+import { triggerEventKey } from "@/lib/campaigns/whatsapp-form";
 import { useSendNoticeToast } from "../send-notice-toast";
 import { TypeStep } from "./type-step";
 import { NameStep } from "./name-step";
@@ -343,7 +344,7 @@ export function CampaignForm({
     state.reach ? ` (${state.reach.count})` : ""
   }`;
   const triggerSummary = state.trigger.event
-    ? `${t(`trigger.event.${state.trigger.event}`)}${
+    ? `${t(`trigger.event.${triggerEventKey(state.trigger.event, state.channel)}`)}${
         state.trigger.event === "after_booking"
           ? ` · ${state.trigger.days ?? 0} ${t("trigger.daysAfter")}`
           : state.trigger.event === "first_visit"
