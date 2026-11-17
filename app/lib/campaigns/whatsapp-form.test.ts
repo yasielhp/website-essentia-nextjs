@@ -9,7 +9,9 @@ import {
   sampleParams,
   unavailableParams,
   visitFieldsExist,
+  WHATSAPP_MESSAGES_PER_RUN,
 } from "./whatsapp-form";
+import { BUDGET_MS, PER_SECOND } from "./dispatch-whatsapp";
 import { template } from "./whatsapp-fixtures";
 
 const field = (f: WhatsAppParamSource & { kind: "field" }) => f;
@@ -204,5 +206,11 @@ describe("sampleParams", () => {
     expect(sampleParams([fixed("  ")], "es", "standard", {}, today)).toEqual([
       "—",
     ]);
+  });
+});
+
+describe("WHATSAPP_MESSAGES_PER_RUN", () => {
+  test("is what one run of the sender can send", () => {
+    expect(WHATSAPP_MESSAGES_PER_RUN).toBe((PER_SECOND * BUDGET_MS) / 1000);
   });
 });

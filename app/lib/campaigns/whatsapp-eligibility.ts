@@ -24,6 +24,18 @@ export type TemplateIssue =
 /** Why a template is not a choice at all, whatever parameters are given. */
 export type TemplateChoiceIssue = Exclude<TemplateIssue, "param_count">;
 
+const CHOICE_ISSUES: Record<TemplateChoiceIssue, true> = {
+  template_missing: true,
+  template_not_approved: true,
+  template_unsupported: true,
+  template_language: true,
+};
+
+/** Every reason a template can fail to be a choice; a new one is a type error here. */
+export const TEMPLATE_CHOICE_ISSUES = Object.keys(
+  CHOICE_ISSUES,
+) as TemplateChoiceIssue[];
+
 /**
  * Null when the template can be offered for a campaign written in
  * `sendLocale`; otherwise why not. Only an approved template that the

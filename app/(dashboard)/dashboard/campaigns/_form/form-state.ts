@@ -2,16 +2,19 @@ import {
   EMPTY_AUDIENCE,
   EMPTY_LOCALE_CONTENT,
   type CampaignAudience,
+  type CampaignChannel,
   type CampaignContent,
   type CampaignLocale,
   type CampaignLocaleContent,
   type CampaignRow,
   type EmailDoc,
   type SegmentConditions,
+  type WhatsAppContent,
   type CampaignKind,
   type CampaignTrigger,
   DEFAULT_TRIGGER,
 } from "@/types/campaign";
+import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 
 /**
  * The campaign form as one value, shared by the three steps and the shell.
@@ -23,6 +26,35 @@ import {
  */
 
 export type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** Where an error sends the admin: the step that owns the field. */
+export const STEP_OF = {
+  kind: 0,
+  name: 1,
+  audience: 2,
+  trigger: 3,
+  template: 4,
+  content: 5,
+  review: 6,
+} as const;
+
+/**
+ * The step after `step`, skipping the ones this campaign does not have: the
+ * trigger for a kind with one event, and the starting-point step for a WhatsApp
+ * campaign, whose template step is the content step.
+ */
+export function nextStep(
+  step: Step,
+  channel: CampaignChannel,
+  hasTrigger: boolean,
+): Step {
+  let next = step + 1;
+  if (next === STEP_OF.trigger && !hasTrigger) next = STEP_OF.template;
+  if (next === STEP_OF.template && channel === "whatsapp") {
+    next = STEP_OF.content;
+  }
+  return next as Step;
+}
 
 /** Every kind can be built; the picker shows them all. */
 export const AVAILABLE_KINDS: CampaignKind[] = [
@@ -39,6 +71,8 @@ export type PickedContact = { id: string; name: string; email: string };
 export type FormState = {
   id: string | null;
   step: Step;
+  /** Fixed once the campaign is saved: its report only makes sense in one. */
+  channel: CampaignChannel;
   kind: CampaignKind;
   trigger: CampaignTrigger;
   name: string;
@@ -57,6 +91,12 @@ export type FormState = {
 
 export type FormAction =
   | { type: "SET_NAME"; value: string }
+  | { type: "SET_CHANNEL"; channel: CampaignChannel }
+  | {
+      type: "SET_WHATSAPP";
+      templateId: string | null;
+      params: WhatsAppContent["params"];
+    }
   | { type: "SET_KIND"; kind: CampaignKind }
   | { type: "SET_TRIGGER"; trigger: CampaignTrigger }
   | { type: "SET_AUDIENCE"; patch: Partial<CampaignAudience> }
@@ -97,6 +137,7 @@ export type FormAction =
 export const initialFormState: FormState = {
   id: null,
   step: 0,
+  channel: "email",
   kind: "standard",
   trigger: {},
   name: "",
@@ -133,8 +174,35 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         name: action.value,
         fieldErrors: without(state.fieldErrors, "name"),
       };
+    case "SET_CHANNEL": {
+      // A saved campaign keeps its channel (the action refuses to change it).
+      if (state.id || action.channel === state.channel) return state;
+      const kindFits = kindAllowedForChannel(state.kind, action.channel);
+      return {
+        ...state,
+        channel: action.channel,
+        // The audience is counted per channel and the content is a different
+        // thing, so the form goes back to the kind step and is walked again;
+        // what was typed stays.
+        step: 0,
+        reach: null,
+        fieldErrors: {},
+        kind: kindFits ? state.kind : "standard",
+        trigger: kindFits ? state.trigger : {},
+      };
+    }
+    case "SET_WHATSAPP":
+      return {
+        ...state,
+        content: {
+          ...state.content,
+          whatsapp: { templateId: action.templateId, params: action.params },
+        },
+        fieldErrors: without(state.fieldErrors, "content.whatsapp"),
+      };
     case "SET_KIND":
       if (!AVAILABLE_KINDS.includes(action.kind)) return state;
+      if (!kindAllowedForChannel(action.kind, state.channel)) return state;
       return {
         ...state,
         kind: action.kind,
@@ -175,10 +243,15 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         audience.lastBooking = null;
         audience.hasBooked = false;
       }
+      // Choosing the send language changes nobody's membership, so the count
+      // stays: the step that recounts is folded away when this is chosen.
+      const onlyLocale = Object.keys(action.patch).every(
+        (key) => key === "sendLocale",
+      );
       return {
         ...state,
         audience,
-        reach: null,
+        reach: onlyLocale ? state.reach : null,
         fieldErrors: without(state.fieldErrors, "audience"),
       };
     }
@@ -251,6 +324,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return {
         ...initialFormState,
         id: action.campaign.id,
+        channel: action.campaign.channel ?? "email",
         kind: action.campaign.kind ?? "standard",
         trigger: action.campaign.trigger ?? {},
         name: action.campaign.name,
@@ -260,6 +334,10 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         content: {
           en: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.en },
           es: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.es },
+          // Absent from every email and from rows older than the channel.
+          ...(action.campaign.content.whatsapp
+            ? { whatsapp: action.campaign.content.whatsapp }
+            : {}),
         },
         activeLocale:
           action.campaign.audience.sendLocale ??
@@ -278,4 +356,14 @@ export function firstErroredLocale(
   if (Object.keys(errors).some((k) => k.startsWith("content.es."))) return "es";
   if (Object.keys(errors).some((k) => k.startsWith("content.en."))) return "en";
   return null;
+}
+
+/**
+ * The `content` the server should store. An email carries no WhatsApp block,
+ * even if the admin picked a template before switching channel back.
+ */
+export function contentOf(state: FormState): CampaignContent {
+  if (state.channel === "whatsapp") return state.content;
+  const { en, es } = state.content;
+  return { en, es };
 }
