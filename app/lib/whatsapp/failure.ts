@@ -37,8 +37,16 @@ export type MetaFailure = {
 };
 
 /**
+ * The most a failure may weigh once written down. The text lands in
+ * `campaign_recipients.error`, and Meta's wording can repeat what the customer
+ * wrote, so it is kept short on purpose: do not raise it.
+ */
+const MAX_FAILURE_LENGTH = 300;
+
+/**
  * `"<code>: <details>"` for the log of a failed message, the details being the
- * most specific text Meta sent. Never empty, so a failure always shows a reason.
+ * most specific text Meta sent, cut to `MAX_FAILURE_LENGTH`. Never empty, so a
+ * failure always shows a reason.
  */
 export function describeMetaFailure(failure: MetaFailure | undefined): string {
   const text = [
@@ -50,6 +58,11 @@ export function describeMetaFailure(failure: MetaFailure | undefined): string {
     typeof failure?.code === "number" || typeof failure?.code === "string"
       ? String(failure.code)
       : null;
-  if (code && text) return `${code}: ${text}`;
-  return code ?? text ?? "WhatsApp error";
+  const described =
+    code && text ? `${code}: ${text}` : (code ?? text ?? "WhatsApp error");
+  if (described.length <= MAX_FAILURE_LENGTH) return described;
+  const cut = described.slice(0, MAX_FAILURE_LENGTH);
+  // A cut through the middle of an emoji would leave half of it behind, which
+  // the database may refuse.
+  return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
 }

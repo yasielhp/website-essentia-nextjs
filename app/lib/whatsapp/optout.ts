@@ -5,6 +5,7 @@
  */
 
 import { toE164 } from "@/lib/whatsapp/client";
+import { matchByPhone } from "@/lib/whatsapp/match";
 
 /**
  * The only words that unsubscribe. `CANCELAR` is left out on purpose: a client
@@ -38,35 +39,12 @@ export function isOptOutText(text: unknown): boolean {
 }
 
 /**
- * The ids of the contacts whose phone is one of the senders' numbers.
- *
- * Phones are stored however a form wrote them (`600 11 22 33`, `600-112-233`,
- * `0034600112233`), so SQL cannot match them reliably; each is normalised with
- * `toE164` and compared here. A sender is Meta's `messages[].from`, digits only
- * and without the `+`; one that is not a usable number matches nothing. Contacts
- * are indexed by number once, so any number of senders costs a single pass.
+ * The ids of the contacts whose phone is one of the senders' numbers, compared
+ * with `toE164` (see `matchByPhone`). `from` is Meta's `messages[].from`.
  */
 export function matchOptOut(
   from: string | readonly string[],
   contacts: { id: string; phone: string | null }[],
 ): string[] {
-  const byPhone = new Map<string, string[]>();
-  for (const contact of contacts) {
-    const phone = toE164(contact.phone);
-    if (!phone) continue;
-    const ids = byPhone.get(phone);
-    if (ids) ids.push(contact.id);
-    else byPhone.set(phone, [contact.id]);
-  }
-
-  const matched = new Set<string>();
-  for (const sender of typeof from === "string" ? [from] : from) {
-    if (typeof sender !== "string") continue;
-    const digits = sender.replace(/\D/g, "");
-    if (!digits) continue;
-    // Always with the `+`, so `toE164` never adds the Spanish prefix to it.
-    const phone = toE164(`+${digits}`);
-    for (const id of (phone && byPhone.get(phone)) || []) matched.add(id);
-  }
-  return [...matched];
+  return matchByPhone(from, contacts, toE164);
 }

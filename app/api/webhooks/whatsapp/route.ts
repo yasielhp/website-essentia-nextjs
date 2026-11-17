@@ -6,6 +6,8 @@ import {
   metaFailureKind,
   type MetaFailure,
 } from "@/lib/whatsapp/failure";
+import { inBatches } from "@/lib/whatsapp/batch";
+import { matchByPhone } from "@/lib/whatsapp/match";
 import { isOptOutText, matchOptOut } from "@/lib/whatsapp/optout";
 import { templateStatusFromEvent } from "@/lib/whatsapp/templates";
 
@@ -124,11 +126,14 @@ const STATE_RANK: Record<string, number> = {
   failed: 3,
 };
 
+/** Messages whose receipts are written at the same time. */
+const STATUS_BATCH_SIZE = 10;
+
 /**
- * Ceiling for the contacts read when looking for the person behind a STOP.
+ * Ceiling for a read of contacts to match against an inbound number.
  * `range(0, n)` is inclusive, so a full page holds n + 1 rows.
  */
-const OPT_OUT_MAX_ROWS = 9_999;
+const CONTACTS_MAX_ROWS = 9_999;
 
 /**
  * The elements of `value` that are objects, or none when it is not an array.
@@ -162,6 +167,11 @@ function isoFrom(timestamp: string | undefined): string {
  * contact, so no campaign tries it again. Limits and anything unrecognised do
  * not: the number may be fine. The stamp can fail without taking the receipt
  * with it, which is why it has its own try/catch.
+ *
+ * Known risk, inherited from the email side: Meta can report `failed` after
+ * `delivered` or `read`. The recipient then goes from `opened` to `bounced`,
+ * and the RPC does not take the message back out of `delivered_count` or
+ * `opened_count`, so that campaign can show it both delivered and bounced.
  */
 async function recordCampaignReceipt(
   db: Database,
@@ -345,11 +355,11 @@ export async function POST(req: NextRequest) {
           "whatsapp_opted_in_at.not.is.null,whatsapp_marketing_opted_in_at.not.is.null",
         )
         .is("whatsapp_opted_out_at", null)
-        .range(0, OPT_OUT_MAX_ROWS);
+        .range(0, CONTACTS_MAX_ROWS);
       if (error) throw error;
 
       const optedIn = (data ?? []) as { id: string; phone: string | null }[];
-      if (optedIn.length > OPT_OUT_MAX_ROWS) {
+      if (optedIn.length > CONTACTS_MAX_ROWS) {
         console.warn("[webhooks/whatsapp] opt-out contact list hit the cap");
       }
 
@@ -366,6 +376,50 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error("[webhooks/whatsapp] could not record opt-outs:", err);
+  }
+
+  // Anyone who writes to us has WhatsApp, so a number flagged as unreachable
+  // (131026 covers causes that pass) is cleared the moment it sends anything,
+  // whatever the type. A STOP clears it too, which is harmless: the opt-out
+  // stamped above is what keeps that contact out of campaigns.
+  try {
+    const inboundSenders = new Set<string>();
+    for (const change of changes) {
+      for (const message of objectsIn<MetaInboundMessage>(
+        change.value?.messages,
+      )) {
+        if (typeof message.from === "string") inboundSenders.add(message.from);
+      }
+    }
+
+    if (inboundSenders.size > 0) {
+      // Only the flagged contacts are read, once per payload and only when
+      // something came in; there are few of them.
+      const { data, error } = await db
+        .from("contacts")
+        .select("id, phone")
+        .not("whatsapp_unreachable_at", "is", null)
+        .range(0, CONTACTS_MAX_ROWS);
+      if (error) throw error;
+
+      const flagged = (data ?? []) as { id: string; phone: string | null }[];
+      if (flagged.length > CONTACTS_MAX_ROWS) {
+        console.warn(
+          "[webhooks/whatsapp] unreachable contact list hit the cap",
+        );
+      }
+
+      const ids = matchByPhone([...inboundSenders], flagged);
+      if (ids.length > 0) {
+        const { error: clearError } = await db
+          .from("contacts")
+          .update({ whatsapp_unreachable_at: null })
+          .in("id", ids);
+        if (clearError) throw clearError;
+      }
+    }
+  } catch (err) {
+    console.error("[webhooks/whatsapp] could not clear unreachable:", err);
   }
 
   const statuses = changes.flatMap((change) =>
@@ -408,52 +462,56 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  try {
-    // Different messages have nothing to say to each other, so their writes go
-    // out together.
-    await Promise.all(
-      [...furthest].map(async ([providerId, { next, at, error, failure }]) => {
-        // A message sent by a campaign has its receipt in `campaign_recipients`
-        // and no row in `booking_events`. Ask the campaigns first; when it was
-        // not one of theirs (or nothing moved), the staff log below is a no-op
-        // or the update it always was.
-        try {
-          if (
-            typeof providerId === "string" &&
-            (await recordCampaignReceipt(db, providerId, {
-              next,
-              at,
-              failure,
-            }))
-          ) {
-            return;
+  // Different messages have nothing to say to each other, so their writes go
+  // out together, but a payload can carry hundreds of them: ten at a time keeps
+  // the requests in flight bounded. A run that fails is logged and the next one
+  // still goes.
+  for (const run of inBatches([...furthest], STATUS_BATCH_SIZE)) {
+    try {
+      await Promise.all(
+        run.map(async ([providerId, { next, at, error, failure }]) => {
+          // A message sent by a campaign has its receipt in `campaign_recipients`
+          // and no row in `booking_events`. Ask the campaigns first; when it was
+          // not one of theirs (or nothing moved), the staff log below is a no-op
+          // or the update it always was.
+          try {
+            if (
+              typeof providerId === "string" &&
+              (await recordCampaignReceipt(db, providerId, {
+                next,
+                at,
+                failure,
+              }))
+            ) {
+              return;
+            }
+          } catch (err) {
+            console.error(
+              "[webhooks/whatsapp] could not record campaign receipt:",
+              err,
+            );
           }
-        } catch (err) {
-          console.error(
-            "[webhooks/whatsapp] could not record campaign receipt:",
-            err,
-          );
-        }
 
-        return db
-          .from("booking_events")
-          .update({
-            status: next,
-            ...(next === "delivered" ? { delivered_at: at } : {}),
-            // Reading implies arrival, and the two callbacks are independent: a
-            // `read` that overtakes its `delivered` in a later request would
-            // otherwise leave the row claiming it was never delivered.
-            ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
-            ...(next === "failed" ? { error } : {}),
-          })
-          .eq("provider_id", providerId)
-          .in("status", PRECEDING_STATES[next]!);
-      }),
-    );
-  } catch (err) {
-    // Acknowledged all the same: Meta disables a subscription that keeps
-    // erroring, and losing every future callback is worse than losing this one.
-    console.error("[webhooks/whatsapp] could not record statuses:", err);
+          return db
+            .from("booking_events")
+            .update({
+              status: next,
+              ...(next === "delivered" ? { delivered_at: at } : {}),
+              // Reading implies arrival, and the two callbacks are independent: a
+              // `read` that overtakes its `delivered` in a later request would
+              // otherwise leave the row claiming it was never delivered.
+              ...(next === "read" ? { delivered_at: at, read_at: at } : {}),
+              ...(next === "failed" ? { error } : {}),
+            })
+            .eq("provider_id", providerId)
+            .in("status", PRECEDING_STATES[next]!);
+        }),
+      );
+    } catch (err) {
+      // Acknowledged all the same: Meta disables a subscription that keeps
+      // erroring, and losing every future callback is worse than losing this one.
+      console.error("[webhooks/whatsapp] could not record statuses:", err);
+    }
   }
 
   return NextResponse.json({ received: true });
