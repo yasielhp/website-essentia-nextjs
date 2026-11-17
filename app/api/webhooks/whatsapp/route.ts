@@ -102,10 +102,14 @@ function isSignatureValid(rawBody: string, header: string | null): boolean {
     .digest("hex");
   const received = header.slice("sha256=".length);
 
-  // Equal length first: `timingSafeEqual` throws on a mismatch rather than
-  // returning false, and the length of a digest is not a secret anyway.
-  if (received.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+  // Equal size first: `timingSafeEqual` throws on a mismatch rather than
+  // returning false, and the size of a digest is not a secret anyway. It is
+  // the BYTES that must match in number, not the characters: a header with a
+  // non-ASCII character has as many characters as a digest and more bytes.
+  const receivedBytes = Buffer.from(received, "utf8");
+  const expectedBytes = Buffer.from(expected, "utf8");
+  if (receivedBytes.byteLength !== expectedBytes.byteLength) return false;
+  return crypto.timingSafeEqual(receivedBytes, expectedBytes);
 }
 
 /**

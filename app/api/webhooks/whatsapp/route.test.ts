@@ -264,3 +264,31 @@ describe("a STOP that is pressed, not typed", () => {
     });
   });
 });
+
+describe("the signature check", () => {
+  const withSignature = (signature: string) =>
+    new NextRequest("https://app.example.test/api/webhooks/whatsapp", {
+      method: "POST",
+      body: JSON.stringify(inbound("34600112233", "STOP")),
+      headers: { "x-hub-signature-256": signature },
+    });
+
+  test("a signature of the right length in characters but not in bytes is a 403, not a crash", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    // 64 characters, as a real digest has, but each one is two bytes in
+    // UTF-8: `timingSafeEqual` throws on buffers of different sizes.
+    // Latin-1 is what a header can carry.
+    const res = await POST(withSignature(`sha256=${"\u00e9".repeat(64)}`));
+    quiet.mockRestore();
+    expect(res.status).toBe(403);
+    expect(suppressionWrites()).toHaveLength(0);
+  });
+
+  test("a wrong signature of the right size is a 403", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(withSignature(`sha256=${"0".repeat(64)}`));
+    quiet.mockRestore();
+    expect(res.status).toBe(403);
+    expect(suppressionWrites()).toHaveLength(0);
+  });
+});
