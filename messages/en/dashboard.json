@@ -1113,6 +1113,8 @@
     "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates.",
     "titleOne": "The email must have one title, and only one.",
     "titleEmpty": "The title cannot be empty.",
+    "kickerOne": "The email can only have one line above the title.",
+    "kickerMisplaced": "The line above the title must come first.",
     "blockRequired": "The block “{name}” is missing: this email must have it.",
     "blockRepeated": "This block is already in the email: it can only appear once."
   },

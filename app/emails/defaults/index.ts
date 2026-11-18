@@ -27,7 +27,8 @@ const BUILT = new Map<string, MessageDefault>();
 /**
  * The text the editor opens with, and what "reset" restores. Pure.
  *
- * `doc` is the WHOLE email as a document: the title, the text and every block
+ * `doc` is the WHOLE email as a document: the kicker (when the email has one)
+ * and the title, the text and every block
  * the message has, each placed where the legacy email prints it (the closing
  * sentence between the blocks that come before it and the one that follows).
  * `intro` and `outro` stay as the two halves of the text, which the guardian
@@ -48,6 +49,7 @@ export function defaultContent(
     ...base,
     doc: buildMessageDoc({
       key,
+      kicker: base.kicker,
       title: base.title,
       intro: base.intro,
       outro: base.outro,

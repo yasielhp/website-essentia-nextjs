@@ -8,6 +8,7 @@ import { EditorState, NodeSelection } from "@tiptap/pm/state";
 import { VariableExtension } from "@maily-to/core/extensions";
 import {
   EmailDocGuard,
+  EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
   canMove,
@@ -21,6 +22,7 @@ const extensions = [
   Text,
   Blockquote,
   VariableExtension,
+  EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
   EmailDocGuard,
@@ -270,5 +272,149 @@ describe("moving a block", () => {
   });
   test("a position that is not a node's start moves nothing", () => {
     expect(moveBlockTransaction(start(), 1, "up")).toBeNull();
+  });
+});
+
+// ── the kicker: a line above the title ─────────────────────────────────────
+
+const kicker = (text?: string) => ({
+  type: "emailKicker",
+  ...(text === undefined ? {} : { content: [{ type: "text", text }] }),
+});
+const WITH_KICKER = () =>
+  doc(
+    kicker("Reserva confirmada"),
+    title(),
+    para("Texto"),
+    block("cancel_link"),
+  );
+
+describe("the kicker in the schema", () => {
+  test("holds text and variables and no marks, like the title, and may be empty", () => {
+    const k = schema.nodes.emailKicker!;
+    expect(k.spec.content).toBe("(text|variable)*");
+    expect(k.spec.marks).toBe("");
+    expect(k.spec.isolating).toBe(true);
+    expect(() => doc(kicker(), title())).not.toThrow();
+    expect(() =>
+      doc(
+        {
+          type: "emailKicker",
+          content: [{ type: "variable", attrs: { id: "service" } }],
+        },
+        title(),
+      ),
+    ).not.toThrow();
+  });
+  test("is read from and written to JSON as the server expects it, empty or not", () => {
+    expect(WITH_KICKER().toJSON().content[0]).toEqual({
+      type: "emailKicker",
+      content: [{ type: "text", text: "Reserva confirmada" }],
+    });
+    expect(doc(kicker(), title()).toJSON().content[0]).toEqual({
+      type: "emailKicker",
+    });
+  });
+});
+
+describe("changeAllowed with a kicker", () => {
+  test("it stays first, and the title stays right under it", () => {
+    const prev = WITH_KICKER();
+    // The title above the kicker, the kicker moved down, the kicker gone: refused.
+    expect(
+      changeAllowed(
+        prev,
+        doc(title(), kicker("A"), para("x"), block("cancel_link")),
+      ),
+    ).toBe(false);
+    expect(
+      changeAllowed(
+        prev,
+        doc(para("x"), kicker("A"), title(), block("cancel_link")),
+      ),
+    ).toBe(false);
+    expect(
+      changeAllowed(prev, doc(title(), para("x"), block("cancel_link"))),
+    ).toBe(false);
+    // Writing in it is free.
+    expect(
+      changeAllowed(
+        prev,
+        doc(kicker("Otra línea"), title(), para("Texto"), block("cancel_link")),
+      ),
+    ).toBe(true);
+    expect(
+      changeAllowed(
+        prev,
+        doc(kicker(), title(), para("Texto"), block("cancel_link")),
+      ),
+    ).toBe(true);
+  });
+  test("a second kicker is refused, and one nested in anything is refused", () => {
+    const prev = WITH_KICKER();
+    expect(
+      changeAllowed(
+        prev,
+        doc(kicker("A"), kicker("B"), title(), block("cancel_link")),
+      ),
+    ).toBe(false);
+    expect(
+      changeAllowed(
+        prev,
+        doc(kicker("A"), title(), {
+          type: "blockquote",
+          content: [kicker("B")],
+        }),
+      ),
+    ).toBe(false);
+  });
+  test("a document with no kicker is not made to have one, and may not grow one in the middle", () => {
+    const prev = DOC();
+    expect(
+      changeAllowed(
+        prev,
+        doc(
+          title(),
+          para("Texto"),
+          block("details_card"),
+          block("cancel_link"),
+        ),
+      ),
+    ).toBe(true);
+    expect(changeAllowed(prev, doc(title(), kicker("A"), para("Texto")))).toBe(
+      false,
+    );
+    expect(
+      changeAllowed(
+        prev,
+        doc(
+          kicker("A"),
+          title(),
+          para("Texto"),
+          block("details_card"),
+          block("cancel_link"),
+        ),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("moving blocks with a kicker", () => {
+  test("a block cannot go above the title, and the kicker above that is not in its way", () => {
+    const d = doc(
+      kicker("A"),
+      title(),
+      block("details_card"),
+      block("cancel_link"),
+    );
+    let pos = 0;
+    const starts: number[] = [];
+    d.forEach((n) => {
+      starts.push(pos);
+      pos += n.nodeSize;
+    });
+    expect(canMove(d, starts[2]!, "up")).toBe(false);
+    expect(canMove(d, starts[2]!, "down")).toBe(true);
+    expect(canMove(d, starts[3]!, "up")).toBe(true);
   });
 });

@@ -6,10 +6,12 @@ import { defaultContent } from "@/emails/defaults";
 import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
 import { chooseDelivery } from "./compose";
+import { docKicker, docTitle, withKickerSlot } from "./email-doc";
 import { editableLocales, sameDoc } from "./editor-state";
 import { validateMessageTemplate } from "./schema";
 import {
   EmailDocGuard,
+  EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
 } from "../../(dashboard)/dashboard/messages/email/email-nodes";
@@ -27,6 +29,7 @@ import {
 const schema = getSchema([
   MailyKit,
   VariableExtension,
+  EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
   EmailDocGuard,
@@ -179,7 +182,7 @@ describe("every title the editor opens has text to show", () => {
     for (const locale of editableLocales(key)) {
       test(`${key}/${locale}: the title, as the editor re-emits it, has words of its own, and a value for its variables`, () => {
         const doc = reemit(defaultContent(key, locale).doc);
-        const title = doc.content?.[0];
+        const title = docTitle(doc);
         expect(title?.type).toBe("emailTitle");
         const children = title?.content ?? [];
         const words = children
@@ -198,4 +201,65 @@ describe("every title the editor opens has text to show", () => {
       });
     }
   }
+});
+
+describe("the kicker slot is no change", () => {
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of LOCALES) {
+      test(`${key}/${locale}: the default with the editor's empty kicker in front of it is still the default`, () => {
+        const def = defaultContent(key, locale).doc;
+        const slot = reemit(withKickerSlot(def));
+        expect(sameDoc(slot, def)).toBe(true);
+        expect(sameDoc(def, slot)).toBe(true);
+        // And one that has its own text is not the same as one that has none.
+        const changed = {
+          ...slot,
+          content: [
+            { type: "emailKicker", content: [{ type: "text", text: "Otra" }] },
+            ...(slot.content ?? []).filter((n) => n.type !== "emailKicker"),
+          ],
+        } as EmailDoc;
+        expect(sameDoc(changed, def)).toBe(false);
+      });
+    }
+  }
+
+  test("a kicker of the default, emptied, is a change; written again the same, it is not", () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const kicker = docKicker(def)!;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    expect(
+      sameDoc({ ...def, content: [{ type: "emailKicker" }, ...rest] }, def),
+    ).toBe(false);
+    expect(
+      sameDoc(
+        {
+          ...def,
+          content: [
+            reemit({ type: "doc", content: [kicker] }).content![0]!,
+            ...rest,
+          ],
+        },
+        def,
+      ),
+    ).toBe(true);
+  });
+
+  test("the server decides it the same way: the default with the empty slot is not an edit", () => {
+    for (const key of MESSAGE_KEYS) {
+      for (const locale of LOCALES) {
+        const doc = reemit(withKickerSlot(defaultContent(key, locale).doc));
+        const result = validateMessageTemplate({
+          key,
+          channel: "email",
+          locale,
+          doc,
+        });
+        expect(result.ok).toBe(true);
+        if (result.ok && result.data.channel === "email") {
+          expect(result.data.content?.doc).toBeNull();
+        }
+      }
+    }
+  });
 });

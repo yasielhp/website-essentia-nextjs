@@ -1113,6 +1113,8 @@
     "templateCategoryNotAllowed": "Esta plantilla es de Marketing: los avisos de cita solo pueden usar plantillas de Utilidad.",
     "titleOne": "El correo debe tener un título, y solo uno.",
     "titleEmpty": "El título no puede estar vacío.",
+    "kickerOne": "El correo solo puede tener una línea sobre el título.",
+    "kickerMisplaced": "La línea sobre el título debe ir la primera.",
     "blockRequired": "Falta el bloque «{name}»: este correo debe llevarlo.",
     "blockRepeated": "Este bloque ya está en el correo: solo puede aparecer una vez."
   },

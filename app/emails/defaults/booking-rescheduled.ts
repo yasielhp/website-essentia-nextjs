@@ -4,9 +4,9 @@ export const bookingRescheduled: MessageDefaults = {
   es: content(
     "Sesión reprogramada — {{service}}",
     "Tu reserva de {{service}} ha sido reprogramada para el {{date}}.",
+    "Sesión reprogramada",
     "Tu reserva ha sido reprogramada, {{first_name}}.",
     [
-      "Sesión reprogramada",
       "Hemos actualizado la fecha y/o la hora de tu sesión. Aquí tienes los nuevos detalles:",
     ],
     [
@@ -16,9 +16,9 @@ export const bookingRescheduled: MessageDefaults = {
   en: content(
     "Booking rescheduled — {{service}}",
     "Your {{service}} booking has been rescheduled to {{date}}.",
+    "Booking rescheduled",
     "Your booking has been rescheduled, {{first_name}}.",
     [
-      "Booking rescheduled",
       "We have updated the date and/or time of your session. Here are the new details:",
     ],
     [

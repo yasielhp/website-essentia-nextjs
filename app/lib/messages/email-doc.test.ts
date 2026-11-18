@@ -9,12 +9,16 @@ import {
 } from "./catalog";
 import {
   BLOCK_NODE,
+  KICKER_NODE,
   TITLE_NODE,
   blockNode,
   buildMessageDoc,
   convertOldShape,
+  docKicker,
   docTitle,
   insertIndexFor,
+  kickerIsEmpty,
+  kickerNodeFrom,
   missingBlocks,
   isMessageDoc,
   layoutOf,
@@ -22,6 +26,8 @@ import {
   structureProblems,
   titleNodeFrom,
   titleText,
+  withKickerSlot,
+  withoutEmptyKicker,
   withoutSpecialNodes,
 } from "./email-doc";
 
@@ -655,5 +661,296 @@ describe("the title cannot be empty, and has no attributes", () => {
         "booking_rescheduled",
       ),
     ).toEqual([]);
+  });
+});
+
+// ── the kicker: the small line in capitals above the title ──────────────────
+
+describe("the kicker", () => {
+  const kicker = (text: string) => kickerNodeFrom(text);
+  const good = (key: (typeof MESSAGE_KEYS)[number]) =>
+    doc(
+      kicker("Reserva confirmada"),
+      titleNodeFrom("Hola, {{first_name}}"),
+      p("Texto."),
+      ...requiredBlocks(key).map(blockNode),
+    );
+
+  test("is text and variable nodes, like the title, and reads back as text with its tokens", () => {
+    const node = kicker("Reserva de {{service}}");
+    expect(node).toEqual({
+      type: KICKER_NODE,
+      content: [
+        { type: "text", text: "Reserva de " },
+        { type: "variable", attrs: { id: "service" } },
+      ],
+    });
+    expect(titleText(node)).toBe("Reserva de {{service}}");
+  });
+
+  test("empty is allowed: it says nothing and is not an error", () => {
+    for (const empty of [
+      { type: KICKER_NODE },
+      { type: KICKER_NODE, content: [] },
+      { type: KICKER_NODE, content: [{ type: "text", text: "  " }] },
+    ] as EmailDoc[]) {
+      expect(kickerIsEmpty(empty)).toBe(true);
+      const d = doc(
+        empty,
+        titleNodeFrom("Hola"),
+        ...requiredBlocks("booking_rescheduled").map(blockNode),
+      );
+      expect(structureProblems(d, "booking_rescheduled")).toEqual([]);
+    }
+    expect(kickerIsEmpty(kicker("x"))).toBe(false);
+    expect(kickerIsEmpty(kicker("{{service}}"))).toBe(false);
+  });
+
+  test("a good document, with the kicker first, has no problem; so has one with no kicker", () => {
+    expect(
+      structureProblems(good("booking_rescheduled"), "booking_rescheduled"),
+    ).toEqual([]);
+    expect(
+      structureProblems(
+        doc(
+          titleNodeFrom("Hola"),
+          ...requiredBlocks("booking_rescheduled").map(blockNode),
+        ),
+        "booking_rescheduled",
+      ),
+    ).toEqual([]);
+  });
+
+  test("two kickers are refused at the second", () => {
+    const d = doc(
+      kicker("A"),
+      kicker("B"),
+      titleNodeFrom("Hola"),
+      blockNode("cancel_link"),
+    );
+    expect(structureProblems(d, "booking_rescheduled")).toEqual([
+      { kind: "kickerOne", path: "" },
+    ]);
+  });
+
+  test("a kicker that is not first (after the title, or after any text) is refused", () => {
+    const afterTitle = doc(
+      titleNodeFrom("Hola"),
+      kicker("A"),
+      blockNode("cancel_link"),
+    );
+    expect(structureProblems(afterTitle, "booking_rescheduled")).toEqual([
+      { kind: "kickerMisplaced", path: "content[1]" },
+    ]);
+    const afterText = doc(
+      p("x"),
+      kicker("A"),
+      titleNodeFrom("Hola"),
+      blockNode("cancel_link"),
+    );
+    expect(structureProblems(afterText, "booking_rescheduled")).toEqual([
+      { kind: "kickerMisplaced", path: "content[1]" },
+    ]);
+  });
+
+  test("attributes, a mark, a link variable or anything but text and variables inside are refused", () => {
+    const d = (node: EmailDoc) =>
+      doc(node, titleNodeFrom("Hola"), blockNode("cancel_link"));
+    expect(
+      structureProblems(
+        d({ ...kicker("A"), attrs: { onclick: "x" } }),
+        "booking_rescheduled",
+      ),
+    ).toEqual([
+      { kind: "blockNotAllowed", path: "content[0]", node: KICKER_NODE },
+    ]);
+    // An empty attribute object is nothing.
+    expect(
+      structureProblems(
+        d({ ...kicker("A"), attrs: {} }),
+        "booking_rescheduled",
+      ),
+    ).toEqual([]);
+    for (const child of [
+      { type: "htmlCodeBlock", attrs: { html: "<script>" } },
+      { type: "paragraph", content: [{ type: "text", text: "x" }] },
+      {
+        type: "text",
+        text: "x",
+        marks: [{ type: "link", attrs: { href: "https://a.b" } }],
+      },
+      { type: "variable", attrs: { id: "cancel_url" } },
+    ] as EmailDoc[]) {
+      expect(
+        structureProblems(
+          d({ type: KICKER_NODE, content: [child] }),
+          "booking_rescheduled",
+        ).map((x) => x.kind),
+      ).toEqual(["blockNotAllowed"]);
+    }
+  });
+
+  test("a variable the message does not offer is the text check's to name, not this one's", () => {
+    const d = doc(
+      kicker("{{expires_on}}"),
+      titleNodeFrom("Hola"),
+      blockNode("cancel_link"),
+    );
+    expect(
+      structureProblems(d, "booking_rescheduled").filter(
+        (x) => x.kind === "blockNotAllowed",
+      ),
+    ).toEqual([]);
+  });
+
+  test("withoutSpecialNodes sets it aside like the title, keeping the indices", () => {
+    const d = doc(kicker("A"), titleNodeFrom("B"), p("c"));
+    expect(withoutSpecialNodes(d).content!.map((n) => n.type)).toEqual([
+      "paragraph",
+      "paragraph",
+      "paragraph",
+    ]);
+    // Nested, it is not set aside: the editor's own check refuses it.
+    const nested = doc({ type: "blockquote", content: [kicker("A")] });
+    expect(withoutSpecialNodes(nested).content![0]!.content![0]!.type).toBe(
+      KICKER_NODE,
+    );
+  });
+
+  test("the default document of a message with a kicker has it first; one without has none", () => {
+    const built = buildMessageDoc({
+      key: "booking_confirmed",
+      kicker: "Reserva confirmada",
+      title: "Hola",
+      intro: doc(p("a")),
+      outro: null,
+    });
+    expect(kinds(built)[0]).toBe(KICKER_NODE);
+    expect(kinds(built)[1]).toBe(TITLE_NODE);
+    const none = buildMessageDoc({
+      key: "consent_request",
+      kicker: null,
+      title: "Hola",
+      intro: doc(p("a")),
+      outro: null,
+    });
+    expect(kinds(none)[0]).toBe(TITLE_NODE);
+    expect(docKicker(none)).toBeUndefined();
+  });
+});
+
+describe("repairForSending with a kicker", () => {
+  const fix = (d: EmailDoc, key = "booking_rescheduled" as const) =>
+    repairForSending(d, key, "Título");
+  const need = requiredBlocks("booking_rescheduled").map(blockNode);
+
+  test("a kicker in its place is left as it is", () => {
+    const d = doc(kickerNodeFrom("A"), titleNodeFrom("B"), ...need);
+    expect(fix(d)).toEqual(d);
+  });
+
+  test("one after the title is moved up, not lost", () => {
+    const d = doc(titleNodeFrom("B"), kickerNodeFrom("A"), p("x"), ...need);
+    const out = fix(d);
+    expect(kinds(out).slice(0, 3)).toEqual([
+      KICKER_NODE,
+      TITLE_NODE,
+      "paragraph",
+    ]);
+    expect(titleText(docKicker(out))).toBe("A");
+  });
+
+  test("with two, only the first stays; with none, none is added", () => {
+    const two = fix(
+      doc(
+        kickerNodeFrom("A"),
+        kickerNodeFrom("B"),
+        titleNodeFrom("T"),
+        ...need,
+      ),
+    );
+    expect(kinds(two).filter((k) => k === KICKER_NODE)).toHaveLength(1);
+    expect(titleText(docKicker(two))).toBe("A");
+    expect(docKicker(fix(doc(titleNodeFrom("T"), ...need)))).toBeUndefined();
+  });
+
+  test("it keeps text and the variables the message offers, and nothing more", () => {
+    const out = fix(
+      doc(
+        {
+          type: KICKER_NODE,
+          attrs: { onclick: "x" },
+          content: [
+            { type: "text", text: "A", marks: [{ type: "bold" }] },
+            { type: "variable", attrs: { id: "service" } },
+            { type: "variable", attrs: { id: "cancel_url" } },
+            { type: "variable", attrs: { id: "nope" } },
+            { type: "htmlCodeBlock", attrs: { html: "<b>" } },
+          ],
+        },
+        titleNodeFrom("T"),
+        ...need,
+      ),
+    );
+    expect(docKicker(out)).toEqual({
+      type: KICKER_NODE,
+      content: [
+        { type: "text", text: "A" },
+        { type: "variable", attrs: { id: "service" } },
+      ],
+    });
+  });
+
+  test("a kicker nested inside something else is not a kicker: it stays where it is for the editor's check to drop", () => {
+    const d = doc(
+      { type: "blockquote", content: [kickerNodeFrom("A")] },
+      titleNodeFrom("T"),
+      ...need,
+    );
+    expect(docKicker(fix(d))).toBeUndefined();
+  });
+});
+
+describe("the slot for the kicker, for the editor", () => {
+  test("a document with no kicker gets an empty one first; one with a kicker is left alone", () => {
+    const bare = doc(titleNodeFrom("T"), p("x"));
+    expect(withKickerSlot(bare).content![0]).toEqual({ type: KICKER_NODE });
+    expect(withKickerSlot(bare).content!.slice(1)).toEqual(bare.content!);
+    const has = doc(kickerNodeFrom("A"), titleNodeFrom("T"));
+    expect(withKickerSlot(has)).toEqual(has);
+  });
+  test("taking the empty kicker away again gives back the same document", () => {
+    const bare = doc(titleNodeFrom("T"), p("x"));
+    expect(withoutEmptyKicker(withKickerSlot(bare))).toEqual(bare);
+    const has = doc(kickerNodeFrom("A"), titleNodeFrom("T"));
+    expect(withoutEmptyKicker(has)).toEqual(has);
+  });
+});
+
+describe("a row saved with only a title column keeps the email it had: the line under the title", () => {
+  test("the default's kicker becomes the paragraph under the title it always was", () => {
+    const def = {
+      title: "Título",
+      doc: buildMessageDoc({
+        key: "booking_confirmed",
+        kicker: "Reserva confirmada",
+        title: "Título",
+        intro: doc(p("Cuerpo.")),
+        outro: null,
+      }),
+    };
+    const out = convertOldShape(
+      { title: "Mío", doc: null },
+      "booking_confirmed",
+      def,
+    );
+    expect(kinds(out).slice(0, 3)).toEqual([
+      TITLE_NODE,
+      "paragraph",
+      "paragraph",
+    ]);
+    expect(titleText(docTitle(out))).toBe("Mío");
+    expect(out.content![1]).toEqual(p("Reserva confirmada"));
+    expect(docKicker(out)).toBeUndefined();
   });
 });

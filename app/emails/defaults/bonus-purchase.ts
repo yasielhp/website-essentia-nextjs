@@ -35,14 +35,16 @@ function closing(before: string, after: string): EmailDoc {
 const es = content(
   "Tu bono de {{sessions}} sesiones está confirmado",
   "Tu bono de {{sessions}} sesiones está confirmado.",
+  "Bono confirmado",
   "Gracias, {{first_name}}. Tu bono está confirmado.",
-  ["Bono confirmado", "Ya tienes tu bono. Estos son sus datos."],
+  ["Ya tienes tu bono. Estos son sus datos."],
 );
 const en = content(
   "Your {{sessions}}-session voucher is confirmed",
   "Your {{sessions}}-session voucher is confirmed.",
+  "Voucher confirmed",
   "Thank you, {{first_name}}. Your voucher is confirmed.",
-  ["Voucher confirmed", "You now have your voucher. Here are its details."],
+  ["You now have your voucher. Here are its details."],
 );
 
 export const bonusPurchase: MessageDefaults = {

@@ -10,6 +10,7 @@ import {
   convertOldShape,
   docTitle,
   isBlockNode,
+  isKickerNode,
   isTitleNode,
   repairForSending,
   titleText,
@@ -125,6 +126,10 @@ const BREAKS = /[\u0000-\u001f\u007f\u0085\u2028\u2029]+/g;
  */
 export const oneLine = (text: string): string =>
   text.replace(BREAKS, " ").replace(/ {2,}/g, " ").trim();
+
+/** The line above the title, as the legacy emails have always printed it. */
+const KICKER_STYLE =
+  "margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;";
 
 const H1_STYLE =
   "margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;";
@@ -288,8 +293,16 @@ export async function composeMessageEmail({
     run = [];
     if (html !== "") pieces.push(html);
   };
+  // The kicker: the words as written, escaped, the variables filled. Empty
+  // (no words, or only spaces) it prints nothing at all.
+  const kickerLine = (node: EmailDoc) =>
+    fill(titleText(node)).replace(/^\s+|\s+$/g, "");
   for (const node of doc.content ?? []) {
-    if (isTitleNode(node)) {
+    if (isKickerNode(node)) {
+      await flush();
+      const line = kickerLine(node);
+      if (line !== "") pieces.push(`<p style="${KICKER_STYLE}">${line}</p>`);
+    } else if (isTitleNode(node)) {
       await flush();
       if (title) pieces.push(`<h1 style="${H1_STYLE}">${title}</h1>`);
     } else if (isBlockNode(node)) {

@@ -1,6 +1,6 @@
 import type { EmailDoc } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
-import { convertOldShape } from "./email-doc";
+import { convertOldShape, withoutEmptyKicker } from "./email-doc";
 import type { MessageKey } from "./catalog";
 
 /**
@@ -80,7 +80,12 @@ export function sameDoc(
   b: EmailDoc | null | undefined,
 ): boolean {
   if (nothing(a) || nothing(b)) return nothing(a) && nothing(b);
-  return JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+  // A kicker that says nothing is no kicker: the editor keeps an empty one
+  // first, as the place to write it, and it must not look like a change.
+  return (
+    JSON.stringify(canon(withoutEmptyKicker(a!))) ===
+    JSON.stringify(canon(withoutEmptyKicker(b!)))
+  );
 }
 
 /**

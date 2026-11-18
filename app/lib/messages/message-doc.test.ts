@@ -1,13 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { defaultContent } from "@/emails/defaults";
 import oldShapeHtml from "./fixtures/old-shape-html.json";
-import {
-  casesFor,
-  docParagraphs,
-  fill,
-  squash,
-  visibleText,
-} from "@/emails/defaults/legacy-cases";
+import oldTitleOnlyHtml from "./fixtures/old-title-only-html.json";
+import { casesFor, squash, visibleText } from "@/emails/defaults/legacy-cases";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
 import {
   MESSAGE_CATALOG,
@@ -21,7 +16,13 @@ import {
   effectiveDoc,
   type MessageRow,
 } from "./compose";
-import { BLOCK_NODE, blockNode, titleNodeFrom, TITLE_NODE } from "./email-doc";
+import {
+  BLOCK_NODE,
+  blockNode,
+  kickerNodeFrom,
+  titleNodeFrom,
+  TITLE_NODE,
+} from "./email-doc";
 import { fixedBlocksByKind } from "./fixed-blocks";
 import { renderMessageEmail } from "./render";
 import { validateMessageTemplate } from "./schema";
@@ -63,6 +64,12 @@ function composeWith(
   });
 }
 
+/** The first paragraph of a default's text, as a line of text. */
+const docFirstParagraph = (d: EmailDoc): string =>
+  (d.content?.[0]?.content ?? []).map((c) => c.text ?? "").join("");
+const fillText = (text: string, values: Record<string, string>) =>
+  text.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_, n: string) => values[n] ?? "");
+
 const saveErrors = (
   key: MessageKey,
   doc: unknown,
@@ -97,26 +104,14 @@ describe("the default document is the legacy email", () => {
           "legacy",
         );
         // Composing the default document itself (what the editor opens) says
-        // what the legacy template says: the same words in the same order, and
-        // nothing more. The one difference is known and deliberate: the legacy
-        // email prints the kicker line above the title, the document has it as
-        // the first line under it (see the guardian in `app/emails/defaults`).
+        // what the legacy template says: the same words, in the same order,
+        // and nothing more. No exception: the kicker is above the title here
+        // as it is in the legacy email.
         const composed = await composeWith(key, locale, doc);
         const c = casesFor(key, locale)[0]!;
-        const def = defaultContent(key, locale);
-        const title = fill(def.title, c.values);
-        let expected = squash(visibleText(c.legacy));
-        if (key !== "consent_request") {
-          const kicker = fill(docParagraphs(def.intro)[0]!, c.values);
-          const swapped = expected.replace(
-            `${kicker} ${title}`,
-            `${title} ${kicker}`,
-          );
-          // It really was above the title in the legacy email.
-          expect(swapped).not.toBe(expected);
-          expected = swapped;
-        }
-        expect(squash(visibleText(composed.html))).toBe(expected);
+        expect(squash(visibleText(composed.html))).toBe(
+          squash(visibleText(c.legacy)),
+        );
       });
 
       test(`${key}/${locale}: saving the default document keeps the row with no body of its own`, () => {
@@ -510,6 +505,32 @@ describe("a row saved before the title and the blocks were in the document", () 
     }
   }
 
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of LOCALES) {
+      test(`${key}/${locale}: a row with only a title column sends what the old composer sent, the line under the title included`, async () => {
+        // The old composer's own output for this row (commit 0dc8af57): the title
+        // from the column, then the default text, whose first line was the
+        // kicker, UNDER the title. The default document now has that line above
+        // the title; a row like this keeps the email it had.
+        const c = casesFor(key, locale)[0]!;
+        const out = await composeMessageEmail({
+          key,
+          locale,
+          row: row({
+            subject: "Asunto {{first_name}}",
+            title: "Título {{first_name}}",
+          }),
+          vars: c.values,
+          blocks: fixedBlocksByKind(key, c.fixed),
+        });
+        const old = (
+          oldTitleOnlyHtml as Record<string, Record<string, string>>
+        )[key]![locale]!;
+        expect(tight(out.html)).toBe(tight(old));
+      });
+    }
+  }
+
   test("a row that only has a title still reads as an edit, over the default text", async () => {
     const old = row({ title: "Solo el título" });
     expect(chooseDelivery("booking_confirmed", old, "es")).toBe("custom");
@@ -688,5 +709,223 @@ describe("saving a document leaves the old title column clean", () => {
     expect(
       result.ok && result.data.channel === "email" && result.data.content,
     ).toEqual({ subject: "Solo" });
+  });
+});
+
+describe("the kicker in the composed email", () => {
+  const KICKER_HTML =
+    /<p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">([^<]*)<\/p>/;
+
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of LOCALES) {
+      const def = defaultContent(key, locale);
+      if (def.kicker === null) continue;
+      test(`${key}/${locale}: the kicker is printed exactly as the legacy email prints it, and comes before the title, which comes before the text`, async () => {
+        const c = casesFor(key, locale)[0]!;
+        const composed = await composeWith(key, locale, def.doc);
+        const legacy = KICKER_HTML.exec(c.legacy)?.[0];
+        expect(legacy).toBeDefined();
+        // Byte for byte the same line.
+        expect(composed.html).toContain(legacy!);
+        const at = {
+          kicker: composed.html.indexOf(legacy!),
+          title: composed.html.indexOf("<h1"),
+          text: composed.html.indexOf(
+            fillText(docFirstParagraph(def.intro), c.values),
+          ),
+        };
+        expect(at.kicker).toBeGreaterThan(-1);
+        expect(at.kicker).toBeLessThan(at.title);
+        expect(at.title).toBeLessThan(at.text);
+      });
+    }
+  }
+
+  test("a message with no kicker prints none", async () => {
+    const out = await composeWith(
+      "consent_request",
+      "es",
+      defaultContent("consent_request", "es").doc,
+    );
+    expect(KICKER_HTML.test(out.html)).toBe(false);
+  });
+
+  test("an empty kicker prints nothing: no line, no gap", async () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    const withEmpty = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: [{ type: "emailKicker" }, ...rest],
+    });
+    const without = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: rest,
+    });
+    expect(KICKER_HTML.test(withEmpty.html)).toBe(false);
+    expect(withEmpty.html).toBe(without.html);
+    // Blank space and an empty variable-less line are the same thing.
+    const blank = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: [
+        { type: "emailKicker", content: [{ type: "text", text: "  " }] },
+        ...rest,
+      ],
+    });
+    expect(blank.html).toBe(without.html);
+  });
+
+  test("the words are the admin's, escaped, with the variables filled", async () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    const out = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: [kickerNodeFrom("Para <b>{{first_name}}</b> & ya"), ...rest],
+    });
+    expect(out.html).toContain(
+      ">Para &lt;b&gt;Ana García&lt;/b&gt; &amp; ya</p>",
+    );
+    expect(out.html).not.toContain("<b>Ana");
+  });
+
+  test("one found after the title is sent above it, not lost", async () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    const [title, ...others] = rest;
+    const out = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: [title!, kickerNodeFrom("Aviso"), ...others],
+    });
+    expect(out.html.indexOf(">Aviso</p>")).toBeGreaterThan(-1);
+    expect(out.html.indexOf(">Aviso</p>")).toBeLessThan(
+      out.html.indexOf("<h1"),
+    );
+  });
+
+  test("hostile things in a kicker never reach the email: attributes, marks, a link variable, an unknown variable; one nested is not printed at all", async () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    const out = await composeWith("booking_confirmed", "es", {
+      ...def,
+      content: [
+        {
+          type: "emailKicker",
+          attrs: { onclick: "x" },
+          content: [
+            { type: "text", text: "Hola", marks: [{ type: "bold" }] },
+            { type: "variable", attrs: { id: "cancel_url" } },
+            { type: "variable", attrs: { id: "nope" } },
+            { type: "htmlCodeBlock", attrs: { html: "<script>x</script>" } },
+          ],
+        },
+        ...rest,
+        { type: "blockquote", content: [kickerNodeFrom("ANIDADA")] },
+      ],
+    });
+    expect(out.html).toContain(">Hola</p>");
+    expect(out.html).not.toContain("onclick");
+    expect(out.html).not.toContain("<script>");
+    expect(out.html).not.toContain("<b>Hola");
+    expect(out.html).not.toContain("ANIDADA");
+  });
+
+  test("a document saved with the kicker as the first PARAGRAPH under the title still sends exactly that: a paragraph under the title", async () => {
+    const def = defaultContent("booking_confirmed", "es");
+    const rest = (def.doc.content ?? []).filter(
+      (n) => n.type !== "emailKicker",
+    );
+    const [title, ...others] = rest;
+    const out = await composeWith("booking_confirmed", "es", {
+      ...def.doc,
+      content: [title!, para("Reserva confirmada"), ...others],
+    });
+    expect(KICKER_HTML.test(out.html)).toBe(false);
+    expect(out.html.indexOf("<h1")).toBeLessThan(
+      out.html.indexOf("Reserva confirmada</p>"),
+    );
+  });
+});
+
+describe("saving a kicker", () => {
+  const withKicker = (node: EmailDoc | null, locale: CampaignLocale = "es") => {
+    const def = defaultContent("booking_confirmed", locale).doc;
+    const rest = (def.content ?? []).filter((n) => n.type !== "emailKicker");
+    return {
+      ...def,
+      content: node ? [node, ...rest, para("Más.")] : [...rest, para("Más.")],
+    };
+  };
+
+  test("a good one is saved", () => {
+    expect(
+      saveErrors(
+        "booking_confirmed",
+        withKicker(kickerNodeFrom("Hola {{first_name}}")),
+      ),
+    ).toBeNull();
+  });
+
+  test("two, after the title, with attributes, nested or with something hostile inside are refused", () => {
+    const def = withKicker(kickerNodeFrom("A"));
+    expect(
+      saveErrors("booking_confirmed", {
+        ...def,
+        content: [kickerNodeFrom("A"), ...def.content!],
+      }),
+    ).toEqual({ "doc.kicker": "kickerOne" });
+    const [first, ...rest] = def.content!;
+    expect(
+      saveErrors("booking_confirmed", {
+        ...def,
+        content: [rest[0]!, first!, ...rest.slice(1)],
+      }),
+    ).toEqual({ "doc.content.1": "kickerMisplaced" });
+    expect(
+      Object.values(
+        saveErrors(
+          "booking_confirmed",
+          withKicker({ ...kickerNodeFrom("A"), attrs: { onclick: "x" } }),
+        ) ?? {},
+      ),
+    ).toEqual(["blockNotAllowed"]);
+    expect(
+      saveErrors("booking_confirmed", {
+        ...def,
+        content: [
+          { type: "blockquote", content: [kickerNodeFrom("A")] },
+          ...def.content!.slice(1),
+        ],
+      }),
+    ).not.toBeNull();
+    for (const child of [
+      { type: "htmlCodeBlock", attrs: { html: "<script>" } },
+      {
+        type: "text",
+        text: "x",
+        marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+      },
+      { type: "variable", attrs: { id: "cancel_url" } },
+    ] as EmailDoc[]) {
+      expect(
+        saveErrors(
+          "booking_confirmed",
+          withKicker({ type: "emailKicker", content: [child] }),
+        ),
+      ).not.toBeNull();
+    }
+  });
+
+  test("a variable the message does not offer is named, as in the title", () => {
+    expect(
+      saveErrors(
+        "booking_confirmed",
+        withKicker(kickerNodeFrom("{{expires_on}}")),
+      ),
+    ).not.toBeNull();
+  });
+
+  test("an empty one is saved: it says nothing", () => {
+    expect(
+      saveErrors("booking_confirmed", withKicker({ type: "emailKicker" })),
+    ).toBeNull();
   });
 });

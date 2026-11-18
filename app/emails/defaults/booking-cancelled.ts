@@ -4,9 +4,9 @@ export const bookingCancelled: MessageDefaults = {
   es: content(
     "Reserva cancelada — {{service}}",
     "Tu reserva de {{service}} el {{date}} ha sido cancelada.",
+    "Reserva cancelada",
     "Tu reserva ha sido cancelada, {{first_name}}.",
     [
-      "Reserva cancelada",
       "Tu reserva ha sido cancelada. Si crees que es un error o deseas hacer una nueva reserva, por favor contáctanos.",
     ],
     [
@@ -16,9 +16,9 @@ export const bookingCancelled: MessageDefaults = {
   en: content(
     "Booking cancelled — {{service}}",
     "Your {{service}} booking on {{date}} has been cancelled.",
+    "Booking cancelled",
     "Your booking has been cancelled, {{first_name}}.",
     [
-      "Booking cancelled",
       "Your booking has been cancelled. If you believe this is a mistake or would like to make a new reservation, please contact us.",
     ],
     [

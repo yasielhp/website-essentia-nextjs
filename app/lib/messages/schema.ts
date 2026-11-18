@@ -57,6 +57,8 @@ export const MESSAGE_VALIDATION_KEYS = [
   // The structure of the whole email: one title, and the blocks it must carry.
   "titleOne",
   "titleEmpty",
+  "kickerOne",
+  "kickerMisplaced",
   "blockRequired",
   "blockRepeated",
   "cannotDisable",
@@ -301,6 +303,9 @@ function checkEmail(
           break;
         case "titleEmpty":
           errors["doc.title"] ??= "titleEmpty";
+          break;
+        case "kickerOne":
+          errors["doc.kicker"] ??= "kickerOne";
           break;
         case "blockRequired":
           errors[`doc.blocks.${problem.block}`] ??= "blockRequired";

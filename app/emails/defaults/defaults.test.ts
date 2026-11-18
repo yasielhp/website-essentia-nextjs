@@ -23,10 +23,16 @@ import {
   squash,
   visibleText,
 } from "./legacy-cases";
-import { docTitle, layoutOf, titleText } from "@/lib/messages/email-doc";
+import {
+  docKicker,
+  docTitle,
+  layoutOf,
+  titleText,
+} from "@/lib/messages/email-doc";
 import { defaultContent } from "./index";
 
 /** The paragraphs of a default's text, without its title or its blocks. */
+/** The text of the document that is neither the kicker nor the title: the paragraphs. */
 const bodyParagraphs = (def: ReturnType<typeof defaultContent>) =>
   docParagraphs({
     type: "doc",
@@ -113,7 +119,12 @@ describe("the default text is the legacy text", () => {
 
       for (const c of casesFor(key, locale)) {
         const legacyText = visibleText(c.legacy);
-        const phrases = [def.title, def.preheader, ...bodyParagraphs(def)]
+        const phrases = [
+          def.title,
+          def.preheader,
+          ...(def.kicker === null ? [] : [def.kicker]),
+          ...bodyParagraphs(def),
+        ]
           .filter((p) => p !== "")
           .map((p) => fill(p, c.values));
 
@@ -149,6 +160,7 @@ describe("the defaults themselves", () => {
         const text = [
           def.subject,
           def.preheader,
+          def.kicker ?? "",
           def.title,
           ...bodyParagraphs(def),
         ].join(" ");
@@ -172,31 +184,26 @@ describe("the defaults themselves", () => {
 
 /**
  * The visible phrases of a message, in the order they must appear: the
- * preheader, the kicker line, the title, the rest of the intro, the fixed
- * blocks the legacy email prints before its closing sentence, the closing
- * sentence, and whatever the legacy email prints after it.
- *
- * The one place the custom email differs from the legacy one is the kicker:
- * the legacy email prints it above the title, the custom one has it as the
- * first line of the body, under the title. `kickerFirst` picks which.
+ * preheader, the kicker line (when the email has one), the title, the rest of
+ * the intro, the fixed blocks the legacy email prints before its closing
+ * sentence, the closing sentence, and whatever the legacy email prints after
+ * it. The document has the SAME order as the email, with no exception: the
+ * kicker is above the title in both.
  */
 function expectedSequence(
   key: MessageKey,
   locale: CampaignLocale,
   c: ReturnType<typeof casesFor>[number],
-  kickerFirst: boolean,
 ): string[] {
   const def = defaultContent(key, locale);
   const intro = docParagraphs(def.intro).map((p) => fill(p, c.values));
-  const hasKicker = key !== "consent_request";
-  const kicker = hasKicker ? [intro[0]!] : [];
-  const rest = hasKicker ? intro.slice(1) : intro;
   const title = fill(def.title, c.values);
   const { before, after } = fixedBlocksSplit(key, c.fixed);
   return [
     ...(def.preheader ? [fill(def.preheader, c.values)] : []),
-    ...(kickerFirst ? [...kicker, title] : [title, ...kicker]),
-    ...rest,
+    ...(def.kicker === null ? [] : [fill(def.kicker, c.values)]),
+    title,
+    ...intro,
     ...before.map(visibleText),
     ...docParagraphs(def.outro).map((p) => fill(p, c.values)),
     ...after.map(visibleText),
@@ -220,7 +227,7 @@ describe("intro, fixed blocks and closing sentence are in the legacy order", () 
         test(`${key}/${locale} (${c.label}): the legacy email prints them in this sequence`, () => {
           expectInOrder(
             visibleText(c.legacy),
-            expectedSequence(key, locale, c, true),
+            expectedSequence(key, locale, c),
           );
         });
       }
@@ -241,7 +248,7 @@ describe("intro, fixed blocks and closing sentence are in the legacy order", () 
     ]);
   });
 
-  test("the editor's document is the whole email: title, intro, the blocks before the closing sentence, the closing, the blocks after", () => {
+  test("the editor's document is the whole email: kicker, title, intro, the blocks before the closing sentence, the closing, the blocks after", () => {
     for (const key of MESSAGE_KEYS) {
       for (const locale of LOCALES) {
         const def = defaultContent(key, locale);
@@ -252,6 +259,7 @@ describe("intro, fixed blocks and closing sentence are in the legacy order", () 
         const intro = (def.intro.content ?? []).map((n) => n.type);
         const outro = (def.outro?.content ?? []).map((n) => n.type);
         expect(shape).toEqual([
+          ...(def.kicker === null ? [] : ["emailKicker"]),
           "emailTitle",
           ...intro,
           ...before.map((k) => `block:${k}`),
@@ -259,6 +267,9 @@ describe("intro, fixed blocks and closing sentence are in the legacy order", () 
           ...after.map((k) => `block:${k}`),
         ]);
         expect(titleText(docTitle(def.doc))).toBe(def.title);
+        expect(
+          def.kicker === null ? undefined : titleText(docKicker(def.doc)),
+        ).toBe(def.kicker ?? undefined);
         // The text of the document, block and title aside, is the intro and the closing.
         expect(bodyParagraphs(def)).toEqual([
           ...docParagraphs(def.intro),
@@ -302,10 +313,7 @@ describe("a saved row with no body of its own sends the default body in the lega
             blocks: fixedBlocksByKind(key, c.fixed),
           });
           expect(html).not.toContain("<!--outro-->");
-          expectInOrder(
-            visibleText(html),
-            expectedSequence(key, locale, c, false),
-          );
+          expectInOrder(visibleText(html), expectedSequence(key, locale, c));
         });
       }
     }

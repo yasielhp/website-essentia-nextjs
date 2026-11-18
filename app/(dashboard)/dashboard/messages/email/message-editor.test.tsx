@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
 import { defaultContent } from "@/emails/defaults";
 import { MESSAGE_CATALOG } from "@/lib/messages/catalog";
+import { docTitle } from "@/lib/messages/email-doc";
 import type {
   MessageCatalogEntry,
   MessageDefaultEntry,
@@ -455,7 +456,7 @@ describe("a block the email must carry and the document lacks", () => {
       enabled: true,
       doc: {
         type: "doc",
-        content: [defaultContent("booking_confirmed", "es").doc.content![0]],
+        content: [docTitle(defaultContent("booking_confirmed", "es").doc)],
       },
     } as never);
     const alert = html.slice(

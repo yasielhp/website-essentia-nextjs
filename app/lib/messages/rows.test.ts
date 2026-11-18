@@ -297,3 +297,70 @@ describe("readRows with hostile content inside the title or a block", () => {
     }
   });
 });
+
+describe("readRows with a kicker", () => {
+  const kicker = (content: unknown[] = [{ type: "text", text: "Aviso" }]) => ({
+    type: "emailKicker",
+    content,
+  });
+  const title = {
+    type: "emailTitle",
+    content: [{ type: "text", text: "Hola" }],
+  };
+  const cancel = { type: "systemBlock", attrs: { kind: "cancel_link" } };
+  const at = (content: unknown[]) =>
+    ({ type: "doc", content }) as unknown as EmailDoc;
+
+  it("a document with its kicker first is read as it was saved, empty or not", () => {
+    for (const k of [kicker(), { type: "emailKicker" }, kicker([])]) {
+      const doc = at([k, title, cancel]);
+      const [out] = readRows([row({ key: "booking_rescheduled", doc })]);
+      expect(out?.corrupt).toBeUndefined();
+      expect(out?.doc).toEqual(doc);
+    }
+  });
+
+  it("one that is out of place still opens: it is put right when sent, not lost", () => {
+    for (const doc of [
+      at([title, kicker(), cancel]),
+      at([kicker(), kicker(), title, cancel]),
+    ]) {
+      const [out] = readRows([row({ key: "booking_rescheduled", doc })]);
+      expect(out?.corrupt).toBeUndefined();
+      expect(out?.doc).toEqual(doc);
+    }
+  });
+
+  it("hostile content, attributes or a place inside something else make it corrupt", () => {
+    const bad = [
+      at([
+        kicker([{ type: "htmlCodeBlock", attrs: { html: "<script>" } }]),
+        title,
+        cancel,
+      ]),
+      at([
+        kicker([
+          {
+            type: "text",
+            text: "x",
+            marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+          },
+        ]),
+        title,
+        cancel,
+      ]),
+      at([{ ...kicker(), attrs: { onclick: "x" } }, title, cancel]),
+      at([
+        kicker([{ type: "variable", attrs: { id: "cancel_url" } }]),
+        title,
+        cancel,
+      ]),
+      at([{ type: "blockquote", content: [kicker()] }, title, cancel]),
+    ];
+    for (const doc of bad) {
+      const [out] = readRows([row({ key: "booking_rescheduled", doc })]);
+      expect(out?.corrupt).toBe(true);
+      expect(out?.doc).toBeNull();
+    }
+  });
+});

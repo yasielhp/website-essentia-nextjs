@@ -6,11 +6,9 @@ export const bookingPaid: MessageDefaults = {
   es: content(
     "Tu reserva en Essentia está confirmada",
     "",
+    "Reserva confirmada",
     "Tu reserva ha sido confirmada, {{first_name}}",
-    [
-      "Reserva confirmada",
-      "Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión.",
-    ],
+    ["Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión."],
     [
       "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
     ],
@@ -18,9 +16,9 @@ export const bookingPaid: MessageDefaults = {
   en: content(
     "Your Essentia booking is confirmed",
     "",
+    "Booking Confirmed",
     "Your booking is confirmed, {{first_name}}",
     [
-      "Booking Confirmed",
       "We look forward to seeing you. Here are the details of your upcoming session.",
     ],
     [

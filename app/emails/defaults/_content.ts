@@ -11,13 +11,19 @@ import type {
  * after them.
  */
 export type MessageDefaultText = Omit<CampaignLocaleContent, "doc"> & {
+  /**
+   * The small line in capitals ABOVE the title ("Booking confirmed"), as plain
+   * text with `{{variables}}`; null for a message whose email has none. It is
+   * not part of `intro`.
+   */
+  kicker: string | null;
   intro: EmailDoc;
   outro: EmailDoc | null;
 };
 
 /**
  * A default as the editor opens it: the text and `doc`, the WHOLE email as a
- * document (its title, the text and every block the message has, placed where the
+ * document (its kicker and title, the text and every block the message has, placed where the
  * legacy email prints them). `defaultContent` builds `doc` from the text.
  */
 export type MessageDefault = MessageDefaultText & { doc: EmailDoc };
@@ -34,9 +40,10 @@ export function withOutro(
 }
 
 /**
- * A default: the subject, the preheader and the title as plain text with
- * `{{variables}}`, and the body as paragraphs, split into what comes before
- * the fixed blocks and what comes after.
+ * A default: the subject, the preheader, the kicker (the line above the title,
+ * or null) and the title as plain text with `{{variables}}`, and the body as
+ * paragraphs, split into what comes before the fixed blocks and what comes
+ * after.
  *
  * The text is copied from the legacy template it stands for, sentence by
  * sentence (`docs/plans/2026-11-17-message-inventory.md`), and a test checks
@@ -48,6 +55,7 @@ export function withOutro(
 export function content(
   subject: string,
   preheader: string,
+  kicker: string | null,
   title: string,
   intro: string[],
   outro: string[] = [],
@@ -55,7 +63,7 @@ export function content(
   const toDoc = (paragraphs: string[]) =>
     blocksToDoc(paragraphs.map((text) => ({ type: "paragraph", text })));
   return withOutro(
-    { subject, preheader, title, intro: toDoc(intro) },
+    { subject, preheader, kicker, title, intro: toDoc(intro) },
     outro.length > 0 ? toDoc(outro) : null,
   );
 }
