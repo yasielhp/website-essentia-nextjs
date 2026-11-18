@@ -2362,6 +2362,7 @@
       "loadFailed": "The messages could not be loaded.",
       "retry": "Try again",
       "columns": {
+        "active": "On",
         "message": "Message",
         "type": "Type",
         "status": "Status"
@@ -2373,7 +2374,6 @@
       "status": {
         "default": "Default",
         "custom": "Customised",
-        "disabled": "Switched off",
         "customSome": "Customised: {languages}",
         "corruptIn": "Damaged: {languages}"
       },
@@ -2508,7 +2508,6 @@
         "channelLabel": "WhatsApp",
         "state": {
           "none": "Not set up: nothing is sent",
-          "off": "Switched off ({languages}): nothing is sent",
           "configured": "Set up",
           "invalid": "Template not valid ({language}): {reason}",
           "unknown": "The template could not be checked ({languages})",
@@ -2587,6 +2586,36 @@
         "notice": "There is an unsaved draft from before you left this page. It is only in this tab.",
         "recover": "Recover draft",
         "discard": "Discard"
+      },
+      "switch": {
+        "label": "Switch on {name}, {type}",
+        "turnedOn": "Message switched on",
+        "channel": {
+          "email": "email",
+          "whatsapp": "WhatsApp"
+        },
+        "partial": "Off in {languages}",
+        "offDialog": {
+          "title": "Switch off “{name}” ({type})?",
+          "yes": "Switch off",
+          "working": "Switching off…",
+          "body": {
+            "email": {
+              "booking_received": "Clients who ask for an appointment will not get the email saying their request was received.",
+              "booking_confirmed": "Clients will not get the email when the team confirms their booking.",
+              "booking_paid": "Clients who pay online will not get the confirmation of their payment.",
+              "booking_rescheduled": "Clients will not get the email when the date of their appointment is changed.",
+              "booking_cancelled": "Clients will not get the email when their booking is cancelled.",
+              "booking_reminder": "The reminder email will not be sent before each appointment.",
+              "consent_request": "The consent request will not be able to be sent from the contact's page.",
+              "bonus_purchase": "Clients who buy a voucher will not get the confirmation email."
+            },
+            "whatsapp": {
+              "booking_confirmed": "Clients will not get the WhatsApp when the team confirms their booking.",
+              "booking_paid": "Clients will not get the WhatsApp with the confirmation of their first payment."
+            }
+          }
+        }
       },
       "types": {
         "email": "Email",

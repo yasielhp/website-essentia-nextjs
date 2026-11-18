@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createTranslator } from "next-intl";
+import { MESSAGE_KEYS } from "./catalog";
+import { WHATSAPP_MESSAGE_KEYS } from "./whatsapp-row";
 import en from "../../../messages/en/dashboard.json";
 import es from "../../../messages/es/dashboard.json";
 import { MESSAGE_VALIDATION_KEYS } from "./schema";
@@ -119,4 +121,69 @@ describe("the words of the kicker", () => {
       }
     });
   }
+});
+
+describe("the question before a message is switched off", () => {
+  const ask = (
+    locale: "es" | "en",
+    path: string,
+    values: Record<string, string> = {},
+  ) =>
+    createTranslator({
+      locale,
+      messages: { dashboard: LOCALES[locale] },
+      namespace: "dashboard.messages.email",
+    })(path as never, values as never) as string;
+
+  it("names the message and its channel, in both languages", () => {
+    expect(
+      ask("es", "switch.offDialog.title", {
+        name: "Pago de la reserva confirmado",
+        type: "correo",
+      }),
+    ).toBe("¿Apagar «Pago de la reserva confirmado» (correo)?");
+    expect(
+      ask("en", "switch.offDialog.title", {
+        name: "Booking paid",
+        type: "email",
+      }),
+    ).toBe("Switch off “Booking paid” (email)?");
+    expect(
+      ask("es", "switch.label", { name: "Reserva recibida", type: "correo" }),
+    ).toBe("Activar Reserva recibida, correo");
+  });
+
+  for (const locale of ["es", "en"] as const) {
+    it(`${locale}: every message and channel says what turning it off will stop, each in its own words`, () => {
+      const bodies = (
+        LOCALES[locale].messages.email as unknown as {
+          switch: {
+            offDialog: { body: Record<string, Record<string, string>> };
+          };
+        }
+      ).switch.offDialog.body;
+      const email = MESSAGE_KEYS.map((key) => bodies.email?.[key]);
+      for (const text of email) expect(text?.trim()).toBeTruthy();
+      expect(new Set(email).size).toBe(MESSAGE_KEYS.length);
+      for (const key of WHATSAPP_MESSAGE_KEYS) {
+        expect(bodies.whatsapp?.[key]?.trim()).toBeTruthy();
+      }
+      // Nothing for a WhatsApp message there is no switch for.
+      expect(Object.keys(bodies.whatsapp ?? {}).sort()).toEqual(
+        [...WHATSAPP_MESSAGE_KEYS].sort(),
+      );
+    });
+  }
+
+  it("the paid confirmation, the consent request and the reminder say the concrete thing", () => {
+    expect(ask("es", "switch.offDialog.body.email.booking_paid")).toBe(
+      "Las clientas que paguen online no recibirán la confirmación de su pago.",
+    );
+    expect(ask("es", "switch.offDialog.body.email.consent_request")).toBe(
+      "La solicitud de consentimiento no se podrá enviar desde la ficha del contacto.",
+    );
+    expect(ask("es", "switch.offDialog.body.email.booking_reminder")).toBe(
+      "No se enviará el recordatorio por correo antes de cada cita.",
+    );
+  });
 });

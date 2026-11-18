@@ -169,7 +169,7 @@ describe("the Emails tab strings", () => {
       "param_count",
       "dynamic_url",
     ];
-    const states = ["none", "off", "configured", "invalid", "unknown"];
+    const states = ["none", "configured", "invalid", "unknown"];
     for (const messages of Object.values(LOCALES)) {
       for (const issue of issues) {
         expect(messages[`messages.email.whatsapp.issue.${issue}`]).toBeTruthy();
@@ -183,6 +183,8 @@ describe("the Emails tab strings", () => {
       for (const state of states) {
         expect(messages[`messages.email.whatsapp.state.${state}`]).toBeTruthy();
       }
+      // The switch is the list's own column now: no state of the row says "off".
+      expect(messages["messages.email.whatsapp.state.off"]).toBeUndefined();
     }
   });
 

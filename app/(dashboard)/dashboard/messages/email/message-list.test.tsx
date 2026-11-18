@@ -7,7 +7,7 @@ import type {
   MessageCatalogEntry,
   MessageTemplateRowView,
 } from "@/lib/messages/types";
-import { MessageList } from "./message-list";
+import { MessageList, openRow } from "./message-list";
 
 const catalog = MESSAGE_KEYS.map((key) => ({
   key,
@@ -48,8 +48,10 @@ const ROWS = MESSAGE_KEYS.length + 2;
 describe("the list of messages", () => {
   const html = render([]);
 
-  test("every row is one link to its own page, and nothing else to press", () => {
-    expect(html).not.toContain("<button");
+  test("every row is one link to its own page, and one switch: nothing else to press", () => {
+    // The table and the cards each carry one switch per row, and no other button.
+    expect(html.match(/<button/g)).toHaveLength(ROWS * 2);
+    expect(html.match(/role="switch"/g)).toHaveLength(ROWS * 2);
     const links = [
       ...html.matchAll(/href="(\/dashboard\/messages\/[^"]+)"/g),
     ].map((m) => m[1]);
@@ -66,10 +68,9 @@ describe("the list of messages", () => {
     expect(new Set(links).size).toBe(ROWS);
   });
 
-  test("no test button, no reset, no switch", () => {
+  test("no test button and no reset: the switch is the only control a row has", () => {
     expect(html).not.toContain("Enviarme prueba");
     expect(html).not.toContain("Restablecer");
-    expect(html).not.toContain('role="switch"');
     expect(html).not.toContain("Quitar");
   });
 
@@ -81,7 +82,7 @@ describe("the list of messages", () => {
     expect(html).not.toMatch(/aria-label="[^"]*(Español|Inglés)"/);
   });
 
-  test("the status no longer says 'Apagado': the state of the switch is its own thing", () => {
+  test("the status never says 'Apagado': the switch says it, once", () => {
     const off = render([row({ enabled: false })]);
     expect(off).not.toContain("Apagado");
     expect(html).not.toContain("Apagado");
@@ -130,9 +131,10 @@ describe("the list on a phone and on a wide screen", () => {
     expect(new Set(names(cards)).size).toBe(names(cards).length);
   });
 
-  test("a card names each fact, since there is no header: type and state", () => {
+  test("a card names each fact, since there is no header: type, state and the switch", () => {
     expect(cards).toContain("Tipo:");
     expect(cards).toContain("Estado:");
+    expect(cards).toContain("Activo:");
     expect(cards).not.toContain("Idioma");
     expect(table).not.toContain("Tipo:");
   });
@@ -149,9 +151,9 @@ describe("the list on a phone and on a wide screen", () => {
     for (const cls of items) expect(cls).toContain("cursor-pointer");
   });
 
-  test("there is no column of actions: three columns, and the row is what opens the message", () => {
+  test("there is no column of actions: four columns (the last is the switch), and the row is what opens the message", () => {
     expect(html).not.toContain("Acciones");
-    expect(table.match(/<th[^>]*scope="col"/g)).toHaveLength(3);
+    expect(table.match(/<th[^>]*scope="col"/g)).toHaveLength(4);
     const rows = [...table.matchAll(/<tr [^>]*class="([^"]*)"/g)]
       .map((m) => m[1])
       .filter((cls) => cls.includes("align-top"));
@@ -180,9 +182,9 @@ describe("the list on a phone and on a wide screen", () => {
     expect(html).not.toContain("· WhatsApp");
   });
 
-  test("the cards have no buttons or switches either", () => {
-    expect(cards).not.toContain("<button");
-    expect(cards).not.toContain('role="switch"');
+  test("each card has its switch and no other button", () => {
+    expect(cards.match(/<button/g)).toHaveLength(ROWS);
+    expect(cards.match(/role="switch"/g)).toHaveLength(ROWS);
   });
 
   test("the long state of a WhatsApp row can wrap", () => {
@@ -205,15 +207,15 @@ describe("the list says nothing about where reminders are set up", () => {
   });
 });
 
-describe("the columns: message, type and state", () => {
+describe("the columns: message, type, state and switch", () => {
   const html = render([]);
   const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
   const headers = [...table.matchAll(/<th[^>]*scope="col"[^>]*>([^<]*)</g)].map(
     (m) => m[1],
   );
 
-  test("Message, Type and State, and no Language column", () => {
-    expect(headers).toEqual(["Mensaje", "Tipo", "Estado"]);
+  test("Message, Type, State and On, and no Language column", () => {
+    expect(headers).toEqual(["Mensaje", "Tipo", "Estado", "Activo"]);
     expect(table).not.toContain("Idioma");
     expect(table).not.toContain("Español");
     expect(table).not.toContain("Inglés");
@@ -330,5 +332,128 @@ describe("the colour of the type badge", () => {
         expect(cls).not.toContain("text-green-800");
       }
     }
+  });
+});
+
+describe("the switch of each row", () => {
+  const switches = (html: string) =>
+    [...html.matchAll(/<button[^>]*role="switch"[^>]*>/g)].map((m) => m[0]);
+  const label = (tag: string) => /aria-label="([^"]+)"/.exec(tag)?.[1];
+  const checked = (tag: string) => /aria-checked="(true|false)"/.exec(tag)?.[1];
+  const tableOf = (html: string) =>
+    html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+
+  test("with nothing saved, every row is on, and each switch has its own name: message and channel", () => {
+    const html = tableOf(render([]));
+    const all = switches(html);
+    expect(all).toHaveLength(ROWS);
+    expect(all.every((tag) => checked(tag) === "true")).toBe(true);
+    const names = all.map(label);
+    expect(new Set(names).size).toBe(ROWS);
+    expect(names).toContain("Activar Reserva recibida, correo");
+    expect(names).toContain("Activar Reserva confirmada, correo");
+    expect(names).toContain("Activar Reserva confirmada, WhatsApp");
+    expect(names).toContain("Activar Pago de la reserva confirmado, WhatsApp");
+  });
+
+  test("a row saved off is off, with a single switch for both languages and nothing said in the status", () => {
+    const html = tableOf(
+      render([
+        row({ key: "booking_paid", locale: "es", enabled: false }),
+        row({ key: "booking_paid", locale: "en", enabled: false }),
+      ]),
+    );
+    const tag = switches(html).find(
+      (t) => label(t) === "Activar Pago de la reserva confirmado, correo",
+    )!;
+    expect(checked(tag)).toBe("false");
+    // Only that row is off.
+    expect(switches(html).filter((t) => checked(t) === "false")).toHaveLength(
+      1,
+    );
+    expect(html).not.toContain("Apagado");
+  });
+
+  test("the languages that disagree (old data): off, naming the language that is off", () => {
+    const html = tableOf(
+      render([row({ key: "booking_paid", locale: "en", enabled: false })]),
+    );
+    const tag = switches(html).find(
+      (t) => label(t) === "Activar Pago de la reserva confirmado, correo",
+    )!;
+    expect(checked(tag)).toBe("false");
+    expect(html).toContain("Apagado en Inglés");
+  });
+
+  test("the reminder has one language: its switch is the same as any other", () => {
+    const html = tableOf(
+      render([row({ key: "booking_reminder", locale: "es", enabled: false })]),
+    );
+    const tag = switches(html).find(
+      (t) => label(t) === "Activar Recordatorio de la cita, correo",
+    )!;
+    expect(checked(tag)).toBe("false");
+    expect(html).not.toContain("Apagado en");
+  });
+
+  test("email and WhatsApp are two switches", () => {
+    const html = tableOf(
+      render([
+        row({
+          key: "booking_confirmed",
+          channel: "whatsapp",
+          locale: "es",
+          enabled: false,
+        }),
+        row({
+          key: "booking_confirmed",
+          channel: "whatsapp",
+          locale: "en",
+          enabled: false,
+        }),
+      ]),
+    );
+    const byName = (n: string) => switches(html).find((t) => label(t) === n)!;
+    expect(checked(byName("Activar Reserva confirmada, WhatsApp"))).toBe(
+      "false",
+    );
+    expect(checked(byName("Activar Reserva confirmada, correo"))).toBe("true");
+  });
+
+  test("each switch is a button of at least 44 px on a phone, and the question to turn off is not in the page until it is asked", () => {
+    const html = render([]);
+    for (const tag of switches(html)) expect(tag).toContain("min-h-11");
+    expect(html).not.toContain("<dialog");
+    expect(html).not.toContain('role="alertdialog"');
+  });
+});
+
+describe("a click on the switch does not open the row", () => {
+  const fake = (inControl: boolean) => {
+    let opened = 0;
+    const link = { href: "/x", click: () => (opened += 1) };
+    const event = {
+      target: {
+        closest: (selector: string) =>
+          inControl && /button|switch/.test(selector) ? {} : null,
+      },
+      currentTarget: { querySelector: () => link },
+      metaKey: false,
+      ctrlKey: false,
+      shiftKey: false,
+    };
+    return { event: event as never, opened: () => opened };
+  };
+
+  test("a click inside the switch is the switch's alone", () => {
+    const f = fake(true);
+    openRow(f.event);
+    expect(f.opened()).toBe(0);
+  });
+
+  test("a click anywhere else on the row still opens it", () => {
+    const f = fake(false);
+    openRow(f.event);
+    expect(f.opened()).toBe(1);
   });
 });

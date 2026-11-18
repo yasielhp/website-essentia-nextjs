@@ -2362,6 +2362,7 @@
       "loadFailed": "No se pudieron cargar los mensajes.",
       "retry": "Reintentar",
       "columns": {
+        "active": "Activo",
         "message": "Mensaje",
         "type": "Tipo",
         "status": "Estado"
@@ -2373,7 +2374,6 @@
       "status": {
         "default": "Por defecto",
         "custom": "Personalizado",
-        "disabled": "Apagado",
         "customSome": "Personalizado: {languages}",
         "corruptIn": "Dañado: {languages}"
       },
@@ -2508,7 +2508,6 @@
         "channelLabel": "WhatsApp",
         "state": {
           "none": "Sin configurar: no se envía nada",
-          "off": "Apagado ({languages}): no se envía nada",
           "configured": "Configurado",
           "invalid": "Plantilla no válida ({language}): {reason}",
           "unknown": "No se pudo comprobar la plantilla ({languages})",
@@ -2587,6 +2586,36 @@
         "notice": "Hay un borrador sin guardar de antes de salir de esta página. Solo está en esta pestaña.",
         "recover": "Recuperar borrador",
         "discard": "Descartar"
+      },
+      "switch": {
+        "label": "Activar {name}, {type}",
+        "turnedOn": "Mensaje activado",
+        "channel": {
+          "email": "correo",
+          "whatsapp": "WhatsApp"
+        },
+        "partial": "Apagado en {languages}",
+        "offDialog": {
+          "title": "¿Apagar «{name}» ({type})?",
+          "yes": "Apagar",
+          "working": "Apagando…",
+          "body": {
+            "email": {
+              "booking_received": "Las clientas que pidan una cita no recibirán el correo que dice que se ha recibido su solicitud.",
+              "booking_confirmed": "Las clientas no recibirán el correo cuando el equipo confirme su reserva.",
+              "booking_paid": "Las clientas que paguen online no recibirán la confirmación de su pago.",
+              "booking_rescheduled": "Las clientas no recibirán el correo cuando se cambie la fecha de su cita.",
+              "booking_cancelled": "Las clientas no recibirán el correo cuando se cancele su reserva.",
+              "booking_reminder": "No se enviará el recordatorio por correo antes de cada cita.",
+              "consent_request": "La solicitud de consentimiento no se podrá enviar desde la ficha del contacto.",
+              "bonus_purchase": "Las clientas que compren un bono no recibirán el correo de confirmación."
+            },
+            "whatsapp": {
+              "booking_confirmed": "Las clientas no recibirán el WhatsApp cuando el equipo confirme su reserva.",
+              "booking_paid": "Las clientas no recibirán el WhatsApp con la confirmación de su primer pago."
+            }
+          }
+        }
       },
       "types": {
         "email": "Email",

@@ -1,17 +1,28 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { IconChat, IconMail } from "@/components/ui/icons";
+import { setMessageEnabled } from "@/actions/message-templates";
+import { getAccessToken } from "@/lib/client-session";
+import { notifySuccess } from "@/lib/feedback";
 import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { messageEditHref } from "@/lib/messages/message-route";
 import {
   messageListRows,
   type EmailListRow,
+  type ListRow,
   type WhatsAppListRow,
 } from "@/lib/messages/list-rows";
+import {
+  switchTarget,
+  type SwitchSummary,
+} from "@/lib/messages/reminder-switch";
+import { ConfirmDialog } from "./confirm-dialog";
+import { MessageSwitch } from "./message-switch";
+import { useEmailActionText, useEmailActionToast } from "./action-error";
 import type {
   MessageCatalogEntry,
   MessageTemplateRowView,
@@ -32,8 +43,12 @@ const ROW_LINK =
  * done twice when the link itself was the thing clicked. With Cmd, Ctrl or
  * Shift held it opens in a new tab, as a link does.
  */
-function openRow(event: MouseEvent<HTMLElement>) {
-  if ((event.target as HTMLElement).closest("a")) return;
+export function openRow(event: MouseEvent<HTMLElement>) {
+  // A link is its own, and so is the switch of the row: pressing it must not
+  // also open the message.
+  if ((event.target as HTMLElement).closest('a, button, [role="switch"]')) {
+    return;
+  }
   const link =
     event.currentTarget.querySelector<HTMLAnchorElement>("a[data-row-link]");
   if (!link) return;
@@ -62,7 +77,7 @@ function useRowWords() {
     t,
     tWa,
     languages,
-    column: (name: "type" | "status") => t(`columns.${name}`),
+    column: (name: "type" | "status" | "active") => t(`columns.${name}`),
     emailName: (row: EmailListRow) => tKeys(row.key),
     emailHint: (row: EmailListRow) => tHints(row.key),
     whatsappName: (row: WhatsAppListRow) => tKeys(row.key),
@@ -216,13 +231,160 @@ function EmailNotes({
   );
 }
 
+/** The switch of a row with what a click on it will do, once the row's own saved state is known. */
+function effective(
+  row: ListRow,
+  pending: Record<string, boolean>,
+): SwitchSummary {
+  const forced = pending[row.id];
+  if (forced === undefined) return row.switch;
+  return {
+    state: forced ? "on" : "off",
+    offLocales: forced ? [] : [...row.locales],
+  };
+}
+
+/**
+ * The switches of the list: their state (what was saved, or what was just
+ * asked and is being saved), the question that comes before TURNING OFF (a
+ * modal, with what it will stop, message by message) and the saving.
+ *
+ * Turning on is not asked and is shown at once, with a loading state, and put
+ * back with a notice if it fails. Turning off is asked first; the dialog is the
+ * loading state, shows a failure inside it and closes on success. A row that is
+ * partly off (old data) is turned ON, which makes both languages agree.
+ */
+function useRowSwitches() {
+  const t = useTranslations("dashboard.messages.email");
+  const tKeys = useTranslations("dashboard.messages.keys");
+  const w = useRowWords();
+  const showError = useEmailActionToast();
+  const failureText = useEmailActionText();
+  // What each row was last told to be, until the page is loaded again.
+  const [done, setDone] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [asking, setAsking] = useState<ListRow | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const stateOf = (row: ListRow) => effective(row, done);
+  const busyRows = (row: ListRow) => saving[row.id] === true;
+
+  async function write(row: ListRow, enabled: boolean): Promise<string | null> {
+    setSaving((now) => ({ ...now, [row.id]: true }));
+    const before = done[row.id];
+    // Turning on shows at once; turning off waits for the answer (the dialog
+    // is where it is shown to be working).
+    if (enabled) setDone((now) => ({ ...now, [row.id]: true }));
+    let problem: string | null = null;
+    try {
+      const result = await setMessageEnabled(
+        getAccessToken(),
+        row.key,
+        row.type,
+        enabled,
+      );
+      if (result.ok) {
+        setDone((now) => ({ ...now, [row.id]: enabled }));
+        if (enabled) notifySuccess(t("switch.turnedOn"));
+      } else {
+        const text = failureText(result);
+        problem = text.description
+          ? `${text.title} ${text.description}`
+          : text.title;
+        if (enabled) showError(result);
+      }
+    } catch {
+      problem = failureText({ error: "generic" }).title;
+      if (enabled) showError({ error: "generic" });
+    }
+    if (problem !== null && enabled) {
+      // Put back: it did not save.
+      setDone((now) => {
+        const next = { ...now };
+        if (before === undefined) delete next[row.id];
+        else next[row.id] = before;
+        return next;
+      });
+    }
+    setSaving((now) => {
+      const next = { ...now };
+      delete next[row.id];
+      return next;
+    });
+    return problem;
+  }
+
+  function press(row: ListRow) {
+    if (busyRows(row)) return;
+    const summary = stateOf(row);
+    if (switchTarget(summary)) {
+      void write(row, true);
+    } else {
+      setFailure(null);
+      setAsking(row);
+    }
+  }
+
+  const typeName = (row: ListRow) => t(`switch.channel.${row.type}`);
+
+  const control = (row: ListRow) => {
+    const summary = stateOf(row);
+    const name = tKeys(row.key);
+    return (
+      <div className="flex flex-col items-start gap-0.5">
+        <MessageSwitch
+          id={`message-switch-${row.id.replace(/[^a-z0-9_-]/gi, "-")}`}
+          label={t("switch.label", { name, type: typeName(row) })}
+          checked={summary.state === "on"}
+          busy={busyRows(row)}
+          onToggle={() => press(row)}
+        />
+        {summary.state === "partial" && (
+          <span className="text-petroleum-400 text-xs">
+            {t("switch.partial", {
+              languages: w.languages(summary.offLocales),
+            })}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const dialog = asking ? (
+    <ConfirmDialog
+      title={t("switch.offDialog.title", {
+        name: tKeys(asking.key),
+        type: typeName(asking),
+      })}
+      body={t(`switch.offDialog.body.${asking.type}.${asking.key}`)}
+      error={failure}
+      yesLabel={t("switch.offDialog.yes")}
+      workingLabel={t("switch.offDialog.working")}
+      noLabel={t("resetNo")}
+      returnTo={`message-switch-${asking.id.replace(/[^a-z0-9_-]/gi, "-")}`}
+      busy={busyRows(asking)}
+      onCancel={() => setAsking(null)}
+      onConfirm={() => {
+        const row = asking;
+        void write(row, false).then((problem) => {
+          if (problem === null) setAsking(null);
+          else setFailure(problem);
+        });
+      }}
+    />
+  ) : null;
+
+  return { control, dialog };
+}
+
 /**
  * One row per message and channel: its name, its type (email or WhatsApp) and
  * its state, summed over the languages it is sent in (for the reminder, whether
  * it is switched off too). There is no column of actions: the whole row opens the
  * page where the message is edited or set up, in Spanish, and its name is the
- * link; the language is chosen on that page. Testing, the reminder's switch and
- * resetting are there too.
+ * link; the language is chosen on that page. Testing and resetting are there
+ * too. The last column is the row's switch (all its languages together); it is
+ * the one thing on a row that is not the link.
  *
  * A table on a wide screen and a list of cards on a phone, as the other lists
  * of the dashboard do. Both are drawn from `messageListRows`, so which rows
@@ -240,23 +402,27 @@ export function MessageList({
 }) {
   const w = useRowWords();
   const list = messageListRows(rows, catalog, templates);
+  const switches = useRowSwitches();
 
   return (
     <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
+      {switches.dialog}
       {/* Desktop table */}
       <div className="hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-sand-100 border-b text-left">
-              {(["message", "type", "status"] as const).map((column) => (
-                <th
-                  key={column}
-                  scope="col"
-                  className="text-petroleum-400 px-5 py-3 text-xs font-medium whitespace-nowrap"
-                >
-                  {w.t(`columns.${column}`)}
-                </th>
-              ))}
+              {(["message", "type", "status", "active"] as const).map(
+                (column) => (
+                  <th
+                    key={column}
+                    scope="col"
+                    className="text-petroleum-400 px-5 py-3 text-xs font-medium whitespace-nowrap"
+                  >
+                    {w.t(`columns.${column}`)}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
@@ -305,6 +471,9 @@ export function MessageList({
                         <EmailNotes row={row} savedOn={savedOn} />
                       </>
                     )}
+                  </td>
+                  <td className="px-5 py-1.5 md:py-2.5">
+                    {switches.control(row)}
                   </td>
                 </tr>
               );
@@ -358,6 +527,10 @@ export function MessageList({
                   ) : (
                     <EmailStatus row={row} />
                   ),
+                },
+                {
+                  label: w.column("active"),
+                  value: switches.control(row),
                 },
               ]}
             >
