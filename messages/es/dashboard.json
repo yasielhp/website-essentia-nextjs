@@ -1110,7 +1110,10 @@
     "docTooDeep": "El mensaje tiene demasiados niveles anidados.",
     "docNotRenderable": "Este contenido no se puede mostrar en un email. Revisa los títulos y los bloques.",
     "manualNotAllowed": "Un aviso de cita se envía a quien tiene la cita: no admite contactos añadidos a mano",
-    "templateCategoryNotAllowed": "Esta plantilla es de Marketing: los avisos de cita solo pueden usar plantillas de Utilidad."
+    "templateCategoryNotAllowed": "Esta plantilla es de Marketing: los avisos de cita solo pueden usar plantillas de Utilidad.",
+    "titleOne": "El correo debe tener un título, y solo uno.",
+    "blockRequired": "Falta el bloque «{name}»: no se puede quitar.",
+    "blockRepeated": "Este bloque ya está en el correo: solo puede aparecer una vez."
   },
   "gender": {
     "unspecified": "Sin especificar",

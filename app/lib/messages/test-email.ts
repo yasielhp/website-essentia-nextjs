@@ -7,7 +7,7 @@ import {
   composeMessageEmail,
   type MessageRow,
 } from "./compose";
-import { fixedBlocksHtml } from "./fixed-blocks";
+import { fixedBlocksByKind } from "./fixed-blocks";
 import { legacySampleEmail, sampleFixed, sampleVars } from "./samples";
 
 /**
@@ -26,13 +26,13 @@ export async function buildTestEmail(
   const vars = sampleVars(key, locale);
   // The switch only decides whether it is sent, not what it says.
   const shown = row ? { ...row, enabled: true } : null;
-  if (shown && chooseDelivery(key, shown) === "custom") {
+  if (shown && chooseDelivery(key, shown, locale) === "custom") {
     return composeMessageEmail({
       key,
       locale,
       row: shown,
       vars,
-      fixedHtml: fixedBlocksHtml(key, sampleFixed(key, locale)),
+      blocks: fixedBlocksByKind(key, sampleFixed(key, locale)),
     });
   }
   return {

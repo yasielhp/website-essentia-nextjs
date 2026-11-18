@@ -3,7 +3,7 @@ import { pushBookingToCalendars } from "@/lib/calendar-sync";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { formatLongDate, formatPrice } from "@/utils/format";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
@@ -175,8 +175,8 @@ export async function handleBookingPaid(
       amount_due: owedEur > 0 ? formatPrice(owedEur, locale) : "",
       consent_url: consentUrl ?? "",
     },
-    fixedHtml: () =>
-      fixedBlocksHtml("booking_paid", {
+    blocks: () =>
+      fixedBlocksByKind("booking_paid", {
         locale,
         service: booking.service_title as string,
         date,

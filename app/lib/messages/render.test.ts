@@ -7,7 +7,7 @@ import {
   composeMessageEmail,
   type MessageRow,
 } from "./compose";
-import { fixedBlocksHtml } from "./fixed-blocks";
+import { fixedBlocksByKind } from "./fixed-blocks";
 import { renderMessageEmail } from "./render";
 
 const row = (over: Partial<MessageRow> = {}): MessageRow => ({
@@ -29,7 +29,7 @@ const vars = {
 };
 
 const fixed = () =>
-  fixedBlocksHtml("booking_confirmed", {
+  fixedBlocksByKind("booking_confirmed", {
     locale: "es",
     service: "Drenaje",
     sessionType: "Sesión individual",
@@ -44,18 +44,18 @@ const fixed = () =>
 describe("chooseDelivery", () => {
   test("no row: the email that has always gone out", () => {
     for (const key of MESSAGE_KEYS) {
-      expect(chooseDelivery(key, null)).toBe("legacy");
+      expect(chooseDelivery(key, null, "es")).toBe("legacy");
     }
   });
 
   test("a row with text is the admin's version", () => {
-    expect(chooseDelivery("booking_confirmed", row())).toBe("custom");
+    expect(chooseDelivery("booking_confirmed", row(), "es")).toBe("custom");
   });
 
   test("only the reminder can be switched off", () => {
     const off = row({ enabled: false });
     for (const key of MESSAGE_KEYS) {
-      expect(chooseDelivery(key, off)).toBe(
+      expect(chooseDelivery(key, off, "es")).toBe(
         key === "booking_reminder" ? "skip" : "custom",
       );
     }
@@ -69,7 +69,7 @@ describe("chooseDelivery", () => {
       title: null,
       doc: null,
     });
-    expect(chooseDelivery("booking_reminder", off)).toBe("skip");
+    expect(chooseDelivery("booking_reminder", off, "es")).toBe("skip");
   });
 
   test("a row that only carries the switch has no text to send: legacy", () => {
@@ -79,8 +79,8 @@ describe("chooseDelivery", () => {
       title: null,
       doc: null,
     });
-    expect(chooseDelivery("booking_reminder", bare)).toBe("legacy");
-    expect(chooseDelivery("booking_confirmed", bare)).toBe("legacy");
+    expect(chooseDelivery("booking_reminder", bare, "es")).toBe("legacy");
+    expect(chooseDelivery("booking_confirmed", bare, "es")).toBe("legacy");
   });
 
   test("a blank subject alone is not an edit", () => {
@@ -88,6 +88,7 @@ describe("chooseDelivery", () => {
       chooseDelivery(
         "booking_confirmed",
         row({ subject: "  ", preheader: null, title: null, doc: null }),
+        "es",
       ),
     ).toBe("legacy");
   });
@@ -100,7 +101,7 @@ describe("composeMessageEmail", () => {
       locale: "es",
       row: row(over),
       vars: v,
-      fixedHtml: fixed(),
+      blocks: fixed(),
     });
 
   test("subject, title and body carry the variables; the HTML ones are escaped", async () => {
@@ -168,7 +169,7 @@ describe("composeMessageEmail", () => {
           key: "booking_confirmed",
           locale: "es",
           vars,
-          fixedHtml: fixed,
+          blocks: fixed,
         },
         async () => row({ subject: "{{session_type}}" }),
       );
@@ -216,7 +217,7 @@ describe("composeMessageEmail", () => {
       }),
       // The caller hands over a cancel_url the message does not offer.
       vars: { first_name: "Ana", cancel_url: "https://example.test/secret" },
-      fixedHtml: "",
+      blocks: {},
     });
     expect(html).not.toContain("example.test/secret");
     expect(html).not.toContain("{{");
@@ -228,7 +229,7 @@ describe("composeMessageEmail", () => {
       locale: "es",
       row: row({ subject: null, title: null, preheader: null, doc: null }),
       vars: { first_name: "Ana", service: "Drenaje", date: "hoy" },
-      fixedHtml: "",
+      blocks: {},
     });
     expect(subject).toBe("Tu reserva ha sido confirmada — Drenaje");
     expect(html).toContain("Tu reserva ha sido confirmada, Ana.");
@@ -241,7 +242,7 @@ describe("composeMessageEmail", () => {
       locale: "es",
       row: row({ preheader: "" }),
       vars: { first_name: "Ana" },
-      fixedHtml: "",
+      blocks: {},
     });
     expect(html).toContain(">ESSENTIA</span>");
     expect(html).toContain(
@@ -266,7 +267,7 @@ describe("composeMessageEmail", () => {
             enabled: true,
           },
           vars: { first_name: "Ana" },
-          fixedHtml: "",
+          blocks: {},
         });
         expect(out.html.startsWith("<!DOCTYPE html>")).toBe(true);
         expect(out.html).not.toContain("{{");
@@ -288,7 +289,7 @@ describe("renderMessageEmail", () => {
     key: "booking_confirmed" as const,
     locale: "es" as const,
     vars,
-    fixedHtml: fixed,
+    blocks: fixed,
   };
 
   test("no saved row: legacy, and the fixed blocks are never built", async () => {
@@ -296,9 +297,9 @@ describe("renderMessageEmail", () => {
     const out = await renderMessageEmail(
       {
         ...opts,
-        fixedHtml: () => {
+        blocks: () => {
           built = true;
-          return "";
+          return {};
         },
       },
       async () => null,
@@ -318,7 +319,7 @@ describe("renderMessageEmail", () => {
     const out = await renderMessageEmail(
       {
         ...opts,
-        fixedHtml: () => {
+        blocks: () => {
           throw new Error("boom");
         },
       },
@@ -399,7 +400,9 @@ describe("a body that is not a document is not an edit", () => {
     ],
   ] as const) {
     test(`${label}: nothing edited, so legacy`, () => {
-      expect(chooseDelivery("booking_confirmed", bare(doc))).toBe("legacy");
+      expect(chooseDelivery("booking_confirmed", bare(doc), "es")).toBe(
+        "legacy",
+      );
     });
   }
 
@@ -409,7 +412,7 @@ describe("a body that is not a document is not an edit", () => {
       locale: "es",
       row: { ...bare("hola"), subject: "Asunto" },
       vars: { first_name: "Ana" },
-      fixedHtml: "",
+      blocks: {},
     });
     expect(html).toContain("Estamos deseando verte.");
   });
@@ -417,10 +420,10 @@ describe("a body that is not a document is not an edit", () => {
   test("only a switch that is exactly false turns the reminder off", () => {
     for (const enabled of [null, undefined, 0, "false", ""]) {
       const row = { ...bare(null), enabled } as unknown as MessageRow;
-      expect(chooseDelivery("booking_reminder", row)).not.toBe("skip");
+      expect(chooseDelivery("booking_reminder", row, "es")).not.toBe("skip");
     }
     const off = { ...bare(null), enabled: false };
-    expect(chooseDelivery("booking_reminder", off)).toBe("skip");
+    expect(chooseDelivery("booking_reminder", off, "es")).toBe("skip");
   });
 });
 
@@ -459,7 +462,7 @@ describe("links in the admin's body", () => {
       locale: "es",
       row: row({ doc: paragraphWithLink(href) }),
       vars,
-      fixedHtml: "",
+      blocks: {},
     });
 
   const hrefs = (html: string) =>

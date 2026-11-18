@@ -1,7 +1,7 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { bonusPurchaseEmail } from "@/emails/templates/bonus-purchase";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { bonusExpiry, bonusToday } from "@/lib/bonuses/expiry";
 import { shouldGrantBonus } from "@/lib/bonuses/orders";
@@ -196,8 +196,8 @@ async function sendConfirmation(
         amount_paid: amount,
         expires_on: expires,
       },
-      fixedHtml: () =>
-        fixedBlocksHtml("bonus_purchase", {
+      blocks: () =>
+        fixedBlocksByKind("bonus_purchase", {
           locale,
           service,
           date: "",

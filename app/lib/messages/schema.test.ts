@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { EmailDoc } from "@/types/campaign";
-import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
+import { MESSAGE_CATALOG, MESSAGE_KEYS, requiredBlocks } from "./catalog";
+import { blockNode, isMessageDoc, titleNodeFrom } from "./email-doc";
 import {
   MAX_DOC_CHARS,
   MESSAGE_VALIDATION_KEYS,
@@ -26,17 +27,43 @@ const linked = (href: string): EmailDoc => ({
   marks: [{ type: "link", attrs: { href } }],
 });
 
-const email = (over: Record<string, unknown> = {}) => ({
-  key: "booking_confirmed",
-  channel: "email",
-  locale: "es",
-  enabled: true,
-  subject: "Tu cita, {{first_name}}",
-  preheader: "Nos vemos pronto",
-  title: "Hola {{first_name}}",
-  doc: doc(para(text("Te esperamos el {{date}}."))),
-  ...over,
-});
+/**
+ * A body as the whole email the editor saves: its title first, then the body,
+ * then the blocks the message cannot do without. The tests below are about what
+ * a BODY may hold, so they write bodies and this wraps them.
+ */
+const whole = (key: string, nodes: EmailDoc[]): EmailDoc =>
+  doc(
+    titleNodeFrom("Hola {{first_name}}"),
+    ...nodes,
+    ...requiredBlocks(key as (typeof MESSAGE_KEYS)[number]).map(blockNode),
+  );
+
+const email = (over: Record<string, unknown> = {}) => {
+  const input: Record<string, unknown> = {
+    key: "booking_confirmed",
+    channel: "email",
+    locale: "es",
+    enabled: true,
+    subject: "Tu cita, {{first_name}}",
+    preheader: "Nos vemos pronto",
+    title: "Hola {{first_name}}",
+    doc: doc(para(text("Te esperamos el {{date}}."))),
+    ...over,
+  };
+  const body = input.doc as EmailDoc | null | undefined;
+  // A body with something in it, not yet a whole email: it is made one.
+  if (
+    body &&
+    typeof body === "object" &&
+    Array.isArray(body.content) &&
+    body.content.length > 0 &&
+    !isMessageDoc(body)
+  ) {
+    input.doc = whole(String(input.key), body.content);
+  }
+  return input;
+};
 
 const whatsapp = (over: Record<string, unknown> = {}) => ({
   key: "booking_confirmed",
@@ -86,7 +113,9 @@ describe("validateMessageTemplate — email, the valid case", () => {
       subject: "Tu cita, {{first_name}}",
       preheader: "Nos vemos pronto",
       title: "Hola {{first_name}}",
-      doc: doc(para(text("Te esperamos el {{date}}."))),
+      doc: whole("booking_confirmed", [
+        para(text("Te esperamos el {{date}}.")),
+      ]),
     });
   });
 
@@ -103,7 +132,7 @@ describe("validateMessageTemplate — email, the valid case", () => {
   });
 
   it("trims the text and keeps an empty body as null", () => {
-    const out = accepted(email({ subject: "  Asunto  ", doc: doc(para()) }));
+    const out = accepted(email({ subject: "  Asunto  ", doc: doc() }));
     if (out.channel !== "email") throw new Error("channel");
     expect(out.content?.subject).toBe("Asunto");
     expect(out.content?.doc).toBeNull();
@@ -146,7 +175,7 @@ describe("validateMessageTemplate — the switch alone creates no content", () =
         subject: "",
         preheader: "  ",
         title: "",
-        doc: doc(para()),
+        doc: doc(),
       }),
     );
     if (out.channel !== "email") throw new Error("channel");
@@ -228,7 +257,8 @@ describe("validateMessageTemplate — limits", () => {
   });
 
   it("a document just under the size limit passes, one over it does not", () => {
-    const wrap = (n: number) => doc(para(text("x".repeat(n))));
+    const wrap = (n: number) =>
+      whole("booking_confirmed", [para(text("x".repeat(n)))]);
     const overhead = JSON.stringify(wrap(0)).length;
     expect(
       validateMessageTemplate(email({ doc: wrap(MAX_DOC_CHARS - overhead) }))
@@ -296,7 +326,7 @@ describe("validateMessageTemplate — a body the renderer could not draw", () =>
       expect(
         errorsOf(email({ doc: doc(para(text("a")), heading(level)) })),
       ).toEqual({
-        "doc.content.1.attrs.level": "docNotRenderable",
+        "doc.content.2.attrs.level": "docNotRenderable",
       });
     }
   });
@@ -304,7 +334,9 @@ describe("validateMessageTemplate — a body the renderer could not draw", () =>
 
 describe("validateMessageTemplate — shape", () => {
   it("refuses a key outside the catalogue", () => {
-    expect(errorsOf(email({ key: "nope" }))).toEqual({ key: "invalidInput" });
+    expect(errorsOf(email({ key: "nope", doc: null }))).toEqual({
+      key: "invalidInput",
+    });
   });
 
   it("refuses a channel or a language it does not know", () => {
@@ -386,7 +418,7 @@ describe("validateMessageTemplate — variables", () => {
       doc: doc(para(text("ok")), para(text("Hola "), text("{{nope}}"))),
     });
     expect(result.fieldErrors).toEqual({
-      "doc.content.1.content.1.text": "unknownVariable",
+      "doc.content.2.content.1.text": "unknownVariable",
     });
     expect(result.unknownVariables).toEqual(["nope"]);
   });
@@ -397,7 +429,7 @@ describe("validateMessageTemplate — variables", () => {
       key: "booking_cancelled",
     });
     expect(result.fieldErrors).toEqual({
-      "doc.content.0.content.0.attrs.id": "unknownVariable",
+      "doc.content.1.content.0.attrs.id": "unknownVariable",
     });
   });
 
@@ -425,7 +457,7 @@ describe("validateMessageTemplate — variables", () => {
     const result = unknown({
       doc: doc({ type: "button", attrs: { text: "Ir", url: "{{nope}}" } }),
     });
-    expect(result.fieldErrors["doc.content.0.attrs.url"]).toBe(
+    expect(result.fieldErrors["doc.content.1.attrs.url"]).toBe(
       "unknownVariable",
     );
     expect(result.unknownVariables).toEqual(["nope"]);
@@ -440,7 +472,7 @@ describe("validateMessageTemplate — variables", () => {
       errorsOf(
         email({ key: "booking_cancelled", doc: doc(button("cancel_url")) }),
       ),
-    ).toEqual({ "doc.content.0.attrs.url": "unknownVariable" });
+    ).toEqual({ "doc.content.1.attrs.url": "unknownVariable" });
     expect(
       validateMessageTemplate(
         email({ key: "booking_reminder", doc: doc(button("cancel_url")) }),
@@ -506,7 +538,7 @@ describe("validateMessageTemplate — links", () => {
     it(`refuses ${JSON.stringify(href)}`, () => {
       const errors = errorsOf(email({ doc: linkBody(href) }));
       expect(Object.values(errors)).toEqual(["linkNotAllowed"]);
-      expect(Object.keys(errors)[0]).toBe("doc.content.0.content.0.marks.0");
+      expect(Object.keys(errors)[0]).toBe("doc.content.1.content.0.marks.0");
     });
   }
 
@@ -525,7 +557,7 @@ describe("validateMessageTemplate — links", () => {
           doc: doc({ type: "htmlCodeBlock", attrs: { html: "<b>x</b>" } }),
         }),
       ),
-    ).toEqual({ "doc.content.0": "blockNotAllowed" });
+    ).toEqual({ "doc.content.1": "blockNotAllowed" });
   });
 
   it("refuses a block set to show conditionally: it would never be sent", () => {
@@ -537,7 +569,7 @@ describe("validateMessageTemplate — links", () => {
         }),
       });
     expect(errorsOf(conditional("first_name"))).toEqual({
-      "doc.content.1": "blockNotAllowed",
+      "doc.content.2": "blockNotAllowed",
     });
     // What the editor writes on a block nobody made conditional.
     expect(validateMessageTemplate(conditional("")).ok).toBe(true);
@@ -554,7 +586,7 @@ describe("validateMessageTemplate — links", () => {
           }),
         }),
       ),
-    ).toEqual({ "doc.content.0": "linkNotAllowed" });
+    ).toEqual({ "doc.content.1": "linkNotAllowed" });
     expect(
       errorsOf(
         email({
@@ -564,7 +596,7 @@ describe("validateMessageTemplate — links", () => {
           }),
         }),
       ),
-    ).toEqual({ "doc.content.0": "linkNotAllowed" });
+    ).toEqual({ "doc.content.1": "linkNotAllowed" });
   });
 
   it("a text that merely reads like a link is not a link", () => {
@@ -744,7 +776,7 @@ describe("a save only touches the fields it carries", () => {
   it("saving only the body leaves the texts alone", () => {
     const payload = payloadOf({
       ...address,
-      doc: doc(para(text("Nuevo cuerpo"))),
+      doc: whole("booking_confirmed", [para(text("Nuevo cuerpo"))]),
     });
     expect(payload).toHaveProperty("doc");
     for (const column of ["subject", "preheader", "title"]) {
@@ -813,7 +845,9 @@ describe("toRowPayload", () => {
       subject: "Tu cita, {{first_name}}",
       preheader: "Nos vemos pronto",
       title: "Hola {{first_name}}",
-      doc: doc(para(text("Te esperamos el {{date}}."))),
+      doc: whole("booking_confirmed", [
+        para(text("Te esperamos el {{date}}.")),
+      ]),
       updated_by: "admin-1",
       updated_at: NOW,
     });

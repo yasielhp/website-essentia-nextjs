@@ -4,7 +4,18 @@ import { renderBodyFragment } from "@/emails/templates/campaign";
 import { escapeHtml, renderVariables } from "@/lib/campaigns/body-html";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
-import { OUTRO_MARKER } from "./fixed-blocks";
+import {
+  SPECIAL_NODES,
+  blockKindOf,
+  convertOldShape,
+  docTitle,
+  isBlockNode,
+  isTitleNode,
+  repairForSending,
+  titleText,
+} from "./email-doc";
+import { sameDoc } from "./editor-state";
+import type { FixedBlocksByKind } from "./fixed-blocks";
 import { ALLOWED_NODES, sanitizeDoc } from "./safe-doc";
 import {
   MESSAGE_CATALOG,
@@ -40,18 +51,38 @@ export type Delivery = "legacy" | "custom" | "skip";
 export function chooseDelivery(
   key: MessageKey,
   row: MessageRow | null,
+  locale: CampaignLocale,
 ): Delivery {
   if (!row) return "legacy";
   // Strictly false: a null or an odd value in the column is not "off".
   if (row.enabled === false && MESSAGE_CATALOG[key].canDisable) return "skip";
   // A row that only carries the switch (the reminder turned off and on again)
   // has no text of its own to send: the legacy email is still the right one.
+  // Nor has one whose document says exactly what the default says: saving the
+  // default is not an edit.
   const edited =
-    usableDoc(row.doc) != null ||
-    row.title != null ||
+    !sameDoc(effectiveDoc(key, locale, row), defaultContent(key, locale).doc) ||
     row.preheader != null ||
     (row.subject ?? "").trim() !== "";
   return edited ? "custom" : "legacy";
+}
+
+/**
+ * The document of a row, whole: the saved one if it is in the current shape,
+ * the one a row saved before the title and the blocks were in the document
+ * converts to (`convertOldShape`), and the default one when the row has no body
+ * of its own.
+ */
+export function effectiveDoc(
+  key: MessageKey,
+  locale: CampaignLocale,
+  row: Pick<MessageRow, "title" | "doc">,
+): EmailDoc {
+  const fallback = defaultContent(key, locale);
+  return convertOldShape({ title: row.title, doc: usableDoc(row.doc) }, key, {
+    title: fallback.title,
+    doc: fallback.doc,
+  });
 }
 
 /**
@@ -74,7 +105,9 @@ export function usableDoc(doc: unknown): EmailDoc | null {
   }
   // Nothing the renderer would draw (only unknown nodes, say) is not a body.
   const drawable = candidate.content.some(
-    (node) => typeof node?.type === "string" && ALLOWED_NODES.has(node.type),
+    (node) =>
+      typeof node?.type === "string" &&
+      (ALLOWED_NODES.has(node.type) || SPECIAL_NODES.has(node.type)),
   );
   return drawable && !docIsEmpty(candidate) ? candidate : null;
 }
@@ -161,12 +194,19 @@ function paidShell({
  * The admin's version of a message, ready to send.
  *
  * Same shell as the email it replaces (`emailBase`, or `booking_paid`'s own),
- * the body the admin wrote, then the fixed blocks the code adds. Anything the
- * row leaves null falls back to the default text, so a half-filled row never
- * sends an empty subject. Nor does a subject that is nothing once its
- * variables are filled (`{{session_type}}` on a booking that has none): the
- * default subject goes out instead. The subject and the preheader are always
- * one line.
+ * and the body is the message's document, in the order it has: the editor's own
+ * nodes are drawn by the renderer (sanitised first, a run at a time), the title
+ * by the same style the email has always had, and each block by the code from
+ * the booking's data (`blocks`, by kind). A block whose condition does not hold
+ * prints nothing. Anything the row leaves null falls back to the default, so a
+ * half-filled row never sends an empty subject. Nor does a subject that is
+ * nothing once its variables are filled (`{{session_type}}` on a booking that
+ * has none): the default subject goes out instead. The subject and the
+ * preheader are always one line.
+ *
+ * A document that is missing what an email needs (a title, a block that cannot
+ * be removed) is repaired before it is drawn (`repairForSending`): no email goes
+ * out without them.
  *
  * THROWS when even the default subject comes out empty (none does today):
  * `renderMessageEmail` turns that into `legacy`, never into an email with no
@@ -181,13 +221,14 @@ export async function composeMessageEmail({
   locale,
   row,
   vars,
-  fixedHtml,
+  blocks,
 }: {
   key: MessageKey;
   locale: CampaignLocale;
   row: MessageRow;
   vars: MessageVars;
-  fixedHtml: string;
+  /** The HTML of each block of the message, by kind (see `fixedBlocksByKind`). */
+  blocks: FixedBlocksByKind;
 }): Promise<{ subject: string; html: string }> {
   const fallback = defaultContent(key, locale);
   const offered = new Set<string>(MESSAGE_CATALOG[key].variables);
@@ -203,9 +244,17 @@ export async function composeMessageEmail({
   if (subject === "") {
     throw new Error(`[messages] ${key}/${locale}: the subject is empty`);
   }
-  const rawTitle = row.title ?? fallback.title;
-  const rawPreheader = row.preheader ?? fallback.preheader;
+
+  // The whole email, in the order it has, whatever shape the row was saved in.
+  const doc = repairForSending(
+    effectiveDoc(key, locale, row),
+    key,
+    fallback.title,
+  );
+  const titleNode = docTitle(doc);
+  const rawTitle = titleText(titleNode);
   const title = renderVariables(escapeHtml(rawTitle), values);
+  const rawPreheader = row.preheader ?? fallback.preheader;
   const preheader = oneLine(
     renderVariables(escapeHtml(rawPreheader || rawTitle), values),
   );
@@ -215,38 +264,41 @@ export async function composeMessageEmail({
     renderVariables(escapeHtml(rawPreheader), values),
   );
 
-  const fragment = async (doc: EmailDoc | null): Promise<string> =>
-    doc
-      ? renderVariables(
-          await renderBodyFragment(sanitizeDoc(doc, values), values),
-          values,
-        )
-      : "";
+  const fragment = async (nodes: EmailDoc[]): Promise<string> => {
+    const clean = sanitizeDoc({ type: "doc", content: nodes }, values);
+    if (docIsEmpty(clean)) return "";
+    return renderVariables(await renderBodyFragment(clean, values), values);
+  };
 
-  // The fixed blocks carry a marker where the legacy email prints its closing
-  // sentence. Without a body of the admin's own the default intro, the blocks
-  // and the default closing go out in the legacy order. With one, their
-  // document goes first, whole (its closing included), and then the blocks.
-  const at = fixedHtml.indexOf(OUTRO_MARKER);
-  const blocksBefore = at === -1 ? fixedHtml : fixedHtml.slice(0, at);
-  const blocksAfter =
-    at === -1 ? "" : fixedHtml.slice(at + OUTRO_MARKER.length);
-  // The admin's body, if what is left of it after sanitising is worth sending.
-  const sanitised = usableDoc(row.doc);
-  const edited =
-    sanitised && !docIsEmpty(sanitizeDoc(sanitised, values)) ? sanitised : null;
-  const content = edited
-    ? `${await fragment(edited)}
-      ${blocksBefore}
-      ${blocksAfter}`
-    : `${await fragment(fallback.intro)}
-      ${blocksBefore}
-      ${await fragment(fallback.outro)}
-      ${blocksAfter}`;
+  // A run of the editor's own nodes is drawn together; the title and each block
+  // are drawn where they stand.
+  const pieces: string[] = [];
+  let run: EmailDoc[] = [];
+  const flush = async () => {
+    if (run.length === 0) return;
+    const html = await fragment(run);
+    run = [];
+    if (html !== "") pieces.push(html);
+  };
+  for (const node of doc.content ?? []) {
+    if (isTitleNode(node)) {
+      await flush();
+      if (title) pieces.push(`<h1 style="${H1_STYLE}">${title}</h1>`);
+    } else if (isBlockNode(node)) {
+      await flush();
+      const kind = blockKindOf(node);
+      const html = kind
+        ? (blocks as Record<string, string | undefined>)[kind]
+        : "";
+      if (html) pieces.push(html);
+    } else {
+      run.push(node);
+    }
+  }
+  await flush();
 
   const body = `
-      ${title ? `<h1 style="${H1_STYLE}">${title}</h1>` : ""}
-      ${content}`;
+      ${pieces.join("\n      ")}`;
 
   return {
     subject,

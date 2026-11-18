@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { casesFor } from "@/emails/defaults/legacy-cases";
-import { MESSAGE_KEYS } from "./catalog";
-import { fixedBlocks, fixedBlocksHtml } from "./fixed-blocks";
+import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
+import {
+  fixedBlocks,
+  fixedBlocksByKind,
+  fixedBlocksSplit,
+} from "./fixed-blocks";
 
 /**
  * The fixed blocks are copies and re-compositions of markup the legacy
@@ -38,19 +42,21 @@ describe("hostile values in the booking data", () => {
   for (const key of MESSAGE_KEYS) {
     test(`${key}: nothing from the booking reaches the HTML unescaped`, () => {
       const [c] = casesFor(key, "es");
-      const html = fixedBlocksHtml(key, {
-        ...c!.fixed,
-        service: HOSTILE,
-        sessionType: HOSTILE,
-        date: HOSTILE,
-        time: HOSTILE,
-        duration: HOSTILE,
-        bonus: c!.fixed.bonus && {
-          ...c!.fixed.bonus,
-          amount: HOSTILE,
-          expiresOn: HOSTILE,
-        },
-      });
+      const html = Object.values(
+        fixedBlocksByKind(key, {
+          ...c!.fixed,
+          service: HOSTILE,
+          sessionType: HOSTILE,
+          date: HOSTILE,
+          time: HOSTILE,
+          duration: HOSTILE,
+          bonus: c!.fixed.bonus && {
+            ...c!.fixed.bonus,
+            amount: HOSTILE,
+            expiresOn: HOSTILE,
+          },
+        }),
+      ).join("\n");
       expect(html).not.toContain("<script");
       expect(html).not.toContain(`"><`);
       // Escaped, not dropped: the text is still there for a human to read.
@@ -64,10 +70,10 @@ describe("hostile values in the booking data", () => {
   test("booking_received: an amount due that is not a number prints no payment sentence", () => {
     const [c] = casesFor("booking_received", "es");
     const withAmount = (amountDueEur: unknown) =>
-      fixedBlocksHtml("booking_received", {
+      fixedBlocksByKind("booking_received", {
         ...c!.fixed,
         amountDueEur: amountDueEur as number,
-      });
+      }).payment_note;
     for (const hostile of [
       "<img src=x onerror=alert(1)>",
       "45",
@@ -85,15 +91,53 @@ describe("hostile values in the booking data", () => {
 
   test("the calendar link carries the raw title once, encoded, not escaped twice", () => {
     const [c] = casesFor("booking_confirmed", "es");
-    const html = fixedBlocksHtml("booking_confirmed", {
+    const html = fixedBlocksByKind("booking_confirmed", {
       ...c!.fixed,
       service: "Masaje & Spa",
-    });
+    }).calendar_button;
     // The `&` in the title is encoded once, by URLSearchParams (`%26`). The
     // helper writes the URL into the href as it is, separators included, and
     // does not escape it as HTML: so the title is not escaped a second time.
     expect(html).toContain("?action=TEMPLATE&text=");
     expect(html).toContain("Masaje+%26+Spa");
     expect(html).not.toContain("&amp;amp;");
+  });
+});
+
+describe("the blocks by kind", () => {
+  for (const key of MESSAGE_KEYS) {
+    test(`${key}: a message draws exactly the blocks its catalogue entry lists`, () => {
+      const [c] = casesFor(key, "es");
+      const drawn = Object.keys(fixedBlocksByKind(key, c!.fixed)).sort();
+      expect(drawn).toEqual([...MESSAGE_CATALOG[key].fixed].sort());
+    });
+  }
+
+  test("a block whose condition does not hold is the empty string, not a missing key", () => {
+    const [c] = casesFor("booking_received", "es");
+    const noDebt = fixedBlocksByKind("booking_received", {
+      ...c!.fixed,
+      amountDueEur: null,
+      cancelUrl: null,
+    });
+    expect(noDebt.payment_note).toBe("");
+    expect(noDebt.cancel_link).toBe("");
+    expect(noDebt.details_card).not.toBe("");
+  });
+
+  test("the legacy order is the document's default order: before the closing sentence, then after it", () => {
+    for (const key of MESSAGE_KEYS) {
+      const [c] = casesFor(key, "es");
+      const byKind = fixedBlocksByKind(key, c!.fixed);
+      const { before, after } = fixedBlocksSplit(key, c!.fixed);
+      const expectBefore = MESSAGE_CATALOG[key].fixed
+        .filter((b) => !MESSAGE_CATALOG[key].afterClosing.includes(b))
+        .map((b) => byKind[b] ?? "")
+        .filter(Boolean);
+      expect(before).toEqual(expectBefore);
+      expect(after.length).toBe(
+        MESSAGE_CATALOG[key].afterClosing.filter((b) => byKind[b]).length,
+      );
+    }
   });
 });

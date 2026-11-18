@@ -1110,7 +1110,10 @@
     "docTooDeep": "The message has too many nested levels.",
     "docNotRenderable": "This content cannot be shown in an email. Check the headings and the blocks.",
     "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts",
-    "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates."
+    "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates.",
+    "titleOne": "The email must have one title, and only one.",
+    "blockRequired": "The block “{name}” is missing: it cannot be removed.",
+    "blockRepeated": "This block is already in the email: it can only appear once."
   },
   "gender": {
     "unspecified": "Not specified",

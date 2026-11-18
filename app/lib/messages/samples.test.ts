@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
-import { fixedBlocksHtml } from "./fixed-blocks";
+import { fixedBlocksByKind } from "./fixed-blocks";
 import { legacySampleEmail, sampleFixed, sampleVars } from "./samples";
 
 const LOCALES = ["en", "es"] as const;
@@ -60,7 +60,9 @@ describe("sampleFixed and legacySampleEmail", () => {
         const vars = sampleVars(key, locale);
         const fixed = sampleFixed(key, locale);
         expect(fixed.locale).toBe(locale);
-        expect(fixedBlocksHtml(key, fixed).length).toBeGreaterThan(0);
+        expect(
+          Object.values(fixedBlocksByKind(key, fixed)).join("").length,
+        ).toBeGreaterThan(0);
         const legacy = legacySampleEmail(key, locale);
         expect(legacy).toContain("<html");
         if (vars.service && key !== "bonus_purchase") {

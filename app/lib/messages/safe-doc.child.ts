@@ -37,7 +37,7 @@ for (const type of HOSTILE) {
       enabled: true,
     },
     vars: { first_name: "Ana" },
-    fixedHtml: "",
+    blocks: {},
   });
   if (!html.includes("Visible")) throw new Error(`${type}: body lost`);
 }

@@ -66,7 +66,7 @@ describe("buildPreviewEmail", () => {
         enabled: true,
       },
       vars: { first_name: "Ana", service: "Drenaje", consent_url: "" },
-      fixedHtml: "",
+      blocks: {},
     });
     expect(signed.html).toContain("Firma antes de venir.");
     expect(signed.html).not.toContain(label);

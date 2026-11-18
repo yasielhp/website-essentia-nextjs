@@ -7,7 +7,7 @@ import {
 import { composeMessageEmail } from "@/lib/messages/compose";
 import {
   fixedBlocks,
-  fixedBlocksHtml,
+  fixedBlocksByKind,
   fixedBlocksSplit,
 } from "@/lib/messages/fixed-blocks";
 import {
@@ -299,7 +299,7 @@ describe("a saved row with no body of its own sends the default body in the lega
             locale,
             row: subjectOnly,
             vars: c.values,
-            fixedHtml: fixedBlocksHtml(key, c.fixed),
+            blocks: fixedBlocksByKind(key, c.fixed),
           });
           expect(html).not.toContain("<!--outro-->");
           expectInOrder(
@@ -329,7 +329,7 @@ describe("a saved row with no body of its own sends the default body in the lega
         },
       },
       vars: c!.values,
-      fixedHtml: fixedBlocksHtml("booking_confirmed", c!.fixed),
+      blocks: fixedBlocksByKind("booking_confirmed", c!.fixed),
     });
     const text = visibleText(html);
     expect(text).not.toContain("Si necesitas cancelar o cambiar la fecha");

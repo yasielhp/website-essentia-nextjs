@@ -1,7 +1,7 @@
 import type { CampaignLocale } from "@/types/campaign";
 import type { MessageKey } from "./catalog";
 import { composeMessageEmail } from "./compose";
-import { fixedBlocksHtml } from "./fixed-blocks";
+import { fixedBlocksByKind } from "./fixed-blocks";
 import { sampleFixed, sampleVars } from "./samples";
 import type { EmailContentWrite } from "./schema";
 
@@ -39,7 +39,7 @@ export async function rehearseRender(
         enabled: true,
       },
       vars: sampleVars(key, locale),
-      fixedHtml: fixedBlocksHtml(key, sampleFixed(key, locale)),
+      blocks: fixedBlocksByKind(key, sampleFixed(key, locale)),
     });
     return out.html.trim() === "" || out.subject.trim() === ""
       ? "docNotRenderable"

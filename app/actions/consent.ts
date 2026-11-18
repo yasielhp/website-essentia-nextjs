@@ -4,7 +4,7 @@ import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { consentRequestEmail } from "@/emails/templates/consent-request";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { consentSchema, type ConsentInput } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
@@ -502,8 +502,8 @@ export async function sendConsentEmail(
       first_name: contact.first_name?.trim() || "",
       consent_url: consentUrl,
     },
-    fixedHtml: () =>
-      fixedBlocksHtml("consent_request", {
+    blocks: () =>
+      fixedBlocksByKind("consent_request", {
         locale,
         service: "",
         date: "",

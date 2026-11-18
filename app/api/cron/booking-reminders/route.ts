@@ -3,7 +3,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { getAppUrl } from "@/lib/env";
 import { sendEmailBatch } from "@/emails/send";
 import { bookingReminderEmail } from "@/emails/templates/booking-reminder";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import { loadMessageRow, renderMessageEmail } from "@/lib/messages/render";
 import { pruneAuthEvents } from "@/lib/auth-security";
 
@@ -178,8 +178,8 @@ async function handle(request: NextRequest) {
           duration: booking.duration ?? "",
           cancel_url: cancelUrl ?? "",
         },
-        fixedHtml: () =>
-          fixedBlocksHtml("booking_reminder", {
+        blocks: () =>
+          fixedBlocksByKind("booking_reminder", {
             locale,
             service,
             sessionType,

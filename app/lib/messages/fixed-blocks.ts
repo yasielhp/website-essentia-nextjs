@@ -8,7 +8,8 @@ import {
   googleCalendarUrl,
 } from "@/emails/templates/_base";
 import { formatPrice } from "@/utils/format";
-import type { MessageKey } from "./catalog";
+import type { FixedBlock, MessageKey } from "./catalog";
+import { layoutOf } from "./email-doc";
 
 /**
  * The blocks the code adds after the body an admin edits: the data, the links
@@ -251,84 +252,85 @@ function bonusCard(d: FixedBlocksData): string {
       </table>`;
 }
 
+/** The HTML of each block of a message, by kind; "" for one that does not apply this time. */
+export type FixedBlocksByKind = Partial<Record<FixedBlock, string>>;
+
 /**
- * The fixed blocks of a message, one string each, in the order its legacy
- * template prints them, split around the closing sentence: `before` is what
- * the legacy email prints ahead of it and `after` what follows. Only the
- * request-received email has anything after: its cancellation link comes
- * under the closing line. Empty blocks (no link, nothing owed) are left out.
+ * Every block a message has, drawn from the booking's data, by kind. A block
+ * whose condition does not hold (nothing owed, no link, already signed) is the
+ * empty string: the document may hold the block and it then prints nothing.
+ * The order of a message's blocks is the document's, not this function's.
+ */
+export function fixedBlocksByKind(
+  key: MessageKey,
+  d: FixedBlocksData,
+): FixedBlocksByKind {
+  switch (key) {
+    case "booking_received":
+      return {
+        details_card: detailsCard(d),
+        payment_note: receivedPaymentNote(d),
+        cancel_link: cancelBlock(d),
+      };
+    case "booking_confirmed":
+      return {
+        details_card: detailsCard(d),
+        location: locationBlock(d.locale),
+        calendar_button: calendarFor(d),
+        consent_button: consentBlock(d.consentUrl, d.locale),
+        cancel_link: cancelBlock(d),
+      };
+    case "booking_paid": {
+      const [card, location, owedNote, calendar, consent] = paidBlocks(d);
+      return {
+        details_card: card,
+        location,
+        payment_note: owedNote,
+        calendar_button: calendar,
+        consent_button: consent,
+      };
+    }
+    case "booking_rescheduled":
+      return {
+        details_card: detailsCard(d),
+        calendar_button: calendarFor(d),
+        cancel_link: cancelBlock(d),
+      };
+    case "booking_cancelled":
+      return { details_card: detailsCard(d) };
+    case "booking_reminder":
+      return {
+        details_card: detailsCard(d),
+        location: locationBlock(d.locale),
+        calendar_button: calendarFor(d),
+        cancel_link: cancelBlock(d),
+      };
+    case "consent_request":
+      return { consent_button: consentBlock(d.consentUrl, d.locale) };
+    case "bonus_purchase":
+      return { bonus_card: bonusCard(d) };
+  }
+}
+
+/**
+ * The blocks of a message that print something, one string each, in the order
+ * its legacy template prints them, split around the closing sentence: `before`
+ * is what the legacy email prints ahead of it and `after` what follows. Empty
+ * blocks (no link, nothing owed) are left out.
  */
 export function fixedBlocksSplit(
   key: MessageKey,
   d: FixedBlocksData,
 ): { before: string[]; after: string[] } {
-  const split = (): { before: string[]; after: string[] } => {
-    switch (key) {
-      case "booking_received":
-        return {
-          before: [detailsCard(d), receivedPaymentNote(d)],
-          after: [cancelBlock(d)],
-        };
-      case "booking_confirmed":
-        return {
-          before: [
-            detailsCard(d),
-            locationBlock(d.locale),
-            calendarFor(d),
-            consentBlock(d.consentUrl, d.locale),
-            cancelBlock(d),
-          ],
-          after: [],
-        };
-      case "booking_paid":
-        return { before: paidBlocks(d), after: [] };
-      case "booking_rescheduled":
-        return {
-          before: [detailsCard(d), calendarFor(d), cancelBlock(d)],
-          after: [],
-        };
-      case "booking_cancelled":
-        return { before: [detailsCard(d)], after: [] };
-      case "booking_reminder":
-        return {
-          before: [
-            detailsCard(d),
-            locationBlock(d.locale),
-            calendarFor(d),
-            cancelBlock(d),
-          ],
-          after: [],
-        };
-      case "consent_request":
-        return { before: [consentBlock(d.consentUrl, d.locale)], after: [] };
-      case "bonus_purchase":
-        return { before: [bonusCard(d)], after: [] };
-    }
-  };
-  const { before, after } = split();
-  return {
-    before: before.filter((block) => block !== ""),
-    after: after.filter((block) => block !== ""),
-  };
+  const byKind = fixedBlocksByKind(key, d);
+  const { before, after } = layoutOf(key);
+  const html = (blocks: FixedBlock[]) =>
+    blocks.map((block) => byKind[block] ?? "").filter((block) => block !== "");
+  return { before: html(before), after: html(after) };
 }
 
-/** All the fixed blocks in order, closing sentence aside. */
+/** All the blocks that print something, in order, closing sentence aside. */
 export function fixedBlocks(key: MessageKey, d: FixedBlocksData): string[] {
   const { before, after } = fixedBlocksSplit(key, d);
   return [...before, ...after];
-}
-
-/**
- * Where the closing sentence goes inside the fixed blocks' HTML. The composer
- * splits on it when the body is the default one and strips it otherwise.
- */
-export const OUTRO_MARKER = "<!--outro-->";
-
-/**
- * The fixed blocks as one piece of HTML, with the marker where the closing
- * sentence belongs.
- */
-export function fixedBlocksHtml(key: MessageKey, d: FixedBlocksData): string {
-  const { before, after } = fixedBlocksSplit(key, d);
-  return [...before, OUTRO_MARKER, ...after].join("\n");
 }

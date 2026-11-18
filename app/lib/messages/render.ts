@@ -1,6 +1,7 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 import type { CampaignLocale, EmailDoc } from "@/types/campaign";
 import type { MessageKey } from "./catalog";
+import type { FixedBlocksByKind } from "./fixed-blocks";
 import {
   chooseDelivery,
   composeMessageEmail,
@@ -57,7 +58,7 @@ export async function loadMessageRow(
  * Decides, for one email about to go out, whether the admin's version or the
  * one in code is used. SERVER ONLY.
  *
- * `fixedHtml` is a function so the fixed blocks are only built when a custom
+ * `blocks` is a function so the fixed blocks are only built when a custom
  * email needs them: on the legacy path nothing of this module touches the
  * email.
  *
@@ -68,14 +69,14 @@ export async function renderMessageEmail(
     key: MessageKey;
     locale: CampaignLocale;
     vars: MessageVars;
-    fixedHtml: () => string;
+    blocks: () => FixedBlocksByKind;
   },
   // Injectable so the decision can be tested without a database.
   load: typeof loadMessageRow = loadMessageRow,
 ): Promise<RenderedMessage> {
   try {
     const row = await load(opts.key, opts.locale);
-    const delivery = chooseDelivery(opts.key, row);
+    const delivery = chooseDelivery(opts.key, row, opts.locale);
     if (delivery === "legacy" || !row) return { kind: "legacy" };
     if (delivery === "skip") return { kind: "skip" };
     const { subject, html } = await composeMessageEmail({
@@ -83,7 +84,7 @@ export async function renderMessageEmail(
       locale: opts.locale,
       row,
       vars: opts.vars,
-      fixedHtml: opts.fixedHtml(),
+      blocks: opts.blocks(),
     });
     return { kind: "custom", subject, html };
   } catch (err) {

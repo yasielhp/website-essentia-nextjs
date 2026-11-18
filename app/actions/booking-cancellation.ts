@@ -5,7 +5,7 @@ import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
 import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
@@ -164,8 +164,8 @@ export async function cancelBookingByToken(
           time: booking.time ?? "",
           duration: booking.duration ?? "",
         },
-        fixedHtml: () =>
-          fixedBlocksHtml("booking_cancelled", {
+        blocks: () =>
+          fixedBlocksByKind("booking_cancelled", {
             locale,
             service,
             sessionType,

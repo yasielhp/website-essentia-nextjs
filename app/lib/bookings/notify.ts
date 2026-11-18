@@ -7,7 +7,7 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { staffNewBookingEmail } from "@/emails/templates/staff-new-booking";
-import { fixedBlocksHtml } from "@/lib/messages/fixed-blocks";
+import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
 import {
   LEGACY_BOOKING_SUBJECTS,
   type BookingNoticeKey,
@@ -475,8 +475,8 @@ export async function notifyBookingCore(
       cancel_url: cancelUrl ?? "",
       consent_url: consentUrl ?? "",
     },
-    fixedHtml: () =>
-      fixedBlocksHtml(messageKey[event], {
+    blocks: () =>
+      fixedBlocksByKind(messageKey[event], {
         locale,
         service,
         sessionType,

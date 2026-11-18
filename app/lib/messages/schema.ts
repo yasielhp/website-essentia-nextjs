@@ -4,7 +4,10 @@ import { docNode, whatsappParamSchema } from "@/lib/schemas";
 import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_CATALOG, MESSAGE_KEYS, unknownVariables } from "./catalog";
+import { defaultContent } from "@/emails/defaults";
 import { MAX_DOC_DEPTH, docDepth } from "./doc-depth";
+import { sameDoc } from "./editor-state";
+import { structureProblems, withoutSpecialNodes } from "./email-doc";
 import { allowedParamFields } from "./param-fields";
 import { findForbiddenNodes } from "./safe-doc";
 
@@ -51,6 +54,10 @@ export const MESSAGE_VALIDATION_KEYS = [
   "docTooLarge",
   "docTooDeep",
   "docNotRenderable",
+  // The structure of the whole email: one title, and the blocks that cannot go.
+  "titleOne",
+  "blockRequired",
+  "blockRepeated",
   "cannotDisable",
   "unknownVariable",
   "linkNotAllowed",
@@ -257,6 +264,10 @@ function checkEmail(
     doc = null;
   }
   if (doc && docIsEmpty(doc)) doc = null;
+  // The default document, saved as it is, is not an edit: the row keeps no body
+  // of its own, and the email stays the one that has always gone out.
+  const isDefault =
+    doc !== null && sameDoc(doc, defaultContent(key, data.locale).doc);
 
   if (doc) {
     const offered = new Set<string>(MESSAGE_CATALOG[key].variables);
@@ -272,9 +283,27 @@ function checkEmail(
       }
     }
     // What the renderer would refuse or rewrite is refused here too, with the
-    // very function it uses, so saving and sending cannot disagree.
-    for (const problem of findForbiddenNodes(doc)) {
+    // very function it uses, so saving and sending cannot disagree. The title
+    // and the blocks of the system are not the renderer's: they are checked
+    // for their own rules, and the rest of the document is read with them
+    // out of the way (the indices stay, so the paths still point right).
+    for (const problem of findForbiddenNodes(withoutSpecialNodes(doc))) {
       errors[dottedPath(problem.path)] ??= problem.kind;
+    }
+    // One title, no block of another message, none twice, and every block the
+    // message cannot do without. Saved a block short, an email would go out
+    // without its cancellation link or its consent button.
+    for (const problem of structureProblems(doc, key)) {
+      switch (problem.kind) {
+        case "titleOne":
+          errors["doc.title"] ??= "titleOne";
+          break;
+        case "blockRequired":
+          errors[`doc.blocks.${problem.block}`] ??= "blockRequired";
+          break;
+        default:
+          errors[dottedPath(problem.path)] ??= problem.kind;
+      }
     }
     // Attribute values the renderer throws on, found before it is asked.
     for (const path of unrenderableAttrs(doc, "doc")) {
@@ -289,7 +318,7 @@ function checkEmail(
     if (data[field] === undefined) continue;
     content[field] = blank(data[field]) ? null : data[field]!;
   }
-  if (data.doc !== undefined) content.doc = doc;
+  if (data.doc !== undefined) content.doc = isDefault ? null : doc;
   return Object.keys(content).length > 0 ? content : null;
 }
 
