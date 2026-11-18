@@ -54,6 +54,8 @@ import {
   useMessageReset,
 } from "./page-parts";
 import { LanguageSwitch } from "./language-switch";
+import { SystemBlocks } from "./system-blocks";
+import { bodyVariableRenderer } from "./variable-kind-ui";
 import { VariableChips } from "./variable-chips";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
@@ -167,6 +169,15 @@ export function MessageEditor({
         () => editorRef.current?.getJSON() as EmailDoc | undefined,
       ),
   });
+
+  // A variable in the body is drawn like its chip: its icon, its colour, its name.
+  const renderVariable = useMemo(
+    () =>
+      bodyVariableRenderer((name) =>
+        t.has(`variables.${name}`) ? t(`variables.${name}`) : name,
+      ),
+    [t],
+  );
 
   const reset = useMessageReset({
     channel: "email",
@@ -540,6 +551,7 @@ export function MessageEditor({
               }`}
             >
               <MailyEditor
+                renderVariable={renderVariable}
                 contentJson={opened.doc as never}
                 editable={!saving}
                 onCreate={(editor) => {
@@ -582,34 +594,12 @@ export function MessageEditor({
                 </ul>
               </div>
             )}
+            {/* What the system adds after the body, where it comes out. */}
+            <SystemBlocks fixed={catalog.fixed} variables={catalog.variables} />
             <ul className="text-petroleum-400 list-disc space-y-1 pl-4 text-xs">
-              <li>{tEditor("fixedAfter")}</li>
               <li>{tEditor("closingNote")}</li>
               <li>{tEditor("emptyNote")}</li>
             </ul>
-          </section>
-
-          <section
-            aria-labelledby="message-fixed"
-            className="bg-sand-50 rounded-xl px-4 py-3"
-          >
-            <h2
-              id="message-fixed"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {tEditor("fixedTitle")}
-            </h2>
-            {catalog.fixed.length === 0 ? (
-              <p className="text-petroleum-400 mt-1 text-xs">
-                {tEditor("fixedNone")}
-              </p>
-            ) : (
-              <ul className="text-petroleum-500 mt-1 list-disc pl-4 text-xs">
-                {catalog.fixed.map((block) => (
-                  <li key={block}>{t(`fixed.${block}`)}</li>
-                ))}
-              </ul>
-            )}
           </section>
         </div>
 

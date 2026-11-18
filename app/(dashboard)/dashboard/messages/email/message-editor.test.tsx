@@ -53,8 +53,8 @@ type MessageEditorKey = MessageCatalogEntry["key"];
 
 const catalogOf = (key: MessageEditorKey): MessageCatalogEntry => ({
   key,
-  variables: [],
-  fixed: [],
+  variables: [...MESSAGE_CATALOG[key].variables],
+  fixed: [...MESSAGE_CATALOG[key].fixed],
   canDisable: MESSAGE_CATALOG[key].canDisable,
   whatsappEligible: MESSAGE_CATALOG[key].whatsappEligible,
 });
@@ -219,5 +219,114 @@ describe("the language of the message is chosen inside the page", () => {
     const reminder = render("booking_reminder", null);
     expect(reminder).not.toContain("<nav");
     expect(reminder).not.toContain("/booking_reminder/en");
+  });
+});
+
+describe("the body, with what the system adds after it", () => {
+  const confirmed = render("booking_confirmed", null);
+  const received = render("booking_received", null);
+  const cards = (html: string) => {
+    const list = html.slice(html.indexOf('id="message-system-blocks"'));
+    const ol = list.slice(list.indexOf("<ol"), list.indexOf("</ol>"));
+    return [
+      ...ol.matchAll(
+        /<li class="border-sand-500[^"]*"[^>]*>.*?<p class="[^"]*">([^<]*)<\/p>/g,
+      ),
+    ].map((m) => m[1]);
+  };
+
+  test("the blocks are cards below the editor, in the order they come out, for one message", () => {
+    expect(cards(confirmed)).toEqual([
+      "Detalles de la reserva",
+      "Ubicación del centro",
+      "Botón «Añadir al calendario»",
+      "Botón para firmar el consentimiento",
+      "Enlace para cancelar o cambiar la cita",
+    ]);
+  });
+
+  test("and for another, which has other blocks: the payment note and no location", () => {
+    expect(cards(received)).toEqual([
+      "Detalles de la reserva",
+      "Aviso de pago pendiente (solo si queda algo por pagar)",
+      "Enlace para cancelar o cambiar la cita",
+    ]);
+    expect(received).not.toContain("Ubicación del centro");
+  });
+
+  test("they come after the editor of the body and before the preview, labelled as not editable, once", () => {
+    expect(confirmed.indexOf('id="message-body-label"')).toBeLessThan(
+      confirmed.indexOf('id="message-system-blocks"'),
+    );
+    expect(confirmed.indexOf('id="message-system-blocks"')).toBeLessThan(
+      confirmed.indexOf("Así se verá el correo"),
+    );
+    expect(confirmed.match(/Lo añade el sistema; no se edita/g)).toHaveLength(
+      1,
+    );
+  });
+
+  test("a card has a dashed border, an icon, the name and a line on what it holds", () => {
+    const start = confirmed.indexOf('<li class="border-sand-500');
+    const first = confirmed.slice(
+      start,
+      confirmed.indexOf("</div></li>", start),
+    );
+    expect(first).toContain("border-dashed");
+    expect(first).toContain("<svg");
+    expect(first).toContain("Detalles de la reserva");
+    expect(first).toContain("Servicio, tipo de sesión, fecha, hora y duración");
+  });
+
+  test("a card names the variables it fills, as the same tags", () => {
+    const start = confirmed.indexOf('<li class="border-sand-500');
+    const first = confirmed.slice(
+      start,
+      confirmed.indexOf("</div></li>", start),
+    );
+    expect(first).toContain("Servicio");
+    expect(first).toContain("Fecha");
+    expect(first).toContain("text-blue-700");
+  });
+
+  test("the old list of bullets and the plain list of blocks are gone; what still helps stays", () => {
+    expect(confirmed).not.toContain("Bloques del sistema de este correo");
+    expect(confirmed).not.toContain("van siempre después de tu texto");
+    expect(confirmed).toContain("el texto de cierre por defecto");
+    expect(confirmed).toContain("Dejar el cuerpo vacío");
+  });
+});
+
+describe("the variables, with their icon and colour", () => {
+  const html = render("booking_confirmed", null);
+  const chips = html.slice(
+    html.indexOf('id="message-variables"'),
+    html.indexOf('id="message-body-label"'),
+  );
+  const chip = (name: string) =>
+    chips.slice(
+      chips.indexOf(`>${name}</button>`) - 600,
+      chips.indexOf(`>${name}</button>`),
+    );
+
+  test("every chip has an icon beside its name, and its kind's tone", () => {
+    const buttons = [...chips.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map(
+      (m) => m[1],
+    );
+    expect(buttons).toHaveLength(
+      MESSAGE_CATALOG.booking_confirmed.variables.length,
+    );
+    for (const b of buttons) expect(b).toContain("<svg");
+  });
+
+  test("a person, a service, a time and a link look like their kind, and not alike", () => {
+    expect(chips).toMatch(/text-petroleum-700[^>]*>[^]*?Nombre/);
+    expect(chip("Enlace para cancelar")).toContain("text-purple-700");
+    expect(chip("Hora")).toContain("text-blue-700");
+    expect(chip("Servicio")).toContain("text-teal-700");
+  });
+
+  test("the chips are 44 px high on a phone", () => {
+    expect(chips).toContain("min-h-11");
   });
 });

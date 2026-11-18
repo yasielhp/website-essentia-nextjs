@@ -17,6 +17,12 @@ import {
   text,
   type BlockGroupItem,
 } from "@maily-to/core/blocks";
+import {
+  VariableExtension,
+  getVariableSuggestions,
+  type RenderVariableFunction,
+} from "@maily-to/core/extensions";
+import { useMemo } from "react";
 import "@maily-to/core/style.css";
 
 /**
@@ -57,12 +63,36 @@ const MESSAGE_BLOCKS: BlockGroupItem[] = [
 export type MailyEditorProps = Pick<
   EditorProps,
   "contentJson" | "onUpdate" | "onCreate" | "editable"
->;
+> & {
+  /**
+   * How a variable already in the body is drawn (an icon and a colour by kind,
+   * say). Only the editor's view changes: what is saved is the same node.
+   */
+  renderVariable?: RenderVariableFunction;
+};
 
-export default function MailyEditor(props: MailyEditorProps) {
+export default function MailyEditor({
+  renderVariable,
+  ...props
+}: MailyEditorProps) {
+  // The editor's own variable extension, with the same suggestions and only the
+  // drawing replaced (an extension of the same name takes the default's place).
+  const extensions = useMemo(
+    () =>
+      renderVariable
+        ? [
+            VariableExtension.configure({
+              renderVariable,
+              suggestion: getVariableSuggestions(),
+            }),
+          ]
+        : undefined,
+    [renderVariable],
+  );
   return (
     <Editor
       {...props}
+      extensions={extensions}
       blocks={MESSAGE_BLOCKS}
       config={{
         hasMenuBar: false,

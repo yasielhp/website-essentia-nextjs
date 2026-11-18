@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { isLinkVariable } from "@/lib/messages/editor-state";
+import { variableKind } from "@/lib/messages/variable-kinds";
+import { KIND_TONE, KindIcon } from "./variable-kind-ui";
 
 /**
  * The variables a message offers, as buttons that put one where the admin was
@@ -36,19 +38,25 @@ export function VariableChips({
         {variables.some(isLinkVariable) && ` ${tEditor("variablesLinkHint")}`}
       </p>
       <ul className="flex flex-wrap gap-2">
-        {variables.map((name) => (
-          <li key={name}>
-            <button
-              type="button"
-              disabled={disabled}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onInsert(name)}
-              className="border-sand-200 text-petroleum-700 hover:border-petroleum-400 rounded-full border bg-white px-3 py-1 text-xs transition-colors disabled:opacity-50"
-            >
-              {t(`variables.${name}`)}
-            </button>
-          </li>
-        ))}
+        {variables.map((name) => {
+          const kind = variableKind(name);
+          return (
+            <li key={name}>
+              <button
+                type="button"
+                disabled={disabled}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onInsert(name)}
+                className={`hover:ring-petroleum-400 focus-visible:ring-petroleum-500 inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-shadow hover:ring-1 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 sm:min-h-8 ${
+                  kind ? KIND_TONE[kind] : "bg-sand-100 text-petroleum-700"
+                }`}
+              >
+                {kind && <KindIcon kind={kind} />}
+                {t(`variables.${name}`)}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

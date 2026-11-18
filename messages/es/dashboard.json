@@ -2431,11 +2431,8 @@
         "body": "Cuerpo",
         "seedNotice": "Estás viendo el texto actual del correo. Si lo cambias, tu versión sustituye al texto por defecto.",
         "customNotice": "Esta es tu versión guardada. «Restablecer» vuelve al texto por defecto.",
-        "fixedAfter": "Los bloques del sistema (detalles de la reserva, botón de calendario, enlace para cancelar o firmar, ubicación) van siempre después de tu texto y no se pueden mover ni quitar.",
         "closingNote": "Si editas el cuerpo, el texto de cierre por defecto también pasa a ser tuyo.",
         "emptyNote": "Dejar el cuerpo vacío vuelve al texto por defecto.",
-        "fixedTitle": "Bloques del sistema de este correo",
-        "fixedNone": "Este correo no lleva bloques del sistema.",
         "variablesTitle": "Variables",
         "variablesHint": "Pulsa una para insertarla donde esté el cursor; se rellena con los datos de cada cliente.",
         "variablesLinkHint": "Los enlaces se insertan como un botón.",
@@ -2455,6 +2452,16 @@
           "note": "Con una reserva de ejemplo; los bloques del sistema se ven como los recibirá el cliente.",
           "loading": "Preparando la vista previa…",
           "failed": "No se puede mostrar la vista previa hasta que se arregle lo marcado."
+        },
+        "systemBlocksTitle": "Lo añade el sistema; no se edita",
+        "blockWhat": {
+          "details_card": "Servicio, tipo de sesión, fecha, hora y duración",
+          "location": "La dirección del centro",
+          "payment_note": "Solo aparece si queda algo por pagar en el centro",
+          "calendar_button": "Botón para añadir la cita al calendario",
+          "cancel_link": "Enlace para cancelar o cambiar la cita",
+          "consent_button": "Botón para firmar el consentimiento informado",
+          "bonus_card": "Servicio, sesiones, importe pagado y validez del bono"
         }
       },
       "errors": {

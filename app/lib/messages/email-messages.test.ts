@@ -96,9 +96,28 @@ describe("the Emails tab strings", () => {
     }
   });
 
-  it("the fixed-blocks warning names what the admin cannot move", () => {
-    expect(LOCALES.es["messages.email.editor.fixedAfter"]).toContain("siempre");
-    expect(LOCALES.en["messages.email.editor.fixedAfter"]).toContain("always");
+  it("every block the system adds has a name and a line on what it holds, and the label says it is not edited", () => {
+    const blocks = new Set(
+      MESSAGE_KEYS.flatMap((key) => MESSAGE_CATALOG[key].fixed),
+    );
+    for (const messages of Object.values(LOCALES)) {
+      for (const b of blocks) {
+        expect(messages[`messages.email.fixed.${b}`]).toBeTruthy();
+        expect(messages[`messages.email.editor.blockWhat.${b}`]).toBeTruthy();
+      }
+    }
+    expect(LOCALES.es["messages.email.editor.systemBlocksTitle"]).toBe(
+      "Lo añade el sistema; no se edita",
+    );
+    expect(LOCALES.en["messages.email.editor.systemBlocksTitle"]).toBe(
+      "Added by the system; not editable",
+    );
+    // The old list of bullets under the editor is gone.
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of ["fixedAfter", "fixedTitle", "fixedNone"]) {
+        expect(messages[`messages.email.editor.${key}`]).toBeUndefined();
+      }
+    }
   });
 
   it("every WhatsApp message says when it is sent", () => {

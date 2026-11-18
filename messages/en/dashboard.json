@@ -2431,11 +2431,8 @@
         "body": "Body",
         "seedNotice": "You are looking at the email's current text. If you change it, your version replaces the default text.",
         "customNotice": "This is your saved version. “Reset” goes back to the default text.",
-        "fixedAfter": "The system blocks (booking details, calendar button, cancel or sign link, location) always come after your text and cannot be moved or removed.",
         "closingNote": "If you edit the body, the default closing text becomes yours as well.",
         "emptyNote": "Leaving the body empty goes back to the default text.",
-        "fixedTitle": "System blocks in this email",
-        "fixedNone": "This email has no system blocks.",
         "variablesTitle": "Variables",
         "variablesHint": "Click one to insert it where the cursor is; it is filled in with each client's data.",
         "variablesLinkHint": "Links are inserted as a button.",
@@ -2455,6 +2452,16 @@
           "note": "With an example booking; the system blocks look as the client will receive them.",
           "loading": "Preparing the preview…",
           "failed": "The preview cannot be shown until what is marked is fixed."
+        },
+        "systemBlocksTitle": "Added by the system; not editable",
+        "blockWhat": {
+          "details_card": "Service, session type, date, time and duration",
+          "location": "The centre's address",
+          "payment_note": "Only shown when something is still owed at the centre",
+          "calendar_button": "Button to add the appointment to the calendar",
+          "cancel_link": "Link to cancel or change the appointment",
+          "consent_button": "Button to sign the informed consent",
+          "bonus_card": "Service, sessions, amount paid and validity of the voucher"
         }
       },
       "errors": {
