@@ -272,8 +272,6 @@ describe("the one bar of the table", () => {
         selected={0}
         canSelectAll={false}
         full={false}
-        onlySelected={false}
-        onToggleOnly={() => {}}
         onSelectAll={() => {}}
         onClear={() => {}}
         {...over}
@@ -300,29 +298,21 @@ describe("the one bar of the table", () => {
     expect(html).not.toContain("personas");
     expect(html).toContain("Buscar");
   });
-  test("people picked: how many, the way to pick all, the toggle and the way to clear, each once", () => {
+  test("people picked: how many, the way to pick all and the way to clear, each once, and no 'only selected' toggle", () => {
     const html = bar({ selected: 50, canSelectAll: true });
     expect(times(html, "50 seleccionadas")).toBe(1);
     expect(times(html, "Seleccionar las 163")).toBe(1);
-    expect(times(html, "Ver solo seleccionadas")).toBe(1);
+    expect(html).not.toContain("Ver solo seleccionadas");
+    expect(html).not.toContain("aria-pressed");
     expect(times(html, "Quitar selección")).toBe(1);
     expect(html).not.toContain("163 personas");
-    // The toggle does not repeat the number.
-    expect(html).not.toContain("Ver solo seleccionadas (");
     // In that order.
     const order = [
       "50 seleccionadas",
       "Seleccionar las 163",
-      "Ver solo seleccionadas",
       "Quitar selección",
     ].map((t) => html.indexOf(t));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-  });
-  test("the toggle says whether it is on", () => {
-    expect(bar({ selected: 3 })).toContain('aria-pressed="false"');
-    expect(bar({ selected: 3, onlySelected: true })).toContain(
-      'aria-pressed="true"',
-    );
   });
   test("when everyone listed is already picked there is no 'select all'", () => {
     expect(bar({ selected: 163, canSelectAll: false })).not.toContain(
@@ -342,7 +332,7 @@ describe("the one bar of the table", () => {
     expect(bar({ selected: 50, canSelectAll: true }, "en")).toContain(
       "Select all 163",
     );
-    expect(bar({ selected: 3 }, "en")).toContain("Show only selected");
+    expect(bar({ selected: 3 }, "en")).not.toContain("Show only selected");
   });
   test("on a phone the targets are 44 px and the controls can break into lines", () => {
     const html = bar({ selected: 50, canSelectAll: true });

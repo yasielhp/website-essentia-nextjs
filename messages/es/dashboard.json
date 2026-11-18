@@ -2119,7 +2119,6 @@
         "filterSentence": "{count, plural, one {El segmento incluye a la persona que cumple los filtros, y a las que los cumplan más adelante.} other {El segmento incluye a las # personas que cumplen los filtros, y a las que los cumplan más adelante.}}",
         "listSentence": "{count, plural, one {El segmento incluye solo a la persona seleccionada.} other {El segmento incluye solo a las # personas seleccionadas.}}",
         "clearSelection": "Quitar selección",
-        "onlySelected": "Ver solo seleccionadas",
         "selectVisible": "Seleccionar las personas de esta página",
         "selectPerson": "Seleccionar a {name}",
         "filteredEmpty": "Nadie cumple estos filtros",

@@ -370,7 +370,6 @@ describe("the screen where a segment is made", () => {
     "campaigns.segments.form.filterSentence",
     "campaigns.segments.form.listSentence",
     "campaigns.segments.form.clearSelection",
-    "campaigns.segments.form.onlySelected",
     "campaigns.segments.form.selectVisible",
     "campaigns.segments.form.selectPerson",
     "campaigns.segments.form.count",

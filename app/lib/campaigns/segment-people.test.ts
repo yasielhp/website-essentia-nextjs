@@ -111,8 +111,6 @@ describe("visiblePeople", () => {
           people,
           filters: filters(),
           search: "",
-          onlySelected: false,
-          selected: new Set(),
           now: NOW,
         }),
       ),
@@ -123,8 +121,6 @@ describe("visiblePeople", () => {
       people,
       filters: filters({ language: "es" }),
       search: "",
-      onlySelected: false,
-      selected: new Set(),
       now: NOW,
     });
     expect(ids(out)).toEqual([es.id]);
@@ -134,8 +130,6 @@ describe("visiblePeople", () => {
           people,
           filters: filters({ newsletter: true }),
           search: "",
-          onlySelected: false,
-          selected: new Set(),
           now: NOW,
         }),
       ),
@@ -155,8 +149,6 @@ describe("visiblePeople", () => {
           people: all,
           filters: filters(),
           search,
-          onlySelected: false,
-          selected: new Set(),
           now: NOW,
         }),
       );
@@ -167,26 +159,6 @@ describe("visiblePeople", () => {
     expect(find("60011223")).toEqual([ana.id]);
     expect(find("   ")).toEqual(ids(all));
     expect(find("nadie")).toEqual([]);
-  });
-  test("only the selected: all of them, whatever the filters say, narrowed by the search", () => {
-    const out = visiblePeople({
-      people,
-      filters: filters({ language: "es" }),
-      search: "",
-      onlySelected: true,
-      selected: new Set([en.id]),
-      now: NOW,
-    });
-    expect(ids(out)).toEqual([en.id]);
-    const searched = visiblePeople({
-      people,
-      filters: filters(),
-      search: "zzz",
-      onlySelected: true,
-      selected: new Set([en.id]),
-      now: NOW,
-    });
-    expect(searched).toEqual([]);
   });
 });
 

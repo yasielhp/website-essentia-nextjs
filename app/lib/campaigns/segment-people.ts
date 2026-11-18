@@ -95,28 +95,21 @@ export function searchMatches(person: SegmentPerson, term: string): boolean {
 }
 
 /**
- * Who the table shows. Normally the people who meet the filters and the search.
- * With "only selected" it is the selected ones whatever the filters say (they
- * were chosen, not filtered), still narrowed by the search.
+ * Who the table shows: the people who meet the filters and the search.
  */
 export function visiblePeople({
   people,
   filters,
   search,
-  onlySelected,
-  selected,
   now,
 }: {
   people: SegmentPerson[];
   filters: SegmentFilters;
   search: string;
-  onlySelected: boolean;
-  selected: ReadonlySet<string>;
   now: Date;
 }): SegmentPerson[] {
   return people.filter((person) => {
     if (!searchMatches(person, search)) return false;
-    if (onlySelected) return selected.has(person.id);
     return conditionsMatch(person, { ...filters, manualIds: [] }, now);
   });
 }

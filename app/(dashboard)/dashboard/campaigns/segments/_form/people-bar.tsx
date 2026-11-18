@@ -20,8 +20,6 @@ export function PeopleBar({
   selected,
   canSelectAll,
   full,
-  onlySelected,
-  onToggleOnly,
   onSelectAll,
   onClear,
 }: {
@@ -39,8 +37,6 @@ export function PeopleBar({
   canSelectAll: boolean;
   /** The list holds as many as it can. */
   full: boolean;
-  onlySelected: boolean;
-  onToggleOnly: () => void;
   onSelectAll: () => void;
   onClear: () => void;
 }) {
@@ -77,18 +73,6 @@ export function PeopleBar({
                 {t("selectAllN", { total: shown })}
               </button>
             )}
-            <button
-              type="button"
-              aria-pressed={onlySelected}
-              onClick={onToggleOnly}
-              className={`inline-flex min-h-11 items-center rounded-full border px-3 text-xs transition-colors sm:min-h-8 ${
-                onlySelected
-                  ? "border-petroleum-700 bg-petroleum-700 text-white"
-                  : "border-sand-200 text-petroleum-700 hover:border-petroleum-400 bg-white"
-              }`}
-            >
-              {t("onlySelected")}
-            </button>
             <button type="button" onClick={onClear} className={LINK}>
               {t("clearSelection")}
             </button>

@@ -99,7 +99,6 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
   const [filters, setFilters] = useState<SegmentFilters>(start.filters);
   const [selected, setSelected] = useState<ReadonlySet<string>>(start.selected);
   const [search, setSearch] = useState("");
-  const [onlySelected, setOnlySelected] = useState(false);
   const [page, setPage] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pending, setPending] = useState<SegmentFilters>(start.filters);
@@ -142,12 +141,9 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
         people,
         filters,
         search,
-        // Nobody picked: there is nothing to show "only" of.
-        onlySelected: onlySelected && selected.size > 0,
-        selected,
         now,
       }),
-    [people, filters, search, onlySelected, selected, now],
+    [people, filters, search, now],
   );
   const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -165,11 +161,9 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
         people,
         filters,
         search: "",
-        onlySelected: false,
-        selected,
         now,
       }).length,
-    [people, filters, selected, now],
+    [people, filters, now],
   );
   const sentence = segmentSentence(selectedCount, matching);
   const sentenceText =
@@ -179,10 +173,7 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
   // More people are listed than are picked, and the list has room for them.
   const canSelectAll =
     !listIsFull(selected) && shown.some((p) => !selected.has(p.id));
-  const clearSelection = () => {
-    setSelected(new Set());
-    setOnlySelected(false);
-  };
+  const clearSelection = () => setSelected(new Set());
   const filterCount = activeFilters(filters).length;
 
   function openFilters() {
@@ -237,11 +228,9 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     loaded.status === "ready" && shown.length === 0
       ? people.length === 0
         ? tForm("noPeople")
-        : onlySelected && selected.size > 0
+        : search.trim() !== "" && filterCount === 0
           ? tForm("searchEmpty")
-          : search.trim() !== "" && filterCount === 0
-            ? tForm("searchEmpty")
-            : tForm("filteredEmpty")
+          : tForm("filteredEmpty")
       : null;
 
   return (
@@ -334,11 +323,6 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
           selected={selectedCount}
           canSelectAll={canSelectAll}
           full={listIsFull(selected)}
-          onlySelected={onlySelected}
-          onToggleOnly={() => {
-            setOnlySelected((on) => !on);
-            setPage(0);
-          }}
           onSelectAll={() =>
             setSelected((s) =>
               selectAllShown(
