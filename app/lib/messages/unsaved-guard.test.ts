@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { shouldGuardClick } from "./unsaved-guard";
 
 const base = {
-  href: "/dashboard/messages?tab=email",
+  href: "/dashboard/settings/messages?tab=email",
   origin: "https://app.example.com",
-  currentPath: "/dashboard/messages/email/booking_confirmed/es",
+  currentPath: "/dashboard/settings/messages/email/booking_confirmed/es",
   button: 0,
   ctrlKey: false,
   metaKey: false,
@@ -19,7 +19,7 @@ describe("shouldGuardClick", () => {
   test("a plain click on a link inside the app is guarded", () => {
     expect(shouldGuardClick(base)).toEqual({
       guard: true,
-      to: "/dashboard/messages?tab=email",
+      to: "/dashboard/settings/messages?tab=email",
     });
     expect(
       shouldGuardClick({

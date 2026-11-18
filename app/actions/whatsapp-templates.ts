@@ -14,6 +14,7 @@ import {
   isTemplateApiConfigured,
 } from "@/lib/whatsapp/client";
 import { syncTemplatesFromMeta } from "@/lib/whatsapp/sync-templates";
+import { MESSAGES_PATH } from "@/lib/messages/message-route";
 import { countParams } from "@/lib/whatsapp/templates";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import {
@@ -21,7 +22,7 @@ import {
   type WhatsAppTemplateInput,
 } from "@/lib/schemas";
 
-const PATH = "/dashboard/messages";
+const PATH = MESSAGES_PATH;
 
 /**
  * `error` is always a key the UI translates. Whatever Meta or the network said

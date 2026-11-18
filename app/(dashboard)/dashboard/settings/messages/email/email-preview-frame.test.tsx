@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
-import en from "../../../../../messages/en/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
+import en from "../../../../../../messages/en/dashboard.json";
 import { EmailPreviewFrame } from "./email-preview-frame";
 
 const render = (

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import es from "../../../../../messages/es/dashboard.json";
-import en from "../../../../../messages/en/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
+import en from "../../../../../../messages/en/dashboard.json";
 
 /**
  * One word for what Meta calls a template's parameters: «dato variable» / "variable

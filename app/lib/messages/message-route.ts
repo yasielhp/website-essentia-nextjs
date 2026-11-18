@@ -40,18 +40,26 @@ export function parseMessageRoute(
   return { ok: true, channel, key: messageKey, locale: language };
 }
 
+/** Messages is a page of Settings: the list, and under it the page of each message. */
+export const MESSAGES_PATH = "/dashboard/settings/messages";
+
+/** The list of Messages on one of its two tabs. */
+export function messagesTabHref(tab: "email" | "whatsapp"): string {
+  return `${MESSAGES_PATH}?tab=${tab}`;
+}
+
 /** The page where one message is edited (the email) or set up (the WhatsApp notice). */
 export function messageEditHref(
   channel: MessageChannel,
   key: MessageKey,
   locale: MessageLocale,
 ): string {
-  return `/dashboard/messages/${channel}/${key}/${locale}`;
+  return `${MESSAGES_PATH}/${channel}/${key}/${locale}`;
 }
 
 /** The list, on the tab the page came from. */
 export function messageListHref(): string {
-  return "/dashboard/messages?tab=email";
+  return messagesTabHref("email");
 }
 
 /**

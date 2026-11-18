@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import es from "../../../../messages/es/dashboard.json";
-import en from "../../../../messages/en/dashboard.json";
+import es from "../../../../../messages/es/dashboard.json";
+import en from "../../../../../messages/en/dashboard.json";
 
 const read = (f: string) => readFileSync(join(import.meta.dir, f), "utf8");
 

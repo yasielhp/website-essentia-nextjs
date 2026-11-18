@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
-import en from "../../../../../messages/en/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
+import en from "../../../../../../messages/en/dashboard.json";
 
 const calls: unknown[] = [];
 
@@ -114,10 +114,10 @@ describe("the language of the WhatsApp notice is chosen inside the page", () => 
   test("a switch Spanish | English sits above the template, as links with the open one marked", () => {
     const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
     expect(nav).toContain(
-      'href="/dashboard/messages/whatsapp/booking_confirmed/es"',
+      'href="/dashboard/settings/messages/whatsapp/booking_confirmed/es"',
     );
     expect(nav).toContain(
-      'href="/dashboard/messages/whatsapp/booking_confirmed/en"',
+      'href="/dashboard/settings/messages/whatsapp/booking_confirmed/en"',
     );
     expect(nav.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html.indexOf("<nav")).toBeLessThan(

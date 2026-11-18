@@ -14,7 +14,7 @@ import {
   EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
-} from "../../(dashboard)/dashboard/messages/email/email-nodes";
+} from "../../(dashboard)/dashboard/settings/messages/email/email-nodes";
 
 /**
  * The editor does not give back the document it was given: it fills in the

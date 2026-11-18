@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
 import { MESSAGE_CATALOG } from "@/lib/messages/catalog";
 import { VARIABLE_KINDS, variableKind } from "@/lib/messages/variable-kinds";
 import { bodyVariableRenderer, KIND_TONE } from "./variable-kind-ui";

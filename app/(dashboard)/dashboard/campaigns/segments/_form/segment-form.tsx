@@ -33,7 +33,7 @@ import {
   type SegmentFilters,
 } from "@/lib/campaigns/segment-people";
 import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
-import { UnsavedBar } from "../../../messages/email/page-parts";
+import { UnsavedBar } from "../../../settings/messages/email/page-parts";
 import { FilterChips } from "./filter-chips";
 import { PeopleBar } from "./people-bar";
 import { SegmentFilterModal } from "./filter-modal";

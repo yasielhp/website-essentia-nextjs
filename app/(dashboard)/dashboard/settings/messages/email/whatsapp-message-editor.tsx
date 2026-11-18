@@ -16,6 +16,7 @@ import { useMessageDraft } from "@/hooks/use-message-draft";
 import { headerActions } from "@/lib/messages/header-actions";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { NEW_APPOINTMENT_NOTICE_HREF } from "@/lib/campaigns/new-start";
+import { messagesTabHref } from "@/lib/messages/message-route";
 import {
   draftKey,
   validateWhatsAppDraft,
@@ -349,7 +350,7 @@ export function WhatsAppMessageEditor({
               {tEd("noneTitle", { language })}
             </p>
             <Link
-              href="/dashboard/messages?tab=whatsapp"
+              href={messagesTabHref("whatsapp")}
               className="text-petroleum-700 mt-2 inline-block text-sm font-medium underline underline-offset-2"
             >
               {tEd("create")}

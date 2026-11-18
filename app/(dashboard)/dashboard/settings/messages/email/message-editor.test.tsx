@@ -2,7 +2,7 @@ import { afterAll, describe, expect, mock, test } from "bun:test";
 import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
 import { defaultContent } from "@/emails/defaults";
 import { MESSAGE_CATALOG } from "@/lib/messages/catalog";
 import { docTitle } from "@/lib/messages/email-doc";
@@ -257,10 +257,10 @@ describe("the language of the message is chosen inside the page", () => {
   test("a switch Spanish | English sits above the subject, as the two pages' links, the open one marked", () => {
     const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
     expect(nav).toContain(
-      'href="/dashboard/messages/email/booking_confirmed/es"',
+      'href="/dashboard/settings/messages/email/booking_confirmed/es"',
     );
     expect(nav).toContain(
-      'href="/dashboard/messages/email/booking_confirmed/en"',
+      'href="/dashboard/settings/messages/email/booking_confirmed/en"',
     );
     expect(nav.match(/aria-current="page"/g)).toHaveLength(1);
     expect(nav.indexOf("Español")).toBeLessThan(nav.indexOf("Inglés"));

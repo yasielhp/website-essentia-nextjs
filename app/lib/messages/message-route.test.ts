@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  MESSAGES_PATH,
+  messagesTabHref,
   messageEditHref,
   messageListHref,
   messageRowLabel,
@@ -70,19 +72,28 @@ describe("hrefs", () => {
   test("a row's link is its own page, and the key and language are what the page parses back", () => {
     for (const key of MESSAGE_KEYS) {
       const href = messageEditHref("email", key, "es");
-      expect(href).toBe(`/dashboard/messages/email/${key}/es`);
-      const [, , , channel, k, locale] = href.split("/");
+      expect(href).toBe(`/dashboard/settings/messages/email/${key}/es`);
+      const [, , , , channel, k, locale] = href.split("/");
       expect(parseMessageRoute(channel, k, locale)).toMatchObject({
         ok: true,
         key,
       });
     }
     expect(messageEditHref("whatsapp", "booking_paid", "en")).toBe(
-      "/dashboard/messages/whatsapp/booking_paid/en",
+      "/dashboard/settings/messages/whatsapp/booking_paid/en",
+    );
+  });
+  test("the list is a page of Settings, on the tab asked for, and nothing else is the address of Messages any more", () => {
+    expect(MESSAGES_PATH).toBe("/dashboard/settings/messages");
+    expect(messagesTabHref("email")).toBe(
+      "/dashboard/settings/messages?tab=email",
+    );
+    expect(messagesTabHref("whatsapp")).toBe(
+      "/dashboard/settings/messages?tab=whatsapp",
     );
   });
   test("the way back opens the Emails tab", () => {
-    expect(messageListHref()).toBe("/dashboard/messages?tab=email");
+    expect(messageListHref()).toBe("/dashboard/settings/messages?tab=email");
   });
 });
 

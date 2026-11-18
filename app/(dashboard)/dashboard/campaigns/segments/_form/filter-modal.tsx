@@ -3,7 +3,7 @@
 import type { Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Modal } from "../../../messages/whatsapp/modal";
+import { Modal } from "../../../settings/messages/whatsapp/modal";
 import { applyOnEnter } from "@/utils/filter-modal-keys";
 import {
   applyFilterPatch,

@@ -29,7 +29,6 @@ export type Breadcrumb = {
 const SECTION_KEYS: Record<string, string> = {
   blog: "sections.blog",
   campaigns: "sections.campaigns",
-  messages: "sections.messages",
   bookings: "sections.bookings",
   contacts: "sections.users",
   subscriptions: "sections.subscriptions",
@@ -80,12 +79,17 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
 
   if (rest.length === 0) return [sectionCrumb];
 
-  // A message's own page: Messages, then the message and its language. The
-  // way back is the list on the tab the page came from.
-  if (section === "messages" && rest.length === 3) {
-    const route = parseMessageRoute(rest[0], rest[1], rest[2]);
-    if (route.ok) {
+  // Messages is a page of Settings: Settings › Messages on the list, and
+  // Settings › Messages › the message on a message's own page. The way back is
+  // the list on the tab the page came from.
+  if (section === "settings" && rest[0] === "messages") {
+    const settings = { key: "sections.settings", href: "/dashboard/settings" };
+    if (rest.length === 1) return [settings, { key: "sections.messages" }];
+    const route =
+      rest.length === 4 ? parseMessageRoute(rest[1], rest[2], rest[3]) : null;
+    if (route?.ok) {
       return [
+        settings,
         { key: "sections.messages", href: messageListHref() },
         {
           messageRow: {

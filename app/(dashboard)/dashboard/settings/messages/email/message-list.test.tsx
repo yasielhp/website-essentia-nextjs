@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
 import { MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type {
   MessageCatalogEntry,
@@ -53,12 +53,16 @@ describe("the list of messages", () => {
     expect(html.match(/<button/g)).toHaveLength(ROWS * 2);
     expect(html.match(/role="switch"/g)).toHaveLength(ROWS * 2);
     const links = [
-      ...html.matchAll(/href="(\/dashboard\/messages\/[^"]+)"/g),
+      ...html.matchAll(/href="(\/dashboard\/settings\/messages\/[^"]+)"/g),
     ].map((m) => m[1]);
-    expect(links).toContain("/dashboard/messages/email/booking_received/es");
-    expect(links).toContain("/dashboard/messages/email/booking_reminder/es");
     expect(links).toContain(
-      "/dashboard/messages/whatsapp/booking_confirmed/es",
+      "/dashboard/settings/messages/email/booking_received/es",
+    );
+    expect(links).toContain(
+      "/dashboard/settings/messages/email/booking_reminder/es",
+    );
+    expect(links).toContain(
+      "/dashboard/settings/messages/whatsapp/booking_confirmed/es",
     );
     // One row per message and channel, and every one opens the message in
     // Spanish: the language is chosen on its page.
@@ -111,7 +115,7 @@ describe("the list on a phone and on a wide screen", () => {
   const cards = html.slice(html.indexOf('<ul class="divide-sand-100'));
 
   const hrefs = (part: string) =>
-    [...part.matchAll(/href="(\/dashboard\/messages\/[^"]+)"/g)].map(
+    [...part.matchAll(/href="(\/dashboard\/settings\/messages\/[^"]+)"/g)].map(
       (m) => m[1],
     );
   const names = (part: string) =>

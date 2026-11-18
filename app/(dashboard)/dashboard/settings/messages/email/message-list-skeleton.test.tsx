@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
-import es from "../../../../../messages/es/dashboard.json";
+import es from "../../../../../../messages/es/dashboard.json";
 import { messageListRows } from "@/lib/messages/list-rows";
 import { MessageListSkeleton } from "./message-list-skeleton";
 

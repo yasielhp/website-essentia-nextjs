@@ -11,7 +11,7 @@ import type {
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import { useEmailActionToast } from "./action-error";
-import { useWhatsAppTemplates } from "../../campaigns/_form/use-whatsapp-templates";
+import { useWhatsAppTemplates } from "../../../campaigns/_form/use-whatsapp-templates";
 import { MessageList } from "./message-list";
 import { MessageListSkeleton } from "./message-list-skeleton";
 
