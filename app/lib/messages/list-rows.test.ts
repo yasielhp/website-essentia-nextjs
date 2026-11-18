@@ -379,3 +379,36 @@ describe("the switch of a row: both languages together", () => {
     expect(waOf([], "booking_paid").switch.state).toBe("on");
   });
 });
+
+describe("a WhatsApp row that is not set up", () => {
+  const waOf = (rows: MessageTemplateRowView[], key = "booking_paid") =>
+    waRows(messageListRows(rows, catalog, [])).find((x) => x.key === key)!;
+  const wa = (over: Partial<MessageTemplateRowView>) =>
+    row({ key: "booking_paid", channel: "whatsapp", ...over });
+
+  test("with no saved row, or a row with no template in either language, it has no template", () => {
+    expect(waOf([]).hasTemplate).toBe(false);
+    expect(
+      waOf([wa({ locale: "es", enabled: false }), wa({ locale: "en" })])
+        .hasTemplate,
+    ).toBe(false);
+  });
+
+  test("a template in any one language is enough, whether or not it can be sent", () => {
+    expect(
+      waOf([wa({ locale: "en", whatsapp_template_id: "tpl-1" })]).hasTemplate,
+    ).toBe(true);
+    expect(
+      waOf([wa({ locale: "es", whatsapp_template_id: "gone" })]).hasTemplate,
+    ).toBe(true);
+  });
+
+  test("the configuration removed leaves a row that was switched off still off, with no template", () => {
+    const r = waOf([
+      wa({ locale: "es", enabled: false, whatsapp_template_id: null }),
+      wa({ locale: "en", enabled: false, whatsapp_template_id: null }),
+    ]);
+    expect(r.hasTemplate).toBe(false);
+    expect(r.switch.state).toBe("off");
+  });
+});

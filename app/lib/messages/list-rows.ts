@@ -106,6 +106,13 @@ export type WhatsAppListRow = {
   switch: SwitchSummary;
   /** There is a saved row in some language, even if it cannot be sent: the link says "Edit". */
   saved: boolean;
+  /**
+   * A template is saved in some language (whether or not it can be sent). With
+   * none the row is not set up, and its switch is drawn off and cannot be
+   * pressed: there is nothing to switch on. Only how it is drawn: nothing is
+   * written to say so.
+   */
+  hasTemplate: boolean;
 };
 
 export type ListRow = EmailListRow | WhatsAppListRow;
@@ -178,6 +185,10 @@ export function messageListRows(
           (["es", "en"] as const).filter((l) => isSwitchedOff(saved(l))),
         ),
         saved: saved("es") !== undefined || saved("en") !== undefined,
+        hasTemplate: Boolean(
+          saved("es")?.whatsapp_template_id ||
+          saved("en")?.whatsapp_template_id,
+        ),
       },
     ];
   });

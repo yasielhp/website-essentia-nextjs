@@ -77,7 +77,7 @@ function useRowWords() {
     t,
     tWa,
     languages,
-    column: (name: "type" | "status" | "active") => t(`columns.${name}`),
+    column: (name: "type" | "content") => t(`columns.${name}`),
     emailName: (row: EmailListRow) => tKeys(row.key),
     emailHint: (row: EmailListRow) => tHints(row.key),
     whatsappName: (row: WhatsAppListRow) => tKeys(row.key),
@@ -328,25 +328,32 @@ function useRowSwitches() {
   const typeName = (row: ListRow) => t(`switch.channel.${row.type}`);
 
   const control = (row: ListRow) => {
-    const summary = stateOf(row);
+    // A WhatsApp row with no template in any language has nothing to switch
+    // on: it is DRAWN off and cannot be pressed, and nothing is written to say
+    // so. With a template the switch shows what is saved (on by default).
+    const notSetUp = row.type === "whatsapp" && !row.hasTemplate;
+    const summary: SwitchSummary = notSetUp
+      ? { state: "off", offLocales: [...row.locales] }
+      : stateOf(row);
     const name = tKeys(row.key);
     return (
-      <div className="flex flex-col items-start gap-0.5">
+      <span className="flex flex-col items-start gap-0.5">
         <MessageSwitch
           id={`message-switch-${row.id.replace(/[^a-z0-9_-]/gi, "-")}`}
           label={t("switch.label", { name, type: typeName(row) })}
           checked={summary.state === "on"}
           busy={busyRows(row)}
+          locked={notSetUp ? t("switch.needsSetup") : undefined}
           onToggle={() => press(row)}
         />
-        {summary.state === "partial" && (
+        {!notSetUp && summary.state === "partial" && (
           <span className="text-petroleum-400 text-xs">
             {t("switch.partial", {
               languages: w.languages(summary.offLocales),
             })}
           </span>
         )}
-      </div>
+      </span>
     );
   };
 
@@ -412,7 +419,7 @@ export function MessageList({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-sand-100 border-b text-left">
-              {(["message", "type", "status", "active"] as const).map(
+              {(["switch", "message", "type", "content"] as const).map(
                 (column) => (
                   <th
                     key={column}
@@ -436,6 +443,9 @@ export function MessageList({
                   onClick={openRow}
                   className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b align-top transition-colors last:border-0"
                 >
+                  <td className="px-5 py-1.5 md:py-2.5">
+                    {switches.control(row)}
+                  </td>
                   <th scope="row" className="px-5 py-3.5 text-left font-normal">
                     <p>
                       {/* A page of its own: a link, so it opens in a new tab too. */}
@@ -472,9 +482,6 @@ export function MessageList({
                       </>
                     )}
                   </td>
-                  <td className="px-5 py-1.5 md:py-2.5">
-                    {switches.control(row)}
-                  </td>
                 </tr>
               );
             })}
@@ -493,14 +500,17 @@ export function MessageList({
               key={row.id}
               onClick={openRow}
               title={
-                <Link
-                  href={link.href}
-                  aria-label={link.name}
-                  data-row-link
-                  className={`${ROW_LINK} inline-flex min-h-11 items-center`}
-                >
-                  {whatsapp ? w.whatsappName(row) : w.emailName(row)}
-                </Link>
+                <span className="flex items-start gap-3">
+                  {switches.control(row)}
+                  <Link
+                    href={link.href}
+                    aria-label={link.name}
+                    data-row-link
+                    className={`${ROW_LINK} inline-flex min-h-11 items-center`}
+                  >
+                    {whatsapp ? w.whatsappName(row) : w.emailName(row)}
+                  </Link>
+                </span>
               }
               description={
                 whatsapp ? undefined : (
@@ -521,16 +531,12 @@ export function MessageList({
                   value: <TypeBadge type={row.type} />,
                 },
                 {
-                  label: w.column("status"),
+                  label: w.column("content"),
                   value: whatsapp ? (
                     <WhatsAppStatus row={row} />
                   ) : (
                     <EmailStatus row={row} />
                   ),
-                },
-                {
-                  label: w.column("active"),
-                  value: switches.control(row),
                 },
               ]}
             >

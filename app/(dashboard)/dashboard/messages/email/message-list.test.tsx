@@ -131,10 +131,12 @@ describe("the list on a phone and on a wide screen", () => {
     expect(new Set(names(cards)).size).toBe(names(cards).length);
   });
 
-  test("a card names each fact, since there is no header: type, state and the switch", () => {
+  test("a card names each fact, since there is no header: type and content", () => {
     expect(cards).toContain("Tipo:");
-    expect(cards).toContain("Estado:");
-    expect(cards).toContain("Activo:");
+    expect(cards).toContain("Contenido:");
+    // The switch is up by the title, not a fact among the others.
+    expect(cards).not.toContain("Activo:");
+    expect(cards).not.toContain("Estado:");
     expect(cards).not.toContain("Idioma");
     expect(table).not.toContain("Tipo:");
   });
@@ -151,7 +153,7 @@ describe("the list on a phone and on a wide screen", () => {
     for (const cls of items) expect(cls).toContain("cursor-pointer");
   });
 
-  test("there is no column of actions: four columns (the last is the switch), and the row is what opens the message", () => {
+  test("there is no column of actions: four columns (the first is the switch), and the row is what opens the message", () => {
     expect(html).not.toContain("Acciones");
     expect(table.match(/<th[^>]*scope="col"/g)).toHaveLength(4);
     const rows = [...table.matchAll(/<tr [^>]*class="([^"]*)"/g)]
@@ -207,15 +209,15 @@ describe("the list says nothing about where reminders are set up", () => {
   });
 });
 
-describe("the columns: message, type, state and switch", () => {
+describe("the columns: the switch (State), message, type and content", () => {
   const html = render([]);
   const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
   const headers = [...table.matchAll(/<th[^>]*scope="col"[^>]*>([^<]*)</g)].map(
     (m) => m[1],
   );
 
-  test("Message, Type, State and On, and no Language column", () => {
-    expect(headers).toEqual(["Mensaje", "Tipo", "Estado", "Activo"]);
+  test("State (the switch) first, then Message, Type and Content, and no Language column", () => {
+    expect(headers).toEqual(["Estado", "Mensaje", "Tipo", "Contenido"]);
     expect(table).not.toContain("Idioma");
     expect(table).not.toContain("Español");
     expect(table).not.toContain("Inglés");
@@ -343,17 +345,85 @@ describe("the switch of each row", () => {
   const tableOf = (html: string) =>
     html.slice(html.indexOf("<table"), html.indexOf("</table>"));
 
-  test("with nothing saved, every row is on, and each switch has its own name: message and channel", () => {
+  const REASON = "Configura la plantilla de WhatsApp para poder activarlo.";
+  const locked = (tag: string) => /aria-disabled="true"/.test(tag);
+
+  test("with nothing saved, every email row is on; each switch has its own name: message and channel", () => {
     const html = tableOf(render([]));
     const all = switches(html);
     expect(all).toHaveLength(ROWS);
-    expect(all.every((tag) => checked(tag) === "true")).toBe(true);
+    const email = all.filter((t) => !label(t)?.includes("WhatsApp"));
+    expect(email).toHaveLength(MESSAGE_KEYS.length);
+    expect(email.every((tag) => checked(tag) === "true")).toBe(true);
+    expect(email.some(locked)).toBe(false);
     const names = all.map(label);
     expect(new Set(names).size).toBe(ROWS);
     expect(names).toContain("Activar Reserva recibida, correo");
     expect(names).toContain("Activar Reserva confirmada, correo");
-    expect(names).toContain("Activar Reserva confirmada, WhatsApp");
-    expect(names).toContain("Activar Pago de la reserva confirmado, WhatsApp");
+  });
+
+  test("a WhatsApp row that is not set up shows OFF and cannot be pressed, and its name says why", () => {
+    const html = tableOf(render([]));
+    const wa = switches(html).filter((t) => label(t)?.includes("WhatsApp"));
+    expect(wa).toHaveLength(2);
+    for (const tag of wa) {
+      expect(checked(tag)).toBe("false");
+      expect(locked(tag)).toBe(true);
+      expect(label(tag)).toContain(REASON);
+    }
+    expect(wa.map(label)).toContain(
+      `Activar Reserva confirmada, WhatsApp. ${REASON}`,
+    );
+    // Nothing is written to show it: it is how it is drawn.
+    expect(html).not.toContain("<dialog");
+  });
+
+  test("a template saved in any language enables it, and it shows what is saved: on by default, off if it was switched off", () => {
+    const wa = (over: Partial<MessageTemplateRowView>) =>
+      row({ key: "booking_paid", channel: "whatsapp", ...over });
+    const find = (rows: MessageTemplateRowView[]) =>
+      switches(tableOf(render(rows))).find((t) =>
+        label(t)?.startsWith("Activar Pago de la reserva confirmado, WhatsApp"),
+      )!;
+    const on = find([wa({ locale: "es", whatsapp_template_id: "tpl-1" })]);
+    expect(locked(on)).toBe(false);
+    expect(checked(on)).toBe("true");
+    expect(label(on)).toBe("Activar Pago de la reserva confirmado, WhatsApp");
+    const off = find([
+      wa({ locale: "es", whatsapp_template_id: "tpl-1", enabled: false }),
+      wa({ locale: "en", whatsapp_template_id: "tpl-2", enabled: false }),
+    ]);
+    expect(locked(off)).toBe(false);
+    expect(checked(off)).toBe("false");
+  });
+
+  test("the configuration removed from a row that was switched off by hand: still off, and locked again", () => {
+    const wa = (locale: "es" | "en") =>
+      row({
+        key: "booking_paid",
+        channel: "whatsapp",
+        locale,
+        enabled: false,
+        whatsapp_template_id: null,
+      });
+    const tag = switches(tableOf(render([wa("es"), wa("en")]))).find((t) =>
+      label(t)?.startsWith("Activar Pago de la reserva confirmado, WhatsApp"),
+    )!;
+    expect(checked(tag)).toBe("false");
+    expect(locked(tag)).toBe(true);
+  });
+
+  test("the switch is the first column of the table and sits up by the title on a card", () => {
+    const html = render([]);
+    const table = tableOf(html);
+    const firstRow = table.slice(table.indexOf("<tbody"));
+    expect(firstRow.indexOf('role="switch"')).toBeLessThan(
+      firstRow.indexOf("data-row-link"),
+    );
+    const cards = html.slice(html.indexOf('<ul class="divide-sand-100'));
+    const card = cards.slice(0, cards.indexOf("Tipo:"));
+    expect(card).toContain('role="switch"');
+    expect(card.indexOf("data-row-link")).toBeGreaterThan(-1);
   });
 
   test("a row saved off is off, with a single switch for both languages and nothing said in the status", () => {
@@ -368,9 +438,9 @@ describe("the switch of each row", () => {
     )!;
     expect(checked(tag)).toBe("false");
     // Only that row is off.
-    expect(switches(html).filter((t) => checked(t) === "false")).toHaveLength(
-      1,
-    );
+    expect(
+      switches(html).filter((t) => checked(t) === "false" && !locked(t)),
+    ).toHaveLength(1);
     expect(html).not.toContain("Apagado");
   });
 
@@ -404,12 +474,14 @@ describe("the switch of each row", () => {
           channel: "whatsapp",
           locale: "es",
           enabled: false,
+          whatsapp_template_id: "tpl-1",
         }),
         row({
           key: "booking_confirmed",
           channel: "whatsapp",
           locale: "en",
           enabled: false,
+          whatsapp_template_id: "tpl-2",
         }),
       ]),
     );

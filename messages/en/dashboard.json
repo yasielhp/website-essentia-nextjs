@@ -2362,10 +2362,10 @@
       "loadFailed": "The messages could not be loaded.",
       "retry": "Try again",
       "columns": {
-        "active": "On",
+        "switch": "Status",
         "message": "Message",
         "type": "Type",
-        "status": "Status"
+        "content": "Content"
       },
       "locales": {
         "es": "Spanish",
@@ -2588,6 +2588,7 @@
         "discard": "Discard"
       },
       "switch": {
+        "needsSetup": "Set up the WhatsApp template to turn it on.",
         "label": "Switch on {name}, {type}",
         "turnedOn": "Message switched on",
         "channel": {

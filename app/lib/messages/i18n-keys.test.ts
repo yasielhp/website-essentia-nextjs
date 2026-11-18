@@ -187,3 +187,28 @@ describe("the question before a message is switched off", () => {
     );
   });
 });
+
+describe("the switch's column and its reason when it cannot be pressed", () => {
+  for (const [locale, header, content, reason] of [
+    [
+      "es",
+      "Estado",
+      "Contenido",
+      "Configura la plantilla de WhatsApp para poder activarlo.",
+    ],
+    ["en", "Status", "Content", "Set up the WhatsApp template to turn it on."],
+  ] as const) {
+    it(`${locale}: the switch's column is State, the old State is Content, and the reason is said`, () => {
+      const email = LOCALES[locale].messages.email as unknown as {
+        columns: Record<string, string>;
+        switch: Record<string, string>;
+      };
+      expect(email.columns.switch).toBe(header);
+      expect(email.columns.content).toBe(content);
+      // No two columns of one name, and nothing left of the old keys.
+      expect(email.columns.status).toBeUndefined();
+      expect(email.columns.active).toBeUndefined();
+      expect(email.switch.needsSetup).toBe(reason);
+    });
+  }
+});

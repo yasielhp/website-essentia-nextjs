@@ -2362,10 +2362,10 @@
       "loadFailed": "No se pudieron cargar los mensajes.",
       "retry": "Reintentar",
       "columns": {
-        "active": "Activo",
+        "switch": "Estado",
         "message": "Mensaje",
         "type": "Tipo",
-        "status": "Estado"
+        "content": "Contenido"
       },
       "locales": {
         "es": "Español",
@@ -2588,6 +2588,7 @@
         "discard": "Descartar"
       },
       "switch": {
+        "needsSetup": "Configura la plantilla de WhatsApp para poder activarlo.",
         "label": "Activar {name}, {type}",
         "turnedOn": "Mensaje activado",
         "channel": {
