@@ -13,7 +13,9 @@ import type {
  * what the editor shows: an admin who edits the body replaces the whole thing,
  * closing included.
  */
-export type MessageDefault = CampaignLocaleContent & {
+export type MessageDefault = Omit<CampaignLocaleContent, "doc"> & {
+  /** The whole email as the editor opens it: title, text and blocks (see `defaultContent`). */
+  doc: EmailDoc;
   intro: EmailDoc;
   outro: EmailDoc | null;
 };

@@ -884,10 +884,15 @@ describe("node types are an allow-list", () => {
   test("the default body of every message passes saving", async () => {
     const { MESSAGE_KEYS } = await import("./catalog");
     const { defaultContent } = await import("@/emails/defaults");
+    const { structureProblems, withoutSpecialNodes } =
+      await import("./email-doc");
     for (const key of MESSAGE_KEYS) {
       for (const locale of ["es", "en"] as const) {
         const d = defaultContent(key, locale);
-        expect(findForbiddenNodes(d.doc!)).toEqual([]);
+        // The whole email: the editor's own nodes pass the allow-list, and the
+        // title and the blocks pass the structure check of their own.
+        expect(findForbiddenNodes(withoutSpecialNodes(d.doc))).toEqual([]);
+        expect(structureProblems(d.doc, key)).toEqual([]);
         expect(findForbiddenNodes(d.intro)).toEqual([]);
         if (d.outro) expect(findForbiddenNodes(d.outro)).toEqual([]);
       }

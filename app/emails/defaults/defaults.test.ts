@@ -23,7 +23,15 @@ import {
   squash,
   visibleText,
 } from "./legacy-cases";
+import { docTitle, layoutOf, titleText } from "@/lib/messages/email-doc";
 import { defaultContent } from "./index";
+
+/** The paragraphs of a default's text, without its title or its blocks. */
+const bodyParagraphs = (def: ReturnType<typeof defaultContent>) =>
+  docParagraphs({
+    type: "doc",
+    content: (def.doc.content ?? []).filter((n) => n.type === "paragraph"),
+  });
 
 /**
  * The guardian: the default text the editor opens with must be the text the
@@ -105,7 +113,7 @@ describe("the default text is the legacy text", () => {
 
       for (const c of casesFor(key, locale)) {
         const legacyText = visibleText(c.legacy);
-        const phrases = [def.title, def.preheader, ...docParagraphs(def.doc)]
+        const phrases = [def.title, def.preheader, ...bodyParagraphs(def)]
           .filter((p) => p !== "")
           .map((p) => fill(p, c.values));
 
@@ -142,7 +150,7 @@ describe("the defaults themselves", () => {
           def.subject,
           def.preheader,
           def.title,
-          ...docParagraphs(def.doc),
+          ...bodyParagraphs(def),
         ].join(" ");
         for (const m of text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)) {
           expect(offered.has(m[1]!)).toBe(true);
@@ -233,14 +241,40 @@ describe("intro, fixed blocks and closing sentence are in the legacy order", () 
     ]);
   });
 
-  test("the editor's document is the intro and the closing together", () => {
+  test("the editor's document is the whole email: title, intro, the blocks before the closing sentence, the closing, the blocks after", () => {
     for (const key of MESSAGE_KEYS) {
       for (const locale of LOCALES) {
         const def = defaultContent(key, locale);
-        expect(docParagraphs(def.doc)).toEqual([
+        const { before, after } = layoutOf(key);
+        const shape = (def.doc.content ?? []).map((node) =>
+          node.type === "systemBlock" ? `block:${node.attrs?.kind}` : node.type,
+        );
+        const intro = (def.intro.content ?? []).map((n) => n.type);
+        const outro = (def.outro?.content ?? []).map((n) => n.type);
+        expect(shape).toEqual([
+          "emailTitle",
+          ...intro,
+          ...before.map((k) => `block:${k}`),
+          ...outro,
+          ...after.map((k) => `block:${k}`),
+        ]);
+        expect(titleText(docTitle(def.doc))).toBe(def.title);
+        // The text of the document, block and title aside, is the intro and the closing.
+        expect(bodyParagraphs(def)).toEqual([
           ...docParagraphs(def.intro),
           ...docParagraphs(def.outro),
         ]);
+      }
+    }
+  });
+
+  test("every message's document has every block its catalogue entry lists, once, in the catalogue's order", () => {
+    for (const key of MESSAGE_KEYS) {
+      for (const locale of LOCALES) {
+        const blocks = (defaultContent(key, locale).doc.content ?? [])
+          .filter((n) => n.type === "systemBlock")
+          .map((n) => n.attrs?.kind);
+        expect(blocks).toEqual([...MESSAGE_CATALOG[key].fixed]);
       }
     }
   });
