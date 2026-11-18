@@ -22,21 +22,48 @@ export function editableLocales(key: MessageKey): ("es" | "en")[] {
 export { isLinkVariable } from "./email-doc";
 
 /**
- * Whether two bodies say the same thing. The editor re-emits a document it was
- * given with attributes it fills in (a null alignment, an empty list of marks),
- * which are not a change, and the order of an object's keys is not one either.
+ * What the editor fills in when it gives a document back, and which means
+ * nothing: an attribute left at the value the editor gives it is the same as an
+ * attribute that is not there. A paragraph is left to right, a variable is
+ * required and shows its default value. (Found by putting every default through
+ * the editor's own schema; a test keeps it so.) A value that is NOT the default
+ * (right to left, an optional variable) is a real choice and stays.
  */
-function canon(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canon);
+const EDITOR_DEFAULTS: Record<string, unknown> = {
+  textDirection: "ltr",
+  required: true,
+  hideDefaultValue: false,
+  // A link: how the editor opens and marks the ones it is given.
+  rel: "noopener noreferrer nofollow",
+  class: "mly:no-underline",
+  isUrlVariable: false,
+};
+
+/**
+ * Whether two bodies say the same thing. The editor re-emits a document it was
+ * given with attributes it fills in (a null alignment, an empty list of marks,
+ * its own defaults), which are not a change, and the order of an object's keys
+ * is not one either. THE one comparison: the Save button, the warning about
+ * unsaved changes, the local draft and the server's decision that a document
+ * equal to the default is not an edit all use it.
+ */
+function canon(value: unknown, inAttrs = false): unknown {
+  if (Array.isArray(value)) return value.map((v) => canon(v));
   if (typeof value === "object" && value !== null) {
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value).sort()) {
       const item = (value as Record<string, unknown>)[key];
       if (item === undefined || item === null) continue;
       if (Array.isArray(item) && item.length === 0 && key === "marks") continue;
-      const inner = canon(item);
+      if (
+        inAttrs &&
+        Object.hasOwn(EDITOR_DEFAULTS, key) &&
+        EDITOR_DEFAULTS[key] === item
+      )
+        continue;
+      const inner = canon(item, key === "attrs");
       // `attrs: {}` is what an attribute-less node looks like once its null
-      // attributes are gone.
+      // and default attributes are gone.
       if (key === "attrs" && Object.keys(inner as object).length === 0)
         continue;
       out[key] = inner;
