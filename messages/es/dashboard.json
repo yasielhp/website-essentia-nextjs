@@ -2221,7 +2221,7 @@
       "notConfigured": "WhatsApp Business aún no está conectado; avisa a quien administra la web. Las plantillas se guardan como borrador.",
       "loadFailed": "No se pudieron cargar las plantillas.",
       "retry": "Reintentar",
-      "empty": "Todavía no hay plantillas. Crea la primera o sincroniza las que ya tengas en Meta.",
+      "empty": "Todavía no hay plantillas. Crea la primera; las que ya tengas en Meta aparecerán aquí solas.",
       "table": {
         "name": "Nombre",
         "language": "Idioma",
@@ -2326,7 +2326,7 @@
         "db": "No se pudo acceder a la base de datos.",
         "invalid": "Revisa los campos marcados.",
         "templateExists": "Ya existe una plantilla con ese nombre e idioma.",
-        "submittedNotSaved": "Meta aceptó la plantilla, pero no se guardó aquí. Sincroniza para traerla.",
+        "submittedNotSaved": "Meta aceptó la plantilla, pero no se guardó aquí. Aparecerá sola en la próxima actualización desde Meta.",
         "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
         "meta": "Meta rechazó la petición."
       }

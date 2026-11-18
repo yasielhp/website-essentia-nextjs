@@ -2221,7 +2221,7 @@
       "notConfigured": "WhatsApp Business is not connected yet; tell whoever manages the website. Templates are saved as drafts.",
       "loadFailed": "The templates could not be loaded.",
       "retry": "Try again",
-      "empty": "There are no templates yet. Create the first one or sync the ones you already have at Meta.",
+      "empty": "There are no templates yet. Create the first one; the ones you already have at Meta will show up here by themselves.",
       "table": {
         "name": "Name",
         "language": "Language",
@@ -2326,7 +2326,7 @@
         "db": "The database could not be reached.",
         "invalid": "Check the highlighted fields.",
         "templateExists": "A template with that name and language already exists.",
-        "submittedNotSaved": "Meta accepted the template, but it was not saved here. Sync to bring it in.",
+        "submittedNotSaved": "Meta accepted the template, but it was not saved here. It will show up by itself at the next update from Meta.",
         "whatsapp_not_configured": "WhatsApp Business is not set up on the server.",
         "meta": "Meta rejected the request."
       }
