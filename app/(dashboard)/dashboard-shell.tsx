@@ -70,10 +70,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const displayName = user?.name ?? user?.email ?? t("shell.fallbackUser");
   const crumbLabel = (crumb: Breadcrumb) => {
     if (crumb.messageRow) {
-      const { channel, key, locale } = crumb.messageRow;
+      const { channel, key } = crumb.messageRow;
       return messageRowLabel(
         t(`messages.keys.${key}`),
-        t(`messages.email.locales.${locale}`),
         channel === "whatsapp"
           ? t("messages.email.whatsapp.channelLabel")
           : undefined,

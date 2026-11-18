@@ -2422,7 +2422,7 @@
         "bonus_card": "Voucher details"
       },
       "editor": {
-        "title": "Edit “{name}” · {language}",
+        "title": "Edit “{name}”",
         "subject": "Subject",
         "preheader": "Preheader",
         "preheaderHint": "The line mail apps show next to the subject.",
@@ -2516,7 +2516,7 @@
           "noButtons": "Templates with a variable-link button are not offered: this send does not fill buttons."
         },
         "editor": {
-          "title": "WhatsApp · “{name}” · {language}",
+          "title": "WhatsApp · “{name}”",
           "template": "Template",
           "templatePlaceholder": "Choose a template",
           "noneTitle": "There is no template yet that can be used here in {language}.",
@@ -2562,6 +2562,9 @@
       "types": {
         "email": "Email",
         "whatsapp": "WhatsApp"
+      },
+      "languageSwitch": {
+        "label": "Language"
       }
     }
   },

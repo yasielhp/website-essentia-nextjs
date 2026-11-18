@@ -54,11 +54,11 @@ export function messageListHref(): string {
   return "/dashboard/messages?tab=email";
 }
 
-/** What the page is called: "Booking confirmed · WhatsApp · Spanish". */
-export function messageRowLabel(
-  name: string,
-  language: string,
-  channelLabel?: string,
-): string {
-  return [name, channelLabel, language].filter(Boolean).join(" · ");
+/**
+ * What the page is called in the crumbs: "Booking received", and for the
+ * WhatsApp notice "Booking confirmed · WhatsApp". The language is chosen on the
+ * page, so it is not part of the name.
+ */
+export function messageRowLabel(name: string, channelLabel?: string): string {
+  return [name, channelLabel].filter(Boolean).join(" · ");
 }

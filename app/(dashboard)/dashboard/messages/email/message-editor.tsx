@@ -53,6 +53,7 @@ import {
   UnsavedBar,
   useMessageReset,
 } from "./page-parts";
+import { LanguageSwitch } from "./language-switch";
 import { VariableChips } from "./variable-chips";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
@@ -414,16 +415,10 @@ export function MessageEditor({
     );
   };
 
-  const language = t(`locales.${locale}`);
-
   return (
     <div className="flex flex-col gap-6">
       <MessagePageHeader
-        title={tEditor("title", { name: tKeys(messageKey), language })}
-        status={{
-          text: hasSaved ? t("status.custom") : t("status.default"),
-          tone: hasSaved ? "custom" : "default",
-        }}
+        title={tEditor("title", { name: tKeys(messageKey) })}
         extraStatus={
           catalog.canDisable && !enabled ? t("status.disabled") : undefined
         }
@@ -508,6 +503,11 @@ export function MessageEditor({
 
       <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-6">
+          <LanguageSwitch
+            channel="email"
+            messageKey={messageKey}
+            locale={locale}
+          />
           {textInput("subject", tEditor("subject"))}
           {textInput(
             "preheader",

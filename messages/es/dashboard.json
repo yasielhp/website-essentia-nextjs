@@ -2422,7 +2422,7 @@
         "bonus_card": "Detalles del bono"
       },
       "editor": {
-        "title": "Editar «{name}» · {language}",
+        "title": "Editar «{name}»",
         "subject": "Asunto",
         "preheader": "Pre-encabezado",
         "preheaderHint": "La línea que muestran las apps de correo junto al asunto.",
@@ -2516,7 +2516,7 @@
           "noButtons": "No se ofrecen las plantillas con un botón de enlace variable: este envío no rellena botones."
         },
         "editor": {
-          "title": "WhatsApp · «{name}» · {language}",
+          "title": "WhatsApp · «{name}»",
           "template": "Plantilla",
           "templatePlaceholder": "Elige una plantilla",
           "noneTitle": "Todavía no hay ninguna plantilla que se pueda usar aquí en {language}.",
@@ -2562,6 +2562,9 @@
       "types": {
         "email": "Email",
         "whatsapp": "WhatsApp"
+      },
+      "languageSwitch": {
+        "label": "Idioma"
       }
     }
   },

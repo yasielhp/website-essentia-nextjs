@@ -118,10 +118,7 @@ export function EmailMessagePage({
   const t = useTranslations("dashboard.messages.email");
   const tKeys = useTranslations("dashboard.messages.keys");
   const loaded = useLoadedMessages();
-  const title = t("editor.title", {
-    name: tKeys(messageKey),
-    language: t(`locales.${locale}`),
-  });
+  const title = t("editor.title", { name: tKeys(messageKey) });
 
   if (loaded.status !== "ready") {
     return (
@@ -202,10 +199,7 @@ export function WhatsAppMessagePage({
   const loaded = useLoadedMessages();
   const [templatesKey, setTemplatesKey] = useState(0);
   const templates = useWhatsAppTemplates(true, templatesKey);
-  const title = t("whatsapp.editor.title", {
-    name: tKeys(messageKey),
-    language: t(`locales.${locale}`),
-  });
+  const title = t("whatsapp.editor.title", { name: tKeys(messageKey) });
 
   const failed = loaded.status === "error" || templates.status === "error";
   if (loaded.status !== "ready" || templates.status !== "ready") {

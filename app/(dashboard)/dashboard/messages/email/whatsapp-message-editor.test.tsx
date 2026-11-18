@@ -99,3 +99,30 @@ describe("the explanation of the page", () => {
     );
   });
 });
+
+describe("the language of the WhatsApp notice is chosen inside the page", () => {
+  const html = render("es");
+  const top = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+
+  test("the title carries no language, and says WhatsApp first", () => {
+    expect(top).toContain("WhatsApp · «Reserva confirmada»");
+    expect(top).not.toContain("Español");
+  });
+  test("the 'Not set up' state stays beside the title", () => {
+    expect(top).toContain("Sin configurar");
+  });
+  test("a switch Spanish | English sits above the template, as links with the open one marked", () => {
+    const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
+    expect(nav).toContain(
+      'href="/dashboard/messages/whatsapp/booking_confirmed/es"',
+    );
+    expect(nav).toContain(
+      'href="/dashboard/messages/whatsapp/booking_confirmed/en"',
+    );
+    expect(nav.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(html.indexOf("<nav")).toBeLessThan(
+      html.indexOf("wa-message-template"),
+    );
+    expect(render("en")).toContain("Language");
+  });
+});

@@ -87,14 +87,12 @@ describe("hrefs", () => {
 });
 
 describe("messageRowLabel", () => {
-  test("is the message and its language, as the list shows them", () => {
-    expect(messageRowLabel("Reserva confirmada", "Español")).toBe(
-      "Reserva confirmada · Español",
-    );
+  test("is the message, with no language: that is chosen on its page", () => {
+    expect(messageRowLabel("Reserva confirmada")).toBe("Reserva confirmada");
   });
-  test("WhatsApp says so between the two", () => {
-    expect(messageRowLabel("Reserva confirmada", "Español", "WhatsApp")).toBe(
-      "Reserva confirmada · WhatsApp · Español",
+  test("the WhatsApp notice says so after the name", () => {
+    expect(messageRowLabel("Reserva confirmada", "WhatsApp")).toBe(
+      "Reserva confirmada · WhatsApp",
     );
   });
 });

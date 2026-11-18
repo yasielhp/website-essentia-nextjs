@@ -1,5 +1,6 @@
 "use client";
 
+import { LanguageSwitch } from "./language-switch";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -254,7 +255,7 @@ export function WhatsAppMessageEditor({
   return (
     <div className="flex flex-col gap-6">
       <MessagePageHeader
-        title={tEd("title", { name: tKeys(messageKey), language })}
+        title={tEd("title", { name: tKeys(messageKey) })}
         status={{
           text: hasSaved ? t("pageStatus.set") : t("pageStatus.none"),
           tone: hasSaved ? "custom" : "default",
@@ -332,6 +333,12 @@ export function WhatsAppMessageEditor({
           {t("campaignLink")}
         </Link>
       </p>
+
+      <LanguageSwitch
+        channel="whatsapp"
+        messageKey={messageKey}
+        locale={locale}
+      />
 
       <div className="flex flex-col gap-1.5">
         <label

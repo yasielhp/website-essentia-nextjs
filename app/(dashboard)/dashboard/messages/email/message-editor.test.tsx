@@ -127,10 +127,11 @@ describe("the page of any other email", () => {
     expect(html).toContain("Enviarme prueba");
   });
 
-  test("a saved text reads as custom and offers Reset", () => {
+  test("a saved text offers Reset, and says nothing about being 'custom' beside the title", () => {
     const html = render("booking_confirmed", { enabled: true, subject: "Mío" });
-    expect(html).toContain("Personalizado");
     expect(html).toContain("Restablecer");
+    const top = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+    expect(top).not.toContain("Personalizado");
   });
 });
 
@@ -180,5 +181,43 @@ describe("the header of a message page", () => {
     const top = header(render("booking_confirmed", null));
     expect(top).not.toContain("Restablecer");
     expect(top).toMatch(/disabled=""[^>]*>[^<]*(<[^>]*>[^<]*)*Guardar/);
+  });
+});
+
+describe("the language of the message is chosen inside the page", () => {
+  const html = render("booking_confirmed", null);
+  const top = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+
+  test("the title carries no language, and there is no 'Default' badge beside it", () => {
+    expect(top).toContain("Editar «Reserva confirmada»");
+    expect(top).not.toContain("Español");
+    expect(top).not.toContain("Inglés");
+    expect(top).not.toContain("Por defecto");
+    expect(html).not.toContain("Personalizado");
+  });
+
+  test("a switch Spanish | English sits above the subject, as the two pages' links, the open one marked", () => {
+    const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
+    expect(nav).toContain(
+      'href="/dashboard/messages/email/booking_confirmed/es"',
+    );
+    expect(nav).toContain(
+      'href="/dashboard/messages/email/booking_confirmed/en"',
+    );
+    expect(nav.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(nav.indexOf("Español")).toBeLessThan(nav.indexOf("Inglés"));
+    // The open one is the one marked.
+    const marked = nav.slice(nav.indexOf('aria-current="page"'));
+    expect(marked.slice(0, marked.indexOf("</a>"))).toContain("Español");
+    expect(html.indexOf("<nav")).toBeLessThan(
+      html.indexOf('id="message-subject"'),
+    );
+    expect(html).toContain("Idioma");
+  });
+
+  test("the reminder, sent in Spanish only, has nothing to choose", () => {
+    const reminder = render("booking_reminder", null);
+    expect(reminder).not.toContain("<nav");
+    expect(reminder).not.toContain("/booking_reminder/en");
   });
 });
