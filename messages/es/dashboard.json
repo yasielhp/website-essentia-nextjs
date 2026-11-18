@@ -2429,7 +2429,6 @@
         "titleField": "Título",
         "titleHint": "El encabezado grande dentro del correo.",
         "body": "Cuerpo",
-        "seedNotice": "Estás viendo el texto actual del correo. Si lo cambias, tu versión sustituye al texto por defecto.",
         "customNotice": "Esta es tu versión guardada. «Restablecer» vuelve al texto por defecto.",
         "closingNote": "Si editas el cuerpo, el texto de cierre por defecto también pasa a ser tuyo.",
         "emptyNote": "Dejar el cuerpo vacío vuelve al texto por defecto.",

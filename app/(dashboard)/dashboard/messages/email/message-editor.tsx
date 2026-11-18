@@ -433,11 +433,12 @@ export function MessageEditor({
         extraStatus={
           catalog.canDisable && !enabled ? t("status.disabled") : undefined
         }
-        describedBy="message-notice"
+        describedBy={hasSaved ? "message-notice" : undefined}
         help={{
           id: "message-test-help",
           text:
             actions.help === "saveFirst" ? tEditor("saveFirst") : t("testNote"),
+          quiet: actions.help !== "saveFirst",
         }}
         actions={
           <>
@@ -505,12 +506,15 @@ export function MessageEditor({
         </div>
       )}
 
-      <p
-        id="message-notice"
-        className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs"
-      >
-        {hasSaved ? tEditor("customNotice") : tEditor("seedNotice")}
-      </p>
+      {/* Only once there is a version of the admin's own: what Reset does. */}
+      {hasSaved && (
+        <p
+          id="message-notice"
+          className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs"
+        >
+          {tEditor("customNotice")}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-6">

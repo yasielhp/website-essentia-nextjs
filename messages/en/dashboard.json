@@ -2429,7 +2429,6 @@
         "titleField": "Title",
         "titleHint": "The large heading inside the email.",
         "body": "Body",
-        "seedNotice": "You are looking at the email's current text. If you change it, your version replaces the default text.",
         "customNotice": "This is your saved version. “Reset” goes back to the default text.",
         "closingNote": "If you edit the body, the default closing text becomes yours as well.",
         "emptyNote": "Leaving the body empty goes back to the default text.",

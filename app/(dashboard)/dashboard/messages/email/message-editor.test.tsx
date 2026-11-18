@@ -154,12 +154,20 @@ describe("the header of a message page", () => {
     );
   });
 
-  test("the help line sits under the title, and the test button is described by it", () => {
+  test("what the test sends describes its button for a screen reader, and is not a line under the title", () => {
     const html = render("booking_confirmed", null);
     const top = header(html);
-    expect(top).toContain('id="message-test-help"');
     expect(top).toContain('aria-describedby="message-test-help"');
+    const help = top.match(/<p[^>]*id="message-test-help"[^>]*>/)?.[0] ?? "";
+    expect(help).toContain('class="sr-only"');
     expect(top).toContain("La prueba se envía solo a tu email");
+  });
+
+  test("a message nobody has edited says nothing about whose text it is", () => {
+    const html = render("booking_confirmed", null);
+    expect(html).not.toContain("Estás viendo el texto actual del correo");
+    expect(html).not.toContain('id="message-notice"');
+    expect(header(html)).not.toContain('aria-describedby="message-notice"');
   });
 
   test("the title is first, and is where focus goes", () => {

@@ -21,7 +21,9 @@ import { useEmailActionToast } from "./action-error";
  * reader starts on it and the next thing to reach is the actions, then the form.
  * The way back to the list is the crumb above, not a button.
  *
- * `help` is the small line under the title; the test button is described by it.
+ * `help` describes the test button. It is a small line under the title only
+ * when it tells the admin something to do (save first); what the test sends is
+ * left to a screen reader (`quiet`), since the button already says it.
  */
 export function MessagePageHeader({
   title,
@@ -37,7 +39,7 @@ export function MessagePageHeader({
   /** A second state beside it, such as "Switched off". */
   extraStatus?: string;
   describedBy?: string;
-  help?: { id: string; text: string };
+  help?: { id: string; text: string; quiet?: boolean };
   actions?: React.ReactNode;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -77,7 +79,11 @@ export function MessagePageHeader({
         {help && (
           <p
             id={help.id}
-            className="text-petroleum-400 mt-1.5 max-w-xl text-xs"
+            className={
+              help.quiet
+                ? "sr-only"
+                : "text-petroleum-400 mt-1.5 max-w-xl text-xs"
+            }
           >
             {help.text}
           </p>

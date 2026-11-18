@@ -264,6 +264,7 @@ export function WhatsAppMessageEditor({
           id: "message-test-help",
           text:
             actions.help === "saveFirst" ? tEd("saveFirst") : tEd("testNote"),
+          quiet: actions.help !== "saveFirst",
         }}
         actions={
           <>
