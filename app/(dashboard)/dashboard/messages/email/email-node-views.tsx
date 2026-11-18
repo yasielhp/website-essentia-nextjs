@@ -16,7 +16,6 @@ import {
   IconEuro,
   IconGrip,
   IconLink,
-  IconLock,
   IconPin,
   IconReceipt,
   IconTag,
@@ -29,7 +28,6 @@ import {
   type BlockIcon,
 } from "@/lib/messages/variable-kinds";
 import type { FixedBlock, MessageVariable } from "@/lib/messages/catalog";
-import { isRequiredBlock } from "@/lib/messages/catalog";
 import {
   EmailDocGuard,
   EmailTitleNode,
@@ -61,7 +59,6 @@ export type EmailNodesUi = {
   down: (name: string) => string;
   remove: (name: string) => string;
   drag: (name: string) => string;
-  locked: string;
 };
 
 /** Re-draws a view when the document changes: whether a block can still move depends on its neighbours. */
@@ -107,7 +104,6 @@ function BlockView({
   const info = BLOCK_INFO[kind];
   if (!info) return <NodeViewWrapper />;
   const name = ui.blockName(kind);
-  const required = isRequiredBlock(kind);
   const pos = typeof getPos === "function" ? getPos() : undefined;
   const can = (dir: "up" | "down") =>
     typeof pos === "number" && canMove(editor.state.doc, pos, dir);
@@ -181,12 +177,6 @@ function BlockView({
             })}
           </ul>
         )}
-        {required && (
-          <p className="text-petroleum-400 mt-1.5 inline-flex items-center gap-1 text-xs">
-            <IconLock />
-            {ui.locked}
-          </p>
-        )}
       </div>
       <div className="ml-auto flex shrink-0 items-center justify-end">
         <button
@@ -211,18 +201,16 @@ function BlockView({
         >
           <IconArrowDown />
         </button>
-        {!required && (
-          <button
-            type="button"
-            data-action="remove"
-            aria-label={ui.remove(name)}
-            title={ui.remove(name)}
-            onClick={remove}
-            className={ACTION}
-          >
-            <IconTrash />
-          </button>
-        )}
+        <button
+          type="button"
+          data-action="remove"
+          aria-label={ui.remove(name)}
+          title={ui.remove(name)}
+          onClick={remove}
+          className={ACTION}
+        >
+          <IconTrash />
+        </button>
       </div>
     </NodeViewWrapper>
   );
@@ -230,13 +218,9 @@ function BlockView({
 
 /**
  * The editor's nodes for the whole email: the title, the blocks the system
- * adds, and the guard that keeps them in order, drawn with `ui`. The required
- * ones are the catalogue's, so the editor and the server read one rule.
+ * adds, and the guard that keeps them in order, drawn with `ui`.
  */
-export function emailNodeExtensions(
-  ui: EmailNodesUi,
-  required: ReadonlySet<string>,
-): AnyExtension[] {
+export function emailNodeExtensions(ui: EmailNodesUi): AnyExtension[] {
   const Title = (props: NodeViewProps) => <TitleView ui={ui} {...props} />;
   const Block = (props: NodeViewProps) => <BlockView ui={ui} {...props} />;
   return [
@@ -257,6 +241,6 @@ export function emailNodeExtensions(
             ),
         }),
     }),
-    EmailDocGuard.configure({ required }),
+    EmailDocGuard,
   ];
 }

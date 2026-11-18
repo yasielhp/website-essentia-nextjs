@@ -538,7 +538,7 @@ describe("repairForSending: an email never goes out without what it needs", () =
 });
 
 describe("putting a block back", () => {
-  test("it goes before the first block it should come before, or at the end", () => {
+  test("it joins the blocks, right after the last one that comes before it in the message's order", () => {
     // confirmed: details, location, calendar, consent, cancel
     expect(
       insertIndexFor(
@@ -546,7 +546,7 @@ describe("putting a block back", () => {
         "location",
         "booking_confirmed",
       ),
-    ).toBe(2 + 1);
+    ).toBe(3);
     expect(
       insertIndexFor(
         [TITLE_NODE, null, "details_card"],
@@ -554,6 +554,16 @@ describe("putting a block back", () => {
         "booking_confirmed",
       ),
     ).toBe(3);
+    // The closing sentence after the blocks stays after them.
+    expect(
+      insertIndexFor(
+        [TITLE_NODE, "details_card", "calendar_button", null],
+        "cancel_link",
+        "booking_rescheduled",
+      ),
+    ).toBe(3);
+  });
+  test("with none before it, ahead of the first one after it; with none at all, at the end", () => {
     expect(
       insertIndexFor(
         [TITLE_NODE, "location"],
@@ -562,15 +572,22 @@ describe("putting a block back", () => {
       ),
     ).toBe(1);
     expect(insertIndexFor([], "details_card", "booking_confirmed")).toBe(0);
+    expect(
+      insertIndexFor(
+        [TITLE_NODE, null, null],
+        "details_card",
+        "booking_confirmed",
+      ),
+    ).toBe(3);
   });
-  test("a text between blocks does not move it", () => {
+  test("a text between blocks does not move it: it follows the block before it", () => {
     expect(
       insertIndexFor(
         ["details_card", null, null, "cancel_link"],
         "calendar_button",
         "booking_rescheduled",
       ),
-    ).toBe(3);
+    ).toBe(1);
   });
   test("the blocks that can be put back are the ones the document lacks, in the message's order", () => {
     const d = doc(

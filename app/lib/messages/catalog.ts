@@ -77,12 +77,13 @@ export type FixedBlock =
   | "bonus_card";
 
 /**
- * Which blocks can be taken out of a message. A block that does a job (the link
- * to cancel, the button to sign, the notice of what is still owed, the voucher's
- * card) is `required`: the document of a message that lacks one is refused when
+ * Which blocks an email must carry. A block that does a job (the link to
+ * cancel, the button to sign, the notice of what is still owed, the voucher's
+ * card) is `required`: the editor lets it be removed, but then says the email
+ * must have it and does not let it be saved; the server refuses the same when
  * saved, and sending adds it back, so no email ever goes out without it. The
  * ones that only inform (the booking's details, the address, the calendar
- * button) can be removed. Every block can be moved.
+ * button) can be removed without a word. Every block can be moved.
  */
 export const FIXED_BLOCK_INFO: Record<FixedBlock, { required: boolean }> = {
   details_card: { required: false },
@@ -97,7 +98,7 @@ export const FIXED_BLOCK_INFO: Record<FixedBlock, { required: boolean }> = {
 export const isRequiredBlock = (block: FixedBlock): boolean =>
   FIXED_BLOCK_INFO[block].required;
 
-/** The blocks of a message that cannot be removed, in its order. */
+/** The blocks a message must carry, in its order. */
 export function requiredBlocks(key: MessageKey): FixedBlock[] {
   return MESSAGE_CATALOG[key].fixed.filter(isRequiredBlock);
 }

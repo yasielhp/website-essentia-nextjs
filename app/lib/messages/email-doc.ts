@@ -399,10 +399,12 @@ export function repairForSending(
 // ── putting a block back ───────────────────────────────────────────────────
 
 /**
- * Where a block taken out goes when it is put back: before the first block the
- * document still has that comes after it in the order the message has always had
- * its blocks, or at the end when none does. `topLevel` is what the document has,
- * node by node: a block's kind, or `null` for anything else.
+ * Where a block taken out goes when it is put back: right after the last block
+ * the document still has that comes before it in the order the message has
+ * always had its blocks (so it joins them, ahead of the closing sentence), or
+ * else before the first one that comes after it, or at the end when the
+ * document has none. `topLevelKinds` is what the document has, node by node: a
+ * block's kind, or `null` for anything else.
  */
 export function insertIndexFor(
   topLevelKinds: readonly (string | null)[],
@@ -411,10 +413,17 @@ export function insertIndexFor(
 ): number {
   const order = MESSAGE_CATALOG[key].fixed as readonly string[];
   const rank = order.indexOf(kind);
-  const at = topLevelKinds.findIndex(
-    (other) => other !== null && order.indexOf(other) > rank,
-  );
-  return at === -1 ? topLevelKinds.length : at;
+  let lastBefore = -1;
+  let firstAfter = -1;
+  topLevelKinds.forEach((other, index) => {
+    if (other === null) return;
+    const at = order.indexOf(other);
+    if (at === -1) return;
+    if (at < rank) lastBefore = index;
+    else if (at > rank && firstAfter === -1) firstAfter = index;
+  });
+  if (lastBefore !== -1) return lastBefore + 1;
+  return firstAfter !== -1 ? firstAfter : topLevelKinds.length;
 }
 
 /** The blocks of a message that the document does not have (the ones that can be put back). */

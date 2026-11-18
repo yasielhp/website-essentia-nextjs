@@ -202,6 +202,12 @@ export function MessageEditor({
     () => missingBlocks(current.doc, messageKey),
     [current.doc, messageKey],
   );
+  // What this email must carry and the document lacks: said over the editor, and
+  // Save waits for it (the server refuses the same, and sending adds it).
+  const mustHave = useMemo(
+    () => requiredBlocks(messageKey).filter((block) => missing.includes(block)),
+    [messageKey, missing],
+  );
   // The editor's own nodes for the whole email, drawn in the page's words. Built
   // once: the editor is.
   const nodes = useMemo(() => {
@@ -215,9 +221,8 @@ export function MessageEditor({
       down: (name) => tEditor("blockDown", { name }),
       remove: (name) => tEditor("blockRemove", { name }),
       drag: (name) => tEditor("blockDrag", { name }),
-      locked: tEditor("blockLocked"),
     };
-    return emailNodeExtensions(ui, new Set(requiredBlocks(messageKey)));
+    return emailNodeExtensions(ui);
     // Built once with the page's words: the editor keeps what it was given.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -545,9 +550,18 @@ export function MessageEditor({
               {testing ? t("actions.testing") : t("actions.test")}
             </Button>
             <Button
-              disabled={actions.save.disabled}
+              disabled={actions.save.disabled || mustHave.length > 0}
+              title={
+                mustHave.length > 0
+                  ? tEditor("saveBlocked")
+                  : dirty
+                    ? undefined
+                    : tEditor("unchanged")
+              }
+              aria-describedby={
+                mustHave.length > 0 ? "message-missing-blocks" : undefined
+              }
               onClick={() => void save()}
-              title={dirty ? undefined : tEditor("unchanged")}
             >
               {saving ? tEditor("saving") : tEditor("save")}
             </Button>
@@ -627,6 +641,32 @@ export function MessageEditor({
             <p id="message-body-hint" className="text-petroleum-400 text-xs">
               {tEditor("bodyHint")}
             </p>
+            {mustHave.length > 0 && (
+              <div
+                id="message-missing-blocks"
+                role="alert"
+                className="flex flex-col gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3"
+              >
+                {mustHave.map((block) => (
+                  <div
+                    key={block}
+                    className="flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <p className="text-sm font-medium text-red-700">
+                      {tEditor("blockMissing", { name: t(`fixed.${block}`) })}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-11 sm:h-8"
+                      onClick={() => addBlock(block)}
+                    >
+                      {tEditor("blockAdd")}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             {/* One card: the bar of variables over the whole email. */}
             <div
               className={`rounded-2xl border bg-white ${

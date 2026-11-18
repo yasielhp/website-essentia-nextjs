@@ -1112,7 +1112,7 @@
     "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts",
     "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates.",
     "titleOne": "The email must have one title, and only one.",
-    "blockRequired": "The block “{name}” is missing: it cannot be removed.",
+    "blockRequired": "The block “{name}” is missing: this email must have it.",
     "blockRepeated": "This block is already in the email: it can only appear once."
   },
   "gender": {
@@ -2466,7 +2466,9 @@
         "blockDown": "Move down “{name}”",
         "blockRemove": "Remove “{name}”",
         "blockDrag": "Drag “{name}”",
-        "blockLocked": "It cannot be removed"
+        "blockMissing": "“{name}” is missing. This email must have it.",
+        "blockAdd": "Add",
+        "saveBlocked": "A block this email must have is missing: add it to save."
       },
       "errors": {
         "generic": "The action could not be completed.",

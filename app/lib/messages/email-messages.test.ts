@@ -115,7 +115,9 @@ describe("the Emails tab strings", () => {
         "blockDown",
         "blockRemove",
         "blockDrag",
-        "blockLocked",
+        "blockMissing",
+        "blockAdd",
+        "saveBlocked",
         "bodyHint",
       ]) {
         expect(messages[`messages.email.editor.${key}`]).toBeTruthy();
@@ -124,9 +126,13 @@ describe("the Emails tab strings", () => {
         expect(messages[`messages.email.editor.${key}`]).toContain("{name}");
       }
     }
-    expect(LOCALES.es["messages.email.editor.blockLocked"]).toBe(
-      "No se puede quitar",
+    expect(LOCALES.es["messages.email.editor.blockMissing"]).toBe(
+      "Falta «{name}». Este correo debe llevarlo.",
     );
+    // Nothing is locked any more: every block can be removed.
+    for (const messages of Object.values(LOCALES)) {
+      expect(messages["messages.email.editor.blockLocked"]).toBeUndefined();
+    }
     // The old list of bullets under the editor is gone.
     for (const messages of Object.values(LOCALES)) {
       for (const key of [

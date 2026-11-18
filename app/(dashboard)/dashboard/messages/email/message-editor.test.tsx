@@ -308,25 +308,98 @@ describe("the whole email in one editor", () => {
 describe("the editor's nodes for the email", () => {
   test("a title, the blocks, and the guard that keeps them in order", async () => {
     const { emailNodeExtensions } = await import("./email-node-views");
-    const nodes = emailNodeExtensions(
-      {
-        variables: [],
-        titleLabel: "Título",
-        blockName: () => "",
-        blockWhat: () => "",
-        variableLabel: (n) => n,
-        up: () => "",
-        down: () => "",
-        remove: () => "",
-        drag: () => "",
-        locked: "",
-      },
-      new Set(["cancel_link"]),
-    );
+    const nodes = emailNodeExtensions({
+      variables: [],
+      titleLabel: "Título",
+      blockName: () => "",
+      blockWhat: () => "",
+      variableLabel: (n) => n,
+      up: () => "",
+      down: () => "",
+      remove: () => "",
+      drag: () => "",
+    });
     expect(nodes.map((n) => n.name)).toEqual([
       "emailTitle",
       "systemBlock",
       "emailDocGuard",
     ]);
+  });
+});
+
+describe("a block the email must carry and the document lacks", () => {
+  /** The default document without one kind of block, as a saved row. */
+  const without = (key: Parameters<typeof render>[0], kind: string) => ({
+    enabled: true,
+    doc: {
+      type: "doc",
+      content: (defaultContent(key, "es").doc.content ?? []).filter(
+        (n) => !(n.type === "systemBlock" && n.attrs?.kind === kind),
+      ),
+    },
+  });
+  const header = (html: string) =>
+    html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+
+  test("it is an alert over the editor that names it, with a button to add it", () => {
+    const html = render(
+      "booking_confirmed",
+      without("booking_confirmed", "cancel_link") as never,
+    );
+    const alert = html.slice(html.indexOf('id="message-missing-blocks"'));
+    expect(alert).toContain('role="alert"');
+    expect(alert.slice(0, alert.indexOf("</div></div>"))).toContain(
+      "Falta «Enlace para cancelar o cambiar la cita». Este correo debe llevarlo.",
+    );
+    expect(alert.slice(0, 900)).toContain(">Añadir<");
+    expect(html.indexOf('id="message-missing-blocks"')).toBeLessThan(
+      html.indexOf('role="toolbar"'),
+    );
+  });
+
+  test("one line for each that is missing", () => {
+    const html = render("booking_confirmed", {
+      enabled: true,
+      doc: {
+        type: "doc",
+        content: [defaultContent("booking_confirmed", "es").doc.content![0]],
+      },
+    } as never);
+    const alert = html.slice(
+      html.indexOf('id="message-missing-blocks"'),
+      html.indexOf('role="toolbar"'),
+    );
+    expect((alert.match(/Este correo debe llevarlo/g) ?? []).length).toBe(2);
+    expect(alert).toContain("Botón para firmar el consentimiento");
+    expect(alert).toContain("Enlace para cancelar o cambiar la cita");
+  });
+
+  test("Save waits, and says why", () => {
+    const top = header(
+      render(
+        "booking_confirmed",
+        without("booking_confirmed", "cancel_link") as never,
+      ),
+    );
+    expect(top).toMatch(/disabled=""[^>]*>[^<]*(<[^>]*>[^<]*)*Guardar/);
+    expect(top).toContain("Falta un bloque que este correo debe llevar");
+    expect(top).toContain('aria-describedby="message-missing-blocks"');
+  });
+
+  test("a block that only informs may be missing without a word", () => {
+    const html = render(
+      "booking_confirmed",
+      without("booking_confirmed", "location") as never,
+    );
+    expect(html).not.toContain('id="message-missing-blocks"');
+    expect(html).not.toContain("Este correo debe llevarlo");
+    // It can be put back from the bar.
+    expect(html).toContain("Añadir bloque");
+  });
+
+  test("with nothing missing there is no alert, and no lock anywhere", () => {
+    const html = render("booking_confirmed", null);
+    expect(html).not.toContain('id="message-missing-blocks"');
+    expect(html).not.toContain("No se puede quitar");
   });
 });

@@ -54,7 +54,7 @@ export const MESSAGE_VALIDATION_KEYS = [
   "docTooLarge",
   "docTooDeep",
   "docNotRenderable",
-  // The structure of the whole email: one title, and the blocks that cannot go.
+  // The structure of the whole email: one title, and the blocks it must carry.
   "titleOne",
   "blockRequired",
   "blockRepeated",

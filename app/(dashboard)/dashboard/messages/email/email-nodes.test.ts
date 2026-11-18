@@ -23,10 +23,9 @@ const extensions = [
   VariableExtension,
   EmailTitleNode,
   SystemBlockNode,
-  EmailDocGuard.configure({ required: new Set(["cancel_link"]) }),
+  EmailDocGuard,
 ];
 const schema = getSchema(extensions);
-const RULES = { required: new Set(["cancel_link"]) };
 
 const title = (text = "Hola") => ({
   type: "emailTitle",
@@ -79,14 +78,12 @@ describe("the schema", () => {
 });
 
 describe("changeAllowed: what the editor refuses", () => {
-  const ok = (next: ReturnType<typeof doc>) =>
-    changeAllowed(DOC(), next, RULES);
+  const ok = (next: ReturnType<typeof doc>) => changeAllowed(DOC(), next);
 
-  test("taking away a block that cannot go is refused", () => {
-    expect(ok(doc(title(), para("Texto"), block("details_card")))).toBe(false);
-  });
-  test("taking away a block that only informs is allowed", () => {
+  test("any block can be taken away, the ones a message must carry too: the page says it is missing, the editor does not stop it", () => {
+    expect(ok(doc(title(), para("Texto"), block("details_card")))).toBe(true);
     expect(ok(doc(title(), para("Texto"), block("cancel_link")))).toBe(true);
+    expect(ok(doc(title(), para("Texto")))).toBe(true);
   });
   test("moving a block, even a required one, is allowed: it is the same set", () => {
     expect(
@@ -182,61 +179,39 @@ describe("changeAllowed: what the editor refuses", () => {
   test("what was already wrong is not made worse, and is not demanded", () => {
     const broken = doc(para("sin título"), block("details_card"));
     expect(
-      changeAllowed(
-        broken,
-        doc(para("otra cosa"), block("details_card")),
-        RULES,
-      ),
+      changeAllowed(broken, doc(para("otra cosa"), block("details_card"))),
     ).toBe(true);
     expect(
-      changeAllowed(
-        broken,
-        doc(title(), para("a"), block("details_card")),
-        RULES,
-      ),
+      changeAllowed(broken, doc(title(), para("a"), block("details_card"))),
     ).toBe(true);
   });
 });
 
 describe("the guard inside a state", () => {
-  const state = () => EditorState.create({ doc: DOC(), plugins: [] });
+  const withPlugin = () =>
+    EditorState.create({
+      doc: DOC(),
+      plugins: EmailDocGuard.config.addProseMirrorPlugins!.call({} as never),
+    });
 
   test("a change that breaks a rule does nothing; one that does not goes through", () => {
-    const withPlugin = EditorState.create({
-      doc: DOC(),
-      plugins: EmailDocGuard.configure({
-        required: new Set(["cancel_link"]),
-      }).config.addProseMirrorPlugins!.call({
-        options: { required: new Set(["cancel_link"]) },
-      } as never),
-    });
-    // The last node is the required block.
-    const last = withPlugin.doc.lastChild!;
-    const from = withPlugin.doc.content.size - last.nodeSize;
-    const refused = withPlugin.applyTransaction(
-      withPlugin.tr.delete(from, from + last.nodeSize),
+    const s = withPlugin();
+    // A second title is refused.
+    const second = s.tr.insert(
+      s.doc.content.size,
+      schema.nodeFromJSON(title("Otro")),
     );
-    expect(refused.state.doc.eq(withPlugin.doc)).toBe(true);
-    // Cutting a selected block is the same deletion.
-    const selected = withPlugin.tr
-      .setSelection(NodeSelection.create(withPlugin.doc, from))
+    expect(s.applyTransaction(second).state.doc.eq(s.doc)).toBe(true);
+    // Removing a block, selected as a whole and cut, goes through (a required one too).
+    const last = s.doc.lastChild!;
+    const from = s.doc.content.size - last.nodeSize;
+    const cut = s.tr
+      .setSelection(NodeSelection.create(s.doc, from))
       .deleteSelection();
-    expect(
-      withPlugin.applyTransaction(selected).state.doc.eq(withPlugin.doc),
-    ).toBe(true);
-    // The block that only informs can go.
-    const infoFrom =
-      withPlugin.doc.content.size -
-      last.nodeSize -
-      withPlugin.doc.child(2).nodeSize;
-    const allowed = withPlugin.applyTransaction(
-      withPlugin.tr.delete(
-        infoFrom,
-        infoFrom + withPlugin.doc.child(2).nodeSize,
-      ),
-    );
-    expect(allowed.state.doc.childCount).toBe(3);
-    expect(state().doc.childCount).toBe(4);
+    expect(s.applyTransaction(cut).state.doc.childCount).toBe(3);
+    // The title cannot be removed.
+    const noTitle = s.tr.delete(0, s.doc.firstChild!.nodeSize);
+    expect(s.applyTransaction(noTitle).state.doc.eq(s.doc)).toBe(true);
   });
 });
 
@@ -291,7 +266,7 @@ describe("moving a block", () => {
   test("the moved document passes the guard (a move is not a removal)", () => {
     const s = start();
     const tr = moveBlockTransaction(s, posOf(s, 3), "up")!;
-    expect(changeAllowed(s.doc, tr.doc, RULES)).toBe(true);
+    expect(changeAllowed(s.doc, tr.doc)).toBe(true);
   });
   test("a position that is not a node's start moves nothing", () => {
     expect(moveBlockTransaction(start(), 1, "up")).toBeNull();

@@ -1112,7 +1112,7 @@
     "manualNotAllowed": "Un aviso de cita se envía a quien tiene la cita: no admite contactos añadidos a mano",
     "templateCategoryNotAllowed": "Esta plantilla es de Marketing: los avisos de cita solo pueden usar plantillas de Utilidad.",
     "titleOne": "El correo debe tener un título, y solo uno.",
-    "blockRequired": "Falta el bloque «{name}»: no se puede quitar.",
+    "blockRequired": "Falta el bloque «{name}»: este correo debe llevarlo.",
     "blockRepeated": "Este bloque ya está en el correo: solo puede aparecer una vez."
   },
   "gender": {
@@ -2466,7 +2466,9 @@
         "blockDown": "Bajar «{name}»",
         "blockRemove": "Quitar «{name}»",
         "blockDrag": "Arrastrar «{name}»",
-        "blockLocked": "No se puede quitar"
+        "blockMissing": "Falta «{name}». Este correo debe llevarlo.",
+        "blockAdd": "Añadir",
+        "saveBlocked": "Falta un bloque que este correo debe llevar: añádelo para guardar."
       },
       "errors": {
         "generic": "No se pudo completar la acción.",

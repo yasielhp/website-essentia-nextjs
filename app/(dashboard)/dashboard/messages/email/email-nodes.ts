@@ -10,17 +10,12 @@ import { BLOCK_NODE, TITLE_NODE } from "@/lib/messages/email-doc";
  * view each is given (`email-node-views.tsx`, which extends these two).
  *
  * What the editor guarantees, whatever the keyboard, the mouse or a paste does:
- * one title, which stays first; each block at most once; a block the message
- * cannot do without is never removed; and none of them ever sits inside
- * anything else. A change that would break one of those is refused whole (the
- * keystroke does nothing), and the server checks the same rules again when
- * the email is saved and sent.
+ * one title, which stays first; each block at most once; and none of them ever
+ * sits inside anything else. A change that would break one of those is refused
+ * whole (the keystroke does nothing). Any block can be removed, a required one
+ * too: the page then says the email lacks it and does not let it be saved, and
+ * the server checks the same again when it is saved and sent.
  */
-
-export type GuardRules = {
-  /** The kinds of block that cannot be removed. */
-  required: ReadonlySet<string>;
-};
 
 type Census = {
   titles: number;
@@ -58,11 +53,7 @@ function census(doc: PMNode): Census {
  * so it is tested without an editor. A rule the previous document already
  * broke (it came from somewhere else) is not made worse, and not demanded.
  */
-export function changeAllowed(
-  prev: PMNode,
-  next: PMNode,
-  rules: GuardRules,
-): boolean {
+export function changeAllowed(prev: PMNode, next: PMNode): boolean {
   const before = census(prev);
   const after = census(next);
   if (after.nested) return false;
@@ -75,33 +66,20 @@ export function changeAllowed(
     // A block twice, where it was not twice before, is refused.
     if (count > Math.max(before.kinds.get(kind) ?? 0, 1)) return false;
   }
-  for (const kind of rules.required) {
-    // A block that cannot go is still there if it was.
-    if (
-      (before.kinds.get(kind) ?? 0) > 0 &&
-      (after.kinds.get(kind) ?? 0) === 0
-    ) {
-      return false;
-    }
-  }
   return true;
 }
 
 const guardKey = new PluginKey("emailDocGuard");
 
 /** The extension that refuses a change that breaks the rules. */
-export const EmailDocGuard = Extension.create<GuardRules>({
+export const EmailDocGuard = Extension.create({
   name: "emailDocGuard",
-  addOptions() {
-    return { required: new Set<string>() };
-  },
   addProseMirrorPlugins() {
-    const rules = this.options;
     return [
       new Plugin({
         key: guardKey,
         filterTransaction: (tr, state) =>
-          !tr.docChanged || changeAllowed(state.doc, tr.doc, rules),
+          !tr.docChanged || changeAllowed(state.doc, tr.doc),
       }),
     ];
   },
