@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
+import { editableLocales } from "@/lib/messages/editor-state";
 import type { MessageRow } from "@/lib/messages/compose";
 import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
 import { editorIds, editorNames, withEditors } from "@/lib/messages/editors";
@@ -444,6 +445,80 @@ export async function resetMessageTemplate(
       // either way the default email goes out and no switch is being held.
       kept: kept?.enabled === false ? "disabled" : null,
     };
+  } catch {
+    return { ok: false, error: "db" };
+  }
+}
+
+const switchSchema = z.object({
+  key: z.enum(MESSAGE_KEYS),
+  channel: z.enum(["email", "whatsapp"]),
+  enabled: z.boolean(),
+});
+
+/**
+ * The switch of one row of the list of Messages (a message and a channel), for
+ * every language the row has. An administrator's act. It writes the switch and
+ * NOTHING else: not a text, not a template, not the author or the date of an
+ * edit (the list's "saved on" is the text's, not the switch's), and saving a
+ * text never changes it.
+ *
+ * Off is an upsert on the row's address, so a message with no row gets one that
+ * holds only the switch, and a row with a text keeps it. On only UPDATES the
+ * rows that exist: no row already means on, and turning on never creates one.
+ * What each sender does with an off message is in `renderMessageEmail` and
+ * `notify-client`.
+ */
+export async function setMessageEnabled(
+  accessToken: string | null,
+  key: string,
+  channel: string,
+  enabled: boolean,
+): Promise<{ ok: true } | Failure> {
+  try {
+    await admin(accessToken);
+  } catch (err) {
+    return authFailure(err);
+  }
+  const parsed = switchSchema.safeParse({ key, channel, enabled });
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const target = parsed.data;
+  // A message that does not go out on WhatsApp has no WhatsApp switch.
+  if (
+    target.channel === "whatsapp" &&
+    !MESSAGE_CATALOG[target.key].whatsappEligible
+  ) {
+    return { ok: false, error: "invalid" };
+  }
+  const locales =
+    target.channel === "whatsapp"
+      ? (["es", "en"] as const)
+      : editableLocales(target.key);
+
+  try {
+    const db = getAdminClient().database;
+    if (target.enabled) {
+      const { error } = await db
+        .from("message_templates")
+        .update({ enabled: true })
+        .eq("key", target.key)
+        .eq("channel", target.channel)
+        .in("locale", [...locales]);
+      if (error) return { ok: false, error: "db" };
+    } else {
+      const { error } = await db.from("message_templates").upsert(
+        locales.map((locale) => ({
+          key: target.key,
+          channel: target.channel,
+          locale,
+          enabled: false,
+        })),
+        { onConflict: "key,channel,locale" },
+      );
+      if (error) return { ok: false, error: "db" };
+    }
+    revalidatePath(PATH);
+    return { ok: true };
   } catch {
     return { ok: false, error: "db" };
   }
