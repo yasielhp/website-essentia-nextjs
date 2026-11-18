@@ -272,6 +272,33 @@ describe("the whole email in one editor", () => {
     expect(bar).toContain('aria-label="Variables"');
   });
 
+  test("the bar shows no text of the variables on a screen with a pointer; each chip is named and has a tooltip", () => {
+    const bar = confirmed.slice(confirmed.indexOf('role="toolbar"'));
+    const chips = bar.slice(0, bar.indexOf("</div></div>"));
+    const buttons = chips.split("<button").slice(1);
+    const names = es.messages.email.variables as Record<string, string>;
+    const shorts = es.messages.email.variableShort as Record<string, string>;
+    expect(buttons.length).toBe(
+      MESSAGE_CATALOG.booking_confirmed.variables.length,
+    );
+    MESSAGE_CATALOG.booking_confirmed.variables.forEach((name, i) => {
+      const b = buttons[i]!;
+      // The long name is the accessible name (what the tooltip says too)...
+      expect(b).toContain(`aria-label="${names[name]}"`);
+      expect(b).not.toContain(" title=");
+      // ...and the only text is the short name, hidden from `md` up (a phone
+      // has no hover) and from screen readers (the label already says it).
+      expect(b).toContain(
+        `aria-hidden="true" class="md:hidden">${shorts[name]}<`,
+      );
+      const visible = `<button${b}`
+        .replace(/<svg[\s\S]*?<\/svg>/g, "")
+        .replace(/<span[^>]*class="md:hidden"[^>]*>[^<]*<\/span>/g, "")
+        .replace(/<[^>]*>/g, "");
+      expect(visible.trim()).toBe("");
+    });
+  });
+
   test("it slides sideways on a phone, and the chips are 44 px high", () => {
     const bar = confirmed.slice(confirmed.indexOf('role="toolbar"'));
     expect(bar.slice(0, 400)).toContain("overflow-x-auto");

@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import {
   DEFAULT_RENDER_VARIABLE_FUNCTION,
@@ -13,6 +15,7 @@ import {
   IconTag,
   IconUser,
 } from "@/components/ui/icons";
+import { useTooltip } from "@/components/ui/tooltip";
 import { variableKind, type VariableKind } from "@/lib/messages/variable-kinds";
 
 /**
@@ -45,9 +48,19 @@ export const KIND_TONE: Record<VariableKind, string> = {
   link: "bg-purple-50 text-purple-700",
 };
 
-export function KindIcon({ kind }: { kind: VariableKind }) {
+export function KindIcon({
+  kind,
+  small = false,
+}: {
+  kind: VariableKind;
+  /** The size that sits inside a line of text. */
+  small?: boolean;
+}) {
   return (
-    <span aria-hidden="true" className="inline-flex shrink-0 [&>svg]:size-3.5">
+    <span
+      aria-hidden="true"
+      className={`inline-flex shrink-0 ${small ? "[&>svg]:size-3" : "[&>svg]:size-3.5"}`}
+    >
       {ICON[kind]}
     </span>
   );
@@ -72,31 +85,56 @@ export function VariableTag({
 }
 
 /**
+ * One variable inside a line of the body: its icon and its SHORT name, a little
+ * smaller than the text around it and on its baseline so it never breaks the
+ * line; the long explanation is in its tooltip.
+ */
+function BodyVariable({
+  name,
+  label,
+  hint,
+}: {
+  name: string;
+  label: string;
+  hint: string;
+}) {
+  const kind = variableKind(name);
+  const tip = useTooltip(hint);
+  return (
+    <>
+      <span
+        ref={(el) => tip.attach(el)}
+        {...tip.props}
+        data-variable={name}
+        className={`inline-flex max-w-48 items-center gap-1 rounded-md px-1 py-px align-baseline text-[0.8em] leading-snug font-medium ${
+          kind ? KIND_TONE[kind] : "bg-sand-100 text-petroleum-700"
+        }`}
+      >
+        {kind && <KindIcon kind={kind} small />}
+        <span className="truncate">{label}</span>
+      </span>
+      {tip.bubble}
+    </>
+  );
+}
+
+/**
  * How a variable already in the body is drawn inside the editor: the same icon
- * and soft colour as its chip, and its name in words, not the raw `first_name`.
- * Only the editor's view; the saved node is the same. Anything that is not a
- * variable of the body (a button's, the bubble menu's) keeps Maily's own look.
+ * and soft colour as its chip, and its short name in words, not the raw
+ * `first_name`, with the long name as its tooltip. Only the editor's view; the
+ * saved node is the same. Anything that is not a variable of the body (a
+ * button's, the bubble menu's) keeps Maily's own look.
  */
 export function bodyVariableRenderer(
   label: (name: string) => string,
+  hint: (name: string) => string = label,
 ): RenderVariableFunction {
   const render: RenderVariableFunction = (opts) => {
     if (opts.from !== "content-variable") {
       return DEFAULT_RENDER_VARIABLE_FUNCTION(opts);
     }
     const name = opts.variable.name;
-    const kind = variableKind(name);
-    return (
-      <span
-        data-variable={name}
-        className={`inline-flex max-w-xs items-center gap-1 rounded-md px-1.5 py-0.5 align-middle text-sm font-medium ${
-          kind ? KIND_TONE[kind] : "bg-sand-100 text-petroleum-700"
-        }`}
-      >
-        {kind && <KindIcon kind={kind} />}
-        <span className="truncate">{label(name)}</span>
-      </span>
-    );
+    return <BodyVariable name={name} label={label(name)} hint={hint(name)} />;
   };
   return render;
 }

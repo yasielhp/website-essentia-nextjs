@@ -2416,6 +2416,20 @@
         "cancel_url": "Enlace para cancelar",
         "consent_url": "Enlace del consentimiento informado"
       },
+      "variableShort": {
+        "first_name": "Nombre",
+        "service": "Servicio",
+        "session_type": "Tipo de sesión",
+        "date": "Fecha",
+        "time": "Hora",
+        "duration": "Duración",
+        "amount_due": "Pendiente",
+        "amount_paid": "Pagado",
+        "sessions": "Sesiones",
+        "expires_on": "Válido hasta",
+        "cancel_url": "Cancelar",
+        "consent_url": "Consentimiento"
+      },
       "fixed": {
         "details_card": "Detalles de la reserva",
         "location": "Ubicación del centro",

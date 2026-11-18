@@ -32,6 +32,29 @@ describe("how a variable in the body is drawn", () => {
     expect(html("time")).toContain(KIND_TONE.time);
     expect(html("cancel_url")).toContain(KIND_TONE.link);
   });
+  test("it shows the short name and keeps the long explanation for the tooltip, which is not there until it is asked for", () => {
+    const withHint = bodyVariableRenderer(
+      () => "Nombre",
+      () => "Nombre (completo, como lo recibe el sistema)",
+    );
+    const out = renderToStaticMarkup(
+      <NextIntlClientProvider locale="es" messages={{ dashboard: es }}>
+        {
+          withHint({
+            variable: { name: "first_name", required: false, valid: true },
+            editor: undefined as never,
+            from: "content-variable",
+          }) as never
+        }
+      </NextIntlClientProvider>,
+    );
+    expect(out).toContain(">Nombre<");
+    expect(out).not.toContain("completo");
+    expect(out).not.toContain('role="tooltip"');
+    // Smaller than the text around it, on its baseline, so it never breaks a line.
+    expect(out).toContain("text-[0.8em]");
+    expect(out).toContain("align-baseline");
+  });
   test("every variable any message offers is drawn with a kind of its own", () => {
     for (const key of Object.keys(
       MESSAGE_CATALOG,

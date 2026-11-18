@@ -189,8 +189,10 @@ export function MessageEditor({
   // A variable in the body is drawn like its chip: its icon, its colour, its name.
   const renderVariable = useMemo(
     () =>
-      bodyVariableRenderer((name) =>
-        t.has(`variables.${name}`) ? t(`variables.${name}`) : name,
+      bodyVariableRenderer(
+        (name) =>
+          t.has(`variableShort.${name}`) ? t(`variableShort.${name}`) : name,
+        (name) => (t.has(`variables.${name}`) ? t(`variables.${name}`) : name),
       ),
     [t],
   );
@@ -693,6 +695,8 @@ export function MessageEditor({
                 <MailyEditor
                   renderVariable={renderVariable}
                   nodes={nodes}
+                  // The size of the email's own text (15 px, 1.6), not the page's.
+                  contentClassName="[&>p]:!text-[15px] [&>p]:!leading-[1.6]"
                   contentJson={opened.doc as never}
                   editable={!saving}
                   onCreate={(editor) => {

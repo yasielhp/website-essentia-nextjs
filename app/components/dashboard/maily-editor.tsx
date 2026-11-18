@@ -75,11 +75,14 @@ export type MailyEditorProps = Pick<
    * the editor's. They must be stable: the editor is built once with them.
    */
   nodes?: AnyExtension[];
+  /** Classes of the writing area, after its minimum height. */
+  contentClassName?: string;
 };
 
 export default function MailyEditor({
   renderVariable,
   nodes,
+  contentClassName,
   ...props
 }: MailyEditorProps) {
   // The editor's own variable extension, with the same suggestions and only the
@@ -107,7 +110,9 @@ export default function MailyEditor({
         spellCheck: true,
         autofocus: false,
         immediatelyRender: false,
-        contentClassName: "min-h-64",
+        contentClassName: contentClassName
+          ? `min-h-64 ${contentClassName}`
+          : "min-h-64",
       }}
     />
   );

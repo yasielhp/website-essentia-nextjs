@@ -23,3 +23,23 @@ describe("the keys the message actions can answer with are translated", () => {
     });
   }
 });
+
+describe("each variable has a long name and a short one", () => {
+  for (const [locale, messages] of Object.entries(LOCALES)) {
+    it(`${locale}: the short names cover the same variables as the long ones, no more, no fewer`, () => {
+      const email = messages.messages.email as {
+        variables: Record<string, string>;
+        variableShort: Record<string, string>;
+      };
+      expect(Object.keys(email.variableShort).sort()).toEqual(
+        Object.keys(email.variables).sort(),
+      );
+      for (const [name, short] of Object.entries(email.variableShort)) {
+        expect(short.trim()).not.toBe("");
+        // Short is for a chip in a line of text: never longer than the long one.
+        expect(short.length).toBeLessThanOrEqual(email.variables[name]!.length);
+        expect(short.length).toBeLessThanOrEqual(16);
+      }
+    });
+  }
+});

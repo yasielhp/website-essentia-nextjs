@@ -83,7 +83,7 @@ function TitleView({ ui }: { ui: EmailNodesUi }) {
       </p>
       <NodeViewContent
         as="h1"
-        className="font-display text-petroleum-700 min-h-10 text-2xl leading-tight outline-none sm:text-3xl"
+        className="font-body! text-petroleum-700! m-0! min-h-8 text-[22px]! leading-[1.3]! font-semibold! outline-none sm:text-2xl!"
       />
     </NodeViewWrapper>
   );
@@ -160,9 +160,14 @@ function BlockView({
       >
         {ICON[info.icon]}
       </span>
+      {/* `!` on the sizes: the editor's own prose styles come after the utilities and set 15 px. */}
       <div className="min-w-0 flex-1 basis-48">
-        <p className="text-petroleum-700 text-sm font-medium">{name}</p>
-        <p className="text-petroleum-500 text-xs">{ui.blockWhat(kind)}</p>
+        <p className="text-petroleum-700 !text-sm !leading-snug font-medium">
+          {name}
+        </p>
+        <p className="text-petroleum-500 !text-xs !leading-snug">
+          {ui.blockWhat(kind)}
+        </p>
         {variables.length > 0 && (
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
             {variables.map((variable) => {

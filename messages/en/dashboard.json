@@ -2416,6 +2416,20 @@
         "cancel_url": "Cancellation link",
         "consent_url": "Informed consent link"
       },
+      "variableShort": {
+        "first_name": "Name",
+        "service": "Service",
+        "session_type": "Session type",
+        "date": "Date",
+        "time": "Time",
+        "duration": "Duration",
+        "amount_due": "Amount due",
+        "amount_paid": "Paid",
+        "sessions": "Sessions",
+        "expires_on": "Valid until",
+        "cancel_url": "Cancel",
+        "consent_url": "Consent"
+      },
       "fixed": {
         "details_card": "Booking details",
         "location": "The centre's address",
