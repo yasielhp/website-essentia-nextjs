@@ -92,6 +92,16 @@ export function titleNodeFrom(text: string): EmailDoc {
   return { type: TITLE_NODE, content };
 }
 
+/** Whether a text holds a `{{variable}}` token that stands for an address. */
+const hasLinkToken = (text: string): boolean =>
+  [...text.matchAll(TOKEN)].some((match) => isLinkVariable(match[1]!));
+
+/** The text without the tokens that stand for an address. */
+const withoutLinkTokens = (text: string): string =>
+  text.replace(TOKEN, (token, name: string) =>
+    isLinkVariable(name) ? "" : token,
+  );
+
 /** The kicker, from text with `{{variables}}` in it: the same nodes as a title's. */
 export function kickerNodeFrom(text: string): EmailDoc {
   return { ...titleNodeFrom(text), type: KICKER_NODE };
@@ -348,6 +358,9 @@ export function structureProblems(
         isObject(child) &&
         ((child.type === "text" &&
           typeof child.text === "string" &&
+          // An address written as text (`{{cancel_url}}`) would be printed as
+          // text: refused as a link variable inserted as a chip is.
+          !hasLinkToken(child.text) &&
           !(child.marks && child.marks.length > 0)) ||
           (child.type === "variable" &&
             titleVariableOk(child, key) &&
@@ -479,7 +492,8 @@ export function repairForSending(
       .filter(isObject)
       .flatMap((child): EmailDoc[] => {
         if (child.type === "text" && typeof child.text === "string") {
-          return [{ type: "text", text: child.text }];
+          // An address written as text is dropped, never printed.
+          return [{ type: "text", text: withoutLinkTokens(child.text) }];
         }
         const id = child.attrs?.id;
         return child.type === "variable" &&

@@ -954,3 +954,70 @@ describe("a row saved with only a title column keeps the email it had: the line 
     expect(docKicker(out)).toBeUndefined();
   });
 });
+
+describe("a link variable written as plain text in the title or the kicker", () => {
+  const withLine = (node: EmailDoc, which: "title" | "kicker") =>
+    which === "title"
+      ? doc(node, blockNode("cancel_link"))
+      : doc(node, titleNodeFrom("Hola"), blockNode("cancel_link"));
+  const text = (value: string): EmailDoc => ({ type: "text", text: value });
+
+  for (const which of ["title", "kicker"] as const) {
+    const type = which === "title" ? TITLE_NODE : KICKER_NODE;
+    const base = 0;
+    for (const written of [
+      "{{cancel_url}}",
+      "{{consent_url}}",
+      "{{ cancel_url }}",
+      "{{anything_url}}",
+      "Haz clic: {{cancel_url}} ahora",
+    ]) {
+      test(`${which}: «${written}» is refused as a chip's link variable is`, () => {
+        const problems = structureProblems(
+          withLine({ type, content: [text(written)] }, which),
+          "booking_rescheduled",
+        );
+        expect(problems.filter((p) => p.kind === "blockNotAllowed")).toEqual([
+          {
+            kind: "blockNotAllowed",
+            path: `content[${base}].content[0]`,
+            node: "text",
+          },
+        ]);
+      });
+    }
+    test(`${which}: an ordinary variable written as text is fine, and so is text with braces that is not a token`, () => {
+      for (const ok of [
+        "{{first_name}}",
+        "{{service}} y {{date}}",
+        "llaves { sueltas }",
+        "{{url}}",
+      ]) {
+        expect(
+          structureProblems(
+            withLine({ type, content: [text(ok)] }, which),
+            "booking_rescheduled",
+          ).filter((p) => p.kind === "blockNotAllowed"),
+        ).toEqual([]);
+      }
+    });
+  }
+
+  test("at send the token is dropped from the line, never printed as an address", () => {
+    const need = requiredBlocks("booking_rescheduled").map(blockNode);
+    const out = repairForSending(
+      doc(
+        { type: KICKER_NODE, content: [text("Mira {{cancel_url}} ya")] },
+        {
+          type: TITLE_NODE,
+          content: [text("{{consent_url}}Hola {{first_name}}")],
+        },
+        ...need,
+      ),
+      "booking_rescheduled",
+      "Título",
+    );
+    expect(titleText(docKicker(out))).toBe("Mira  ya");
+    expect(titleText(docTitle(out))).toBe("Hola {{first_name}}");
+  });
+});

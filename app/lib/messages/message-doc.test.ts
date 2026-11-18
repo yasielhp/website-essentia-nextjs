@@ -938,3 +938,50 @@ describe("saving a kicker", () => {
     ).toBeNull();
   });
 });
+
+describe("an address written as text in the title or the kicker is refused when saved", () => {
+  test("for both lines, with the error a chip's link variable gets", () => {
+    const def = defaultContent("booking_confirmed", "es").doc;
+    const rest = (def.content ?? []).filter(
+      (n) => n.type !== "emailKicker" && n.type !== "emailTitle",
+    );
+    for (const line of [
+      {
+        type: "emailTitle",
+        content: [{ type: "text", text: "Ver {{cancel_url}}" }],
+      },
+    ]) {
+      const asTitle = { ...def, content: [line, ...rest] } as EmailDoc;
+      expect(saveErrors("booking_confirmed", asTitle)).toEqual({
+        "doc.content.0.content.0": "blockNotAllowed",
+      });
+      const asChip = {
+        ...def,
+        content: [
+          {
+            type: "emailTitle",
+            content: [{ type: "variable", attrs: { id: "cancel_url" } }],
+          },
+          ...rest,
+        ],
+      } as EmailDoc;
+      expect(saveErrors("booking_confirmed", asChip)).toEqual({
+        "doc.content.0.content.0": "blockNotAllowed",
+      });
+    }
+    const asKicker = {
+      ...def,
+      content: [
+        {
+          type: "emailKicker",
+          content: [{ type: "text", text: "{{consent_url}}" }],
+        },
+        titleNodeFrom("Hola"),
+        ...rest,
+      ],
+    } as EmailDoc;
+    expect(saveErrors("booking_confirmed", asKicker)).toEqual({
+      "doc.content.0.content.0": "blockNotAllowed",
+    });
+  });
+});
