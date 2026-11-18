@@ -217,9 +217,10 @@ export function ResetButton({
 }
 
 /**
- * Send me a test, under the preview: what the test will look like is right
- * above it. Its line of help says why it waits (save first) where it can be
- * seen, and what it does only to a screen reader, since the button says it.
+ * Send me a test, at the right of the preview's heading: what the test will
+ * look like is right below it. Its line of help says why it waits (save first)
+ * where it can be seen, under the button, and what it does only to a screen
+ * reader, since the button says it.
  */
 export function TestAction({
   label,
@@ -233,7 +234,7 @@ export function TestAction({
   help: { text: string; quiet: boolean };
 }) {
   return (
-    <div className="flex flex-col items-start gap-1.5">
+    <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
       <Button
         variant="outline"
         aria-describedby="message-test-help"

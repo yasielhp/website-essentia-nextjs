@@ -180,13 +180,18 @@ describe("the header of a message page", () => {
     expect(html).not.toContain("sticky bottom-0");
   });
 
-  test("Send me a test sits under the preview, described by its line of help", () => {
+  test("Send me a test sits at the right of the preview's heading, before the email, described by its line of help", () => {
     const html = render("booking_confirmed", null);
     const after = html.slice(html.indexOf("</header>"));
-    expect(after.indexOf("Vista previa")).toBeGreaterThan(-1);
-    expect(after.indexOf("Enviarme prueba")).toBeGreaterThan(
-      after.indexOf("Vista previa"),
-    );
+    const heading = after.indexOf("Vista previa");
+    const test = after.indexOf("Enviarme prueba");
+    expect(heading).toBeGreaterThan(-1);
+    expect(test).toBeGreaterThan(heading);
+    // Same row as the heading: the row closes after the button and before the email.
+    const row = after.slice(after.lastIndexOf("<div", heading), test);
+    expect(row).toContain("justify-between");
+    const frame = after.indexOf("Preparando la vista previa");
+    if (frame > -1) expect(test).toBeLessThan(frame);
     expect(after).toContain('aria-describedby="message-test-help"');
     const help = after.match(/<p[^>]*id="message-test-help"[^>]*>/)?.[0] ?? "";
     expect(help).toContain('class="sr-only"');

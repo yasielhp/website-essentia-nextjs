@@ -718,6 +718,20 @@ export function MessageEditor({
         {/* Not pinned: the preview is as tall as the email, and scrolls with the page. */}
         <div className="flex min-w-0 flex-col gap-4">
           <EmailPreviewFrame
+            action={
+              <TestAction
+                label={testing ? t("actions.testing") : t("actions.test")}
+                disabled={actions.test.disabled}
+                onClick={() => void sendTest()}
+                help={{
+                  text:
+                    actions.help === "saveFirst"
+                      ? tEditor("saveFirst")
+                      : t("testNote"),
+                  quiet: actions.help !== "saveFirst",
+                }}
+              />
+            }
             html={preview.html}
             failed={preview.failed}
             failure={
@@ -727,18 +741,6 @@ export function MessageEditor({
                   : tErrors("generic")
                 : null
             }
-          />
-          <TestAction
-            label={testing ? t("actions.testing") : t("actions.test")}
-            disabled={actions.test.disabled}
-            onClick={() => void sendTest()}
-            help={{
-              text:
-                actions.help === "saveFirst"
-                  ? tEditor("saveFirst")
-                  : t("testNote"),
-              quiet: actions.help !== "saveFirst",
-            }}
           />
         </div>
       </div>

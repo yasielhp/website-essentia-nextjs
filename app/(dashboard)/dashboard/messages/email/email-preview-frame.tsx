@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useTranslations } from "next-intl";
 import { previewSrcDoc } from "@/lib/messages/preview-frame";
 
@@ -22,6 +28,7 @@ export function EmailPreviewFrame({
   html,
   failed,
   failure,
+  action,
 }: {
   /** Null while the first one is being prepared. */
   html: string | null;
@@ -29,6 +36,8 @@ export function EmailPreviewFrame({
   failed: boolean;
   /** Why it failed when the draft was not the cause, already in words. */
   failure: string | null;
+  /** What goes at the right of the heading: Send me a test. */
+  action?: ReactNode;
 }) {
   const t = useTranslations("dashboard.messages.email.editor.preview");
   const frame = useRef<HTMLIFrameElement>(null);
@@ -92,7 +101,12 @@ export function EmailPreviewFrame({
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-petroleum-500 text-xs font-medium">{t("title")}</h3>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-petroleum-500 pt-2.5 text-xs font-medium">
+          {t("title")}
+        </h3>
+        {action}
+      </div>
       <p id="message-preview-note" className="sr-only">
         {t("note")}
       </p>

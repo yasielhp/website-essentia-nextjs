@@ -419,9 +419,23 @@ export function WhatsAppMessageEditor({
             </div>
           </section>
           <aside>
-            <h2 className="text-petroleum-500 mb-1 text-sm font-semibold">
-              {tEd("preview")}
-            </h2>
+            <div className="mb-1 flex items-start justify-between gap-3">
+              <h2 className="text-petroleum-500 pt-2.5 text-sm font-semibold">
+                {tEd("preview")}
+              </h2>
+              <TestAction
+                label={testing ? tEd("testing") : tEd("test")}
+                disabled={actions.test.disabled}
+                onClick={() => void sendTest()}
+                help={{
+                  text:
+                    actions.help === "saveFirst"
+                      ? tEd("saveFirst")
+                      : tEd("testNote"),
+                  quiet: actions.help !== "saveFirst",
+                }}
+              />
+            </div>
             <p className="text-petroleum-400 mb-3 text-xs">
               {tEd("previewNote")}
             </p>
@@ -438,20 +452,6 @@ export function WhatsAppMessageEditor({
                 today,
               )}
             />
-            <div className="mt-4">
-              <TestAction
-                label={testing ? tEd("testing") : tEd("test")}
-                disabled={actions.test.disabled}
-                onClick={() => void sendTest()}
-                help={{
-                  text:
-                    actions.help === "saveFirst"
-                      ? tEd("saveFirst")
-                      : tEd("testNote"),
-                  quiet: actions.help !== "saveFirst",
-                }}
-              />
-            </div>
           </aside>
         </div>
       )}
