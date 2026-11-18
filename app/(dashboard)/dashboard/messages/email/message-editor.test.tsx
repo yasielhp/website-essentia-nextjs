@@ -167,11 +167,25 @@ describe("the header of a message page", () => {
     expect(top).toContain("La prueba se envía solo a tu email");
   });
 
-  test("a message nobody has edited says nothing about whose text it is", () => {
-    const html = render("booking_confirmed", null);
-    expect(html).not.toContain("Estás viendo el texto actual del correo");
-    expect(html).not.toContain('id="message-notice"');
-    expect(header(html)).not.toContain('aria-describedby="message-notice"');
+  test("the page never explains whose text it is: that is what the Reset dialog says", () => {
+    const savedRow = {
+      enabled: true,
+      subject: "Asunto propio",
+      doc: {
+        type: "doc",
+        content: [
+          ...(defaultContent("booking_confirmed", "es").doc.content ?? []),
+          { type: "paragraph", content: [{ type: "text", text: "Más." }] },
+        ],
+      },
+    };
+    for (const saved of [null, savedRow]) {
+      const html = render("booking_confirmed", saved as never);
+      expect(html).not.toContain("Estás viendo el texto actual del correo");
+      expect(html).not.toContain("Esta es tu versión guardada");
+      expect(html).not.toContain('id="message-notice"');
+      expect(header(html)).not.toContain('aria-describedby="message-notice"');
+    }
   });
 
   test("the title is first, and is where focus goes", () => {

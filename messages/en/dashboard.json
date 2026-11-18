@@ -2449,7 +2449,6 @@
         "preheader": "Preheader",
         "preheaderHint": "The line mail apps show next to the subject.",
         "body": "Body",
-        "customNotice": "This is your saved version. “Reset” goes back to the default text.",
         "variablesTitle": "Variables",
         "save": "Save",
         "saving": "Saving…",

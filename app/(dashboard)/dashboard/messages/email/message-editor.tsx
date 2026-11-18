@@ -532,7 +532,6 @@ export function MessageEditor({
         extraStatus={
           catalog.canDisable && !enabled ? t("status.disabled") : undefined
         }
-        describedBy={hasSaved ? "message-notice" : undefined}
         help={{
           id: "message-test-help",
           text:
@@ -613,16 +612,6 @@ export function MessageEditor({
             </Link>
           </p>
         </div>
-      )}
-
-      {/* Only once there is a version of the admin's own: what Reset does. */}
-      {hasSaved && (
-        <p
-          id="message-notice"
-          className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs"
-        >
-          {tEditor("customNotice")}
-        </p>
       )}
 
       <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">

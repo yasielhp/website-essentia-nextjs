@@ -2449,7 +2449,6 @@
         "preheader": "Pre-encabezado",
         "preheaderHint": "La línea que muestran las apps de correo junto al asunto.",
         "body": "Cuerpo",
-        "customNotice": "Esta es tu versión guardada. «Restablecer» vuelve al texto por defecto.",
         "variablesTitle": "Variables",
         "save": "Guardar",
         "saving": "Guardando…",
