@@ -43,6 +43,7 @@ import {
   DraftBanner,
   MessagePageHeader,
   ResetButton,
+  TestAction,
   ResetDialog,
   UnsavedBar,
   useMessageReset,
@@ -258,12 +259,6 @@ export function WhatsAppMessageEditor({
           text: hasSaved ? t("pageStatus.set") : t("pageStatus.none"),
           tone: hasSaved ? "custom" : "default",
         }}
-        help={{
-          id: "message-test-help",
-          text:
-            actions.help === "saveFirst" ? tEd("saveFirst") : tEd("testNote"),
-          quiet: actions.help !== "saveFirst",
-        }}
         actions={
           <>
             {actions.reset.shown && (
@@ -273,14 +268,6 @@ export function WhatsAppMessageEditor({
                 onClick={() => reset.setAsking(true)}
               />
             )}
-            <Button
-              variant="outline"
-              aria-describedby="message-test-help"
-              disabled={actions.test.disabled}
-              onClick={() => void sendTest()}
-            >
-              {testing ? tEd("testing") : tEd("test")}
-            </Button>
             <Button
               disabled={actions.save.disabled}
               onClick={() => void save()}
@@ -451,6 +438,20 @@ export function WhatsAppMessageEditor({
                 today,
               )}
             />
+            <div className="mt-4">
+              <TestAction
+                label={testing ? tEd("testing") : tEd("test")}
+                disabled={actions.test.disabled}
+                onClick={() => void sendTest()}
+                help={{
+                  text:
+                    actions.help === "saveFirst"
+                      ? tEd("saveFirst")
+                      : tEd("testNote"),
+                  quiet: actions.help !== "saveFirst",
+                }}
+              />
+            </div>
           </aside>
         </div>
       )}

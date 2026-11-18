@@ -165,28 +165,33 @@ describe("the header of a message page", () => {
   const header = (html: string) =>
     html.slice(html.indexOf("<header"), html.indexOf("</header>"));
 
-  test("holds the title and, on the right, the test, Save and Reset; no fixed bar, no back button", () => {
+  test("holds the title and, on the right, Reset where the test was, and Save; no fixed bar, no back button", () => {
     const html = render("booking_confirmed", { enabled: true, subject: "Mío" });
     const top = header(html);
     expect(top).toContain("Editar");
-    expect(top).toContain("Enviarme prueba");
     expect(top).toContain("Guardar");
     expect(top).toContain("Restablecer");
+    expect(top).not.toContain("Enviarme prueba");
+    // Reset now looks like the button it replaces.
+    const reset = top.match(/<button[^>]*id="message-reset-button"[^>]*>/)?.[0];
+    expect(reset).toContain("border");
+    expect(top.indexOf("Restablecer")).toBeLessThan(top.indexOf("Guardar"));
     expect(html).not.toContain("Volver a mensajes");
     expect(html).not.toContain("sticky bottom-0");
-    // Nothing of the actions is left below the header.
-    expect(html.slice(html.indexOf("</header>"))).not.toContain(
-      "Enviarme prueba",
-    );
   });
 
-  test("what the test sends describes its button for a screen reader, and is not a line under the title", () => {
+  test("Send me a test sits under the preview, described by its line of help", () => {
     const html = render("booking_confirmed", null);
-    const top = header(html);
-    expect(top).toContain('aria-describedby="message-test-help"');
-    const help = top.match(/<p[^>]*id="message-test-help"[^>]*>/)?.[0] ?? "";
+    const after = html.slice(html.indexOf("</header>"));
+    expect(after.indexOf("Vista previa")).toBeGreaterThan(-1);
+    expect(after.indexOf("Enviarme prueba")).toBeGreaterThan(
+      after.indexOf("Vista previa"),
+    );
+    expect(after).toContain('aria-describedby="message-test-help"');
+    const help = after.match(/<p[^>]*id="message-test-help"[^>]*>/)?.[0] ?? "";
     expect(help).toContain('class="sr-only"');
-    expect(top).toContain("La prueba se envía solo a tu email");
+    expect(after).toContain("La prueba se envía solo a tu email");
+    expect(header(html)).not.toContain("message-test-help");
   });
 
   test("the page never explains whose text it is: that is what the Reset dialog says", () => {
@@ -213,7 +218,7 @@ describe("the header of a message page", () => {
   test("the title is first, and is where focus goes", () => {
     const top = header(render("booking_confirmed", null));
     expect(top.indexOf('id="message-title"')).toBeLessThan(
-      top.indexOf("Enviarme prueba"),
+      top.indexOf("Guardar"),
     );
     expect(top).toContain('tabindex="-1"');
   });

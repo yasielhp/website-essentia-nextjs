@@ -20,18 +20,14 @@ import { runReset } from "@/lib/messages/reset-run";
  * theirs out: the title (with its state) on the left, the actions on the right,
  * stacked on a phone. The title takes focus when the page opens, so a screen
  * reader starts on it and the next thing to reach is the actions, then the form.
- * The way back to the list is the crumb above, not a button.
- *
- * `help` describes the test button. It is a small line under the title only
- * when it tells the admin something to do (save first); what the test sends is
- * left to a screen reader (`quiet`), since the button already says it.
+ * The way back to the list is the crumb above, not a button. Send me a test is
+ * not here: it sits under the preview (`TestAction`).
  */
 export function MessagePageHeader({
   title,
   status,
   extraStatus,
   describedBy,
-  help,
   actions,
 }: {
   title: string;
@@ -40,7 +36,6 @@ export function MessagePageHeader({
   /** A second state beside it, such as "Switched off". */
   extraStatus?: string;
   describedBy?: string;
-  help?: { id: string; text: string; quiet?: boolean };
   actions?: React.ReactNode;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -77,18 +72,6 @@ export function MessagePageHeader({
             </span>
           )}
         </div>
-        {help && (
-          <p
-            id={help.id}
-            className={
-              help.quiet
-                ? "sr-only"
-                : "text-petroleum-400 mt-1.5 max-w-xl text-xs"
-            }
-          >
-            {help.text}
-          </p>
-        )}
       </div>
       {actions && (
         <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
@@ -224,12 +207,48 @@ export function ResetButton({
   return (
     <Button
       id="message-reset-button"
-      variant="ghost"
+      variant="outline"
       disabled={disabled}
       onClick={onClick}
     >
       {label}
     </Button>
+  );
+}
+
+/**
+ * Send me a test, under the preview: what the test will look like is right
+ * above it. Its line of help says why it waits (save first) where it can be
+ * seen, and what it does only to a screen reader, since the button says it.
+ */
+export function TestAction({
+  label,
+  disabled,
+  onClick,
+  help,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  help: { text: string; quiet: boolean };
+}) {
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <Button
+        variant="outline"
+        aria-describedby="message-test-help"
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {label}
+      </Button>
+      <p
+        id="message-test-help"
+        className={help.quiet ? "sr-only" : "text-petroleum-400 text-xs"}
+      >
+        {help.text}
+      </p>
+    </div>
   );
 }
 

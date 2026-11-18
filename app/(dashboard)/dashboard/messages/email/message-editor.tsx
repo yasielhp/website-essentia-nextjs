@@ -59,6 +59,7 @@ import {
   DraftBanner,
   MessagePageHeader,
   ResetButton,
+  TestAction,
   ResetDialog,
   UnsavedBar,
   useMessageReset,
@@ -506,12 +507,6 @@ export function MessageEditor({
     <div className="flex flex-col gap-6">
       <MessagePageHeader
         title={tEditor("title", { name: tKeys(messageKey) })}
-        help={{
-          id: "message-test-help",
-          text:
-            actions.help === "saveFirst" ? tEditor("saveFirst") : t("testNote"),
-          quiet: actions.help !== "saveFirst",
-        }}
         actions={
           <>
             {actions.reset.shown && (
@@ -521,14 +516,6 @@ export function MessageEditor({
                 onClick={() => reset.setAsking(true)}
               />
             )}
-            <Button
-              variant="outline"
-              aria-describedby="message-test-help"
-              disabled={actions.test.disabled}
-              onClick={() => void sendTest()}
-            >
-              {testing ? t("actions.testing") : t("actions.test")}
-            </Button>
             <Button
               disabled={actions.save.disabled || mustHave.length > 0}
               title={
@@ -729,7 +716,7 @@ export function MessageEditor({
 
         {/* The preview stays in view beside the editor on a wide screen. */}
         {/* Not pinned: the preview is as tall as the email, and scrolls with the page. */}
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-4">
           <EmailPreviewFrame
             html={preview.html}
             failed={preview.failed}
@@ -740,6 +727,18 @@ export function MessageEditor({
                   : tErrors("generic")
                 : null
             }
+          />
+          <TestAction
+            label={testing ? t("actions.testing") : t("actions.test")}
+            disabled={actions.test.disabled}
+            onClick={() => void sendTest()}
+            help={{
+              text:
+                actions.help === "saveFirst"
+                  ? tEditor("saveFirst")
+                  : t("testNote"),
+              quiet: actions.help !== "saveFirst",
+            }}
           />
         </div>
       </div>
