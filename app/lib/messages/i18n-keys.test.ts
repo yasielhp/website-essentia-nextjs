@@ -102,3 +102,21 @@ describe("the dialog that asks before a reset or a removal", () => {
     });
   }
 });
+
+describe("the words of the kicker", () => {
+  for (const locale of ["es", "en"] as const) {
+    it(`${locale}: the name, the faint line that says where to write, and the errors exist`, () => {
+      const editor = LOCALES[locale].messages.email.editor as unknown as Record<
+        string,
+        string
+      >;
+      for (const key of ["kickerLabel", "kickerPlaceholder"]) {
+        expect(editor[key]?.trim()).toBeTruthy();
+      }
+      const validation = LOCALES[locale].validation as Record<string, string>;
+      for (const key of ["kickerOne", "kickerMisplaced"]) {
+        expect(validation[key]?.trim()).toBeTruthy();
+      }
+    });
+  }
+});

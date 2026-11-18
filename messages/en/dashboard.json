@@ -2479,9 +2479,11 @@
           "bonus_card": "Service, sessions, amount paid and validity of the voucher"
         },
         "titleLabel": "Title",
+        "kickerLabel": "Line above the title",
+        "kickerPlaceholder": "Line above the title (optional)",
         "bodyHint": "The whole email is here, from top to bottom. Move the blocks by dragging them or with the arrows; variables go where the cursor is and are filled with each client's data.",
         "addBlock": "Add block",
-        "variableNotInTitle": "A link cannot go in the title",
+        "variableNotInTitle": "A link cannot go in the title or the line above it",
         "blockUp": "Move up “{name}”",
         "blockDown": "Move down “{name}”",
         "blockRemove": "Remove “{name}”",

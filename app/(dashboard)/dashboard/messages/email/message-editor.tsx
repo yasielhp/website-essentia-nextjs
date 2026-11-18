@@ -45,10 +45,11 @@ import type {
 import { rowHasText, switchInput } from "@/lib/messages/reminder-switch";
 import {
   BLOCK_NODE,
-  TITLE_NODE,
   blockNode,
   insertIndexFor,
+  isEmailLine,
   missingBlocks,
+  withKickerSlot,
 } from "@/lib/messages/email-doc";
 import { requiredBlocks, type FixedBlock } from "@/lib/messages/catalog";
 import type { EmailDoc } from "@/types/campaign";
@@ -198,7 +199,7 @@ export function MessageEditor({
   );
 
   // Where the caret is, and which blocks of the message the document lacks.
-  const [inTitle, setInTitle] = useState(false);
+  const [inLine, setInLine] = useState(false);
   const touchedEditor = useRef(false);
   const missing = useMemo(
     () => missingBlocks(current.doc, messageKey),
@@ -215,6 +216,8 @@ export function MessageEditor({
   const nodes = useMemo(() => {
     const ui: EmailNodesUi = {
       titleLabel: tEditor("titleLabel"),
+      kickerLabel: tEditor("kickerLabel"),
+      kickerPlaceholder: tEditor("kickerPlaceholder"),
       blockName: (block) => t(`fixed.${block}`),
       blockWhat: (block) => tEditor(`blockWhat.${block}`),
       up: (name) => tEditor("blockUp", { name }),
@@ -264,8 +267,9 @@ export function MessageEditor({
     const recovered = draft.take();
     if (!recovered) return;
     setCurrent(recovered);
-    if (editorRef.current) editorRef.current.commands.setContent(recovered.doc);
-    else recoveredDoc.current = recovered.doc;
+    if (editorRef.current) {
+      editorRef.current.commands.setContent(withKickerSlot(recovered.doc));
+    } else recoveredDoc.current = recovered.doc;
   }
 
   /**
@@ -317,15 +321,16 @@ export function MessageEditor({
       const editor = editorRef.current;
       if (!editor) return;
       const { selection } = editor.state;
-      const inTitle = selection.$from.parent.type.name === TITLE_NODE;
+      const inLine = isEmailLine(selection.$from.parent.type.name);
       const link = isLinkVariable(name);
-      if (link && inTitle) return;
-      // The editor opens with the caret in the title; until the admin has
-      // chosen a place, a variable goes to the text under it.
+      if (link && inLine) return;
+      // The editor opens with the caret in the first line (the kicker, or the
+      // title); until the admin has chosen a place, a variable goes to the text
+      // under them.
       if (!touchedEditor.current && !editor.isFocused) {
         let at = 0;
         editor.state.doc.forEach((child, offset) => {
-          if (at === 0 && child.isTextblock && child.type.name !== TITLE_NODE) {
+          if (at === 0 && child.isTextblock && !isEmailLine(child.type.name)) {
             at = offset + 1;
           }
         });
@@ -673,7 +678,7 @@ export function MessageEditor({
               <BodyToolbar
                 variables={catalog.variables}
                 disabled={saving}
-                inTitle={inTitle}
+                inLine={inLine}
                 missing={missing}
                 onInsert={insertVariable}
                 onAddBlock={addBlock}
@@ -692,18 +697,21 @@ export function MessageEditor({
                   nodes={nodes}
                   // The size of the email's own text (15 px, 1.6), not the page's.
                   contentClassName="[&>p]:!text-[15px] [&>p]:!leading-[1.6]"
-                  contentJson={opened.doc as never}
+                  contentJson={withKickerSlot(opened.doc) as never}
                   editable={!saving}
                   onCreate={(editor) => {
                     editorRef.current = editor;
                     if (recoveredDoc.current) {
-                      editor.commands.setContent(recoveredDoc.current);
+                      editor.commands.setContent(
+                        withKickerSlot(recoveredDoc.current),
+                      );
                       recoveredDoc.current = null;
                     }
                     const sync = () =>
-                      setInTitle(
-                        editor.state.selection.$from.parent.type.name ===
-                          TITLE_NODE,
+                      setInLine(
+                        isEmailLine(
+                          editor.state.selection.$from.parent.type.name,
+                        ),
                       );
                     editor.on("selectionUpdate", sync);
                     editor.on("focus", () => {

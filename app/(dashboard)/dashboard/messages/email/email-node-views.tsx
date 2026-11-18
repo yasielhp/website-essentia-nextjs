@@ -17,6 +17,7 @@ import {
 import { FIXED_BLOCK_INFO, type FixedBlock } from "@/lib/messages/catalog";
 import {
   EmailDocGuard,
+  EmailKickerNode,
   EmailTitleNode,
   SystemBlockNode,
   canMove,
@@ -26,6 +27,10 @@ import {
 /** Everything the two views say, already in words. */
 export type EmailNodesUi = {
   titleLabel: string;
+  /** The name of the line above the title, for a screen reader (nothing is shown). */
+  kickerLabel: string;
+  /** Said, faintly, in the empty kicker: where to write it. Not part of the email. */
+  kickerPlaceholder: string;
   blockName: (block: FixedBlock) => string;
   blockWhat: (block: FixedBlock) => string;
   up: (name: string) => string;
@@ -43,6 +48,38 @@ function useDocVersion(editor: Editor) {
       editor.off("update", bump);
     };
   }, [editor]);
+}
+
+/**
+ * The kicker, as the email draws it: small, in capitals, soft colour, a little
+ * letter-spacing, above the title. No visible label (it looks like the email's
+ * own line); its name is for a screen reader. When empty a faint line says where
+ * to write, and it is only the editor's: an empty kicker prints nothing.
+ */
+export function KickerView({
+  node,
+  ui,
+}: Pick<NodeViewProps, "node"> & { ui: EmailNodesUi }) {
+  const empty = node.content.size === 0;
+  return (
+    <NodeViewWrapper className="relative">
+      {empty && (
+        <span
+          aria-hidden="true"
+          contentEditable={false}
+          className="text-sand-500 pointer-events-none absolute top-0 left-0 text-[14px] leading-snug tracking-[1px] uppercase select-none"
+        >
+          {ui.kickerPlaceholder}
+        </span>
+      )}
+      {/* `!`: the editor's own prose styles come after the utilities. */}
+      <NodeViewContent
+        as="p"
+        aria-label={ui.kickerLabel}
+        className="font-body! text-petroleum-400! m-0! mb-2! min-h-5 text-[14px]! leading-snug! font-normal! tracking-[1px] uppercase outline-none"
+      />
+    </NodeViewWrapper>
+  );
 }
 
 function TitleView({ ui }: { ui: EmailNodesUi }) {
@@ -174,9 +211,13 @@ export function BlockView({
  * adds, and the guard that keeps them in order, drawn with `ui`.
  */
 export function emailNodeExtensions(ui: EmailNodesUi): AnyExtension[] {
+  const Kicker = (props: NodeViewProps) => <KickerView ui={ui} {...props} />;
   const Title = (props: NodeViewProps) => <TitleView ui={ui} {...props} />;
   const Block = (props: NodeViewProps) => <BlockView ui={ui} {...props} />;
   return [
+    EmailKickerNode.extend({
+      addNodeView: () => ReactNodeViewRenderer(Kicker),
+    }),
     EmailTitleNode.extend({
       addNodeView: () => ReactNodeViewRenderer(Title),
     }),

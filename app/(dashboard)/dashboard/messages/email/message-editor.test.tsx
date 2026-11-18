@@ -43,7 +43,7 @@ afterAll(() => {
 });
 
 const { MessageEditor } = await import("./message-editor");
-const { BlockView } = await import("./email-node-views");
+const { BlockView, KickerView } = await import("./email-node-views");
 
 const defaults = (key: MessageEditorKey): MessageDefaultEntry => ({
   key,
@@ -354,6 +354,8 @@ describe("the editor's nodes for the email", () => {
     const { emailNodeExtensions } = await import("./email-node-views");
     const nodes = emailNodeExtensions({
       titleLabel: "Título",
+      kickerLabel: "Línea sobre el título",
+      kickerPlaceholder: "Línea sobre el título (opcional)",
       blockName: () => "",
       blockWhat: () => "",
       up: () => "",
@@ -362,6 +364,7 @@ describe("the editor's nodes for the email", () => {
       drag: () => "",
     });
     expect(nodes.map((n) => n.name)).toEqual([
+      "emailKicker",
       "emailTitle",
       "systemBlock",
       "emailDocGuard",
@@ -520,5 +523,49 @@ describe("the question about resetting", () => {
     // And nothing of the old line of confirmation that pushed the page down.
     expect(html).not.toContain("Volver al texto por defecto");
     expect(html).not.toContain("Sí, restablecer");
+  });
+});
+
+describe("the kicker in the editor", () => {
+  const ui = {
+    titleLabel: "Título",
+    kickerLabel: "Línea sobre el título",
+    kickerPlaceholder: "Línea sobre el título (opcional)",
+    blockName: () => "",
+    blockWhat: () => "",
+    up: () => "",
+    down: () => "",
+    remove: () => "",
+    drag: () => "",
+  };
+  const draw = (size: number) => {
+    const props = {
+      node: { content: { size } },
+      ui,
+    } as unknown as ComponentProps<typeof KickerView>;
+    return renderToStaticMarkup(<KickerView {...props} />);
+  };
+
+  test("it looks like the email's line: small, in capitals, soft colour, spaced letters, above the title", () => {
+    const html = draw(5);
+    expect(html).toContain("uppercase");
+    expect(html).toContain("tracking-[1px]");
+    expect(html).toContain("text-[14px]!");
+    expect(html).toContain("text-petroleum-400!");
+    expect(html).toContain("font-body!");
+  });
+
+  test("it has no visible label; its name is for a screen reader", () => {
+    const html = draw(5);
+    expect(html).toContain('aria-label="Línea sobre el título"');
+    expect(html).not.toContain(">Línea sobre el título<");
+  });
+
+  test("empty, a faint line says where to write it, and it is the editor's only: it is hidden from a screen reader and does not take the pointer", () => {
+    const html = draw(0);
+    expect(html).toContain("Línea sobre el título (opcional)");
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain("pointer-events-none");
+    expect(draw(3)).not.toContain("(opcional)");
   });
 });

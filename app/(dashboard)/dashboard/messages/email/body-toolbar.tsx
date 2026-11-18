@@ -96,15 +96,15 @@ function VariableChip({
 export function BodyToolbar({
   variables,
   disabled,
-  inTitle,
+  inLine,
   missing,
   onInsert,
   onAddBlock,
 }: {
   variables: readonly string[];
   disabled: boolean;
-  /** The caret is in the title. */
-  inTitle: boolean;
+  /** The caret is in the title or the line above it. */
+  inLine: boolean;
   /** The blocks of the message the document lacks. */
   missing: readonly FixedBlock[];
   onInsert: (name: string) => void;
@@ -146,7 +146,7 @@ export function BodyToolbar({
           <VariableChip
             key={name}
             name={name}
-            blocked={inTitle && isLinkVariable(name)}
+            blocked={inLine && isLinkVariable(name)}
             disabled={disabled}
             focusable={index === active}
             buttonRef={(el) => {

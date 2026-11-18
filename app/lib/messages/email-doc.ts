@@ -52,6 +52,10 @@ export const isTitleNode = (node: unknown): boolean =>
 export const isKickerNode = (node: unknown): boolean =>
   isObject(node) && node.type === KICKER_NODE;
 
+/** Whether a node type is one of the two lines at the top of the email (an address has no place in either). */
+export const isEmailLine = (type: string): boolean =>
+  type === KICKER_NODE || type === TITLE_NODE;
+
 export const isBlockNode = (node: unknown): boolean =>
   isObject(node) && node.type === BLOCK_NODE;
 

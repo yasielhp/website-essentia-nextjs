@@ -2479,9 +2479,11 @@
           "bonus_card": "Servicio, sesiones, importe pagado y validez del bono"
         },
         "titleLabel": "Título",
+        "kickerLabel": "Línea sobre el título",
+        "kickerPlaceholder": "Línea sobre el título (opcional)",
         "bodyHint": "Aquí está todo el correo, de arriba abajo. Mueve los bloques arrastrándolos o con las flechas; las variables se insertan donde esté el cursor y se rellenan con los datos de cada cliente.",
         "addBlock": "Añadir bloque",
-        "variableNotInTitle": "Un enlace no se puede poner en el título",
+        "variableNotInTitle": "Un enlace no se puede poner en el título ni en la línea de encima",
         "blockUp": "Subir «{name}»",
         "blockDown": "Bajar «{name}»",
         "blockRemove": "Quitar «{name}»",
