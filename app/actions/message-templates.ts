@@ -205,6 +205,14 @@ export async function saveMessageTemplate(
     };
   }
   const write = parsed.data;
+  // With the switch gone from a save there may be nothing left to save: a body
+  // with no field of content writes only who and when, and changes nothing.
+  if (
+    (write.channel === "email" && write.content === null) ||
+    (write.channel === "whatsapp" && write.whatsapp === null)
+  ) {
+    return { ok: false, error: "invalid", fieldErrors: { _: "invalidInput" } };
+  }
   const db = getAdminClient().database;
 
   // A switched-off message is not sent, so its template is not checked. A save

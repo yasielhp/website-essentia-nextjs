@@ -139,6 +139,45 @@ describe("saveMessageTemplate — a WhatsApp row", () => {
     expect(upserts).toHaveLength(0);
   });
 
+  test("a save that carries only the switch has nothing to save: invalid, and nothing is written, not even who and when", async () => {
+    stored = TEMPLATE;
+    for (const only of [
+      {
+        key: "booking_confirmed",
+        channel: "whatsapp",
+        locale: "es",
+        enabled: false,
+      },
+      {
+        key: "booking_confirmed",
+        channel: "whatsapp",
+        locale: "es",
+        enabled: true,
+      },
+      { key: "booking_confirmed", channel: "whatsapp", locale: "es" },
+      { key: "booking_paid", channel: "email", locale: "es", enabled: false },
+      { key: "booking_paid", channel: "email", locale: "es" },
+    ]) {
+      expect(await save("token", only)).toEqual({
+        ok: false,
+        error: "invalid",
+        fieldErrors: { _: "invalidInput" },
+      });
+    }
+    expect(upserts).toHaveLength(0);
+  });
+
+  test("a save that carries a field of content still goes through: an email with only a subject", async () => {
+    const out = await save("token", {
+      key: "booking_paid",
+      channel: "email",
+      locale: "es",
+      subject: "Hola",
+    });
+    expect(out.ok).toBe(true);
+    expect(upserts).toHaveLength(1);
+  });
+
   test("the switch is not part of a save: a text saved with `enabled` in it never writes it", async () => {
     stored = TEMPLATE;
     const out = await save("token", { ...input, enabled: false });

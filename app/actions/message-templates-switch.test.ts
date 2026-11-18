@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 import { argsOf, chainDb, has, type Step } from "@/lib/campaigns/fake-db";
-import { AuthError } from "@/lib/auth-guard";
+import { ADMIN_ROLES, AuthError } from "@/lib/auth-guard";
 import { MESSAGE_KEYS } from "@/lib/messages/catalog";
 import { WHATSAPP_MESSAGE_KEYS } from "@/lib/messages/whatsapp-row";
 
@@ -21,6 +21,8 @@ import { WHATSAPP_MESSAGE_KEYS } from "@/lib/messages/whatsapp-row";
  */
 
 let role: "admin" | "staff" | "none" = "admin";
+/** The roles the action asked the guard for, each time it asked. */
+let asked: (readonly string[] | undefined)[] = [];
 let queries: { table: string; chain: Step[] }[] = [];
 let failWrite = false;
 
@@ -41,10 +43,14 @@ beforeAll(async () => {
   }));
   mock.module("@/lib/auth-guard", () => ({
     ...real.guard,
-    requireRole: async () => {
+    // Like the real guard: the caller gets in only if their role is one of the
+    // roles the action ASKED for, so an action that asked for a wider set (staff
+    // too) would let staff in and the test would see it.
+    requireRole: async (_token: unknown, roles?: readonly string[]) => {
+      asked.push(roles);
       if (role === "none") throw new AuthError("no", 401);
-      if (role === "staff") throw new AuthError("no", 403);
-      return { userId: "admin-1", email: "a@example.test", role: "admin" };
+      if (!roles?.includes(role)) throw new AuthError("no", 403);
+      return { userId: `${role}-1`, email: "a@example.test", role };
     },
   }));
   mock.module("@/lib/insforge-admin", () => ({
@@ -68,6 +74,7 @@ afterAll(() => {
 
 beforeEach(() => {
   role = "admin";
+  asked = [];
   queries = [];
   failWrite = false;
   revalidated = 0;
@@ -90,6 +97,22 @@ describe("who may switch", () => {
       error: "unauthenticated",
     });
     expect(queries).toHaveLength(0);
+  });
+});
+
+describe("the roles it asks for", () => {
+  test("exactly the administrator's, and nothing wider: an action that asked for staff too would let staff switch messages off", async () => {
+    await setEnabled("t", "booking_paid", "email", false);
+    expect(asked).toEqual([ADMIN_ROLES]);
+    expect(ADMIN_ROLES).toEqual(["admin"]);
+  });
+
+  test("an administrator gets in, and the guard was asked once", async () => {
+    role = "admin";
+    expect(await setEnabled("t", "booking_paid", "email", true)).toEqual({
+      ok: true,
+    });
+    expect(asked).toHaveLength(1);
   });
 });
 

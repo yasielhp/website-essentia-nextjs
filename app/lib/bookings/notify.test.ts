@@ -47,6 +47,8 @@ const TOKEN = "tok-123";
 
 let sent: Sent[] = [];
 let recorded: Recorded[] = [];
+// The provider refuses every send.
+let failSend = false;
 // What the fake `message_templates` answers with.
 let templates: () => { data: unknown; error: unknown } = () => ({
   data: null,
@@ -113,6 +115,7 @@ beforeAll(async () => {
   mock.module("@/emails/send", () => ({
     ...real.send,
     sendEmail: async (m: Sent) => {
+      if (failSend) return { error: { message: "refused" }, id: null };
       sent.push(m);
       return { error: null, id: "re_1" };
     },
@@ -141,6 +144,7 @@ afterAll(() => {
 beforeEach(() => {
   sent = [];
   recorded = [];
+  failSend = false;
   templates = () => ({ data: null, error: null });
 });
 
@@ -845,5 +849,43 @@ describe("the Server Action checks what it is handed before anything is sent", (
     const quiet = spyOn(console, "error").mockImplementation(() => {});
     expect(readBookingNotification({ ...created, service: 7 })).toBeNull();
     quiet.mockRestore();
+  });
+});
+
+describe("what notifyBookingCore reports about the client's email", () => {
+  const edited = {
+    subject: "Asunto",
+    preheader: null,
+    title: null,
+    doc: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Hola." }] },
+      ],
+    },
+    enabled: true,
+  };
+
+  test("sent when the provider took it", async () => {
+    expect(await notifyBookingCore(payload("confirmed", "es"), actor)).toBe(
+      "sent",
+    );
+    expect(sent).toHaveLength(1);
+  });
+
+  test("skipped when the message is switched off, with or without a text", async () => {
+    templates = () => ({ data: { ...edited, enabled: false }, error: null });
+    expect(await notifyBookingCore(payload("confirmed", "es"), actor)).toBe(
+      "skipped",
+    );
+    expect(sent.filter((e) => e.to === "ana@example.test")).toHaveLength(0);
+  });
+
+  test("failed when the provider refuses it, and the history says so", async () => {
+    failSend = true;
+    expect(await notifyBookingCore(payload("confirmed", "es"), actor)).toBe(
+      "failed",
+    );
+    expect(recorded.some((e) => e.status === "failed")).toBe(true);
   });
 });

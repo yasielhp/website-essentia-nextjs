@@ -13,6 +13,7 @@ import {
   type BookingNoticeKey,
 } from "@/lib/messages/legacy-subjects";
 import { emailOffSummary, OFF_REASON } from "@/lib/messages/off-note";
+import type { NotifyOutcome } from "./notify-outcome";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
@@ -314,7 +315,7 @@ async function sendAndRecord(params: {
   html: string;
   actorId: string | null;
   actorRole: BookingEventActorRole;
-}): Promise<void> {
+}): Promise<"sent" | "failed"> {
   const { bookingId, event, to, subject, html, actorId, actorRole } = params;
 
   // The subject is the line the dashboard shows, because it is what the client
@@ -338,12 +339,14 @@ async function sendAndRecord(params: {
           // message is delivered, opened or bounces.
           { ...entry, status: "sent", providerId: id },
     );
+    return error ? "failed" : "sent";
   } catch (err) {
     await recordBookingEvent({
       ...entry,
       status: "failed",
       error: err instanceof Error ? err.message : String(err),
     });
+    return "failed";
   }
 }
 
@@ -360,7 +363,7 @@ async function sendAndRecord(params: {
 export async function notifyBookingCore(
   payload: BookingNotificationPayload,
   actor: { actorId: string | null; actorRole: BookingEventActorRole },
-): Promise<void> {
+): Promise<NotifyOutcome> {
   const {
     bookingId,
     event,
@@ -374,7 +377,8 @@ export async function notifyBookingCore(
   const amountDueEur = amountOrNull(payload.amountDueEur);
 
   const recipient = await getBookingRecipient(bookingId);
-  if (!recipient) return;
+  // Nobody to write to: the client's email did not go.
+  if (!recipient) return "failed";
 
   const clientEmail = recipient.email;
   const serviceId = recipient.serviceId ?? payload.serviceId;
@@ -491,6 +495,7 @@ export async function notifyBookingCore(
       }),
   });
 
+  let clientOutcome: NotifyOutcome;
   if (custom.kind === "skip") {
     // The admin switched this message off in the list of Messages: nothing is
     // sent to the client, and the history says so, so "nobody told me" has an
@@ -505,8 +510,9 @@ export async function notifyBookingCore(
       error: OFF_REASON,
       ...actor,
     });
+    clientOutcome = "skipped";
   } else {
-    await sendAndRecord({
+    clientOutcome = await sendAndRecord({
       bookingId,
       event,
       to: clientEmail,
@@ -578,4 +584,6 @@ export async function notifyBookingCore(
       console.error("[notifyBooking] client WhatsApp failed:", err);
     }
   }
+
+  return clientOutcome;
 }

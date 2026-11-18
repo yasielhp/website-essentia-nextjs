@@ -7,6 +7,7 @@ import { pushBookingToCalendars } from "@/lib/calendar-sync";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { notifyBookingCore } from "@/lib/bookings/notify";
+import { clientWasNotified } from "@/lib/bookings/notify-outcome";
 import { parseIsoDate } from "@/utils/format";
 
 /**
@@ -277,7 +278,7 @@ export async function createBookingForStaff(
   // Telling people must never undo a booking that is already saved.
   const notified = { client: false, professional: false, calendar: false };
   try {
-    await notifyBookingCore(
+    const outcome = await notifyBookingCore(
       {
         bookingId,
         event: "confirmed",
@@ -294,7 +295,9 @@ export async function createBookingForStaff(
       },
       actorOf(actor),
     );
-    notified.client = true;
+    // Only a send the provider took: a message switched off in Messages, or a
+    // refused one, is not "the client was told".
+    notified.client = clientWasNotified(outcome);
   } catch {
     console.error("[mcp] client notification failed");
   }
@@ -409,7 +412,7 @@ export async function cancelBookingForStaff(
           : "es";
     }
     try {
-      await notifyBookingCore(
+      const outcome = await notifyBookingCore(
         {
           bookingId,
           event: "cancelled",
@@ -428,7 +431,7 @@ export async function cancelBookingForStaff(
         },
         actorOf(actor),
       );
-      notified.client = true;
+      notified.client = clientWasNotified(outcome);
     } catch {
       console.error("[mcp] cancellation email failed");
     }
