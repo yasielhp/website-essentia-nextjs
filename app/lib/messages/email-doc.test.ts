@@ -616,3 +616,44 @@ describe("putting a block back", () => {
     ).toEqual([]);
   });
 });
+
+describe("the title cannot be empty, and has no attributes", () => {
+  const withTitle = (t: EmailDoc) => doc(t, blockNode("cancel_link"));
+  test("no content, only spaces, or only empty text is refused; a variable is a title", () => {
+    for (const t of [
+      { type: TITLE_NODE },
+      { type: TITLE_NODE, content: [] },
+      { type: TITLE_NODE, content: [{ type: "text", text: "   " }] },
+      { type: TITLE_NODE, content: [{ type: "text", text: "" }] },
+    ] as EmailDoc[]) {
+      expect(structureProblems(withTitle(t), "booking_rescheduled")).toEqual([
+        { kind: "titleEmpty", path: "" },
+      ]);
+    }
+    expect(
+      structureProblems(
+        withTitle(titleNodeFrom("{{first_name}}")),
+        "booking_rescheduled",
+      ),
+    ).toEqual([]);
+    expect(
+      structureProblems(
+        withTitle(titleNodeFrom(" Hola ")),
+        "booking_rescheduled",
+      ),
+    ).toEqual([]);
+  });
+  test("attributes on the title are refused, as on a block", () => {
+    const t = { ...titleNodeFrom("Hola"), attrs: { onclick: "x", style: "x" } };
+    expect(structureProblems(withTitle(t), "booking_rescheduled")).toEqual([
+      { kind: "blockNotAllowed", path: "content[0]", node: TITLE_NODE },
+    ]);
+    // An empty attribute object is nothing.
+    expect(
+      structureProblems(
+        withTitle({ ...titleNodeFrom("Hola"), attrs: {} }),
+        "booking_rescheduled",
+      ),
+    ).toEqual([]);
+  });
+});

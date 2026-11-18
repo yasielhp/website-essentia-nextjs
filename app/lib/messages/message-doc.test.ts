@@ -543,3 +543,101 @@ describe("any failure of the new composer is the legacy email", () => {
     }
   });
 });
+
+describe("a title that comes out empty", () => {
+  test("when sent, it is the default title of that message and language, never an email with no heading", async () => {
+    for (const locale of LOCALES) {
+      const doc = edited("booking_cancelled", locale, (n) => [
+        {
+          type: TITLE_NODE,
+          content: [{ type: "variable", attrs: { id: "service" } }],
+        },
+        ...n.slice(1),
+      ]);
+      const c = casesFor("booking_cancelled", locale)[0]!;
+      // The variable has nothing in it for this booking.
+      const out = await composeMessageEmail({
+        key: "booking_cancelled",
+        locale,
+        row: row({ subject: "S", doc }),
+        vars: { ...c.values, service: "" },
+        blocks: fixedBlocksByKind("booking_cancelled", c.fixed),
+      });
+      expect(out.html).toContain("<h1");
+      const h1 = /<h1[^>]*>([^<]*)<\/h1>/.exec(out.html)?.[1] ?? "";
+      expect(h1.trim()).not.toBe("");
+      expect(visibleText(out.html)).toContain(h1);
+      const expected = defaultContent(
+        "booking_cancelled",
+        locale,
+      ).title.replace("{{first_name}}", c.values.first_name!);
+      expect(h1).toBe(expected);
+    }
+  });
+  test("when saved it is refused with an error of its own", () => {
+    const doc = edited("booking_cancelled", "es", (n) => [
+      { type: TITLE_NODE, content: [{ type: "text", text: "  " }] },
+      ...n.slice(1),
+    ]);
+    expect(saveErrors("booking_cancelled", doc)).toEqual({
+      "doc.title": "titleEmpty",
+    });
+  });
+  test("a title with an attribute is refused when saved", () => {
+    const doc = edited("booking_cancelled", "es", (n) => [
+      { ...n[0]!, attrs: { onclick: "x" } },
+      ...n.slice(1),
+    ]);
+    expect(Object.values(saveErrors("booking_cancelled", doc) ?? {})).toEqual([
+      "blockNotAllowed",
+    ]);
+  });
+});
+
+describe("saving a document leaves the old title column clean", () => {
+  const writeOf = (
+    key: MessageKey,
+    doc: EmailDoc | null,
+    extra: Record<string, unknown> = {},
+  ) => {
+    const result = validateMessageTemplate({
+      key,
+      channel: "email",
+      locale: "es",
+      doc,
+      ...extra,
+    });
+    if (!result.ok || result.data.channel !== "email")
+      throw new Error("expected valid");
+    return result.data.content;
+  };
+  test("the default document clears it, so an old row does not come back as custom with its old title", () => {
+    expect(
+      writeOf(
+        "booking_confirmed",
+        defaultContent("booking_confirmed", "es").doc,
+      ),
+    ).toEqual({ doc: null, title: null });
+  });
+  test("so does a document of the administrator's own", () => {
+    const doc = edited("booking_confirmed", "es", (n) => [...n, para("Más.")]);
+    expect(writeOf("booking_confirmed", doc)).toMatchObject({ title: null });
+  });
+  test("a title the caller sends on purpose is kept as sent", () => {
+    const doc = edited("booking_confirmed", "es", (n) => [...n, para("Más.")]);
+    expect(
+      writeOf("booking_confirmed", doc, { title: "A mano" }),
+    ).toMatchObject({ title: "A mano" });
+  });
+  test("saving only the subject does not touch the document or the title", () => {
+    const result = validateMessageTemplate({
+      key: "booking_confirmed",
+      channel: "email",
+      locale: "es",
+      subject: "Solo",
+    });
+    expect(
+      result.ok && result.data.channel === "email" && result.data.content,
+    ).toEqual({ subject: "Solo" });
+  });
+});

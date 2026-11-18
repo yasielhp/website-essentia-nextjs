@@ -56,6 +56,7 @@ export const MESSAGE_VALIDATION_KEYS = [
   "docNotRenderable",
   // The structure of the whole email: one title, and the blocks it must carry.
   "titleOne",
+  "titleEmpty",
   "blockRequired",
   "blockRepeated",
   "cannotDisable",
@@ -298,6 +299,9 @@ function checkEmail(
         case "titleOne":
           errors["doc.title"] ??= "titleOne";
           break;
+        case "titleEmpty":
+          errors["doc.title"] ??= "titleEmpty";
+          break;
         case "blockRequired":
           errors[`doc.blocks.${problem.block}`] ??= "blockRequired";
           break;
@@ -318,7 +322,14 @@ function checkEmail(
     if (data[field] === undefined) continue;
     content[field] = blank(data[field]) ? null : data[field]!;
   }
-  if (data.doc !== undefined) content.doc = isDefault ? null : doc;
+  if (data.doc !== undefined) {
+    content.doc = isDefault ? null : doc;
+    // The title now lives inside the document. An old row's `title` column
+    // must not outlive the body it belonged to (a default document would leave
+    // the row to come back as custom with the old title), so saving a body
+    // clears it unless the caller sent one on purpose.
+    if (data.title === undefined) content.title = null;
+  }
   return Object.keys(content).length > 0 ? content : null;
 }
 

@@ -773,13 +773,14 @@ describe("a save only touches the fields it carries", () => {
     }
   });
 
-  it("saving only the body leaves the texts alone", () => {
+  it("saving only the body leaves the subject and the preheader alone, and clears the old title column", () => {
     const payload = payloadOf({
       ...address,
       doc: whole("booking_confirmed", [para(text("Nuevo cuerpo"))]),
     });
     expect(payload).toHaveProperty("doc");
-    for (const column of ["subject", "preheader", "title"]) {
+    expect(payload).toHaveProperty("title", null);
+    for (const column of ["subject", "preheader"]) {
       expect(payload).not.toHaveProperty(column);
     }
   });

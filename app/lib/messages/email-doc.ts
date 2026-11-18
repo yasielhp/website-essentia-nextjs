@@ -196,6 +196,11 @@ export type StructureProblem =
       path: "";
     }
   | {
+      /** The title has nothing in it: no text but spaces, and no variable. */
+      kind: "titleEmpty";
+      path: "";
+    }
+  | {
       /** A block the message cannot do without is not in the document. */
       kind: "blockRequired";
       path: "";
@@ -249,6 +254,20 @@ export function structureProblems(
       if (titles > 1) {
         problems.push({ kind: "titleOne", path: "" });
       }
+      // The title is plain: it carries no attributes (the send ignores them),
+      // as a block carries none beyond its kind. An empty object is nothing.
+      if (Object.keys(node.attrs ?? {}).length > 0) {
+        problems.push({ kind: "blockNotAllowed", path, node: TITLE_NODE });
+      }
+      const filled = (node.content ?? []).some(
+        (child) =>
+          isObject(child) &&
+          ((child.type === "text" &&
+            typeof child.text === "string" &&
+            child.text.trim() !== "") ||
+            child.type === "variable"),
+      );
+      if (!filled) problems.push({ kind: "titleEmpty", path: "" });
       (node.content ?? []).forEach((child, j) => {
         const ok =
           isObject(child) &&

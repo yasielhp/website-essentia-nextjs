@@ -1112,6 +1112,7 @@
     "manualNotAllowed": "An appointment notice goes to whoever has the appointment: it takes no hand-picked contacts",
     "templateCategoryNotAllowed": "This template is Marketing: appointment notices can only use Utility templates.",
     "titleOne": "The email must have one title, and only one.",
+    "titleEmpty": "The title cannot be empty.",
     "blockRequired": "The block “{name}” is missing: this email must have it.",
     "blockRepeated": "This block is already in the email: it can only appear once."
   },

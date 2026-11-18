@@ -252,8 +252,16 @@ export async function composeMessageEmail({
     fallback.title,
   );
   const titleNode = docTitle(doc);
-  const rawTitle = titleText(titleNode);
-  const title = renderVariables(escapeHtml(rawTitle), values);
+  const fill = (raw: string) => renderVariables(escapeHtml(raw), values);
+  // A title that comes out empty (a variable this booking has no value for, or
+  // one saved before it was refused) is the message's own default title: an
+  // email never goes out without its heading.
+  let rawTitle = titleText(titleNode);
+  let title = fill(rawTitle);
+  if (title.trim() === "") {
+    rawTitle = fallback.title;
+    title = fill(rawTitle);
+  }
   const rawPreheader = row.preheader ?? fallback.preheader;
   const preheader = oneLine(
     renderVariables(escapeHtml(rawPreheader || rawTitle), values),
