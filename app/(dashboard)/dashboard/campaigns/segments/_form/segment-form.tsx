@@ -168,8 +168,6 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     sentence.key === "list"
       ? tForm("listSentence", { count: sentence.count })
       : tForm("filterSentence", { count: sentence.count });
-  // What the header checkbox acts on: everyone listed, on every page.
-  const listedIds = useMemo(() => shown.map((p) => p.id), [shown]);
   const filterCount = activeFilters(filters).length;
 
   function openFilters() {
@@ -356,12 +354,16 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
           <>
             <SegmentPeopleTable
               rows={rows}
-              listedIds={listedIds}
               selected={selected}
               locale={locale}
               onToggle={(id) => setSelected((s) => toggleOne(s, id))}
-              onToggleListed={() =>
-                setSelected((s) => toggleVisible(s, listedIds))
+              onTogglePage={() =>
+                setSelected((s) =>
+                  toggleVisible(
+                    s,
+                    rows.map((p) => p.id),
+                  ),
+                )
               }
             />
             {totalPages > 1 && (

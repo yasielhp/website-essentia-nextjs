@@ -2118,7 +2118,7 @@
         "search": "Search by name, email or phone",
         "filterSentence": "{count, plural, one {The segment includes the person who meets the filters, and anyone who meets them later.} other {The segment includes the # people who meet the filters, and anyone who meets them later.}}",
         "listSentence": "{count, plural, one {The segment includes only the person selected.} other {The segment includes only the # people selected.}}",
-        "selectVisible": "Select everyone on the list",
+        "selectVisible": "Select the people on this page",
         "selectPerson": "Select {name}",
         "filteredEmpty": "Nobody meets these filters",
         "searchEmpty": "Nobody matches the search",

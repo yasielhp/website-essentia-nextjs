@@ -559,12 +559,12 @@ describe("the segment screen's later strings", () => {
     );
     expect(locales.es["campaigns.segments.form.subscriptionAny"]).toBe("Todos");
   });
-  test("the checkbox of the header says it is of the whole list, and the bar has no buttons left to name", () => {
+  test("the checkbox of the header says it is of this page, and the bar has no buttons left to name", () => {
     expect(locales.es["campaigns.segments.form.selectVisible"]).toContain(
-      "de la lista",
+      "de esta página",
     );
     expect(locales.en["campaigns.segments.form.selectVisible"]).toContain(
-      "on the list",
+      "on this page",
     );
     for (const locale of ["es", "en"] as const) {
       for (const key of [

@@ -29,32 +29,32 @@ export function Issue({
 /**
  * The people a segment can be made of, one per row, with a checkbox. A table on
  * a wide screen and labelled cards on a phone, from the same rows. The header
- * checkbox selects (or clears) EVERYONE the table lists, on every page, under
- * the filters and the search in force; the selection itself lives in the form,
- * so it survives filtering, searching and paging.
+ * checkbox selects (or clears) the people on THIS page, never the other pages;
+ * the selection itself lives in the form, so it survives filtering, searching
+ * and paging.
  */
 export function SegmentPeopleTable({
   rows,
-  listedIds,
   selected,
   locale,
   onToggle,
-  onToggleListed,
+  onTogglePage,
 }: {
   /** The people on this page. */
   rows: SegmentPerson[];
-  /** Everyone the table lists, across its pages: what the header checkbox acts on. */
-  listedIds: string[];
   selected: ReadonlySet<string>;
   locale: SupportedLocale;
   onToggle: (id: string) => void;
-  onToggleListed: () => void;
+  onTogglePage: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.segments");
   const tForm = useTranslations("dashboard.campaigns.segments.form");
   const tAudience = useTranslations("dashboard.campaigns.audience");
   const header = useRef<HTMLInputElement>(null);
-  const check = headerCheckState(selected, listedIds);
+  const check = headerCheckState(
+    selected,
+    rows.map((p) => p.id),
+  );
   useEffect(() => {
     if (header.current) header.current.indeterminate = check === "some";
   }, [check]);
@@ -77,7 +77,7 @@ export function SegmentPeopleTable({
                   ref={header}
                   type="checkbox"
                   checked={check === "all"}
-                  onChange={onToggleListed}
+                  onChange={onTogglePage}
                   aria-label={tForm("selectVisible")}
                   className="accent-petroleum-700 size-4"
                 />
@@ -169,7 +169,7 @@ export function SegmentPeopleTable({
             ref={(el) => {
               if (el) el.indeterminate = check === "some";
             }}
-            onChange={onToggleListed}
+            onChange={onTogglePage}
             className="accent-petroleum-700 size-4"
           />
           {tForm("selectVisible")}

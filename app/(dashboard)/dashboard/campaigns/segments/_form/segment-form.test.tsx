@@ -100,40 +100,35 @@ describe("the header of the screen where a segment is made", () => {
 });
 
 describe("the table of people", () => {
-  const render = (selected: string[], listed: string[] = [ana.id, luis.id]) =>
+  const render = (selected: string[]) =>
     wrap(
       <SegmentPeopleTable
         rows={[ana, luis]}
-        listedIds={listed}
         selected={new Set(selected)}
         locale="es"
         onToggle={() => {}}
-        onToggleListed={() => {}}
+        onTogglePage={() => {}}
       />,
     );
 
-  test("has a checkbox per person with her name, and one in the header for the whole list", () => {
+  test("has a checkbox per person with her name, and one in the header for the page", () => {
     const html = render([]);
     expect(html).toContain('aria-label="Seleccionar a Ana Pérez"');
     expect(html).toContain('aria-label="Seleccionar a Luis"');
     expect(html).toContain(
-      'aria-label="Seleccionar a todas las personas de la lista"',
+      'aria-label="Seleccionar las personas de esta página"',
     );
   });
-  test("the header checkbox answers for the whole list, not for the page on screen", () => {
+  test("the header checkbox answers for the page on screen, not for the other pages", () => {
     const headerBox = (html: string) =>
       html.match(
-        /<input[^>]*aria-label="Seleccionar a todas las personas de la lista"[^>]*>/,
+        /<input[^>]*aria-label="Seleccionar las personas de esta página"[^>]*>/,
       )?.[0] ?? "";
-    // Both people of this page are picked, but the list has a third on another page.
-    expect(headerBox(render(["a", "b"], ["a", "b", "c"]))).not.toContain(
-      'checked=""',
-    );
-    // Everyone listed is picked: it is checked.
-    expect(headerBox(render(["a", "b", "c"], ["a", "b", "c"]))).toContain(
-      'checked=""',
-    );
-    expect(headerBox(render([], ["a", "b", "c"]))).not.toContain('checked=""');
+    // Both people of this page are picked: it is checked, whoever else exists.
+    expect(headerBox(render(["a", "b"]))).toContain('checked=""');
+    // Somebody picked on another page does not check it.
+    expect(headerBox(render(["zz"]))).not.toContain('checked=""');
+    expect(headerBox(render(["a"]))).not.toContain('checked=""');
   });
   test("a selected person is checked and the others are not", () => {
     const html = render(["a"]);
