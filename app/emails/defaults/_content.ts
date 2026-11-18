@@ -6,36 +6,31 @@ import type {
 } from "@/types/campaign";
 
 /**
- * A default as the editor opens it, plus the two halves of its body.
- *
- * `intro` is what the legacy email prints before its fixed blocks and `outro`
- * the closing sentence it prints after them. `doc` is both together, which is
- * what the editor shows: an admin who edits the body replaces the whole thing,
- * closing included.
+ * The text of a default, in the two halves the legacy email prints: `intro` is
+ * what it prints before its blocks and `outro` the closing sentence it prints
+ * after them.
  */
-export type MessageDefault = Omit<CampaignLocaleContent, "doc"> & {
-  /** The whole email as the editor opens it: title, text and blocks (see `defaultContent`). */
-  doc: EmailDoc;
+export type MessageDefaultText = Omit<CampaignLocaleContent, "doc"> & {
   intro: EmailDoc;
   outro: EmailDoc | null;
 };
 
-/** One message's default text, in both languages. */
-export type MessageDefaults = Record<CampaignLocale, MessageDefault>;
+/**
+ * A default as the editor opens it: the text and `doc`, the WHOLE email as a
+ * document (its title, the text and every block the message has, placed where the
+ * legacy email prints them). `defaultContent` builds `doc` from the text.
+ */
+export type MessageDefault = MessageDefaultText & { doc: EmailDoc };
 
-/** Joins an intro and an outro into the one document the editor opens. */
+/** One message's default text, in both languages. */
+export type MessageDefaults = Record<CampaignLocale, MessageDefaultText>;
+
+/** The text of a default with its closing sentence. */
 export function withOutro(
-  base: Omit<MessageDefault, "doc" | "outro">,
+  base: Omit<MessageDefaultText, "outro">,
   outro: EmailDoc | null,
-): MessageDefault {
-  return {
-    ...base,
-    outro,
-    doc: {
-      type: "doc",
-      content: [...(base.intro.content ?? []), ...(outro?.content ?? [])],
-    },
-  };
+): MessageDefaultText {
+  return { ...base, outro };
 }
 
 /**
@@ -56,7 +51,7 @@ export function content(
   title: string,
   intro: string[],
   outro: string[] = [],
-): MessageDefault {
+): MessageDefaultText {
   const toDoc = (paragraphs: string[]) =>
     blocksToDoc(paragraphs.map((text) => ({ type: "paragraph", text })));
   return withOutro(
