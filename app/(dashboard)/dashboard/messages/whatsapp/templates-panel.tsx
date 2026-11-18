@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useReducer, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -48,8 +49,19 @@ function listReducer(state: ListState, action: ListAction): ListState {
   }
 }
 
-/** The WhatsApp tab: the list, the sync and the create form. */
-export function TemplatesPanel() {
+/**
+ * The WhatsApp tab: the list, the sync and the create form.
+ *
+ * Its two buttons belong at the top right of the page, beside the title, so
+ * they are drawn into `actionsSlot`, the place the page's header keeps for them
+ * (`null` until the header has mounted). With no slot at all, as when the panel
+ * is drawn on its own, they stay above the list.
+ */
+export function TemplatesPanel({
+  actionsSlot,
+}: {
+  actionsSlot?: HTMLElement | null;
+} = {}) {
   const t = useTranslations("dashboard.messages.whatsapp");
   const locale = useDashboardLocale();
   const showError = useActionToast();
@@ -119,24 +131,31 @@ export function TemplatesPanel() {
     }
   }
 
+  const actions = (
+    <>
+      <Button
+        variant="outline"
+        onClick={() => void handleSync()}
+        disabled={syncing || !configured}
+        title={configured ? undefined : t("syncUnavailable")}
+      >
+        {syncing ? t("syncing") : t("sync")}
+      </Button>
+      <Button className="gap-2" onClick={() => setForm(null)}>
+        <IconPlus />
+        {t("new")}
+      </Button>
+    </>
+  );
+
   return (
     <div>
+      {actionsSlot && createPortal(actions, actionsSlot)}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <p className="text-petroleum-400 max-w-2xl text-sm">{t("intro")}</p>
-        <div className="flex max-w-full flex-wrap gap-3">
-          <Button
-            variant="outline"
-            onClick={() => void handleSync()}
-            disabled={syncing || !configured}
-            title={configured ? undefined : t("syncUnavailable")}
-          >
-            {syncing ? t("syncing") : t("sync")}
-          </Button>
-          <Button className="gap-2" onClick={() => setForm(null)}>
-            <IconPlus />
-            {t("new")}
-          </Button>
-        </div>
+        <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
+        {actionsSlot === undefined && (
+          <div className="flex max-w-full flex-wrap gap-3">{actions}</div>
+        )}
       </div>
 
       {!configured && (

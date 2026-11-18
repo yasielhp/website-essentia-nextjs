@@ -103,7 +103,7 @@ export function EmailPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-petroleum-400 max-w-2xl text-sm">{t("intro")}</p>
+      <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
       {waTemplates.status === "error" && (
         <div
           role="alert"

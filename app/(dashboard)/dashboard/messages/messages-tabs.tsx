@@ -19,6 +19,12 @@ export function MessagesTabs({
   const t = useTranslations("dashboard.messages");
   const [active, setActive] = useState<TabKey>(initialTab);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  /**
+   * Where the open tab puts its own buttons: top right, beside the title, as on
+   * every other page. The tab owns them (and their state); the header only
+   * gives them the place.
+   */
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   /**
    * Picking a tab is remembered in the address, without a new history entry:
@@ -35,8 +41,18 @@ export function MessagesTabs({
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <h1 className="font-display text-petroleum-700 text-2xl">{t("title")}</h1>
-      <p className="text-petroleum-400 mt-1 text-sm">{t("description")}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-petroleum-700 text-2xl">
+            {t("title")}
+          </h1>
+          <p className="text-petroleum-400 mt-1 text-sm">{t("description")}</p>
+        </div>
+        <div
+          ref={setActionsSlot}
+          className="flex shrink-0 flex-wrap items-center gap-3 empty:hidden sm:justify-end"
+        />
+      </header>
 
       <div
         role="tablist"
@@ -84,7 +100,7 @@ export function MessagesTabs({
         id={`messages-panel-${active}`}
         aria-labelledby={`messages-tab-${active}`}
       >
-        {active === "whatsapp" && <TemplatesPanel />}
+        {active === "whatsapp" && <TemplatesPanel actionsSlot={actionsSlot} />}
         {active === "email" && <EmailPanel />}
       </div>
     </div>
