@@ -119,9 +119,9 @@ describe("the template validation messages", () => {
 });
 
 describe("navigation", () => {
-  test("the sidebar and breadcrumb entries exist in both languages", () => {
+  test("Messages is a breadcrumb of Settings, not an entry of the sidebar, in both languages", () => {
     for (const locale of [locales.es, locales.en]) {
-      expect((locale.nav as Tree).messages).toBeTruthy();
+      expect((locale.nav as Tree).messages).toBeUndefined();
       expect(
         ((locale.breadcrumbs as Tree).sections as Tree).messages,
       ).toBeTruthy();
