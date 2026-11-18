@@ -155,3 +155,14 @@
     background-color: var(--color-petroleum-700);
   }
 }
+
+/* ─── Editor de correos: la línea sobre el título ──────────── */
+/* El editor (Maily) escribe su propio marcador en inglés, «Write something or /
+   to see commands», en cualquier nodo vacío. La línea sobre el título ya trae el
+   suyo (en `email-node-views.tsx`), así que el de Maily se apaga ahí para que no
+   se pinten dos textos uno encima del otro. */
+.node-emailKicker.is-empty::before,
+.node-emailKicker .is-empty::before,
+.node-emailKicker [data-placeholder]::before {
+  content: none !important;
+}
