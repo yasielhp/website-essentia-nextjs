@@ -48,14 +48,11 @@ function useDocVersion(editor: Editor) {
 function TitleView({ ui }: { ui: EmailNodesUi }) {
   return (
     <NodeViewWrapper className="border-sand-100 mb-3 border-b pb-3">
-      <p
-        contentEditable={false}
-        className="text-petroleum-400 mb-1 text-[11px] font-medium tracking-wide uppercase select-none"
-      >
-        {ui.titleLabel}
-      </p>
+      {/* No visible label: the title looks like the email's own. Its name is
+          for a screen reader only. */}
       <NodeViewContent
         as="h1"
+        aria-label={ui.titleLabel}
         className="font-body! text-petroleum-700! m-0! min-h-8 text-[22px]! leading-[1.3]! font-semibold! outline-none sm:text-2xl!"
       />
     </NodeViewWrapper>
