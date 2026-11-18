@@ -608,7 +608,8 @@ export function MessageEditor({
         </div>
 
         {/* The preview stays in view beside the editor on a wide screen. */}
-        <div className="min-w-0 xl:sticky xl:top-6">
+        {/* Not pinned: the preview is as tall as the email, and scrolls with the page. */}
+        <div className="min-w-0">
           <EmailPreviewFrame
             html={preview.html}
             failed={preview.failed}

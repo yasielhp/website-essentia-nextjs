@@ -1,25 +1,22 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { previewSrcDoc } from "@/lib/messages/preview-frame";
 
 /**
- * As tall as the window leaves room for when the preview sits beside the form
- * (the bar above it, its label and its margins take about 7.5rem), never less
- * than 30rem;
- * a fixed 40rem when it sits under the form.
- */
-const FRAME_HEIGHT = "h-160 xl:h-[max(30rem,calc(100dvh-7.5rem))]";
-
-/**
- * The email, drawn by the server, in an iframe that is sandboxed with nothing
- * allowed: no script runs in it, and its styles stay out of the dashboard (and
- * the dashboard's out of it). One view, as wide as its column. Its height does
- * not depend on what it shows, so the editor does not jump while the preview
- * reloads: beside the form (a wide screen, where the column stays in view) it
- * is as tall as the window allows; under the form it is a fixed height. The
- * subject is the form's own field, not repeated here, and the note on what the example
- * shows is the frame's description for a screen reader.
+ * The email, drawn by the server, with nothing around it: no box, no padding,
+ * no scroll bar of its own. The frame is as wide as its column and as TALL AS
+ * THE EMAIL, so what is seen is the whole email, top to bottom, and the page
+ * is what scrolls.
+ *
+ * It is an iframe so the email's styles stay out of the dashboard (and the
+ * dashboard's out of it). Its sandbox allows one thing, `allow-same-origin`,
+ * and only so this component can read how tall the email is: no script runs in
+ * it, no form is sent and no window is opened (see `previewSrcDoc` for links).
+ *
+ * The subject is the form's own field, not repeated here, and the note on what
+ * the example shows is the frame's description for a screen reader.
  */
 export function EmailPreviewFrame({
   html,
@@ -34,6 +31,64 @@ export function EmailPreviewFrame({
   failure: string | null;
 }) {
   const t = useTranslations("dashboard.messages.email.editor.preview");
+  const frame = useRef<HTMLIFrameElement>(null);
+  /** The email's own height in px; null until the first one has been measured. */
+  const [height, setHeight] = useState<number | null>(null);
+
+  /**
+   * Reads the email's height. The frame is collapsed for the reading, or a
+   * shorter email would be measured as tall as the frame already is; nothing
+   * is painted in between.
+   */
+  const measure = useCallback(() => {
+    const element = frame.current;
+    const doc = element?.contentDocument;
+    if (!element || !doc?.documentElement) return;
+    const before = element.style.height;
+    element.style.height = "0px";
+    const tall = Math.max(
+      doc.documentElement.scrollHeight,
+      doc.body?.scrollHeight ?? 0,
+    );
+    element.style.height = before;
+    if (tall > 0) setHeight(tall);
+  }, []);
+
+  /** Watches the email inside the frame; replaced each time the frame loads. */
+  const inner = useRef<ResizeObserver | null>(null);
+
+  /**
+   * The frame has loaded an email: measure it, and keep measuring while it
+   * settles (a font or the logo arriving a moment later makes it a little
+   * taller than it was at first).
+   */
+  const onLoad = useCallback(() => {
+    measure();
+    inner.current?.disconnect();
+    const body = frame.current?.contentDocument?.body;
+    if (!body || typeof ResizeObserver === "undefined") return;
+    inner.current = new ResizeObserver(() => measure());
+    inner.current.observe(body);
+  }, [measure]);
+
+  // A narrower or wider column wraps the email differently: measure again.
+  // (The frame only exists once there is an email to show.)
+  const shown = html !== null;
+  useEffect(() => {
+    const element = frame.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let width = element.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (element.clientWidth === width) return;
+      width = element.clientWidth;
+      measure();
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      inner.current?.disconnect();
+    };
+  }, [measure, shown]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -46,23 +101,25 @@ export function EmailPreviewFrame({
           {failure ?? t("failed")}
         </p>
       )}
-      <div className="border-sand-200 bg-sand-50 overflow-hidden rounded-2xl border p-3">
-        {html === null ? (
-          <div
-            className={`text-petroleum-400 flex items-center justify-center text-sm ${FRAME_HEIGHT}`}
-          >
-            {t("loading")}
-          </div>
-        ) : (
-          <iframe
-            title={t("title")}
-            aria-describedby="message-preview-note"
-            srcDoc={previewSrcDoc(html)}
-            sandbox=""
-            className={`w-full rounded-xl border-0 bg-white ${FRAME_HEIGHT}`}
-          />
-        )}
-      </div>
+      {html === null ? (
+        <p className="text-petroleum-400 py-16 text-center text-sm">
+          {t("loading")}
+        </p>
+      ) : (
+        <iframe
+          ref={frame}
+          title={t("title")}
+          aria-describedby="message-preview-note"
+          srcDoc={previewSrcDoc(html)}
+          sandbox="allow-same-origin"
+          scrolling="no"
+          onLoad={onLoad}
+          style={height === null ? undefined : { height }}
+          className={`block w-full overflow-hidden rounded-2xl border-0 ${
+            height === null ? "h-160" : ""
+          }`}
+        />
+      )}
     </div>
   );
 }
