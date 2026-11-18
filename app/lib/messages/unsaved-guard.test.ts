@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { shouldGuardClick } from "./unsaved-guard";
 
 const base = {
-  href: "/dashboard/settings/messages?tab=email",
+  href: "/dashboard/settings#settings-messages",
   origin: "https://app.example.com",
   currentPath: "/dashboard/settings/messages/email/booking_confirmed/es",
   button: 0,
@@ -19,7 +19,7 @@ describe("shouldGuardClick", () => {
   test("a plain click on a link inside the app is guarded", () => {
     expect(shouldGuardClick(base)).toEqual({
       guard: true,
-      to: "/dashboard/settings/messages?tab=email",
+      to: "/dashboard/settings#settings-messages",
     });
     expect(
       shouldGuardClick({
@@ -27,6 +27,12 @@ describe("shouldGuardClick", () => {
         href: "https://app.example.com/dashboard/users",
       }),
     ).toEqual({ guard: true, to: "/dashboard/users" });
+  });
+  test("the way back to the list in Settings (another page, with an anchor) is guarded, and the anchor is kept", () => {
+    expect(shouldGuardClick(base)).toEqual({
+      guard: true,
+      to: "/dashboard/settings#settings-messages",
+    });
   });
   test("a link to another site is the browser's: beforeunload asks about it", () => {
     expect(

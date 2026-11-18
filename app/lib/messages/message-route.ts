@@ -40,12 +40,20 @@ export function parseMessageRoute(
   return { ok: true, channel, key: messageKey, locale: language };
 }
 
-/** Messages is a page of Settings: the list, and under it the page of each message. */
+/**
+ * Messages live in Settings. The list of automatic messages and the WhatsApp
+ * templates are two CARDS of the settings page, found by their anchor; each
+ * message has a page of its own under it.
+ */
+export const SETTINGS_PATH = "/dashboard/settings";
 export const MESSAGES_PATH = "/dashboard/settings/messages";
+/** The ids of the two cards (`SettingsCard` writes `settings-<id>`). */
+export const MESSAGES_ANCHOR = "settings-messages";
+export const WHATSAPP_TEMPLATES_ANCHOR = "settings-whatsapp-templates";
 
-/** The list of Messages on one of its two tabs. */
-export function messagesTabHref(tab: "email" | "whatsapp"): string {
-  return `${MESSAGES_PATH}?tab=${tab}`;
+/** The WhatsApp templates card of Settings. */
+export function whatsappTemplatesHref(): string {
+  return `${SETTINGS_PATH}#${WHATSAPP_TEMPLATES_ANCHOR}`;
 }
 
 /** The page where one message is edited (the email) or set up (the WhatsApp notice). */
@@ -57,9 +65,9 @@ export function messageEditHref(
   return `${MESSAGES_PATH}/${channel}/${key}/${locale}`;
 }
 
-/** The list, on the tab the page came from. */
+/** The list: the automatic messages card of Settings, which every message page comes from. */
 export function messageListHref(): string {
-  return messagesTabHref("email");
+  return `${SETTINGS_PATH}#${MESSAGES_ANCHOR}`;
 }
 
 /**

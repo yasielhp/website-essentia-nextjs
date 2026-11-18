@@ -5,14 +5,18 @@ import { useTranslations } from "next-intl";
 import { LoadWhenVisible } from "@/components/dashboard/load-when-visible";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { useKeepAnchorInView } from "@/hooks/use-keep-anchor-in-view";
+import {
+  MESSAGES_ANCHOR,
+  WHATSAPP_TEMPLATES_ANCHOR,
+} from "@/lib/messages/message-route";
 import { EmailPanel } from "./messages/email/email-panel";
 import { MessageListSkeleton } from "./messages/email/message-list-skeleton";
 import { TemplatesPanel } from "./messages/whatsapp/templates-panel";
 import { TemplateTable } from "./messages/whatsapp/template-table";
 
-/** The anchors the rest of the dashboard links to (`/dashboard/settings#settings-messages`). */
-export const MESSAGES_CARD_ID = "settings-messages";
-export const WHATSAPP_TEMPLATES_CARD_ID = "settings-whatsapp-templates";
+// The anchors the rest of the dashboard links to live with the addresses.
+const MESSAGES_CARD_ID = MESSAGES_ANCHOR;
+const WHATSAPP_TEMPLATES_CARD_ID = WHATSAPP_TEMPLATES_ANCHOR;
 
 /**
  * "Automatic messages": every message the centre sends on its own, with its

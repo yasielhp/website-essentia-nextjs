@@ -1,19 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { getBreadcrumbs } from "./breadcrumbs";
 
-const SETTINGS = { key: "sections.settings", href: "/dashboard/settings" };
-const MESSAGES = {
-  key: "sections.messages",
-  href: "/dashboard/settings/messages?tab=email",
+// "Settings" leads back to the card the page came from.
+const SETTINGS = {
+  key: "sections.settings",
+  href: "/dashboard/settings#settings-messages",
 };
 
-describe("the crumbs of a message's own page: Settings, Messages, the message", () => {
-  test("Settings, then Messages (the list), then the message", () => {
+describe("the crumbs of a message's own page: Settings, the message", () => {
+  test("Settings (back to its card of messages), then the message", () => {
     expect(
       getBreadcrumbs("/dashboard/settings/messages/email/booking_confirmed/es"),
     ).toEqual([
       SETTINGS,
-      MESSAGES,
       {
         messageRow: {
           channel: "email",
@@ -28,7 +27,6 @@ describe("the crumbs of a message's own page: Settings, Messages, the message", 
       getBreadcrumbs("/dashboard/settings/messages/whatsapp/booking_paid/en"),
     ).toEqual([
       SETTINGS,
-      MESSAGES,
       {
         messageRow: { channel: "whatsapp", key: "booking_paid", locale: "en" },
       },
@@ -39,7 +37,7 @@ describe("the crumbs of a message's own page: Settings, Messages, the message", 
       getBreadcrumbs(
         "/dashboard/settings/messages/email/booking_confirmed/es/",
       ),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
   });
   test("an address that is no page has no message crumb", () => {
     for (const path of [
@@ -53,16 +51,26 @@ describe("the crumbs of a message's own page: Settings, Messages, the message", 
   });
 });
 
-describe("the list of messages is a page of Settings", () => {
-  test("Settings (a link) › Messages", () => {
-    expect(getBreadcrumbs("/dashboard/settings/messages")).toEqual([
-      SETTINGS,
-      { key: "sections.messages" },
+describe("the list of messages is a card of Settings, not a page", () => {
+  test("Settings itself is one crumb: there is no Messages section or page to name", () => {
+    expect(getBreadcrumbs("/dashboard/settings")).toEqual([
+      { key: "sections.settings" },
     ]);
+    for (const path of [
+      "/dashboard/messages",
+      "/dashboard/settings/messages",
+    ]) {
+      expect(
+        getBreadcrumbs(path).every((c) => c.key !== "sections.messages"),
+      ).toBe(true);
+    }
   });
-  test("the old address is no section of its own any more: it is not given a crumb of Messages as a section", () => {
-    const crumbs = getBreadcrumbs("/dashboard/messages");
-    expect(crumbs.every((c) => c.key !== "sections.messages")).toBe(true);
+  test("the word Messages is no crumb of the message pages either", () => {
+    for (const crumb of getBreadcrumbs(
+      "/dashboard/settings/messages/email/booking_confirmed/es",
+    )) {
+      expect(crumb.key).not.toBe("sections.messages");
+    }
   });
 });
 

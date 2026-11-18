@@ -1,6 +1,6 @@
 "use client";
 
-import { messagesTabHref } from "@/lib/messages/message-route";
+import { whatsappTemplatesHref } from "@/lib/messages/message-route";
 import { useEffect, useMemo, useState, type Dispatch } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -240,7 +240,7 @@ export function WhatsAppStep({
                 )}
                 {/* Another tab: leaving would lose the campaign half made. */}
                 <Link
-                  href={messagesTabHref("whatsapp")}
+                  href={whatsappTemplatesHref()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-petroleum-700 mt-2 inline-block text-sm font-medium underline underline-offset-2"

@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+  MESSAGES_ANCHOR,
   MESSAGES_PATH,
-  messagesTabHref,
+  SETTINGS_PATH,
+  WHATSAPP_TEMPLATES_ANCHOR,
+  whatsappTemplatesHref,
   messageEditHref,
   messageListHref,
   messageRowLabel,
@@ -83,17 +86,17 @@ describe("hrefs", () => {
       "/dashboard/settings/messages/whatsapp/booking_paid/en",
     );
   });
-  test("the list is a page of Settings, on the tab asked for, and nothing else is the address of Messages any more", () => {
+  test("the list and the templates are cards of Settings, found by their anchor; a message's own page is under Settings", () => {
+    expect(SETTINGS_PATH).toBe("/dashboard/settings");
     expect(MESSAGES_PATH).toBe("/dashboard/settings/messages");
-    expect(messagesTabHref("email")).toBe(
-      "/dashboard/settings/messages?tab=email",
-    );
-    expect(messagesTabHref("whatsapp")).toBe(
-      "/dashboard/settings/messages?tab=whatsapp",
+    expect(MESSAGES_ANCHOR).toBe("settings-messages");
+    expect(WHATSAPP_TEMPLATES_ANCHOR).toBe("settings-whatsapp-templates");
+    expect(whatsappTemplatesHref()).toBe(
+      "/dashboard/settings#settings-whatsapp-templates",
     );
   });
-  test("the way back opens the Emails tab", () => {
-    expect(messageListHref()).toBe("/dashboard/settings/messages?tab=email");
+  test("the way back is the card of automatic messages in Settings", () => {
+    expect(messageListHref()).toBe("/dashboard/settings#settings-messages");
   });
 });
 

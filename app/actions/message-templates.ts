@@ -16,7 +16,7 @@ import {
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import { editableLocales } from "@/lib/messages/editor-state";
-import { MESSAGES_PATH } from "@/lib/messages/message-route";
+import { SETTINGS_PATH } from "@/lib/messages/message-route";
 import type { MessageRow } from "@/lib/messages/compose";
 import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
 import { editorIds, editorNames, withEditors } from "@/lib/messages/editors";
@@ -35,7 +35,7 @@ import type {
 import { sendTemplateMessage } from "@/lib/whatsapp/client";
 import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 
-const PATH = MESSAGES_PATH;
+const PATH = SETTINGS_PATH;
 const LOCALES = ["en", "es"] as const;
 
 /**

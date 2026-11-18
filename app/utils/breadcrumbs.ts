@@ -79,18 +79,14 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
 
   if (rest.length === 0) return [sectionCrumb];
 
-  // Messages is a page of Settings: Settings › Messages on the list, and
-  // Settings › Messages › the message on a message's own page. The way back is
-  // the list on the tab the page came from.
+  // A message's own page lives under Settings: Settings › the message. The
+  // list is a card of the settings page, so "Settings" leads back to that card.
   if (section === "settings" && rest[0] === "messages") {
-    const settings = { key: "sections.settings", href: "/dashboard/settings" };
-    if (rest.length === 1) return [settings, { key: "sections.messages" }];
     const route =
       rest.length === 4 ? parseMessageRoute(rest[1], rest[2], rest[3]) : null;
     if (route?.ok) {
       return [
-        settings,
-        { key: "sections.messages", href: messageListHref() },
+        { key: "sections.settings", href: messageListHref() },
         {
           messageRow: {
             channel: route.channel,
