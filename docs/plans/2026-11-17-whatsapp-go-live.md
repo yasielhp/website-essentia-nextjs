@@ -119,7 +119,7 @@ Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil 
 
 ## 3. Plantillas de Meta
 
-Se crean desde **Mensajes → WhatsApp** (el panel las envía a Meta y las sincroniza) y las aprueba Meta en minutos o días.
+Se crean desde **Ajustes → Mensajes → Plantillas de WhatsApp** (el panel las envía a Meta y las sincroniza) y las aprueba Meta en minutos o días.
 
 - **Cuerpo.** Variables como `{{1}}`, `{{2}}`…, consecutivas, **ni al principio ni al final del texto** (Meta lo rechaza; el panel también). Cada variable necesita un **ejemplo**; sin ejemplos Meta no la revisa.
 - **Cabecera.** Sin cabecera o solo de texto **sin variables**. Una cabecera multimedia (imagen, vídeo, documento) o con variable hace que la plantilla salga marcada como no enviable (`media_header`, `header_variable`).
@@ -137,8 +137,8 @@ Se crean desde **Mensajes → WhatsApp** (el panel las envía a Meta y las sincr
 2. Aplicar la migración `l` y verificarla. Decidir sobre la `m` (sección 2).
 3. Cargar las variables de entorno en Vercel y **volver a desplegar**.
 4. Suscribir el webhook (punto 6). Comprobar que Meta lo acepta (devuelve el desafío si el token coincide).
-5. En **Mensajes → WhatsApp**, crear las plantillas necesarias y esperar la aprobación; la pestaña se actualiza sola desde Meta al abrirla (y un cron lo hace cada hora): comprobar que salen `APPROVED`.
-6. En **Mensajes**, para cada aviso inmediato a la clienta (confirmación y confirmación de pago) y cada idioma, elegir la plantilla y mapear sus parámetros. Hasta que no hay fila de WhatsApp para un aviso, ese aviso no sale por WhatsApp. El recordatorio y los demás avisos con hora (48 h antes, 2 h antes, 24 h después de la visita…) **no** se configuran aquí: son campañas de tipo **aviso de cita** (paso 7).
+5. En **Ajustes → Mensajes → Plantillas de WhatsApp**, crear las plantillas necesarias y esperar la aprobación; la pestaña se actualiza sola desde Meta al abrirla (y un cron lo hace cada hora): comprobar que salen `APPROVED`.
+6. En **Ajustes → Mensajes → Mensajes automáticos**, para cada aviso inmediato a la clienta (confirmación y confirmación de pago) y cada idioma, elegir la plantilla y mapear sus parámetros. Hasta que no hay fila de WhatsApp para un aviso, ese aviso no sale por WhatsApp. El recordatorio y los demás avisos con hora (48 h antes, 2 h antes, 24 h después de la visita…) **no** se configuran aquí: son campañas de tipo **aviso de cita** (paso 7).
 7. En **Campañas**, crear uno o varios **avisos de cita** por WhatsApp: se elige cuándo (de 1 a 336 horas **antes** de la cita, o de 1 a 720 horas **después**), la plantilla y los parámetros, y se activa.
 8. **Piloto** (siguiente sección). Solo después, abrir las casillas de WhatsApp a las clientas reales y crear campañas.
 
