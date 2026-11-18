@@ -307,3 +307,36 @@ describe("the state of a message, summed over its languages", () => {
     expect(t).not.toContain("por Ana");
   });
 });
+
+describe("the colour of the type badge", () => {
+  const html = render([]);
+  const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+  const cards = html.slice(html.indexOf('<ul class="divide-sand-100'));
+  const badge = (part: string, label: string) =>
+    [
+      ...part.matchAll(
+        /<span class="([^"]*)"><span aria-hidden="true"[^>]*><svg[^>]*>.*?<\/svg><\/span>(Email|WhatsApp)<\/span>/g,
+      ),
+    ]
+      .filter((m) => m[2] === label)
+      .map((m) => m[1]!);
+
+  test("WhatsApp is green and Email is blue, in the table and in the cards, each with its icon and its name", () => {
+    for (const part of [table, cards]) {
+      const wa = badge(part, "WhatsApp");
+      const mail = badge(part, "Email");
+      expect(wa).toHaveLength(2);
+      expect(mail).toHaveLength(MESSAGE_KEYS.length);
+      for (const cls of wa) {
+        expect(cls).toContain("bg-green-100");
+        expect(cls).toContain("text-green-800");
+        expect(cls).not.toContain("text-blue-700");
+      }
+      for (const cls of mail) {
+        expect(cls).toContain("bg-blue-50");
+        expect(cls).toContain("text-blue-700");
+        expect(cls).not.toContain("text-green-800");
+      }
+    }
+  });
+});

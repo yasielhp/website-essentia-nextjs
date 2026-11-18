@@ -94,7 +94,13 @@ function TypeBadge({ type }: { type: "email" | "whatsapp" }) {
   const t = useTranslations("dashboard.messages.email.types");
   return (
     <span
-      className={`${PILL} bg-sand-100 text-petroleum-500 gap-1.5 whitespace-nowrap`}
+      // The channel by colour and by icon and name together: WhatsApp green,
+      // email blue (the tones of the status badges and of the date variables).
+      className={`${PILL} gap-1.5 whitespace-nowrap ${
+        type === "email"
+          ? "bg-blue-50 text-blue-700"
+          : "bg-green-100 text-green-800"
+      }`}
     >
       <span aria-hidden="true" className="inline-flex [&>svg]:size-3.5">
         {type === "email" ? <IconMail /> : <IconChat />}
