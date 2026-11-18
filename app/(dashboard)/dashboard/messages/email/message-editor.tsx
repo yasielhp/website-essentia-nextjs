@@ -617,7 +617,6 @@ export function MessageEditor({
         <div className="min-w-0 xl:sticky xl:top-6">
           <EmailPreviewFrame
             html={preview.html}
-            subject={preview.subject}
             failed={preview.failed}
             failure={
               preview.failure

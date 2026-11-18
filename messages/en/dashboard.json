@@ -2453,11 +2453,8 @@
         "preview": {
           "title": "How the email will look",
           "note": "With an example booking; the system blocks look as the client will receive them.",
-          "mobile": "Mobile",
-          "desktop": "Desktop",
           "loading": "Preparing the preview…",
-          "failed": "The preview cannot be shown until what is marked is fixed.",
-          "subject": "Subject: {subject}"
+          "failed": "The preview cannot be shown until what is marked is fixed."
         }
       },
       "errors": {

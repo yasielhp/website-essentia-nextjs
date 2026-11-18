@@ -13,7 +13,6 @@ export type Problems = {
 export type PreviewState = {
   /** The last email that could be drawn; null until the first one. */
   html: string | null;
-  subject: string | null;
   /** The newest draft could not be drawn; `html` is the one before it. */
   failed: boolean;
   /** Why, when it was not the draft's fault (a lapsed session, the limit). */
@@ -24,7 +23,6 @@ export type PreviewState = {
 
 const FIRST: PreviewState = {
   html: null,
-  subject: null,
   failed: false,
   failure: null,
   problems: null,
@@ -63,7 +61,6 @@ export function useMessagePreview(
           } else if (result.ok) {
             setState({
               html: result.html,
-              subject: result.subject,
               failed: false,
               failure: null,
               problems: null,

@@ -2453,11 +2453,8 @@
         "preview": {
           "title": "Así se verá el correo",
           "note": "Con una reserva de ejemplo; los bloques del sistema se ven como los recibirá el cliente.",
-          "mobile": "Móvil",
-          "desktop": "Escritorio",
           "loading": "Preparando la vista previa…",
-          "failed": "No se puede mostrar la vista previa hasta que se arregle lo marcado.",
-          "subject": "Asunto: {subject}"
+          "failed": "No se puede mostrar la vista previa hasta que se arregle lo marcado."
         }
       },
       "errors": {
