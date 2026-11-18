@@ -67,6 +67,7 @@ import {
 import { LanguageSwitch } from "./language-switch";
 import { bodyVariableRenderer } from "./variable-kind-ui";
 import { BodyToolbar } from "./body-toolbar";
+import { BodySkeleton } from "./message-page-skeleton";
 import { emailNodeExtensions, type EmailNodesUi } from "./email-node-views";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
@@ -75,9 +76,7 @@ const MailyEditor = dynamic(
   () => import("@/components/dashboard/maily-editor"),
   {
     ssr: false,
-    loading: () => (
-      <div className="bg-sand-100 min-h-64 animate-pulse rounded-2xl" />
-    ),
+    loading: () => <BodySkeleton />,
   },
 );
 

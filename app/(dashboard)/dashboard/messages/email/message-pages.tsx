@@ -15,6 +15,7 @@ import { useWhatsAppTemplates } from "../../campaigns/_form/use-whatsapp-templat
 import { useEmailActionToast } from "./action-error";
 import { MessageEditor } from "./message-editor";
 import { MessagePageHeader, ResetControl } from "./page-parts";
+import { MessagePageSkeleton } from "./message-page-skeleton";
 import { WhatsAppMessageEditor } from "./whatsapp-message-editor";
 
 type Locale = "es" | "en";
@@ -75,34 +76,43 @@ function useLoadedMessages(): Loaded & { reload: () => void } {
 
 const FRAME = "px-6 py-8 lg:px-10";
 
-/** The page while it loads or when it could not: the same header, then the state. */
+/**
+ * The page while it loads, in its own shape (the same as the route's
+ * `loading.tsx`, now with its title), or when it could not: the header, then a
+ * way to try again.
+ */
 function Waiting({
+  channel,
   title,
   failed,
   onRetry,
 }: {
+  channel: "email" | "whatsapp";
   title: string;
   failed: boolean;
   onRetry: () => void;
 }) {
   const t = useTranslations("dashboard.messages.email");
+  if (!failed) {
+    return (
+      <div className={FRAME}>
+        <MessagePageSkeleton
+          channel={channel}
+          title={title}
+          label={t("page.loading")}
+        />
+      </div>
+    );
+  }
   return (
     <div className={`${FRAME} flex flex-col gap-6`}>
       <MessagePageHeader title={title} />
-      {failed ? (
-        <div className="border-sand-200 flex flex-col items-center gap-4 rounded-2xl border bg-white px-6 py-16 text-center">
-          <p className="text-petroleum-400 text-sm">{t("loadFailed")}</p>
-          <Button variant="outline" onClick={onRetry}>
-            {t("retry")}
-          </Button>
-        </div>
-      ) : (
-        <div
-          role="status"
-          aria-label={t("page.loading")}
-          className="bg-sand-100 h-64 animate-pulse rounded-2xl"
-        />
-      )}
+      <div className="border-sand-200 flex flex-col items-center gap-4 rounded-2xl border bg-white px-6 py-16 text-center">
+        <p className="text-petroleum-400 text-sm">{t("loadFailed")}</p>
+        <Button variant="outline" onClick={onRetry}>
+          {t("retry")}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -123,6 +133,7 @@ export function EmailMessagePage({
   if (loaded.status !== "ready") {
     return (
       <Waiting
+        channel="email"
         title={title}
         failed={loaded.status === "error"}
         onRetry={loaded.reload}
@@ -140,7 +151,9 @@ export function EmailMessagePage({
   );
   const catalog = loaded.catalog.find((c) => c.key === messageKey);
   if (!defaults || !catalog) {
-    return <Waiting title={title} failed onRetry={loaded.reload} />;
+    return (
+      <Waiting channel="email" title={title} failed onRetry={loaded.reload} />
+    );
   }
 
   // A row whose text cannot be read is not edited: it is put back to the default.
@@ -211,6 +224,7 @@ export function WhatsAppMessagePage({
   if (loaded.status !== "ready" || templates.status !== "ready") {
     return (
       <Waiting
+        channel="whatsapp"
         title={title}
         failed={failed}
         onRetry={() => {

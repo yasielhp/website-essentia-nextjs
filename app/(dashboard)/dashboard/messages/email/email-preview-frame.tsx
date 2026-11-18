@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import { previewSrcDoc } from "@/lib/messages/preview-frame";
+import { EmailCardSkeleton } from "./message-page-skeleton";
 
 /**
  * The email, drawn by the server, with nothing around it: no box, no padding,
@@ -116,9 +117,10 @@ export function EmailPreviewFrame({
         </p>
       )}
       {html === null ? (
-        <p className="text-petroleum-400 py-16 text-center text-sm">
-          {t("loading")}
-        </p>
+        <div role="status">
+          <span className="sr-only">{t("loading")}</span>
+          <EmailCardSkeleton />
+        </div>
       ) : (
         <iframe
           ref={frame}
