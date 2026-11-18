@@ -66,24 +66,6 @@ export function KindIcon({
   );
 }
 
-/** A variable as a small, quiet tag: its icon and its name. */
-export function VariableTag({
-  kind,
-  children,
-}: {
-  kind: VariableKind;
-  children: ReactNode;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${KIND_TONE[kind]}`}
-    >
-      <KindIcon kind={kind} />
-      {children}
-    </span>
-  );
-}
-
 /**
  * One variable inside a line of the body: its icon and its SHORT name, a little
  * smaller than the text around it and on its baseline so it never breaks the

@@ -4,9 +4,9 @@ import { MailyKit, VariableExtension } from "@maily-to/core/extensions";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { defaultContent } from "@/emails/defaults";
 import type { EmailDoc } from "@/types/campaign";
-import { MESSAGE_KEYS } from "./catalog";
+import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
 import { chooseDelivery } from "./compose";
-import { sameDoc } from "./editor-state";
+import { editableLocales, sameDoc } from "./editor-state";
 import { validateMessageTemplate } from "./schema";
 import {
   EmailDocGuard,
@@ -169,6 +169,32 @@ describe("the server decides it the same way", () => {
             locale,
           ),
         ).toBe("legacy");
+      });
+    }
+  }
+});
+
+describe("every title the editor opens has text to show", () => {
+  for (const key of MESSAGE_KEYS) {
+    for (const locale of editableLocales(key)) {
+      test(`${key}/${locale}: the title, as the editor re-emits it, has words of its own, and a value for its variables`, () => {
+        const doc = reemit(defaultContent(key, locale).doc);
+        const title = doc.content?.[0];
+        expect(title?.type).toBe("emailTitle");
+        const children = title?.content ?? [];
+        const words = children
+          .filter((c) => c.type === "text")
+          .map((c) => c.text ?? "")
+          .join("")
+          .trim();
+        // Not only a variable: there is text a person can read in it.
+        expect(words.length).toBeGreaterThan(3);
+        // And the variable in it is one the message offers, so it is a chip with a name.
+        for (const c of children.filter((c) => c.type === "variable")) {
+          expect(MESSAGE_CATALOG[key].variables as readonly string[]).toContain(
+            String(c.attrs?.id),
+          );
+        }
       });
     }
   }

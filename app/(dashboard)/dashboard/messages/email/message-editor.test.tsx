@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
+import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
@@ -41,6 +42,7 @@ afterAll(() => {
 });
 
 const { MessageEditor } = await import("./message-editor");
+const { BlockView } = await import("./email-node-views");
 
 const defaults = (key: MessageEditorKey): MessageDefaultEntry => ({
   key,
@@ -336,11 +338,9 @@ describe("the editor's nodes for the email", () => {
   test("a title, the blocks, and the guard that keeps them in order", async () => {
     const { emailNodeExtensions } = await import("./email-node-views");
     const nodes = emailNodeExtensions({
-      variables: [],
       titleLabel: "Título",
       blockName: () => "",
       blockWhat: () => "",
-      variableLabel: (n) => n,
       up: () => "",
       down: () => "",
       remove: () => "",
@@ -351,6 +351,58 @@ describe("the editor's nodes for the email", () => {
       "systemBlock",
       "emailDocGuard",
     ]);
+  });
+});
+
+describe("the card of a block of the system", () => {
+  async function card(kind: string) {
+    const ui = {
+      titleLabel: "Título",
+      blockName: () => "Detalles de la reserva",
+      blockWhat: () => "Servicio, tipo de sesión, fecha, hora y duración",
+      up: (n: string) => `Subir ${n}`,
+      down: (n: string) => `Bajar ${n}`,
+      remove: (n: string) => `Quitar ${n}`,
+      drag: (n: string) => `Arrastrar ${n}`,
+    };
+    const editor = { on() {}, off() {}, state: { doc: { forEach() {} } } };
+    const props = {
+      node: { attrs: { kind }, nodeSize: 1 },
+      editor,
+      getPos: () => 0,
+      selected: false,
+      ui,
+    } as unknown as ComponentProps<typeof BlockView>;
+    return renderToStaticMarkup(<BlockView {...props} />);
+  }
+
+  test("has the name, one line of what it is, the controls, and nothing else: no round icon, no row of variables", async () => {
+    for (const kind of [
+      "details_card",
+      "location",
+      "payment_note",
+      "calendar_button",
+      "cancel_link",
+      "consent_button",
+      "bonus_card",
+    ]) {
+      const html = await card(kind);
+      expect(html).toContain("Detalles de la reserva");
+      expect(html).toContain(
+        "Servicio, tipo de sesión, fecha, hora y duración",
+      );
+      // The only pictures are the grip and the three buttons.
+      expect((html.match(/<svg/g) ?? []).length).toBe(4);
+      expect(html).not.toContain("<ul");
+      expect(html).not.toContain("rounded-full bg-sand-100");
+      expect(html).toContain('data-drag-handle="true"');
+      for (const action of ["up", "down", "remove"]) {
+        expect(html).toContain(`data-action="${action}"`);
+      }
+      expect(html).toContain("border-dashed");
+      expect(html).toContain("!text-sm");
+      expect(html).toContain("!text-xs");
+    }
   });
 });
 

@@ -214,11 +214,9 @@ export function MessageEditor({
   // once: the editor is.
   const nodes = useMemo(() => {
     const ui: EmailNodesUi = {
-      variables: catalog.variables,
       titleLabel: tEditor("titleLabel"),
       blockName: (block) => t(`fixed.${block}`),
       blockWhat: (block) => tEditor(`blockWhat.${block}`),
-      variableLabel: (name) => t(`variables.${name}`),
       up: (name) => tEditor("blockUp", { name }),
       down: (name) => tEditor("blockDown", { name }),
       remove: (name) => tEditor("blockRemove", { name }),

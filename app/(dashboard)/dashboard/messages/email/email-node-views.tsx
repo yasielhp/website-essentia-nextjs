@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, type ReactNode } from "react";
+import { useEffect, useReducer } from "react";
 import type { AnyExtension, Editor } from "@tiptap/core";
 import {
   NodeViewContent,
@@ -11,23 +11,10 @@ import {
 import {
   IconArrowDown,
   IconArrowUp,
-  IconCalendar,
-  IconEdit,
-  IconEuro,
   IconGrip,
-  IconLink,
-  IconPin,
-  IconReceipt,
-  IconTag,
   IconTrash,
 } from "@/components/ui/icons";
-import {
-  BLOCK_INFO,
-  blockCards,
-  variableKind,
-  type BlockIcon,
-} from "@/lib/messages/variable-kinds";
-import type { FixedBlock, MessageVariable } from "@/lib/messages/catalog";
+import { FIXED_BLOCK_INFO, type FixedBlock } from "@/lib/messages/catalog";
 import {
   EmailDocGuard,
   EmailTitleNode,
@@ -35,26 +22,12 @@ import {
   canMove,
   moveBlockTransaction,
 } from "./email-nodes";
-import { VariableTag } from "./variable-kind-ui";
-
-const ICON: Record<BlockIcon, ReactNode> = {
-  details: <IconReceipt />,
-  location: <IconPin />,
-  money: <IconEuro />,
-  calendar: <IconCalendar />,
-  link: <IconLink />,
-  consent: <IconEdit />,
-  voucher: <IconTag />,
-};
 
 /** Everything the two views say, already in words. */
 export type EmailNodesUi = {
-  /** The variables the message offers, to name the ones a block fills. */
-  variables: readonly MessageVariable[];
   titleLabel: string;
   blockName: (block: FixedBlock) => string;
   blockWhat: (block: FixedBlock) => string;
-  variableLabel: (name: string) => string;
   up: (name: string) => string;
   down: (name: string) => string;
   remove: (name: string) => string;
@@ -92,7 +65,7 @@ function TitleView({ ui }: { ui: EmailNodesUi }) {
 const ACTION =
   "text-petroleum-500 hover:text-petroleum-700 hover:bg-sand-100 focus-visible:ring-petroleum-500 inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-30 disabled:hover:bg-transparent sm:size-8";
 
-function BlockView({
+export function BlockView({
   node,
   editor,
   getPos,
@@ -101,13 +74,11 @@ function BlockView({
 }: NodeViewProps & { ui: EmailNodesUi }) {
   useDocVersion(editor);
   const kind = String(node.attrs.kind) as FixedBlock;
-  const info = BLOCK_INFO[kind];
-  if (!info) return <NodeViewWrapper />;
+  if (!Object.hasOwn(FIXED_BLOCK_INFO, kind)) return <NodeViewWrapper />;
   const name = ui.blockName(kind);
   const pos = typeof getPos === "function" ? getPos() : undefined;
   const can = (dir: "up" | "down") =>
     typeof pos === "number" && canMove(editor.state.doc, pos, dir);
-  const variables = blockCards([kind], ui.variables)[0]!.variables;
 
   const move = (dir: "up" | "down") => {
     const at = typeof getPos === "function" ? getPos() : undefined;
@@ -154,12 +125,6 @@ function BlockView({
       >
         <IconGrip />
       </button>
-      <span
-        aria-hidden="true"
-        className="bg-sand-100 text-petroleum-500 mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full"
-      >
-        {ICON[info.icon]}
-      </span>
       {/* `!` on the sizes: the editor's own prose styles come after the utilities and set 15 px. */}
       <div className="min-w-0 flex-1 basis-48">
         <p className="text-petroleum-700 !text-sm !leading-snug font-medium">
@@ -168,20 +133,6 @@ function BlockView({
         <p className="text-petroleum-500 !text-xs !leading-snug">
           {ui.blockWhat(kind)}
         </p>
-        {variables.length > 0 && (
-          <ul className="mt-1.5 flex flex-wrap gap-1.5">
-            {variables.map((variable) => {
-              const vk = variableKind(variable);
-              return vk ? (
-                <li key={variable}>
-                  <VariableTag kind={vk}>
-                    {ui.variableLabel(variable)}
-                  </VariableTag>
-                </li>
-              ) : null;
-            })}
-          </ul>
-        )}
       </div>
       <div className="ml-auto flex shrink-0 items-center justify-end">
         <button
