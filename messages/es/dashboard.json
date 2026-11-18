@@ -1442,10 +1442,6 @@
     }
   },
   "settings": {
-    "messages": {
-      "heading": "Mensajes",
-      "description": "Los correos y avisos de WhatsApp que el centro envía solo, y las plantillas de WhatsApp."
-    },
     "plans": {
       "heading": "Todas las suscripciones",
       "editPlan": "Editar plan",
@@ -2212,13 +2208,6 @@
     "countsFailed": "No se pudieron contar las campañas por estado."
   },
   "messages": {
-    "title": "Mensajes",
-    "description": "Los textos que el centro envía a sus clientes.",
-    "tabsLabel": "Tipo de mensaje",
-    "tabs": {
-      "email": "Mensajes automáticos",
-      "whatsapp": "Plantillas de WhatsApp"
-    },
     "whatsapp": {
       "intro": "Meta revisa cada plantilla antes de que se pueda enviar, y una campaña de WhatsApp solo puede usar plantillas aprobadas. La revisión tarda de minutos a días.",
       "autoSync": {
@@ -2338,7 +2327,8 @@
         "submittedNotSaved": "Meta aceptó la plantilla, pero no se guardó aquí. Aparecerá sola en la próxima actualización desde Meta.",
         "whatsapp_not_configured": "Falta configurar WhatsApp Business en el servidor.",
         "meta": "Meta rechazó la petición."
-      }
+      },
+      "heading": "Plantillas de WhatsApp"
     },
     "keys": {
       "booking_received": "Reserva recibida",
@@ -2627,7 +2617,8 @@
       },
       "languageSwitch": {
         "label": "Idioma"
-      }
+      },
+      "heading": "Mensajes automáticos"
     }
   },
   "bonuses": {

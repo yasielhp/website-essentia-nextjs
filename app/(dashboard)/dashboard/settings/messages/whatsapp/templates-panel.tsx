@@ -50,20 +50,20 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 /**
  * When this browser last asked Meta for the templates. Kept outside the
- * component so leaving the tab and coming back does not ask again at once.
+ * component so leaving the page and coming back does not ask again at once.
  */
 let lastAutoSyncAt: number | null = null;
 
 /**
- * The WhatsApp tab: the list and the create form.
+ * The WhatsApp templates card: the list and the create form.
  *
  * Nobody syncs by hand. The list is shown at once from the dashboard's copy
  * and, when that copy is not fresh, Meta is asked in the background and the
  * list redrawn (`shouldAutoSync`); a cron does the same every hour. Only a sync
  * that fails asks anything of the admin: a notice with a way to try again.
  *
- * Its button belongs at the top right of the page, beside the title, so it is
- * drawn into `actionsSlot`, the place the page's header keeps for it (`null`
+ * Its button belongs at the top right of its card, beside the title, so it is
+ * drawn into `actionsSlot`, the place the card's header keeps for it (`null`
  * until the header has mounted). With no slot at all, as when the panel is
  * drawn on its own, it stays above the list.
  */
@@ -139,7 +139,7 @@ export function TemplatesPanel({
   }
 
   // Once the copy is on screen, bring it up to date if it is not fresh. Asked
-  // a moment later, not in the effect itself, and not at all if the tab was
+  // a moment later, not in the effect itself, and not at all if the card was
   // left in between.
   useEffect(() => {
     if (loading || failed) return;

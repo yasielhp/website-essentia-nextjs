@@ -46,7 +46,7 @@ function reducer(_: ListState, action: ListAction): ListState {
   };
 }
 
-/** The Emails tab: every message the system sends to clients, and its editor. */
+/** The automatic messages card: every message the system sends to clients, and the way to its page. */
 export function EmailPanel() {
   const t = useTranslations("dashboard.messages.email");
   const showError = useEmailActionToast();

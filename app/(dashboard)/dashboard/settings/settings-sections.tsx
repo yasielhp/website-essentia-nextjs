@@ -6,7 +6,10 @@ import { BookingsSettings } from "@/components/dashboard/settings/bookings-setti
 import { SubscriptionsSettings } from "@/components/dashboard/settings/subscriptions-settings";
 import { BonusPlansSettings } from "@/components/dashboard/settings/bonus-plans-settings";
 import { PaymentsSettings } from "@/components/dashboard/settings/payments-settings";
-import { MessagesSettingsCard } from "./messages-card";
+import {
+  AutomaticMessagesSettings,
+  WhatsAppTemplatesSettings,
+} from "./messages-cards";
 
 /**
  * One group of settings. Each carries its own heading ("All sessions", "All
@@ -24,9 +27,9 @@ function SettingsCard({ id, children }: { id: string; children: ReactNode }) {
 }
 
 /**
- * Every setting in the dashboard, as cards one under another: the way into
- * Messages (first, so it is found), sessions, vouchers, subscriptions and
- * payments. They were tabs, which hid all but one
+ * Every setting in the dashboard, as cards one under another: sessions,
+ * vouchers, subscriptions, payments, and then the automatic messages and the
+ * WhatsApp templates (which load only when they come near the screen). They were tabs, which hid all but one
  * of them behind a click. Who may see this screen is settled on the server, in
  * `page.tsx`.
  */
@@ -40,9 +43,6 @@ export function SettingsSections() {
       </h1>
 
       <div className="flex flex-col gap-6">
-        <SettingsCard id="messages">
-          <MessagesSettingsCard />
-        </SettingsCard>
         <SettingsCard id="bookings">
           <BookingsSettings />
         </SettingsCard>
@@ -54,6 +54,12 @@ export function SettingsSections() {
         </SettingsCard>
         <SettingsCard id="payments">
           <PaymentsSettings />
+        </SettingsCard>
+        <SettingsCard id="messages">
+          <AutomaticMessagesSettings />
+        </SettingsCard>
+        <SettingsCard id="whatsapp-templates">
+          <WhatsAppTemplatesSettings />
         </SettingsCard>
       </div>
     </div>

@@ -1442,10 +1442,6 @@
     }
   },
   "settings": {
-    "messages": {
-      "heading": "Messages",
-      "description": "The emails and WhatsApp notices the centre sends on its own, and the WhatsApp templates."
-    },
     "plans": {
       "heading": "All subscriptions",
       "editPlan": "Edit plan",
@@ -2212,13 +2208,6 @@
     "countsFailed": "The campaigns could not be counted by state."
   },
   "messages": {
-    "title": "Messages",
-    "description": "The texts the centre sends to its clients.",
-    "tabsLabel": "Message type",
-    "tabs": {
-      "email": "Automatic messages",
-      "whatsapp": "WhatsApp templates"
-    },
     "whatsapp": {
       "intro": "Meta reviews every template before it can be sent, and a WhatsApp campaign can only use approved templates. A review takes anywhere from minutes to days.",
       "autoSync": {
@@ -2338,7 +2327,8 @@
         "submittedNotSaved": "Meta accepted the template, but it was not saved here. It will show up by itself at the next update from Meta.",
         "whatsapp_not_configured": "WhatsApp Business is not set up on the server.",
         "meta": "Meta rejected the request."
-      }
+      },
+      "heading": "WhatsApp templates"
     },
     "keys": {
       "booking_received": "Booking received",
@@ -2627,7 +2617,8 @@
       },
       "languageSwitch": {
         "label": "Language"
-      }
+      },
+      "heading": "Automatic messages"
     }
   },
   "bonuses": {
