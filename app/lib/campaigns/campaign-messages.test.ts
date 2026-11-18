@@ -369,13 +369,11 @@ describe("the screen where a segment is made", () => {
     "campaigns.segments.form.search",
     "campaigns.segments.form.filterSentence",
     "campaigns.segments.form.listSentence",
-    "campaigns.segments.form.clearSelection",
     "campaigns.segments.form.selectVisible",
     "campaigns.segments.form.selectPerson",
     "campaigns.segments.form.count",
     "campaigns.segments.form.countOf",
     "campaigns.segments.form.selectedCount",
-    "campaigns.segments.form.selectAllN",
     "campaigns.segments.form.filteredEmpty",
     "campaigns.segments.form.searchEmpty",
     "campaigns.segments.form.clearFilters",
@@ -544,7 +542,6 @@ describe("the segment screen's later strings", () => {
     for (const locale of ["es", "en"] as const) {
       for (const key of [
         "campaigns.segments.form.listFull",
-        "campaigns.segments.form.selectAllN",
         "campaigns.segments.form.selectedCount",
         "campaigns.segments.form.count",
         "campaigns.segments.form.countOf",
@@ -562,13 +559,22 @@ describe("the segment screen's later strings", () => {
     );
     expect(locales.es["campaigns.segments.form.subscriptionAny"]).toBe("Todos");
   });
-  test("the checkbox of the header says it is of this page", () => {
+  test("the checkbox of the header says it is of the whole list, and the bar has no buttons left to name", () => {
     expect(locales.es["campaigns.segments.form.selectVisible"]).toContain(
-      "de esta página",
+      "de la lista",
     );
     expect(locales.en["campaigns.segments.form.selectVisible"]).toContain(
-      "on this page",
+      "on the list",
     );
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "campaigns.segments.form.clearSelection",
+        "campaigns.segments.form.selectAllN",
+        "campaigns.segments.form.onlySelected",
+      ]) {
+        expect(locales[locale][key]).toBeUndefined();
+      }
+    }
   });
   test("the strings of the old segment form are gone", () => {
     for (const locale of ["es", "en"] as const) {

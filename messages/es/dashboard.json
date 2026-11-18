@@ -2118,8 +2118,7 @@
         "search": "Buscar por nombre, correo o teléfono",
         "filterSentence": "{count, plural, one {El segmento incluye a la persona que cumple los filtros, y a las que los cumplan más adelante.} other {El segmento incluye a las # personas que cumplen los filtros, y a las que los cumplan más adelante.}}",
         "listSentence": "{count, plural, one {El segmento incluye solo a la persona seleccionada.} other {El segmento incluye solo a las # personas seleccionadas.}}",
-        "clearSelection": "Quitar selección",
-        "selectVisible": "Seleccionar las personas de esta página",
+        "selectVisible": "Seleccionar a todas las personas de la lista",
         "selectPerson": "Seleccionar a {name}",
         "filteredEmpty": "Nadie cumple estos filtros",
         "searchEmpty": "Nadie coincide con la búsqueda",
@@ -2135,8 +2134,7 @@
         "subscriptionAny": "Todos",
         "count": "{count, plural, one {# persona} other {# personas}}",
         "countOf": "{shown} de {total, plural, one {# persona} other {# personas}}",
-        "selectedCount": "{count, plural, one {# seleccionada} other {# seleccionadas}}",
-        "selectAllN": "Seleccionar las {total}"
+        "selectedCount": "{count, plural, one {# de {total} seleccionada} other {# de {total} seleccionadas}}"
       },
       "issue": {
         "unsubscribed": "Baja de email",

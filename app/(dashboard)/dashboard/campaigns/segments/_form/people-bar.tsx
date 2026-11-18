@@ -3,13 +3,11 @@
 import { useTranslations } from "next-intl";
 import { INPUT_CLASS } from "@/constants/form-styles";
 
-const LINK =
-  "text-petroleum-700 inline-flex min-h-11 items-center font-medium underline underline-offset-2 sm:min-h-8";
-
 /**
  * The one bar of the table of people: the search on the left, and on the right
- * either how many are shown (nothing picked) or what is picked and what can be
- * done with it, each thing once. Plain values in, so a test can pin each state.
+ * either how many are shown (nothing picked) or how many of everybody are
+ * picked. Picking and clearing are the checkboxes' job, the header one for the
+ * whole list. Plain values in, so a test can pin each state.
  */
 export function PeopleBar({
   search,
@@ -18,10 +16,7 @@ export function PeopleBar({
   shown,
   total,
   selected,
-  canSelectAll,
   full,
-  onSelectAll,
-  onClear,
 }: {
   search: string;
   onSearch: (value: string) => void;
@@ -33,12 +28,8 @@ export function PeopleBar({
   total: number;
   /** How many are picked (those that still exist). */
   selected: number;
-  /** More people are listed than are picked, and the list has room. */
-  canSelectAll: boolean;
   /** The list holds as many as it can. */
   full: boolean;
-  onSelectAll: () => void;
-  onClear: () => void;
 }) {
   const t = useTranslations("dashboard.campaigns.segments.form");
   return (
@@ -61,21 +52,13 @@ export function PeopleBar({
         ) : (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-0 text-sm">
             <span className="text-petroleum-700 font-semibold">
-              {t("selectedCount", { count: selected })}
+              {t("selectedCount", { count: selected, total })}
             </span>
             {full && (
               <span role="status" className="font-medium text-yellow-800">
                 {t("listFull")}
               </span>
             )}
-            {canSelectAll && (
-              <button type="button" onClick={onSelectAll} className={LINK}>
-                {t("selectAllN", { total: shown })}
-              </button>
-            )}
-            <button type="button" onClick={onClear} className={LINK}>
-              {t("clearSelection")}
-            </button>
           </div>
         ))}
     </div>

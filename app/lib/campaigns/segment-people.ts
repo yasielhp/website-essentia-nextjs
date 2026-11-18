@@ -136,7 +136,7 @@ export function listIsFull(selected: ReadonlySet<string>): boolean {
 
 export type HeaderCheck = "none" | "some" | "all";
 
-/** The header checkbox: none, some or all of what is on screen is selected. */
+/** The header checkbox: none, some or all of the people listed are selected. */
 export function headerCheckState(
   selected: ReadonlySet<string>,
   visibleIds: string[],
@@ -147,9 +147,10 @@ export function headerCheckState(
 }
 
 /**
- * The header checkbox's click: when everything seen is selected it un-selects
- * what is seen, otherwise it selects what is seen. What is selected out of sight
- * (another filter, another page) is never touched.
+ * The header checkbox's click, over everyone the table lists (every page of the
+ * filters and the search in force): when all of them are selected it un-selects
+ * them, otherwise it selects them. Whoever is selected but not listed (hidden by
+ * a filter or the search) is never touched.
  */
 export function toggleVisible(
   selected: ReadonlySet<string>,
@@ -165,22 +166,6 @@ export function toggleVisible(
       if (next.size >= MAX_LIST_PEOPLE) break;
       next.add(id);
     }
-  }
-  return next;
-}
-
-/**
- * Everyone the table is showing, across its pages, added to what was already
- * picked (and no more than the list holds).
- */
-export function selectAllShown(
-  selected: ReadonlySet<string>,
-  shownIds: string[],
-): Set<string> {
-  const next = new Set(selected);
-  for (const id of shownIds) {
-    if (next.size >= MAX_LIST_PEOPLE) break;
-    next.add(id);
   }
   return next;
 }

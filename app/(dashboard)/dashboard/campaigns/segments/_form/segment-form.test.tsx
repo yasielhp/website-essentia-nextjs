@@ -85,10 +85,11 @@ describe("the header of the screen where a segment is made", () => {
   test("says nothing about who the segment includes while the people are not loaded: never a made-up zero", () => {
     expect(html).not.toContain("El segmento incluye");
   });
-  test("says the kind of segment beside the title, with the badge the list and the detail use", () => {
+  test("has the title alone on the left: no badge of the kind of segment beside it", () => {
     const title = header.slice(0, header.indexOf("Filtros"));
     expect(title).toContain("Nuevo segmento");
-    expect(title).toContain("Por filtro");
+    expect(header).not.toContain("Por filtro");
+    expect(header).not.toContain("Lista manual");
   });
   test("is ONE card: the name, the bar and the table, with no sentence over it and no second strip", () => {
     expect(html.match(/<section/g)).toHaveLength(1);
@@ -99,24 +100,40 @@ describe("the header of the screen where a segment is made", () => {
 });
 
 describe("the table of people", () => {
-  const render = (selected: string[]) =>
+  const render = (selected: string[], listed: string[] = [ana.id, luis.id]) =>
     wrap(
       <SegmentPeopleTable
         rows={[ana, luis]}
+        listedIds={listed}
         selected={new Set(selected)}
         locale="es"
         onToggle={() => {}}
-        onToggleVisible={() => {}}
+        onToggleListed={() => {}}
       />,
     );
 
-  test("has a checkbox per person with her name, and one in the header for those shown", () => {
+  test("has a checkbox per person with her name, and one in the header for the whole list", () => {
     const html = render([]);
     expect(html).toContain('aria-label="Seleccionar a Ana Pérez"');
     expect(html).toContain('aria-label="Seleccionar a Luis"');
     expect(html).toContain(
-      'aria-label="Seleccionar las personas de esta página"',
+      'aria-label="Seleccionar a todas las personas de la lista"',
     );
+  });
+  test("the header checkbox answers for the whole list, not for the page on screen", () => {
+    const headerBox = (html: string) =>
+      html.match(
+        /<input[^>]*aria-label="Seleccionar a todas las personas de la lista"[^>]*>/,
+      )?.[0] ?? "";
+    // Both people of this page are picked, but the list has a third on another page.
+    expect(headerBox(render(["a", "b"], ["a", "b", "c"]))).not.toContain(
+      'checked=""',
+    );
+    // Everyone listed is picked: it is checked.
+    expect(headerBox(render(["a", "b", "c"], ["a", "b", "c"]))).toContain(
+      'checked=""',
+    );
+    expect(headerBox(render([], ["a", "b", "c"]))).not.toContain('checked=""');
   });
   test("a selected person is checked and the others are not", () => {
     const html = render(["a"]);
@@ -270,10 +287,7 @@ describe("the one bar of the table", () => {
         shown={163}
         total={163}
         selected={0}
-        canSelectAll={false}
         full={false}
-        onSelectAll={() => {}}
-        onClear={() => {}}
         {...over}
       />,
       locale,
@@ -298,45 +312,35 @@ describe("the one bar of the table", () => {
     expect(html).not.toContain("personas");
     expect(html).toContain("Buscar");
   });
-  test("people picked: how many, the way to pick all and the way to clear, each once, and no 'only selected' toggle", () => {
-    const html = bar({ selected: 50, canSelectAll: true });
-    expect(times(html, "50 seleccionadas")).toBe(1);
-    expect(times(html, "Seleccionar las 163")).toBe(1);
+  test("people picked: how many of everybody, once, and not one button: picking and clearing are the checkboxes' job", () => {
+    const html = bar({ selected: 50 });
+    expect(times(html, "50 de 163 seleccionadas")).toBe(1);
+    expect(html).not.toContain("163 personas");
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("Seleccionar las");
+    expect(html).not.toContain("Quitar selección");
     expect(html).not.toContain("Ver solo seleccionadas");
     expect(html).not.toContain("aria-pressed");
-    expect(times(html, "Quitar selección")).toBe(1);
-    expect(html).not.toContain("163 personas");
-    // In that order.
-    const order = [
-      "50 seleccionadas",
-      "Seleccionar las 163",
-      "Quitar selección",
-    ].map((t) => html.indexOf(t));
-    expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
-  test("when everyone listed is already picked there is no 'select all'", () => {
-    expect(bar({ selected: 163, canSelectAll: false })).not.toContain(
-      "Seleccionar las",
+  test("the count is of everybody, whatever the filters and the search show", () => {
+    expect(bar({ selected: 50, shown: 32 })).toContain(
+      "50 de 163 seleccionadas",
     );
+    expect(bar({ selected: 163 })).toContain("163 de 163 seleccionadas");
   });
-  test("a full list says so in the bar, and offers no more", () => {
-    const html = bar({ selected: 2000, full: true, canSelectAll: false });
+  test("a full list says so in the bar", () => {
+    const html = bar({ selected: 2000, total: 2400, full: true });
+    expect(html).toContain("2000 de 2400 seleccionadas");
     expect(html).toContain("Una lista admite hasta 2000 personas");
-    expect(html).not.toContain("Seleccionar las");
   });
   test("one person picked is singular, and in English", () => {
-    expect(bar({ selected: 1 })).toContain("1 seleccionada");
-    expect(bar({ selected: 50, canSelectAll: true }, "en")).toContain(
-      "50 selected",
-    );
-    expect(bar({ selected: 50, canSelectAll: true }, "en")).toContain(
-      "Select all 163",
-    );
-    expect(bar({ selected: 3 }, "en")).not.toContain("Show only selected");
+    expect(bar({ selected: 1 })).toContain("1 de 163 seleccionada");
+    expect(bar({ selected: 1 })).not.toContain("seleccionadas");
+    expect(bar({ selected: 50 }, "en")).toContain("50 of 163 selected");
+    expect(bar({ selected: 50 }, "en")).not.toContain("Select all");
+    expect(bar({ selected: 3 }, "en")).not.toContain("Clear selection");
   });
-  test("on a phone the targets are 44 px and the controls can break into lines", () => {
-    const html = bar({ selected: 50, canSelectAll: true });
-    expect(html).toContain("min-h-11");
-    expect(html).toContain("flex-wrap");
+  test("on a phone the count can break under the search", () => {
+    expect(bar({ selected: 50 })).toContain("flex-wrap");
   });
 });

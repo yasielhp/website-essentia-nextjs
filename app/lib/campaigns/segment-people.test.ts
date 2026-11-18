@@ -13,7 +13,6 @@ import {
   removeFilter,
   searchMatches,
   segmentSentence,
-  selectAllShown,
   toSegmentPerson,
   toggleOne,
   toggleVisible,
@@ -390,22 +389,5 @@ describe("a list holds two thousand people, and no more", () => {
   });
   test("a selection under the limit is untouched by it", () => {
     expect(toggleVisible(new Set(), ["a", "b"]).size).toBe(2);
-  });
-});
-
-describe("selecting everyone who is listed, not only the page", () => {
-  const ids = (n: number, p = "s") =>
-    Array.from({ length: n }, (_, i) => `${p}${i}`);
-  const shown = ids(120);
-
-  test("selectAllShown adds them to what was picked out of sight", () => {
-    const out = selectAllShown(new Set(["hidden"]), shown);
-    expect(out.size).toBe(121);
-    expect(out.has("hidden")).toBe(true);
-  });
-  test("and stops at the limit of a list", () => {
-    const many = ids(MAX_LIST_PEOPLE + 500, "m");
-    const out = selectAllShown(new Set(), many);
-    expect(out.size).toBe(MAX_LIST_PEOPLE);
   });
 });

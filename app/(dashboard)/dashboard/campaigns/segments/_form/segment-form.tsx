@@ -27,7 +27,6 @@ import {
   listIsFull,
   removeFilter,
   segmentSentence,
-  selectAllShown,
   toggleOne,
   toggleVisible,
   visiblePeople,
@@ -36,7 +35,6 @@ import {
 import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { UnsavedBar } from "../../../messages/email/page-parts";
 import { FilterChips } from "./filter-chips";
-import { SegmentKindBadge } from "./kind-badge";
 import { PeopleBar } from "./people-bar";
 import { SegmentFilterModal } from "./filter-modal";
 import { SegmentPeopleTable } from "./people-table";
@@ -170,10 +168,8 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
     sentence.key === "list"
       ? tForm("listSentence", { count: sentence.count })
       : tForm("filterSentence", { count: sentence.count });
-  // More people are listed than are picked, and the list has room for them.
-  const canSelectAll =
-    !listIsFull(selected) && shown.some((p) => !selected.has(p.id));
-  const clearSelection = () => setSelected(new Set());
+  // What the header checkbox acts on: everyone listed, on every page.
+  const listedIds = useMemo(() => shown.map((p) => p.id), [shown]);
   const filterCount = activeFilters(filters).length;
 
   function openFilters() {
@@ -236,16 +232,9 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
   return (
     <div className="flex flex-col gap-5 px-6 py-8 lg:px-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="font-display text-petroleum-700 min-w-0 text-3xl break-words">
-            {segment ? segment.name : t("new")}
-          </h1>
-          {/* What the segment is, said live as people are picked or not. */}
-          <SegmentKindBadge
-            kind={sentence.key}
-            title={loaded.status === "ready" ? sentenceText : undefined}
-          />
-        </div>
+        <h1 className="font-display text-petroleum-700 min-w-0 text-3xl break-words">
+          {segment ? segment.name : t("new")}
+        </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
           <Button
             variant={filterCount > 0 ? "soft" : "outline"}
@@ -321,17 +310,7 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
           shown={shown.length}
           total={people.length}
           selected={selectedCount}
-          canSelectAll={canSelectAll}
           full={listIsFull(selected)}
-          onSelectAll={() =>
-            setSelected((s) =>
-              selectAllShown(
-                s,
-                shown.map((p) => p.id),
-              ),
-            )
-          }
-          onClear={clearSelection}
         />
 
         {filterCount > 0 && (
@@ -377,16 +356,12 @@ export function SegmentForm({ segment }: { segment?: CampaignSegment }) {
           <>
             <SegmentPeopleTable
               rows={rows}
+              listedIds={listedIds}
               selected={selected}
               locale={locale}
               onToggle={(id) => setSelected((s) => toggleOne(s, id))}
-              onToggleVisible={() =>
-                setSelected((s) =>
-                  toggleVisible(
-                    s,
-                    rows.map((p) => p.id),
-                  ),
-                )
+              onToggleListed={() =>
+                setSelected((s) => toggleVisible(s, listedIds))
               }
             />
             {totalPages > 1 && (
