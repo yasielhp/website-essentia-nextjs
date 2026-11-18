@@ -17,7 +17,6 @@ import {
 const fields = {
   subject: "Asunto {{first_name}}",
   preheader: "Pre",
-  title: "Título",
   doc: { type: "doc", content: [{ type: "paragraph" }] },
 } as never;
 
@@ -62,14 +61,15 @@ describe("encodeDraft / decodeDraft", () => {
   });
   test("carries a version and what it is for", () => {
     const parsed = JSON.parse(encodeDraft("email", fields) as string);
-    expect(parsed.v).toBe(1);
+    // 2: an older draft (it had a title of its own) has no place in this shape.
+    expect(parsed.v).toBe(2);
     expect(parsed.kind).toBe("email");
   });
   test("a draft of another version, another kind or no shape is ignored", () => {
     const raw = JSON.parse(encodeDraft("email", fields) as string);
     expect(
       decodeDraft(
-        JSON.stringify({ ...raw, v: 2 }),
+        JSON.stringify({ ...raw, v: 1 }),
         "email",
         validateEmailDraft,
       ),
@@ -83,7 +83,7 @@ describe("encodeDraft / decodeDraft", () => {
     ).toBeNull();
     expect(
       decodeDraft(
-        JSON.stringify({ v: 1, kind: "email" }),
+        JSON.stringify({ v: 2, kind: "email" }),
         "email",
         validateEmailDraft,
       ),
@@ -98,7 +98,7 @@ describe("encodeDraft / decodeDraft", () => {
     const bad = { ...(fields as object), doc: "<p>hi</p>" };
     expect(
       decodeDraft(
-        JSON.stringify({ v: 1, kind: "email", data: bad }),
+        JSON.stringify({ v: 2, kind: "email", data: bad }),
         "email",
         validateEmailDraft,
       ),
@@ -106,7 +106,7 @@ describe("encodeDraft / decodeDraft", () => {
     const bad2 = { ...(fields as object), doc: { type: "doc", content: "x" } };
     expect(
       decodeDraft(
-        JSON.stringify({ v: 1, kind: "email", data: bad2 }),
+        JSON.stringify({ v: 2, kind: "email", data: bad2 }),
         "email",
         validateEmailDraft,
       ),
@@ -114,7 +114,7 @@ describe("encodeDraft / decodeDraft", () => {
     const bad3 = { ...(fields as object), subject: 5 };
     expect(
       decodeDraft(
-        JSON.stringify({ v: 1, kind: "email", data: bad3 }),
+        JSON.stringify({ v: 2, kind: "email", data: bad3 }),
         "email",
         validateEmailDraft,
       ),
@@ -123,7 +123,7 @@ describe("encodeDraft / decodeDraft", () => {
   test("one that is too big is not stored at all", () => {
     const big = {
       ...(fields as object),
-      title: "x".repeat(MAX_DRAFT_BYTES + 1),
+      subject: "x".repeat(MAX_DRAFT_BYTES + 1),
     } as never;
     expect(encodeDraft("email", big)).toBeNull();
   });
@@ -203,7 +203,7 @@ describe("storage that is not there, or throws", () => {
     writeDraft(s, key, "email", fields);
     const big = {
       ...(fields as object),
-      title: "x".repeat(MAX_DRAFT_BYTES + 1),
+      subject: "x".repeat(MAX_DRAFT_BYTES + 1),
     } as never;
     expect(writeDraft(s, key, "email", big)).toBe(false);
     expect(s.data.has(key)).toBe(false);
@@ -219,7 +219,6 @@ describe("what is worth offering", () => {
   const saved = fields as {
     subject: string;
     preheader: string;
-    title: string;
     doc: unknown;
   } as never;
   test("a draft identical to what is saved is not offered", () => {
@@ -232,7 +231,7 @@ describe("what is worth offering", () => {
     ).toBeNull();
   });
   test("one that differs in any field is", () => {
-    for (const field of ["subject", "preheader", "title"]) {
+    for (const field of ["subject", "preheader"]) {
       const draft = { ...(saved as object), [field]: "otro" } as never;
       expect(emailDraftOffer(draft, saved)).toBe(draft);
     }

@@ -2429,15 +2429,9 @@
         "subject": "Subject",
         "preheader": "Preheader",
         "preheaderHint": "The line mail apps show next to the subject.",
-        "titleField": "Title",
-        "titleHint": "The large heading inside the email.",
         "body": "Body",
         "customNotice": "This is your saved version. “Reset” goes back to the default text.",
-        "closingNote": "If you edit the body, the default closing text becomes yours as well.",
-        "emptyNote": "Leaving the body empty goes back to the default text.",
         "variablesTitle": "Variables",
-        "variablesHint": "Click one to insert it where the cursor is; it is filled in with each client's data.",
-        "variablesLinkHint": "Links are inserted as a button.",
         "save": "Save",
         "saving": "Saving…",
         "saved": "Message saved",
@@ -2455,7 +2449,6 @@
           "loading": "Preparing the preview…",
           "failed": "The preview cannot be shown until what is marked is fixed."
         },
-        "systemBlocksTitle": "Added by the system; not editable",
         "blockWhat": {
           "details_card": "Service, session type, date, time and duration",
           "location": "The centre's address",
@@ -2464,7 +2457,16 @@
           "cancel_link": "Link to cancel or change the appointment",
           "consent_button": "Button to sign the informed consent",
           "bonus_card": "Service, sessions, amount paid and validity of the voucher"
-        }
+        },
+        "titleLabel": "Title",
+        "bodyHint": "The whole email is here, from top to bottom. Move the blocks by dragging them or with the arrows; variables go where the cursor is and are filled with each client's data.",
+        "addBlock": "Add block",
+        "variableNotInTitle": "A link cannot go in the title",
+        "blockUp": "Move up “{name}”",
+        "blockDown": "Move down “{name}”",
+        "blockRemove": "Remove “{name}”",
+        "blockDrag": "Drag “{name}”",
+        "blockLocked": "It cannot be removed"
       },
       "errors": {
         "generic": "The action could not be completed.",

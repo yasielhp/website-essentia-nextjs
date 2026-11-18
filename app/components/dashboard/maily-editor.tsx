@@ -22,6 +22,7 @@ import {
   getVariableSuggestions,
   type RenderVariableFunction,
 } from "@maily-to/core/extensions";
+import type { AnyExtension } from "@tiptap/core";
 import { useMemo } from "react";
 import "@maily-to/core/style.css";
 
@@ -69,26 +70,33 @@ export type MailyEditorProps = Pick<
    * say). Only the editor's view changes: what is saved is the same node.
    */
   renderVariable?: RenderVariableFunction;
+  /**
+   * Nodes of the page's own (the title and the blocks of an email), added to
+   * the editor's. They must be stable: the editor is built once with them.
+   */
+  nodes?: AnyExtension[];
 };
 
 export default function MailyEditor({
   renderVariable,
+  nodes,
   ...props
 }: MailyEditorProps) {
   // The editor's own variable extension, with the same suggestions and only the
   // drawing replaced (an extension of the same name takes the default's place).
-  const extensions = useMemo(
-    () =>
-      renderVariable
-        ? [
-            VariableExtension.configure({
-              renderVariable,
-              suggestion: getVariableSuggestions(),
-            }),
-          ]
-        : undefined,
-    [renderVariable],
-  );
+  const extensions = useMemo(() => {
+    const all: AnyExtension[] = [];
+    if (renderVariable) {
+      all.push(
+        VariableExtension.configure({
+          renderVariable,
+          suggestion: getVariableSuggestions(),
+        }),
+      );
+    }
+    if (nodes) all.push(...nodes);
+    return all.length > 0 ? all : undefined;
+  }, [renderVariable, nodes]);
   return (
     <Editor
       {...props}

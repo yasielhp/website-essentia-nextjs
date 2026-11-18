@@ -96,7 +96,7 @@ describe("the Emails tab strings", () => {
     }
   });
 
-  it("every block the system adds has a name and a line on what it holds, and the label says it is not edited", () => {
+  it("every block the system adds has a name and a line on what it holds, and the editor has words for the title and for moving, removing and putting them back", () => {
     const blocks = new Set(
       MESSAGE_KEYS.flatMap((key) => MESSAGE_CATALOG[key].fixed),
     );
@@ -106,15 +106,41 @@ describe("the Emails tab strings", () => {
         expect(messages[`messages.email.editor.blockWhat.${b}`]).toBeTruthy();
       }
     }
-    expect(LOCALES.es["messages.email.editor.systemBlocksTitle"]).toBe(
-      "Lo añade el sistema; no se edita",
-    );
-    expect(LOCALES.en["messages.email.editor.systemBlocksTitle"]).toBe(
-      "Added by the system; not editable",
+    // What the editor says about the blocks it holds and the title.
+    for (const messages of Object.values(LOCALES)) {
+      for (const key of [
+        "titleLabel",
+        "addBlock",
+        "blockUp",
+        "blockDown",
+        "blockRemove",
+        "blockDrag",
+        "blockLocked",
+        "bodyHint",
+      ]) {
+        expect(messages[`messages.email.editor.${key}`]).toBeTruthy();
+      }
+      for (const key of ["blockUp", "blockDown", "blockRemove", "blockDrag"]) {
+        expect(messages[`messages.email.editor.${key}`]).toContain("{name}");
+      }
+    }
+    expect(LOCALES.es["messages.email.editor.blockLocked"]).toBe(
+      "No se puede quitar",
     );
     // The old list of bullets under the editor is gone.
     for (const messages of Object.values(LOCALES)) {
-      for (const key of ["fixedAfter", "fixedTitle", "fixedNone"]) {
+      for (const key of [
+        "fixedAfter",
+        "fixedTitle",
+        "fixedNone",
+        "systemBlocksTitle",
+        "titleField",
+        "titleHint",
+        "closingNote",
+        "emptyNote",
+        "variablesHint",
+        "variablesLinkHint",
+      ]) {
         expect(messages[`messages.email.editor.${key}`]).toBeUndefined();
       }
     }

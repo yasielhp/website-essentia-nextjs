@@ -14,6 +14,8 @@ import {
   buildMessageDoc,
   convertOldShape,
   docTitle,
+  insertIndexFor,
+  missingBlocks,
   isMessageDoc,
   layoutOf,
   repairForSending,
@@ -532,5 +534,68 @@ describe("repairForSending: an email never goes out without what it needs", () =
         "Def",
       ),
     ).not.toThrow();
+  });
+});
+
+describe("putting a block back", () => {
+  test("it goes before the first block it should come before, or at the end", () => {
+    // confirmed: details, location, calendar, consent, cancel
+    expect(
+      insertIndexFor(
+        [TITLE_NODE, null, "details_card", "consent_button"],
+        "location",
+        "booking_confirmed",
+      ),
+    ).toBe(2 + 1);
+    expect(
+      insertIndexFor(
+        [TITLE_NODE, null, "details_card"],
+        "cancel_link",
+        "booking_confirmed",
+      ),
+    ).toBe(3);
+    expect(
+      insertIndexFor(
+        [TITLE_NODE, "location"],
+        "details_card",
+        "booking_confirmed",
+      ),
+    ).toBe(1);
+    expect(insertIndexFor([], "details_card", "booking_confirmed")).toBe(0);
+  });
+  test("a text between blocks does not move it", () => {
+    expect(
+      insertIndexFor(
+        ["details_card", null, null, "cancel_link"],
+        "calendar_button",
+        "booking_rescheduled",
+      ),
+    ).toBe(3);
+  });
+  test("the blocks that can be put back are the ones the document lacks, in the message's order", () => {
+    const d = doc(
+      titleNodeFrom("H"),
+      blockNode("details_card"),
+      blockNode("cancel_link"),
+    );
+    expect(missingBlocks(d, "booking_confirmed")).toEqual([
+      "location",
+      "calendar_button",
+      "consent_button",
+    ]);
+    expect(missingBlocks(doc(titleNodeFrom("H")), "booking_cancelled")).toEqual(
+      ["details_card"],
+    );
+    expect(
+      missingBlocks(
+        buildMessageDoc({
+          key: "booking_cancelled",
+          title: "T",
+          intro: doc(),
+          outro: null,
+        }),
+        "booking_cancelled",
+      ),
+    ).toEqual([]);
   });
 });

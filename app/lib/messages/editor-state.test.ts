@@ -10,9 +10,16 @@ import {
   linkButtonNode,
   variableToken,
   openingState,
+  plainDoc,
   sameDoc,
 } from "./editor-state";
 import { MESSAGE_KEYS } from "./catalog";
+import {
+  buildMessageDoc,
+  docTitle,
+  titleNodeFrom,
+  titleText,
+} from "./email-doc";
 
 const p = (text: string): EmailDoc => ({
   type: "paragraph",
@@ -23,11 +30,25 @@ const doc = (...nodes: EmailDoc[]): EmailDoc => ({
   content: nodes,
 });
 
+const KEY = "booking_cancelled" as const;
+// What the editor is given: the default text and the whole email as a document.
+const DEFAULT_DOC = buildMessageDoc({
+  key: KEY,
+  title: "Hola {{first_name}}",
+  intro: doc(p("Cuerpo")),
+  outro: doc(p("Cierre")),
+});
 const DEFAULT = {
   subject: "Tu cita, {{first_name}}",
   preheader: "Te esperamos",
   title: "Hola {{first_name}}",
-  doc: doc(p("Cuerpo"), p("Cierre")),
+  doc: DEFAULT_DOC,
+};
+/** The three fields the editor holds. */
+const FIELDS = {
+  subject: DEFAULT.subject,
+  preheader: DEFAULT.preheader,
+  doc: DEFAULT_DOC,
 };
 
 describe("editableLocales", () => {
@@ -95,44 +116,102 @@ describe("sameDoc", () => {
 
 describe("openingState", () => {
   it("with nothing saved, the editor opens on the default text", () => {
-    expect(openingState(null, DEFAULT)).toEqual(DEFAULT);
+    expect(openingState(null, DEFAULT, KEY)).toEqual(FIELDS);
   });
   it("a saved field replaces the default for that field only", () => {
     const state = openingState(
       { subject: "Mío", preheader: null, title: null, doc: null },
       DEFAULT,
+      KEY,
     );
-    expect(state).toEqual({ ...DEFAULT, subject: "Mío" });
+    expect(state).toEqual({ ...FIELDS, subject: "Mío" });
   });
-  it("a saved body replaces the whole default one", () => {
-    const mine = doc(p("Solo mío"));
+  it("a saved document in the current shape is the one the editor opens on", () => {
+    const mine = doc(titleNodeFrom("Mi título"), p("Solo mío"));
     expect(
       openingState(
         { subject: null, preheader: null, title: null, doc: mine },
         DEFAULT,
+        KEY,
       ).doc,
     ).toEqual(mine);
+  });
+  it("a row saved in the old shape opens converted: its title, its body, then the blocks, as the sender would send it", () => {
+    const state = openingState(
+      {
+        subject: null,
+        preheader: null,
+        title: "Mi título",
+        doc: doc(p("Solo mío")),
+      },
+      DEFAULT,
+      KEY,
+    );
+    expect(titleText(docTitle(state.doc))).toBe("Mi título");
+    expect((state.doc.content ?? []).map((n) => n.type)).toEqual([
+      "emailTitle",
+      "paragraph",
+      "systemBlock",
+    ]);
+  });
+  it("an old row with only a title opens on the default document under that title", () => {
+    const state = openingState(
+      { subject: null, preheader: null, title: "Otro título", doc: null },
+      DEFAULT,
+      KEY,
+    );
+    expect(titleText(docTitle(state.doc))).toBe("Otro título");
+    expect(state.doc.content!.length).toBe(DEFAULT_DOC.content!.length);
   });
   it("a blank saved text is the default, not an empty subject", () => {
     expect(
       openingState(
         { subject: "  ", preheader: null, title: null, doc: null },
         DEFAULT,
+        KEY,
       ).subject,
     ).toBe(DEFAULT.subject);
   });
 });
 
 describe("changedFields", () => {
-  const opening = openingState(null, DEFAULT);
+  const opening = openingState(null, DEFAULT, KEY);
 
   it("nothing touched sends nothing: the default is never saved as content", () => {
     expect(changedFields(opening, { ...opening })).toEqual({});
   });
   it("only the field that changed is sent", () => {
-    expect(changedFields(opening, { ...opening, title: "Otro" })).toEqual({
-      title: "Otro",
+    expect(changedFields(opening, { ...opening, subject: "Otro" })).toEqual({
+      subject: "Otro",
     });
+  });
+  it("a changed title is a changed document: the title is part of it", () => {
+    const retitled = {
+      ...opening.doc,
+      content: opening.doc.content!.map((n) =>
+        n.type === "emailTitle" ? titleNodeFrom("Otro título") : n,
+      ),
+    };
+    expect(changedFields(opening, { ...opening, doc: retitled })).toEqual({
+      doc: retitled,
+    });
+  });
+  it("moving a block is a change, and so is taking away one that can go", () => {
+    const nodes = [...opening.doc.content!];
+    const swapped = {
+      ...opening.doc,
+      content: [nodes[0]!, nodes[2]!, nodes[1]!, ...nodes.slice(3)],
+    };
+    expect(
+      Object.keys(changedFields(opening, { ...opening, doc: swapped })),
+    ).toEqual(["doc"]);
+    const without = {
+      ...opening.doc,
+      content: nodes.filter((n) => n.type !== "systemBlock"),
+    };
+    expect(
+      Object.keys(changedFields(opening, { ...opening, doc: without })),
+    ).toEqual(["doc"]);
   });
   it("trailing spaces are not a change", () => {
     expect(
@@ -150,7 +229,7 @@ describe("changedFields", () => {
       doc: edited,
     });
   });
-  it("an emptied body is sent as null: empty means the default text", () => {
+  it("an emptied document is sent as null: empty means the default", () => {
     expect(changedFields(opening, { ...opening, doc: doc() })).toEqual({
       doc: null,
     });
@@ -159,18 +238,14 @@ describe("changedFields", () => {
     });
   });
   it("a body the editor re-emitted with null attributes is not a change", () => {
-    const again = doc(
-      {
-        type: "paragraph",
-        attrs: { textAlign: null },
-        content: [{ type: "text", text: "Cuerpo" }],
-      },
-      {
-        type: "paragraph",
-        attrs: { textAlign: null },
-        content: [{ type: "text", text: "Cierre" }],
-      },
-    );
+    const again = {
+      ...opening.doc,
+      content: opening.doc.content!.map((node) =>
+        node.type === "paragraph"
+          ? { ...node, attrs: { textAlign: null } }
+          : node,
+      ),
+    };
     expect(changedFields(opening, { ...opening, doc: again })).toEqual({});
   });
 });
@@ -330,5 +405,48 @@ describe("flushCurrent", () => {
     clearTimeout(timer);
     expect(changedFields(fields, out)).toEqual({ doc: typed });
     expect(changedFields(fields, fields)).toEqual({});
+  });
+});
+
+describe("docErrorLines for the whole email", () => {
+  it("a block the message cannot do without is named by its kind, not by a position", () => {
+    expect(
+      docErrorLines({ "doc.blocks.cancel_link": "blockRequired" }),
+    ).toEqual([
+      { key: "blockRequired", block: null, blockKind: "cancel_link" },
+    ]);
+  });
+  it("the title has a line of its own, and a block of the body keeps its number", () => {
+    expect(
+      docErrorLines({
+        "doc.title": "titleOne",
+        "doc.content.3": "blockRepeated",
+      }),
+    ).toEqual([
+      { key: "titleOne", block: null },
+      { key: "blockRepeated", block: 4 },
+    ]);
+  });
+});
+
+describe("plainDoc", () => {
+  it("turns attributes with no prototype (the editor's) into plain objects, which a Server Action carries", () => {
+    const attrs = Object.create(null) as Record<string, unknown>;
+    attrs.kind = "cancel_link";
+    const out = plainDoc({
+      type: "doc",
+      content: [{ type: "systemBlock", attrs }],
+    });
+    const copy = out.content![0]!.attrs!;
+    expect(Object.getPrototypeOf(copy)).toBe(Object.prototype);
+    expect(copy).toEqual({ kind: "cancel_link" });
+  });
+  it("changes nothing else about the document", () => {
+    const d = doc(p("a"), {
+      type: "variable",
+      attrs: { id: "first_name" },
+    } as EmailDoc);
+    expect(plainDoc(d)).toEqual(d);
+    expect(sameDoc(plainDoc(d), d)).toBe(true);
   });
 });

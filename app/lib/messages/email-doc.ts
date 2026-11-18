@@ -6,7 +6,6 @@ import {
   type FixedBlock,
   type MessageKey,
 } from "./catalog";
-import { isLinkVariable } from "./editor-state";
 
 /**
  * The document of an email message, whole: the title, the text and the blocks
@@ -24,6 +23,9 @@ import { isLinkVariable } from "./editor-state";
  *
  * Which blocks cannot be taken out is the catalogue's (`required`).
  */
+
+/** A variable that stands for an address, which the body can only use as a link. */
+export const isLinkVariable = (name: string) => name.endsWith("_url");
 
 export const TITLE_NODE = "emailTitle";
 export const BLOCK_NODE = "systemBlock";
@@ -392,4 +394,35 @@ export function repairForSending(
     if (isRequiredBlock(block) && !seen.has(block)) out.push(blockNode(block));
   }
   return { type: "doc", content: out };
+}
+
+// ── putting a block back ───────────────────────────────────────────────────
+
+/**
+ * Where a block taken out goes when it is put back: before the first block the
+ * document still has that comes after it in the order the message has always had
+ * its blocks, or at the end when none does. `topLevel` is what the document has,
+ * node by node: a block's kind, or `null` for anything else.
+ */
+export function insertIndexFor(
+  topLevelKinds: readonly (string | null)[],
+  kind: FixedBlock,
+  key: MessageKey,
+): number {
+  const order = MESSAGE_CATALOG[key].fixed as readonly string[];
+  const rank = order.indexOf(kind);
+  const at = topLevelKinds.findIndex(
+    (other) => other !== null && order.indexOf(other) > rank,
+  );
+  return at === -1 ? topLevelKinds.length : at;
+}
+
+/** The blocks of a message that the document does not have (the ones that can be put back). */
+export function missingBlocks(doc: EmailDoc, key: MessageKey): FixedBlock[] {
+  const present = new Set(
+    topLevel(doc)
+      .filter(isBlockNode)
+      .map((node) => blockKindOf(node)),
+  );
+  return MESSAGE_CATALOG[key].fixed.filter((block) => !present.has(block));
 }

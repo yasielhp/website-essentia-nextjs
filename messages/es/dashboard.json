@@ -2429,15 +2429,9 @@
         "subject": "Asunto",
         "preheader": "Pre-encabezado",
         "preheaderHint": "La línea que muestran las apps de correo junto al asunto.",
-        "titleField": "Título",
-        "titleHint": "El encabezado grande dentro del correo.",
         "body": "Cuerpo",
         "customNotice": "Esta es tu versión guardada. «Restablecer» vuelve al texto por defecto.",
-        "closingNote": "Si editas el cuerpo, el texto de cierre por defecto también pasa a ser tuyo.",
-        "emptyNote": "Dejar el cuerpo vacío vuelve al texto por defecto.",
         "variablesTitle": "Variables",
-        "variablesHint": "Pulsa una para insertarla donde esté el cursor; se rellena con los datos de cada cliente.",
-        "variablesLinkHint": "Los enlaces se insertan como un botón.",
         "save": "Guardar",
         "saving": "Guardando…",
         "saved": "Mensaje guardado",
@@ -2455,7 +2449,6 @@
           "loading": "Preparando la vista previa…",
           "failed": "No se puede mostrar la vista previa hasta que se arregle lo marcado."
         },
-        "systemBlocksTitle": "Lo añade el sistema; no se edita",
         "blockWhat": {
           "details_card": "Servicio, tipo de sesión, fecha, hora y duración",
           "location": "La dirección del centro",
@@ -2464,7 +2457,16 @@
           "cancel_link": "Enlace para cancelar o cambiar la cita",
           "consent_button": "Botón para firmar el consentimiento informado",
           "bonus_card": "Servicio, sesiones, importe pagado y validez del bono"
-        }
+        },
+        "titleLabel": "Título",
+        "bodyHint": "Aquí está todo el correo, de arriba abajo. Mueve los bloques arrastrándolos o con las flechas; las variables se insertan donde esté el cursor y se rellenan con los datos de cada cliente.",
+        "addBlock": "Añadir bloque",
+        "variableNotInTitle": "Un enlace no se puede poner en el título",
+        "blockUp": "Subir «{name}»",
+        "blockDown": "Bajar «{name}»",
+        "blockRemove": "Quitar «{name}»",
+        "blockDrag": "Arrastrar «{name}»",
+        "blockLocked": "No se puede quitar"
       },
       "errors": {
         "generic": "No se pudo completar la acción.",

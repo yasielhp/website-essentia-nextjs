@@ -16,7 +16,8 @@ import { changedFields, type EmailFields } from "./editor-state";
 /** Past this the draft is not kept: a quota error is the browser's way of saying the same. */
 export const MAX_DRAFT_BYTES = 500 * 1024;
 
-const VERSION = 1;
+// 2: the title became part of the document, so an earlier draft has no place here.
+const VERSION = 2;
 
 export type DraftKind = "email" | "whatsapp";
 
@@ -65,18 +66,14 @@ export function decodeDraft<T>(
 
 export function validateEmailDraft(data: unknown): EmailFields | null {
   if (!isObject(data)) return null;
-  const { subject, preheader, title, doc } = data;
-  if (
-    typeof subject !== "string" ||
-    typeof preheader !== "string" ||
-    typeof title !== "string"
-  ) {
+  const { subject, preheader, doc } = data;
+  if (typeof subject !== "string" || typeof preheader !== "string") {
     return null;
   }
   if (!isObject(doc) || doc.type !== "doc" || !Array.isArray(doc.content)) {
     return null;
   }
-  return { subject, preheader, title, doc } as unknown as EmailFields;
+  return { subject, preheader, doc } as unknown as EmailFields;
 }
 
 export function validateWhatsAppDraft(data: unknown): WhatsAppDraft | null {

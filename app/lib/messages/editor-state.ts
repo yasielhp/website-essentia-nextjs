@@ -1,5 +1,6 @@
 import type { EmailDoc } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
+import { convertOldShape } from "./email-doc";
 import type { MessageKey } from "./catalog";
 
 /**
@@ -18,8 +19,7 @@ export function editableLocales(key: MessageKey): ("es" | "en")[] {
   return key === "booking_reminder" ? ["es"] : ["es", "en"];
 }
 
-/** A variable that stands for an address, which the body can only use as a link. */
-export const isLinkVariable = (name: string) => name.endsWith("_url");
+export { isLinkVariable } from "./email-doc";
 
 /**
  * Whether two bodies say the same thing. The editor re-emits a document it was
@@ -56,11 +56,24 @@ export function sameDoc(
   return JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 }
 
-/** The four things an email message has to say. */
+/**
+ * The document as plain JSON. The editor's nodes keep their attributes in
+ * objects with no prototype; a Server Action does not carry those (they reach
+ * the server as opaque references that no check can read), so what is sent, kept
+ * as a draft or compared is a copy that is plain through and through.
+ */
+export function plainDoc(doc: EmailDoc): EmailDoc {
+  return JSON.parse(JSON.stringify(doc)) as EmailDoc;
+}
+
+/**
+ * The three things an email message has to say: its subject, its preheader and
+ * the whole email as a document (the title is part of it, and so are the blocks
+ * the system adds).
+ */
 export type EmailFields = {
   subject: string;
   preheader: string;
-  title: string;
   doc: EmailDoc;
 };
 
@@ -76,19 +89,27 @@ const filled = (text: string | null) =>
 
 /**
  * What the editor opens with: the admin's version field by field where there
- * is one, the default text otherwise. A body replaces the default one whole
- * (the default is intro and closing in a single document, because an edited
- * body takes the closing text with it).
+ * is one, the default text otherwise. The document is the whole email. A row
+ * saved before the title and the blocks were part of it (a `title` column and a
+ * body with no blocks) is converted by the very function the sender uses, so
+ * what the editor shows is what would have gone out.
  */
 export function openingState(
   saved: Saved | null,
-  defaults: EmailFields,
+  defaults: EmailFields & { title: string },
+  key: MessageKey,
 ): EmailFields {
   return {
     subject: filled(saved?.subject ?? null) ?? defaults.subject,
     preheader: filled(saved?.preheader ?? null) ?? defaults.preheader,
-    title: filled(saved?.title ?? null) ?? defaults.title,
-    doc: saved?.doc && !nothing(saved.doc) ? saved.doc : defaults.doc,
+    doc: convertOldShape(
+      {
+        title: saved?.title ?? null,
+        doc: saved?.doc && !nothing(saved.doc) ? saved.doc : null,
+      },
+      key,
+      { title: defaults.title, doc: defaults.doc },
+    ),
   };
 }
 
@@ -96,7 +117,6 @@ export function openingState(
 export type EmailChanges = {
   subject?: string | null;
   preheader?: string | null;
-  title?: string | null;
   doc?: EmailDoc | null;
 };
 
@@ -110,7 +130,7 @@ export function changedFields(
   current: EmailFields,
 ): EmailChanges {
   const changes: EmailChanges = {};
-  for (const field of ["subject", "preheader", "title"] as const) {
+  for (const field of ["subject", "preheader"] as const) {
     const was = opened[field].trim();
     const now = current[field].trim();
     if (was !== now) changes[field] = now === "" ? null : now;
@@ -121,7 +141,12 @@ export function changedFields(
   return changes;
 }
 
-export type DocErrorLine = { key: string; block: number | null };
+export type DocErrorLine = {
+  key: string;
+  block: number | null;
+  /** For a block the message cannot do without that is missing: which one. */
+  blockKind?: string;
+};
 
 /**
  * The problems a save found in the body, as lines a person can act on: what
@@ -136,6 +161,11 @@ export function docErrorLines(
   const seen = new Set<string>();
   for (const [path, key] of Object.entries(fieldErrors)) {
     if (path !== "doc" && !path.startsWith("doc.")) continue;
+    const missing = /^doc\.blocks\.(.+)$/.exec(path);
+    if (missing) {
+      lines.push({ key, block: null, blockKind: missing[1] });
+      continue;
+    }
     const match = /^doc\.content\.(\d+)/.exec(path);
     const block = match ? Number(match[1]) + 1 : null;
     const id = `${key}:${block}`;

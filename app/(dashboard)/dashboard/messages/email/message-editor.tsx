@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import type { EditorProps } from "@maily-to/core";
+import { NodeSelection } from "@tiptap/pm/state";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import {
@@ -29,6 +30,7 @@ import {
   flushCurrent,
   insertAtSelection,
   isLinkVariable,
+  plainDoc,
   linkButtonNode,
   openingState,
   variableToken,
@@ -41,6 +43,14 @@ import type {
   MessageTemplateRowView,
 } from "@/lib/messages/types";
 import { rowHasText, switchInput } from "@/lib/messages/reminder-switch";
+import {
+  BLOCK_NODE,
+  TITLE_NODE,
+  blockNode,
+  insertIndexFor,
+  missingBlocks,
+} from "@/lib/messages/email-doc";
+import { requiredBlocks, type FixedBlock } from "@/lib/messages/catalog";
 import type { EmailDoc } from "@/types/campaign";
 import { useEmailActionToast } from "./action-error";
 import { EmailPreviewFrame } from "./email-preview-frame";
@@ -54,9 +64,9 @@ import {
   useMessageReset,
 } from "./page-parts";
 import { LanguageSwitch } from "./language-switch";
-import { SystemBlocks } from "./system-blocks";
 import { bodyVariableRenderer } from "./variable-kind-ui";
-import { VariableChips } from "./variable-chips";
+import { BodyToolbar } from "./body-toolbar";
+import { emailNodeExtensions, type EmailNodesUi } from "./email-node-views";
 
 // ProseMirror needs a DOM: the editor is loaded after the page, with a
 // placeholder as tall as it will be.
@@ -71,11 +81,15 @@ const MailyEditor = dynamic(
 );
 
 type TiptapEditor = Parameters<NonNullable<EditorProps["onCreate"]>>[0];
-type TextField = "subject" | "preheader" | "title";
+
+/** The editor's document as plain JSON, or undefined before there is an editor. */
+const plainDocOf = (editor: TiptapEditor | null): EmailDoc | undefined =>
+  editor ? plainDoc(editor.getJSON() as EmailDoc) : undefined;
+type TextField = "subject" | "preheader";
 const NO_PROBLEMS: Problems = { fieldErrors: {}, names: null };
 
 /**
- * Edits one message in one language: the subject, the preheader, the title and
+ * Edits one message in one language: the subject, the preheader and the whole
  * the body, with the variables it offers, a live preview of the whole email
  * and the notes about what is fixed.
  *
@@ -109,14 +123,18 @@ export function MessageEditor({
     () => ({
       subject: defaults.subject,
       preheader: defaults.preheader,
-      title: defaults.title,
       doc: defaults.doc,
     }),
     [defaults],
   );
-  // What the editor opened with: the body is handed to the editor once.
+  // What the editor opened with: the body is handed to the editor once. A row
+  // saved before the title and the blocks were in the document is converted.
   const [opened] = useState<EmailFields>(() =>
-    openingState(saved, defaultFields),
+    openingState(
+      saved,
+      { ...defaultFields, title: defaults.title },
+      messageKey,
+    ),
   );
   // What counts as saved: the opening state, then whatever was last saved here.
   // The page stays open after a save, so this moves and "changed" is measured
@@ -163,10 +181,8 @@ export function MessageEditor({
     // The body reaches `current` a beat after the keystroke: the last write
     // takes the editor's own document, so a back button inside that beat keeps it.
     snapshot: () =>
-      flushCurrent(
-        current,
-        pendingDoc.current,
-        () => editorRef.current?.getJSON() as EmailDoc | undefined,
+      flushCurrent(current, pendingDoc.current, () =>
+        plainDocOf(editorRef.current),
       ),
   });
 
@@ -178,6 +194,33 @@ export function MessageEditor({
       ),
     [t],
   );
+
+  // Where the caret is, and which blocks of the message the document lacks.
+  const [inTitle, setInTitle] = useState(false);
+  const touchedEditor = useRef(false);
+  const missing = useMemo(
+    () => missingBlocks(current.doc, messageKey),
+    [current.doc, messageKey],
+  );
+  // The editor's own nodes for the whole email, drawn in the page's words. Built
+  // once: the editor is.
+  const nodes = useMemo(() => {
+    const ui: EmailNodesUi = {
+      variables: catalog.variables,
+      titleLabel: tEditor("titleLabel"),
+      blockName: (block) => t(`fixed.${block}`),
+      blockWhat: (block) => tEditor(`blockWhat.${block}`),
+      variableLabel: (name) => t(`variables.${name}`),
+      up: (name) => tEditor("blockUp", { name }),
+      down: (name) => tEditor("blockDown", { name }),
+      remove: (name) => tEditor("blockRemove", { name }),
+      drag: (name) => tEditor("blockDrag", { name }),
+      locked: tEditor("blockLocked"),
+    };
+    return emailNodeExtensions(ui, new Set(requiredBlocks(messageKey)));
+    // Built once with the page's words: the editor keeps what it was given.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const reset = useMessageReset({
     channel: "email",
@@ -220,10 +263,8 @@ export function MessageEditor({
    * nor missed by the question about unsaved changes.
    */
   function fieldsNow(): EmailFields {
-    const now = flushCurrent(
-      current,
-      pendingDoc.current,
-      () => editorRef.current?.getJSON() as EmailDoc | undefined,
+    const now = flushCurrent(current, pendingDoc.current, () =>
+      plainDocOf(editorRef.current),
     );
     if (now !== current) setCurrent(now);
     return now;
@@ -252,23 +293,47 @@ export function MessageEditor({
     setCurrent((before) => ({ ...before, [field]: value }));
   }
 
-  /** Puts a variable where the admin was writing. */
+  /**
+   * Puts a variable where the admin was writing: in the subject or the preheader
+   * as text, in the body at the caret (the title included, where an address has
+   * no place). A block selected as a whole is not written over: what is inserted
+   * goes after it, as its own line.
+   */
   function insertVariable(name: string) {
-    if (isLinkVariable(name)) {
-      editorRef.current
-        ?.chain()
-        .focus()
-        .insertContent(linkButtonNode(name, locale))
-        .run();
-      return;
-    }
     const field = lastField.current;
     if (field === "body") {
-      editorRef.current
-        ?.chain()
-        .focus()
-        .insertContent({ type: "variable", attrs: { id: name } })
-        .run();
+      const editor = editorRef.current;
+      if (!editor) return;
+      const { selection } = editor.state;
+      const inTitle = selection.$from.parent.type.name === TITLE_NODE;
+      const link = isLinkVariable(name);
+      if (link && inTitle) return;
+      // The editor opens with the caret in the title; until the admin has
+      // chosen a place, a variable goes to the text under it.
+      if (!touchedEditor.current && !editor.isFocused) {
+        let at = 0;
+        editor.state.doc.forEach((child, offset) => {
+          if (at === 0 && child.isTextblock && child.type.name !== TITLE_NODE) {
+            at = offset + 1;
+          }
+        });
+        if (at > 0) editor.commands.setTextSelection(at);
+      }
+      const node = link
+        ? linkButtonNode(name, locale)
+        : { type: "variable", attrs: { id: name } };
+      if (selection instanceof NodeSelection) {
+        editor
+          .chain()
+          .focus()
+          .insertContentAt(
+            selection.to,
+            link ? node : { type: "paragraph", content: [node] },
+          )
+          .run();
+        return;
+      }
+      editor.chain().focus().insertContent(node).run();
       return;
     }
     const input = inputs.current[field];
@@ -283,6 +348,28 @@ export function MessageEditor({
     requestAnimationFrame(() => {
       input?.focus();
       input?.setSelectionRange(caret, caret);
+    });
+  }
+
+  /** Puts a block that was taken out back where the message has always had it. */
+  function addBlock(block: FixedBlock) {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const { doc } = editor.state;
+    const kinds: (string | null)[] = [];
+    doc.forEach((node) =>
+      kinds.push(
+        node.type.name === BLOCK_NODE ? String(node.attrs.kind) : null,
+      ),
+    );
+    const index = insertIndexFor(kinds, block, messageKey);
+    let pos = 0;
+    for (let i = 0; i < index; i++) pos += doc.child(i).nodeSize;
+    editor.chain().focus().insertContentAt(pos, blockNode(block)).run();
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-block-kind="${block}"]`)
+        ?.scrollIntoView({ block: "nearest" });
     });
   }
 
@@ -529,13 +616,6 @@ export function MessageEditor({
             tEditor("preheader"),
             tEditor("preheaderHint"),
           )}
-          {textInput("title", tEditor("titleField"), tEditor("titleHint"))}
-
-          <VariableChips
-            variables={catalog.variables}
-            disabled={saving}
-            onInsert={insertVariable}
-          />
 
           <section className="flex flex-col gap-2">
             <h2
@@ -544,51 +624,82 @@ export function MessageEditor({
             >
               {tEditor("body")}
             </h2>
+            <p id="message-body-hint" className="text-petroleum-400 text-xs">
+              {tEditor("bodyHint")}
+            </p>
+            {/* One card: the bar of variables over the whole email. */}
             <div
-              role="group"
-              aria-labelledby="message-body-label"
-              onFocusCapture={() => {
-                lastField.current = "body";
-              }}
-              className={`rounded-2xl border bg-white px-4 py-2 ${
+              className={`rounded-2xl border bg-white ${
                 docLines.length > 0 ? "border-red-300" : "border-sand-200"
               }`}
             >
-              <MailyEditor
-                renderVariable={renderVariable}
-                contentJson={opened.doc as never}
-                editable={!saving}
-                onCreate={(editor) => {
-                  editorRef.current = editor;
-                  if (recoveredDoc.current) {
-                    editor.commands.setContent(recoveredDoc.current);
-                    recoveredDoc.current = null;
-                  }
-                }}
-                onUpdate={(editor) => {
-                  if (pendingDoc.current.timer) {
-                    clearTimeout(pendingDoc.current.timer);
-                  }
-                  pendingDoc.current.timer = setTimeout(() => {
-                    pendingDoc.current.timer = null;
-                    setCurrent((before) => ({
-                      ...before,
-                      doc: editor.getJSON() as EmailDoc,
-                    }));
-                  }, 300);
-                }}
+              <BodyToolbar
+                variables={catalog.variables}
+                disabled={saving}
+                inTitle={inTitle}
+                missing={missing}
+                onInsert={insertVariable}
+                onAddBlock={addBlock}
               />
+              <div
+                role="group"
+                aria-labelledby="message-body-label"
+                aria-describedby="message-body-hint"
+                onFocusCapture={() => {
+                  lastField.current = "body";
+                }}
+                className="px-4 py-2"
+              >
+                <MailyEditor
+                  renderVariable={renderVariable}
+                  nodes={nodes}
+                  contentJson={opened.doc as never}
+                  editable={!saving}
+                  onCreate={(editor) => {
+                    editorRef.current = editor;
+                    if (recoveredDoc.current) {
+                      editor.commands.setContent(recoveredDoc.current);
+                      recoveredDoc.current = null;
+                    }
+                    const sync = () =>
+                      setInTitle(
+                        editor.state.selection.$from.parent.type.name ===
+                          TITLE_NODE,
+                      );
+                    editor.on("selectionUpdate", sync);
+                    editor.on("focus", () => {
+                      touchedEditor.current = true;
+                      sync();
+                    });
+                  }}
+                  onUpdate={(editor) => {
+                    if (pendingDoc.current.timer) {
+                      clearTimeout(pendingDoc.current.timer);
+                    }
+                    pendingDoc.current.timer = setTimeout(() => {
+                      pendingDoc.current.timer = null;
+                      setCurrent((before) => ({
+                        ...before,
+                        doc: plainDoc(editor.getJSON() as EmailDoc),
+                      }));
+                    }, 300);
+                  }}
+                />
+              </div>
             </div>
             {docLines.length > 0 && (
               <div role="alert" className="text-xs text-red-600">
                 <p className="font-medium">{tEditor("docErrorsTitle")}</p>
                 <ul className="list-disc pl-4">
-                  {docLines.map(({ key, block }) => {
+                  {docLines.map(({ key, block, blockKind }) => {
                     const message = tValidation.has(key)
-                      ? tValidation(key)
+                      ? tValidation(
+                          key,
+                          blockKind ? { name: t(`fixed.${blockKind}`) } : {},
+                        )
                       : tValidation("invalidInput");
                     return (
-                      <li key={`${key}-${block}`}>
+                      <li key={`${key}-${block}-${blockKind ?? ""}`}>
                         {block === null
                           ? message
                           : tEditor("docErrorAt", { message, block })}
@@ -598,12 +709,6 @@ export function MessageEditor({
                 </ul>
               </div>
             )}
-            {/* What the system adds after the body, where it comes out. */}
-            <SystemBlocks fixed={catalog.fixed} variables={catalog.variables} />
-            <ul className="text-petroleum-400 list-disc space-y-1 pl-4 text-xs">
-              <li>{tEditor("closingNote")}</li>
-              <li>{tEditor("emptyNote")}</li>
-            </ul>
           </section>
         </div>
 

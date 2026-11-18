@@ -900,3 +900,59 @@ export const IconPin = () => (
     <circle cx="12" cy="9.5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
+
+/** Six dots: the handle a block is dragged by. */
+export const IconGrip = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="9" cy="6" r="1.6" />
+    <circle cx="15" cy="6" r="1.6" />
+    <circle cx="9" cy="12" r="1.6" />
+    <circle cx="15" cy="12" r="1.6" />
+    <circle cx="9" cy="18" r="1.6" />
+    <circle cx="15" cy="18" r="1.6" />
+  </svg>
+);
+
+export const IconLock = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <rect
+      x="5"
+      y="11"
+      width="14"
+      height="9"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M8 11V8a4 4 0 0 1 8 0v3"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const IconArrowUp = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M12 19V5M6 11l6-6 6 6"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+export const IconArrowDown = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M12 5v14M6 13l6 6 6-6"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);

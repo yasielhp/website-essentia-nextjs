@@ -2,6 +2,7 @@ import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
+import { defaultContent } from "@/emails/defaults";
 import { MESSAGE_CATALOG } from "@/lib/messages/catalog";
 import type {
   MessageCatalogEntry,
@@ -47,7 +48,7 @@ const defaults = (key: MessageEditorKey): MessageDefaultEntry => ({
   subject: "Asunto",
   preheader: "Pre",
   title: "Título",
-  doc: { type: "doc", content: [] },
+  doc: defaultContent(key, "es").doc,
 });
 type MessageEditorKey = MessageCatalogEntry["key"];
 
@@ -231,111 +232,101 @@ describe("the language of the message is chosen inside the page", () => {
   });
 });
 
-describe("the body, with what the system adds after it", () => {
+describe("the whole email in one editor", () => {
   const confirmed = render("booking_confirmed", null);
-  const received = render("booking_received", null);
-  const cards = (html: string) => {
-    const list = html.slice(html.indexOf('id="message-system-blocks"'));
-    const ol = list.slice(list.indexOf("<ol"), list.indexOf("</ol>"));
-    return [
-      ...ol.matchAll(
-        /<li class="border-sand-500[^"]*"[^>]*>.*?<p class="[^"]*">([^<]*)<\/p>/g,
-      ),
-    ].map((m) => m[1]);
-  };
+  const top = confirmed.slice(0, confirmed.indexOf('id="message-body-label"'));
 
-  test("the blocks are cards below the editor, in the order they come out, for one message", () => {
-    expect(cards(confirmed)).toEqual([
-      "Detalles de la reserva",
-      "Ubicación del centro",
-      "Botón «Añadir al calendario»",
-      "Botón para firmar el consentimiento",
-      "Enlace para cancelar o cambiar la cita",
-    ]);
+  test("above the editor there are only the language, the subject and the preheader: no Title field, no list of variables", () => {
+    expect(top).toContain('id="message-subject"');
+    expect(top).toContain('id="message-preheader"');
+    expect(top).not.toContain('id="message-title"[^>]*type="text"');
+    expect(top).not.toContain("El encabezado grande dentro del correo");
+    expect(confirmed).not.toContain('id="message-variables"');
+    expect(confirmed).not.toContain("Pulsa una para insertarla");
+    // One field called Title is gone; the title is inside the body.
+    expect(top).not.toMatch(/<label[^>]*>Título<\/label>/);
   });
 
-  test("and for another, which has other blocks: the payment note and no location", () => {
-    expect(cards(received)).toEqual([
-      "Detalles de la reserva",
-      "Aviso de pago pendiente (solo si queda algo por pagar)",
-      "Enlace para cancelar o cambiar la cita",
-    ]);
-    expect(received).not.toContain("Ubicación del centro");
-  });
-
-  test("they come after the editor of the body and before the preview, labelled as not editable, once", () => {
-    expect(confirmed.indexOf('id="message-body-label"')).toBeLessThan(
-      confirmed.indexOf('id="message-system-blocks"'),
+  test("the bar of variables is inside the body's card, first, and the editor follows it", () => {
+    const body = confirmed.slice(confirmed.indexOf('id="message-body-label"'));
+    expect(body.indexOf('role="toolbar"')).toBeGreaterThan(-1);
+    expect(body.indexOf('role="toolbar"')).toBeLessThan(
+      body.indexOf('role="group"'),
     );
-    expect(confirmed.indexOf('id="message-system-blocks"')).toBeLessThan(
-      confirmed.indexOf("Vista previa"),
-    );
-    expect(confirmed.match(/Lo añade el sistema; no se edita/g)).toHaveLength(
-      1,
-    );
-  });
-
-  test("a card has a dashed border, an icon, the name and a line on what it holds", () => {
-    const start = confirmed.indexOf('<li class="border-sand-500');
-    const first = confirmed.slice(
-      start,
-      confirmed.indexOf("</div></li>", start),
-    );
-    expect(first).toContain("border-dashed");
-    expect(first).toContain("<svg");
-    expect(first).toContain("Detalles de la reserva");
-    expect(first).toContain("Servicio, tipo de sesión, fecha, hora y duración");
-  });
-
-  test("a card names the variables it fills, as the same tags", () => {
-    const start = confirmed.indexOf('<li class="border-sand-500');
-    const first = confirmed.slice(
-      start,
-      confirmed.indexOf("</div></li>", start),
-    );
-    expect(first).toContain("Servicio");
-    expect(first).toContain("Fecha");
-    expect(first).toContain("text-blue-700");
-  });
-
-  test("the old list of bullets and the plain list of blocks are gone; what still helps stays", () => {
     expect(confirmed).not.toContain("Bloques del sistema de este correo");
-    expect(confirmed).not.toContain("van siempre después de tu texto");
-    expect(confirmed).toContain("el texto de cierre por defecto");
-    expect(confirmed).toContain("Dejar el cuerpo vacío");
+    expect(confirmed).not.toContain("Lo añade el sistema; no se edita");
+  });
+
+  test("the bar is one stop for the keyboard, with a name on each chip", () => {
+    const bar = confirmed.slice(confirmed.indexOf('role="toolbar"'));
+    const buttons = [
+      ...bar
+        .slice(0, bar.indexOf("</div></div>"))
+        .matchAll(/<button[^>]*tabindex="(-?\d)"[^>]*>/g),
+    ];
+    expect(buttons.length).toBe(
+      MESSAGE_CATALOG.booking_confirmed.variables.length,
+    );
+    expect(buttons.filter((m) => m[1] === "0")).toHaveLength(1);
+    expect(bar).toContain('aria-orientation="horizontal"');
+    expect(bar).toContain('aria-label="Variables"');
+  });
+
+  test("it slides sideways on a phone, and the chips are 44 px high", () => {
+    const bar = confirmed.slice(confirmed.indexOf('role="toolbar"'));
+    expect(bar.slice(0, 400)).toContain("overflow-x-auto");
+    expect(bar).toContain("min-h-11");
+    expect(confirmed).toContain("sticky top-0");
+  });
+
+  test("every chip has its icon and the tone of its kind", () => {
+    const bar = confirmed.slice(confirmed.indexOf('role="toolbar"'));
+    const chips = bar.slice(0, bar.indexOf("</div></div>"));
+    for (const b of chips.split("<button").slice(1))
+      expect(b).toContain("<svg");
+    expect(chips).toContain("text-purple-700");
+    expect(chips).toContain("text-blue-700");
+    expect(chips).toContain("text-teal-700");
+  });
+
+  test("with every block in the document there is nothing to add back", () => {
+    // The default document has them all: the menu appears only for what is missing.
+    expect(confirmed).not.toContain("Añadir bloque");
+  });
+
+  test("a hint says the order here is the order of the email", () => {
+    expect(confirmed).toContain("Aquí está todo el correo, de arriba abajo");
+    expect(confirmed).toContain('aria-describedby="message-body-hint"');
+  });
+
+  test("the old lines of help that no longer hold are gone", () => {
+    expect(confirmed).not.toContain("el texto de cierre por defecto");
+    expect(confirmed).not.toContain("Dejar el cuerpo vacío");
   });
 });
 
-describe("the variables, with their icon and colour", () => {
-  const html = render("booking_confirmed", null);
-  const chips = html.slice(
-    html.indexOf('id="message-variables"'),
-    html.indexOf('id="message-body-label"'),
-  );
-  const chip = (name: string) =>
-    chips.slice(
-      chips.indexOf(`>${name}</button>`) - 600,
-      chips.indexOf(`>${name}</button>`),
+describe("the editor's nodes for the email", () => {
+  test("a title, the blocks, and the guard that keeps them in order", async () => {
+    const { emailNodeExtensions } = await import("./email-node-views");
+    const nodes = emailNodeExtensions(
+      {
+        variables: [],
+        titleLabel: "Título",
+        blockName: () => "",
+        blockWhat: () => "",
+        variableLabel: (n) => n,
+        up: () => "",
+        down: () => "",
+        remove: () => "",
+        drag: () => "",
+        locked: "",
+      },
+      new Set(["cancel_link"]),
     );
-
-  test("every chip has an icon beside its name, and its kind's tone", () => {
-    const buttons = [...chips.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map(
-      (m) => m[1],
-    );
-    expect(buttons).toHaveLength(
-      MESSAGE_CATALOG.booking_confirmed.variables.length,
-    );
-    for (const b of buttons) expect(b).toContain("<svg");
-  });
-
-  test("a person, a service, a time and a link look like their kind, and not alike", () => {
-    expect(chips).toMatch(/text-petroleum-700[^>]*>[^]*?Nombre/);
-    expect(chip("Enlace para cancelar")).toContain("text-purple-700");
-    expect(chip("Hora")).toContain("text-blue-700");
-    expect(chip("Servicio")).toContain("text-teal-700");
-  });
-
-  test("the chips are 44 px high on a phone", () => {
-    expect(chips).toContain("min-h-11");
+    expect(nodes.map((n) => n.name)).toEqual([
+      "emailTitle",
+      "systemBlock",
+      "emailDocGuard",
+    ]);
   });
 });
