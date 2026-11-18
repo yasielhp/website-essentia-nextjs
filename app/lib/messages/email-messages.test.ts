@@ -212,7 +212,7 @@ describe("the message pages' strings", () => {
     }
   });
 
-  it("a link's accessible name carries the message and the language, so no two rows read alike", () => {
+  it("a link's accessible name carries the message, and no language: a row is a message, the language is chosen on its page", () => {
     for (const messages of Object.values(LOCALES)) {
       for (const key of [
         "messages.email.actions.editRow",
@@ -220,7 +220,7 @@ describe("the message pages' strings", () => {
         "messages.email.whatsapp.actions.configureRow",
       ]) {
         expect(messages[key]).toContain("{name}");
-        expect(messages[key]).toContain("{language}");
+        expect(messages[key]).not.toContain("{language}");
       }
     }
   });

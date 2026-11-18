@@ -2357,7 +2357,7 @@
       "retry": "Reintentar",
       "columns": {
         "message": "Mensaje",
-        "language": "Idioma",
+        "type": "Tipo",
         "status": "Estado"
       },
       "locales": {
@@ -2368,7 +2368,8 @@
         "default": "Por defecto",
         "custom": "Personalizado",
         "disabled": "Apagado",
-        "corrupt": "Dañado"
+        "customSome": "Personalizado: {languages}",
+        "corruptIn": "Dañado: {languages}"
       },
       "savedOn": "Guardado el {date}",
       "savedOnBy": "Guardado el {date} por {name}",
@@ -2377,7 +2378,7 @@
         "testing": "Enviando…",
         "reset": "Restablecer",
         "resetting": "Restableciendo…",
-        "editRow": "Editar {name}, {language}"
+        "editRow": "Editar {name}"
       },
       "testNote": "La prueba se envía solo a tu email, con el asunto [PRUEBA], y lleva la versión guardada.",
       "testSent": "Prueba enviada a {email}",
@@ -2479,10 +2480,11 @@
         "channelLabel": "WhatsApp",
         "state": {
           "none": "Sin configurar: no se envía nada",
-          "off": "Apagado: no se envía nada",
-          "configured": "Configurado: plantilla {name}",
-          "invalid": "Plantilla no válida: {reason}",
-          "unknown": "No se pudo comprobar la plantilla"
+          "off": "Apagado ({languages}): no se envía nada",
+          "configured": "Configurado",
+          "invalid": "Plantilla no válida ({language}): {reason}",
+          "unknown": "No se pudo comprobar la plantilla ({languages})",
+          "configuredSome": "Configurado: {languages}"
         },
         "issue": {
           "template_missing": "ya no existe",
@@ -2495,8 +2497,8 @@
         "actions": {
           "remove": "Quitar",
           "removing": "Quitando…",
-          "editRow": "Editar el WhatsApp de {name}, {language}",
-          "configureRow": "Configurar el WhatsApp de {name}, {language}"
+          "editRow": "Editar el WhatsApp de {name}",
+          "configureRow": "Configurar el WhatsApp de {name}"
         },
         "removeConfirm": "¿Dejar de enviar este aviso por WhatsApp? Se borra la configuración de esta fila.",
         "removeYes": "Sí, quitar",
@@ -2556,6 +2558,10 @@
         "notice": "Hay un borrador sin guardar de antes de salir de esta página. Solo está en esta pestaña.",
         "recover": "Recuperar borrador",
         "discard": "Descartar"
+      },
+      "types": {
+        "email": "Email",
+        "whatsapp": "WhatsApp"
       }
     }
   },

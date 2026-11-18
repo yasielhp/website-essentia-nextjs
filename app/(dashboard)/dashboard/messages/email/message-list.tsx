@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { IconChat, IconMail } from "@/components/ui/icons";
 import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { messageEditHref } from "@/lib/messages/message-route";
@@ -53,38 +54,31 @@ function useRowWords() {
   const tKeys = useTranslations("dashboard.messages.keys");
   const tHints = useTranslations("dashboard.messages.keyHints");
   const locale = useDashboardLocale();
-  const language = (l: "es" | "en") => t(`locales.${l}`);
+  /** «Español», or «Español, Inglés»: the languages a state is about. */
+  const languages = (list: ("es" | "en")[]) =>
+    list.map((l) => t(`locales.${l}`)).join(", ");
 
   return {
     t,
     tWa,
-    column: (name: "language" | "status") => t(`columns.${name}`),
-    language,
+    languages,
+    column: (name: "type" | "status") => t(`columns.${name}`),
     emailName: (row: EmailListRow) => tKeys(row.key),
     emailHint: (row: EmailListRow) => tHints(row.key),
     whatsappName: (row: WhatsAppListRow) => tKeys(row.key),
-    /** Said beside the name of a WhatsApp row, outside its link. */
-    whatsappTag: (
-      <span className="text-petroleum-400 font-normal">
-        · {tWa("channelLabel")}
-      </span>
-    ),
+    // The row opens the message in Spanish; its page has the language switch.
     emailLink: (row: EmailListRow) => ({
-      href: messageEditHref("email", row.key, row.locale),
-      name: t("actions.editRow", {
-        name: tKeys(row.key),
-        language: language(row.locale),
-      }),
+      href: messageEditHref("email", row.key, "es"),
+      name: t("actions.editRow", { name: tKeys(row.key) }),
     }),
     whatsappLink: (row: WhatsAppListRow) => ({
-      href: messageEditHref("whatsapp", row.key, row.locale),
+      href: messageEditHref("whatsapp", row.key, "es"),
       name: tWa(row.saved ? "actions.editRow" : "actions.configureRow", {
         name: tKeys(row.key),
-        language: language(row.locale),
       }),
     }),
     savedOn: (row: EmailListRow) =>
-      row.custom && row.updatedAt
+      row.updatedAt
         ? row.updatedByName
           ? t("savedOnBy", {
               date: formatMediumDate(row.updatedAt, locale),
@@ -95,28 +89,52 @@ function useRowWords() {
   };
 }
 
-/** The state of an email row: default, custom or unreadable, and "off". */
+/** The channel of a row, as a discreet badge with its icon. */
+function TypeBadge({ type }: { type: "email" | "whatsapp" }) {
+  const t = useTranslations("dashboard.messages.email.types");
+  return (
+    <span
+      className={`${PILL} bg-sand-100 text-petroleum-500 gap-1.5 whitespace-nowrap`}
+    >
+      <span aria-hidden="true" className="inline-flex [&>svg]:size-3.5">
+        {type === "email" ? <IconMail /> : <IconChat />}
+      </span>
+      {t(type)}
+    </span>
+  );
+}
+
+/**
+ * The state of an email message, over its languages: by default, custom in
+ * every language, custom in some (named), or unreadable in some (named); and,
+ * for the reminder, switched off.
+ */
 function EmailStatus({ row }: { row: EmailListRow }) {
   const t = useTranslations("dashboard.messages.email");
+  const w = useRowWords();
+  const { status } = row;
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span
-        className={`${PILL} whitespace-nowrap ${
-          row.corrupt
-            ? "bg-red-100 text-red-700"
-            : row.custom
-              ? "bg-green-100 text-green-800"
-              : "bg-sand-100 text-petroleum-500"
-        }`}
-      >
-        {t(
-          row.corrupt
-            ? "status.corrupt"
-            : row.custom
-              ? "status.custom"
-              : "status.default",
-        )}
-      </span>
+      {row.corrupt.length > 0 && (
+        <span className={`${PILL} bg-red-100 text-red-700`}>
+          {t("status.corruptIn", { languages: w.languages(row.corrupt) })}
+        </span>
+      )}
+      {(row.corrupt.length === 0 || status.kind !== "default") && (
+        <span
+          className={`${PILL} text-left ${
+            status.kind === "default"
+              ? "bg-sand-100 text-petroleum-500"
+              : "bg-green-100 text-green-800"
+          }`}
+        >
+          {status.kind === "customSome"
+            ? t("status.customSome", {
+                languages: w.languages(status.languages),
+              })
+            : t(status.kind === "custom" ? "status.custom" : "status.default")}
+        </span>
+      )}
       {row.off && (
         <span
           className={`${PILL} bg-yellow-100 whitespace-nowrap text-yellow-800`}
@@ -128,26 +146,61 @@ function EmailStatus({ row }: { row: EmailListRow }) {
   );
 }
 
-/** What a WhatsApp row does today. It can be long, so it wraps. */
+/**
+ * What a WhatsApp message does today, over its languages. Anything that stops
+ * a language from sending is its own line, in red or yellow, with the
+ * language; what works is one line (all, or the ones that do). It can be long,
+ * so it wraps.
+ */
 function WhatsAppStatus({ row }: { row: WhatsAppListRow }) {
   const tWa = useTranslations("dashboard.messages.email.whatsapp");
-  const { state } = row;
-  const tone =
-    state.kind === "configured"
-      ? "bg-green-100 text-green-800"
-      : state.kind === "invalid"
-        ? "bg-red-100 text-red-700"
-        : state.kind === "off" || state.kind === "unknown"
-          ? "bg-yellow-100 text-yellow-800"
-          : "bg-sand-100 text-petroleum-500";
-  return (
-    <span className={`${PILL} ${tone} max-w-full text-left`}>
-      {state.kind === "configured"
-        ? tWa("state.configured", { name: state.templateName })
-        : state.kind === "invalid"
-          ? tWa("state.invalid", { reason: tWa(`issue.${state.issue}`) })
-          : tWa(`state.${state.kind}`)}
+  const w = useRowWords();
+  const { summary } = row;
+  const trouble =
+    summary.problems.length + summary.unknown.length + summary.off.length > 0;
+  const pill = (tone: string, text: string, key: string) => (
+    <span key={key} className={`${PILL} ${tone} max-w-full text-left`}>
+      {text}
     </span>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {summary.problems.map((p) =>
+        pill(
+          "bg-red-100 text-red-700",
+          tWa("state.invalid", {
+            language: w.languages([p.locale]),
+            reason: tWa(`issue.${p.issue}`),
+          }),
+          `problem-${p.locale}`,
+        ),
+      )}
+      {summary.unknown.length > 0 &&
+        pill(
+          "bg-yellow-100 text-yellow-800",
+          tWa("state.unknown", { languages: w.languages(summary.unknown) }),
+          "unknown",
+        )}
+      {summary.off.length > 0 &&
+        pill(
+          "bg-yellow-100 text-yellow-800",
+          tWa("state.off", { languages: w.languages(summary.off) }),
+          "off",
+        )}
+      {summary.level === "all" &&
+        pill("bg-green-100 text-green-800", tWa("state.configured"), "ok")}
+      {summary.level === "some" &&
+        pill(
+          "bg-green-100 text-green-800",
+          tWa("state.configuredSome", {
+            languages: w.languages(summary.configured),
+          }),
+          "ok",
+        )}
+      {summary.level === "none" &&
+        !trouble &&
+        pill("bg-sand-100 text-petroleum-500", tWa("state.none"), "none")}
+    </div>
   );
 }
 
@@ -163,7 +216,7 @@ function EmailNotes({
   return (
     <>
       {savedOn && <p className="text-petroleum-400 mt-1 text-xs">{savedOn}</p>}
-      {row.corrupt && (
+      {row.corrupt.length > 0 && (
         <p role="alert" className="mt-1 max-w-xs text-xs text-red-700">
           {t("corrupt")}
         </p>
@@ -173,11 +226,12 @@ function EmailNotes({
 }
 
 /**
- * One row per message and language the system really sends: its name, whether
- * it is the default or the admin's (and, for the reminder, whether it is
- * switched off). There is no column of actions: the whole row opens the page
- * where the message is edited or set up, and its name is the link. Testing, the
- * reminder's switch and resetting are on that page.
+ * One row per message and channel: its name, its type (email or WhatsApp) and
+ * its state, summed over the languages it is sent in (for the reminder, whether
+ * it is switched off too). There is no column of actions: the whole row opens the
+ * page where the message is edited or set up, in Spanish, and its name is the
+ * link; the language is chosen on that page. Testing, the reminder's switch and
+ * resetting are there too.
  *
  * A table on a wide screen and a list of cards on a phone, as the other lists
  * of the dashboard do. Both are drawn from `messageListRows`, so which rows
@@ -203,7 +257,7 @@ export function MessageList({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-sand-100 border-b text-left">
-              {(["message", "language", "status"] as const).map((column) => (
+              {(["message", "type", "status"] as const).map((column) => (
                 <th
                   key={column}
                   scope="col"
@@ -216,37 +270,9 @@ export function MessageList({
           </thead>
           <tbody>
             {list.map((row) => {
-              if (row.type === "whatsapp") {
-                const link = w.whatsappLink(row);
-                return (
-                  <tr
-                    key={row.id}
-                    onClick={openRow}
-                    className="border-sand-100 bg-sand-50/50 hover:bg-sand-100/70 cursor-pointer border-b align-top transition-colors last:border-0"
-                  >
-                    <th scope="row" className="px-5 py-3 text-left font-normal">
-                      <p className="text-sm">
-                        <Link
-                          href={link.href}
-                          aria-label={link.name}
-                          data-row-link
-                          className={ROW_LINK}
-                        >
-                          {w.whatsappName(row)}
-                        </Link>{" "}
-                        {w.whatsappTag}
-                      </p>
-                    </th>
-                    <td className="text-petroleum-500 px-5 py-3">
-                      {w.language(row.locale)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <WhatsAppStatus row={row} />
-                    </td>
-                  </tr>
-                );
-              }
-              const link = w.emailLink(row);
+              const whatsapp = row.type === "whatsapp";
+              const link = whatsapp ? w.whatsappLink(row) : w.emailLink(row);
+              const savedOn = whatsapp ? null : w.savedOn(row);
               return (
                 <tr
                   key={row.id}
@@ -262,24 +288,32 @@ export function MessageList({
                         data-row-link
                         className={ROW_LINK}
                       >
-                        {w.emailName(row)}
+                        {whatsapp ? w.whatsappName(row) : w.emailName(row)}
                       </Link>
                     </p>
-                    <p className="text-petroleum-400 mt-0.5 max-w-full text-xs">
-                      {w.emailHint(row)}
-                    </p>
-                    {row.reminderNote && (
-                      <p className="text-petroleum-400 mt-1 max-w-xs text-xs">
+                    {!whatsapp && (
+                      <p className="text-petroleum-400 mt-0.5 max-w-full text-xs">
+                        {w.emailHint(row)}
+                      </p>
+                    )}
+                    {!whatsapp && row.reminderNote && (
+                      <p className="text-petroleum-400 mt-1 max-w-full text-xs">
                         {w.t("reminder.note")}
                       </p>
                     )}
                   </th>
-                  <td className="text-petroleum-500 px-5 py-3.5">
-                    {w.language(row.locale)}
+                  <td className="px-5 py-3.5">
+                    <TypeBadge type={row.type} />
                   </td>
                   <td className="px-5 py-3.5">
-                    <EmailStatus row={row} />
-                    <EmailNotes row={row} savedOn={w.savedOn(row)} />
+                    {whatsapp ? (
+                      <WhatsAppStatus row={row} />
+                    ) : (
+                      <>
+                        <EmailStatus row={row} />
+                        <EmailNotes row={row} savedOn={savedOn} />
+                      </>
+                    )}
                   </td>
                 </tr>
               );
@@ -291,40 +325,9 @@ export function MessageList({
       {/* Mobile cards */}
       <ul className="divide-sand-100 divide-y md:hidden">
         {list.map((row) => {
-          if (row.type === "whatsapp") {
-            const link = w.whatsappLink(row);
-            return (
-              <MobileRowCard
-                key={row.id}
-                onClick={openRow}
-                title={
-                  <>
-                    <Link
-                      href={link.href}
-                      aria-label={link.name}
-                      data-row-link
-                      className={`${ROW_LINK} inline-flex min-h-11 items-center`}
-                    >
-                      {w.whatsappName(row)}
-                    </Link>{" "}
-                    {w.whatsappTag}
-                  </>
-                }
-                facts={[
-                  {
-                    label: w.column("language"),
-                    value: w.language(row.locale),
-                  },
-                  {
-                    label: w.column("status"),
-                    value: <WhatsAppStatus row={row} />,
-                  },
-                ]}
-              />
-            );
-          }
-          const link = w.emailLink(row);
-          const savedOn = w.savedOn(row);
+          const whatsapp = row.type === "whatsapp";
+          const link = whatsapp ? w.whatsappLink(row) : w.emailLink(row);
+          const savedOn = whatsapp ? null : w.savedOn(row);
           return (
             <MobileRowCard
               key={row.id}
@@ -336,26 +339,38 @@ export function MessageList({
                   data-row-link
                   className={`${ROW_LINK} inline-flex min-h-11 items-center`}
                 >
-                  {w.emailName(row)}
+                  {whatsapp ? w.whatsappName(row) : w.emailName(row)}
                 </Link>
               }
               description={
-                <>
-                  {w.emailHint(row)}
-                  {row.reminderNote && (
-                    <>
-                      <br />
-                      {w.t("reminder.note")}
-                    </>
-                  )}
-                </>
+                whatsapp ? undefined : (
+                  <>
+                    {w.emailHint(row)}
+                    {row.reminderNote && (
+                      <>
+                        <br />
+                        {w.t("reminder.note")}
+                      </>
+                    )}
+                  </>
+                )
               }
               facts={[
-                { label: w.column("language"), value: w.language(row.locale) },
-                { label: w.column("status"), value: <EmailStatus row={row} /> },
+                {
+                  label: w.column("type"),
+                  value: <TypeBadge type={row.type} />,
+                },
+                {
+                  label: w.column("status"),
+                  value: whatsapp ? (
+                    <WhatsAppStatus row={row} />
+                  ) : (
+                    <EmailStatus row={row} />
+                  ),
+                },
               ]}
             >
-              {(savedOn || row.corrupt) && (
+              {!whatsapp && (savedOn || row.corrupt.length > 0) && (
                 <EmailNotes row={row} savedOn={savedOn} />
               )}
             </MobileRowCard>

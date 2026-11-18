@@ -43,6 +43,9 @@ function render(rows: MessageTemplateRowView[]): string {
   );
 }
 
+/** One row per message, and one more for each of the two that also go out on WhatsApp. */
+const ROWS = MESSAGE_KEYS.length + 2;
+
 describe("the list of messages", () => {
   const html = render([]);
 
@@ -53,12 +56,15 @@ describe("the list of messages", () => {
     ].map((m) => m[1]);
     expect(links).toContain("/dashboard/messages/email/booking_received/es");
     expect(links).toContain("/dashboard/messages/email/booking_reminder/es");
-    expect(links).not.toContain(
-      "/dashboard/messages/email/booking_reminder/en",
-    );
     expect(links).toContain(
-      "/dashboard/messages/whatsapp/booking_confirmed/en",
+      "/dashboard/messages/whatsapp/booking_confirmed/es",
     );
+    // One row per message and channel, and every one opens the message in
+    // Spanish: the language is chosen on its page.
+    expect(links.every((href) => href.endsWith("/es"))).toBe(true);
+    // The table and the cards each carry them: ROWS of each, all different.
+    expect(links).toHaveLength(ROWS * 2);
+    expect(new Set(links).size).toBe(ROWS);
   });
 
   test("no test button, no reset, no switch", () => {
@@ -68,12 +74,12 @@ describe("the list of messages", () => {
     expect(html).not.toContain("Quitar");
   });
 
-  test("each link says which message and which language it is for", () => {
-    expect(html).toContain('aria-label="Editar Reserva recibida, Español"');
-    expect(html).toContain('aria-label="Editar Reserva recibida, Inglés"');
+  test("each link says which message it is for, with no language", () => {
+    expect(html).toContain('aria-label="Editar Reserva recibida"');
     expect(html).toContain(
-      'aria-label="Configurar el WhatsApp de Reserva confirmada, Español"',
+      'aria-label="Configurar el WhatsApp de Reserva confirmada"',
     );
+    expect(html).not.toMatch(/aria-label="[^"]*(Español|Inglés)"/);
   });
 
   test("a switched-off reminder shows the badge, with no switch to flip it", () => {
@@ -122,20 +128,21 @@ describe("the list on a phone and on a wide screen", () => {
 
   test("both show the same links, in the same order, each with a name of its own", () => {
     expect(hrefs(cards)).toEqual(hrefs(table));
-    expect(hrefs(cards).length).toBeGreaterThan(10);
+    expect(hrefs(cards)).toHaveLength(ROWS);
     expect(names(cards)).toEqual(names(table));
     expect(new Set(names(cards)).size).toBe(names(cards).length);
   });
 
-  test("a card names each fact, since there is no header: language and state", () => {
-    expect(cards).toContain("Idioma:");
+  test("a card names each fact, since there is no header: type and state", () => {
+    expect(cards).toContain("Tipo:");
     expect(cards).toContain("Estado:");
-    expect(table).not.toContain("Idioma:");
+    expect(cards).not.toContain("Idioma");
+    expect(table).not.toContain("Tipo:");
   });
 
   test("a card's link is its title, at least 44 px tall, and the whole card opens it", () => {
     const links = [...cards.matchAll(/<a [^>]*>/g)].map((m) => m[0]);
-    expect(links.length).toBeGreaterThan(10);
+    expect(links).toHaveLength(ROWS);
     for (const link of links) {
       expect(link).toContain("min-h-11");
       expect(link).toContain("data-row-link");
@@ -151,7 +158,7 @@ describe("the list on a phone and on a wide screen", () => {
     const rows = [...table.matchAll(/<tr [^>]*class="([^"]*)"/g)]
       .map((m) => m[1])
       .filter((cls) => cls.includes("align-top"));
-    expect(rows.length).toBeGreaterThan(10);
+    expect(rows).toHaveLength(ROWS);
     for (const cls of rows) expect(cls).toContain("cursor-pointer");
     // No button-shaped link is left: nothing reads "Editar" or "Configurar" on its own.
     expect(html).not.toMatch(/>Editar</);
@@ -164,17 +171,16 @@ describe("the list on a phone and on a wide screen", () => {
         new RegExp(`<a [^>]*aria-label="${label}"[^>]*>([^<]*)</a>`),
       )?.[1];
     for (const part of [table, cards]) {
-      expect(link(part, "Editar Reserva recibida, Español")).toBe(
-        "Reserva recibida",
+      expect(link(part, "Editar Reserva recibida")).toBe("Reserva recibida");
+      expect(link(part, "Configurar el WhatsApp de Reserva confirmada")).toBe(
+        "Reserva confirmada",
       );
-      expect(
-        link(part, "Configurar el WhatsApp de Reserva confirmada, Español"),
-      ).toBe("Reserva confirmada");
     }
     expect(table.match(/data-row-link/g)).toHaveLength(
       table.match(/align-top/g)!.length,
     );
-    expect(html).toContain("· WhatsApp");
+    // The channel is the Type column's, not an addition to the name.
+    expect(html).not.toContain("· WhatsApp");
   });
 
   test("the cards have no buttons or switches either", () => {
@@ -204,5 +210,100 @@ describe("the list says nothing about where reminders are set up", () => {
     expect(html).not.toContain("Crear un Aviso de cita");
     expect(html).not.toContain("Aviso de cita");
     expect(html).not.toContain('href="/dashboard/campaigns/new"');
+  });
+});
+
+describe("the columns: message, type and state", () => {
+  const html = render([]);
+  const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+  const headers = [...table.matchAll(/<th[^>]*scope="col"[^>]*>([^<]*)</g)].map(
+    (m) => m[1],
+  );
+
+  test("Message, Type and State, and no Language column", () => {
+    expect(headers).toEqual(["Mensaje", "Tipo", "Estado"]);
+    expect(table).not.toContain("Idioma");
+    expect(table).not.toContain("Español");
+    expect(table).not.toContain("Inglés");
+  });
+
+  test("each row has the badge of its type, Email or WhatsApp, with an icon", () => {
+    const badges = [
+      ...table.matchAll(
+        /<span class="[^"]*bg-sand-100[^"]*gap-1\.5[^"]*"><span aria-hidden="true"[^>]*><svg[^>]*>.*?<\/svg><\/span>(Email|WhatsApp)<\/span>/g,
+      ),
+    ].map((m) => m[1]);
+    expect(badges.filter((b) => b === "Email")).toHaveLength(
+      MESSAGE_KEYS.length,
+    );
+    expect(badges.filter((b) => b === "WhatsApp")).toHaveLength(2);
+  });
+
+  test("the same message appears once as Email and once as WhatsApp, with the same name", () => {
+    expect(table.match(/>Reserva confirmada<\/a>/g)).toHaveLength(2);
+    expect(table.match(/>Reserva recibida<\/a>/g)).toHaveLength(1);
+  });
+});
+
+describe("the state of a message, summed over its languages", () => {
+  const text = (rows: MessageTemplateRowView[]) => {
+    const html = render(rows);
+    return html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+  };
+
+  test("only Spanish edited: customised, naming Spanish", () => {
+    const t = text([
+      row({ key: "booking_received", locale: "es", subject: "Hola" }),
+    ]);
+    expect(t).toContain("Personalizado: Español");
+  });
+  test("only English edited: naming English", () => {
+    expect(
+      text([row({ key: "booking_received", locale: "en", subject: "Hi" })]),
+    ).toContain("Personalizado: Inglés");
+  });
+  test("both edited: just customised", () => {
+    const t = text([
+      row({ key: "booking_received", locale: "es", subject: "Hola" }),
+      row({ key: "booking_received", locale: "en", subject: "Hi" }),
+    ]);
+    expect(t).toContain(">Personalizado<");
+    expect(t).not.toContain("Personalizado: ");
+  });
+  test("the reminder, sent in Spanish only, is customised when its Spanish is", () => {
+    expect(text([row({ key: "booking_reminder", subject: "Hola" })])).toContain(
+      ">Personalizado<",
+    );
+  });
+  test("an unreadable text says in which language, in red", () => {
+    const t = text([
+      row({ key: "booking_cancelled", locale: "en", corrupt: true }),
+    ]);
+    expect(t).toContain("Dañado: Inglés");
+    expect(t).toContain("bg-red-100");
+  });
+  test("a WhatsApp message with nothing set up says nothing is sent, once", () => {
+    const t = text([]);
+    expect(t.match(/Sin configurar: no se envía nada/g)).toHaveLength(2);
+  });
+  test("the save shown is the most recent one, and who made it", () => {
+    const t = text([
+      row({
+        key: "booking_received",
+        locale: "es",
+        subject: "Hola",
+        updated_at: "2026-11-10T10:00:00Z",
+        updated_by_name: "Ana",
+      }),
+      row({
+        key: "booking_received",
+        locale: "en",
+        subject: "Hi",
+        updated_at: "2026-11-16T10:00:00Z",
+        updated_by_name: "Luis",
+      }),
+    ]);
+    expect(t).toContain("por Luis");
+    expect(t).not.toContain("por Ana");
   });
 });

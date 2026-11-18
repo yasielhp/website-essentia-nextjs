@@ -2357,7 +2357,7 @@
       "retry": "Try again",
       "columns": {
         "message": "Message",
-        "language": "Language",
+        "type": "Type",
         "status": "Status"
       },
       "locales": {
@@ -2368,7 +2368,8 @@
         "default": "Default",
         "custom": "Customised",
         "disabled": "Switched off",
-        "corrupt": "Damaged"
+        "customSome": "Customised: {languages}",
+        "corruptIn": "Damaged: {languages}"
       },
       "savedOn": "Saved on {date}",
       "savedOnBy": "Saved on {date} by {name}",
@@ -2377,7 +2378,7 @@
         "testing": "Sending…",
         "reset": "Reset",
         "resetting": "Resetting…",
-        "editRow": "Edit {name}, {language}"
+        "editRow": "Edit {name}"
       },
       "testNote": "The test goes only to your email, with the subject [PRUEBA], and carries the saved version.",
       "testSent": "Test sent to {email}",
@@ -2479,10 +2480,11 @@
         "channelLabel": "WhatsApp",
         "state": {
           "none": "Not set up: nothing is sent",
-          "off": "Switched off: nothing is sent",
-          "configured": "Set up: template {name}",
-          "invalid": "Template not valid: {reason}",
-          "unknown": "The template could not be checked"
+          "off": "Switched off ({languages}): nothing is sent",
+          "configured": "Set up",
+          "invalid": "Template not valid ({language}): {reason}",
+          "unknown": "The template could not be checked ({languages})",
+          "configuredSome": "Set up: {languages}"
         },
         "issue": {
           "template_missing": "it no longer exists",
@@ -2495,8 +2497,8 @@
         "actions": {
           "remove": "Remove",
           "removing": "Removing…",
-          "editRow": "Edit the WhatsApp of {name}, {language}",
-          "configureRow": "Set up the WhatsApp of {name}, {language}"
+          "editRow": "Edit the WhatsApp of {name}",
+          "configureRow": "Set up the WhatsApp of {name}"
         },
         "removeConfirm": "Stop sending this notice on WhatsApp? This row's setup is deleted.",
         "removeYes": "Yes, remove",
@@ -2556,6 +2558,10 @@
         "notice": "There is an unsaved draft from before you left this page. It is only in this tab.",
         "recover": "Recover draft",
         "discard": "Discard"
+      },
+      "types": {
+        "email": "Email",
+        "whatsapp": "WhatsApp"
       }
     }
   },

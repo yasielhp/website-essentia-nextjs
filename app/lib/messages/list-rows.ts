@@ -19,29 +19,88 @@ import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 
 type Locale = "es" | "en";
 
+/** What the languages of one email message say together. */
+export type EmailStatusSummary = {
+  /**
+   * `default`: none is the admin's. `custom`: every language the message is sent
+   * in is. `customSome`: only the ones in `languages`, named in the message's own order.
+   */
+  kind: "default" | "custom" | "customSome";
+  languages: Locale[];
+};
+
+export function summarizeEmail(
+  locales: Locale[],
+  custom: Locale[],
+): EmailStatusSummary {
+  const edited = locales.filter((l) => custom.includes(l));
+  if (edited.length === 0) return { kind: "default", languages: [] };
+  return {
+    kind: edited.length === locales.length ? "custom" : "customSome",
+    languages: edited,
+  };
+}
+
 export type EmailListRow = {
   type: "email";
   id: string;
   key: MessageKey;
-  locale: Locale;
-  /** The admin's own text (a row that holds only the switch is not). */
-  custom: boolean;
-  corrupt: boolean;
+  /** The languages the message is sent in. */
+  locales: Locale[];
+  status: EmailStatusSummary;
+  /** The languages whose saved text cannot be read. */
+  corrupt: Locale[];
   /** The reminder, switched off. */
   off: boolean;
+  /** The most recent save among the admin's own texts, and who made it. */
   updatedAt: string | null;
   updatedByName: string | null;
   /** The reminder says it is always sent in Spanish. */
   reminderNote: boolean;
 };
 
+/** What the languages of one WhatsApp message do together. */
+export type WhatsAppSummary = {
+  /** How many of the languages are set up and sendable: none, some or all. */
+  level: "none" | "some" | "all";
+  configured: Locale[];
+  /** A template that no longer works, with the language it was chosen for. */
+  problems: { locale: Locale; issue: string }[];
+  /** A saved template that cannot be judged because the templates could not be read. */
+  unknown: Locale[];
+  /** A row saved switched off. */
+  off: Locale[];
+};
+
+export function summarizeWhatsApp(
+  states: Record<Locale, WhatsAppRowState>,
+): WhatsAppSummary {
+  const order: Locale[] = ["es", "en"];
+  const configured = order.filter((l) => states[l].kind === "configured");
+  return {
+    level:
+      configured.length === 0
+        ? "none"
+        : configured.length === order.length
+          ? "all"
+          : "some",
+    configured,
+    problems: order.flatMap((locale) => {
+      const state = states[locale];
+      return state.kind === "invalid" ? [{ locale, issue: state.issue }] : [];
+    }),
+    unknown: order.filter((l) => states[l].kind === "unknown"),
+    off: order.filter((l) => states[l].kind === "off"),
+  };
+}
+
 export type WhatsAppListRow = {
   type: "whatsapp";
   id: string;
   key: MessageKey;
-  locale: Locale;
-  state: WhatsAppRowState;
-  /** There is a saved row, even if it cannot be sent: the link says "Edit". */
+  locales: Locale[];
+  summary: WhatsAppSummary;
+  /** There is a saved row in some language, even if it cannot be sent: the link says "Edit". */
   saved: boolean;
 };
 
@@ -54,44 +113,62 @@ export function messageListRows(
 ): ListRow[] {
   return MESSAGE_KEYS.flatMap((key): ListRow[] => {
     const canDisable = Boolean(catalog.find((c) => c.key === key)?.canDisable);
-    const email = editableLocales(key).map((locale): EmailListRow => {
+    const locales = editableLocales(key);
+    const found = locales.map((locale) => {
       const row = rows.find(
         (r) => r.channel === "email" && r.key === key && r.locale === locale,
       );
       const corrupt = row?.corrupt === true;
-      const custom = !corrupt && rowHasText(row);
-      return {
-        type: "email",
-        id: `${key}:${locale}`,
-        key,
-        locale,
-        custom,
-        corrupt,
-        off: isSwitchedOff(canDisable, row),
-        updatedAt: custom ? (row?.updated_at ?? null) : null,
-        updatedByName: custom ? (row?.updated_by_name ?? null) : null,
-        reminderNote: key === "booking_reminder",
-      };
+      return { locale, row, corrupt, custom: !corrupt && rowHasText(row) };
     });
-    if (!WHATSAPP_MESSAGE_KEYS.includes(key)) return email;
+    const custom = found.filter((f) => f.custom);
+    // The most recent save among the texts that are the admin's own.
+    const latest = [...custom].sort((a, b) =>
+      (b.row?.updated_at ?? "").localeCompare(a.row?.updated_at ?? ""),
+    )[0];
+    const email: EmailListRow = {
+      type: "email",
+      id: `${key}:email`,
+      key,
+      locales,
+      status: summarizeEmail(
+        locales,
+        custom.map((f) => f.locale),
+      ),
+      corrupt: found.filter((f) => f.corrupt).map((f) => f.locale),
+      off: found.some((f) => isSwitchedOff(canDisable, f.row)),
+      updatedAt: latest?.row?.updated_at ?? null,
+      updatedByName: latest?.row?.updated_by_name ?? null,
+      reminderNote: key === "booking_reminder",
+    };
+    if (!WHATSAPP_MESSAGE_KEYS.includes(key)) return [email];
 
-    const whatsapp = (["es", "en"] as const).map((locale): WhatsAppListRow => {
-      const saved = rows.find(
+    const saved = (locale: Locale) =>
+      rows.find(
         (r) => r.channel === "whatsapp" && r.key === key && r.locale === locale,
       );
-      return {
+    const states = {
+      es: whatsappRowState(
+        saved("es") as SavedWhatsAppRow | undefined,
+        templates,
+        "es",
+      ),
+      en: whatsappRowState(
+        saved("en") as SavedWhatsAppRow | undefined,
+        templates,
+        "en",
+      ),
+    };
+    return [
+      email,
+      {
         type: "whatsapp",
-        id: `wa:${key}:${locale}`,
+        id: `wa:${key}`,
         key,
-        locale,
-        state: whatsappRowState(
-          saved as SavedWhatsAppRow | undefined,
-          templates,
-          locale,
-        ),
-        saved: saved !== undefined,
-      };
-    });
-    return [...email, ...whatsapp];
+        locales: ["es", "en"],
+        summary: summarizeWhatsApp(states),
+        saved: saved("es") !== undefined || saved("en") !== undefined,
+      },
+    ];
   });
 }
