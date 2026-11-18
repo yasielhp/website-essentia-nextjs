@@ -35,6 +35,8 @@ export type MessageCatalogEntry = {
   key: MessageKey;
   variables: MessageVariable[];
   fixed: FixedBlock[];
+  /** The blocks (of `fixed`) the email prints after its closing sentence. */
+  afterClosing: FixedBlock[];
   canDisable: boolean;
   whatsappEligible: boolean;
 };

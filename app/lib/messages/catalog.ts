@@ -76,9 +76,42 @@ export type FixedBlock =
   /** Vouchers: service / sessions / amount paid / valid until. */
   | "bonus_card";
 
+/**
+ * Which blocks can be taken out of a message. A block that does a job (the link
+ * to cancel, the button to sign, the notice of what is still owed, the voucher's
+ * card) is `required`: the document of a message that lacks one is refused when
+ * saved, and sending adds it back, so no email ever goes out without it. The
+ * ones that only inform (the booking's details, the address, the calendar
+ * button) can be removed. Every block can be moved.
+ */
+export const FIXED_BLOCK_INFO: Record<FixedBlock, { required: boolean }> = {
+  details_card: { required: false },
+  location: { required: false },
+  payment_note: { required: true },
+  calendar_button: { required: false },
+  cancel_link: { required: true },
+  consent_button: { required: true },
+  bonus_card: { required: true },
+};
+
+export const isRequiredBlock = (block: FixedBlock): boolean =>
+  FIXED_BLOCK_INFO[block].required;
+
+/** The blocks of a message that cannot be removed, in its order. */
+export function requiredBlocks(key: MessageKey): FixedBlock[] {
+  return MESSAGE_CATALOG[key].fixed.filter(isRequiredBlock);
+}
+
 export type MessageDefinition = {
   variables: MessageVariable[];
+  /** The blocks the code draws, in the order the email has always printed them. */
   fixed: FixedBlock[];
+  /**
+   * The blocks (a subset of `fixed`) the email has always printed AFTER its
+   * closing sentence; the rest come before it. Only the request-received email
+   * has one: its cancellation link comes under the closing line.
+   */
+  afterClosing: FixedBlock[];
   /**
    * Whether the admin may switch the message off. Only the reminder: it is the
    * one nobody is owed. Switching off the confirmation would leave a client who
@@ -110,6 +143,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "cancel_url",
     ],
     fixed: ["details_card", "payment_note", "cancel_link"],
+    afterClosing: ["cancel_link"],
     canDisable: false,
     // An acknowledgement of a request, not the confirmation the client opted
     // in to hear about.
@@ -133,6 +167,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "consent_button",
       "cancel_link",
     ],
+    afterClosing: [],
     canDisable: false,
     whatsappEligible: true,
   },
@@ -156,6 +191,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "calendar_button",
       "consent_button",
     ],
+    afterClosing: [],
     canDisable: false,
     // A confirmation, and the paid booking has a booking behind it.
     whatsappEligible: true,
@@ -171,6 +207,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "cancel_url",
     ],
     fixed: ["details_card", "calendar_button", "cancel_link"],
+    afterClosing: [],
     canDisable: false,
     // The opt-in text names confirmation and reminder only.
     whatsappEligible: false,
@@ -185,6 +222,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "duration",
     ],
     fixed: ["details_card"],
+    afterClosing: [],
     canDisable: false,
     whatsappEligible: false,
   },
@@ -199,6 +237,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "cancel_url",
     ],
     fixed: ["details_card", "location", "calendar_button", "cancel_link"],
+    afterClosing: [],
     canDisable: true,
     // Its WhatsApp version is not a message here but an appointment notice (a
     // campaign of that kind), which can be set several times and at any hour
@@ -209,6 +248,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
   consent_request: {
     variables: ["first_name", "consent_url"],
     fixed: ["consent_button"],
+    afterClosing: [],
     canDisable: false,
     // No booking behind it: the sender could not find a number to write to.
     whatsappEligible: false,
@@ -222,6 +262,7 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "expires_on",
     ],
     fixed: ["bonus_card"],
+    afterClosing: [],
     canDisable: false,
     // Bought on the website, with no booking and no WhatsApp opt-in.
     whatsappEligible: false,

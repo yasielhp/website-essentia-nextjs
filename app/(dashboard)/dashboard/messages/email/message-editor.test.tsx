@@ -55,6 +55,7 @@ const catalogOf = (key: MessageEditorKey): MessageCatalogEntry => ({
   key,
   variables: [...MESSAGE_CATALOG[key].variables],
   fixed: [...MESSAGE_CATALOG[key].fixed],
+  afterClosing: [...MESSAGE_CATALOG[key].afterClosing],
   canDisable: MESSAGE_CATALOG[key].canDisable,
   whatsappEligible: MESSAGE_CATALOG[key].whatsappEligible,
 });

@@ -98,6 +98,13 @@ describe("MESSAGE_CATALOG", () => {
     }
   });
 
+  it("the blocks printed after the closing sentence are among the message's blocks", () => {
+    for (const key of MESSAGE_KEYS) {
+      const { fixed, afterClosing } = MESSAGE_CATALOG[key];
+      for (const block of afterClosing) expect(fixed).toContain(block);
+    }
+  });
+
   it("allows WhatsApp only on messages tied to a booking", () => {
     // The WhatsApp sender finds the client through the booking, so a message
     // with no booking behind it has nobody to resolve a number from.
