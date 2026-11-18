@@ -187,10 +187,35 @@ describe("decideClientWhatsApp — nothing to do", () => {
     );
   });
 
-  it("a message that cannot be switched off ignores the switch: a paid client keeps her confirmation", () => {
+  it("a message that is switched off is `off` for a client who would have been messaged", () => {
     const off = { ...ROW, enabled: false };
-    expect(decide({ key: "booking_confirmed", row: off }).kind).toBe("send");
-    expect(decide({ key: "booking_paid", row: off }).kind).toBe("send");
+    for (const key of ["booking_confirmed", "booking_paid"] as const) {
+      expect(decide({ key, row: off })).toEqual({
+        kind: "off",
+        to: "+34611222333",
+      });
+    }
+  });
+
+  it("off is judged before the template: a broken or missing template is not a recorded skip while the message is off", () => {
+    const off = { ...ROW, enabled: false };
+    expect(decide({ row: off, template: null }).kind).toBe("off");
+    expect(
+      decide({ row: off, template: { ...TEMPLATE, status: "REJECTED" } }).kind,
+    ).toBe("off");
+  });
+
+  it("off with no template, no consent or a STOP says nothing at all: she would not have been messaged", () => {
+    const off = { ...ROW, enabled: false };
+    expect(decide({ row: { ...off, whatsapp_template_id: null } }).kind).toBe(
+      "none",
+    );
+    expect(decide({ row: off, contact: null }).kind).toBe("none");
+    expect(decide({ row: off, phoneSuppressed: true }).kind).toBe("none");
+  });
+
+  it("only a false is off: a null or an odd value in the column is on", () => {
+    expect(decide({ row: { ...ROW, enabled: null } }).kind).toBe("send");
   });
 
   it("no contact, no opt-in, an opt-out or an unreachable number: nothing, and not a recorded skip", () => {
@@ -473,6 +498,36 @@ describe("deliverClientWhatsApp", () => {
       expect(h.sent).toHaveLength(0);
       expect(h.recorded).toHaveLength(0);
     }
+  });
+
+  it("a message that is switched off sends nothing and leaves ONE entry that says it is off: not the configuration skip", async () => {
+    const h = harness();
+    const out = await deliverClientWhatsApp(
+      args({ row: { ...ROW, enabled: false } }),
+      h.deps,
+    );
+    expect(out).toBe("skipped");
+    expect(h.sent).toHaveLength(0);
+    expect(h.recorded).toHaveLength(1);
+    expect(h.recorded[0]).toMatchObject({
+      bookingId: "b-1",
+      channel: "whatsapp",
+      event: "confirmed",
+      recipient: "+34611222333",
+      status: "skipped",
+      error: "message_off",
+    });
+    expect(String(h.recorded[0]!.summary)).toContain("apagado");
+  });
+
+  it("switched off with a broken template still leaves only the off entry", async () => {
+    const h = harness();
+    await deliverClientWhatsApp(
+      args({ row: { ...ROW, enabled: false }, template: null }),
+      h.deps,
+    );
+    expect(h.recorded).toHaveLength(1);
+    expect(h.recorded[0]).toMatchObject({ error: "message_off" });
   });
 
   it("an ineligible template is one skipped entry with the reason, and no send", async () => {

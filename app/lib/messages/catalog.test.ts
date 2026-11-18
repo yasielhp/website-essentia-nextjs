@@ -81,11 +81,6 @@ describe("MESSAGE_CATALOG", () => {
     }
   });
 
-  it("lets only the reminder be switched off", () => {
-    const disable = MESSAGE_KEYS.filter((k) => MESSAGE_CATALOG[k].canDisable);
-    expect(disable).toEqual(["booking_reminder"]);
-  });
-
   it("offers a link variable exactly where a fixed block carries that link", () => {
     for (const key of MESSAGE_KEYS) {
       const { variables, fixed } = MESSAGE_CATALOG[key];
@@ -124,15 +119,6 @@ describe("MESSAGE_CATALOG", () => {
 
   it("the reminder is not one of them: its WhatsApp version is an appointment notice, a campaign", () => {
     expect(MESSAGE_CATALOG.booking_reminder.whatsappEligible).toBe(false);
-    // The email reminder is untouched: it can still be switched off.
-    expect(MESSAGE_CATALOG.booking_reminder.canDisable).toBe(true);
-  });
-
-  it("nothing that goes out on WhatsApp can be switched off", () => {
-    for (const key of MESSAGE_KEYS) {
-      const { whatsappEligible, canDisable } = MESSAGE_CATALOG[key];
-      expect(whatsappEligible && canDisable).toBe(false);
-    }
   });
 });
 

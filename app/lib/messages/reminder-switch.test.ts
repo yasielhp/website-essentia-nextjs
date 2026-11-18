@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { isSwitchedOff, rowHasText, switchInput } from "./reminder-switch";
+import {
+  isSwitchedOff,
+  rowHasText,
+  summarizeSwitch,
+  switchTarget,
+} from "./reminder-switch";
 
 const row = (over = {}) => ({
   enabled: true,
@@ -10,17 +15,37 @@ const row = (over = {}) => ({
   ...over,
 });
 
-describe("switchInput", () => {
-  test("carries the switch and nothing else: the text is not touched", () => {
-    expect(switchInput("booking_reminder", "es", false)).toEqual({
-      key: "booking_reminder",
-      channel: "email",
-      locale: "es",
-      enabled: false,
+describe("summarizeSwitch", () => {
+  test("on when no language is off, off when all are, partial between", () => {
+    expect(summarizeSwitch(["es", "en"], [])).toEqual({
+      state: "on",
+      offLocales: [],
     });
-    expect(
-      Object.keys(switchInput("booking_reminder", "es", true)).sort(),
-    ).toEqual(["channel", "enabled", "key", "locale"]);
+    expect(summarizeSwitch(["es", "en"], ["es", "en"])).toEqual({
+      state: "off",
+      offLocales: ["es", "en"],
+    });
+    expect(summarizeSwitch(["es", "en"], ["en"])).toEqual({
+      state: "partial",
+      offLocales: ["en"],
+    });
+    expect(summarizeSwitch(["es"], ["es"]).state).toBe("off");
+  });
+  test("a language the message is not sent in does not count", () => {
+    expect(summarizeSwitch(["es"], ["en"])).toEqual({
+      state: "on",
+      offLocales: [],
+    });
+  });
+});
+
+describe("switchTarget: what a click does", () => {
+  test("on turns off; off turns on; partial turns on, which equalises the languages", () => {
+    expect(switchTarget(summarizeSwitch(["es", "en"], []))).toBe(false);
+    expect(switchTarget(summarizeSwitch(["es", "en"], ["es", "en"]))).toBe(
+      true,
+    );
+    expect(switchTarget(summarizeSwitch(["es", "en"], ["en"]))).toBe(true);
   });
 });
 
@@ -43,10 +68,11 @@ describe("rowHasText", () => {
 });
 
 describe("isSwitchedOff", () => {
-  test("only a message that can be switched off, with a row that says so", () => {
-    expect(isSwitchedOff(true, row({ enabled: false }))).toBe(true);
-    expect(isSwitchedOff(true, row({ enabled: true }))).toBe(false);
-    expect(isSwitchedOff(true, undefined)).toBe(false);
-    expect(isSwitchedOff(false, row({ enabled: false }))).toBe(false);
+  test("only a row that says false is off; no row, a null or an odd value is on", () => {
+    expect(isSwitchedOff(row({ enabled: false }))).toBe(true);
+    expect(isSwitchedOff(row({ enabled: true }))).toBe(false);
+    expect(isSwitchedOff({ enabled: null })).toBe(false);
+    expect(isSwitchedOff(undefined)).toBe(false);
+    expect(isSwitchedOff(null)).toBe(false);
   });
 });

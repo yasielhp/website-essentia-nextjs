@@ -52,16 +52,14 @@ describe("chooseDelivery", () => {
     expect(chooseDelivery("booking_confirmed", row(), "es")).toBe("custom");
   });
 
-  test("only the reminder can be switched off", () => {
+  test("every message can be switched off: its row says so and it is skipped", () => {
     const off = row({ enabled: false });
     for (const key of MESSAGE_KEYS) {
-      expect(chooseDelivery(key, off, "es")).toBe(
-        key === "booking_reminder" ? "skip" : "custom",
-      );
+      expect(chooseDelivery(key, off, "es")).toBe("skip");
     }
   });
 
-  test("a switched-off reminder is skipped even when it has no text", () => {
+  test("a message that is switched off is skipped even when it has no text", () => {
     const off = row({
       enabled: false,
       subject: null,
@@ -69,7 +67,9 @@ describe("chooseDelivery", () => {
       title: null,
       doc: null,
     });
-    expect(chooseDelivery("booking_reminder", off, "es")).toBe("skip");
+    for (const key of MESSAGE_KEYS) {
+      expect(chooseDelivery(key, off, "es")).toBe("skip");
+    }
   });
 
   test("a row that only carries the switch has no text to send: legacy", () => {
@@ -345,21 +345,46 @@ describe("renderMessageEmail", () => {
     expect(out.html).toContain("Detalles de la sesión");
   });
 
-  test("the reminder switched off: skip", async () => {
-    const out = await renderMessageEmail(
-      { ...opts, key: "booking_reminder" },
-      async () => row({ enabled: false }),
-    );
-    expect(out).toEqual({ kind: "skip" });
-  });
-
-  test("any other message switched off still sends", async () => {
+  test("any message switched off: skip", async () => {
     for (const key of MESSAGE_KEYS) {
-      if (key === "booking_reminder") continue;
       const out = await renderMessageEmail({ ...opts, key }, async () =>
         row({ enabled: false }),
       );
-      expect(out.kind).not.toBe("skip");
+      expect(out).toEqual({ kind: "skip" });
+    }
+  });
+
+  test("a switch that cannot be read is not a switch: the email that has always gone out", async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      for (const key of MESSAGE_KEYS) {
+        const out = await renderMessageEmail({ ...opts, key }, async () => {
+          throw new Error("database down");
+        });
+        expect(out).toEqual({ kind: "legacy" });
+      }
+    } finally {
+      console.error = original;
+    }
+  });
+
+  test("with the switch on, or with no row, nothing changes: legacy when there is no text", async () => {
+    for (const key of MESSAGE_KEYS) {
+      expect(
+        await renderMessageEmail({ ...opts, key }, async () => null),
+      ).toEqual({ kind: "legacy" });
+      expect(
+        await renderMessageEmail({ ...opts, key }, async () =>
+          row({
+            enabled: true,
+            subject: null,
+            preheader: null,
+            doc: null,
+            title: null,
+          }),
+        ),
+      ).toEqual({ kind: "legacy" });
     }
   });
 

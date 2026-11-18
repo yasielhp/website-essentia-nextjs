@@ -113,10 +113,18 @@ describe("whatsappRowState", () => {
     ).toEqual({ kind: "none" });
   });
 
-  it("a row switched off says so and sends nothing", () => {
+  it("the switch is not the status: a row that is switched off is read as what it is set up as", () => {
     expect(whatsappRowState(saved({ enabled: false }), [good], "es")).toEqual({
-      kind: "off",
+      kind: "configured",
+      templateName: "cita_confirmada",
     });
+    expect(
+      whatsappRowState(
+        saved({ enabled: false, whatsapp_template_id: null }),
+        [good],
+        "es",
+      ),
+    ).toEqual({ kind: "none" });
   });
 
   it("a template that can go out is configured, by name", () => {

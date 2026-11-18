@@ -112,8 +112,7 @@ function TypeBadge({ type }: { type: "email" | "whatsapp" }) {
 
 /**
  * The state of an email message, over its languages: by default, custom in
- * every language, custom in some (named), or unreadable in some (named); and,
- * for the reminder, switched off.
+ * every language, custom in some (named), or unreadable in some (named).
  */
 function EmailStatus({ row }: { row: EmailListRow }) {
   const t = useTranslations("dashboard.messages.email");
@@ -141,13 +140,6 @@ function EmailStatus({ row }: { row: EmailListRow }) {
             : t(status.kind === "custom" ? "status.custom" : "status.default")}
         </span>
       )}
-      {row.off && (
-        <span
-          className={`${PILL} bg-yellow-100 whitespace-nowrap text-yellow-800`}
-        >
-          {t("status.disabled")}
-        </span>
-      )}
     </div>
   );
 }
@@ -162,8 +154,7 @@ function WhatsAppStatus({ row }: { row: WhatsAppListRow }) {
   const tWa = useTranslations("dashboard.messages.email.whatsapp");
   const w = useRowWords();
   const { summary } = row;
-  const trouble =
-    summary.problems.length + summary.unknown.length + summary.off.length > 0;
+  const trouble = summary.problems.length + summary.unknown.length > 0;
   const pill = (tone: string, text: string, key: string) => (
     <span key={key} className={`${PILL} ${tone} max-w-full text-left`}>
       {text}
@@ -186,12 +177,6 @@ function WhatsAppStatus({ row }: { row: WhatsAppListRow }) {
           "bg-yellow-100 text-yellow-800",
           tWa("state.unknown", { languages: w.languages(summary.unknown) }),
           "unknown",
-        )}
-      {summary.off.length > 0 &&
-        pill(
-          "bg-yellow-100 text-yellow-800",
-          tWa("state.off", { languages: w.languages(summary.off) }),
-          "off",
         )}
       {summary.level === "all" &&
         pill("bg-green-100 text-green-800", tWa("state.configured"), "ok")}

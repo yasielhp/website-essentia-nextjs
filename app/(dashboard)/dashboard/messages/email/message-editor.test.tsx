@@ -60,7 +60,6 @@ const catalogOf = (key: MessageEditorKey): MessageCatalogEntry => ({
   variables: [...MESSAGE_CATALOG[key].variables],
   fixed: [...MESSAGE_CATALOG[key].fixed],
   afterClosing: [...MESSAGE_CATALOG[key].afterClosing],
-  canDisable: MESSAGE_CATALOG[key].canDisable,
   whatsappEligible: MESSAGE_CATALOG[key].whatsappEligible,
 });
 
@@ -86,34 +85,21 @@ function render(
 }
 
 describe("the page of the reminder", () => {
-  test("has the switch, on, with its explanation and the way to WhatsApp", () => {
+  test("has no switch of its own any more, and keeps the way to WhatsApp reminders as a note", () => {
     const html = render("booking_reminder", null);
-    expect(html).toContain('role="switch"');
-    expect(html).toContain('aria-checked="true"');
-    expect(html).toContain(
-      "Se envía un recordatorio por correo antes de cada cita.",
-    );
+    expect(html).not.toContain('role="switch"');
+    expect(html).not.toContain("Enviar el recordatorio por correo");
+    expect(html).not.toContain("reminder-switch-note");
     expect(html).toContain(
       'href="/dashboard/campaigns/new?channel=whatsapp&amp;kind=appointment"',
     );
     expect(html).toContain("Para recordatorios por WhatsApp");
   });
 
-  test("the switch is the panel's own row, named by what it does", () => {
-    const html = render("booking_reminder", null);
-    expect(html).toContain("Enviar el recordatorio por correo");
-    expect(html).toContain('aria-describedby="reminder-switch-note"');
-    expect(html).toContain('id="reminder-switch-note"');
-  });
-
-  test("switched off it says so, in the switch and beside the title, and Reset is offered", () => {
-    const html = render("booking_reminder", { enabled: false });
-    expect(html).toContain('aria-checked="false"');
-    expect(html).toContain("Apagado: no se envía el recordatorio por correo.");
-    expect(html).toContain("Apagado");
-    expect(html).toContain("Restablecer");
-    // A switch alone is not the admin's text.
-    expect(html).not.toContain("Personalizado");
+  test("no other message has that note: only the reminder points to the campaign", () => {
+    expect(render("booking_confirmed", null)).not.toContain(
+      "Para recordatorios por WhatsApp",
+    );
   });
 
   test("the test button and Save are on the page, and the page has no way to close it", () => {
@@ -121,6 +107,41 @@ describe("the page of the reminder", () => {
     expect(html).toContain("Enviarme prueba");
     expect(html).toContain("Guardar");
     expect(html).not.toContain("Cerrar");
+  });
+});
+
+describe("a message that is switched off", () => {
+  const OFF_NOTE =
+    "Este mensaje está apagado: no se envía. Actívalo en la lista de Mensajes.";
+  test("any message says so, discreetly, and has no switch to turn it on here", () => {
+    for (const key of [
+      "booking_reminder",
+      "booking_confirmed",
+      "booking_paid",
+      "consent_request",
+    ] as const) {
+      const html = render(key, { enabled: false });
+      expect(html).toContain(OFF_NOTE);
+      expect(html).not.toContain('role="switch"');
+      // A switch alone is not the admin's text, and is not a Reset to offer.
+      expect(html).not.toContain("Personalizado");
+      expect(html).not.toContain("Restablecer");
+    }
+  });
+  test("on, or with no row, the page says nothing about it", () => {
+    for (const saved of [null, { enabled: true }]) {
+      expect(render("booking_confirmed", saved as never)).not.toContain(
+        "está apagado",
+      );
+    }
+  });
+  test("a switched-off message with a text of its own still offers Reset", () => {
+    const html = render("booking_confirmed", {
+      enabled: false,
+      subject: "Mío",
+    });
+    expect(html).toContain("Restablecer");
+    expect(html).toContain(OFF_NOTE);
   });
 });
 

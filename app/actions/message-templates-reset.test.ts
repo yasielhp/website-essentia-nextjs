@@ -172,23 +172,25 @@ describe("resetting the reminder's email", () => {
   });
 });
 
-describe("resetting a message that cannot be switched off", () => {
-  test("the row is deleted, whatever its switch says", async () => {
-    for (const enabled of [true, false]) {
-      row = edited(enabled);
+describe("resetting any message, email or WhatsApp: the switch is kept", () => {
+  for (const channel of ["email", "whatsapp"] as const) {
+    test(`${channel}: a row that is on is deleted, and only while it is still on`, async () => {
+      row = edited(true);
       queries = [];
-      const out = await reset("token", "booking_confirmed", "email", "es");
+      const out = await reset("token", "booking_confirmed", channel, "es");
       expect(out).toEqual({ ok: true, removed: true, kept: null });
       expect(row).toBeNull();
       const del = queries.find((chain) => has(chain, "delete"))!;
-      expect(filters(del)).not.toHaveProperty("enabled");
-    }
-  });
+      expect(filters(del)).toMatchObject({ enabled: true });
+    });
 
-  test("a WhatsApp row too", async () => {
-    row = edited(true);
-    const out = await reset("token", "booking_confirmed", "whatsapp", "es");
-    expect(out).toEqual({ ok: true, removed: true, kept: null });
-    expect(row).toBeNull();
-  });
+    test(`${channel}: a row that is off is emptied and stays off: deleting it would switch the message on without a word`, async () => {
+      row = edited(false);
+      const out = await reset("token", "booking_confirmed", channel, "es");
+      expect(out).toEqual({ ok: true, removed: false, kept: "disabled" });
+      expect(row).not.toBeNull();
+      expect(row!.enabled).toBe(false);
+      expect(row!.subject).toBeNull();
+    });
+  }
 });

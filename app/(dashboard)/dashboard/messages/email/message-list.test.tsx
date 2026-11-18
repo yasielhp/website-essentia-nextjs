@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
-import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
+import { MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type {
   MessageCatalogEntry,
   MessageTemplateRowView,
@@ -11,7 +11,6 @@ import { MessageList } from "./message-list";
 
 const catalog = MESSAGE_KEYS.map((key) => ({
   key,
-  canDisable: MESSAGE_CATALOG[key].canDisable,
 })) as unknown as MessageCatalogEntry[];
 
 const row = (over: Partial<MessageTemplateRowView>): MessageTemplateRowView =>
@@ -82,11 +81,9 @@ describe("the list of messages", () => {
     expect(html).not.toMatch(/aria-label="[^"]*(Español|Inglés)"/);
   });
 
-  test("a switched-off reminder shows the badge, with no switch to flip it", () => {
+  test("the status no longer says 'Apagado': the state of the switch is its own thing", () => {
     const off = render([row({ enabled: false })]);
-    expect(off).toContain("Apagado");
-    expect(off).not.toContain('role="switch"');
-    expect(off).not.toContain("<button");
+    expect(off).not.toContain("Apagado");
     expect(html).not.toContain("Apagado");
   });
 
@@ -186,11 +183,6 @@ describe("the list on a phone and on a wide screen", () => {
   test("the cards have no buttons or switches either", () => {
     expect(cards).not.toContain("<button");
     expect(cards).not.toContain('role="switch"');
-  });
-
-  test("the switched-off reminder shows its badge in both", () => {
-    expect(table).toContain("Apagado");
-    expect(cards).toContain("Apagado");
   });
 
   test("the long state of a WhatsApp row can wrap", () => {

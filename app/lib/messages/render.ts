@@ -92,3 +92,23 @@ export async function renderMessageEmail(
     return { kind: "legacy" };
   }
 }
+
+/**
+ * Whether the admin has switched this message off, for a sender that has to
+ * know BEFORE it does something it cannot take back (creating a consent link,
+ * reopening a signed consent). A switch that cannot be read is not a switch:
+ * false, so the email that has always gone out goes out. Never throws.
+ */
+export async function isMessageOff(
+  key: MessageKey,
+  locale: CampaignLocale,
+  load: typeof loadMessageRow = loadMessageRow,
+): Promise<boolean> {
+  try {
+    const row = await load(key, locale);
+    return chooseDelivery(key, row, locale) === "skip";
+  } catch (err) {
+    console.error(`[messages] ${key}/${locale} switch unreadable:`, err);
+    return false;
+  }
+}

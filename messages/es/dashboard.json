@@ -1100,7 +1100,6 @@
     "templateButtonValue": "Esa plantilla tiene un botón con un enlace variable, y los mensajes no rellenan botones. Elige otra.",
     "paramCountMismatch": "Los datos no coinciden con los que pide la plantilla.",
     "kindNotAllowedForChannel": "Este tipo de campaña no está disponible por WhatsApp.",
-    "cannotDisable": "Este mensaje no se puede desactivar: una clienta que ha pagado se quedaría sin su correo.",
     "unknownVariable": "Usa solo las variables que ofrece este mensaje.",
     "linkNotAllowed": "Un enlace solo puede empezar por https://, http:// o mailto:.",
     "blockNotAllowed": "Este bloque no está permitido en un mensaje.",
@@ -1305,6 +1304,7 @@
           "no_email": "Este contacto no tiene email.",
           "signed": "Ya está firmado.",
           "failed": "No se pudo enviar.",
+          "message_off": "Este mensaje está apagado en Mensajes. Actívalo para enviarlo.",
           "not_signed": "Este consentimiento no está firmado.",
           "conflict": "El consentimiento ha cambiado. Recarga la ficha e inténtalo de nuevo."
         },
@@ -2397,14 +2397,10 @@
       "resetNo": "Cancelar",
       "resetDone": "Mensaje restablecido",
       "resetNothing": "No había nada que restablecer",
-      "resetKeptDisabled": "Restablecido. El recordatorio sigue apagado.",
+      "resetKeptDisabled": "Restablecido. El mensaje sigue apagado.",
+      "offNote": "Este mensaje está apagado: no se envía. Actívalo en la lista de Mensajes.",
       "reminder": {
         "note": "Se envía siempre en español: la reserva no guarda el idioma del cliente.",
-        "switch": "Enviar el recordatorio por correo",
-        "hintOn": "Se envía un recordatorio por correo antes de cada cita.",
-        "hintOff": "Apagado: no se envía el recordatorio por correo.",
-        "turnedOn": "Recordatorio por correo activado",
-        "turnedOff": "Recordatorio por correo apagado",
         "forWhatsApp": "Para recordatorios por WhatsApp, crea un Aviso de cita en Campañas."
       },
       "corrupt": "El texto guardado está dañado y no se puede abrir. Restablécelo para empezar de nuevo.",

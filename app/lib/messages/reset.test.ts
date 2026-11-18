@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
-import { CLEARED_COLUMNS, keepsSwitch, resetPlan } from "./reset";
+import { MESSAGE_KEYS } from "./catalog";
+import { CLEARED_COLUMNS, resetPlan } from "./reset";
 
 describe("resetPlan", () => {
   it("does nothing when there is no saved row", () => {
@@ -10,38 +10,22 @@ describe("resetPlan", () => {
     }
   });
 
-  it("clears a switched-off reminder and keeps it off", () => {
-    expect(resetPlan("booking_reminder", "email", { enabled: false })).toBe(
-      "clear",
-    );
-  });
-
-  it("deletes a reminder that is on: with no text it is the legacy email", () => {
-    expect(resetPlan("booking_reminder", "email", { enabled: true })).toBe(
-      "delete",
-    );
-    // A null or odd value in the column is not "off".
-    expect(
-      resetPlan("booking_reminder", "email", { enabled: null as never }),
-    ).toBe("delete");
-  });
-
-  it("deletes the row of every message that cannot be switched off", () => {
+  it("clears a switched-off row of any message and channel and keeps it off", () => {
     for (const key of MESSAGE_KEYS) {
-      if (MESSAGE_CATALOG[key].canDisable) continue;
-      expect(resetPlan(key, "email", { enabled: true })).toBe("delete");
-      // Even a stray `false` there: nothing may stay switched off.
-      expect(resetPlan(key, "email", { enabled: false })).toBe("delete");
+      expect(resetPlan(key, "email", { enabled: false })).toBe("clear");
+      expect(resetPlan(key, "whatsapp", { enabled: false })).toBe("clear");
     }
   });
 
-  it("deletes the WhatsApp row, switched off or not", () => {
-    expect(resetPlan("booking_reminder", "whatsapp", { enabled: false })).toBe(
-      "delete",
-    );
-    expect(resetPlan("booking_reminder", "whatsapp", { enabled: true })).toBe(
-      "delete",
-    );
+  it("deletes a row that is on: with no text it is the legacy email, and a WhatsApp row with no template sends nothing", () => {
+    for (const key of MESSAGE_KEYS) {
+      expect(resetPlan(key, "email", { enabled: true })).toBe("delete");
+      expect(resetPlan(key, "whatsapp", { enabled: true })).toBe("delete");
+      // A null or odd value in the column is not "off".
+      expect(resetPlan(key, "email", { enabled: null as never })).toBe(
+        "delete",
+      );
+    }
   });
 });
 
@@ -56,15 +40,5 @@ describe("CLEARED_COLUMNS", () => {
       whatsapp_params: [],
     });
     expect(CLEARED_COLUMNS).not.toHaveProperty("enabled");
-  });
-});
-
-describe("keepsSwitch", () => {
-  it("is the email of a message that can be switched off, and nothing else", () => {
-    for (const key of MESSAGE_KEYS) {
-      expect(keepsSwitch(key, "email")).toBe(MESSAGE_CATALOG[key].canDisable);
-      expect(keepsSwitch(key, "whatsapp")).toBe(false);
-    }
-    expect(keepsSwitch("booking_reminder", "email")).toBe(true);
   });
 });

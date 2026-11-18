@@ -195,8 +195,8 @@ async function handle(request: NextRequest) {
 
     // Switched off: nothing is sent and the booking is not stamped, so turning
     // the reminder back on still reaches whoever is inside the window then.
-    // The booking history has no entry for reminders today, so the omission is
-    // logged once, after the loop.
+    // The booking history has no entry for reminders (one a booking an hour
+    // would bury the real ones), so the omission is logged once, after the loop.
     if (custom.kind === "skip") {
       switchedOff++;
       skipped++;
@@ -230,8 +230,8 @@ async function handle(request: NextRequest) {
   }
 
   if (switchedOff > 0) {
-    console.info(
-      `[cron/booking-reminders] reminder switched off: ${switchedOff} not sent`,
+    console.warn(
+      `[cron/booking-reminders] booking_reminder is switched off: ${switchedOff} not sent`,
     );
   }
 

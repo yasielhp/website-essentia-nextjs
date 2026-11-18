@@ -604,12 +604,21 @@ describe("any failure of the new composer is the legacy email", () => {
     }
   });
 
-  test("only the reminder can be skipped", async () => {
+  test("every message can be skipped when its row says it is off, and a row that is on, or says nothing, is not", async () => {
     for (const key of MESSAGE_KEYS) {
-      const off = row({ enabled: false, doc: defaultContent(key, "es").doc });
-      expect(chooseDelivery(key, off, "es")).toBe(
-        MESSAGE_CATALOG[key].canDisable ? "skip" : "legacy",
+      const doc = defaultContent(key, "es").doc;
+      expect(chooseDelivery(key, row({ enabled: false, doc }), "es")).toBe(
+        "skip",
       );
+      expect(chooseDelivery(key, row({ enabled: true, doc }), "es")).toBe(
+        "legacy",
+      );
+      // A null or odd value in the column is not "off".
+      expect(
+        chooseDelivery(key, row({ enabled: null as never, doc }), "es"),
+      ).toBe("legacy");
+      // No row at all: on, and the email that has always gone out.
+      expect(chooseDelivery(key, null, "es")).toBe("legacy");
     }
   });
 });

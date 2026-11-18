@@ -1,6 +1,11 @@
 import { MESSAGE_KEYS, type MessageKey } from "./catalog";
 import { editableLocales } from "./editor-state";
-import { isSwitchedOff, rowHasText } from "./reminder-switch";
+import {
+  isSwitchedOff,
+  rowHasText,
+  summarizeSwitch,
+  type SwitchSummary,
+} from "./reminder-switch";
 import type { MessageCatalogEntry, MessageTemplateRowView } from "./types";
 import {
   WHATSAPP_MESSAGE_KEYS,
@@ -50,8 +55,8 @@ export type EmailListRow = {
   status: EmailStatusSummary;
   /** The languages whose saved text cannot be read. */
   corrupt: Locale[];
-  /** The reminder, switched off. */
-  off: boolean;
+  /** The switch of the row: both languages together. */
+  switch: SwitchSummary;
   /** The most recent save among the admin's own texts, and who made it. */
   updatedAt: string | null;
   updatedByName: string | null;
@@ -68,8 +73,6 @@ export type WhatsAppSummary = {
   problems: { locale: Locale; issue: string }[];
   /** A saved template that cannot be judged because the templates could not be read. */
   unknown: Locale[];
-  /** A row saved switched off. */
-  off: Locale[];
 };
 
 export function summarizeWhatsApp(
@@ -90,7 +93,6 @@ export function summarizeWhatsApp(
       return state.kind === "invalid" ? [{ locale, issue: state.issue }] : [];
     }),
     unknown: order.filter((l) => states[l].kind === "unknown"),
-    off: order.filter((l) => states[l].kind === "off"),
   };
 }
 
@@ -100,6 +102,8 @@ export type WhatsAppListRow = {
   key: MessageKey;
   locales: Locale[];
   summary: WhatsAppSummary;
+  /** The switch of the row: both languages together, whether or not it is set up. */
+  switch: SwitchSummary;
   /** There is a saved row in some language, even if it cannot be sent: the link says "Edit". */
   saved: boolean;
 };
@@ -108,11 +112,10 @@ export type ListRow = EmailListRow | WhatsAppListRow;
 
 export function messageListRows(
   rows: MessageTemplateRowView[],
-  catalog: Pick<MessageCatalogEntry, "key" | "canDisable">[],
+  _catalog: Pick<MessageCatalogEntry, "key">[],
   templates: WhatsAppTemplateRow[] | null,
 ): ListRow[] {
   return MESSAGE_KEYS.flatMap((key): ListRow[] => {
-    const canDisable = Boolean(catalog.find((c) => c.key === key)?.canDisable);
     const locales = editableLocales(key);
     const found = locales.map((locale) => {
       const row = rows.find(
@@ -136,7 +139,10 @@ export function messageListRows(
         custom.map((f) => f.locale),
       ),
       corrupt: found.filter((f) => f.corrupt).map((f) => f.locale),
-      off: found.some((f) => isSwitchedOff(canDisable, f.row)),
+      switch: summarizeSwitch(
+        locales,
+        found.filter((f) => isSwitchedOff(f.row)).map((f) => f.locale),
+      ),
       updatedAt: latest?.row?.updated_at ?? null,
       updatedByName: latest?.row?.updated_by_name ?? null,
       reminderNote: key === "booking_reminder",
@@ -167,6 +173,10 @@ export function messageListRows(
         key,
         locales: ["es", "en"],
         summary: summarizeWhatsApp(states),
+        switch: summarizeSwitch(
+          ["es", "en"],
+          (["es", "en"] as const).filter((l) => isSwitchedOff(saved(l))),
+        ),
         saved: saved("es") !== undefined || saved("en") !== undefined,
       },
     ];

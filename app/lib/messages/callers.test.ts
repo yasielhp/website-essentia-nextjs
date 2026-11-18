@@ -30,7 +30,14 @@ type Sent = { to: string; subject: string; html: string };
 type Ctx = { table: string; ops: string[] };
 
 let sent: Sent[] = [];
-let recorded: { summary?: string }[] = [];
+let recorded: {
+  summary?: string;
+  status?: string;
+  channel?: string;
+  event?: string;
+  error?: string | null;
+  bookingId?: string;
+}[] = [];
 let templates: () => { data: unknown; error: unknown } = () => ({
   data: null,
   error: null,
@@ -471,5 +478,164 @@ describe("voucher confirmation (bonus_purchase)", () => {
     expect(sent[0]!.subject).toBe("Asunto del centro para Ana");
     expect(sent[0]!.html).toContain("Tu bono de 5 sesiones.");
     expect(sent[0]!.html).toContain("Importe pagado");
+  });
+});
+
+// ── a message switched off, for every caller ───────────────────────────────
+
+/** What the fake `message_templates` answers for a message that is switched off, with or without a text of its own. */
+const OFF = [
+  [
+    "with a text of its own",
+    () => ({ data: { ...edited("Texto."), enabled: false }, error: null }),
+  ],
+  [
+    "with no text",
+    () => ({
+      data: {
+        subject: null,
+        preheader: null,
+        title: null,
+        doc: null,
+        enabled: false,
+      },
+      error: null,
+    }),
+  ],
+] as const;
+
+describe("a message that is switched off sends nothing, throws nothing and says so", () => {
+  describe("cancellation by link", () => {
+    beforeEach(() => {
+      bookingRow = {
+        id: "b-1",
+        service_id: "svc-1",
+        service_title: "Drenaje linfático",
+        date: FUTURE,
+        time: "10:30",
+        duration: "60 min",
+        status: "confirmed",
+        first_name: "Ana",
+        last_name: "García",
+        email: "ana@example.test",
+        staff_id: null,
+        service_tiers: { label: "Sesión individual" },
+      };
+    });
+    for (const [label, answer] of OFF) {
+      test(`${label}: the booking is still cancelled, no email, and the history has the entry`, async () => {
+        templates = answer;
+        const res = await cancelBookingByToken("tok", "es");
+        expect(res.ok).toBe(true);
+        expect(sent).toHaveLength(0);
+        const note = recorded.find((e) => e.status === "skipped");
+        expect(note).toMatchObject({
+          bookingId: "b-1",
+          channel: "email",
+          event: "cancelled",
+          error: "message_off",
+        });
+        expect(note?.summary).toContain("apagado");
+      });
+    }
+  });
+
+  describe("consent request, sent by a person", () => {
+    beforeEach(() => {
+      contactRow = {
+        email: "ana@example.test",
+        first_name: "Ana",
+        preferred_language: "es",
+      };
+    });
+    for (const [label, answer] of OFF) {
+      test(`${label}: it answers with a clear error, sends nothing and does not pretend`, async () => {
+        templates = answer;
+        const res = await sendConsentEmail("token", "contact-1");
+        expect(res).toEqual({ error: "message_off" });
+        expect(sent).toHaveLength(0);
+      });
+    }
+    test("the switch that cannot be read does not stop it: it is sent", async () => {
+      const quiet = spyOn(console, "error").mockImplementation(() => {});
+      templates = () => {
+        throw new Error("db down");
+      };
+      const res = await sendConsentEmail("token", "contact-1");
+      quiet.mockRestore();
+      expect(res.error).toBeNull();
+      expect(sent).toHaveLength(1);
+    });
+  });
+
+  describe("paid booking confirmation", () => {
+    beforeEach(() => {
+      bookingRow = {
+        first_name: "Ana",
+        last_name: "García",
+        email: "ana@example.test",
+        service_title: "Drenaje linfático",
+        date: FUTURE,
+        time: "10:30",
+        duration: "60 min",
+        price_eur: 45,
+        amount_paid_eur: 0,
+        payment_status: "pending",
+        status: "pending",
+        stripe_session_id: null,
+        contact_id: "contact-1",
+        staff_id: null,
+      };
+      contactRow = { preferred_language: "es" };
+    });
+    for (const [label, answer] of OFF) {
+      test(`${label}: the payment is still handled, no email, and the history has the entry`, async () => {
+        templates = answer;
+        await handleBookingPaid("b-1", 4500);
+        expect(sent).toHaveLength(0);
+        const note = recorded.find((e) => e.status === "skipped");
+        expect(note).toMatchObject({
+          bookingId: "b-1",
+          channel: "email",
+          event: "paid",
+          error: "message_off",
+        });
+        expect(note?.summary).toContain("apagado");
+        // The payment itself is in the history as always.
+        expect(recorded.some((e) => e.channel === "payment")).toBe(true);
+      });
+    }
+  });
+
+  describe("voucher confirmation", () => {
+    beforeEach(() => {
+      orderRow = {
+        id: "o-1",
+        tier_id: "t-1",
+        plan_id: "p-1",
+        sessions: 5,
+        price_eur: 180,
+        validity_days: 365,
+        first_name: "Ana",
+        last_name: "García",
+        email: "ana@example.test",
+        phone: "+34600000000",
+        preferred_language: "es",
+        status: "pending",
+      };
+    });
+    for (const [label, answer] of OFF) {
+      test(`${label}: no email, no throw, and a warning is logged (a voucher has no booking history)`, async () => {
+        templates = answer;
+        const warn = spyOn(console, "warn").mockImplementation(() => {});
+        await handleBonusPaid("order-1", 18000);
+        const logged = warn.mock.calls.map((c) => String(c[0]));
+        warn.mockRestore();
+        expect(sent).toHaveLength(0);
+        expect(
+          logged.some((l) => l.includes("bonus_purchase") && l.includes("off")),
+        ).toBe(true);
+      });
+    }
   });
 });

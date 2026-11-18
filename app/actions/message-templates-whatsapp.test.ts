@@ -139,13 +139,11 @@ describe("saveMessageTemplate — a WhatsApp row", () => {
     expect(upserts).toHaveLength(0);
   });
 
-  test("a row on WhatsApp cannot be switched off", async () => {
+  test("the switch is not part of a save: a text saved with `enabled` in it never writes it", async () => {
     stored = TEMPLATE;
     const out = await save("token", { ...input, enabled: false });
-    expect(out).toMatchObject({
-      ok: false,
-      fieldErrors: { enabled: "cannotDisable" },
-    });
-    expect(upserts).toHaveLength(0);
+    expect(out.ok).toBe(true);
+    expect(upserts).toHaveLength(1);
+    expect(upserts[0]).not.toHaveProperty("enabled");
   });
 });

@@ -368,26 +368,18 @@ describe("validateMessageTemplate — shape", () => {
   });
 });
 
-describe("validateMessageTemplate — only the reminder can be switched off", () => {
+describe("validateMessageTemplate — any message can be switched off", () => {
   for (const key of MESSAGE_KEYS) {
-    if (MESSAGE_CATALOG[key].canDisable) {
-      it(`${key} can be switched off`, () => {
-        expect(validateMessageTemplate(email({ key, enabled: false })).ok).toBe(
-          true,
-        );
-      });
-    } else {
-      it(`${key} cannot: a client who paid would be left without it`, () => {
-        const plain = { subject: "Hola", title: "Hola", doc: null };
-        expect(errorsOf(email({ key, enabled: false, ...plain }))).toEqual({
-          enabled: "cannotDisable",
-        });
-        // Also when only the switch is sent.
-        expect(
-          errorsOf({ key, channel: "email", locale: "es", enabled: false }),
-        ).toEqual({ enabled: "cannotDisable" });
-      });
-    }
+    it(`${key}: the validator has no opinion on the switch (the switch is its own action)`, () => {
+      expect(
+        validateMessageTemplate({
+          key,
+          channel: "email",
+          locale: "es",
+          enabled: false,
+        }).ok,
+      ).toBe(true);
+    });
   }
 });
 
@@ -640,18 +632,6 @@ describe("validateMessageTemplate — WhatsApp", () => {
     expect(errorsOf(whatsapp({ whatsappTemplateId: null }))).toEqual({
       whatsappTemplateId: "templateRequired",
     });
-  });
-
-  it("no message that goes out on WhatsApp can be switched off: a paid client would be left without it", () => {
-    expect(
-      errorsOf(
-        whatsapp({
-          enabled: false,
-          whatsappTemplateId: null,
-          whatsappParams: [],
-        }),
-      ),
-    ).toEqual({ enabled: "cannotDisable" });
   });
 
   it("a save with none of the WhatsApp fields brings no template and changes none", () => {

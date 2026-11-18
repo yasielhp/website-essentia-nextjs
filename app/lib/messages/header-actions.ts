@@ -11,12 +11,8 @@ export type HeaderActionsInput = {
   dirty: boolean;
   saving: boolean;
   testing: boolean;
-  /** The reminder's own switch is being saved. */
-  switching: boolean;
   /** The admin has saved something here (a text, or a WhatsApp notice). */
   hasSaved: boolean;
-  /** Email only: the message is switched on (the reminder can be off). */
-  enabled: boolean;
   /** WhatsApp only: the server has an account to send through. */
   canTest: boolean;
   /** WhatsApp only: a template is saved, so there is something to test. */
@@ -34,7 +30,7 @@ export type HeaderActions = {
 };
 
 export function headerActions(input: HeaderActionsInput): HeaderActions {
-  const { channel, dirty, saving, testing, switching } = input;
+  const { channel, dirty, saving, testing } = input;
   const whatsapp = channel === "whatsapp";
   return {
     test: {
@@ -46,11 +42,11 @@ export function headerActions(input: HeaderActionsInput): HeaderActions {
       busy: testing,
     },
     save: {
-      disabled: !dirty || saving || (whatsapp ? !input.usable : switching),
+      disabled: !dirty || saving || (whatsapp && !input.usable),
       busy: saving,
     },
     reset: {
-      shown: whatsapp ? input.hasSaved : input.hasSaved || !input.enabled,
+      shown: input.hasSaved,
       disabled: saving,
     },
     help: dirty ? "saveFirst" : "testNote",

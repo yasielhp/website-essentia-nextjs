@@ -12,6 +12,7 @@ import {
   LEGACY_BOOKING_SUBJECTS,
   type BookingNoticeKey,
 } from "@/lib/messages/legacy-subjects";
+import { emailOffSummary, OFF_REASON } from "@/lib/messages/off-note";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { formatLongDate } from "@/lib/format-date";
@@ -490,14 +491,30 @@ export async function notifyBookingCore(
       }),
   });
 
-  await sendAndRecord({
-    bookingId,
-    event,
-    to: clientEmail,
-    subject: custom.kind === "custom" ? custom.subject : legacySubject,
-    html: custom.kind === "custom" ? custom.html : clientTemplates[event](),
-    ...actor,
-  });
+  if (custom.kind === "skip") {
+    // The admin switched this message off in the list of Messages: nothing is
+    // sent to the client, and the history says so, so "nobody told me" has an
+    // answer. The rest of the event (the contact, the staff, WhatsApp) goes on.
+    await recordBookingEvent({
+      bookingId,
+      channel: "email",
+      event,
+      summary: emailOffSummary(messageKey[event]),
+      recipient: clientEmail,
+      status: "skipped",
+      error: OFF_REASON,
+      ...actor,
+    });
+  } else {
+    await sendAndRecord({
+      bookingId,
+      event,
+      to: clientEmail,
+      subject: custom.kind === "custom" ? custom.subject : legacySubject,
+      html: custom.kind === "custom" ? custom.html : clientTemplates[event](),
+      ...actor,
+    });
+  }
 
   // ── Sync contact record ────────────────────────────────────────
   if (event === "received" || event === "confirmed") {

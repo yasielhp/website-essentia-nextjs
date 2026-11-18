@@ -1100,7 +1100,6 @@
     "templateButtonValue": "That template has a button with a variable link, and messages do not fill buttons. Choose another.",
     "paramCountMismatch": "The values do not match what the template asks for.",
     "kindNotAllowedForChannel": "This campaign type is not available on WhatsApp.",
-    "cannotDisable": "This message cannot be switched off: a client who has paid would be left without their email.",
     "unknownVariable": "Use only the variables this message offers.",
     "linkNotAllowed": "A link can only start with https://, http:// or mailto:.",
     "blockNotAllowed": "This block is not allowed in a message.",
@@ -1305,6 +1304,7 @@
           "no_email": "This contact has no email.",
           "signed": "Already signed.",
           "failed": "Could not send.",
+          "message_off": "This message is switched off in Messages. Switch it on to send it.",
           "not_signed": "This consent is not signed.",
           "conflict": "The consent has changed. Reload the file and try again."
         },
@@ -2397,14 +2397,10 @@
       "resetNo": "Cancel",
       "resetDone": "Message reset",
       "resetNothing": "There was nothing to reset",
-      "resetKeptDisabled": "Reset. The reminder is still switched off.",
+      "resetKeptDisabled": "Reset. The message is still switched off.",
+      "offNote": "This message is switched off: it is not sent. Switch it on in the list of Messages.",
       "reminder": {
         "note": "Always sent in Spanish: a booking does not keep the client's language.",
-        "switch": "Send the email reminder",
-        "hintOn": "An email reminder goes out before every appointment.",
-        "hintOff": "Switched off: the email reminder is not sent.",
-        "turnedOn": "Email reminder switched on",
-        "turnedOff": "Email reminder switched off",
         "forWhatsApp": "For WhatsApp reminders, create an Appointment notice in Campaigns."
       },
       "corrupt": "The saved text is damaged and cannot be opened. Reset it to start again.",

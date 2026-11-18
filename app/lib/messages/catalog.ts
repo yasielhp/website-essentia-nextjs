@@ -114,12 +114,6 @@ export type MessageDefinition = {
    */
   afterClosing: FixedBlock[];
   /**
-   * Whether the admin may switch the message off. Only the reminder: it is the
-   * one nobody is owed. Switching off the confirmation would leave a client who
-   * has paid without their email.
-   */
-  canDisable: boolean;
-  /**
    * Whether the message may also go out on WhatsApp. Two conditions: the
    * client opted in to hear about exactly this (the checkbox promises "the
    * confirmation and the reminder of my appointment"), and the message hangs
@@ -145,7 +139,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["details_card", "payment_note", "cancel_link"],
     afterClosing: ["cancel_link"],
-    canDisable: false,
     // An acknowledgement of a request, not the confirmation the client opted
     // in to hear about.
     whatsappEligible: false,
@@ -169,7 +162,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "cancel_link",
     ],
     afterClosing: [],
-    canDisable: false,
     whatsappEligible: true,
   },
   // The email that follows an online payment (Redsys webhook). A different
@@ -193,7 +185,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
       "consent_button",
     ],
     afterClosing: [],
-    canDisable: false,
     // A confirmation, and the paid booking has a booking behind it.
     whatsappEligible: true,
   },
@@ -209,7 +200,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["details_card", "calendar_button", "cancel_link"],
     afterClosing: [],
-    canDisable: false,
     // The opt-in text names confirmation and reminder only.
     whatsappEligible: false,
   },
@@ -224,7 +214,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["details_card"],
     afterClosing: [],
-    canDisable: false,
     whatsappEligible: false,
   },
   booking_reminder: {
@@ -239,7 +228,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["details_card", "location", "calendar_button", "cancel_link"],
     afterClosing: [],
-    canDisable: true,
     // Its WhatsApp version is not a message here but an appointment notice (a
     // campaign of that kind), which can be set several times and at any hour
     // before or after the booking. One fixed WhatsApp reminder as well would
@@ -250,7 +238,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     variables: ["first_name", "consent_url"],
     fixed: ["consent_button"],
     afterClosing: [],
-    canDisable: false,
     // No booking behind it: the sender could not find a number to write to.
     whatsappEligible: false,
   },
@@ -264,7 +251,6 @@ export const MESSAGE_CATALOG: Record<MessageKey, MessageDefinition> = {
     ],
     fixed: ["bonus_card"],
     afterClosing: [],
-    canDisable: false,
     // Bought on the website, with no booking and no WhatsApp opt-in.
     whatsappEligible: false,
   },

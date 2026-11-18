@@ -32,7 +32,15 @@ import type {
  */
 
 type Sent = { to: string; subject: string; html: string };
-type Recorded = { summary?: string; status?: string; channel?: string };
+type Recorded = {
+  summary?: string;
+  status?: string;
+  channel?: string;
+  bookingId?: string;
+  event?: string;
+  error?: string | null;
+  recipient?: string | null;
+};
 
 const CONSENT = "https://example.test/consent?token=c1";
 const TOKEN = "tok-123";
@@ -310,11 +318,49 @@ describe("an edited message is what the client receives", () => {
     });
   }
 
-  test("a switched-off confirmation still goes out: only the reminder can be off", async () => {
-    templates = () => ({ data: { ...edited, enabled: false }, error: null });
+  for (const event of EVENTS) {
+    for (const withText of [true, false]) {
+      test(`${event}: switched off ${withText ? "with a text of its own" : "with no text"}, no email goes to the client, nothing throws, and the history says why`, async () => {
+        templates = () => ({
+          data: withText
+            ? { ...edited, enabled: false }
+            : {
+                subject: null,
+                preheader: null,
+                title: null,
+                doc: null,
+                enabled: false,
+              },
+          error: null,
+        });
+        await notifyBookingCore(payload(event, "es"), actor);
+        expect(sent.filter((e) => e.to === "ana@example.test")).toHaveLength(0);
+        const note = recorded.find((e) => e.status === "skipped");
+        expect(note).toMatchObject({
+          bookingId: "b-1",
+          channel: "email",
+          event,
+          status: "skipped",
+          error: "message_off",
+          recipient: "ana@example.test",
+        });
+        expect(note?.summary).toContain("apagado");
+      });
+    }
+  }
+
+  test("on, or with no row, or with a database that cannot be read: it is sent", async () => {
+    templates = () => ({ data: { ...edited, enabled: true }, error: null });
     await notifyBookingCore(payload("confirmed", "es"), actor);
-    expect(sent).toHaveLength(1);
     expect(clientEmail().subject).toBe("Asunto del centro para Ana García");
+    sent = [];
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    templates = () => {
+      throw new Error("db down");
+    };
+    await notifyBookingCore(payload("confirmed", "es"), actor);
+    quiet.mockRestore();
+    expect(clientEmail().html).toBe(legacyHtml("confirmed", "es"));
   });
 });
 

@@ -67,14 +67,6 @@ export function messageTemplateChoices(
 export type WhatsAppRowState =
   /** Nothing saved, or no template chosen: nothing is sent. */
   | { kind: "none" }
-  /**
-   * The row is switched off: nothing is sent. Nothing on this screen produces
-   * it (the only switch is the email reminder's, and the sender stops a
-   * WhatsApp reminder by deleting its row), but a row saved with
-   * `enabled: false` by a direct call is honoured by the sender, and the list
-   * must not call it "set up". So the state stays, as the honest reading.
-   */
-  | { kind: "off" }
   | { kind: "configured"; templateName: string }
   | { kind: "invalid"; issue: TemplateIssue | "dynamic_url" }
   /** The templates could not be read, so the saved one cannot be judged. */
@@ -93,7 +85,8 @@ export function whatsappRowState(
   locale: CampaignLocale,
 ): WhatsAppRowState {
   if (!saved || !saved.whatsapp_template_id) return { kind: "none" };
-  if (saved.enabled === false) return { kind: "off" };
+  // The switch is not the status: a row switched off is still read as what it
+  // is set up as, and the list shows the switch beside it.
   if (templates === null) return { kind: "unknown" };
   const template = templates.find((t) => t.id === saved.whatsapp_template_id);
   const issue = whatsappTemplateEligibility(

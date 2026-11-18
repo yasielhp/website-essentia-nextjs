@@ -66,6 +66,11 @@ export type ClientSkipReason =
 export type ClientWhatsAppDecision =
   | { kind: "none" }
   | { kind: "skip"; reason: ClientSkipReason; to: string }
+  /**
+   * The message is switched off in the list of Messages: nothing is sent, and
+   * a client who WOULD have been messaged gets one entry saying so.
+   */
+  | { kind: "off"; to: string }
   | {
       kind: "send";
       to: string;
@@ -182,6 +187,10 @@ export function decideClientWhatsApp(input: {
   const to = clientRecipient(contact, booking);
   if (!to) return { kind: "none" };
   if (input.phoneSuppressed) return { kind: "none" };
+  // Switched off (strictly false: a null or an odd value is on). Judged before
+  // the template, so a switched-off message with a template that stopped
+  // working does not leave the configuration entry the admin would act on.
+  if (row.enabled === false) return { kind: "off", to };
 
   // From here the client would have been messaged: a template that cannot be
   // sent is the admin's to fix, and shows.

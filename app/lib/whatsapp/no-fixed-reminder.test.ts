@@ -41,10 +41,6 @@ describe("the fixed WhatsApp reminder is gone", () => {
   test("the reminder is not a message that goes out on WhatsApp", () => {
     expect(MESSAGE_CATALOG.booking_reminder.whatsappEligible).toBe(false);
   });
-
-  test("and the reminder email can still be switched off, as it always could", () => {
-    expect(MESSAGE_CATALOG.booking_reminder.canDisable).toBe(true);
-  });
 });
 
 describe("codeOnly", () => {

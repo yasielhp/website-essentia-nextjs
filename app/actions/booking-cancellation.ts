@@ -6,6 +6,7 @@ import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
 import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
+import { emailOffSummary, OFF_REASON } from "@/lib/messages/off-note";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
@@ -174,35 +175,51 @@ export async function cancelBookingByToken(
             duration: booking.duration,
           }),
       });
-      if (custom.kind === "custom") sentSubject = custom.subject;
-      const { error: sendError, id } = await sendEmail({
-        to: booking.email,
-        subject: sentSubject,
-        html:
-          custom.kind === "custom"
-            ? custom.html
-            : bookingCancelledEmail({
-                name: booking.first_name ?? "",
-                service,
-                sessionType,
-                date,
-                time: booking.time ?? "",
-                duration: booking.duration,
-                locale,
-              }),
-      });
-      await recordBookingEvent(
-        sendError
-          ? {
-              ...entry,
-              summary: sentSubject,
-              status: "failed",
-              error: sendError.message,
-            }
-          : // Resend's id, so its webhook can advance this row when the message
-            // is delivered, opened or bounces.
-            { ...entry, summary: sentSubject, status: "sent", providerId: id },
-      );
+      if (custom.kind === "skip") {
+        // Switched off in the list of Messages: the cancellation stands, the
+        // client is not written to, and the history says why.
+        await recordBookingEvent({
+          ...entry,
+          summary: emailOffSummary("booking_cancelled"),
+          status: "skipped",
+          error: OFF_REASON,
+        });
+      } else {
+        if (custom.kind === "custom") sentSubject = custom.subject;
+        const { error: sendError, id } = await sendEmail({
+          to: booking.email,
+          subject: sentSubject,
+          html:
+            custom.kind === "custom"
+              ? custom.html
+              : bookingCancelledEmail({
+                  name: booking.first_name ?? "",
+                  service,
+                  sessionType,
+                  date,
+                  time: booking.time ?? "",
+                  duration: booking.duration,
+                  locale,
+                }),
+        });
+        await recordBookingEvent(
+          sendError
+            ? {
+                ...entry,
+                summary: sentSubject,
+                status: "failed",
+                error: sendError.message,
+              }
+            : // Resend's id, so its webhook can advance this row when the message
+              // is delivered, opened or bounces.
+              {
+                ...entry,
+                summary: sentSubject,
+                status: "sent",
+                providerId: id,
+              },
+        );
+      }
     } catch (err) {
       await recordBookingEvent({
         ...entry,

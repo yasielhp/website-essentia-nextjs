@@ -61,7 +61,6 @@ export const MESSAGE_VALIDATION_KEYS = [
   "kickerMisplaced",
   "blockRequired",
   "blockRepeated",
-  "cannotDisable",
   "unknownVariable",
   "linkNotAllowed",
   "blockNotAllowed",
@@ -415,10 +414,6 @@ export function validateMessageTemplate(
   const enabled = data.enabled;
   const errors: Errors = {};
   const unknown = new Set<string>();
-
-  // Switching off the confirmation would leave a client who has paid without
-  // their email: only the message that `canDisable` may be off.
-  if (enabled === false && !def.canDisable) errors.enabled = "cannotDisable";
 
   if (data.channel === "whatsapp") {
     if (!def.whatsappEligible) {

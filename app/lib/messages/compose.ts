@@ -43,9 +43,11 @@ export type MessageRow = {
  * - `legacy`: nobody edited it, so the email that has always gone out goes out
  *   again, byte for byte.
  * - `custom`: the admin's version.
- * - `skip`: switched off. Only a message that `canDisable` can be: for every
- *   other one `enabled` is ignored, because a paid client must never be left
- *   without their email by a toggle.
+ * - `skip`: switched off (the switch of its row in the list of messages), for
+ *   any message. Every sender must then send nothing, throw nothing and leave
+ *   it written down; a switch that cannot be read is not a switch (see
+ *   `renderMessageEmail`: it fails towards sending the email that has always
+ *   gone out).
  */
 export type Delivery = "legacy" | "custom" | "skip";
 
@@ -56,8 +58,8 @@ export function chooseDelivery(
 ): Delivery {
   if (!row) return "legacy";
   // Strictly false: a null or an odd value in the column is not "off".
-  if (row.enabled === false && MESSAGE_CATALOG[key].canDisable) return "skip";
-  // A row that only carries the switch (the reminder turned off and on again)
+  if (row.enabled === false) return "skip";
+  // A row that only carries the switch (a message turned off and on again)
   // has no text of its own to send: the legacy email is still the right one.
   // Nor has one whose document says exactly what the default says: saving the
   // default is not an edit.

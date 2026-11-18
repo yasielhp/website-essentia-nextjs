@@ -169,9 +169,7 @@ export function EmailMessagePage({
               }),
               body: t("resetDialog.body"),
               note:
-                catalog.canDisable && saved.enabled === false
-                  ? t("resetDialog.keepsOff")
-                  : undefined,
+                saved.enabled === false ? t("resetDialog.keepsOff") : undefined,
               yes: t("resetDialog.yes"),
               no: t("resetNo"),
             }}

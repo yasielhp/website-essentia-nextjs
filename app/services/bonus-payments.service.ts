@@ -206,6 +206,14 @@ async function sendConfirmation(
         }),
     });
 
+    if (custom.kind === "skip") {
+      // Switched off in the list of Messages. A voucher has no booking, so
+      // there is no history to write to: it is said in the log.
+      console.warn(
+        `[handleBonusPaid] bonus_purchase is switched off: the confirmation for order ${order.id} was not sent`,
+      );
+      return;
+    }
     const { error } = await sendEmail({
       to: order.email,
       subject: custom.kind === "custom" ? custom.subject : legacySubject,

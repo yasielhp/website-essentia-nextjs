@@ -1,6 +1,5 @@
 "use client";
 
-import { ToggleRow } from "@/components/dashboard/toggle-row";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
@@ -42,7 +41,7 @@ import type {
   MessageDefaultEntry,
   MessageTemplateRowView,
 } from "@/lib/messages/types";
-import { rowHasText, switchInput } from "@/lib/messages/reminder-switch";
+import { rowHasText } from "@/lib/messages/reminder-switch";
 import {
   BLOCK_NODE,
   blockNode,
@@ -152,10 +151,9 @@ export function MessageEditor({
   // "Custom" is a text of the admin's own: a row that holds only the switch
   // is still the default.
   const [hasSaved, setHasSaved] = useState(rowHasText(saved));
-  // The reminder's switch is its own state: it saves at once and says nothing
-  // about the form, so it is not a change the form asks about.
-  const [enabled, setEnabled] = useState(saved ? saved.enabled : true);
-  const [switching, setSwitching] = useState(false);
+  // Whether the message is switched on. The switch is in the list of messages,
+  // not here: this page only says so when it is off.
+  const enabled = saved ? saved.enabled !== false : true;
 
   const editorRef = useRef<TiptapEditor | null>(null);
   const lastField = useRef<TextField | "body">("body");
@@ -241,9 +239,7 @@ export function MessageEditor({
     dirty,
     saving,
     testing,
-    switching,
     hasSaved,
-    enabled,
     canTest: true,
     hasTemplate: true,
     usable: true,
@@ -257,8 +253,7 @@ export function MessageEditor({
     }),
     body: t("resetDialog.body"),
     // The reminder, switched off: a reset keeps it off, and says so before.
-    note:
-      catalog.canDisable && !enabled ? t("resetDialog.keepsOff") : undefined,
+    note: !enabled ? t("resetDialog.keepsOff") : undefined,
     yes: t("resetDialog.yes"),
     no: t("resetNo"),
   };
@@ -429,29 +424,6 @@ export function MessageEditor({
     setSaving(false);
   }
 
-  /** Only the switch is sent: the text, saved or not, is not touched. */
-  async function toggle() {
-    if (inFlight.current || switching) return;
-    const next = !enabled;
-    setSwitching(true);
-    try {
-      const result = await saveMessageTemplate(
-        getAccessToken(),
-        switchInput(messageKey, locale, next),
-      );
-      if (result.ok) {
-        setEnabled(next);
-        notifySuccess(next ? t("reminder.turnedOn") : t("reminder.turnedOff"));
-      } else {
-        showError(result);
-      }
-    } catch {
-      showError({ error: "generic" });
-    } finally {
-      setSwitching(false);
-    }
-  }
-
   async function sendTest() {
     if (inFlight.current) return;
     // The test carries the saved version: with a change in the editor that
@@ -534,9 +506,6 @@ export function MessageEditor({
     <div className="flex flex-col gap-6">
       <MessagePageHeader
         title={tEditor("title", { name: tKeys(messageKey) })}
-        extraStatus={
-          catalog.canDisable && !enabled ? t("status.disabled") : undefined
-        }
         help={{
           id: "message-test-help",
           text:
@@ -598,25 +567,24 @@ export function MessageEditor({
         <DraftBanner onRecover={recoverDraft} onDiscard={draft.discard} />
       )}
 
-      {catalog.canDisable && (
-        <div className="flex flex-col gap-2">
-          <ToggleRow
-            checked={enabled}
-            onToggle={() => void toggle()}
-            label={t("reminder.switch")}
-            hint={enabled ? t("reminder.hintOn") : t("reminder.hintOff")}
-            disabled={switching || saving}
-            describedBy="reminder-switch-note"
-          />
-          <p id="reminder-switch-note" className="px-1">
-            <Link
-              href={NEW_APPOINTMENT_NOTICE_HREF}
-              className="text-petroleum-700 inline-block text-xs underline underline-offset-2"
-            >
-              {t("reminder.forWhatsApp")}
-            </Link>
-          </p>
-        </div>
+      {!enabled && (
+        <p
+          id="message-off-note"
+          className="text-petroleum-400 -mt-2 max-w-xl text-xs"
+        >
+          {t("offNote")}
+        </p>
+      )}
+
+      {messageKey === "booking_reminder" && (
+        <p className="-mt-2 px-1">
+          <Link
+            href={NEW_APPOINTMENT_NOTICE_HREF}
+            className="text-petroleum-700 inline-block text-xs underline underline-offset-2"
+          >
+            {t("reminder.forWhatsApp")}
+          </Link>
+        </p>
       )}
 
       <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">

@@ -309,7 +309,7 @@ describe("booking reminders", () => {
   });
 
   test("a reminder switched off sends nothing and stamps nothing", async () => {
-    const info = spyOn(console, "info").mockImplementation(() => {});
+    const info = spyOn(console, "warn").mockImplementation(() => {});
     templates = () => ({
       data: {
         subject: null,
@@ -349,7 +349,7 @@ describe("booking reminders", () => {
   });
 
   test("switched off with two bookings: one log line with the count, nothing sent or stamped", async () => {
-    const info = spyOn(console, "info").mockImplementation(() => {});
+    const info = spyOn(console, "warn").mockImplementation(() => {});
     bookingsInRun = [BOOKING, SECOND];
     templates = () => ({
       data: {

@@ -7,9 +7,7 @@ const email = (over = {}) =>
     dirty: false,
     saving: false,
     testing: false,
-    switching: false,
     hasSaved: false,
-    enabled: true,
     canTest: true,
     hasTemplate: true,
     usable: true,
@@ -22,9 +20,7 @@ const whatsapp = (over = {}) =>
     dirty: false,
     saving: false,
     testing: false,
-    switching: false,
     hasSaved: true,
-    enabled: true,
     canTest: true,
     hasTemplate: true,
     usable: true,
@@ -57,13 +53,9 @@ describe("the email page's actions", () => {
     expect(out.test).toEqual({ disabled: true, busy: true });
     expect(out.save.disabled).toBe(true);
   });
-  test("the reminder's switch in flight keeps Save from running beside it", () => {
-    expect(email({ dirty: true, switching: true }).save.disabled).toBe(true);
-  });
-  test("Reset is offered once there is a text of one's own, or the reminder is switched off", () => {
+  test("Reset is offered once there is a text of one's own, and not for a row that only holds the switch", () => {
     expect(email({ hasSaved: true }).reset.shown).toBe(true);
-    expect(email({ enabled: false }).reset.shown).toBe(true);
-    expect(email({ hasSaved: false, enabled: true }).reset.shown).toBe(false);
+    expect(email({ hasSaved: false }).reset.shown).toBe(false);
   });
 });
 
@@ -85,8 +77,5 @@ describe("the WhatsApp page's actions", () => {
   });
   test("nothing saved yet: no Remove, whatever else", () => {
     expect(whatsapp({ hasSaved: false }).reset.shown).toBe(false);
-    expect(whatsapp({ enabled: false, hasSaved: false }).reset.shown).toBe(
-      false,
-    );
   });
 });

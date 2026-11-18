@@ -264,7 +264,7 @@ describe("the appointment notice strings", () => {
     expect(say("shortBefore", 48)).toBe("48 h antes de la cita");
   });
 
-  test("the reminder switch points to the campaign and no longer talks of a WhatsApp reminder of its own", () => {
+  test("the reminder page points to the campaign and no longer talks of a WhatsApp reminder of its own", () => {
     expect(locales.es["messages.email.reminder.forWhatsApp"]).toContain(
       "Aviso de cita",
     );
@@ -272,9 +272,10 @@ describe("the appointment notice strings", () => {
       "Appointment notice",
     );
     for (const locale of ["es", "en"] as const) {
-      expect(locales[locale]["messages.email.reminder.turnedOff"]).not.toMatch(
-        /WhatsApp/,
-      );
+      // The switch moved to the list of Messages: nothing of it is left here.
+      expect(
+        locales[locale]["messages.email.reminder.turnedOff"],
+      ).toBeUndefined();
       expect(
         locales[locale]["messages.email.whatsapp.when.booking_reminder"],
       ).toBeUndefined();

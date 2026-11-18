@@ -5,6 +5,7 @@ import type {
 } from "@/lib/booking-events/types";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, type MessageKey } from "@/lib/messages/catalog";
+import { OFF_REASON, whatsappOffSummary } from "@/lib/messages/off-note";
 import type { CampaignLocale } from "@/types/campaign";
 import {
   isWhatsAppConfigured,
@@ -155,6 +156,16 @@ export async function deliverClientWhatsApp(
       console.error("[whatsapp/client] could not record:", err);
     }
   };
+
+  if (decision.kind === "off") {
+    await write({
+      ...entry,
+      summary: whatsappOffSummary(input.key),
+      status: "skipped",
+      error: OFF_REASON,
+    });
+    return "skipped";
+  }
 
   if (decision.kind === "skip") {
     await write({

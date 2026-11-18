@@ -16,7 +16,7 @@ import {
 import { getAdminClient } from "@/lib/insforge-admin";
 import { MESSAGE_CATALOG, MESSAGE_KEYS } from "@/lib/messages/catalog";
 import type { MessageRow } from "@/lib/messages/compose";
-import { CLEARED_COLUMNS, keepsSwitch, resetPlan } from "@/lib/messages/reset";
+import { CLEARED_COLUMNS, resetPlan } from "@/lib/messages/reset";
 import { editorIds, editorNames, withEditors } from "@/lib/messages/editors";
 import { buildPreviewEmail } from "@/lib/messages/preview";
 import { readRows } from "@/lib/messages/rows";
@@ -160,8 +160,9 @@ export async function listMessageTemplates(accessToken: string | null): Promise<
  * leaves the body, and a new row keeps every field it was not given NULL (the
  * email that has always gone out); the default text is never copied into a
  * row, here or by opening the editor. A field sent as `null` or `""` is
- * cleared. So a client must send ONLY what the admin changed: a toggle sends
- * only `enabled`, and sending the text fields as null would wipe them.
+ * cleared. So a client must send ONLY what the admin changed: sending the text
+ * fields as null would wipe them. `enabled` is ignored here: the switch is
+ * `setMessageEnabled`'s, and saving a text never changes it.
  *
  * An email body is also tried through the real renderer before it is written:
  * one it cannot draw would be saved as the admin's and never reach a client.
@@ -177,8 +178,19 @@ export async function saveMessageTemplate(
     return authFailure(err);
   }
 
+  // The switch is NOT part of a save: it has its own action (`setMessageEnabled`)
+  // and a text saved here never changes it, whatever the browser sent. A message
+  // switched off must not come back on because somebody fixed a comma.
+  const withoutSwitch =
+    typeof input === "object" && input !== null && !Array.isArray(input)
+      ? Object.fromEntries(
+          Object.entries(input as Record<string, unknown>).filter(
+            ([name]) => name !== "enabled",
+          ),
+        )
+      : input;
   // It came over the wire: whatever the type says, it is validated as unknown.
-  const parsed = validateMessageTemplate(input);
+  const parsed = validateMessageTemplate(withoutSwitch);
   if (!parsed.ok) {
     return {
       ok: false,
@@ -196,11 +208,7 @@ export async function saveMessageTemplate(
 
   // A switched-off message is not sent, so its template is not checked. A save
   // that carries neither a template nor the switch changes nothing to check.
-  if (
-    write.channel === "whatsapp" &&
-    write.enabled !== false &&
-    (write.whatsapp !== null || write.enabled === true)
-  ) {
+  if (write.channel === "whatsapp" && write.whatsapp !== null) {
     // What a database read can add to the schema: the template must exist and
     // be sendable in this language with exactly these parameters. What the
     // save does not mention is what the row already has.
@@ -397,7 +405,6 @@ export async function resetMessageTemplate(
 
     if (plan === "none") return { ok: true, removed: false, kept: null };
 
-    const guarded = keepsSwitch(target.key, target.channel);
     if (plan === "delete") {
       const removal = db
         .from("message_templates")
@@ -405,12 +412,6 @@ export async function resetMessageTemplate(
         .eq("key", target.key)
         .eq("channel", target.channel)
         .eq("locale", target.locale);
-      if (!guarded) {
-        const { error } = await removal;
-        if (error) return { ok: false, error: "db" };
-        revalidatePath(PATH);
-        return { ok: true, removed: true, kept: null };
-      }
       // Only while it is still on: switched off since the read, it is not
       // deleted, and falls through to be emptied with its switch kept.
       const { data, error } = await removal.eq("enabled", true).select("key");

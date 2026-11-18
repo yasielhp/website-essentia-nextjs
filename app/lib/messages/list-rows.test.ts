@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MESSAGE_CATALOG, MESSAGE_KEYS } from "./catalog";
+import { MESSAGE_KEYS } from "./catalog";
 import {
   messageListRows,
   summarizeEmail,
@@ -12,7 +12,6 @@ import type { MessageCatalogEntry, MessageTemplateRowView } from "./types";
 
 const catalog = MESSAGE_KEYS.map((key) => ({
   key,
-  canDisable: MESSAGE_CATALOG[key].canDisable,
 })) as unknown as MessageCatalogEntry[];
 
 const row = (over: Partial<MessageTemplateRowView>) =>
@@ -128,7 +127,6 @@ describe("summarizeWhatsApp: what the languages of one message do together", () 
       configured: [],
       problems: [],
       unknown: [],
-      off: [],
     });
   });
   test("both configured: configured", () => {
@@ -166,9 +164,6 @@ describe("summarizeWhatsApp: what the languages of one message do together", () 
     const out = state({ kind: "unknown" }, { kind: "none" });
     expect(out.unknown).toEqual(["es"]);
     expect(out.level).toBe("none");
-  });
-  test("a row switched off is said with its language", () => {
-    expect(state({ kind: "none" }, { kind: "off" }).off).toEqual(["en"]);
   });
 });
 
@@ -223,7 +218,7 @@ describe("the rows of the list", () => {
       updatedAt: null,
       updatedByName: null,
       corrupt: [],
-      off: false,
+      switch: { state: "on", offLocales: [] },
     });
   });
 
@@ -239,7 +234,7 @@ describe("the rows of the list", () => {
     expect(r.status.kind).toBe("default");
   });
 
-  test("the reminder switched off, and the note that it goes in Spanish", () => {
+  test("the reminder says it goes in Spanish, and its switch is the same as any other row's", () => {
     const r = emailRows(
       messageListRows(
         [row({ key: "booking_reminder", enabled: false })],
@@ -248,7 +243,7 @@ describe("the rows of the list", () => {
       ),
     ).find((x) => x.key === "booking_reminder")!;
     expect(r).toMatchObject({
-      off: true,
+      switch: { state: "off", offLocales: ["es"] },
       reminderNote: true,
       status: { kind: "default" },
     });
@@ -298,5 +293,89 @@ describe("the rows of the list", () => {
     expect(
       emailRows(out).find((r) => r.key === "booking_confirmed")!.status.kind,
     ).toBe("default");
+  });
+});
+
+describe("the switch of a row: both languages together", () => {
+  const emailOf = (rows: MessageTemplateRowView[], key: string) =>
+    emailRows(messageListRows(rows, catalog, [])).find((x) => x.key === key)!;
+  const waOf = (rows: MessageTemplateRowView[], key: string) =>
+    waRows(messageListRows(rows, catalog, [])).find((x) => x.key === key)!;
+
+  test("with no saved row every message is on", () => {
+    for (const r of messageListRows([], catalog, [])) {
+      expect(r.switch).toEqual({ state: "on", offLocales: [] });
+    }
+  });
+
+  test("a row saved with only the switch off is off, and is still not an edit", () => {
+    const r = emailOf(
+      [
+        row({ key: "booking_paid", locale: "es", enabled: false }),
+        row({ key: "booking_paid", locale: "en", enabled: false }),
+      ],
+      "booking_paid",
+    );
+    expect(r.switch).toEqual({ state: "off", offLocales: ["es", "en"] });
+    expect(r.status.kind).toBe("default");
+  });
+
+  test("the two languages that do not agree make it off in part, with the language", () => {
+    const r = emailOf(
+      [row({ key: "booking_paid", locale: "en", enabled: false })],
+      "booking_paid",
+    );
+    expect(r.switch).toEqual({ state: "partial", offLocales: ["en"] });
+  });
+
+  test("the reminder has one language: off is off", () => {
+    expect(
+      emailOf(
+        [row({ key: "booking_reminder", locale: "es", enabled: false })],
+        "booking_reminder",
+      ).switch,
+    ).toEqual({ state: "off", offLocales: ["es"] });
+  });
+
+  test("email and WhatsApp are two switches: one does not move the other", () => {
+    const rows = [
+      row({
+        key: "booking_confirmed",
+        channel: "whatsapp",
+        locale: "es",
+        enabled: false,
+      }),
+      row({
+        key: "booking_confirmed",
+        channel: "whatsapp",
+        locale: "en",
+        enabled: false,
+      }),
+    ];
+    expect(waOf(rows, "booking_confirmed").switch.state).toBe("off");
+    expect(emailOf(rows, "booking_confirmed").switch.state).toBe("on");
+  });
+
+  test("a WhatsApp switch does not depend on its being set up: off with no template, on with no template", () => {
+    const off = waOf(
+      [
+        row({
+          key: "booking_paid",
+          channel: "whatsapp",
+          locale: "es",
+          enabled: false,
+        }),
+        row({
+          key: "booking_paid",
+          channel: "whatsapp",
+          locale: "en",
+          enabled: false,
+        }),
+      ],
+      "booking_paid",
+    );
+    expect(off.switch.state).toBe("off");
+    expect(off.summary.level).toBe("none");
+    expect(waOf([], "booking_paid").switch.state).toBe("on");
   });
 });

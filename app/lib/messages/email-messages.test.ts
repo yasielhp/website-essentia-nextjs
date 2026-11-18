@@ -239,11 +239,6 @@ describe("the Emails tab strings", () => {
       }
     }
   });
-
-  it("only the reminder is a message that can be switched off, and the tab says so once", () => {
-    const off = MESSAGE_KEYS.filter((k) => MESSAGE_CATALOG[k].canDisable);
-    expect(off).toEqual(["booking_reminder"]);
-  });
 });
 
 describe("the message pages' strings", () => {

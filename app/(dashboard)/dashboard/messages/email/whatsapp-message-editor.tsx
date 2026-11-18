@@ -105,7 +105,6 @@ export function WhatsAppMessageEditor({
   const stale = hasSaved
     ? whatsappRowState(
         {
-          enabled: true,
           whatsapp_template_id: templateId,
           whatsapp_params: params,
         } as SavedWhatsAppRow,
@@ -147,9 +146,7 @@ export function WhatsAppMessageEditor({
     dirty,
     saving,
     testing,
-    switching: false,
     hasSaved,
-    enabled: true,
     canTest,
     hasTemplate: baseline.templateId !== null,
     usable: usable !== null,

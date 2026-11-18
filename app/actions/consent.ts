@@ -5,7 +5,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { sendEmail } from "@/emails/send";
 import { consentRequestEmail } from "@/emails/templates/consent-request";
 import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
-import { renderMessageEmail } from "@/lib/messages/render";
+import { isMessageOff, renderMessageEmail } from "@/lib/messages/render";
 import { consentSchema, type ConsentInput } from "@/lib/schemas";
 import { missingRequired, sanitizeAnswers } from "@/lib/consent/fields";
 import { signatureSource } from "@/lib/consent/signature";
@@ -422,7 +422,14 @@ export async function resendConsent(
   accessToken: string | null,
   contactId: string,
 ): Promise<{
-  error: "forbidden" | "no_email" | "not_signed" | "conflict" | "failed" | null;
+  error:
+    | "forbidden"
+    | "no_email"
+    | "not_signed"
+    | "conflict"
+    | "message_off"
+    | "failed"
+    | null;
   email?: string;
 }> {
   try {
@@ -434,11 +441,26 @@ export async function resendConsent(
 
   const { data } = await getAdminClient()
     .database.from("contacts")
-    .select("email")
+    .select("email, preferred_language")
     .eq("id", contactId)
     .maybeSingle();
-  if (!(data as { email: string | null } | null)?.email) {
+  const found = data as {
+    email: string | null;
+    preferred_language: string | null;
+  } | null;
+  if (!found?.email) {
     return { error: "no_email" };
+  }
+  // Asked BEFORE the consent is reopened: with the message switched off nothing
+  // could be sent, and a signed consent must not be undone for an email that
+  // will not go.
+  if (
+    await isMessageOff(
+      "consent_request",
+      found.preferred_language === "en" ? "en" : "es",
+    )
+  ) {
+    return { error: "message_off" };
   }
 
   const reopened = await reopenConsent(accessToken, contactId);
@@ -449,7 +471,12 @@ export async function resendConsent(
   // to deliver, and the consent stays reopened for the desk to resend.
   return sent.error === null
     ? { error: null, email: sent.email }
-    : { error: sent.error === "no_email" ? "no_email" : "failed" };
+    : {
+        error:
+          sent.error === "no_email" || sent.error === "message_off"
+            ? sent.error
+            : "failed",
+      };
 }
 
 /**
@@ -461,7 +488,7 @@ export async function sendConsentEmail(
   accessToken: string | null,
   contactId: string,
 ): Promise<{
-  error: "forbidden" | "no_email" | "signed" | "failed" | null;
+  error: "forbidden" | "no_email" | "signed" | "message_off" | "failed" | null;
   email?: string;
 }> {
   try {
@@ -483,11 +510,17 @@ export async function sendConsentEmail(
   } | null;
   if (!contact?.email) return { error: "no_email" };
 
+  const locale = contact.preferred_language === "en" ? "en" : "es";
+  // Asked before anything is created: a switched-off message sends nothing, and
+  // a person pressing "Send" must be told so, not shown a success.
+  if (await isMessageOff("consent_request", locale)) {
+    return { error: "message_off" };
+  }
+
   const consent = await ensureConsent(contactId);
   if (!consent) return { error: "failed" };
   if (consent.signed) return { error: "signed" };
 
-  const locale = contact.preferred_language === "en" ? "en" : "es";
   const consentUrl = buildConsentUrl(consent.token, locale);
   const legacySubject =
     locale === "es"
@@ -511,6 +544,8 @@ export async function sendConsentEmail(
         consentUrl,
       }),
   });
+  // Switched off between the question above and here: the same answer.
+  if (custom.kind === "skip") return { error: "message_off" };
   const { error } = await sendEmail({
     to: contact.email,
     subject: custom.kind === "custom" ? custom.subject : legacySubject,

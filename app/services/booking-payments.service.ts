@@ -4,6 +4,7 @@ import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
 import { bookingConfirmationEmail } from "@/emails/templates/booking-confirmation";
 import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
+import { emailOffSummary, OFF_REASON } from "@/lib/messages/off-note";
 import { renderMessageEmail } from "@/lib/messages/render";
 import { formatLongDate, formatPrice } from "@/utils/format";
 import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
@@ -188,28 +189,44 @@ export async function handleBookingPaid(
         consentUrl,
       }),
   });
-  const { error } = await sendEmail({
-    to: booking.email as string,
-    subject: custom.kind === "custom" ? custom.subject : legacySubject,
-    html:
-      custom.kind === "custom"
-        ? custom.html
-        : bookingConfirmationEmail({
-            name: booking.first_name as string,
-            serviceName: booking.service_title as string,
-            date,
-            time: booking.time as string,
-            duration: booking.duration as string,
-            dateIso: booking.date as string,
-            locale,
-            paidEur: received,
-            owedEur,
-            consentUrl,
-          }),
-  });
+  if (custom.kind === "skip") {
+    // Switched off in the list of Messages: the payment stands, the client is
+    // not written to, and the history says why (a client who paid and heard
+    // nothing is exactly what the centre has to be able to explain).
+    await recordBookingEvent({
+      bookingId,
+      channel: "email",
+      event: "paid",
+      actorRole: "system",
+      recipient: booking.email as string,
+      summary: emailOffSummary("booking_paid"),
+      status: "skipped",
+      error: OFF_REASON,
+    });
+  } else {
+    const { error } = await sendEmail({
+      to: booking.email as string,
+      subject: custom.kind === "custom" ? custom.subject : legacySubject,
+      html:
+        custom.kind === "custom"
+          ? custom.html
+          : bookingConfirmationEmail({
+              name: booking.first_name as string,
+              serviceName: booking.service_title as string,
+              date,
+              time: booking.time as string,
+              duration: booking.duration as string,
+              dateIso: booking.date as string,
+              locale,
+              paidEur: received,
+              owedEur,
+              consentUrl,
+            }),
+    });
 
-  if (error) {
-    console.error("[handleBookingPaid] email failed:", error);
+    if (error) {
+      console.error("[handleBookingPaid] email failed:", error);
+    }
   }
 
   // The WhatsApp confirmation, last and only for the FIRST payment: unlike the
