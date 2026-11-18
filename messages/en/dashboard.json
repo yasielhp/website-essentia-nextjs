@@ -2358,8 +2358,7 @@
       "columns": {
         "message": "Message",
         "language": "Language",
-        "status": "Status",
-        "actions": "Actions"
+        "status": "Status"
       },
       "locales": {
         "es": "Spanish",
@@ -2374,7 +2373,6 @@
       "savedOn": "Saved on {date}",
       "savedOnBy": "Saved on {date} by {name}",
       "actions": {
-        "edit": "Edit",
         "test": "Send me a test",
         "testing": "Sending…",
         "reset": "Reset",
@@ -2495,8 +2493,6 @@
           "dynamic_url": "it has a button with a variable link, which this send does not fill"
         },
         "actions": {
-          "configure": "Set up",
-          "edit": "Edit",
           "remove": "Remove",
           "removing": "Removing…",
           "editRow": "Edit the WhatsApp of {name}, {language}",

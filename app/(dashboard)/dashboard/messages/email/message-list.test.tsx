@@ -133,15 +133,48 @@ describe("the list on a phone and on a wide screen", () => {
     expect(table).not.toContain("Idioma:");
   });
 
-  test("a card's link is across the card and at least 44 px tall", () => {
-    const links = [
-      ...cards.matchAll(/<a [^>]*class="([^"]*)"[^>]*aria-label/g),
-    ];
-    expect(links.length).toBeGreaterThan(0);
-    for (const [, cls] of links) {
-      expect(cls).toContain("h-11");
-      expect(cls).toContain("w-full");
+  test("a card's link is its title, at least 44 px tall, and the whole card opens it", () => {
+    const links = [...cards.matchAll(/<a [^>]*>/g)].map((m) => m[0]);
+    expect(links.length).toBeGreaterThan(10);
+    for (const link of links) {
+      expect(link).toContain("min-h-11");
+      expect(link).toContain("data-row-link");
     }
+    const items = [...cards.matchAll(/<li class="([^"]*)"/g)].map((m) => m[1]);
+    expect(items.length).toBe(links.length);
+    for (const cls of items) expect(cls).toContain("cursor-pointer");
+  });
+
+  test("there is no column of actions: three columns, and the row is what opens the message", () => {
+    expect(html).not.toContain("Acciones");
+    expect(table.match(/<th[^>]*scope="col"/g)).toHaveLength(3);
+    const rows = [...table.matchAll(/<tr [^>]*class="([^"]*)"/g)]
+      .map((m) => m[1])
+      .filter((cls) => cls.includes("align-top"));
+    expect(rows.length).toBeGreaterThan(10);
+    for (const cls of rows) expect(cls).toContain("cursor-pointer");
+    // No button-shaped link is left: nothing reads "Editar" or "Configurar" on its own.
+    expect(html).not.toMatch(/>Editar</);
+    expect(html).not.toMatch(/>Configurar</);
+  });
+
+  test("the name of each message is its link, one per row, and the WhatsApp tag stays out of it", () => {
+    const link = (part: string, label: string) =>
+      part.match(
+        new RegExp(`<a [^>]*aria-label="${label}"[^>]*>([^<]*)</a>`),
+      )?.[1];
+    for (const part of [table, cards]) {
+      expect(link(part, "Editar Reserva recibida, Español")).toBe(
+        "Reserva recibida",
+      );
+      expect(
+        link(part, "Configurar el WhatsApp de Reserva confirmada, Español"),
+      ).toBe("Reserva confirmada");
+    }
+    expect(table.match(/data-row-link/g)).toHaveLength(
+      table.match(/align-top/g)!.length,
+    );
+    expect(html).toContain("· WhatsApp");
   });
 
   test("the cards have no buttons or switches either", () => {

@@ -1,11 +1,9 @@
 "use client";
 
+import type { MouseEvent } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import {
-  MOBILE_ACTION,
-  MobileRowCard,
-} from "@/components/dashboard/mobile-row-card";
+import { MobileRowCard } from "@/components/dashboard/mobile-row-card";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { messageEditHref } from "@/lib/messages/message-route";
 import {
@@ -22,6 +20,28 @@ import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 
 const PILL =
   "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium";
+
+/** The name of a message: the link of its row, the one a keyboard reaches. */
+const ROW_LINK =
+  "text-petroleum-700 focus-visible:ring-petroleum-500 rounded font-medium hover:underline focus-visible:ring-2 focus-visible:outline-none";
+
+/**
+ * A click anywhere on a row (or a card) opens the page of its message: it is
+ * handed to the row's own link, so the navigation is the link's and nothing is
+ * done twice when the link itself was the thing clicked. With Cmd, Ctrl or
+ * Shift held it opens in a new tab, as a link does.
+ */
+function openRow(event: MouseEvent<HTMLElement>) {
+  if ((event.target as HTMLElement).closest("a")) return;
+  const link =
+    event.currentTarget.querySelector<HTMLAnchorElement>("a[data-row-link]");
+  if (!link) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey) {
+    window.open(link.href, "_blank", "noopener");
+    return;
+  }
+  link.click();
+}
 
 /**
  * The words of a row, shared by the table and the cards: the name of the
@@ -42,17 +62,15 @@ function useRowWords() {
     language,
     emailName: (row: EmailListRow) => tKeys(row.key),
     emailHint: (row: EmailListRow) => tHints(row.key),
-    whatsappName: (row: WhatsAppListRow) => (
-      <>
-        {tKeys(row.key)}{" "}
-        <span className="text-petroleum-400 font-normal">
-          · {tWa("channelLabel")}
-        </span>
-      </>
+    whatsappName: (row: WhatsAppListRow) => tKeys(row.key),
+    /** Said beside the name of a WhatsApp row, outside its link. */
+    whatsappTag: (
+      <span className="text-petroleum-400 font-normal">
+        · {tWa("channelLabel")}
+      </span>
     ),
     emailLink: (row: EmailListRow) => ({
       href: messageEditHref("email", row.key, row.locale),
-      label: t("actions.edit"),
       name: t("actions.editRow", {
         name: tKeys(row.key),
         language: language(row.locale),
@@ -60,7 +78,6 @@ function useRowWords() {
     }),
     whatsappLink: (row: WhatsAppListRow) => ({
       href: messageEditHref("whatsapp", row.key, row.locale),
-      label: row.saved ? tWa("actions.edit") : tWa("actions.configure"),
       name: tWa(row.saved ? "actions.editRow" : "actions.configureRow", {
         name: tKeys(row.key),
         language: language(row.locale),
@@ -158,7 +175,8 @@ function EmailNotes({
 /**
  * One row per message and language the system really sends: its name, whether
  * it is the default or the admin's (and, for the reminder, whether it is
- * switched off), and one link to the page where it is edited. Testing, the
+ * switched off). There is no column of actions: the whole row opens the page
+ * where the message is edited or set up, and its name is the link. Testing, the
  * reminder's switch and resetting are on that page.
  *
  * A table on a wide screen and a list of cards on a phone, as the other lists
@@ -185,17 +203,15 @@ export function MessageList({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-sand-100 border-b text-left">
-              {(["message", "language", "status", "actions"] as const).map(
-                (column) => (
-                  <th
-                    key={column}
-                    scope="col"
-                    className="text-petroleum-400 px-5 py-3 text-xs font-medium whitespace-nowrap"
-                  >
-                    {w.t(`columns.${column}`)}
-                  </th>
-                ),
-              )}
+              {(["message", "language", "status"] as const).map((column) => (
+                <th
+                  key={column}
+                  scope="col"
+                  className="text-petroleum-400 px-5 py-3 text-xs font-medium whitespace-nowrap"
+                >
+                  {w.t(`columns.${column}`)}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -205,11 +221,20 @@ export function MessageList({
                 return (
                   <tr
                     key={row.id}
-                    className="border-sand-100 bg-sand-50/50 border-b align-top last:border-0"
+                    onClick={openRow}
+                    className="border-sand-100 bg-sand-50/50 hover:bg-sand-100/70 cursor-pointer border-b align-top transition-colors last:border-0"
                   >
                     <th scope="row" className="px-5 py-3 text-left font-normal">
-                      <p className="text-petroleum-700 text-sm font-medium">
-                        {w.whatsappName(row)}
+                      <p className="text-sm">
+                        <Link
+                          href={link.href}
+                          aria-label={link.name}
+                          data-row-link
+                          className={ROW_LINK}
+                        >
+                          {w.whatsappName(row)}
+                        </Link>{" "}
+                        {w.whatsappTag}
                       </p>
                     </th>
                     <td className="text-petroleum-500 px-5 py-3">
@@ -218,16 +243,6 @@ export function MessageList({
                     <td className="px-5 py-3">
                       <WhatsAppStatus row={row} />
                     </td>
-                    <td className="px-5 py-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        href={link.href}
-                        aria-label={link.name}
-                      >
-                        {link.label}
-                      </Button>
-                    </td>
                   </tr>
                 );
               }
@@ -235,13 +250,22 @@ export function MessageList({
               return (
                 <tr
                   key={row.id}
-                  className="border-sand-100 border-b align-top last:border-0"
+                  onClick={openRow}
+                  className="border-sand-100 hover:bg-sand-50 cursor-pointer border-b align-top transition-colors last:border-0"
                 >
                   <th scope="row" className="px-5 py-3.5 text-left font-normal">
-                    <p className="text-petroleum-700 font-medium">
-                      {w.emailName(row)}
+                    <p>
+                      {/* A page of its own: a link, so it opens in a new tab too. */}
+                      <Link
+                        href={link.href}
+                        aria-label={link.name}
+                        data-row-link
+                        className={ROW_LINK}
+                      >
+                        {w.emailName(row)}
+                      </Link>
                     </p>
-                    <p className="text-petroleum-400 mt-0.5 max-w-xs text-xs">
+                    <p className="text-petroleum-400 mt-0.5 max-w-full text-xs">
                       {w.emailHint(row)}
                     </p>
                     {row.reminderNote && (
@@ -256,17 +280,6 @@ export function MessageList({
                   <td className="px-5 py-3.5">
                     <EmailStatus row={row} />
                     <EmailNotes row={row} savedOn={w.savedOn(row)} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {/* A page of its own: a link, so it opens in a new tab too. */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      href={link.href}
-                      aria-label={link.name}
-                    >
-                      {link.label}
-                    </Button>
                   </td>
                 </tr>
               );
@@ -283,7 +296,20 @@ export function MessageList({
             return (
               <MobileRowCard
                 key={row.id}
-                title={w.whatsappName(row)}
+                onClick={openRow}
+                title={
+                  <>
+                    <Link
+                      href={link.href}
+                      aria-label={link.name}
+                      data-row-link
+                      className={`${ROW_LINK} inline-flex min-h-11 items-center`}
+                    >
+                      {w.whatsappName(row)}
+                    </Link>{" "}
+                    {w.whatsappTag}
+                  </>
+                }
                 facts={[
                   {
                     label: w.column("language"),
@@ -294,16 +320,6 @@ export function MessageList({
                     value: <WhatsAppStatus row={row} />,
                   },
                 ]}
-                action={
-                  <Button
-                    variant="outline"
-                    href={link.href}
-                    aria-label={link.name}
-                    className={MOBILE_ACTION}
-                  >
-                    {link.label}
-                  </Button>
-                }
               />
             );
           }
@@ -312,7 +328,17 @@ export function MessageList({
           return (
             <MobileRowCard
               key={row.id}
-              title={w.emailName(row)}
+              onClick={openRow}
+              title={
+                <Link
+                  href={link.href}
+                  aria-label={link.name}
+                  data-row-link
+                  className={`${ROW_LINK} inline-flex min-h-11 items-center`}
+                >
+                  {w.emailName(row)}
+                </Link>
+              }
               description={
                 <>
                   {w.emailHint(row)}
@@ -328,16 +354,6 @@ export function MessageList({
                 { label: w.column("language"), value: w.language(row.locale) },
                 { label: w.column("status"), value: <EmailStatus row={row} /> },
               ]}
-              action={
-                <Button
-                  variant="outline"
-                  href={link.href}
-                  aria-label={link.name}
-                  className={MOBILE_ACTION}
-                >
-                  {link.label}
-                </Button>
-              }
             >
               {(savedOn || row.corrupt) && (
                 <EmailNotes row={row} savedOn={savedOn} />

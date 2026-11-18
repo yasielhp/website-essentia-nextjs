@@ -2358,8 +2358,7 @@
       "columns": {
         "message": "Mensaje",
         "language": "Idioma",
-        "status": "Estado",
-        "actions": "Acciones"
+        "status": "Estado"
       },
       "locales": {
         "es": "Español",
@@ -2374,7 +2373,6 @@
       "savedOn": "Guardado el {date}",
       "savedOnBy": "Guardado el {date} por {name}",
       "actions": {
-        "edit": "Editar",
         "test": "Enviarme prueba",
         "testing": "Enviando…",
         "reset": "Restablecer",
@@ -2495,8 +2493,6 @@
           "dynamic_url": "tiene un botón con un enlace variable, que este envío no rellena"
         },
         "actions": {
-          "configure": "Configurar",
-          "edit": "Editar",
           "remove": "Quitar",
           "removing": "Quitando…",
           "editRow": "Editar el WhatsApp de {name}, {language}",

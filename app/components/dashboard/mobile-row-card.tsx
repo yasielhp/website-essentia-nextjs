@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 
 /**
  * One row of a list on a phone: the table's header is not there, so every datum
@@ -22,15 +22,21 @@ export function MobileRowCard({
   facts,
   children,
   action,
+  onClick,
 }: {
   title: ReactNode;
   description?: ReactNode;
   facts?: CardFact[];
   children?: ReactNode;
   action?: ReactNode;
+  /** For a card that opens something when tapped anywhere (its title is the link). */
+  onClick?: MouseEventHandler<HTMLLIElement>;
 }) {
   return (
-    <li className="flex flex-col gap-3 px-5 py-4">
+    <li
+      onClick={onClick}
+      className={`flex flex-col gap-3 px-5 py-4 ${onClick ? "active:bg-sand-50 cursor-pointer" : ""}`}
+    >
       <div className="min-w-0">
         <p className="text-petroleum-700 font-medium break-words">{title}</p>
         {description && (
