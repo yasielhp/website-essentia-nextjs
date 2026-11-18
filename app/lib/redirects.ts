@@ -22,18 +22,37 @@ export type MovedAddress = {
   has?: { type: "query"; key: string; value: string }[];
 };
 
+/** Where each of the two old addresses of the list goes, by tab. */
+const TEMPLATES_CARD = "/dashboard/settings#settings-whatsapp-templates";
+const MESSAGES_CARD = "/dashboard/settings#settings-messages";
+const WHATSAPP_TAB = [
+  { type: "query", key: "tab", value: "whatsapp" },
+] as const;
+
 export const dashboardMessagesRedirects: MovedAddress[] = [
   // The old WhatsApp tab: the templates card.
   {
     source: "/dashboard/messages",
-    has: [{ type: "query", key: "tab", value: "whatsapp" }],
-    destination: "/dashboard/settings#settings-whatsapp-templates",
+    has: [...WHATSAPP_TAB],
+    destination: TEMPLATES_CARD,
+    permanent: true,
+  },
+  // The page of tabs that lived for a day under Settings, in case it was saved.
+  {
+    source: "/dashboard/settings/messages",
+    has: [...WHATSAPP_TAB],
+    destination: TEMPLATES_CARD,
     permanent: true,
   },
   // The old list (the emails tab, and anything else): the automatic messages card.
   {
     source: "/dashboard/messages",
-    destination: "/dashboard/settings#settings-messages",
+    destination: MESSAGES_CARD,
+    permanent: true,
+  },
+  {
+    source: "/dashboard/settings/messages",
+    destination: MESSAGES_CARD,
     permanent: true,
   },
   // A message's own page.

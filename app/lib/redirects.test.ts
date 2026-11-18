@@ -30,7 +30,7 @@ function follow(
 
 describe("the old addresses of Messages", () => {
   test("every one is permanent (308), so the old address leaves the index and the bookmarks follow", () => {
-    expect(dashboardMessagesRedirects.length).toBe(3);
+    expect(dashboardMessagesRedirects.length).toBe(5);
     for (const r of dashboardMessagesRedirects) expect(r.permanent).toBe(true);
   });
 
@@ -61,6 +61,16 @@ describe("the old addresses of Messages", () => {
     ]);
   });
 
+  test("the page of tabs that was briefly under Settings goes to the same cards, so a saved address still lands", () => {
+    expect(follow("/dashboard/settings/messages")).toBe(messageListHref());
+    expect(follow("/dashboard/settings/messages", { tab: "email" })).toBe(
+      messageListHref(),
+    );
+    expect(follow("/dashboard/settings/messages", { tab: "whatsapp" })).toBe(
+      whatsappTemplatesHref(),
+    );
+  });
+
   test("a message's own page keeps its tail: channel, key and language", () => {
     expect(follow("/dashboard/messages/email/booking_confirmed/es")).toBe(
       "/dashboard/settings/messages/email/booking_confirmed/es",
@@ -78,6 +88,10 @@ describe("the old addresses of Messages", () => {
     ]) {
       expect(follow(path)).toBeNull();
     }
+    // The one address of a message's page under Settings is NOT the bare list.
+    expect(
+      follow("/dashboard/settings/messages/whatsapp/booking_paid/en"),
+    ).toBeNull();
     for (const r of dashboardMessagesRedirects) {
       expect(r.destination.startsWith("/dashboard/settings")).toBe(true);
       expect(r.destination).not.toContain("/dashboard/messages");
