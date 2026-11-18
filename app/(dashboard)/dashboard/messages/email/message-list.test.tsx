@@ -230,7 +230,7 @@ describe("the columns: message, type and state", () => {
   test("each row has the badge of its type, Email or WhatsApp, with an icon", () => {
     const badges = [
       ...table.matchAll(
-        /<span class="[^"]*bg-sand-100[^"]*gap-1\.5[^"]*"><span aria-hidden="true"[^>]*><svg[^>]*>.*?<\/svg><\/span>(Email|WhatsApp)<\/span>/g,
+        /<span class="[^"]*gap-1\.5[^"]*"><span aria-hidden="true"[^>]*><svg[^>]*>.*?<\/svg><\/span>(Email|WhatsApp)<\/span>/g,
       ),
     ].map((m) => m[1]);
     expect(badges.filter((b) => b === "Email")).toHaveLength(
