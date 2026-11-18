@@ -41,7 +41,7 @@ describe("the preview of an email", () => {
     expect(html.indexOf("sr-only")).toBeLessThan(html.indexOf("<iframe"));
   });
   test("keeps its small label, and the frame is sandboxed and as wide as its column", () => {
-    expect(html).toContain("Así se verá el correo");
+    expect(html).toContain("Vista previa");
     expect(html).toContain('sandbox=""');
     expect(html).toContain("w-full");
     expect(html).not.toContain("width:375");
@@ -58,6 +58,6 @@ describe("the preview of an email", () => {
     ).toContain("Sesión caducada");
   });
   test("English", () => {
-    expect(render("<p>x</p>", {}, "en")).toContain("How the email will look");
+    expect(render("<p>x</p>", {}, "en")).toContain("Preview");
   });
 });

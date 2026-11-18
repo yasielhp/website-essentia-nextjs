@@ -2268,7 +2268,7 @@
       "paramCount": "{count, plural, =0 {No variable values} one {# variable value} other {# variable values}}",
       "detail": {
         "title": "Template {name}",
-        "preview": "How it will look",
+        "preview": "Preview",
         "rejectedHelp": "Meta does not let a rejected template reuse its name. Create a copy under another name and fix the text before submitting it."
       },
       "buttonType": {
@@ -2448,7 +2448,7 @@
         "docErrorAt": "{message} (block {block})",
         "unknownVariables": "Variables this message does not offer: {names}",
         "preview": {
-          "title": "How the email will look",
+          "title": "Preview",
           "note": "With an example booking; the system blocks look as the client will receive them.",
           "loading": "Preparing the preview…",
           "failed": "The preview cannot be shown until what is marked is fixed."

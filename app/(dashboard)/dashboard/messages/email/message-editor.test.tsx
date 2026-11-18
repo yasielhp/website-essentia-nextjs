@@ -259,7 +259,7 @@ describe("the body, with what the system adds after it", () => {
       confirmed.indexOf('id="message-system-blocks"'),
     );
     expect(confirmed.indexOf('id="message-system-blocks"')).toBeLessThan(
-      confirmed.indexOf("Así se verá el correo"),
+      confirmed.indexOf("Vista previa"),
     );
     expect(confirmed.match(/Lo añade el sistema; no se edita/g)).toHaveLength(
       1,
