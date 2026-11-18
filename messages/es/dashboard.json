@@ -1442,6 +1442,10 @@
     }
   },
   "settings": {
+    "messages": {
+      "heading": "Mensajes",
+      "description": "Los correos y avisos de WhatsApp que el centro envía solo, y las plantillas de WhatsApp."
+    },
     "plans": {
       "heading": "Todas las suscripciones",
       "editPlan": "Editar plan",

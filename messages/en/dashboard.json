@@ -1442,6 +1442,10 @@
     }
   },
   "settings": {
+    "messages": {
+      "heading": "Messages",
+      "description": "The emails and WhatsApp notices the centre sends on its own, and the WhatsApp templates."
+    },
     "plans": {
       "heading": "All subscriptions",
       "editPlan": "Edit plan",
