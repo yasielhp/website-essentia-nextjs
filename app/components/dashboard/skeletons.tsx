@@ -40,14 +40,17 @@ export function CardSkeleton({ lines = 2 }: { lines?: number }) {
 
 /**
  * Rows of a table inside its white card: a stacked list on a phone, cells on
- * a desk. `cols` should match the real table so nothing jumps when it loads.
+ * a desk. `cols` should match the real table so nothing jumps when it loads;
+ * `head`, when given, is the real table's header row, drawn as it is.
  */
 export function TableSkeleton({
   cols,
   rows = 5,
+  head,
 }: {
   cols: number;
   rows?: number;
+  head?: { label: string; className?: string }[];
 }) {
   return (
     <>
@@ -64,6 +67,24 @@ export function TableSkeleton({
       </div>
       <div className="hidden md:block">
         <table className="w-full text-sm">
+          {head && (
+            <thead>
+              <tr className="border-sand-100 border-b">
+                {head.map((cell) => (
+                  <th
+                    key={cell.label}
+                    scope="col"
+                    className={
+                      cell.className ??
+                      "text-petroleum-400 px-5 py-3 text-left text-xs font-medium whitespace-nowrap"
+                    }
+                  >
+                    {cell.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
           <tbody>
             {Array.from({ length: rows }).map((_, i) => (
               <tr key={i} className="border-sand-100 border-b last:border-0">

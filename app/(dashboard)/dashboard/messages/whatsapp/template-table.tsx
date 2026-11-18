@@ -64,7 +64,17 @@ export function TemplateTable({
   return (
     <div className="border-sand-200 overflow-hidden rounded-2xl border bg-white">
       {loading ? (
-        <TableSkeleton cols={6} />
+        <TableSkeleton
+          cols={6}
+          head={[
+            { label: t("table.name"), className: TH },
+            { label: t("table.language"), className: TH },
+            { label: t("table.category"), className: TH },
+            { label: t("table.status"), className: TH },
+            { label: t("table.params"), className: `${TH} text-right` },
+            { label: t("table.updated"), className: TH },
+          ]}
+        />
       ) : templates.length === 0 ? (
         <div className="text-petroleum-400 px-6 py-20 text-center text-sm">
           {t("empty")}

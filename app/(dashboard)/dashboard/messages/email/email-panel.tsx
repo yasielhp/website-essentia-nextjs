@@ -13,6 +13,7 @@ import type {
 import { useEmailActionToast } from "./action-error";
 import { useWhatsAppTemplates } from "../../campaigns/_form/use-whatsapp-templates";
 import { MessageList } from "./message-list";
+import { MessageListSkeleton } from "./message-list-skeleton";
 
 type ListState =
   | { status: "loading" }
@@ -87,8 +88,15 @@ export function EmailPanel() {
 
   const reload = () => setReloadKey((n) => n + 1);
 
+  // While it loads: the tab's own intro (it does not depend on what is read)
+  // and the list in its own shape, so nothing moves when the rows arrive.
   if (state.status === "loading") {
-    return <div className="bg-sand-100 h-64 animate-pulse rounded-2xl" />;
+    return (
+      <div className="flex flex-col gap-6">
+        <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
+        <MessageListSkeleton />
+      </div>
+    );
   }
   if (state.status === "error") {
     return (
