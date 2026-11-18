@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { dashboardMessagesRedirects } from "./app/lib/redirects";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
@@ -39,6 +40,8 @@ const nextConfig: NextConfig = {
         destination: "/es/testimonios",
         permanent: true,
       },
+      // Messages moved inside Settings (see `app/lib/redirects.ts`).
+      ...dashboardMessagesRedirects,
     ];
   },
   images: {
