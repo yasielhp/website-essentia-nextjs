@@ -163,8 +163,16 @@ export function EmailMessagePage({
             labels={{
               button: t("actions.reset"),
               working: t("actions.resetting"),
-              confirm: t("resetConfirm"),
-              yes: t("resetYes"),
+              title: t("resetDialog.title", {
+                name: tKeys(messageKey),
+                language: t(`locales.${locale}`),
+              }),
+              body: t("resetDialog.body"),
+              note:
+                catalog.canDisable && saved.enabled === false
+                  ? t("resetDialog.keepsOff")
+                  : undefined,
+              yes: t("resetDialog.yes"),
               no: t("resetNo"),
             }}
           />

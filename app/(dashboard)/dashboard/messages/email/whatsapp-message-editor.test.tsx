@@ -126,3 +126,12 @@ describe("the language of the WhatsApp notice is chosen inside the page", () => 
     expect(render("en")).toContain("Language");
   });
 });
+
+describe("the question about removing the WhatsApp setup", () => {
+  test("is not in the page until the button is pressed, and the old line is gone", () => {
+    const html = render("es");
+    expect(html).not.toContain("<dialog");
+    expect(html).not.toContain('role="alertdialog"');
+    expect(html).not.toContain("Sí, quitar");
+  });
+});

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { createTranslator } from "next-intl";
 import en from "../../../messages/en/dashboard.json";
 import es from "../../../messages/es/dashboard.json";
 import { MESSAGE_VALIDATION_KEYS } from "./schema";
@@ -39,6 +40,64 @@ describe("each variable has a long name and a short one", () => {
         // Short is for a chip in a line of text: never longer than the long one.
         expect(short.length).toBeLessThanOrEqual(email.variables[name]!.length);
         expect(short.length).toBeLessThanOrEqual(16);
+      }
+    });
+  }
+});
+
+describe("the dialog that asks before a reset or a removal", () => {
+  const ask = (
+    locale: "es" | "en",
+    path: string,
+    values: Record<string, string>,
+  ) =>
+    createTranslator({
+      locale,
+      messages: { dashboard: LOCALES[locale] },
+      namespace: "dashboard.messages.email",
+    })(path as never, values as never) as string;
+
+  it("names the message and the language of an email, in both languages", () => {
+    expect(
+      ask("es", "resetDialog.title", {
+        name: "Reserva recibida",
+        language: "Español",
+      }),
+    ).toBe("¿Restablecer «Reserva recibida» en Español?");
+    expect(
+      ask("en", "resetDialog.title", {
+        name: "Booking received",
+        language: "English",
+      }),
+    ).toBe("Reset “Booking received” in English?");
+  });
+
+  it("names the message whose WhatsApp setup goes", () => {
+    expect(
+      ask("es", "whatsapp.removeTitle", { name: "Reserva confirmada" }),
+    ).toBe("¿Quitar la configuración de WhatsApp de «Reserva confirmada»?");
+    expect(
+      ask("en", "whatsapp.removeTitle", { name: "Booking confirmed" }),
+    ).toBe("Remove the WhatsApp setup of “Booking confirmed”?");
+  });
+
+  for (const locale of ["es", "en"] as const) {
+    it(`${locale}: the text, the note and the buttons exist, and the old inline question is gone`, () => {
+      const email = LOCALES[locale].messages.email as Record<string, unknown>;
+      const dialog = email.resetDialog as Record<string, string>;
+      for (const key of ["title", "body", "keepsOff", "yes"]) {
+        expect(dialog[key]?.trim()).toBeTruthy();
+      }
+      expect(email.resetConfirm).toBeUndefined();
+      expect(email.resetYes).toBeUndefined();
+      const whatsapp = email.whatsapp as Record<string, string>;
+      for (const key of [
+        "removeTitle",
+        "removeConfirm",
+        "removeYes",
+        "removeNo",
+      ]) {
+        expect(whatsapp[key]?.trim()).toBeTruthy();
       }
     });
   }

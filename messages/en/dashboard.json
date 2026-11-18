@@ -2386,8 +2386,12 @@
       },
       "testNote": "The test goes only to your email, with the subject [PRUEBA], and carries the saved version.",
       "testSent": "Test sent to {email}",
-      "resetConfirm": "Go back to the default text? Your version is lost.",
-      "resetYes": "Yes, reset",
+      "resetDialog": {
+        "title": "Reset “{name}” in {language}?",
+        "body": "Your saved version is deleted and the default text comes back. The next emails will go out with it.",
+        "keepsOff": "The reminder stays switched off.",
+        "yes": "Reset"
+      },
       "resetNo": "Cancel",
       "resetDone": "Message reset",
       "resetNothing": "There was nothing to reset",
@@ -2525,8 +2529,9 @@
           "editRow": "Edit the WhatsApp of {name}",
           "configureRow": "Set up the WhatsApp of {name}"
         },
+        "removeTitle": "Remove the WhatsApp setup of “{name}”?",
         "removeConfirm": "Stop sending this notice on WhatsApp? This row's setup is deleted.",
-        "removeYes": "Yes, remove",
+        "removeYes": "Remove",
         "removeNo": "Cancel",
         "removed": "WhatsApp removed from this message",
         "when": {

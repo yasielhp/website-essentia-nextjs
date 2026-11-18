@@ -482,3 +482,28 @@ describe("a block the email must carry and the document lacks", () => {
     expect(html).not.toContain("No se puede quitar");
   });
 });
+
+describe("the question about resetting", () => {
+  const edited = {
+    enabled: true,
+    subject: "Asunto propio",
+    doc: {
+      type: "doc",
+      content: [
+        ...(defaultContent("booking_confirmed", "es").doc.content ?? []),
+        { type: "paragraph", content: [{ type: "text", text: "Más." }] },
+      ],
+    },
+  };
+
+  test("the button is in the header and the dialog is not in the page until it is pressed", () => {
+    const html = render("booking_confirmed", edited as never);
+    expect(html).toContain('id="message-reset-button"');
+    expect(html).toContain("Restablecer");
+    expect(html).not.toContain("<dialog");
+    expect(html).not.toContain('role="alertdialog"');
+    // And nothing of the old line of confirmation that pushed the page down.
+    expect(html).not.toContain("Volver al texto por defecto");
+    expect(html).not.toContain("Sí, restablecer");
+  });
+});

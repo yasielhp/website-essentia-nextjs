@@ -11,8 +11,9 @@ import { resetMessageTemplate } from "@/actions/message-templates";
 import { messageListHref } from "@/lib/messages/message-route";
 import type { MessageKey } from "@/lib/messages/catalog";
 import { toast } from "sonner";
-import { ConfirmBar } from "./confirm-bar";
-import { useEmailActionToast } from "./action-error";
+import { ConfirmDialog } from "./confirm-dialog";
+import { useEmailActionText } from "./action-error";
+import { runReset } from "@/lib/messages/reset-run";
 
 /**
  * The top of a message's own page, as the other pages of the dashboard lay
@@ -133,10 +134,15 @@ export function UnsavedBar({
   );
 }
 
-type ResetLabels = {
+export type ResetLabels = {
+  /** The button that opens the dialog, and what it says while the reset runs. */
   button: string;
   working: string;
-  confirm: string;
+  /** The question, naming the message (and the language, for an email). */
+  title: string;
+  body: string;
+  /** Only when it matters before saying yes: the reminder stays off. */
+  note?: string;
   yes: string;
   no: string;
 };
@@ -144,8 +150,8 @@ type ResetLabels = {
 /**
  * "Reset": resets the message to its default (or removes its WhatsApp notice)
  * and goes back to the list, which loads fresh when it opens. The question is
- * asked by `ResetConfirm` and the button that starts it is `ResetButton`, so the
- * page can put the button in its header and the question under it.
+ * asked in a modal dialog (`ResetDialog`) and the button that starts it is
+ * `ResetButton`, so the page can put the button in its header.
  */
 export function useMessageReset({
   channel,
@@ -161,39 +167,49 @@ export function useMessageReset({
 }) {
   const router = useRouter();
   const t = useTranslations("dashboard.messages.email");
-  const showError = useEmailActionToast();
-  const [asking, setAsking] = useState(false);
+  const failureText = useEmailActionText();
+  const [asking, setAskingState] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Why the last try failed: shown inside the dialog, which stays open.
+  const [error, setError] = useState<string | null>(null);
+
+  function setAsking(value: boolean) {
+    setError(null);
+    setAskingState(value);
+  }
 
   async function reset() {
     setBusy(true);
-    try {
-      const result = await resetMessageTemplate(
-        getAccessToken(),
-        messageKey,
-        channel,
-        locale,
+    setError(null);
+    const outcome = await runReset(channel, () =>
+      resetMessageTemplate(getAccessToken(), messageKey, channel, locale),
+    );
+    if (outcome.status === "failed") {
+      const text = failureText(outcome.failure);
+      setError(
+        text.description ? `${text.title} ${text.description}` : text.title,
       );
-      if (!result.ok) {
-        showError(result);
-        setBusy(false);
-        setAsking(false);
-        return;
-      }
-      if (channel === "whatsapp") notifySuccess(t("whatsapp.removed"));
-      else if (result.kept === "disabled") toast.info(t("resetKeptDisabled"));
-      else if (result.removed) notifySuccess(t("resetDone"));
-      else toast.info(t("resetNothing"));
-      onBeforeLeave?.();
-      router.push(messageListHref());
-    } catch {
-      showError({ error: "generic" });
       setBusy(false);
-      setAsking(false);
+      return;
     }
+    switch (outcome.notice) {
+      case "whatsappRemoved":
+        notifySuccess(t("whatsapp.removed"));
+        break;
+      case "keptDisabled":
+        toast.info(t("resetKeptDisabled"));
+        break;
+      case "done":
+        notifySuccess(t("resetDone"));
+        break;
+      default:
+        toast.info(t("resetNothing"));
+    }
+    onBeforeLeave?.();
+    router.push(messageListHref());
   }
 
-  return { asking, setAsking, busy, reset };
+  return { asking, setAsking, busy, error, reset };
 }
 
 export function ResetButton({
@@ -217,22 +233,28 @@ export function ResetButton({
   );
 }
 
-/** The question, in place of nothing: it goes under the header, where it moves nothing. */
-export function ResetConfirm({
+/** The question, in a modal dialog over the page: nothing under the header moves. */
+export function ResetDialog({
   labels,
   busy,
+  error,
   onCancel,
   onConfirm,
 }: {
   labels: ResetLabels;
   busy: boolean;
+  error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
-    <ConfirmBar
-      message={labels.confirm}
+    <ConfirmDialog
+      title={labels.title}
+      body={labels.body}
+      note={labels.note}
+      error={error}
       yesLabel={labels.yes}
+      workingLabel={labels.working}
       noLabel={labels.no}
       returnTo="message-reset-button"
       busy={busy}
@@ -254,22 +276,29 @@ export function ResetControl({
   locale: "es" | "en";
   labels: ResetLabels;
 }) {
-  const { asking, setAsking, busy, reset } = useMessageReset({
+  const { asking, setAsking, busy, error, reset } = useMessageReset({
     channel,
     messageKey,
     locale,
   });
-  if (asking) {
-    return (
-      <ResetConfirm
-        labels={labels}
-        busy={busy}
-        onCancel={() => setAsking(false)}
-        onConfirm={() => void reset()}
+  return (
+    <>
+      <ResetButton
+        label={busy ? labels.working : labels.button}
+        disabled={busy}
+        onClick={() => setAsking(true)}
       />
-    );
-  }
-  return <ResetButton label={labels.button} onClick={() => setAsking(true)} />;
+      {asking && (
+        <ResetDialog
+          labels={labels}
+          busy={busy}
+          error={error}
+          onCancel={() => setAsking(false)}
+          onConfirm={() => void reset()}
+        />
+      )}
+    </>
+  );
 }
 
 /**

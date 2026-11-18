@@ -43,7 +43,7 @@ import {
   DraftBanner,
   MessagePageHeader,
   ResetButton,
-  ResetConfirm,
+  ResetDialog,
   UnsavedBar,
   useMessageReset,
 } from "./page-parts";
@@ -157,7 +157,8 @@ export function WhatsAppMessageEditor({
   const resetLabels = {
     button: t("actions.remove"),
     working: t("actions.removing"),
-    confirm: t("removeConfirm"),
+    title: t("removeTitle", { name: tKeys(messageKey) }),
+    body: t("removeConfirm"),
     yes: t("removeYes"),
     no: t("removeNo"),
   };
@@ -295,9 +296,10 @@ export function WhatsAppMessageEditor({
       />
 
       {reset.asking && (
-        <ResetConfirm
+        <ResetDialog
           labels={resetLabels}
           busy={reset.busy}
+          error={reset.error}
           onCancel={() => reset.setAsking(false)}
           onConfirm={() => void reset.reset()}
         />

@@ -2386,8 +2386,12 @@
       },
       "testNote": "La prueba se envía solo a tu email, con el asunto [PRUEBA], y lleva la versión guardada.",
       "testSent": "Prueba enviada a {email}",
-      "resetConfirm": "¿Volver al texto por defecto? Se pierde tu versión.",
-      "resetYes": "Sí, restablecer",
+      "resetDialog": {
+        "title": "¿Restablecer «{name}» en {language}?",
+        "body": "Se borra tu versión guardada y vuelve el texto por defecto. Los correos siguientes saldrán con él.",
+        "keepsOff": "El recordatorio se queda apagado.",
+        "yes": "Restablecer"
+      },
       "resetNo": "Cancelar",
       "resetDone": "Mensaje restablecido",
       "resetNothing": "No había nada que restablecer",
@@ -2525,8 +2529,9 @@
           "editRow": "Editar el WhatsApp de {name}",
           "configureRow": "Configurar el WhatsApp de {name}"
         },
+        "removeTitle": "¿Quitar la configuración de WhatsApp de «{name}»?",
         "removeConfirm": "¿Dejar de enviar este aviso por WhatsApp? Se borra la configuración de esta fila.",
-        "removeYes": "Sí, quitar",
+        "removeYes": "Quitar",
         "removeNo": "Cancelar",
         "removed": "WhatsApp quitado de este mensaje",
         "when": {

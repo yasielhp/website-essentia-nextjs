@@ -59,7 +59,7 @@ import {
   DraftBanner,
   MessagePageHeader,
   ResetButton,
-  ResetConfirm,
+  ResetDialog,
   UnsavedBar,
   useMessageReset,
 } from "./page-parts";
@@ -248,8 +248,15 @@ export function MessageEditor({
   const resetLabels = {
     button: t("actions.reset"),
     working: t("actions.resetting"),
-    confirm: t("resetConfirm"),
-    yes: t("resetYes"),
+    title: t("resetDialog.title", {
+      name: tKeys(messageKey),
+      language: t(`locales.${locale}`),
+    }),
+    body: t("resetDialog.body"),
+    // The reminder, switched off: a reset keeps it off, and says so before.
+    note:
+      catalog.canDisable && !enabled ? t("resetDialog.keepsOff") : undefined,
+    yes: t("resetDialog.yes"),
     no: t("resetNo"),
   };
 
@@ -570,9 +577,10 @@ export function MessageEditor({
       />
 
       {reset.asking && (
-        <ResetConfirm
+        <ResetDialog
           labels={resetLabels}
           busy={reset.busy}
+          error={reset.error}
           onCancel={() => reset.setAsking(false)}
           onConfirm={() => void reset.reset()}
         />
