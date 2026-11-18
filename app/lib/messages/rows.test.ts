@@ -144,3 +144,96 @@ describe("readRows", () => {
     expect(out).toMatchObject({ subject: null, title: null, preheader: "p" });
   });
 });
+
+describe("readRows with the document of the whole email", () => {
+  it("a message saved with the editor is read back as it was saved, for every message and both languages", async () => {
+    const { MESSAGE_KEYS } = await import("./catalog");
+    const { defaultContent } = await import("@/emails/defaults");
+    for (const key of MESSAGE_KEYS) {
+      for (const locale of ["es", "en"] as const) {
+        const base = defaultContent(key, locale).doc;
+        // The default with one sentence changed: an edit, as the editor saves it.
+        const doc = {
+          ...base,
+          content: (base.content ?? []).map((n, i) =>
+            n.type === "paragraph" &&
+            i === (base.content ?? []).findIndex((x) => x.type === "paragraph")
+              ? {
+                  type: "paragraph",
+                  content: [{ type: "text", text: "Una frase del centro." }],
+                }
+              : n,
+          ),
+        };
+        const [out] = readRows([row({ key, locale, doc })]);
+        expect({ key, locale, corrupt: out?.corrupt }).toEqual({
+          key,
+          locale,
+          corrupt: undefined,
+        });
+        expect(out?.doc).toEqual(doc);
+      }
+    }
+  });
+
+  it("a title and blocks at the top level are not forbidden", () => {
+    const [out] = readRows([
+      row({
+        doc: {
+          type: "doc",
+          content: [
+            { type: "emailTitle", content: [{ type: "text", text: "Hola" }] },
+            { type: "systemBlock", attrs: { kind: "cancel_link" } },
+          ],
+        },
+      }),
+    ]);
+    expect(out?.corrupt).toBeUndefined();
+    expect(out?.doc).not.toBeNull();
+  });
+
+  it("a document that is really corrupt is still read as corrupt: raw HTML, a bad link, a block inside a section", () => {
+    const bad = [
+      {
+        type: "doc",
+        content: [
+          { type: "emailTitle", content: [] },
+          { type: "htmlCodeBlock", attrs: { html: "<script>" } },
+        ],
+      },
+      {
+        type: "doc",
+        content: [
+          { type: "emailTitle", content: [] },
+          {
+            type: "section",
+            content: [{ type: "systemBlock", attrs: { kind: "cancel_link" } }],
+          },
+        ],
+      },
+      {
+        type: "doc",
+        content: [
+          { type: "emailTitle", content: [] },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "x",
+                marks: [
+                  { type: "link", attrs: { href: "javascript:alert(1)" } },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    for (const doc of bad) {
+      const [out] = readRows([row({ doc })]);
+      expect(out?.corrupt).toBe(true);
+      expect(out?.doc).toBeNull();
+    }
+  });
+});

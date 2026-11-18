@@ -1,6 +1,7 @@
 import type { EmailDoc } from "@/types/campaign";
 import { MESSAGE_KEYS } from "./catalog";
 import { MAX_DOC_DEPTH, docDepth } from "./doc-depth";
+import { withoutSpecialNodes } from "./email-doc";
 import { findForbiddenNodes } from "./safe-doc";
 import type { MessageTemplateRowView } from "./types";
 
@@ -29,7 +30,8 @@ function wellFormedNode(node: unknown): boolean {
  * Whether a stored body is one this app would have saved and can show: a
  * document of well-formed nodes, no deeper than a save allows (checked first,
  * and without recursion, so the walk below is bounded), and nothing the
- * sanitiser refuses (raw HTML, an address that is not https, http or mailto).
+ * sanitiser refuses (raw HTML, an address that is not https, http or mailto),
+ * read the way a save reads it (`withoutSpecialNodes`).
  * What is stored is not trusted just for having come from the database.
  */
 function wellFormedDoc(doc: unknown): boolean {
@@ -38,7 +40,10 @@ function wellFormedDoc(doc: unknown): boolean {
     return false;
   }
   if (!doc.content.every(wellFormedNode)) return false;
-  return findForbiddenNodes(doc as EmailDoc).length === 0;
+  // The same reading a save makes: the title and the blocks of the system at the
+  // top level are the document's own and are not the sanitiser's to judge; the
+  // same nodes anywhere else still are, and are refused.
+  return findForbiddenNodes(withoutSpecialNodes(doc as EmailDoc)).length === 0;
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value : null);
