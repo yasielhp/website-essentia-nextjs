@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { EmailDoc } from "@/types/campaign";
 import { readRows } from "./rows";
 
 const row = (over: Record<string, unknown> = {}) => ({
@@ -234,6 +235,65 @@ describe("readRows with the document of the whole email", () => {
       const [out] = readRows([row({ doc })]);
       expect(out?.corrupt).toBe(true);
       expect(out?.doc).toBeNull();
+    }
+  });
+});
+
+describe("readRows with hostile content inside the title or a block", () => {
+  const title = (content: unknown[] = [{ type: "text", text: "Hola" }]) => ({
+    type: "emailTitle",
+    content,
+  });
+  const cancel = { type: "systemBlock", attrs: { kind: "cancel_link" } };
+  const at = (content: unknown[]) =>
+    ({ type: "doc", content }) as unknown as EmailDoc;
+
+  it("a title or block with something hostile inside is corrupt: raw HTML, a javascript link, an invented kind, extra attributes", () => {
+    const bad = [
+      at([
+        title([{ type: "htmlCodeBlock", attrs: { html: "<script>" } }]),
+        cancel,
+      ]),
+      at([
+        title([
+          {
+            type: "text",
+            text: "x",
+            marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+          },
+        ]),
+        cancel,
+      ]),
+      at([title(), { type: "systemBlock", attrs: { kind: "invented" } }]),
+      at([
+        title(),
+        { type: "systemBlock", attrs: { kind: "cancel_link", onclick: "x" } },
+      ]),
+      at([
+        title(),
+        {
+          ...cancel,
+          content: [{ type: "htmlCodeBlock", attrs: { html: "<b>" } }],
+        },
+      ]),
+      at([{ ...title(), attrs: { onclick: "x" } }, cancel]),
+    ];
+    for (const doc of bad) {
+      const [out] = readRows([row({ key: "booking_rescheduled", doc })]);
+      expect(out?.corrupt).toBe(true);
+      expect(out?.doc).toBeNull();
+    }
+  });
+
+  it("a row that lacks a required block, or has an empty title, still opens (the editor's alert says what is missing)", () => {
+    for (const doc of [
+      at([title()]),
+      at([title([]), cancel]),
+      at([title([{ type: "text", text: "  " }]), cancel]),
+    ]) {
+      const [out] = readRows([row({ key: "booking_rescheduled", doc })]);
+      expect(out?.corrupt).toBeUndefined();
+      expect(out?.doc).toEqual(doc);
     }
   });
 });

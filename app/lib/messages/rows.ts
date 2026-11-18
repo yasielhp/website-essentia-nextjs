@@ -1,7 +1,7 @@
 import type { EmailDoc } from "@/types/campaign";
-import { MESSAGE_KEYS } from "./catalog";
+import { MESSAGE_KEYS, type MessageKey } from "./catalog";
 import { MAX_DOC_DEPTH, docDepth } from "./doc-depth";
-import { withoutSpecialNodes } from "./email-doc";
+import { structureProblems, withoutSpecialNodes } from "./email-doc";
 import { findForbiddenNodes } from "./safe-doc";
 import type { MessageTemplateRowView } from "./types";
 
@@ -34,7 +34,7 @@ function wellFormedNode(node: unknown): boolean {
  * read the way a save reads it (`withoutSpecialNodes`).
  * What is stored is not trusted just for having come from the database.
  */
-function wellFormedDoc(doc: unknown): boolean {
+function wellFormedDoc(doc: unknown, key: MessageKey): boolean {
   if (docDepth(doc) > MAX_DOC_DEPTH) return false;
   if (!isRecord(doc) || doc.type !== "doc" || !Array.isArray(doc.content)) {
     return false;
@@ -43,7 +43,17 @@ function wellFormedDoc(doc: unknown): boolean {
   // The same reading a save makes: the title and the blocks of the system at the
   // top level are the document's own and are not the sanitiser's to judge; the
   // same nodes anywhere else still are, and are refused.
-  return findForbiddenNodes(withoutSpecialNodes(doc as EmailDoc)).length === 0;
+  if (findForbiddenNodes(withoutSpecialNodes(doc as EmailDoc)).length > 0) {
+    return false;
+  }
+  // What is inside the title and the blocks is judged by their own rules: an
+  // invented kind, a block with content or attributes, a title holding anything
+  // but text and variables is not a body this app saved. A block that is
+  // MISSING and an empty title are not: that is a document the editor opens
+  // and answers with its alert, not a corrupt one.
+  return !structureProblems(doc as EmailDoc, key).some(
+    (problem) => problem.kind === "blockNotAllowed",
+  );
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value : null);
@@ -59,7 +69,7 @@ export function readRows(raw: unknown[]): MessageTemplateRowView[] {
     if (locale !== "en" && locale !== "es") continue;
 
     const hasDoc = item.doc !== null && item.doc !== undefined;
-    const corrupt = hasDoc && !wellFormedDoc(item.doc);
+    const corrupt = hasDoc && !wellFormedDoc(item.doc, key as MessageKey);
     rows.push({
       key: key as MessageTemplateRowView["key"],
       channel,

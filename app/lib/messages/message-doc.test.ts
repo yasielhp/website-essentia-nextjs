@@ -459,52 +459,55 @@ const OLD_SHAPE_HTML = oldShapeHtml as Record<
 
 describe("a row saved before the title and the blocks were in the document", () => {
   for (const key of MESSAGE_KEYS) {
-    test(`${key}: it is converted, and the email that comes out is the one it always was`, async () => {
-      const locale: CampaignLocale = "es";
-      const c = casesFor(key, locale)[0]!;
-      const old = row({
-        subject: "Asunto {{first_name}}",
-        title: "Título {{first_name}}",
-        doc: { type: "doc", content: [para("Cuerpo propio {{service}}.")] },
+    for (const locale of LOCALES) {
+      test(`${key}/${locale}: it is converted, and the email that comes out is the one it always was`, async () => {
+        const c = casesFor(key, locale)[0]!;
+        const old = row({
+          subject: "Asunto {{first_name}}",
+          title: "Título {{first_name}}",
+          doc: { type: "doc", content: [para("Cuerpo propio {{service}}.")] },
+        });
+        const converted = effectiveDoc(key, locale, old);
+        // The body first and then the blocks, as the old compositor did.
+        const kinds = (converted.content ?? []).map((n) =>
+          n.type === BLOCK_NODE ? n.attrs?.kind : n.type,
+        );
+        expect(kinds).toEqual([
+          TITLE_NODE,
+          "paragraph",
+          ...MESSAGE_CATALOG[key].fixed,
+        ]);
+        const out = await composeMessageEmail({
+          key,
+          locale,
+          row: old,
+          vars: c.values,
+          blocks: fixedBlocksByKind(key, c.fixed),
+        });
+        // Byte for byte the email the OLD composer made of this row (a title
+        // column and a body with no blocks, the blocks tacked on after it): the
+        // snapshot is that composer's own output, taken from commit 0dc8af57. Only
+        // the blank space BETWEEN tags is not compared: the new composer indents
+        // the blocks differently, which a mail client does not draw.
+        expect(tight(out.html)).toBe(
+          tight(OLD_SHAPE_HTML[key]?.[locale] ?? ""),
+        );
+        expect(OLD_SHAPE_HTML[key]?.[locale]).toBeDefined();
+        const text = visibleText(out.html);
+        expect(text).toContain(`Título Ana`);
+        expect(text).toContain("Cuerpo propio");
+        // The same email whether the conversion is done by the sender or in advance.
+        const inAdvance = await composeMessageEmail({
+          key,
+          locale,
+          row: row({ subject: old.subject, doc: converted }),
+          vars: c.values,
+          blocks: fixedBlocksByKind(key, c.fixed),
+        });
+        expect(inAdvance.html).toBe(out.html);
+        expect(chooseDelivery(key, old, locale)).toBe("custom");
       });
-      const converted = effectiveDoc(key, locale, old);
-      // The body first and then the blocks, as the old compositor did.
-      const kinds = (converted.content ?? []).map((n) =>
-        n.type === BLOCK_NODE ? n.attrs?.kind : n.type,
-      );
-      expect(kinds).toEqual([
-        TITLE_NODE,
-        "paragraph",
-        ...MESSAGE_CATALOG[key].fixed,
-      ]);
-      const out = await composeMessageEmail({
-        key,
-        locale,
-        row: old,
-        vars: c.values,
-        blocks: fixedBlocksByKind(key, c.fixed),
-      });
-      // Byte for byte the email the OLD composer made of this row (a title
-      // column and a body with no blocks, the blocks tacked on after it): the
-      // snapshot is that composer's own output, taken from commit 0dc8af57. Only
-      // the blank space BETWEEN tags is not compared: the new composer indents
-      // the blocks differently, which a mail client does not draw.
-      expect(tight(out.html)).toBe(tight(OLD_SHAPE_HTML[key]?.[locale] ?? ""));
-      expect(OLD_SHAPE_HTML[key]?.[locale]).toBeDefined();
-      const text = visibleText(out.html);
-      expect(text).toContain(`Título Ana`);
-      expect(text).toContain("Cuerpo propio");
-      // The same email whether the conversion is done by the sender or in advance.
-      const inAdvance = await composeMessageEmail({
-        key,
-        locale,
-        row: row({ subject: old.subject, doc: converted }),
-        vars: c.values,
-        blocks: fixedBlocksByKind(key, c.fixed),
-      });
-      expect(inAdvance.html).toBe(out.html);
-      expect(chooseDelivery(key, old, locale)).toBe("custom");
-    });
+    }
   }
 
   test("a row that only has a title still reads as an edit, over the default text", async () => {
