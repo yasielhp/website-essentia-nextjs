@@ -12,22 +12,16 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import {
   createRemoteTemplate,
   isTemplateApiConfigured,
-  listRemoteTemplates,
 } from "@/lib/whatsapp/client";
-import { countParams, templateSupport } from "@/lib/whatsapp/templates";
-import {
-  WHATSAPP_TEMPLATE_CATEGORIES,
-  type WhatsAppTemplateRow,
-} from "@/lib/whatsapp/types";
+import { syncTemplatesFromMeta } from "@/lib/whatsapp/sync-templates";
+import { countParams } from "@/lib/whatsapp/templates";
+import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import {
   validateWhatsAppTemplate,
   type WhatsAppTemplateInput,
 } from "@/lib/schemas";
 
 const PATH = "/dashboard/messages";
-
-/** The only categories the dashboard knows how to show and send. */
-const KNOWN_CATEGORIES: readonly string[] = WHATSAPP_TEMPLATE_CATEGORIES;
 
 /**
  * `error` is always a key the UI translates. Whatever Meta or the network said
@@ -104,52 +98,9 @@ export async function syncWhatsAppTemplates(
   } catch (err) {
     return authFailure(err);
   }
-  if (!isTemplateApiConfigured()) {
-    return { ok: false, error: "whatsapp_not_configured" };
-  }
-
-  let remote;
-  try {
-    remote = await listRemoteTemplates();
-  } catch (err) {
-    return metaFailure(err);
-  }
-
-  const known = remote.filter((t) => KNOWN_CATEGORIES.includes(t.category));
-  const skipped = remote.length - known.length;
-  if (known.length === 0) return { ok: true, count: 0, skipped };
-
-  const now = new Date().toISOString();
-  try {
-    const { error } = await getAdminClient()
-      .database.from("whatsapp_templates")
-      .upsert(
-        known.map((t) => ({
-          meta_id: t.metaId,
-          name: t.name,
-          language: t.language,
-          category: t.category,
-          status: t.status,
-          header_format: t.headerFormat,
-          header_text: t.headerText,
-          body: t.body,
-          footer_text: t.footerText,
-          buttons: t.buttons,
-          param_count: countParams(t.body),
-          example_params: t.exampleParams,
-          rejection_reason: t.rejectionReason,
-          unsupported_reason: templateSupport(t),
-          synced_at: now,
-          updated_at: now,
-        })),
-        { onConflict: "name,language" },
-      );
-    if (error) return { ok: false, error: "db" };
-  } catch {
-    return { ok: false, error: "db" };
-  }
-  revalidatePath(PATH);
-  return { ok: true, count: known.length, skipped };
+  const result = await syncTemplatesFromMeta();
+  if (result.ok) revalidatePath(PATH);
+  return result;
 }
 
 /**

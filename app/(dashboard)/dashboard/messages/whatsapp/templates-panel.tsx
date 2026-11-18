@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { createPortal } from "react-dom";
-import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
@@ -11,8 +10,8 @@ import {
   syncWhatsAppTemplates,
 } from "@/actions/whatsapp-templates";
 import { getAccessToken } from "@/lib/client-session";
-import { notifySuccess } from "@/lib/feedback";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { shouldAutoSync } from "@/lib/whatsapp/auto-sync";
 import { latestSync } from "@/lib/whatsapp/template-ui";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import { useActionToast } from "./action-error";
@@ -50,12 +49,23 @@ function listReducer(state: ListState, action: ListAction): ListState {
 }
 
 /**
- * The WhatsApp tab: the list, the sync and the create form.
+ * When this browser last asked Meta for the templates. Kept outside the
+ * component so leaving the tab and coming back does not ask again at once.
+ */
+let lastAutoSyncAt: number | null = null;
+
+/**
+ * The WhatsApp tab: the list and the create form.
  *
- * Its two buttons belong at the top right of the page, beside the title, so
- * they are drawn into `actionsSlot`, the place the page's header keeps for them
- * (`null` until the header has mounted). With no slot at all, as when the panel
- * is drawn on its own, they stay above the list.
+ * Nobody syncs by hand. The list is shown at once from the dashboard's copy
+ * and, when that copy is not fresh, Meta is asked in the background and the
+ * list redrawn (`shouldAutoSync`); a cron does the same every hour. Only a sync
+ * that fails asks anything of the admin: a notice with a way to try again.
+ *
+ * Its button belongs at the top right of the page, beside the title, so it is
+ * drawn into `actionsSlot`, the place the page's header keeps for it (`null`
+ * until the header has mounted). With no slot at all, as when the panel is
+ * drawn on its own, it stays above the list.
  */
 export function TemplatesPanel({
   actionsSlot,
@@ -74,6 +84,7 @@ export function TemplatesPanel({
   );
   const [reloadKey, setReloadKey] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
   /** `undefined` closed; `null` a blank form; a row, a rewrite of that one. */
   const [form, setForm] = useState<WhatsAppTemplateRow | null | undefined>(
     undefined,
@@ -111,52 +122,89 @@ export function TemplatesPanel({
   const lastSync = useMemo(() => latestSync(templates), [templates]);
   const takenNames = useMemo(() => templates.map((x) => x.name), [templates]);
 
-  async function handleSync() {
+  /** Asks Meta, quietly: the list is redrawn if it answers, a notice if not. */
+  async function syncNow() {
+    lastAutoSyncAt = Date.now();
     setSyncing(true);
+    setSyncFailed(false);
     try {
       const result = await syncWhatsAppTemplates(getAccessToken());
-      if (result.ok) {
-        notifySuccess(t("toasts.synced", { count: result.count }));
-        if (result.skipped > 0) {
-          toast.info(t("toasts.skipped", { count: result.skipped }));
-        }
-        reload();
-      } else {
-        showError(result);
-      }
+      if (result.ok) reload();
+      else setSyncFailed(true);
     } catch {
-      showError({ error: "generic" });
+      setSyncFailed(true);
     } finally {
       setSyncing(false);
     }
   }
 
+  // Once the copy is on screen, bring it up to date if it is not fresh. Asked
+  // a moment later, not in the effect itself, and not at all if the tab was
+  // left in between.
+  useEffect(() => {
+    if (loading || failed) return;
+    if (
+      !shouldAutoSync({
+        configured,
+        lastSyncMs: lastSync,
+        lastAttemptMs: lastAutoSyncAt,
+        nowMs: Date.now(),
+      })
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => void syncNow(), 0);
+    return () => clearTimeout(timer);
+    // `syncNow` is a new function each render; this runs when the list settles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, failed, configured, lastSync]);
+
   const actions = (
-    <>
-      <Button
-        variant="outline"
-        onClick={() => void handleSync()}
-        disabled={syncing || !configured}
-        title={configured ? undefined : t("syncUnavailable")}
-      >
-        {syncing ? t("syncing") : t("sync")}
-      </Button>
-      <Button className="gap-2" onClick={() => setForm(null)}>
-        <IconPlus />
-        {t("new")}
-      </Button>
-    </>
+    <Button className="gap-2" onClick={() => setForm(null)}>
+      <IconPlus />
+      {t("new")}
+    </Button>
   );
+  const updatedAt =
+    lastSync === null
+      ? null
+      : new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: "Atlantic/Canary",
+        }).format(lastSync);
 
   return (
     <div>
       {actionsSlot && createPortal(actions, actionsSlot)}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
+        <div className="min-w-0">
+          <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
+          {/* When the copy was last brought from Meta; it brings itself. */}
+          {configured && (syncing || updatedAt) && (
+            <p role="status" className="text-petroleum-400 mt-1 text-xs">
+              {syncing
+                ? t("autoSync.updating")
+                : t("autoSync.updated", { date: updatedAt ?? "" })}
+            </p>
+          )}
+        </div>
         {actionsSlot === undefined && (
           <div className="flex max-w-full flex-wrap gap-3">{actions}</div>
         )}
       </div>
+
+      {syncFailed && !syncing && (
+        <div
+          role="alert"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-yellow-300 bg-yellow-50 px-5 py-4 text-sm text-yellow-800"
+        >
+          <p>{t("autoSync.failed")}</p>
+          <Button variant="outline" size="sm" onClick={() => void syncNow()}>
+            {t("retry")}
+          </Button>
+        </div>
+      )}
 
       {!configured && (
         <p
