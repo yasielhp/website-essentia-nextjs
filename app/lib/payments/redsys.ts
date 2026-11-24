@@ -14,6 +14,7 @@ import type {
   Refund,
   WebhookEvent,
 } from "./types";
+import { classifyRedsysNotification } from "./redsys-notification";
 
 // ─── Provider ─────────────────────────────────────────────────
 
@@ -118,13 +119,17 @@ export class RedsysProvider implements PaymentProvider {
       Ds_SignatureVersion: "HMAC_SHA256_V1",
     });
 
-    const responseCode = parseInt(String(result.Ds_Response ?? "9999"), 10);
-    const type = responseCode < 100 ? "payment.succeeded" : "payment.failed";
+    const payload = result as unknown as Record<string, string>;
+    // Only an authorisation is a payment or a refusal: a refund (0900, type
+    // 3) on the same order used to read as a declined payment.
+    const notice = classifyRedsysNotification(payload);
+    const type =
+      notice.kind === "paid"
+        ? "payment.succeeded"
+        : notice.kind === "declined"
+          ? "payment.failed"
+          : "ignored";
 
-    return {
-      type,
-      provider: "redsys",
-      payload: result as unknown as Record<string, string>,
-    };
+    return { type, provider: "redsys", payload };
   }
 }

@@ -38,7 +38,12 @@ export type Refund = {
 };
 
 export type WebhookEvent = {
-  type: string;
+  /**
+   * `payment.succeeded` and `payment.failed` are the outcome of the client's
+   * payment; `ignored` is any other operation on the order (a refund, a
+   * cancellation), which must change nothing.
+   */
+  type: "payment.succeeded" | "payment.failed" | "ignored";
   provider: ProviderName;
   payload: unknown;
 };
