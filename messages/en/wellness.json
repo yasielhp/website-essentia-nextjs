@@ -57,8 +57,8 @@
   },
   "cta": {
     "heading": "Ready to restore?",
-    "body": "Access to all wellness protocols is included with every Essentia membership. Your tier determines the depth of your programme and the priority of your bookings.",
-    "ctaMembership": "View memberships",
+    "body": "Choose your manual therapy or therapeutic facial and book your session online at our centre on Rambla de Santa Cruz, 83.",
+    "ctaBook": "Book a session",
     "ctaContact": "Talk to us first"
   },
   "treatments": {
@@ -66,7 +66,6 @@
     "manualTherapiesSubtitle": "Each treatment is designed with a specific purpose. Choose the one that fits what your body needs today.",
     "exploreTreatments": "Explore treatments",
     "bookSession": "Book a session",
-    "viewMemberships": "View memberships",
     "manualTherapiesCards": {
       "espira": {
         "title": "Espira",

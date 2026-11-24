@@ -57,8 +57,8 @@
   },
   "cta": {
     "heading": "¿Listo para restaurarte?",
-    "body": "El acceso a todos los protocolos de bienestar está incluido en cada membresía de Essentia. Tu nivel determina la profundidad de tu programa y la prioridad de tus reservas.",
-    "ctaMembership": "Ver membresías",
+    "body": "Elige tu terapia manual o tu facial terapéutico y reserva online tu sesión en nuestro centro de la Rambla de Santa Cruz, 83.",
+    "ctaBook": "Reservar una sesión",
     "ctaContact": "Habla con nosotros primero"
   },
   "treatments": {
@@ -66,7 +66,6 @@
     "manualTherapiesSubtitle": "Cada tratamiento está diseñado con un propósito específico. Elige el que se ajuste a lo que tu cuerpo necesita hoy.",
     "exploreTreatments": "Explorar tratamientos",
     "bookSession": "Reservar una sesión",
-    "viewMemberships": "Ver membresías",
     "manualTherapiesCards": {
       "espira": {
         "title": "Espira",

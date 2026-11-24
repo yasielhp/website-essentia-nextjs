@@ -10,8 +10,7 @@
     "body": "A private club where shared purpose builds real connection. Run, learn, and grow alongside people who take their health seriously.",
     "ctaExplore": "Explore experiences",
     "ctaTalk": "Talk to us",
-    "ctaJoin": "Join the experiences",
-    "ctaLearn": "Explore memberships"
+    "ctaJoin": "Join the experiences"
   },
   "programs": {
     "heading": "The experiences.",
@@ -43,12 +42,6 @@
         "description": "Knowledge shared in our programmes and gatherings compounds across the whole experiences."
       }
     }
-  },
-  "cta": {
-    "heading": "Ready to join?",
-    "body": "Experiences access is included with every Essentia membership. Choose your tier and become part of something that lasts.",
-    "ctaPrimary": "View memberships",
-    "ctaSecondary": "Talk to us first"
   },
   "runningClub": {
     "heading": "Running Club.",

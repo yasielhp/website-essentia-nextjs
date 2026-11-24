@@ -10,8 +10,7 @@
     "body": "Un club privado donde un propósito compartido genera conexiones reales. Corre, aprende y crece junto a personas que se toman su salud en serio.",
     "ctaExplore": "Explorar las experiencias",
     "ctaTalk": "Habla con nosotros",
-    "ctaJoin": "Únete a las experiencias",
-    "ctaLearn": "Explorar membresías"
+    "ctaJoin": "Únete a las experiencias"
   },
   "programs": {
     "heading": "Las experiencias.",
@@ -43,12 +42,6 @@
         "description": "El conocimiento compartido en nuestros programas y encuentros se multiplica en todas las experiencias."
       }
     }
-  },
-  "cta": {
-    "heading": "¿Listo para unirte?",
-    "body": "El acceso a las experiencias está incluido en cada membresía Essentia. Elige tu nivel y forma parte de algo duradero.",
-    "ctaPrimary": "Ver membresías",
-    "ctaSecondary": "Habla primero con nosotros"
   },
   "runningClub": {
     "heading": "Club de Running.",

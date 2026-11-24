@@ -4,7 +4,6 @@ import { getOgImage } from "@/constants/metadata";
 import HeroSection from "@components/sections/experiences/hero-section";
 import ProgramsSection from "@components/sections/experiences/programs-section";
 import ValuesSection from "@components/sections/experiences/values-section";
-import CtaSection from "@components/sections/experiences/cta-section";
 
 export async function generateMetadata({
   params,
@@ -44,7 +43,6 @@ export default async function CommunityPage({
       <HeroSection />
       <ProgramsSection />
       <ValuesSection />
-      <CtaSection />
     </>
   );
 }
