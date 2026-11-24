@@ -145,11 +145,11 @@ export function cancellationLink(
   const copy =
     locale === "es"
       ? {
-          text: "¿No puedes venir? Cancela o cambia tu cita hasta 24 horas antes sin coste.",
+          text: "¿No puedes venir? Cancela o cambia tu cita hasta 24 horas antes; si la cancelas, te devolvemos lo que hayas pagado.",
           link: "Cancelar mi cita",
         }
       : {
-          text: "Cannot make it? Cancel or change your appointment up to 24 hours before at no cost.",
+          text: "Cannot make it? Cancel or change your appointment up to 24 hours before; if you cancel, we refund what you paid.",
           link: "Cancel my appointment",
         };
 

@@ -27,7 +27,11 @@ export function bookingConfirmationEmail({
   locale?: "en" | "es";
   /** What was charged online for this booking. */
   paidEur?: number;
-  /** What is still owed at the centre; 0 or absent when nothing is. */
+  /**
+   * What is still owed at the centre; 0 or absent when nothing is. Online the
+   * whole price is paid since 2026-11-24, so only a booking made with a
+   * deposit before then still gets the balance line.
+   */
   owedEur?: number;
   /** Where a client who has not signed yet fills in their consent. */
   consentUrl?: string | null;
@@ -52,7 +56,7 @@ export function bookingConfirmationEmail({
         locationLine1: "Rambla de Santa Cruz, 83",
         locationLine2: "38004 Santa Cruz de Tenerife",
         footer:
-          "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
+          "Para cambiar o cancelar tu cita, escríbenos hasta 24 horas antes de la sesión; si la cancelas, te devolvemos el importe pagado. Dentro de las 24 horas previas, o si no acudes, no hay reembolso.",
         footerAddress: EMAIL_ADDRESS,
       }
     : {
@@ -72,7 +76,7 @@ export function bookingConfirmationEmail({
         locationLine1: "Rambla de Santa Cruz, 83",
         locationLine2: "38004 Santa Cruz de Tenerife",
         footer:
-          "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
+          "To change or cancel your appointment, write to us up to 24 hours before the session; if you cancel, we refund what you paid. Within the last 24 hours, or if you do not turn up, there is no refund.",
         footerAddress: EMAIL_ADDRESS,
       };
 

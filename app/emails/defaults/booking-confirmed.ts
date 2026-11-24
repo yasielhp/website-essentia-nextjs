@@ -8,7 +8,7 @@ export const bookingConfirmed: MessageDefaults = {
     "Tu reserva ha sido confirmada, {{first_name}}.",
     ["Estamos deseando verte. Aquí tienes los detalles de tu próxima sesión."],
     [
-      "Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.",
+      "Para cambiar o cancelar tu cita, escríbenos hasta 24 horas antes de la sesión; si la cancelas, te devolvemos el importe pagado. Dentro de las 24 horas previas, o si no acudes, no hay reembolso.",
     ],
   ),
   en: content(
@@ -20,7 +20,7 @@ export const bookingConfirmed: MessageDefaults = {
       "We look forward to seeing you. Here are the details of your upcoming session.",
     ],
     [
-      "If you need to cancel or reschedule, please contact us at least 24 hours before your session.",
+      "To change or cancel your appointment, write to us up to 24 hours before the session; if you cancel, we refund what you paid. Within the last 24 hours, or if you do not turn up, there is no refund.",
     ],
   ),
 };

@@ -13,7 +13,7 @@ import { consentRequestEmail } from "../templates/consent-request";
 /**
  * Sample data and the legacy email for every message, language and variant
  * (prepaid or pay at the centre, consent pending or signed, deposit or paid in
- * full). Shared by the tests that compare the code's own blocks and defaults
+ * full; a deposit is only ever a booking made before 2026-11-24). Shared by the tests that compare the code's own blocks and defaults
  * with what the legacy templates really produce. Test support only.
  */
 

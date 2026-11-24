@@ -77,7 +77,7 @@ export function bookingConfirmedEmail({
         ${cancelBlock}
 
         <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-          Si necesitas cancelar o cambiar la fecha, por favor contáctanos con al menos 24 horas de antelación.
+          Para cambiar o cancelar tu cita, escríbenos hasta 24 horas antes de la sesión; si la cancelas, te devolvemos el importe pagado. Dentro de las 24 horas previas, o si no acudes, no hay reembolso.
         </p>
       `,
     });
@@ -113,7 +113,7 @@ export function bookingConfirmedEmail({
       ${cancelBlock}
 
       <p style="margin:${calBtn ? "20px" : "0"} 0 0;font-size:14px;color:#4a6767;line-height:1.6;">
-        If you need to cancel or reschedule, please contact us at least 24 hours before your session.
+        To change or cancel your appointment, write to us up to 24 hours before the session; if you cancel, we refund what you paid. Within the last 24 hours, or if you do not turn up, there is no refund.
       </p>
     `,
   });
