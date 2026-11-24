@@ -5,6 +5,10 @@ import { loadColorSettings, DEFAULT_COLORS } from "@/utils/color-settings";
 import { toYMD, getWeekDays } from "@/utils/dashboard-calendar";
 import type { CalendarView, CalendarEvent } from "@/types/calendar";
 import type { CalendarFilters } from "@/utils/calendar-filters";
+import {
+  HIDDEN_BOOKING_STATUSES,
+  isDrawnBooking,
+} from "@/utils/calendar-status";
 
 /**
  * Everything the dashboard calendar draws, gathered and coloured.
@@ -21,6 +25,9 @@ export type EventLabels = {
   bookingFallback: string;
   staff: string;
   noStaff: string;
+  /** "Status" and "Pending": the line a pending booking's tooltip adds. */
+  status: string;
+  pending: string;
 };
 
 /** The span the chosen view covers, as two `YYYY-MM-DD`. */
@@ -131,6 +138,14 @@ export async function loadCalendarEvents({
     .lte("date", toDate)
     .order("time", { ascending: true });
 
+  // Not every row of `bookings` is an appointment: a draft is a public form
+  // abandoned before the deposit (some for weeks) and a cancelled booking is
+  // over. They are not asked for. A pending one (it waits for payment or the
+  // team) is, and is drawn apart.
+  for (const status of HIDDEN_BOOKING_STATUSES) {
+    bookingsQuery = bookingsQuery.neq("status", status);
+  }
+
   // A partner sees their own bookings and nothing else — not even a grey block
   // where somebody else's sits. The hours those occupy are refused by
   // `fetchAvailability` when a booking is made, which reads every booking that
@@ -175,6 +190,9 @@ export async function loadCalendarEvents({
   const events: CalendarEvent[] = [];
 
   for (const b of bookings) {
+    // The query leaves them out; this keeps one that comes back anyway (an
+    // older answer, a different filter) from being drawn as an appointment.
+    if (!isDrawnBooking(b.status as string | null)) continue;
     const serviceId = b.service_id as string | null;
     const tierId = b.tier_id as string | null;
     const color =
@@ -199,6 +217,8 @@ export async function loadCalendarEvents({
       staffId
         ? `${labels.staff}: ${staffNames.get(staffId) ?? "—"}`
         : labels.noStaff,
+      // A pending booking says what it is; the others have nothing to explain.
+      b.status === "pending" ? `${labels.status}: ${labels.pending}` : null,
     ]
       .filter(Boolean)
       .join("\n");

@@ -9,6 +9,8 @@ import {
   slotFor,
 } from "@/utils/dashboard-calendar";
 import { TIME_SLOTS } from "@/constants/booking";
+import { eventStyle } from "@/utils/calendar-status";
+import { PendingNote, pendingTitle } from "./pending-note";
 
 /**
  * One booking inside a time slot: a name and a treatment, and a click opens
@@ -31,15 +33,14 @@ function SlotEvent({
     <>
       <Tag
         onClick={event.type === "busy" ? undefined : onClick}
+        title={pendingTitle(event)}
         className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs ${
           event.type === "busy"
             ? ""
             : "cursor-pointer transition-opacity hover:opacity-75"
         }`}
-        style={{
-          backgroundColor: event.color + "22",
-          color: event.color,
-        }}
+        // Pending bookings are dashed and striped in their colour.
+        style={eventStyle(event)}
       >
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium">
@@ -48,6 +49,7 @@ function SlotEvent({
               <span className="mr-1.5 font-mono opacity-70">{event.time}</span>
             )}
             {event.title}
+            <PendingNote event={event} />
           </div>
           {event.subtitle && (
             <div className="truncate opacity-70">{event.subtitle}</div>
@@ -112,12 +114,14 @@ export function DayList({
                     type="button"
                     key={e.id + e.type}
                     onClick={() => onEventClick(e)}
+                    title={pendingTitle(e)}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-opacity hover:opacity-75"
-                    style={{ backgroundColor: e.color + "22", color: e.color }}
+                    style={eventStyle(e)}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">
                         {e.title}
+                        <PendingNote event={e} />
                       </div>
                       {e.subtitle && (
                         <div className="truncate text-xs opacity-70">

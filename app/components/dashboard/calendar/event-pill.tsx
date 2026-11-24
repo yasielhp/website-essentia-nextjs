@@ -1,6 +1,8 @@
 "use client";
 
 import type { CalendarEvent } from "@/types/calendar";
+import { eventStyle } from "@/utils/calendar-status";
+import { PendingNote, pendingTitle } from "./pending-note";
 
 export function EventPill({
   event,
@@ -13,8 +15,10 @@ export function EventPill({
 }) {
   // A click opens the booking in the side sheet, which is where the rest of
   // it lives: the pill carries no hover card of its own.
-  const bg = event.color + "22";
-  const fg = event.color;
+  // A booking that waits for payment or the team keeps its colour but is drawn
+  // dashed and striped (`eventStyle`), says so on hover and to a screen reader.
+  const style = eventStyle(event);
+  const title = pendingTitle(event);
   // Busy blocks stand in for bookings the viewer may not open, so they render
   // as plain divs — nothing to point at, nothing to click.
   const busy = event.type === "busy";
@@ -28,20 +32,22 @@ export function EventPill({
           <span className="mr-1 opacity-60">{event.time.slice(0, 5)}</span>
         )}
         {event.title}
+        <PendingNote event={event} />
       </>
     );
 
     return (
       <>
         {busy ? (
-          <div style={{ backgroundColor: bg, color: fg }} className={className}>
+          <div style={style} className={className}>
             {body}
           </div>
         ) : (
           <button
             type="button"
             onClick={onClick}
-            style={{ backgroundColor: bg, color: fg }}
+            title={title}
+            style={style}
             className={`${className} cursor-pointer transition-opacity hover:opacity-75`}
           >
             {body}
@@ -61,20 +67,22 @@ export function EventPill({
       {event.subtitle && (
         <div className="truncate opacity-70">{event.subtitle}</div>
       )}
+      <PendingNote event={event} />
     </>
   );
 
   return (
     <>
       {busy ? (
-        <div style={{ backgroundColor: bg, color: fg }} className={className}>
+        <div style={style} className={className}>
           {body}
         </div>
       ) : (
         <button
           type="button"
           onClick={onClick}
-          style={{ backgroundColor: bg, color: fg }}
+          title={title}
+          style={style}
           className={`${className} cursor-pointer transition-opacity hover:opacity-75`}
         >
           {body}

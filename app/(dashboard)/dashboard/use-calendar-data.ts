@@ -91,7 +91,7 @@ export function useCalendarEvents({
     events: CalendarEvent[];
   }>({ loading: true, events: [] });
 
-  const { bookingFallback, staff, noStaff } = labels;
+  const { bookingFallback, staff, noStaff, status, pending } = labels;
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +103,7 @@ export function useCalendarEvents({
         isPartner,
         userId,
         filters,
-        labels: { bookingFallback, staff, noStaff },
+        labels: { bookingFallback, staff, noStaff, status, pending },
       });
       if (cancelled) return;
       setCalendar({ loading: false, events });
@@ -122,6 +122,8 @@ export function useCalendarEvents({
     bookingFallback,
     staff,
     noStaff,
+    status,
+    pending,
   ]);
 
   return calendar;

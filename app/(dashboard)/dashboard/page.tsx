@@ -27,6 +27,7 @@ import {
 export default function DashboardPage() {
   const t = useTranslations("dashboard.calendar");
   const tTooltip = useTranslations("dashboard.calendar.tooltip");
+  const tStatus = useTranslations("dashboard.bookings.status");
   const locale = useLocale();
   const { push } = useRouter();
   const { user } = useAuth();
@@ -59,6 +60,8 @@ export default function DashboardPage() {
         bookingFallback: t("bookingFallback"),
         staff: tTooltip("staff"),
         noStaff: tTooltip("noStaff"),
+        status: tTooltip("status"),
+        pending: tStatus("pending"),
       },
     });
 
