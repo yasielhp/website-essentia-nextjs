@@ -439,7 +439,10 @@
           "failed": "Fallido",
           "synced": "Sincronizada",
           "removed": "Evento retirado",
-          "reminded": "Recordatorio"
+          "reminded": "Recordatorio",
+          "refund_owed": "Reembolso pendiente",
+          "refund_waived": "Sin reembolso",
+          "refunded": "Reembolsada"
         },
         "roles": {
           "admin": "Administrador",

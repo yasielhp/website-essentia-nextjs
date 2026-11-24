@@ -202,13 +202,15 @@
   "cancel": {
     "confirm": {
       "heading": "Cancel your appointment?",
-      "body": "You can cancel at no cost. If you already paid online, we refund it.",
+      "body": "You can cancel at no cost.",
+      "bodyRefund": "You can cancel at no cost. We will refund the {amount} you paid online.",
       "action": "Yes, cancel my appointment",
       "working": "Cancelling…"
     },
     "done": {
       "heading": "Appointment cancelled",
-      "body": "Your appointment is cancelled and the slot is free again. If you paid online, the refund arrives within a few days."
+      "body": "Your appointment is cancelled and the slot is free again.",
+      "bodyRefund": "Your appointment is cancelled and the slot is free again. We will refund the {amount} you paid online to the same card; it may take a few days to show."
     },
     "late": {
       "heading": "Too late to cancel online",

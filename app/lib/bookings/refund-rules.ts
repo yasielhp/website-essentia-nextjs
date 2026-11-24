@@ -1,0 +1,241 @@
+import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
+
+/**
+ * What a cancelled booking owes back, read from the booking and its payment
+ * history. Pure, so the cancellation paths, the dashboard and the tests agree.
+ *
+ * Nothing here returns money: Redsys refunds are made by hand in its portal.
+ * What the code keeps is the record: a `refund_owed` entry when a booking
+ * paid online is cancelled at least 24 hours before (or inside them, when
+ * the team decides to refund anyway), a `refund_waived` entry when it is
+ * cancelled later and nothing is owed, and a `refunded` entry when an
+ * administrator marks the money as returned. No column holds the state: it is
+ * those entries plus `payment_status`, so no migration is needed.
+ *
+ * Bookings drawn from a bonus (`payment_mode = 'bonus'`) are out of it: the
+ * money was paid for the bonus, not for the session.
+ */
+
+/** The history's words for the three steps (`booking_events.event`). */
+export const REFUND_OWED = "refund_owed";
+export const REFUND_WAIVED = "refund_waived";
+export const REFUNDED = "refunded";
+
+/** The columns of a booking the rules read. */
+export type RefundBooking = {
+  status: string | null;
+  payment_status: string | null;
+  payment_mode: string | null;
+  amount_paid_eur: number | string | null;
+  /** The Redsys order number, under its historical name. */
+  stripe_session_id: string | null;
+  balance_settled_method: string | null;
+};
+
+/** One `channel = 'payment'` entry of the booking's history, oldest first. */
+export type PaymentEntry = {
+  event: string;
+  actor_role: string | null;
+  provider_id: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+};
+
+/** What was paid online, and the Redsys order that took it. */
+export type OnlinePayment = { orderId: string | null; onlineEur: number };
+
+export type RefundState =
+  | { kind: "none" }
+  | { kind: "owed"; amountEur: number }
+  | { kind: "refunded"; amountEur: number };
+
+/** What the dashboard shows of a booking's online payment and its refund. */
+export type BookingRefundView = OnlinePayment & {
+  state: RefundState;
+  /** What can still be marked as refunded (0 when nothing can). */
+  refundableEur: number;
+  /** True for an administrator, on a cancelled booking with money to return. */
+  canMark: boolean;
+};
+
+export type RefundReason =
+  /** Nothing was paid online: there is nothing to return. */
+  | "nothing_online"
+  /** Cancelled at least 24 hours before: the Terms promise the refund. */
+  | "in_advance"
+  /** Inside the last 24 hours (or after the session): no refund. */
+  | "late"
+  /** Inside the last 24 hours, and the team chose to refund all the same. */
+  | "late_team_refunds";
+
+export type RefundDecision = { owed: boolean; reason: RefundReason };
+
+const toCents = (eur: number) => Math.round(eur * 100);
+
+/** The amount an entry carries, or 0. */
+export function entryAmount(entry: Pick<PaymentEntry, "payload">): number {
+  const value = Number(entry.payload?.amountEur);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+/**
+ * Money that came through Redsys: the payments the webhook recorded (actor
+ * `system`, with the order number). A payment taken at the desk has neither.
+ * If a booking holds money under a Redsys order and the entry was never
+ * written, the booking's own amount stands in, unless part of it was taken
+ * at the desk.
+ */
+export function onlinePayment(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+): OnlinePayment {
+  if (booking.payment_mode === "bonus") return { orderId: null, onlineEur: 0 };
+
+  const redsys = entries.filter(
+    (e) => e.event === "paid" && e.actor_role === "system" && e.provider_id,
+  );
+  if (redsys.length > 0) {
+    const cents = redsys.reduce((sum, e) => sum + toCents(entryAmount(e)), 0);
+    return {
+      orderId: redsys.at(-1)?.provider_id ?? null,
+      onlineEur: cents / 100,
+    };
+  }
+
+  const holdsMoney = ["paid", "deposit_paid", "refunded"].includes(
+    booking.payment_status ?? "",
+  );
+  if (
+    booking.stripe_session_id &&
+    holdsMoney &&
+    !booking.balance_settled_method
+  ) {
+    return {
+      orderId: booking.stripe_session_id,
+      onlineEur: Number(booking.amount_paid_eur ?? 0),
+    };
+  }
+  return { orderId: null, onlineEur: 0 };
+}
+
+/**
+ * Whether cancelling now leaves money to return.
+ *
+ * At least 24 hours before, always: whoever cancels, the Terms promise it. A
+ * client cannot cancel later than that on their own (the link refuses), so a
+ * late cancellation is the team's, and the team decides, "no refund" unless
+ * they say otherwise: the late ones are mostly a client calling at the last
+ * minute or not turning up, which the Terms do not refund; when it is the
+ * centre that cancels (somebody ill, a room lost), the team ticks it.
+ */
+export function refundOnCancel(input: {
+  onlineEur: number;
+  hoursBefore: number;
+  by: "client" | "team";
+  teamRefundsLate?: boolean;
+}): RefundDecision {
+  if (!(input.onlineEur > 0)) return { owed: false, reason: "nothing_online" };
+  if (input.hoursBefore >= CANCELLATION_WINDOW_HOURS) {
+    return { owed: true, reason: "in_advance" };
+  }
+  if (input.by === "team" && input.teamRefundsLate === true) {
+    return { owed: true, reason: "late_team_refunds" };
+  }
+  return { owed: false, reason: "late" };
+}
+
+/** Cents already marked as returned. */
+function refundedCents(entries: PaymentEntry[]): number {
+  return entries
+    .filter((e) => e.event === REFUNDED)
+    .reduce((sum, e) => sum + toCents(entryAmount(e)), 0);
+}
+
+/**
+ * What can still be marked as returned: the online money, less what was
+ * already returned, and never more than the booking still holds.
+ */
+export function refundableEur(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+  online: OnlinePayment,
+): number {
+  if (booking.payment_mode === "bonus") return 0;
+  if (!["paid", "deposit_paid"].includes(booking.payment_status ?? "")) {
+    return 0;
+  }
+  const left = Math.min(
+    toCents(online.onlineEur) - refundedCents(entries),
+    toCents(Number(booking.amount_paid_eur ?? 0)),
+  );
+  return left > 0 ? left / 100 : 0;
+}
+
+/**
+ * Where the refund stands: owed (the last `refund_owed` entry, less what was
+ * returned after it, on a booking still cancelled), returned, or nothing.
+ */
+export function refundState(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+  online: OnlinePayment,
+): RefundState {
+  const returned = refundedCents(entries);
+  if (booking.payment_status === "refunded") {
+    return {
+      kind: "refunded",
+      amountEur: returned > 0 ? returned / 100 : online.onlineEur,
+    };
+  }
+
+  let lastOwed = -1;
+  entries.forEach((e, i) => {
+    if (e.event === REFUND_OWED) lastOwed = i;
+  });
+  if (booking.status === "cancelled" && lastOwed >= 0) {
+    const owed = toCents(entryAmount(entries[lastOwed]!));
+    const returnedSince = refundedCents(entries.slice(lastOwed + 1));
+    const left = Math.min(
+      owed - returnedSince,
+      toCents(refundableEur(booking, entries, online)),
+    );
+    if (left > 0) return { kind: "owed", amountEur: left / 100 };
+  }
+
+  return returned > 0
+    ? { kind: "refunded", amountEur: returned / 100 }
+    : { kind: "none" };
+}
+
+/**
+ * The write that records `amountEur` as returned. All of it: the booking
+ * becomes `refunded` and keeps its amount, so the ledger shows the row as a
+ * refund and stops counting it as income. Part of it: the booking keeps the
+ * rest as income (its `amount_paid_eur` goes down) and stays as it was.
+ */
+export function refundPatch(
+  booking: Pick<RefundBooking, "amount_paid_eur">,
+  amountEur: number,
+): { payment_status: "refunded" } | { amount_paid_eur: number } {
+  const paid = toCents(Number(booking.amount_paid_eur ?? 0));
+  const back = toCents(amountEur);
+  return back >= paid
+    ? { payment_status: "refunded" }
+    : { amount_paid_eur: (paid - back) / 100 };
+}
+
+/** The dashboard's view of it, from what the server read. */
+export function refundView(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+  isAdmin: boolean,
+): BookingRefundView {
+  const online = onlinePayment(booking, entries);
+  const refundable = refundableEur(booking, entries, online);
+  return {
+    ...online,
+    state: refundState(booking, entries, online),
+    refundableEur: refundable,
+    canMark: isAdmin && booking.status === "cancelled" && refundable > 0,
+  };
+}

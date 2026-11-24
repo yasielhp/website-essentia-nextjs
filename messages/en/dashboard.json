@@ -439,7 +439,10 @@
           "failed": "Failed",
           "synced": "Synced",
           "removed": "Event removed",
-          "reminded": "Reminder"
+          "reminded": "Reminder",
+          "refund_owed": "Refund pending",
+          "refund_waived": "No refund",
+          "refunded": "Refunded"
         },
         "roles": {
           "admin": "Admin",

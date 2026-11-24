@@ -31,7 +31,13 @@ export type BookingEventName =
   | "reminded"
   | "failed"
   | "synced"
-  | "removed";
+  | "removed"
+  /** A cancelled booking paid online whose money has to be returned. */
+  | "refund_owed"
+  /** Cancelled inside the last 24 hours: nothing is returned. */
+  | "refund_waived"
+  /** The money was returned (by hand, in the Redsys portal) and marked so. */
+  | "refunded";
 
 /**
  * How far it got.

@@ -9,6 +9,7 @@ import {
   setSystemTime,
   test,
 } from "bun:test";
+import { formatPrice } from "@/utils/format";
 
 /**
  * The real cancellation by link, with the database, the mailer, the history,
@@ -22,9 +23,16 @@ type Ctx = { table: string; ops: string[] };
 
 let bookingRow: Record<string, unknown> = {};
 let bookingUpdates = 0;
-let sent: { to: string; subject: string }[] = [];
+let sent: { to: string; subject: string; html: string }[] = [];
+let recorded: { event?: string; channel?: string; summary?: string }[] = [];
+/** The booking's `payment` entries, as `booking_events` answers them. */
+let paymentEntries: Record<string, unknown>[] = [];
 
 function resolveDb({ table, ops }: Ctx): unknown {
+  if (table === "booking_events") return { data: paymentEntries, error: null };
+  if (table === "profiles") {
+    return { data: { email: "office@example.test" }, error: null };
+  }
   if (table === "bookings") {
     if (ops.includes("update")) {
       bookingUpdates += 1;
@@ -77,15 +85,19 @@ beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => fakeAdmin);
   mock.module("@/emails/send", () => ({
     ...real.send,
-    sendEmail: async (m: { to: string; subject: string }) => {
+    sendEmail: async (m: { to: string; subject: string; html: string }) => {
       sent.push(m);
       return { error: null, id: "re-1" };
     },
   }));
   mock.module("@/lib/booking-events/record", () => ({
     ...real.record,
-    recordBookingEvent: async () => {},
-    recordBookingEvents: async () => {},
+    recordBookingEvent: async (e: (typeof recorded)[number]) => {
+      recorded.push(e);
+    },
+    recordBookingEvents: async (es: typeof recorded) => {
+      recorded.push(...es);
+    },
   }));
   mock.module("@/lib/calendar-propagate", () => ({
     ...real.propagate,
@@ -111,6 +123,8 @@ afterAll(() => {
 beforeEach(() => {
   bookingUpdates = 0;
   sent = [];
+  recorded = [];
+  paymentEntries = [];
   bookingRow = {
     id: "b-1",
     service_id: "svc-1",
@@ -166,5 +180,90 @@ describe("the 24-hour limit of the cancellation link, in winter", () => {
     expect((await actions.fetchCancellableBooking("tok"))?.cancellable).toBe(
       false,
     );
+  });
+});
+
+/** `100,00 €`, with the narrow space Intl puts before the sign. */
+const EUR100 = formatPrice(100, "es");
+
+describe("the refund promised by the cancellation link", () => {
+  const paidOnline = () => {
+    bookingRow = {
+      ...bookingRow,
+      payment_status: "paid",
+      payment_mode: "full",
+      amount_paid_eur: "100.00",
+      stripe_session_id: "790098209516",
+      balance_settled_method: null,
+    };
+    paymentEntries = [
+      {
+        event: "paid",
+        actor_role: "system",
+        provider_id: "790098209516",
+        payload: { amountEur: 100 },
+        created_at: "2026-07-01T10:00:00Z",
+      },
+    ];
+  };
+
+  test("a booking paid online, cancelled two days before, is owed back in full", async () => {
+    paidOnline();
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+
+    const page = await actions.fetchCancellableBooking("tok");
+    expect(page?.refundEur).toBe(100);
+
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res).toEqual({ ok: true, refundEur: 100 });
+
+    const owed = recorded.find(
+      (e) => e.channel === "payment" && e.event === "refund_owed",
+    );
+    expect(owed?.summary).toBe(
+      `Reembolso pendiente · ${EUR100} · pedido 790098209516 · cancelada con 48 h de antelación`,
+    );
+
+    // The client's acknowledgement and, apart, the office's notice.
+    const office = sent.find((m) =>
+      m.subject.startsWith("Reembolso pendiente"),
+    );
+    expect(office?.to).toBe("office@example.test");
+    expect(office?.subject).toBe(
+      `Reembolso pendiente — ${EUR100} · Ana García`,
+    );
+    expect(office?.html).toContain("790098209516");
+    expect(office?.html).toContain("/dashboard/bookings/b-1");
+    expect(sent.some((m) => m.to === "ana@example.test")).toBe(true);
+  });
+
+  test("a booking with nothing paid online promises nothing and writes nothing about money", async () => {
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    expect(
+      (await actions.fetchCancellableBooking("tok"))?.refundEur,
+    ).toBeNull();
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res).toEqual({ ok: true, refundEur: null });
+    expect(recorded.some((e) => e.channel === "payment")).toBe(false);
+    expect(sent.map((m) => m.to)).toEqual(["ana@example.test"]);
+  });
+
+  test("a session drawn from a bonus is not refunded here", async () => {
+    paidOnline();
+    bookingRow = { ...bookingRow, payment_mode: "bonus" };
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res.refundEur).toBeNull();
+    expect(recorded.some((e) => e.event === "refund_owed")).toBe(false);
+  });
+
+  test("inside the last 24 hours the page promises nothing and cannot cancel", async () => {
+    paidOnline();
+    setSystemTime(new Date("2026-07-14T10:00:00Z"));
+    const page = await actions.fetchCancellableBooking("tok");
+    expect(page?.cancellable).toBe(false);
+    expect(page?.refundEur).toBeNull();
+    expect((await actions.cancelBookingByToken("tok", "es")).ok).toBe(false);
+    expect(recorded).toEqual([]);
   });
 });

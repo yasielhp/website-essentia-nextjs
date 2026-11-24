@@ -66,6 +66,14 @@ function resendTags(tags: Record<string, string>) {
   return Object.entries(tags).map(([name, value]) => ({ name, value }));
 }
 
+/**
+ * Where a notice for the office goes: the admin's address, else the standing
+ * copy. Never null, so a staff-only notice always has somewhere to land.
+ */
+export async function officeAddress(): Promise<string> {
+  return (await getAdminEmail()) ?? STANDING_BCC;
+}
+
 export async function getAdminEmail(): Promise<string | null> {
   try {
     const { data } = await getAdminClient()

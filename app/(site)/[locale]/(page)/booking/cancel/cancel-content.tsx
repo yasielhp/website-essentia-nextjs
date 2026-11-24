@@ -5,7 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarX, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatBookingDate, type SupportedLocale } from "@/utils/format";
+import {
+  formatBookingDate,
+  formatPrice,
+  type SupportedLocale,
+} from "@/utils/format";
 import {
   fetchCancellableBooking,
   cancelBookingByToken,
@@ -22,6 +26,8 @@ export function CancelContent() {
   const [booking, setBooking] = useState<CancellableBooking | null>(null);
   const [screen, setScreen] = useState<Screen>("loading");
   const [working, setWorking] = useState(false);
+  // What the cancellation left owed back, as the server decided it.
+  const [refundEur, setRefundEur] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +55,7 @@ export function CancelContent() {
     setWorking(true);
     try {
       const result = await cancelBookingByToken(token, locale as "en" | "es");
+      setRefundEur(result.refundEur ?? null);
       setScreen(
         result.ok
           ? "done"
@@ -69,12 +76,26 @@ export function CancelContent() {
     ? formatBookingDate(booking.date.slice(0, 10), locale as SupportedLocale)
     : null;
 
+  // Money back is promised only when some was paid online and the session is
+  // still at least 24 hours away; the server says both.
+  const price = (amount: number) =>
+    formatPrice(amount, locale as SupportedLocale);
   const copy: Record<
     Exclude<Screen, "loading">,
     { title: string; body: string }
   > = {
-    confirm: { title: t("confirm.heading"), body: t("confirm.body") },
-    done: { title: t("done.heading"), body: t("done.body") },
+    confirm: {
+      title: t("confirm.heading"),
+      body: booking?.refundEur
+        ? t("confirm.bodyRefund", { amount: price(booking.refundEur) })
+        : t("confirm.body"),
+    },
+    done: {
+      title: t("done.heading"),
+      body: refundEur
+        ? t("done.bodyRefund", { amount: price(refundEur) })
+        : t("done.body"),
+    },
     late: { title: t("late.heading"), body: t("late.body") },
     already: { title: t("already.heading"), body: t("already.body") },
     missing: { title: t("missing.heading"), body: t("missing.body") },

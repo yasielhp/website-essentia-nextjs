@@ -12,6 +12,10 @@ import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { removeBookingFromCalendars } from "@/lib/calendar-propagate";
 import { formatLongDate } from "@/lib/format-date";
 import { recordBookingEvent } from "@/lib/booking-events/record";
+import {
+  refundIfCancelledNow,
+  settleRefundOnCancel,
+} from "@/lib/bookings/refunds";
 
 const SELECT =
   "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, staff_id, service_tiers(label)";
@@ -52,6 +56,10 @@ export async function fetchCancellableBooking(
   const booking = (data as Row[] | null)?.[0];
   if (!booking) return null;
 
+  const cancellable =
+    booking.status !== "cancelled" &&
+    isOutsideCancellationWindow(booking.date, booking.time);
+
   return {
     serviceTitle: booking.service_title,
     sessionType: booking.service_tiers?.label ?? null,
@@ -60,10 +68,10 @@ export async function fetchCancellableBooking(
     duration: booking.duration,
     status: booking.status,
     firstName: booking.first_name,
-    cancellable:
-      booking.status !== "cancelled" &&
-      isOutsideCancellationWindow(booking.date, booking.time),
+    cancellable,
     alreadyCancelled: booking.status === "cancelled",
+    // The page promises money back only when there is money to give back.
+    refundEur: cancellable ? await refundIfCancelledNow(booking.id) : null,
   };
 }
 
@@ -84,7 +92,12 @@ export async function fetchCancellableBooking(
 export async function cancelBookingByToken(
   token: string,
   locale: "en" | "es" = "es",
-): Promise<{ ok: boolean; reason?: "not_found" | "too_late" | "already" }> {
+): Promise<{
+  ok: boolean;
+  reason?: "not_found" | "too_late" | "already";
+  /** Money paid online that is now owed back to the client, or null. */
+  refundEur?: number | null;
+}> {
   if (!token) return { ok: false, reason: "not_found" };
 
   const db = getAdminClient().database;
@@ -118,6 +131,16 @@ export async function cancelBookingByToken(
     event: "cancelled",
     actorRole: "client",
     summary: "Reserva cancelada por el cliente desde el enlace del correo",
+  });
+
+  // Inside the window checked above, so money paid online is owed back: the
+  // history says so and the office is emailed the amount and the order.
+  const refund = await settleRefundOnCancel({
+    bookingId: booking.id,
+    source: "client_link",
+    actorRole: "client",
+    date: booking.date,
+    time: booking.time,
   });
 
   // The same email staff send when they cancel from the dashboard, so the
@@ -240,5 +263,5 @@ export async function cancelBookingByToken(
     });
   }
 
-  return { ok: true };
+  return { ok: true, refundEur: refund.owed ? refund.amountEur : null };
 }

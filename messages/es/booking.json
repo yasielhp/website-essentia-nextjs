@@ -202,13 +202,15 @@
   "cancel": {
     "confirm": {
       "heading": "¿Cancelar tu cita?",
-      "body": "Puedes cancelarla sin coste. Si ya habías pagado online, te devolvemos el importe.",
+      "body": "Puedes cancelarla sin coste.",
+      "bodyRefund": "Puedes cancelarla sin coste. Te devolveremos los {amount} que pagaste online.",
       "action": "Sí, cancelar mi cita",
       "working": "Cancelando…"
     },
     "done": {
       "heading": "Cita cancelada",
-      "body": "Tu cita queda cancelada y el hueco vuelve a estar libre. Si habías pagado online, recibirás el reembolso en unos días."
+      "body": "Tu cita queda cancelada y el hueco vuelve a estar libre.",
+      "bodyRefund": "Tu cita queda cancelada y el hueco vuelve a estar libre. Te devolveremos los {amount} que pagaste online, en la misma tarjeta; puede tardar unos días en aparecer."
     },
     "late": {
       "heading": "Ya no se puede cancelar online",

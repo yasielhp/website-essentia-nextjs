@@ -52,6 +52,11 @@ export type CancellableBooking = {
   /** False once the session is inside the free-cancellation window. */
   cancellable: boolean;
   alreadyCancelled: boolean;
+  /**
+   * What cancelling now returns to the client (money paid online), or null
+   * when nothing would: not paid online, or no longer cancellable.
+   */
+  refundEur: number | null;
 };
 
 /** A booking row as read from the database. */
