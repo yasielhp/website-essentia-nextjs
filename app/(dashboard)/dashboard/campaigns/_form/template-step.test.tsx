@@ -70,8 +70,11 @@ describe("picking does what pressing a card did", () => {
     expect(source).toMatch(
       /type: "SET_CONTENT_BOTH",\s*content: previousVersions\(row\.content\)/,
     );
-    // Nothing writes one language alone any more.
+    // Nothing writes one language alone any more: the action is gone too.
     expect(source).not.toContain("SET_CONTENT_ALL");
+    expect(
+      readFileSync(join(import.meta.dir, "form-state.ts"), "utf8"),
+    ).not.toContain("SET_CONTENT_ALL");
   });
 
   test("each pick tells the form what it picked, for the folded summary", () => {

@@ -134,11 +134,6 @@ export type FormAction =
       value: string;
     }
   | {
-      type: "SET_CONTENT_ALL";
-      locale: CampaignLocale;
-      content: CampaignLocaleContent;
-    }
-  | {
       /** A starting point: both languages at once, whatever was there. */
       type: "SET_CONTENT_BOTH";
       content: Record<CampaignLocale, CampaignLocaleContent>;
@@ -370,12 +365,6 @@ function reduce(state: FormState, action: FormAction): FormState {
           state.fieldErrors,
           `content.${action.locale}.${action.field}`,
         ),
-      };
-    case "SET_CONTENT_ALL":
-      return {
-        ...state,
-        content: { ...state.content, [action.locale]: action.content },
-        fieldErrors: without(state.fieldErrors, `content.${action.locale}`),
       };
     case "SET_CONTENT_BOTH":
       return {

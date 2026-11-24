@@ -641,11 +641,15 @@ describe("the language on screen is always one the campaign is written in", () =
 
   describe("which versions have something missing", () => {
     const named = { ...initialFormState, name: "Reapertura" };
+    /** Writes one language and leaves the other as it is. */
     const fill = (state: FormState, locale: "es" | "en", hello: string) =>
       formReducer(state, {
-        type: "SET_CONTENT_ALL",
-        locale,
-        content: written(hello),
+        type: "SET_CONTENT_BOTH",
+        content: {
+          es: state.content.es,
+          en: state.content.en,
+          [locale]: written(hello),
+        },
       });
 
     test("a new campaign for everybody lacks both", () => {

@@ -91,9 +91,8 @@ describe("«Qué dice» for an audience of both languages", () => {
 
   test("a version with something missing is marked on its tab and named", () => {
     const onlySpanish = formReducer(base, {
-      type: "SET_CONTENT_ALL",
-      locale: "es",
-      content: written("Hola"),
+      type: "SET_CONTENT_BOTH",
+      content: { es: written("Hola"), en: base.content.en },
     });
     const html = render(onlySpanish);
     expect(html).toContain('data-incomplete="en"');
