@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarX, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getPathname } from "../../../../../../i18n/navigation";
 import {
   formatBookingDate,
   formatPrice,
@@ -179,8 +180,17 @@ export function CancelContent() {
                   {working ? t("confirm.working") : t("confirm.action")}
                 </Button>
               )}
-              {/* Booking is paused, so "book again" points at contact. */}
-              <Button variant="outline" size="md" href="/contact">
+              {/* Before cancelling, "keep my appointment" leaves with nothing
+                  changed (home); after, "book another session" opens the
+                  booking form. Both in the page's language. */}
+              <Button
+                variant="outline"
+                size="md"
+                href={getPathname({
+                  locale: locale as "en" | "es",
+                  href: screen === "confirm" ? "/" : "/booking",
+                })}
+              >
                 {screen === "confirm" ? t("keep") : t("bookAgain")}
               </Button>
             </div>

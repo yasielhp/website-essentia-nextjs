@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildLlmsFullTxt, buildLlmsTxt } from "@/lib/llms";
+import { getPathname } from "../../i18n/navigation";
 
 /**
  * The centre is open at Rambla de Santa Cruz, 83 and books online. Nothing the
@@ -41,5 +42,22 @@ describe("no word of the move or of the old premises", () => {
       expect(body).toContain("{service}");
       expect(body).toContain("Rambla de Santa Cruz, 83");
     }
+  });
+});
+
+describe("booking is open", () => {
+  test("the cancel page sends 'book another session' to the booking form, in the page's language", () => {
+    const source = readFileSync(
+      join(
+        import.meta.dir,
+        "../(site)/[locale]/(page)/booking/cancel/cancel-content.tsx",
+      ),
+      "utf8",
+    );
+    expect(source).not.toContain('href="/contact"');
+    expect(source).not.toMatch(/booking is paused/i);
+    expect(source).toContain('href: screen === "confirm" ? "/" : "/booking"');
+    expect(getPathname({ locale: "es", href: "/booking" })).toBe("/es/reserva");
+    expect(getPathname({ locale: "en", href: "/booking" })).toBe("/booking");
   });
 });
