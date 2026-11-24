@@ -358,6 +358,11 @@
       "errors": {
         "reservationRequired": "Reservation number is required.",
         "saveFailed": "Failed to save booking."
+      },
+      "refund": {
+        "inAdvance": "{amount} was paid online and the session is 24 hours or more away: saving records a pending refund of {amount} and emails the administrator the Redsys order number.",
+        "lateLabel": "Refund the {amount} paid online anyway",
+        "lateHelp": "The session is less than 24 hours away or has passed: under the Terms there is no refund. Tick it only if the centre is cancelling or you decide to refund; it is then recorded as a pending refund and the administrator gets an email."
       }
     },
     "detail": {

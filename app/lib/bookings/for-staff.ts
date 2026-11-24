@@ -9,6 +9,10 @@ import { notifyStaffOnWhatsApp } from "@/lib/whatsapp/notify";
 import { notifyBookingCore } from "@/lib/bookings/notify";
 import { clientWasNotified } from "@/lib/bookings/notify-outcome";
 import { parseIsoDate } from "@/utils/format";
+import {
+  settleRefundOnCancel,
+  type CancelRefund,
+} from "@/lib/bookings/refunds";
 
 /**
  * Taking and cancelling a booking on behalf of the centre, with no browser in
@@ -328,19 +332,24 @@ export type CancelResult =
       ok: true;
       bookingId: string;
       paid_eur: number;
+      /** Money paid online now owed back, as the history recorded it. */
+      refund: CancelRefund;
       notified: { client: boolean; professional: boolean; calendar: boolean };
     };
 
 /**
  * Cancels a booking as the dashboard does: the status, the history, the
  * client's email, the professional's WhatsApp and the calendars. Money already
- * collected is *not* returned — `paid_eur` says how much there is to settle by
- * hand.
+ * collected is *not* returned: a booking paid online and cancelled at least 24
+ * hours before (or later, with `refundLate`, the team's choice) is recorded as
+ * a pending refund and the office is emailed, and the money goes back by hand
+ * in the Redsys portal. `paid_eur` is everything the booking had collected.
  */
 export async function cancelBookingForStaff(
   bookingId: string,
   reason: string | undefined,
   actor: Actor,
+  options?: { refundLate?: boolean },
 ): Promise<CancelResult> {
   const { data } = await db()
     .from("bookings")
@@ -393,6 +402,17 @@ export async function cancelBookingForStaff(
       status: { before: booking.status, after: "cancelled" },
       reason: reason ?? null,
     },
+  });
+
+  const refund = await settleRefundOnCancel({
+    bookingId,
+    source: "assistant",
+    ...actorOf(actor),
+    date: booking.date,
+    time: booking.time,
+    teamRefundsLate:
+      options?.refundLate === true &&
+      (actor.role === "admin" || actor.role === "staff"),
   });
 
   const notified = { client: false, professional: false, calendar: false };
@@ -465,6 +485,7 @@ export async function cancelBookingForStaff(
     ok: true,
     bookingId,
     paid_eur: Number(booking.amount_paid_eur ?? 0),
+    refund,
     notified,
   };
 }

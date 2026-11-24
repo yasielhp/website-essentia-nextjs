@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { notifySuccess } from "@/lib/feedback";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
+import { fetchBookingRefund } from "@/actions/booking-refunds";
+import type { BookingRefundView } from "@/lib/bookings/refund-rules";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { DeleteDialog } from "./delete-dialog";
@@ -36,6 +38,7 @@ import {
 } from "./save-booking";
 import { useLocationOptions } from "../../_shared/location-options";
 import { PaymentFields } from "../../_shared/payment-fields";
+import { RefundOnCancel } from "./refund-on-cancel";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -110,14 +113,37 @@ export default function EditBookingPage() {
     payment,
   } = form;
 
-  const { originalRef, tierStaff, origDate, origTime, origPartlyPaid } =
-    useBookingEditData({
-      id,
-      serviceId,
-      tierId,
-      dispatchAsync,
-      dispatchForm,
+  const {
+    originalRef,
+    tierStaff,
+    origDate,
+    origTime,
+    origStatus,
+    origPartlyPaid,
+  } = useBookingEditData({
+    id,
+    serviceId,
+    tierId,
+    dispatchAsync,
+    dispatchForm,
+  });
+
+  // The money paid online, for what cancelling does with it. Read for the
+  // people who answer for it; a partner gets nothing back.
+  const [refundView, setRefundView] = useState<BookingRefundView | null>(null);
+  const [refundLate, setRefundLate] = useState(false);
+  useEffect(() => {
+    if (role !== "admin" && role !== "staff") return;
+    let cancelled = false;
+    void fetchBookingRefund(getAccessToken(), id).then((view) => {
+      if (!cancelled) setRefundView(view);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, role]);
+  const cancelling =
+    status === "cancelled" && origStatus !== "" && origStatus !== "cancelled";
 
   const fullNameForCrumb =
     [firstName, lastName].filter(Boolean).join(" ") || null;
@@ -167,6 +193,7 @@ export default function EditBookingPage() {
       id,
       draft,
       originalRef.current,
+      { refundLate: cancelling && refundLate },
     );
     dispatchAsync({ type: "SUBMIT_END" });
 
@@ -220,6 +247,16 @@ export default function EditBookingPage() {
               dispatchForm({ type: "SET_FIELD", field: "status", value: s })
             }
           />
+          {cancelling && (
+            <RefundOnCancel
+              view={refundView}
+              date={origDate}
+              time={origTime}
+              refundLate={refundLate}
+              onChange={setRefundLate}
+              disabled={submitting}
+            />
+          )}
 
           {/* ── 2. Service ── */}
           <ServiceSection

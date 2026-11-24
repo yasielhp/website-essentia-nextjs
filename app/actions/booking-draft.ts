@@ -13,6 +13,7 @@ import type {
 } from "@/lib/booking-events/types";
 import { formatPrice, parseIsoDate } from "@/utils/format";
 import { amountOwed } from "@/lib/payments/amounts";
+import { settleRefundOnCancel } from "@/lib/bookings/refunds";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -635,11 +636,20 @@ async function recordBookingEdit(
   await recordBookingEvents(entries);
 }
 
-/** Full booking edit from the dashboard. Staff only. */
+/**
+ * Full booking edit from the dashboard. Staff only.
+ *
+ * `options.refundLate` is the team's answer, for a booking paid online that
+ * they cancel inside the last 24 hours, to "return the money anyway?". It is
+ * read only from an administrator or a member of staff, and only as `true`;
+ * anything else is "no refund", which is what the Terms say for a late
+ * cancellation. At least 24 hours before, the refund is owed whatever it says.
+ */
 export async function updateBookingByAdmin(
   accessToken: string | null,
   bookingId: string,
   payload: UpdateBookingPayload,
+  options?: { refundLate?: boolean },
 ): Promise<{ error: string | null }> {
   let actor: AuthContext;
   try {
@@ -684,6 +694,23 @@ export async function updateBookingByAdmin(
       // fail-open: resolving the professionals' names is a second request, and
       // a booking that saved must not come back as an error because the line
       // describing it could not be written.
+    }
+
+    // Cancelled by this save: money paid online may be owed back. Judged on
+    // the session as it stood before the save, which may also have moved it.
+    const was = before as EditedColumns;
+    if (was.status !== "cancelled" && payload.status === "cancelled") {
+      await settleRefundOnCancel({
+        bookingId,
+        source: "dashboard",
+        actorId: actor.userId,
+        actorRole: actor.role as BookingEventActorRole,
+        date: was.date ?? null,
+        time: was.time ?? null,
+        teamRefundsLate:
+          options?.refundLate === true &&
+          (actor.role === "admin" || actor.role === "staff"),
+      });
     }
   }
 

@@ -269,17 +269,25 @@ export function registerBookingTools(server: ToolServer): void {
     {
       title: "Cancel Booking",
       description:
-        "Cancel a booking as the dashboard does: the history, the client's email, the professional's WhatsApp and the calendars. It does NOT return any money: paid_eur in the answer is what someone has to settle by hand.",
+        "Cancel a booking as the dashboard does: the history, the client's email, the professional's WhatsApp and the calendars. It does NOT return any money. If the booking was paid online and the session is at least 24 hours away, the refund is owed: it is recorded as pending in the booking's history and the office is emailed the amount and the Redsys order number, to return it by hand in the Redsys portal. Within the last 24 hours (or after the session) there is no refund unless refund_late is true, which is the team's decision (for instance when the centre itself cancels); ask before setting it.",
       inputSchema: {
         id: z.string().uuid(),
         reason: z.string().trim().max(300).optional(),
+        refund_late: z
+          .boolean()
+          .optional()
+          .describe(
+            "Only for a booking paid online cancelled within the last 24 hours: true records the refund as owed anyway. Default false (no refund, as the Terms say).",
+          ),
       },
     },
-    async ({ id, reason }, auth) => {
-      const result = await cancelBookingForStaff(id, reason, {
-        userId: auth.userId,
-        role: auth.role,
-      });
+    async ({ id, reason, refund_late }, auth) => {
+      const result = await cancelBookingForStaff(
+        id,
+        reason,
+        { userId: auth.userId, role: auth.role },
+        { refundLate: refund_late === true },
+      );
       if (!result.ok) {
         return fail(
           result.error === "not_found"
@@ -293,7 +301,17 @@ export function registerBookingTools(server: ToolServer): void {
         cancelled: true,
         id: result.bookingId,
         paid_eur: result.paid_eur,
-        refund: "none — settle any payment by hand",
+        refund: result.refund.owed
+          ? {
+              owed: true,
+              amount_eur: result.refund.amountEur,
+              redsys_order: result.refund.orderId,
+              note: "Recorded as a pending refund and emailed to the office. Nothing was returned yet: return it in the Redsys portal, then mark it refunded on the booking's page.",
+            }
+          : {
+              owed: false,
+              reason: result.refund.reason,
+            },
         notified: result.notified,
       });
     },

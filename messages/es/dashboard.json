@@ -358,6 +358,11 @@
       "errors": {
         "reservationRequired": "El número de reserva es obligatorio.",
         "saveFailed": "No se pudo guardar la reserva."
+      },
+      "refund": {
+        "inAdvance": "Se pagaron {amount} online y faltan 24 horas o más: al guardar quedará un reembolso pendiente de {amount} y el administrador recibirá un correo con el número de pedido de Redsys.",
+        "lateLabel": "Devolver igualmente los {amount} pagados online",
+        "lateHelp": "Faltan menos de 24 horas o la sesión ya ha pasado: según las condiciones no hay reembolso. Márcalo solo si cancela el centro o decidís devolverlo; quedará como reembolso pendiente y el administrador recibirá un correo."
       }
     },
     "detail": {

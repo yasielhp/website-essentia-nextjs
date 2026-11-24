@@ -175,6 +175,8 @@ export async function updateBooking(
   id: string,
   draft: BookingDraft,
   original: BookingSnapshot | null,
+  /** For a booking paid online cancelled inside the last 24 hours. */
+  options?: { refundLate?: boolean },
 ): Promise<{ error: string | null }> {
   // The price is worked out again only when the session type or the place
   // changed. Otherwise the stored one stands: a booking paid on the web may
@@ -184,31 +186,36 @@ export async function updateBooking(
     draft.tierId !== original.tierId ||
     draft.location !== original.location;
 
-  const { error } = await updateBookingByAdmin(token, id, {
-    service_id: draft.serviceId,
-    service_title: draft.service?.title ?? draft.serviceId,
-    tier_id: draft.tierId || null,
-    ...(repriced
-      ? {
-          price_eur: draft.tier
-            ? resolvePrice(draft.tier, draft.location)
-            : null,
-        }
-      : {}),
-    duration: durationOf(draft),
-    date: dateOf(draft),
-    time: draft.selectedTime || null,
-    location: draft.location || null,
-    location_address: addressOf(draft),
-    staff_id: draft.staffId || null,
-    notes: draft.notes.trim() || null,
-    first_name: draft.firstName.trim(),
-    last_name: draft.lastName.trim(),
-    email: draft.email.trim(),
-    phone: draft.phone.trim() || null,
-    status: draft.status,
-    ...paymentPatch(draft.payment, original),
-  });
+  const { error } = await updateBookingByAdmin(
+    token,
+    id,
+    {
+      service_id: draft.serviceId,
+      service_title: draft.service?.title ?? draft.serviceId,
+      tier_id: draft.tierId || null,
+      ...(repriced
+        ? {
+            price_eur: draft.tier
+              ? resolvePrice(draft.tier, draft.location)
+              : null,
+          }
+        : {}),
+      duration: durationOf(draft),
+      date: dateOf(draft),
+      time: draft.selectedTime || null,
+      location: draft.location || null,
+      location_address: addressOf(draft),
+      staff_id: draft.staffId || null,
+      notes: draft.notes.trim() || null,
+      first_name: draft.firstName.trim(),
+      last_name: draft.lastName.trim(),
+      email: draft.email.trim(),
+      phone: draft.phone.trim() || null,
+      status: draft.status,
+      ...paymentPatch(draft.payment, original),
+    },
+    options,
+  );
 
   return { error: error ?? null };
 }
