@@ -1704,8 +1704,9 @@
       "whatsapp": {
         "title": "Mensaje de WhatsApp",
         "intro": "Una campaña de WhatsApp envía una plantilla aprobada por Meta. Elige la plantilla y de dónde sale cada dato.",
-        "language": "Idioma de envío",
-        "languageHint": "El segmento incluye los dos idiomas. Cada plantilla es de un solo idioma, así que todos recibirán la de este.",
+        "language": "Idioma",
+        "languageHint": "La audiencia incluye los dos idiomas y cada plantilla es de uno solo: cada contacto recibe la del suyo, así que hay que elegir una aprobada en cada idioma.",
+        "counterpart": "También se ha elegido «{name}» en {language}: es la misma plantilla en ese idioma. Revisa sus datos en su pestaña.",
         "sentIn": "Se envía en {language}, el idioma del segmento.",
         "localeEs": "Español",
         "localeEn": "Inglés",
@@ -1719,7 +1720,7 @@
         "excluded": {
           "template_not_approved": "{count, plural, one {# plantilla sin aprobar por Meta (en revisión, rechazada o desactivada)} other {# plantillas sin aprobar por Meta (en revisión, rechazadas o desactivadas)}}",
           "template_unsupported": "{count, plural, one {# plantilla que no se puede enviar desde aquí} other {# plantillas que no se pueden enviar desde aquí}}",
-          "template_language": "{count, plural, one {# plantilla en otro idioma} other {# plantillas en otro idioma}}: la campaña se envía en {language}",
+          "template_language": "{count, plural, one {# plantilla en otro idioma} other {# plantillas en otro idioma}}: esta versión es en {language}",
           "template_missing": "{count, plural, one {# plantilla que ya no existe} other {# plantillas que ya no existen}}",
           "template_category": "{count, plural, one {# plantilla de Marketing} other {# plantillas de Marketing}}: los avisos de cita solo pueden usar plantillas de Utilidad"
         },
@@ -1727,7 +1728,7 @@
           "template_missing": "ya no existe",
           "template_not_approved": "no está aprobada",
           "template_unsupported": "no se puede enviar desde aquí",
-          "template_language": "no está en el idioma de envío",
+          "template_language": "no está en este idioma",
           "template_category": "es de Marketing, y los avisos de cita solo pueden usar plantillas de Utilidad"
         },
         "selectedUnavailable": "La plantilla elegida ya no se puede usar: {reason}. Elige otra.",
@@ -1757,7 +1758,7 @@
         "confirm": "Confirmar mensaje",
         "chosen": "Plantilla elegida",
         "appointmentCategoryHint": "Los avisos de cita solo admiten plantillas de Utilidad. Una petición de reseña o una oferta cuenta como marketing: usa una campaña normal.",
-        "languageHintAppointment": "Las clientas de la audiencia son de los dos idiomas. Cada plantilla es de un solo idioma: elige en cuál se envía el aviso.",
+        "languageHintAppointment": "Las clientas de la audiencia son de los dos idiomas y cada plantilla es de uno solo: cada clienta recibe el aviso en el suyo, así que hay que elegir una aprobada en cada idioma.",
         "sentInAppointment": "Se envía en {language}, el idioma de las clientas elegido."
       }
     },
@@ -1806,7 +1807,7 @@
         "title": "A qué citas",
         "servicesHelp": "Vacío = todos los servicios.",
         "language": "Idioma de las clientas",
-        "languageHint": "Con «Ambos idiomas», el idioma del aviso se elige en el paso de la plantilla.",
+        "languageHint": "Con «Ambos idiomas», cada clienta recibe el aviso en el suyo: en el paso de la plantilla se elige una por idioma.",
         "reach": "{count} con avisos de la cita activados",
         "note": "Solo reciben el aviso las clientas con los avisos de la cita activados y sin baja; la cifra cuenta clientas, no citas.",
         "panelNote": "Las citas creadas por el equipo desde el panel no activan los avisos de la clienta: se activan en su ficha, con el interruptor «Avisos de la cita».",

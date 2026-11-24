@@ -67,15 +67,15 @@ describe("the limits are the server's", () => {
       services: [],
       lastBooking: null,
       neverBooked: false,
-      sendLocale: "es",
       manualIds: [],
     },
     content: {
       en: { subject: "", preheader: "", title: "", doc: null },
       es: { subject: "", preheader: "", title: "", doc: null },
+      // A notice for every client has a template in each language.
       whatsapp: {
-        templateId: "6f1c2a3e-1111-4222-8333-444455556666",
-        params: [],
+        es: { templateId: "6f1c2a3e-1111-4222-8333-444455556666", params: [] },
+        en: { templateId: "7a2d3b4f-2222-4333-8444-555566667777", params: [] },
       },
     },
   });

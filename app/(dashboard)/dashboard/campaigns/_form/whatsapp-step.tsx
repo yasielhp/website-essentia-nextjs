@@ -8,31 +8,44 @@ import { Button } from "@/components/ui/button";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { WhatsAppParamRow } from "@/components/dashboard/whatsapp-param-mapper";
 import { useFieldError } from "@/hooks/use-field-error";
-import { sendLocaleOf } from "@/lib/schemas";
+import { LocaleTabs } from "@/components/dashboard/locale-tabs";
+import { requiredLocales } from "@/lib/schemas";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import { campaignTemplateChoiceIssue } from "@/lib/campaigns/whatsapp-eligibility";
 import {
   PARAM_FIELDS,
+  counterpartTemplate,
   fieldAvailable,
   fitParams,
   partitionTemplates,
   sampleParams,
+  whatsappVersionIncomplete,
 } from "@/lib/campaigns/whatsapp-form";
-import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
+import type {
+  WhatsAppParamSource,
+  WhatsAppTemplateRow,
+} from "@/lib/whatsapp/types";
 import type { CampaignLocale } from "@/types/campaign";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 import type { FormAction, FormState } from "./form-state";
 import type { TemplatesState } from "./use-whatsapp-templates";
-
-const LOCALES: CampaignLocale[] = ["es", "en"];
 
 /**
  * What a WhatsApp campaign says: which approved template goes out, and where
  * each of its `{{n}}` comes from. There is no text to write here, because the
  * words are the template's and Meta already approved them.
  *
- * Only templates that can really be sent are offered, in the language the
- * campaign goes out in; the rest are counted and explained so a missing one
- * is never a mystery.
+ * A template FOR EACH LANGUAGE of the audience: Meta keeps every language of
+ * a template as a template of its own, and each contact is written to in
+ * hers. When the audience spans both, a switch over the template changes the
+ * whole version on screen (template, parameters and preview) and marks the one
+ * with something missing; picking a template in one language proposes the one
+ * of the same name in the other. A segment that fixes a language has one
+ * version and no switch.
+ *
+ * Only templates that can really be sent are offered, in the language of the
+ * version on screen; the rest are counted and explained so a missing one is
+ * never a mystery.
  */
 export function WhatsAppStep({
   state,
@@ -55,21 +68,53 @@ export function WhatsAppStep({
     "dashboard.messages.whatsapp.unsupported",
   );
   const fieldError = useFieldError();
+  const tContent = useTranslations("dashboard.campaigns.content");
   const { audience, fieldErrors, submitting, kind, trigger } = state;
-  const sendLocale = sendLocaleOf(audience);
-  const block = state.content.whatsapp;
+  const locales = requiredLocales(audience);
+  // The reducer keeps it among the languages the campaign is written in.
+  const locale = state.activeLocale;
+  const blocks = useMemo(
+    () => whatsappBlocks(state.content.whatsapp, audience),
+    [state.content.whatsapp, audience],
+  );
+  const block = blocks[locale];
   const params = useMemo(() => block?.params ?? [], [block]);
   // A sample date that does not move while the admin is typing.
   const [today] = useState(() => new Date());
+  // The language a template was just proposed for, to say so once.
+  const [proposed, setProposed] = useState<{
+    locale: CampaignLocale;
+    name: string;
+  } | null>(null);
 
-  const all = templates.status === "ready" ? templates.templates : [];
-  const choices = partitionTemplates(all, sendLocale, kind);
+  const all = useMemo(
+    () => (templates.status === "ready" ? templates.templates : []),
+    [templates],
+  );
+  /** The template chosen for a language, when it can still be sent. */
+  const usableFor = (target: CampaignLocale): WhatsAppTemplateRow | null => {
+    const chosen = all.find((tpl) => tpl.id === blocks[target]?.templateId);
+    return chosen && !campaignTemplateChoiceIssue(chosen, target, kind)
+      ? chosen
+      : null;
+  };
+  const choices = partitionTemplates(all, locale, kind);
   const selected = all.find((tpl) => tpl.id === block?.templateId) ?? null;
   const selectedIssue =
     selected && templates.status === "ready"
-      ? campaignTemplateChoiceIssue(selected, sendLocale, kind)
+      ? campaignTemplateChoiceIssue(selected, locale, kind)
       : null;
   const usable = selected && !selectedIssue ? selected : null;
+  // Nothing is "missing" while the templates are still on their way.
+  const incomplete =
+    templates.status === "ready"
+      ? locales.filter((target) =>
+          whatsappVersionIncomplete(
+            usableFor(target),
+            blocks[target]?.params ?? [],
+          ),
+        )
+      : [];
 
   // A draft saved with another number of parameters than the template has
   // (or a template re-chosen) comes back to the template's count, so what is
@@ -80,11 +125,12 @@ export function WhatsAppStep({
     if (fitted !== params) {
       dispatch({
         type: "SET_WHATSAPP",
+        locale,
         templateId: usable.id,
         params: fitted,
       });
     }
-  }, [usable, params, dispatch]);
+  }, [usable, params, locale, dispatch]);
 
   const localeLabel = (value: CampaignLocale) =>
     value === "es" ? t("localeEs") : t("localeEn");
@@ -102,14 +148,32 @@ export function WhatsAppStep({
     if (!tpl) return;
     dispatch({
       type: "SET_WHATSAPP",
+      locale,
       templateId: tpl.id,
       params: fitParams(params, tpl.param_count),
     });
+    // The same template in the other language, when that language has none
+    // yet: Meta keeps it as a template apart, usually under the same name. It
+    // is a proposal, said out loud; its values are still to be set there.
+    setProposed(null);
+    for (const other of locales) {
+      if (other === locale || blocks[other]?.templateId) continue;
+      const pair = counterpartTemplate(all, tpl, other, kind);
+      if (!pair) continue;
+      dispatch({
+        type: "SET_WHATSAPP",
+        locale: other,
+        templateId: pair.id,
+        params: fitParams([], pair.param_count),
+      });
+      setProposed({ locale: other, name: pair.name });
+    }
   }
 
   function setParam(index: number, source: WhatsAppParamSource) {
     dispatch({
       type: "SET_WHATSAPP",
+      locale,
       templateId: block?.templateId ?? null,
       params: params.map((current, i) => (i === index ? source : current)),
     });
@@ -118,8 +182,9 @@ export function WhatsAppStep({
   const excludedLines = Object.entries(choices.excluded).filter(
     ([, count]) => (count ?? 0) > 0,
   );
-  const templateError = fieldError(fieldErrors["content.whatsapp.templateId"]);
-  const paramsError = fieldError(fieldErrors["content.whatsapp.params"]);
+  const errorAt = `content.whatsapp.${locale}`;
+  const templateError = fieldError(fieldErrors[`${errorAt}.templateId`]);
+  const paramsError = fieldError(fieldErrors[`${errorAt}.params`]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -138,28 +203,20 @@ export function WhatsAppStep({
           </p>
         )}
 
-        {audience.language === "any" ? (
-          <div className="mb-4 flex flex-col gap-1.5">
-            <label
-              htmlFor="campaign-whatsapp-locale"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("language")}
-            </label>
-            <OptionSelect
-              id="campaign-whatsapp-locale"
-              value={sendLocale}
-              options={LOCALES.map((value) => ({
-                value,
-                label: localeLabel(value),
-              }))}
-              disabled={submitting}
-              onChange={(value) =>
-                dispatch({
-                  type: "SET_AUDIENCE",
-                  patch: { sendLocale: value },
-                })
+        {locales.length > 1 ? (
+          <div className="mb-4 flex flex-col gap-2">
+            <LocaleTabs
+              id="campaign-whatsapp-language"
+              label={t("language")}
+              locales={locales}
+              active={locale}
+              onChange={(next) =>
+                dispatch({ type: "SET_LOCALE", locale: next })
               }
+              nameOf={localeLabel}
+              incomplete={incomplete}
+              incompleteText={tContent("incomplete")}
+              disabled={submitting}
             />
             <p className="text-petroleum-400 text-xs">
               {t(
@@ -168,11 +225,29 @@ export function WhatsAppStep({
                   : "languageHint",
               )}
             </p>
+            {incomplete.length > 0 && (
+              <p aria-live="polite" className="text-xs text-amber-700">
+                {tContent("missingVersions", {
+                  languages: incomplete.map(localeLabel).join(", "),
+                })}
+              </p>
+            )}
+            {proposed && (
+              <p
+                role="status"
+                className="bg-sand-50 text-petroleum-500 rounded-xl px-4 py-3 text-xs"
+              >
+                {t("counterpart", {
+                  name: proposed.name,
+                  language: localeLabel(proposed.locale),
+                })}
+              </p>
+            )}
           </div>
         ) : (
           <p className="bg-sand-50 text-petroleum-400 mb-4 rounded-xl px-4 py-3 text-xs">
             {t(kind === "appointment" ? "sentInAppointment" : "sentIn", {
-              language: localeLabel(sendLocale),
+              language: localeLabel(locale),
             })}
           </p>
         )}
@@ -191,13 +266,13 @@ export function WhatsAppStep({
             {choices.eligible.length > 0 && (
               <div className="flex flex-col gap-1.5">
                 <label
-                  htmlFor="campaign-whatsapp-template"
+                  htmlFor={`campaign-whatsapp-template-${locale}`}
                   className="text-petroleum-500 text-xs font-medium"
                 >
                   {t("template")}
                 </label>
                 <OptionSelect
-                  id="campaign-whatsapp-template"
+                  id={`campaign-whatsapp-template-${locale}`}
                   value={usable?.id ?? ""}
                   options={templateOptions}
                   placeholder={t("templatePlaceholder")}
@@ -258,7 +333,7 @@ export function WhatsAppStep({
                     <li key={issue}>
                       {t(`excluded.${issue}`, {
                         count: count ?? 0,
-                        language: localeLabel(sendLocale),
+                        language: localeLabel(locale),
                       })}
                     </li>
                   ))}
@@ -296,7 +371,7 @@ export function WhatsAppStep({
                 <WhatsAppParamRow
                   key={index}
                   index={index}
-                  idPrefix="campaign-whatsapp-param"
+                  idPrefix={`campaign-whatsapp-param-${locale}`}
                   fields={PARAM_FIELDS}
                   unavailableText={t("unavailable")}
                   source={source}
@@ -305,9 +380,7 @@ export function WhatsAppStep({
                     source.kind !== "field" ||
                     fieldAvailable(source.field, kind, trigger)
                   }
-                  error={fieldError(
-                    fieldErrors[`content.whatsapp.params.${index}`],
-                  )}
+                  error={fieldError(fieldErrors[`${errorAt}.params.${index}`])}
                   disabled={submitting}
                   onChange={(next) => setParam(index, next)}
                 />
@@ -327,7 +400,7 @@ export function WhatsAppStep({
               body={usable.body}
               footerText={usable.footer_text}
               buttons={usable.buttons ?? []}
-              examples={sampleParams(params, sendLocale, kind, trigger, today)}
+              examples={sampleParams(params, locale, kind, trigger, today)}
             />
           </aside>
         </div>

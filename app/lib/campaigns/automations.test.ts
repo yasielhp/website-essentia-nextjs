@@ -180,7 +180,7 @@ describe("runAutomation on WhatsApp", () => {
       whatsapp: { send: fakeSend(() => ok("w")).send },
     });
     expect(mem.campaign.last_error).toBe(
-      "template_unavailable: template_not_approved",
+      "template_unavailable: template_not_approved (es)",
     );
   });
 

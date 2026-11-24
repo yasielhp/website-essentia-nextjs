@@ -486,19 +486,41 @@ describe("filterAudience — WhatsApp channel", () => {
     ]);
   });
 
-  it("writes in the campaign's language, never the contact's, even without a send locale", () => {
+  it("on WhatsApp too each contact is written to in her own language, with that language's template", () => {
     const en = wa({ language: "en" });
     const es = wa({ language: "es", phone: "600112244" });
-    // `any` and no `sendLocale` (old data): the house default, Spanish.
-    expect(run([en, es]).map((r) => r.language)).toEqual(["es", "es"]);
+    expect(run([en, es]).map((r) => r.language)).toEqual(["en", "es"]);
+    // The send language an older campaign chose decides nothing.
     expect(
       run([es], audience({ sendLocale: "en" })).map((r) => r.language),
-    ).toEqual(["en"]);
+    ).toEqual(["es"]);
+    // An audience that fixes a language writes to everybody in it.
     expect(
       run([en], audience({ language: "es", manualIds: [en.id] })).map(
         (r) => r.language,
       ),
     ).toEqual(["es"]);
+  });
+
+  it("an appointment notice counts its clients by their own language too", () => {
+    const en = wa({
+      language: "en",
+      whatsappOptedInAt: "2026-10-01T00:00:00Z",
+    });
+    const es = wa({
+      language: "es",
+      phone: "600112244",
+      whatsappOptedInAt: "2026-10-01T00:00:00Z",
+    });
+    const out = filterAudience(
+      [en, es],
+      EMPTY_AUDIENCE,
+      NOW,
+      "whatsapp",
+      new Set(),
+      "appointment",
+    );
+    expect(out.map((r) => r.language)).toEqual(["en", "es"]);
   });
 
   it("leaves out a number that wrote STOP, whatever the contact's consent and however the phone is written", () => {

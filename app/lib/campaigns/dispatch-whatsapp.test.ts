@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
-import type { CampaignRow } from "@/types/campaign";
+import { EMPTY_AUDIENCE, type CampaignRow } from "@/types/campaign";
 import {
   PER_SECOND,
   SKIPPED_PREFIX,
@@ -327,7 +327,7 @@ describe("sendQueuedWhatsApp", () => {
       expect(result).toMatchObject({
         sent: 0,
         failed: 0,
-        lastError: "template_unavailable: template_not_approved",
+        lastError: "template_unavailable: template_not_approved (es)",
         remaining: 3,
       });
       expect(calls).toHaveLength(0);
@@ -346,7 +346,9 @@ describe("sendQueuedWhatsApp", () => {
         db: mem.db,
         send,
       });
-      expect(result.lastError).toBe("template_unavailable: template_missing");
+      expect(result.lastError).toBe(
+        "template_unavailable: template_missing (es)",
+      );
       expect(result.remaining).toBe(2);
       expect(calls).toHaveLength(0);
       expect(mem.writes).toHaveLength(0);
@@ -363,7 +365,7 @@ describe("sendQueuedWhatsApp", () => {
     expect(result).toMatchObject({
       sent: 0,
       failed: 0,
-      lastError: "template_unavailable: param_count",
+      lastError: "template_unavailable: param_count (es)",
       remaining: 2,
     });
     expect(calls).toHaveLength(0);
@@ -377,7 +379,9 @@ describe("sendQueuedWhatsApp", () => {
       db: mem.db,
       send,
     });
-    expect(result.lastError).toBe("template_unavailable: template_language");
+    expect(result.lastError).toBe(
+      "template_unavailable: template_language (es)",
+    );
     expect(calls).toHaveLength(0);
   });
 
@@ -397,16 +401,17 @@ describe("sendQueuedWhatsApp", () => {
     expect(calls).toHaveLength(0);
   });
 
-  test("the campaign's own locale picks the language to match", async () => {
-    const mem = memoryDb(rowsOf(1), {
+  test("a regional variant of a language serves it, and Meta is given the template's own code", async () => {
+    const mem = memoryDb([row(1, { language: "en" })], {
       template: template({ language: "en_US" }),
     });
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(
+      // An old campaign whose one template was the English one.
       campaign({
         audience: { language: "any", sendLocale: "en" },
       } as Partial<CampaignRow>),
-      rowsOf(1),
+      [row(1, { language: "en" })],
       { db: mem.db, send },
     );
     expect(result.sent).toBe(1);
@@ -587,7 +592,7 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
     expect(elapsed).toBeGreaterThanOrEqual(40_000);
   });
 
-  test("nothing queued is a clean no-op that loads no more than the template", async () => {
+  test("nothing queued is a clean no-op that does not even load a template", async () => {
     const mem = memoryDb([]);
     const { send, calls } = fakeSend(() => ok("w"));
     const result = await sendQueuedWhatsApp(campaign(), [], {
@@ -602,7 +607,8 @@ describe("sendQueuedWhatsApp pacing and budget", () => {
     });
     expect(calls).toHaveLength(0);
     expect(mem.writes).toHaveLength(0);
-    expect(mem.reads).toEqual(["whatsapp_templates"]);
+    // The templates read are the ones of the languages in the queue: none.
+    expect(mem.reads).toEqual([]);
   });
 });
 
@@ -980,7 +986,7 @@ describe("sendQueuedWhatsApp re-checks the consent the campaign is for", () => {
       sent: 0,
       failed: 0,
       remaining: 2,
-      lastError: "template_unavailable: template_category",
+      lastError: "template_unavailable: template_category (es)",
     });
     const news = memoryDb(rowsOf(2), {
       contacts: [consenting("contact-1"), consenting("contact-2")],
@@ -1599,5 +1605,216 @@ describe("refusalStreak", () => {
       "claimed_at",
       { ascending: false },
     ]);
+  });
+});
+
+describe("sendQueuedWhatsApp sends each row the template of its language", () => {
+  const name: WhatsAppParamSource = { kind: "field", field: "first_name" };
+  const TEMPLATES = {
+    "tpl-es": template({
+      id: "tpl-es",
+      name: "reapertura",
+      language: "es",
+      param_count: 2,
+    }),
+    // Meta keeps the English one as a template apart, here with one parameter.
+    "tpl-en": template({
+      id: "tpl-en",
+      name: "reapertura",
+      language: "en",
+      body: "Hello {{1}}, we are back",
+      param_count: 1,
+    }),
+  };
+  const bilingual = (over: Partial<CampaignRow> = {}) =>
+    campaign({
+      audience: { ...EMPTY_AUDIENCE, language: "any" },
+      content: {
+        whatsapp: {
+          es: {
+            templateId: "tpl-es",
+            params: [name, { kind: "static", value: "2 de diciembre" }],
+          },
+          en: { templateId: "tpl-en", params: [name] },
+        },
+      } as never,
+      ...over,
+    });
+  const run = async (
+    rows: ReturnType<typeof row>[],
+    running: CampaignRow,
+    templates: Record<string, WhatsAppTemplateRow | null> = TEMPLATES,
+    contacts = rows.map((r) => consenting(r.contact_id as string)),
+  ) => {
+    const mem = memoryDb(rows, { templates, contacts });
+    const sender = fakeSend((_s, n) => ok(`wamid.${n}`));
+    const result = await sendQueuedWhatsApp(running, rows, {
+      db: mem.db,
+      send: sender.send,
+      sleep: quietSleep,
+    });
+    return { mem, calls: sender.calls, result };
+  };
+
+  test("a Spanish contact the Spanish template, an English one the English, each with its own parameters", async () => {
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const { calls, result, mem } = await run(rows, bilingual());
+    expect(result).toMatchObject({ sent: 2, failed: 0, remaining: 0 });
+    expect(calls).toEqual([
+      {
+        to: "+34600000001",
+        name: "reapertura",
+        language: "es",
+        bodyParams: ["Nombre1", "2 de diciembre"],
+      },
+      {
+        to: "+34600000002",
+        name: "reapertura",
+        language: "en",
+        bodyParams: ["Nombre2"],
+      },
+    ]);
+    expect(mem.status("row-1")).toBe("sent");
+    expect(mem.status("row-2")).toBe("sent");
+    // One read per language, not per row.
+    expect(mem.templateReads.sort()).toEqual(["tpl-en", "tpl-es"]);
+  });
+
+  test("a language whose template Meta paused holds its own rows in the queue; the other language goes out", async () => {
+    const rows = [
+      row(1, { language: "es" }),
+      row(2, { language: "en" }),
+      row(3, { language: "es" }),
+    ];
+    const { calls, result, mem } = await run(rows, bilingual(), {
+      ...TEMPLATES,
+      "tpl-en": { ...TEMPLATES["tpl-en"], status: "PAUSED" },
+    });
+    expect(calls.map((c) => c.to)).toEqual(["+34600000001", "+34600000003"]);
+    expect(result).toMatchObject({
+      sent: 2,
+      failed: 0,
+      remaining: 1,
+      lastError: "template_unavailable: template_not_approved (en)",
+    });
+    // Not failed, not claimed: it may come back, and nothing else requeues it.
+    expect(mem.status("row-2")).toBe("queued");
+    expect(mem.rows.get("row-2")?.claimed_at).toBeNull();
+  });
+
+  test("a language the campaign has no template for holds its rows too, and says which", async () => {
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const onlySpanish = bilingual({
+      content: {
+        whatsapp: {
+          es: {
+            templateId: "tpl-es",
+            params: [name, { kind: "static", value: "x" }],
+          },
+        },
+      } as never,
+    });
+    const { calls, result, mem } = await run(rows, onlySpanish);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.language).toBe("es");
+    expect(result).toMatchObject({
+      sent: 1,
+      remaining: 1,
+      lastError: "template_unavailable: template_missing (en)",
+    });
+    expect(mem.status("row-2")).toBe("queued");
+  });
+
+  test("with no language sendable nothing is claimed and nothing goes out", async () => {
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const { calls, result, mem } = await run(rows, bilingual(), {});
+    expect(calls).toEqual([]);
+    expect(result).toMatchObject({ sent: 0, failed: 0, remaining: 2 });
+    expect(result.lastError).toBe(
+      "template_unavailable: template_missing (es)",
+    );
+    expect(mem.writes).toEqual([]);
+  });
+
+  test("a wrong number of parameters in one language is that language's problem", async () => {
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const { calls, result } = await run(rows, bilingual(), {
+      ...TEMPLATES,
+      "tpl-en": { ...TEMPLATES["tpl-en"], param_count: 3 },
+    });
+    expect(calls.map((c) => c.language)).toEqual(["es"]);
+    expect(result.lastError).toBe("template_unavailable: param_count (en)");
+  });
+
+  test("an audience that fixes a language sends its template to every row, whatever language the row was queued with", async () => {
+    const rows = [row(1, { language: "en" }), row(2, { language: "es" })];
+    const spanish = bilingual({
+      audience: { ...EMPTY_AUDIENCE, language: "es" },
+    });
+    const { calls, mem } = await run(rows, spanish);
+    expect(calls.map((c) => c.language)).toEqual(["es", "es"]);
+    // The English template is not even read.
+    expect(mem.templateReads).toEqual(["tpl-es"]);
+  });
+
+  test("an appointment notice: the template of each language must be a Utility one", async () => {
+    const utility = {
+      "tpl-es": { ...TEMPLATES["tpl-es"], category: "UTILITY" as const },
+      // Approved, but Marketing: not for a notice about her appointment.
+      "tpl-en": TEMPLATES["tpl-en"],
+    };
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const notice = bilingual({
+      kind: "appointment",
+      trigger: { event: "before_visit", hours: 24 },
+    });
+    const { calls, result } = await run(
+      rows,
+      notice,
+      utility,
+      rows.map((r) => noticesOnly(r.contact_id as string)),
+    );
+    expect(calls.map((c) => c.language)).toEqual(["es"]);
+    expect(result.lastError).toBe(
+      "template_unavailable: template_category (en)",
+    );
+  });
+
+  test("a campaign saved with one template and no language still sends it, to the rows of the language it had", async () => {
+    // The fixture's default: `{ templateId, params }` for a Spanish audience.
+    const rows = [row(1, { language: "es" })];
+    const mem = memoryDb(rows);
+    const sender = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(campaign(), rows, {
+      db: mem.db,
+      send: sender.send,
+      sleep: quietSleep,
+    });
+    expect(result).toMatchObject({ sent: 1, remaining: 0 });
+    expect(sender.calls[0]).toMatchObject({
+      name: "reapertura",
+      language: "es",
+      bodyParams: ["Nombre1", "2 de diciembre"],
+    });
+  });
+
+  test("an old campaign for everybody reaches the language it was sent in and holds the other", async () => {
+    const old = campaign({
+      audience: { ...EMPTY_AUDIENCE, language: "any", sendLocale: "es" },
+    });
+    const rows = [row(1, { language: "es" }), row(2, { language: "en" })];
+    const mem = memoryDb(rows);
+    const sender = fakeSend(() => ok("w"));
+    const result = await sendQueuedWhatsApp(old, rows, {
+      db: mem.db,
+      send: sender.send,
+      sleep: quietSleep,
+    });
+    expect(sender.calls.map((c) => c.to)).toEqual(["+34600000001"]);
+    expect(result).toMatchObject({
+      sent: 1,
+      remaining: 1,
+      lastError: "template_unavailable: template_missing (en)",
+    });
   });
 });

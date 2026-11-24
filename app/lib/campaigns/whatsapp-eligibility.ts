@@ -125,28 +125,26 @@ export function campaignTemplateEligibility(
 }
 
 /**
- * The field errors a save reports for a WhatsApp campaign's template, keyed
- * like the form's own validation, or null when it can go out. A parameter
- * mismatch sits on the parameters; every other reason on the template field.
+ * The field errors a save reports for the template of ONE language of a
+ * WhatsApp campaign, keyed like the form's own validation
+ * (`content.whatsapp.<locale>.…`), or null when it can go out. A parameter
+ * mismatch sits on that language's parameters; every other reason on its
+ * template field.
  */
 export function whatsappContentErrors(
   template: WhatsAppTemplateRow | null | undefined,
-  sendLocale: CampaignLocale,
+  locale: CampaignLocale,
   sources: WhatsAppParamSource[],
   kind?: CampaignKind,
 ): Record<string, string> | null {
-  const issue = campaignTemplateEligibility(
-    template,
-    sendLocale,
-    sources,
-    kind,
-  );
+  const issue = campaignTemplateEligibility(template, locale, sources, kind);
   if (issue === null) return null;
+  const at = `content.whatsapp.${locale}`;
   if (issue === "param_count") {
-    return { "content.whatsapp.params": "paramCountMismatch" };
+    return { [`${at}.params`]: "paramCountMismatch" };
   }
   if (issue === "template_category") {
-    return { "content.whatsapp.templateId": "templateCategoryNotAllowed" };
+    return { [`${at}.templateId`]: "templateCategoryNotAllowed" };
   }
-  return { "content.whatsapp.templateId": "templateUnavailable" };
+  return { [`${at}.templateId`]: "templateUnavailable" };
 }

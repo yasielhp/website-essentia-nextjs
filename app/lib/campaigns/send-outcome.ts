@@ -20,6 +20,8 @@ export type SendFailure = {
   error: string;
   /** Only for `template_unavailable`: the eligibility code. */
   detail?: string;
+  /** Only for `template_unavailable`: the language whose template it is. */
+  locale?: "es" | "en";
 };
 
 /**
@@ -33,7 +35,10 @@ export function sendOutcome(result: DispatchResult): SendOutcome | SendFailure {
       ok: false,
       error: result.error,
       ...(result.error === "template_unavailable" && result.detail
-        ? { detail: result.detail }
+        ? {
+            detail: result.detail,
+            ...(result.locale ? { locale: result.locale } : {}),
+          }
         : {}),
     };
   }

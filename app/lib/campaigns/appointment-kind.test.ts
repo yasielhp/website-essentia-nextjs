@@ -97,7 +97,9 @@ describe("the appointment kind", () => {
     );
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.errors["content.whatsapp.templateId"]).toBe("templateRequired");
+      expect(r.errors["content.whatsapp.es.templateId"]).toBe(
+        "templateRequired",
+      );
     }
   });
 });

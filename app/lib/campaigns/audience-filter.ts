@@ -1,4 +1,3 @@
-import { sendLocaleOf } from "@/lib/schemas";
 import { toCampaignPhone } from "@/lib/whatsapp/phone";
 import { conditionsMatch } from "./conditions";
 import { recipientLocale } from "./languages";
@@ -279,16 +278,12 @@ export function filterAudience(
       ...(channel === "whatsapp" && candidate.appointments
         ? { appointments: candidate.appointments }
         : {}),
-      // Each contact is written to in HER language: the email block of that
-      // language. An audience that fixes a language has only that version,
-      // so everybody on it gets it, hand-picked contacts included.
-      // A WhatsApp campaign is still one template in one language, so there
-      // the contact's own language does not count yet, and the visit date is
-      // written in the template's.
-      language:
-        channel === "whatsapp"
-          ? sendLocaleOf(audience)
-          : recipientLocale(audience, candidate.language),
+      // Each contact is written to in HER language, on both channels: the
+      // email block, or the WhatsApp template, of that language (and the
+      // visit date a notice carries is written in it). An audience that
+      // fixes a language has only that version, so everybody on it gets it,
+      // hand-picked contacts included.
+      language: recipientLocale(audience, candidate.language),
     });
   }
 

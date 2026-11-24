@@ -176,6 +176,45 @@ export function partitionTemplates(
   return { eligible, excluded, unsupportedReasons: [...reasons] };
 }
 
+/**
+ * The template that goes with `picked` in another language: the one of the
+ * same NAME that can be chosen for `locale`. Meta keeps each language of a
+ * template as a template of its own, usually under one name, so picking
+ * "reapertura" in Spanish all but says which one is wanted in English. Null
+ * when there is none (or it cannot be sent): the admin picks by hand.
+ */
+export function counterpartTemplate(
+  templates: WhatsAppTemplateRow[],
+  picked: WhatsAppTemplateRow,
+  locale: CampaignLocale,
+  kind?: CampaignKind,
+): WhatsAppTemplateRow | null {
+  return (
+    templates.find(
+      (candidate) =>
+        candidate.id !== picked.id &&
+        candidate.name === picked.name &&
+        campaignTemplateChoiceIssue(candidate, locale, kind) === null,
+    ) ?? null
+  );
+}
+
+/**
+ * Whether a language's message still has something to do before it can go
+ * out: no template that can be sent, or a fixed text left empty (which Meta
+ * would get as a dash). The second does not stop a send; it is what the mark
+ * on the language switch is for.
+ */
+export function whatsappVersionIncomplete(
+  usable: WhatsAppTemplateRow | null,
+  params: WhatsAppParamSource[],
+): boolean {
+  if (!usable) return true;
+  return fitParams(params, usable.param_count).some(
+    (source) => source.kind === "static" && source.value.trim() === "",
+  );
+}
+
 const SAMPLE = {
   es: {
     firstName: "Ana",

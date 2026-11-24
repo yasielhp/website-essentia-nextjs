@@ -9,12 +9,16 @@ import {
   type CampaignRow,
   type EmailDoc,
   type SegmentConditions,
-  type WhatsAppContent,
+  type WhatsAppLocaleContent,
   type CampaignKind,
   type CampaignTrigger,
   DEFAULT_TRIGGER,
 } from "@/types/campaign";
-import { requiredLocales, sendLocaleOf, validateCampaign } from "@/lib/schemas";
+import { requiredLocales, validateCampaign } from "@/lib/schemas";
+import {
+  toWhatsAppContent,
+  whatsappBlocks,
+} from "@/lib/campaigns/whatsapp-content";
 import { missingLocales } from "@/lib/campaigns/languages";
 import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
@@ -105,9 +109,11 @@ export type FormAction =
   | { type: "SET_NAME"; value: string }
   | { type: "SET_CHANNEL"; channel: CampaignChannel }
   | {
+      /** The template of ONE language and what fills it. */
       type: "SET_WHATSAPP";
+      locale: CampaignLocale;
       templateId: string | null;
-      params: WhatsAppContent["params"];
+      params: WhatsAppLocaleContent["params"];
     }
   | { type: "SET_KIND"; kind: CampaignKind }
   | { type: "SET_TRIGGER"; trigger: CampaignTrigger }
@@ -161,8 +167,7 @@ export const initialFormState: FormState = {
   name: "",
   segmentId: null,
   segmentName: null,
-  // The form always names the send language; only stored rows may lack it.
-  audience: { ...EMPTY_AUDIENCE, sendLocale: "es" },
+  audience: EMPTY_AUDIENCE,
   content: { en: EMPTY_LOCALE_CONTENT, es: EMPTY_LOCALE_CONTENT },
   activeLocale: "es",
   pickedContacts: [],
@@ -171,25 +176,6 @@ export const initialFormState: FormState = {
   submitting: false,
   error: null,
 };
-
-/**
- * The count with its language breakdown settled for the audience as it is.
- * A campaign goes out in one language and everybody reached gets that
- * version, so the breakdown is the whole count in the send language; a
- * breakdown computed under another send language would be a lie.
- */
-export function reachIn(
-  reach: FormState["reach"],
-  audience: CampaignAudience,
-): FormState["reach"] {
-  if (!reach) return reach;
-  const locale = sendLocaleOf(audience);
-  return {
-    count: reach.count,
-    en: locale === "en" ? reach.count : 0,
-    es: locale === "es" ? reach.count : 0,
-  };
-}
 
 /** Drops every error under a dotted prefix, e.g. `content.es.`. */
 function without(
@@ -259,9 +245,18 @@ function reduce(state: FormState, action: FormAction): FormState {
         ...state,
         content: {
           ...state.content,
-          whatsapp: { templateId: action.templateId, params: action.params },
+          whatsapp: {
+            ...state.content.whatsapp,
+            [action.locale]: {
+              templateId: action.templateId,
+              params: action.params,
+            },
+          },
         },
-        fieldErrors: without(state.fieldErrors, "content.whatsapp"),
+        fieldErrors: without(
+          state.fieldErrors,
+          `content.whatsapp.${action.locale}`,
+        ),
       };
     case "SET_KIND":
       if (!AVAILABLE_KINDS.includes(action.kind)) return state;
@@ -280,18 +275,15 @@ function reduce(state: FormState, action: FormAction): FormState {
             : { ...DEFAULT_TRIGGER[action.kind] },
         // An appointment notice is aimed at bookings, not at a list: no
         // segment, nobody by hand, none of the filters about past bookings.
-        // The send language and nothing else of the audience carries over.
+        // Nothing of the audience carries over: it starts for every client,
+        // each in her own language.
         ...(action.kind === "appointment" && state.kind !== "appointment"
           ? {
               segmentId: null,
               segmentName: null,
               pickedContacts: [],
               reach: null,
-              audience: {
-                ...EMPTY_AUDIENCE,
-                language: "any" as const,
-                sendLocale: state.audience.sendLocale ?? "es",
-              },
+              audience: { ...EMPTY_AUDIENCE, language: "any" as const },
             }
           : {}),
       };
@@ -303,8 +295,8 @@ function reduce(state: FormState, action: FormAction): FormState {
         segmentId: action.id,
         segmentName: action.name,
         reach: null,
-        // The conditions come from the segment; the hand-picked extras and
-        // the send language stay with the campaign.
+        // The conditions come from the segment; the hand-picked extras stay
+        // with the campaign. Its language decides which versions are written.
         audience: {
           ...action.conditions,
           // A hand-made list brings its people and `manualOnly` along; a filter
@@ -318,33 +310,26 @@ function reduce(state: FormState, action: FormAction): FormState {
               ? state.pickedContacts.map((c) => c.id)
               : state.audience.manualIds,
           manualOnly: action.conditions.manualOnly === true ? true : undefined,
-          sendLocale:
-            action.conditions.language !== "any"
-              ? action.conditions.language
-              : (state.audience.sendLocale ?? "es"),
         },
         fieldErrors: without(state.fieldErrors, "audience"),
       };
     case "SET_AUDIENCE": {
       const audience = { ...state.audience, ...action.patch };
-      // The email is written in the segment's language when it fixes one.
-      if (audience.language !== "any") audience.sendLocale = audience.language;
-      else audience.sendLocale = audience.sendLocale ?? "es";
+      // A campaign has no "send language" any more: it is written in every
+      // language of its audience. One an old campaign carried goes here.
+      delete audience.sendLocale;
       // "Never booked" cannot hold alongside a booking condition.
       if (audience.neverBooked) {
         audience.services = [];
         audience.lastBooking = null;
         audience.hasBooked = false;
       }
-      // Choosing the send language changes nobody's membership, so the count
-      // stays: the step that recounts is folded away when this is chosen.
-      const onlyLocale = Object.keys(action.patch).every(
-        (key) => key === "sendLocale",
-      );
+      // A patch that changes nothing leaves the count as it is.
+      const unchanged = Object.keys(action.patch).length === 0;
       return {
         ...state,
         audience,
-        reach: onlyLocale ? reachIn(state.reach, audience) : null,
+        reach: unchanged ? state.reach : null,
         fieldErrors: without(state.fieldErrors, "audience"),
       };
     }
@@ -443,8 +428,18 @@ function reduce(state: FormState, action: FormAction): FormState {
           en: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.en },
           es: { ...EMPTY_LOCALE_CONTENT, ...action.campaign.content.es },
           // Absent from every email and from rows older than the channel.
+          // A block saved with one template and no language comes back as
+          // the template of the language that campaign was sent in: the form
+          // only ever holds, and writes, a template per language.
           ...(action.campaign.content.whatsapp
-            ? { whatsapp: action.campaign.content.whatsapp }
+            ? {
+                whatsapp: toWhatsAppContent(
+                  whatsappBlocks(
+                    action.campaign.content.whatsapp,
+                    action.campaign.audience,
+                  ),
+                ),
+              }
             : {}),
         },
         // The first language it is written in; `settle` sees to it.

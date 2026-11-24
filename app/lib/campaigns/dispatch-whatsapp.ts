@@ -6,9 +6,10 @@ import type {
   WhatsAppSendResult,
   WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
-import { sendLocaleOf } from "@/lib/schemas";
+import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 import {
   consentPurposeOf,
+  type CampaignLocale,
   type CampaignRow,
   type ConsentPurpose,
 } from "@/types/campaign";
@@ -21,7 +22,13 @@ import {
   haltMessage,
   parseHalted,
 } from "./error-markers";
+import {
+  CAMPAIGN_LOCALES,
+  audienceLocales,
+  recipientLocale,
+} from "./languages";
 import { pause } from "./pause";
+import { whatsappBlocks } from "./whatsapp-content";
 import {
   campaignTemplateEligibility,
   whatsappTemplateEligibility,
@@ -265,18 +272,93 @@ export async function loadWhatsAppTemplate(
   return (data as WhatsAppTemplateRow | null) ?? null;
 }
 
-/** Eligibility of the template a campaign has chosen, for its own content and audience. */
-export function campaignTemplateIssue(
+/**
+ * The template ONE language of a campaign goes out with, ready to send, or why
+ * it cannot. A campaign has a template for each language of its audience, and
+ * each row is sent the one of its own.
+ */
+export type LocaleTemplate =
+  | { ok: true; template: WhatsAppTemplateRow; params: WhatsAppParamSource[] }
+  | { ok: false; issue: CampaignTemplateIssue };
+
+export type CampaignTemplates = Partial<Record<CampaignLocale, LocaleTemplate>>;
+
+/**
+ * Reads the templates a campaign chose for `locales` and judges each for its
+ * own language, parameters and the campaign's kind. A language with no
+ * template chosen is `template_missing`. One read per language asked for,
+ * never per row. Throws on a read error: "could not be read" is not "missing".
+ *
+ * A block saved in the old shape (one template, no language) is read as the
+ * template of the language that campaign was sent in (`whatsappBlocks`).
+ */
+export async function loadCampaignTemplates(
+  db: Db,
   campaign: Pick<CampaignRow, "content" | "audience" | "kind">,
-  template: WhatsAppTemplateRow | null,
-): CampaignTemplateIssue | null {
-  return campaignTemplateEligibility(
-    template,
-    sendLocaleOf(campaign.audience),
-    campaign.content.whatsapp?.params ?? [],
-    campaign.kind,
+  locales: readonly CampaignLocale[],
+): Promise<CampaignTemplates> {
+  const blocks = whatsappBlocks(campaign.content.whatsapp, campaign.audience);
+  const out: CampaignTemplates = {};
+  for (const locale of locales) {
+    const block = blocks[locale];
+    const template = await loadWhatsAppTemplate(db, block?.templateId);
+    const params = block?.params ?? [];
+    const issue = campaignTemplateEligibility(
+      template,
+      locale,
+      params,
+      campaign.kind,
+    );
+    out[locale] =
+      issue !== null || !template
+        ? { ok: false, issue: issue ?? "template_missing" }
+        : { ok: true, template, params };
+  }
+  return out;
+}
+
+export type LocaleTemplateIssue = {
+  locale: CampaignLocale;
+  issue: CampaignTemplateIssue;
+};
+
+/**
+ * The first language (Spanish, then English) whose template cannot go out,
+ * among the ones judged, or null when all of them can.
+ */
+export function firstTemplateIssue(
+  templates: CampaignTemplates,
+): LocaleTemplateIssue | null {
+  for (const locale of CAMPAIGN_LOCALES) {
+    const judged = templates[locale];
+    if (judged && !judged.ok) return { locale, issue: judged.issue };
+  }
+  return null;
+}
+
+/**
+ * Whether a campaign's templates can go out: one for every language of its
+ * audience, each approved, in that language and with its parameters. The
+ * first that cannot, or null. Throws on a read error.
+ */
+export async function campaignTemplateIssue(
+  db: Db,
+  campaign: Pick<CampaignRow, "content" | "audience" | "kind">,
+): Promise<LocaleTemplateIssue | null> {
+  return firstTemplateIssue(
+    await loadCampaignTemplates(
+      db,
+      campaign,
+      audienceLocales(campaign.audience),
+    ),
   );
 }
+
+/** What a send that a template holds back writes: the reason and the language. */
+export const templateUnavailable = ({
+  locale,
+  issue,
+}: LocaleTemplateIssue): string => `template_unavailable: ${issue} (${locale})`;
 
 /**
  * Fails the rows a dead process left in `sending`. They may have been sent, so
@@ -336,7 +418,7 @@ function wholeBatchRefusal(outcomes: RowOutcome[]): string | null {
 
 export async function sendQueuedWhatsApp(
   campaign: CampaignRow,
-  rows: QueuedRow[],
+  queued: QueuedRow[],
   deps: WhatsAppDeps = {},
 ): Promise<WhatsAppSendOutcome> {
   const db = deps.db ?? getAdminClient().database;
@@ -346,10 +428,16 @@ export async function sendQueuedWhatsApp(
   const budgetMs = deps.budgetMs ?? BUDGET_MS;
   const startedAt = now();
 
-  const block = campaign.content.whatsapp;
-  let template: WhatsAppTemplateRow | null;
+  // Each row goes out in ITS language (her own, or the audience's when it
+  // fixes one), with the template the campaign chose for that language.
+  const languageOf = (row: QueuedRow) =>
+    recipientLocale(campaign.audience, row.language);
+  const inQueue = CAMPAIGN_LOCALES.filter((locale) =>
+    queued.some((row) => languageOf(row) === locale),
+  );
+  let templates: CampaignTemplates;
   try {
-    template = await loadWhatsAppTemplate(db, block?.templateId);
+    templates = await loadCampaignTemplates(db, campaign, inQueue);
   } catch (err) {
     return {
       sent: 0,
@@ -358,25 +446,33 @@ export async function sendQueuedWhatsApp(
       halted: null,
       refusal: null,
       lastError: `db: ${(err as Error).message}`,
-      remaining: rows.length,
+      remaining: queued.length,
     };
   }
-  // A template that cannot be sent right now leaves the rows queued instead of
+  const templateOf = (row: QueuedRow) => {
+    const judged = templates[languageOf(row)];
+    return judged?.ok ? judged : null;
+  };
+  // A template that cannot be sent right now leaves ITS rows queued instead of
   // failing them: it may come back (PAUSED is not DELETED) and an automation's
-  // rows are never requeued by anything else.
-  const issue = campaignTemplateIssue(campaign, template);
-  if (issue !== null || !template || !block) {
+  // rows are never requeued by anything else. They are not claimed, and the
+  // rows of the other language still go out: an English template Meta paused
+  // must not cost the Spanish clients their notice.
+  const rows = queued.filter((row) => templateOf(row) !== null);
+  const held = queued.length - rows.length;
+  const heldBy = firstTemplateIssue(templates);
+  const heldError = heldBy ? templateUnavailable(heldBy) : null;
+  if (rows.length === 0) {
     return {
       sent: 0,
       failed: 0,
       unrecorded: 0,
       halted: null,
       refusal: null,
-      lastError: `template_unavailable: ${issue ?? "template_missing"}`,
-      remaining: rows.length,
+      lastError: heldError,
+      remaining: queued.length,
     };
   }
-  const chosen = template;
   // The consent the campaign is for, read again with every batch below.
   const purpose = consentPurposeOf(campaign.kind);
 
@@ -456,6 +552,10 @@ export async function sendQueuedWhatsApp(
     const fail = (error: string) => failRow(row, error);
 
     if (!row.phone) return fail("no phone");
+    // The template of her language, with that language's own parameters.
+    // Only rows whose language has one that can go out get this far.
+    const own = templateOf(row);
+    if (!own) return fail("template_missing");
 
     let bodyParams: string[];
     try {
@@ -463,13 +563,13 @@ export async function sendQueuedWhatsApp(
         ? row.contacts[0]
         : row.contacts;
       bodyParams = resolveParams(
-        block?.params ?? [],
+        own.params,
         {
           id: row.contact_id ?? "",
           email: row.email,
           firstName: contact?.first_name ?? "",
           lastName: contact?.last_name ?? null,
-          language: row.language,
+          language: languageOf(row),
           phone: row.phone,
         },
         row.vars ?? undefined,
@@ -482,8 +582,8 @@ export async function sendQueuedWhatsApp(
     try {
       result = await send({
         to: row.phone,
-        name: chosen.name,
-        language: chosen.language,
+        name: own.template.name,
+        language: own.template.language,
         bodyParams,
       });
     } catch (err) {
@@ -653,10 +753,12 @@ export async function sendQueuedWhatsApp(
     sent,
     failed,
     unrecorded,
-    lastError,
+    // What a template held back is said when nothing else went wrong: the
+    // rows of that language are still in the queue.
+    lastError: lastError ?? heldError,
     halted,
     refusal,
-    remaining: rows.length - sent - failed - unrecorded - lost,
+    remaining: rows.length - sent - failed - unrecorded - lost + held,
   };
 }
 

@@ -91,6 +91,8 @@ describe("dispatchCampaign: the checks come before the claim", () => {
         ok: false,
         error: "template_unavailable",
         detail,
+        // The language whose template it is: the campaign's, Spanish.
+        locale: "es",
       });
       expect(mem.campaign.status).toBe("draft");
       expect(touchedCampaign(mem.log)).toHaveLength(0);
@@ -216,6 +218,81 @@ describe("dispatchCampaign: an automated kind is never sent in one go", () => {
   });
 });
 
+describe("dispatchCampaign: a campaign for both languages needs the template of each before it starts", () => {
+  const name = { kind: "field" as const, field: "first_name" as const };
+  const TEMPLATES = {
+    "tpl-es": template({ id: "tpl-es", language: "es", param_count: 1 }),
+    "tpl-en": template({ id: "tpl-en", language: "en", param_count: 1 }),
+  };
+  const bilingual = () =>
+    campaign({
+      status: "draft",
+      audience: { language: "any" } as never,
+      content: {
+        whatsapp: {
+          es: { templateId: "tpl-es", params: [name] },
+          en: { templateId: "tpl-en", params: [name] },
+        },
+      } as never,
+    });
+
+  test("with both approved it is sent: each recipient frozen with her language and written to with its template", async () => {
+    const { mem, deps, sender } = setup(2, {
+      campaign: bilingual(),
+      templates: TEMPLATES,
+    });
+    const result = await dispatchCampaign(
+      "camp-1",
+      {},
+      {
+        ...deps,
+        resolveAudience: async () => [
+          { ...recipient(1), language: "es" },
+          { ...recipient(2), language: "en" },
+        ],
+      },
+    );
+    expect(result).toMatchObject({ ok: true });
+    // The frozen rows carry each contact's language...
+    expect(mem.upserts[0]?.rows.map((r) => r.language)).toEqual(["es", "en"]);
+    expect(mem.campaign.status).toBe("sent");
+    expect(sender.calls).toHaveLength(2);
+  });
+
+  test("with the English one paused nothing starts, nobody is frozen, and the refusal says English", async () => {
+    const { mem, deps, sender } = setup(2, {
+      campaign: bilingual(),
+      templates: {
+        ...TEMPLATES,
+        "tpl-en": { ...TEMPLATES["tpl-en"], status: "PAUSED" },
+      },
+    });
+    const result = await dispatchCampaign("camp-1", {}, deps);
+    expect(result).toEqual({
+      ok: false,
+      error: "template_unavailable",
+      detail: "template_not_approved",
+      locale: "en",
+    });
+    expect(mem.campaign.status).toBe("draft");
+    expect(mem.upserts).toHaveLength(0);
+    expect(sender.calls).toHaveLength(0);
+  });
+
+  test("a scheduled one blocked that way says so on the campaign, with the language", async () => {
+    const scheduled = { ...bilingual(), status: "scheduled" as const };
+    const { mem, deps } = setup(1, {
+      campaign: scheduled,
+      templates: { "tpl-es": TEMPLATES["tpl-es"] },
+    });
+    await dispatchCampaign("camp-1", {}, deps);
+    expect(mem.campaign.status).toBe("scheduled");
+    expect(mem.campaign.last_error).toBe(
+      "template_unavailable: template_missing (en)",
+    );
+  });
+});
+
 describe("dispatchCampaign: a blocked campaign says why", () => {
   test("a scheduled campaign blocked by missing credentials keeps its state and shows the reason", async () => {
     const { mem, deps } = setup(1, {
@@ -238,7 +315,7 @@ describe("dispatchCampaign: a blocked campaign says why", () => {
     await dispatchCampaign("camp-1", { resume: true }, deps);
     expect(mem.campaign.status).toBe("sending");
     expect(mem.campaign.last_error).toBe(
-      "template_unavailable: template_not_approved",
+      "template_unavailable: template_not_approved (es)",
     );
   });
 

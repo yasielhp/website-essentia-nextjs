@@ -53,6 +53,22 @@ export function recipientLocale(
 }
 
 /**
+ * The language a campaign was sent in when a campaign had ONE: the audience's
+ * when it fixes one, else the choice it stored (`sendLocale`), else Spanish,
+ * the house default.
+ *
+ * It decides nothing about who gets what any more (`recipientLocale` does).
+ * It is only how a row saved in the old shape is read: its lone WhatsApp
+ * template was the template of this language.
+ */
+export function legacySendLocale(
+  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+): CampaignLocale {
+  if (audience.language !== "any") return audience.language;
+  return audience.sendLocale ?? "es";
+}
+
+/**
  * The languages a validation left incomplete, read off its error keys
  * (`content.en.subject`, `content.whatsapp.es.templateId`…), so a refusal can
  * say WHICH version is missing instead of "something is wrong".

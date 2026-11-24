@@ -13,7 +13,7 @@ import {
   campaignChannelSchema,
   campaignKindSchema,
   channelChangeAllowed,
-  sendLocaleOf,
+  requiredLocales,
   segmentSchema,
   validateCampaign,
   validateCampaignDraft,
@@ -35,6 +35,7 @@ import {
 import { toSegmentPerson } from "@/lib/campaigns/segment-people";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { templateGate } from "@/lib/campaigns/template-gate";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import { whatsappContentErrors } from "@/lib/campaigns/whatsapp-eligibility";
 import { prepareTestSend } from "@/lib/campaigns/whatsapp-test-send";
 import { sendTemplateMessage } from "@/lib/whatsapp/client";
@@ -770,25 +771,36 @@ export async function saveCampaign(
   }
 
   // A draft may point at any template, or none; anything that can go out must
-  // point at one that can be sent now, in the campaign's language, with the
-  // parameters it declares. The form offers only such templates, but the
-  // template may have been paused since, and the browser is not trusted.
+  // point, for EVERY language of its audience, at one that can be sent now, in
+  // that language, with the parameters it declares. The form offers only such
+  // templates, but a template may have been paused since, and the browser is
+  // not trusted. Every language's errors come back together, each on its own.
   if (strictness === "full" && validated.data.channel === "whatsapp") {
-    const block = validated.data.content.whatsapp;
-    let template: Awaited<ReturnType<typeof loadWhatsAppTemplate>>;
-    try {
-      template = await loadWhatsAppTemplate(db, block?.templateId);
-    } catch (err) {
-      console.error("[campaigns] template lookup failed:", err);
-      return { ok: false, error: "db" };
-    }
-    const templateErrors = whatsappContentErrors(
-      template,
-      sendLocaleOf(validated.data.audience),
-      block?.params ?? [],
-      validated.data.kind,
+    const blocks = whatsappBlocks(
+      validated.data.content.whatsapp,
+      validated.data.audience,
     );
-    if (templateErrors) {
+    const templateErrors: Record<string, string> = {};
+    for (const locale of requiredLocales(validated.data.audience)) {
+      const block = blocks[locale];
+      let template: Awaited<ReturnType<typeof loadWhatsAppTemplate>>;
+      try {
+        template = await loadWhatsAppTemplate(db, block?.templateId);
+      } catch (err) {
+        console.error("[campaigns] template lookup failed:", err);
+        return { ok: false, error: "db" };
+      }
+      Object.assign(
+        templateErrors,
+        whatsappContentErrors(
+          template,
+          locale,
+          block?.params ?? [],
+          validated.data.kind,
+        ) ?? {},
+      );
+    }
+    if (Object.keys(templateErrors).length > 0) {
       return { ok: false, error: "invalid", fieldErrors: templateErrors };
     }
   }
@@ -1143,9 +1155,10 @@ const whatsappTestLimiter = createRateLimiter({
 });
 
 /**
- * Sends the campaign's template, as it would go out, to the administrator who
- * asked: the template's own example values, to the phone on that admin's
- * profile. Nothing is recorded and no campaign is needed.
+ * Sends ONE language's template of the campaign, as it would go out, to the
+ * administrator who asked: the language on their screen, with that template's
+ * own example values, to the phone on that admin's profile. Nothing is
+ * recorded and no campaign is needed.
  *
  * The phone is read here from the caller's profile, never taken from the
  * browser, so this cannot message anyone else. Failures are keys the form
@@ -1156,6 +1169,7 @@ export async function sendTestWhatsAppCampaign(
   accessToken: string | null,
   content: CampaignContent,
   audience: Pick<CampaignAudience, "language" | "sendLocale">,
+  locale: CampaignLocale,
 ): Promise<{ ok: true; to: string } | Failure> {
   let caller: AuthContext;
   try {
@@ -1166,15 +1180,18 @@ export async function sendTestWhatsAppCampaign(
   const parsed = campaignAudienceSchema
     .pick({ language: true, sendLocale: true })
     .safeParse(audience);
-  // The template id comes from the browser: it must be a uuid (or nothing,
+  // The template ids come from the browser: each must be a uuid (or nothing,
   // which is then "no template") before it reaches a query.
-  const block = whatsappContentSchema.safeParse(
-    content?.whatsapp ?? {
-      templateId: null,
-      params: [],
-    },
-  );
-  if (!parsed.success || !block.success) return { ok: false, error: "invalid" };
+  const whole = whatsappContentSchema.safeParse(content?.whatsapp ?? {});
+  if (
+    !parsed.success ||
+    !whole.success ||
+    (locale !== "es" && locale !== "en")
+  ) {
+    return { ok: false, error: "invalid" };
+  }
+  // The template of the language asked for: the test is of what is on screen.
+  const block = whatsappBlocks(whole.data, parsed.data)[locale];
 
   const db = getAdminClient().database;
   let phone: string | null = null;
@@ -1187,13 +1204,13 @@ export async function sendTestWhatsAppCampaign(
       .maybeSingle();
     if (error) return { ok: false, error: "db" };
     phone = (data as { phone: string | null } | null)?.phone ?? null;
-    template = await loadWhatsAppTemplate(db, block.data.templateId);
+    template = await loadWhatsAppTemplate(db, block?.templateId);
   } catch (err) {
     console.error("[campaigns] whatsapp test lookup failed:", err);
     return { ok: false, error: "db" };
   }
 
-  const plan = prepareTestSend(template, sendLocaleOf(parsed.data), phone);
+  const plan = prepareTestSend(template, locale, phone);
   if (!plan.ok) {
     return {
       ok: false,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { WhatsAppParamSource } from "@/lib/whatsapp/types";
 import {
   PARAM_FIELDS,
+  counterpartTemplate,
   fieldAvailable,
   fitParams,
   kindAllowedForChannel,
@@ -11,6 +12,7 @@ import {
   triggerEventKey,
   unavailableParams,
   visitFieldsExist,
+  whatsappVersionIncomplete,
   WHATSAPP_MESSAGES_PER_RUN,
 } from "./whatsapp-form";
 import { BUDGET_MS, PER_SECOND } from "./dispatch-whatsapp";
@@ -380,5 +382,81 @@ describe("partitionTemplates for an appointment notice", () => {
     expect(campaignTemplateChoiceIssue(marketing, "es", "appointment")).toBe(
       "template_category",
     );
+  });
+});
+
+describe("counterpartTemplate: the same template in the other language", () => {
+  const es = template({ id: "es-1", name: "reapertura", language: "es" });
+  const en = template({ id: "en-1", name: "reapertura", language: "en" });
+  const other = template({ id: "en-2", name: "welcome", language: "en" });
+
+  test("picking it in Spanish finds the one of the same name in English", () => {
+    expect(counterpartTemplate([es, other, en], es, "en")?.id).toBe("en-1");
+    expect(counterpartTemplate([es, other, en], en, "es")?.id).toBe("es-1");
+  });
+
+  test("a regional variant of the language counts", () => {
+    const us = { ...en, id: "en-us", language: "en_US" };
+    expect(counterpartTemplate([es, us], es, "en")?.id).toBe("en-us");
+  });
+
+  test("no template of that name in the other language: none is proposed", () => {
+    expect(counterpartTemplate([es, other], es, "en")).toBeNull();
+  });
+
+  test("one that cannot be sent is not proposed: pending, or unsupported", () => {
+    expect(
+      counterpartTemplate([es, { ...en, status: "PENDING" }], es, "en"),
+    ).toBeNull();
+    expect(
+      counterpartTemplate(
+        [es, { ...en, unsupported_reason: "media_header" }],
+        es,
+        "en",
+      ),
+    ).toBeNull();
+  });
+
+  test("for an appointment notice it must be a Utility template too", () => {
+    expect(counterpartTemplate([es, en], es, "en", "appointment")).toBeNull();
+    expect(
+      counterpartTemplate(
+        [es, { ...en, category: "UTILITY" }],
+        es,
+        "en",
+        "appointment",
+      )?.id,
+    ).toBe("en-1");
+  });
+
+  test("it is never the template that was picked", () => {
+    // Two rows of one name in one language (a re-sync): not its own pair.
+    expect(counterpartTemplate([es], es, "es")).toBeNull();
+  });
+});
+
+describe("whatsappVersionIncomplete: the mark on a language's tab", () => {
+  const two = template({ param_count: 2 });
+  const name = { kind: "field" as const, field: "first_name" as const };
+
+  test("no template that can be sent: incomplete", () => {
+    expect(whatsappVersionIncomplete(null, [])).toBe(true);
+  });
+
+  test("a template with every value set: complete", () => {
+    expect(
+      whatsappVersionIncomplete(two, [name, { kind: "static", value: "x" }]),
+    ).toBe(false);
+    expect(whatsappVersionIncomplete(template({ param_count: 0 }), [])).toBe(
+      false,
+    );
+  });
+
+  test("a fixed text left empty, or a value not set yet: incomplete", () => {
+    expect(
+      whatsappVersionIncomplete(two, [name, { kind: "static", value: "  " }]),
+    ).toBe(true);
+    // The template has two values and only one was ever set.
+    expect(whatsappVersionIncomplete(two, [name])).toBe(true);
   });
 });

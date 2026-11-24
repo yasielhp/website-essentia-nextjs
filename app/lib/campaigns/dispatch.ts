@@ -21,7 +21,6 @@ import {
   WRITE_RETRY_MS,
   campaignTemplateIssue,
   haltMessage,
-  loadWhatsAppTemplate,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   type WhatsAppDeps,
@@ -106,6 +105,8 @@ export type DispatchResult =
         | "db";
       /** `template_unavailable`: why (a code from `whatsappTemplateEligibility`). */
       detail?: string;
+      /** `template_unavailable`: the language whose template cannot go out. */
+      locale?: CampaignLocale;
     };
 
 type QueuedContact = {
@@ -638,7 +639,9 @@ async function preflight(
         .from("campaigns")
         .update({
           last_error: failure.detail
-            ? `${failure.error}: ${failure.detail}`
+            ? `${failure.error}: ${failure.detail}${
+                failure.locale ? ` (${failure.locale})` : ""
+              }`
             : failure.error,
           updated_at: new Date().toISOString(),
         })
@@ -651,16 +654,15 @@ async function preflight(
     return blocked({ ok: false, error: "whatsapp_not_configured" });
   }
   try {
-    const template = await loadWhatsAppTemplate(
-      db,
-      campaign.content.whatsapp?.templateId,
-    );
-    const issue = campaignTemplateIssue(campaign, template);
-    if (issue) {
+    // The template of every language of the audience: a one-off send does
+    // not start with one of them unable to go out.
+    const found = await campaignTemplateIssue(db, campaign);
+    if (found) {
       return blocked({
         ok: false,
         error: "template_unavailable",
-        detail: issue,
+        detail: found.issue,
+        locale: found.locale,
       });
     }
   } catch (err) {

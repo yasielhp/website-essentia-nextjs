@@ -11,7 +11,6 @@ import {
   incompleteLocales,
   initialFormState,
   nextStep,
-  reachIn,
   type FormState,
 } from "./form-state";
 
@@ -109,30 +108,50 @@ describe("SET_CHANNEL", () => {
 });
 
 describe("SET_WHATSAPP", () => {
-  test("stores the template and what fills it", () => {
-    const params = [{ kind: "static" as const, value: "hola" }];
-    const after = formReducer(initialFormState, {
+  const params = [{ kind: "static" as const, value: "hola" }];
+
+  test("stores the template of a language and what fills it, and leaves the other language alone", () => {
+    const spanish = formReducer(initialFormState, {
       type: "SET_WHATSAPP",
-      templateId: "tpl-9",
+      locale: "es",
+      templateId: "tpl-es",
       params,
     });
-    expect(after.content.whatsapp).toEqual({ templateId: "tpl-9", params });
+    expect(spanish.content.whatsapp).toEqual({
+      es: { templateId: "tpl-es", params },
+    });
+    const both = formReducer(spanish, {
+      type: "SET_WHATSAPP",
+      locale: "en",
+      templateId: "tpl-en",
+      params: [],
+    });
+    expect(both.content.whatsapp).toEqual({
+      es: { templateId: "tpl-es", params },
+      en: { templateId: "tpl-en", params: [] },
+    });
   });
-  test("clears the errors that were about the template", () => {
+
+  test("clears the errors that were about that language's template, and no others", () => {
     const before: FormState = {
       ...initialFormState,
       fieldErrors: {
-        "content.whatsapp.templateId": "templateUnavailable",
-        "content.whatsapp.params.0": "paramTooLong",
+        "content.whatsapp.es.templateId": "templateUnavailable",
+        "content.whatsapp.es.params.0": "paramTooLong",
+        "content.whatsapp.en.templateId": "templateRequired",
         name: "nameTaken",
       },
     };
     const after = formReducer(before, {
       type: "SET_WHATSAPP",
+      locale: "es",
       templateId: "tpl-9",
       params: [],
     });
-    expect(after.fieldErrors).toEqual({ name: "nameTaken" });
+    expect(after.fieldErrors).toEqual({
+      "content.whatsapp.en.templateId": "templateRequired",
+      name: "nameTaken",
+    });
   });
 });
 
@@ -142,10 +161,32 @@ describe("LOAD", () => {
     expect(state.channel).toBe("whatsapp");
     expect(state.kind).toBe("automated");
     expect(state.trigger).toEqual({ event: "after_booking", days: 2 });
+    // Saved with one template and no language, for everybody with Spanish
+    // as its send language: it comes back as the Spanish template.
     expect(state.content.whatsapp).toEqual({
-      templateId: "tpl-1",
-      params: [{ kind: "field", field: "first_name" }],
+      es: {
+        templateId: "tpl-1",
+        params: [{ kind: "field", field: "first_name" }],
+      },
     });
+  });
+  test("a draft saved with a template per language comes back as it was", () => {
+    const whatsapp = {
+      es: { templateId: "tpl-es", params: [] },
+      en: {
+        templateId: "tpl-en",
+        params: [{ kind: "field" as const, field: "first_name" as const }],
+      },
+    };
+    const row = whatsappCampaign();
+    row.content = { ...row.content, whatsapp };
+    expect(load(row).content.whatsapp).toEqual(whatsapp);
+  });
+  test("an old one whose send language was English comes back as the English template", () => {
+    const row = whatsappCampaign({
+      audience: { ...EMPTY_AUDIENCE, sendLocale: "en" },
+    });
+    expect(Object.keys(load(row).content.whatsapp ?? {})).toEqual(["en"]);
   });
   test("an older row with no channel is an email", () => {
     const row = whatsappCampaign();
@@ -159,35 +200,15 @@ describe("LOAD", () => {
 });
 
 describe("SET_AUDIENCE", () => {
-  test("choosing only the send language keeps the count and moves everybody to it", () => {
+  test("an empty patch changes nothing, the breakdown by language included", () => {
     const before: FormState = {
       ...initialFormState,
-      reach: { count: 7, en: 0, es: 7 },
-    };
-    const after = formReducer(before, {
-      type: "SET_AUDIENCE",
-      patch: { sendLocale: "en" },
-    });
-    expect(after.audience.sendLocale).toBe("en");
-    // One language, one version: everybody who is reached gets this one.
-    expect(after.reach).toEqual({ count: 7, en: 7, es: 0 });
-  });
-  test("an empty patch changes nothing, the breakdown included", () => {
-    const before: FormState = {
-      ...initialFormState,
-      reach: { count: 7, en: 0, es: 7 },
+      reach: { count: 7, en: 3, es: 4 },
     };
     const after = formReducer(before, { type: "SET_AUDIENCE", patch: {} });
-    expect(after.reach).toEqual({ count: 7, en: 0, es: 7 });
+    expect(after.reach).toEqual({ count: 7, en: 3, es: 4 });
   });
-  test("no count yet stays no count", () => {
-    const after = formReducer(initialFormState, {
-      type: "SET_AUDIENCE",
-      patch: { sendLocale: "en" },
-    });
-    expect(after.reach).toBeNull();
-  });
-  test("any other change makes the count stale", () => {
+  test("any change of who is in it makes the count stale", () => {
     const before: FormState = {
       ...initialFormState,
       reach: { count: 7, en: 3, es: 4 },
@@ -198,11 +219,40 @@ describe("SET_AUDIENCE", () => {
     });
     expect(after.reach).toBeNull();
   });
+  test("the form no longer names one send language for everybody", () => {
+    expect(initialFormState.audience.sendLocale).toBeUndefined();
+    const after = formReducer(initialFormState, {
+      type: "SET_AUDIENCE",
+      patch: { language: "en" },
+    });
+    expect(after.audience.sendLocale).toBeUndefined();
+    const segment = formReducer(initialFormState, {
+      type: "SET_SEGMENT",
+      id: "seg",
+      name: "Todas",
+      conditions: { ...EMPTY_AUDIENCE } as SegmentConditions,
+    });
+    expect(segment.audience.sendLocale).toBeUndefined();
+  });
+  test("a send language an old campaign carried is dropped the first time its audience is touched", () => {
+    const old = load(
+      whatsappCampaign({
+        channel: "email",
+        audience: { ...EMPTY_AUDIENCE, sendLocale: "en" },
+      }),
+    );
+    const after = formReducer(old, {
+      type: "SET_AUDIENCE",
+      patch: { newsletter: true },
+    });
+    expect(after.audience.sendLocale).toBeUndefined();
+  });
 });
 
 describe("contentOf", () => {
   const withBoth: FormState = formReducer(initialFormState, {
     type: "SET_WHATSAPP",
+    locale: "es",
     templateId: "tpl-1",
     params: [],
   });
@@ -211,10 +261,10 @@ describe("contentOf", () => {
       contentOf({ ...withBoth, channel: "email" }).whatsapp,
     ).toBeUndefined();
   });
-  test("a WhatsApp campaign keeps it", () => {
-    expect(
-      contentOf({ ...withBoth, channel: "whatsapp" }).whatsapp?.templateId,
-    ).toBe("tpl-1");
+  test("a WhatsApp campaign keeps it, a template per language", () => {
+    expect(contentOf({ ...withBoth, channel: "whatsapp" }).whatsapp).toEqual({
+      es: { templateId: "tpl-1", params: [] },
+    });
   });
 });
 
@@ -231,28 +281,6 @@ describe("nextStep", () => {
     expect(nextStep(2, "whatsapp", false)).toBe(5);
     expect(nextStep(3, "whatsapp", true)).toBe(5);
     expect(nextStep(5, "whatsapp", false)).toBe(6);
-  });
-});
-
-describe("reachIn", () => {
-  const reach = { count: 6, en: 0, es: 6 };
-  test("a segment that fixes a language sends in it, whatever sendLocale says", () => {
-    const audience = { ...EMPTY_AUDIENCE, language: "en" as const };
-    expect(reachIn(reach, audience)).toEqual({ count: 6, en: 6, es: 0 });
-  });
-  test("with nothing chosen it is Spanish, the house default", () => {
-    expect(reachIn(reach, { ...EMPTY_AUDIENCE })).toEqual({
-      count: 6,
-      en: 0,
-      es: 6,
-    });
-  });
-  test("a chosen send language wins when the segment spans both", () => {
-    const audience = { ...EMPTY_AUDIENCE, sendLocale: "en" as const };
-    expect(reachIn(reach, audience)).toEqual({ count: 6, en: 6, es: 0 });
-  });
-  test("no count is still no count", () => {
-    expect(reachIn(null, EMPTY_AUDIENCE)).toBeNull();
   });
 });
 
@@ -288,7 +316,6 @@ describe("the appointment notice kind", () => {
         neverBooked: false,
         hasBooked: true,
         manualIds: ["c1"],
-        sendLocale: "es",
       },
     };
     const after = formReducer(messy, { type: "SET_KIND", kind: "appointment" });
@@ -296,11 +323,8 @@ describe("the appointment notice kind", () => {
     expect(after.segmentName).toBeNull();
     expect(after.pickedContacts).toEqual([]);
     expect(after.reach).toBeNull();
-    expect(after.audience).toEqual({
-      ...EMPTY_AUDIENCE,
-      language: "any",
-      sendLocale: "es",
-    });
+    // Every client, in her own language: the notice starts for both.
+    expect(after.audience).toEqual({ ...EMPTY_AUDIENCE, language: "any" });
   });
 
   test("is refused for an email", () => {

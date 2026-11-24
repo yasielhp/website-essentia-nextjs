@@ -60,18 +60,26 @@ describe("whatsappContentErrors", () => {
   test("a template that cannot be sent is reported on the template field", () => {
     for (const missing of [null, template({ status: "PAUSED" })]) {
       expect(whatsappContentErrors(missing, "es", SOURCES)).toEqual({
-        "content.whatsapp.templateId": "templateUnavailable",
+        "content.whatsapp.es.templateId": "templateUnavailable",
       });
     }
     expect(
       whatsappContentErrors(template({ language: "en" }), "es", SOURCES),
     ).toEqual({
-      "content.whatsapp.templateId": "templateUnavailable",
+      "content.whatsapp.es.templateId": "templateUnavailable",
     });
+  });
+  test("the error is keyed by the language whose template it is", () => {
+    expect(whatsappContentErrors(null, "en", SOURCES)).toEqual({
+      "content.whatsapp.en.templateId": "templateUnavailable",
+    });
+    expect(
+      whatsappContentErrors(template({ language: "en" }), "en", [SOURCES[0]]),
+    ).toEqual({ "content.whatsapp.en.params": "paramCountMismatch" });
   });
   test("a wrong number of parameters is reported on the parameters", () => {
     expect(whatsappContentErrors(template(), "es", [SOURCES[0]])).toEqual({
-      "content.whatsapp.params": "paramCountMismatch",
+      "content.whatsapp.es.params": "paramCountMismatch",
     });
   });
 });
@@ -152,7 +160,7 @@ describe("an appointment notice only takes a Utility template", () => {
     expect(
       whatsappContentErrors(template(), "es", SOURCES, "appointment"),
     ).toEqual({
-      "content.whatsapp.templateId": "templateCategoryNotAllowed",
+      "content.whatsapp.es.templateId": "templateCategoryNotAllowed",
     });
     expect(
       whatsappContentErrors(utility(), "es", SOURCES, "appointment"),

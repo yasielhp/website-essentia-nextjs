@@ -155,6 +155,12 @@ export const consenting = (id: string): StoredContact => ({
 
 export type MemoryDbOptions = {
   template?: WhatsAppTemplateRow | null;
+  /**
+   * The account's templates by id, for a campaign with one per language: a read
+   * answers the one asked for, or null when it is not here. It wins over
+   * `template`, which answers every id alike.
+   */
+  templates?: Record<string, WhatsAppTemplateRow | null>;
   readError?: string;
   /** Contacts that exist. Defaults to a consenting one for every queued row. */
   contacts?: StoredContact[] | "all-consenting";
@@ -217,6 +223,8 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
   const reads: string[] = [];
   const contactReads: string[][] = [];
   const suppressedReads: string[][] = [];
+  /** The template ids asked for, when `templates` answers by id. */
+  const templateReads: string[] = [];
 
   const stepArgs = (chain: Step[], name: string) =>
     chain.filter((s) => s.name === name).map((s) => s.args);
@@ -257,6 +265,11 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
       reads.push(table);
       if (opts.readError) {
         return { data: null, error: { message: opts.readError } };
+      }
+      if (opts.templates) {
+        const id = stepArgs(chain, "eq").find((a) => a[0] === "id")?.[1];
+        templateReads.push(String(id));
+        return { data: opts.templates[String(id)] ?? null, error: null };
       }
       return {
         data: "template" in opts ? opts.template : template(),
@@ -404,6 +417,7 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
     reads,
     contactReads,
     suppressedReads,
+    templateReads,
     campaign: campaignRow,
     campaignWrites,
     upserts,

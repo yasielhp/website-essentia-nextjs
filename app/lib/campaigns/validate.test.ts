@@ -122,8 +122,11 @@ describe("a WhatsApp campaign", () => {
       },
     });
     expect(r.ok).toBe(false);
+    // Said on the language that has no template: the audience is Spanish.
     if (!r.ok)
-      expect(r.errors["content.whatsapp.templateId"]).toBe("templateRequired");
+      expect(r.errors["content.whatsapp.es.templateId"]).toBe(
+        "templateRequired",
+      );
   });
 
   test("refuses a campaign with no whatsapp block at all", () => {
@@ -133,7 +136,9 @@ describe("a WhatsApp campaign", () => {
     });
     expect(r.ok).toBe(false);
     if (!r.ok)
-      expect(r.errors["content.whatsapp.templateId"]).toBe("templateRequired");
+      expect(r.errors["content.whatsapp.es.templateId"]).toBe(
+        "templateRequired",
+      );
   });
 
   test("keeps the whatsapp block in the validated data", () => {
@@ -248,6 +253,137 @@ describe("a WhatsApp campaign", () => {
     expect(r.ok).toBe(true);
     if (r.ok)
       expect(r.data.content.whatsapp).toEqual(whatsapp.content.whatsapp);
+  });
+});
+
+describe("a WhatsApp campaign has a template for every language of its audience", () => {
+  const TPL_ES = "6f1c2a3e-1111-4222-8333-444455556666";
+  const TPL_EN = "7a2d3b4f-2222-4333-8444-555566667777";
+  const name = { kind: "field" as const, field: "first_name" as const };
+  const es = { templateId: TPL_ES, params: [name] };
+  const en = { templateId: TPL_EN, params: [name] };
+  const whatsapp = (
+    block: unknown,
+    language: "any" | "es" | "en" = "any",
+    over: Record<string, unknown> = {},
+  ) => ({
+    ...campaign,
+    channel: "whatsapp" as const,
+    audience: { ...audience, language },
+    content: { en: empty, es: empty, whatsapp: block },
+    ...over,
+  });
+
+  test("an audience of both languages with a template in each passes", () => {
+    const r = validateCampaign(whatsapp({ es, en }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.content.whatsapp).toEqual({ es, en });
+  });
+
+  test("without the English template it is refused, and the error is the English one's", () => {
+    const r = validateCampaign(whatsapp({ es }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors).toEqual({
+        "content.whatsapp.en.templateId": "templateRequired",
+      });
+      expect(missingLocales(r.errors)).toEqual(["en"]);
+    }
+  });
+
+  test("a language begun and left without a template is as missing", () => {
+    const r = validateCampaign(
+      whatsapp({ es, en: { templateId: null, params: [] } }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["en"]);
+  });
+
+  test("with neither, both are named", () => {
+    const r = validateCampaign(whatsapp({}));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["es", "en"]);
+  });
+
+  test("a Spanish audience needs the Spanish template alone, an English one the English", () => {
+    expect(validateCampaign(whatsapp({ es }, "es")).ok).toBe(true);
+    expect(validateCampaign(whatsapp({ en }, "en")).ok).toBe(true);
+    const r = validateCampaign(whatsapp({ es }, "en"));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["en"]);
+  });
+
+  test("an appointment notice is held to the same: a template per language of its clients", () => {
+    const notice = {
+      kind: "appointment",
+      trigger: { event: "before_visit", hours: 24 },
+    };
+    expect(validateCampaign(whatsapp({ es, en }, "any", notice)).ok).toBe(true);
+    const r = validateCampaign(whatsapp({ es }, "any", notice));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["en"]);
+    expect(validateCampaign(whatsapp({ es }, "es", notice)).ok).toBe(true);
+  });
+
+  test("each language's parameters are checked, and the error says whose", () => {
+    const r = validateCampaign(
+      whatsapp({
+        es,
+        en: {
+          templateId: TPL_EN,
+          params: [{ kind: "static", value: "x".repeat(201) }],
+        },
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors["content.whatsapp.en.params.0"]).toBe("paramTooLong");
+  });
+
+  test("a draft may have one language, or none; a template id that is not one is still refused", () => {
+    expect(validateCampaignDraft(whatsapp({ es })).ok).toBe(true);
+    expect(validateCampaignDraft(whatsapp({})).ok).toBe(true);
+    const r = validateCampaignDraft(
+      whatsapp({ es: { templateId: "not-a-uuid", params: [] } }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors["content.whatsapp.es.templateId"]).toBe(
+        "templateRequired",
+      );
+  });
+
+  describe("a campaign saved when it had one template and no language", () => {
+    const old = { templateId: TPL_ES, params: [name] };
+
+    test("is still read: for a Spanish audience it is the Spanish template, and enough", () => {
+      const r = validateCampaign(whatsapp(old, "es"));
+      expect(r.ok).toBe(true);
+      // Stored as it came: reading it is what gives it a language.
+      if (r.ok) expect(r.data.content.whatsapp).toEqual(old);
+    });
+
+    test("for an English audience it is the English one", () => {
+      expect(validateCampaign(whatsapp(old, "en")).ok).toBe(true);
+    });
+
+    test("for everybody it is the template of the language it was sent in, and the other is now missing", () => {
+      const spanish = validateCampaign(whatsapp(old, "any"));
+      expect(spanish.ok).toBe(false);
+      if (!spanish.ok) expect(missingLocales(spanish.errors)).toEqual(["en"]);
+
+      const english = validateCampaign(
+        whatsapp(old, "any", {
+          audience: { ...everyone, sendLocale: "en" as const },
+        }),
+      );
+      expect(english.ok).toBe(false);
+      if (!english.ok) expect(missingLocales(english.errors)).toEqual(["es"]);
+    });
+
+    test("a draft in the old shape still loads", () => {
+      expect(validateCampaignDraft(whatsapp(old, "any")).ok).toBe(true);
+    });
   });
 });
 
@@ -493,7 +629,9 @@ describe("the kinds a channel allows", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.kind).toBe("kindNotAllowedForChannel");
-      expect(r.errors["content.whatsapp.templateId"]).toBe("templateRequired");
+      expect(r.errors["content.whatsapp.es.templateId"]).toBe(
+        "templateRequired",
+      );
     }
   });
 });

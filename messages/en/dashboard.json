@@ -1704,8 +1704,9 @@
       "whatsapp": {
         "title": "WhatsApp message",
         "intro": "A WhatsApp campaign sends a template approved by Meta. Choose the template and where each value comes from.",
-        "language": "Sending language",
-        "languageHint": "The segment includes both languages. Each template is in a single language, so everyone gets the one in this language.",
+        "language": "Language",
+        "languageHint": "The audience includes both languages and each template is in a single one: each contact gets the one in their own, so an approved one has to be chosen in each language.",
+        "counterpart": "“{name}” has been chosen in {language} too: it is the same template in that language. Check its values in its tab.",
         "sentIn": "Sent in {language}, the language of the segment.",
         "localeEs": "Spanish",
         "localeEn": "English",
@@ -1719,7 +1720,7 @@
         "excluded": {
           "template_not_approved": "{count, plural, one {# template not approved by Meta (in review, rejected or disabled)} other {# templates not approved by Meta (in review, rejected or disabled)}}",
           "template_unsupported": "{count, plural, one {# template that cannot be sent from here} other {# templates that cannot be sent from here}}",
-          "template_language": "{count, plural, one {# template in another language} other {# templates in another language}}: the campaign is sent in {language}",
+          "template_language": "{count, plural, one {# template in another language} other {# templates in another language}}: this version is in {language}",
           "template_missing": "{count, plural, one {# template that no longer exists} other {# templates that no longer exist}}",
           "template_category": "{count, plural, one {# Marketing template} other {# Marketing templates}}: appointment notices can only use Utility templates"
         },
@@ -1727,7 +1728,7 @@
           "template_missing": "it no longer exists",
           "template_not_approved": "it is not approved",
           "template_unsupported": "it cannot be sent from here",
-          "template_language": "it is not in the sending language",
+          "template_language": "it is not in this language",
           "template_category": "it is a Marketing template, and appointment notices can only use Utility templates"
         },
         "selectedUnavailable": "The chosen template can no longer be used: {reason}. Choose another one.",
@@ -1757,7 +1758,7 @@
         "confirm": "Confirm message",
         "chosen": "Template chosen",
         "appointmentCategoryHint": "Appointment notices only take Utility templates. A review request or an offer counts as marketing: use a regular campaign.",
-        "languageHintAppointment": "The clients in the audience speak both languages. Each template is in a single language: choose the one the notice is sent in.",
+        "languageHintAppointment": "The clients in the audience speak both languages and each template is in a single one: each client gets the notice in her own, so an approved one has to be chosen in each language.",
         "sentInAppointment": "Sent in {language}, the clients' language you chose."
       }
     },
@@ -1806,7 +1807,7 @@
         "title": "Which appointments",
         "servicesHelp": "Empty = all services.",
         "language": "Clients' language",
-        "languageHint": "With “Both languages”, the language of the notice is chosen in the template step.",
+        "languageHint": "With “Both languages”, each client gets the notice in her own: one template per language is chosen in the template step.",
         "reach": "{count} with appointment notices switched on",
         "note": "Only clients with appointment notices switched on and no opt-out receive the notice; the figure counts clients, not appointments.",
         "panelNote": "Appointments created by the team from the dashboard do not switch the client's notices on: that is done on the client's contact page, with the “Appointment notices” switch.",

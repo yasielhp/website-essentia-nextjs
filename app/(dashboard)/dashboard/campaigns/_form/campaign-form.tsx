@@ -12,6 +12,7 @@ import {
   validateCampaignDraft,
 } from "@/lib/schemas";
 import { incompleteError } from "@/lib/campaigns/languages";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import { Button } from "@/components/ui/button";
 import {
   activateCampaign,
@@ -232,10 +233,12 @@ export function CampaignForm({
   /** The test of a WhatsApp campaign: the template, to the admin's own phone. */
   async function handleWhatsAppTest() {
     try {
+      // The template of the language on screen, and only that one.
       const result = await sendTestWhatsAppCampaign(
         getAccessToken(),
         contentOf(state),
         state.audience,
+        state.activeLocale,
       );
       if (result.ok) {
         notifySuccess(tToasts("campaignTestSentPhone", { phone: result.to }));
@@ -405,14 +408,26 @@ export function CampaignForm({
             : ""
       }`)
     : "";
-  const chosenTemplateName =
+  // The template of each language, by name; one name when they share it.
+  const whatsappVersions = whatsappBlocks(
+    state.content.whatsapp,
+    state.audience,
+  );
+  const chosenTemplateNames =
     templates.status === "ready"
-      ? templates.templates.find(
-          (tpl) => tpl.id === state.content.whatsapp?.templateId,
-        )?.name
-      : undefined;
+      ? [
+          ...new Set(
+            requiredLocales(state.audience).flatMap((locale) => {
+              const name = templates.templates.find(
+                (tpl) => tpl.id === whatsappVersions[locale]?.templateId,
+              )?.name;
+              return name ? [name] : [];
+            }),
+          ),
+        ]
+      : [];
   const contentSummary = whatsapp
-    ? (chosenTemplateName ?? t("form.whatsapp.chosen"))
+    ? chosenTemplateNames.join(" · ") || t("form.whatsapp.chosen")
     : requiredLocales(state.audience)
         .map((locale) => state.content[locale].subject)
         .filter(Boolean)

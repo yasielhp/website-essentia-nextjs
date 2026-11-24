@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
 import { LocaleTabs } from "@/components/dashboard/locale-tabs";
-import { requiredLocales, sendLocaleOf } from "@/lib/schemas";
+import { requiredLocales } from "@/lib/schemas";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import {
   WHATSAPP_MESSAGES_PER_RUN,
   sampleParams,
@@ -115,27 +116,41 @@ export function ReviewStep({
   const whatsapp = state.channel === "whatsapp";
   const tWhatsApp = useTranslations("dashboard.campaigns.form.whatsapp");
   const [today] = useState(() => new Date());
-  const sendLocale = sendLocaleOf(audience);
-  // The email is written in each of these; the one on screen is the one the
-  // summary shows and the test sends.
+  const [busy, setBusy] = useState<
+    "test" | "schedule" | "send" | "activate" | null
+  >(null);
+  // The campaign is written in each of these (the email, or a WhatsApp
+  // template apiece); the one on screen is the one the summary shows and the
+  // test sends.
   const locales = requiredLocales(audience);
   const locale = state.activeLocale;
   const localeLabel = (value: CampaignLocale) =>
     value === "es" ? tContent("localeEs") : tContent("localeEn");
+  const whatsappBlock = whatsapp
+    ? whatsappBlocks(content.whatsapp, audience)[locale]
+    : null;
   const chosenTemplate =
     whatsapp && templates.status === "ready"
       ? (templates.templates.find(
-          (tpl) => tpl.id === content.whatsapp?.templateId,
+          (tpl) => tpl.id === whatsappBlock?.templateId,
         ) ?? null)
       : null;
+  const languageSwitch = (
+    <LocaleTabs
+      id="campaign-review-language"
+      label={tContent("language")}
+      locales={locales}
+      active={locale}
+      onChange={onLocale}
+      nameOf={localeLabel}
+      disabled={submitting || busy !== null}
+    />
+  );
   const automated = isAutomatedKind(kind);
   const [confirming, setConfirming] = useState(false);
   // Activating starts messaging people on its own: it asks, like "Send now".
   const [confirmingActivate, setConfirmingActivate] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
-  const [busy, setBusy] = useState<
-    "test" | "schedule" | "send" | "activate" | null
-  >(null);
 
   const conditions = describeAudience(audience, t, tAudience);
   const count = reach?.count ?? 0;
@@ -191,44 +206,41 @@ export function ReviewStep({
             {t("contentSummary")}
           </h2>
           {whatsapp ? (
-            chosenTemplate ? (
-              <div className="flex flex-col gap-3">
-                <p className="text-petroleum-700 text-sm font-medium">
-                  {t("whatsappTemplate", { name: chosenTemplate.name })}
+            <div className="flex flex-col gap-3">
+              {languageSwitch}
+              {chosenTemplate ? (
+                <>
+                  <p className="text-petroleum-700 text-sm font-medium">
+                    {t("whatsappTemplate", { name: chosenTemplate.name })}
+                  </p>
+                  <TemplatePreview
+                    headerText={chosenTemplate.header_text}
+                    body={chosenTemplate.body}
+                    footerText={chosenTemplate.footer_text}
+                    buttons={chosenTemplate.buttons ?? []}
+                    examples={sampleParams(
+                      whatsappBlock?.params ?? [],
+                      locale,
+                      kind,
+                      trigger,
+                      today,
+                    )}
+                  />
+                  <p className="text-petroleum-400 text-xs">
+                    {tWhatsApp("previewNote")}
+                  </p>
+                </>
+              ) : templates.status === "ready" ? (
+                <p className="text-sm text-red-600">
+                  {t("whatsappNoTemplate")}
                 </p>
-                <TemplatePreview
-                  headerText={chosenTemplate.header_text}
-                  body={chosenTemplate.body}
-                  footerText={chosenTemplate.footer_text}
-                  buttons={chosenTemplate.buttons ?? []}
-                  examples={sampleParams(
-                    content.whatsapp?.params ?? [],
-                    sendLocale,
-                    kind,
-                    trigger,
-                    today,
-                  )}
-                />
-                <p className="text-petroleum-400 text-xs">
-                  {tWhatsApp("previewNote")}
-                </p>
-              </div>
-            ) : templates.status === "ready" ? (
-              <p className="text-sm text-red-600">{t("whatsappNoTemplate")}</p>
-            ) : (
-              <div className="bg-sand-100 h-24 animate-pulse rounded-xl" />
-            )
+              ) : (
+                <div className="bg-sand-100 h-24 animate-pulse rounded-xl" />
+              )}
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <LocaleTabs
-                id="campaign-review-language"
-                label={tContent("language")}
-                locales={locales}
-                active={locale}
-                onChange={onLocale}
-                nameOf={localeLabel}
-                disabled={disabled}
-              />
+              {languageSwitch}
               <dl>
                 <dt className="text-petroleum-400 text-xs font-medium">
                   {localeLabel(locale)}
@@ -273,17 +285,18 @@ export function ReviewStep({
           >
             {busy === "test" ? t("sendingTest") : t("sendTest")}
           </Button>
-          {whatsapp ? (
-            <p className="text-petroleum-400 text-xs">
-              {t("whatsappTestHint")}
-            </p>
-          ) : (
-            locales.length > 1 && (
+          <div className="flex flex-col gap-0.5">
+            {whatsapp && (
+              <p className="text-petroleum-400 text-xs">
+                {t("whatsappTestHint")}
+              </p>
+            )}
+            {locales.length > 1 && (
               <p className="text-petroleum-400 text-xs">
                 {t("testLanguage", { language: localeLabel(locale) })}
               </p>
-            )
-          )}
+            )}
+          </div>
         </div>
 
         {whatsapp && (

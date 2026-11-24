@@ -13,6 +13,7 @@ import type {
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
 import { audienceLocales } from "@/lib/campaigns/languages";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import { APPOINTMENT_HOURS } from "@/lib/campaigns/appointment-form";
 import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
@@ -439,16 +440,31 @@ export const whatsappParamSchema = z.discriminatedUnion("kind", [
     .refine((param) => param.value.length <= 200, "paramTooLong"),
 ]) satisfies z.ZodType<WhatsAppParamSource>;
 
-/**
- * The `content.whatsapp` block. Even a draft keeps it well formed (a uuid or
- * nothing, parameters of a known shape) so it always loads back into the form;
- * only `campaignSchema` insists on a template.
- *
- * Error keys: `content.whatsapp.templateId` and `content.whatsapp.params.N`.
- */
-export const whatsappContentSchema = z.object({
+/** One language's template and what fills it. */
+const whatsappLocaleContentSchema = z.object({
   templateId: z.uuid("templateRequired").nullable(),
   params: z.array(whatsappParamSchema).max(20),
+});
+
+/**
+ * The `content.whatsapp` block: a template per language (`es`, `en`), each
+ * with its own parameters. Even a draft keeps it well formed (a uuid or
+ * nothing, parameters of a known shape) so it always loads back into the form;
+ * only `campaignSchema` insists on a template, for every language of the
+ * audience.
+ *
+ * The old shape (one `templateId` and `params` at the top, from when a
+ * campaign had one language) is still accepted, and read by `whatsappBlocks`
+ * as the template of the language that campaign was sent in.
+ *
+ * Error keys: `content.whatsapp.<locale>.templateId` and
+ * `content.whatsapp.<locale>.params.N`.
+ */
+export const whatsappContentSchema = z.object({
+  es: whatsappLocaleContentSchema.optional(),
+  en: whatsappLocaleContentSchema.optional(),
+  templateId: z.uuid("templateRequired").nullable().optional(),
+  params: z.array(whatsappParamSchema).max(20).optional(),
 }) satisfies z.ZodType<WhatsAppContent>;
 
 /**
@@ -461,23 +477,6 @@ export const campaignContentSchema = z.object({
   es: z.object(localeContentShape),
   whatsapp: whatsappContentSchema.optional(),
 }) satisfies z.ZodType<CampaignContent>;
-
-/**
- * The language a campaign was written in when a campaign had ONE: the
- * segment's when it fixes one, else the admin's old choice (`sendLocale`), else
- * Spanish, the house default.
- *
- * A campaign is now written in every language its audience includes
- * (`requiredLocales`) and `sendLocale` decides nothing about who gets what.
- * This is still how a row saved in the old shape is read (its lone WhatsApp
- * template was that language's), and the language a form opens on.
- */
-export function sendLocaleOf(
-  audience: Pick<CampaignAudience, "language" | "sendLocale">,
-): CampaignLocale {
-  if (audience.language !== "any") return audience.language;
-  return audience.sendLocale ?? "es";
-}
 
 /**
  * The languages a campaign must be written in: the one its audience fixes, or
@@ -626,8 +625,8 @@ function addCampaignIssues(
  * needs the version of every language its audience includes (the one rule
  * that needs `audience` and `content` side by side): both when the audience
  * spans the two, the audience's own when it fixes one. A WhatsApp campaign
- * needs only a template and ignores the email blocks. `campaignContentSchema`
- * holds just the per-field limits.
+ * needs a template for each of those same languages and ignores the email
+ * blocks. `campaignContentSchema` holds just the per-field limits.
  */
 export const campaignSchema = z
   .object({
@@ -643,13 +642,19 @@ export const campaignSchema = z
     addCampaignIssues(value, ctx);
     if (value.channel === "whatsapp") {
       // The email blocks are not sent, so nothing is asked of them. The
-      // template is the one thing a WhatsApp message cannot go without.
-      if (!value.content.whatsapp?.templateId) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["content", "whatsapp", "templateId"],
-          message: "templateRequired",
-        });
+      // template is the one thing a WhatsApp message cannot go without, and
+      // every language of the audience needs its own: Meta keeps each
+      // language of a template as a template apart, and each contact is
+      // written to in hers.
+      const blocks = whatsappBlocks(value.content.whatsapp, value.audience);
+      for (const locale of requiredLocales(value.audience)) {
+        if (!blocks[locale]?.templateId) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["content", "whatsapp", locale, "templateId"],
+            message: "templateRequired",
+          });
+        }
       }
       return;
     }

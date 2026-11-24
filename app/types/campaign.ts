@@ -282,8 +282,8 @@ export type CampaignLocaleContent = {
   doc: EmailDoc | null;
 };
 
-/** The `content.whatsapp` block: which approved template and what fills it. */
-export type WhatsAppContent = {
+/** One language's WhatsApp message: which approved template and what fills it. */
+export type WhatsAppLocaleContent = {
   /** `whatsapp_templates.id`; null until the admin picks one. */
   templateId: string | null;
   /** One source per `{{n}}`, in order. */
@@ -291,8 +291,27 @@ export type WhatsAppContent = {
 };
 
 /**
+ * The `content.whatsapp` block: a template FOR EACH LANGUAGE the campaign goes
+ * out in (Meta keeps every language of a template as a template of its own),
+ * with its own parameters. Each contact gets the one of her language.
+ *
+ * A row saved when a campaign had one language holds the old shape instead:
+ * `templateId` and `params` at the top, with no language. It is read as the
+ * template of the language that campaign was sent in (`whatsappBlocks`); the
+ * form always writes the new shape.
+ */
+export type WhatsAppContent = Partial<
+  Record<CampaignLocale, WhatsAppLocaleContent>
+> & {
+  /** Old shape only. */
+  templateId?: string | null;
+  /** Old shape only. */
+  params?: WhatsAppParamSource[];
+};
+
+/**
  * The `content` jsonb column. The language blocks are the email; `whatsapp`
- * is the template of a WhatsApp campaign and is absent from older rows.
+ * holds the templates of a WhatsApp campaign and is absent from older rows.
  */
 export type CampaignContent = Record<CampaignLocale, CampaignLocaleContent> & {
   whatsapp?: WhatsAppContent;
