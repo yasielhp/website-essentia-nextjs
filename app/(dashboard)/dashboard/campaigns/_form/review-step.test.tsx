@@ -1,6 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
@@ -17,6 +15,7 @@ import type { TemplatesState } from "./use-whatsapp-templates";
 process.env.NEXT_PUBLIC_INSFORGE_URL ??= "http://localhost:0";
 process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY ??= "test";
 const { ReviewStep } = await import("./review-step");
+const { ContentStep } = await import("./content-step");
 
 const render = (
   state: FormState,
@@ -199,52 +198,31 @@ describe("the review of a WhatsApp campaign for both languages", () => {
       es.campaigns.review.whatsappNoTemplate,
     );
   });
-
-  test("the form sends the test of the template on screen", () => {
-    const form = readFileSync(
-      join(import.meta.dir, "campaign-form.tsx"),
-      "utf8",
-    );
-    expect(form).toMatch(
-      /sendTestWhatsAppCampaign\(\s*getAccessToken\(\),\s*contentOf\(state\),\s*state\.audience,\s*state\.activeLocale,\s*\)/,
-    );
-  });
 });
 
-describe("the form sends the test of the version on screen", () => {
-  const form = readFileSync(join(import.meta.dir, "campaign-form.tsx"), "utf8");
-
-  test("the language on screen is what the action is given", () => {
-    expect(form).toMatch(
-      /sendTestCampaign\(\s*getAccessToken\(\),\s*state\.content,\s*state\.activeLocale,\s*\)/,
+describe("the review and the content step show one language", () => {
+  // What the form sends as a test, and what a refusal says, are
+  // `testRequest` and `refusalText` (form-actions.test.ts). Here: the switch
+  // of the review moves `activeLocale` (SET_LOCALE), and the content step
+  // reads the very same value.
+  test("put on English from the review, the content step shows the English version", () => {
+    expect(render(onEnglish)).toContain("Hello, asunto");
+    const content = renderToStaticMarkup(
+      <NextIntlClientProvider
+        locale="es"
+        timeZone="Atlantic/Canary"
+        messages={{ dashboard: es }}
+      >
+        <ContentStep state={onEnglish} dispatch={() => {}} onDone={() => {}} />
+      </NextIntlClientProvider>,
     );
+    expect(content).toContain('id="campaign-en-subject"');
+    expect(content).toContain('value="Hello, asunto"');
+    expect(content).not.toContain('id="campaign-es-subject"');
   });
 
-  test("the review's switch moves the same language the content step shows", () => {
-    expect(form).toContain(
-      'onLocale={(locale) => dispatch({ type: "SET_LOCALE", locale })}',
-    );
-  });
-
-  test("a refused validation names the version that is missing", () => {
-    expect(form).toContain("errorText(incompleteError(check.errors))");
-  });
-
-  test("an error the server found on the version that is not on screen brings that version on screen", () => {
-    expect(form).toMatch(
-      /const locale = firstErroredLocale\(\s*result\.fieldErrors,\s*state\.activeLocale,\s*\);\s*if \(locale\) dispatch\(\{ type: "SET_LOCALE", locale \}\);/,
-    );
-  });
-
-  test("a template that stopped being sendable is said with the language it is the template of", () => {
-    // Scheduling, activating and sending all refuse through the same words.
-    expect(form.match(/message: refusalText\(result\)/g) ?? []).toHaveLength(3);
+  test("a template refused for its language has a sentence that names the language", () => {
     expect(es.campaigns.errors.template_unavailable_in).toContain("{language}");
     expect(en.campaigns.errors.template_unavailable_in).toContain("{language}");
-    const detail = readFileSync(
-      join(import.meta.dir, "..", "[id]", "page.tsx"),
-      "utf8",
-    );
-    expect(detail).toContain("else toast.error(refusalText(result));");
   });
 });

@@ -14,7 +14,6 @@ import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
 import { campaignTemplateChoiceIssue } from "@/lib/campaigns/whatsapp-eligibility";
 import {
   PARAM_FIELDS,
-  counterpartTemplate,
   fieldAvailable,
   fitParams,
   partitionTemplates,
@@ -28,6 +27,7 @@ import type {
 import type { CampaignLocale } from "@/types/campaign";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 import type { FormAction, FormState } from "./form-state";
+import { pickTemplate } from "./form-actions";
 import type { TemplatesState } from "./use-whatsapp-templates";
 
 /**
@@ -146,28 +146,21 @@ export function WhatsAppStep({
   function pick(id: string) {
     const tpl = all.find((candidate) => candidate.id === id);
     if (!tpl) return;
-    dispatch({
-      type: "SET_WHATSAPP",
+    // The template for this language and, when the other language has none
+    // yet, the same template in it: Meta keeps it as a template apart,
+    // usually under the same name. It is a proposal, said out loud; its
+    // values are still to be set there.
+    const { actions, proposed: next } = pickTemplate({
+      all,
+      picked: tpl,
       locale,
-      templateId: tpl.id,
-      params: fitParams(params, tpl.param_count),
+      locales,
+      blocks,
+      params,
+      kind,
     });
-    // The same template in the other language, when that language has none
-    // yet: Meta keeps it as a template apart, usually under the same name. It
-    // is a proposal, said out loud; its values are still to be set there.
-    setProposed(null);
-    for (const other of locales) {
-      if (other === locale || blocks[other]?.templateId) continue;
-      const pair = counterpartTemplate(all, tpl, other, kind);
-      if (!pair) continue;
-      dispatch({
-        type: "SET_WHATSAPP",
-        locale: other,
-        templateId: pair.id,
-        params: fitParams([], pair.param_count),
-      });
-      setProposed({ locale: other, name: pair.name });
-    }
+    for (const action of actions) dispatch(action);
+    setProposed(next);
   }
 
   function setParam(index: number, source: WhatsAppParamSource) {

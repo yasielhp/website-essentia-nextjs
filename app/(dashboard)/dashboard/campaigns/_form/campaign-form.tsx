@@ -51,10 +51,17 @@ import {
   formStateForStart,
   initialFormState,
   nextStep,
+  type FormAction,
   type FormState,
   type PickedContact,
   type Step,
 } from "./form-state";
+import {
+  contentVerdict,
+  refusalText as sayRefusal,
+  serverErrorFocus,
+  testRequest,
+} from "./form-actions";
 
 /**
  * One form, the way the booking form works: each step is a card, a finished
@@ -116,14 +123,7 @@ export function CampaignForm({
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
   /** A refusal in words; a template that cannot go out says in which language. */
   const refusalText = (failure: { error: string; locale?: unknown }) =>
-    failure.error === "template_unavailable" &&
-    (failure.locale === "es" || failure.locale === "en")
-      ? t("errors.template_unavailable_in", {
-          language: t(
-            failure.locale === "es" ? "content.localeEs" : "content.localeEn",
-          ),
-        })
-      : errorText(failure.error);
+    sayRefusal(t, failure);
 
   /** Marks `step` done and opens the next one the kind actually has. */
   function complete(step: Step) {
@@ -204,19 +204,11 @@ export function CampaignForm({
       if (result.fieldErrors) {
         dispatch({ type: "SET_ERRORS", errors: result.fieldErrors });
         // The error may be on the version that is not on screen: bring it.
-        const locale = firstErroredLocale(
-          result.fieldErrors,
-          state.activeLocale,
-        );
-        if (locale) dispatch({ type: "SET_LOCALE", locale });
         // A template that cannot go out is fixed in the template step.
-        if (
-          Object.keys(result.fieldErrors).some((k) =>
-            k.startsWith("content.whatsapp"),
-          )
-        ) {
-          reopen(STEP_OF.content);
-        }
+        const focus = serverErrorFocus(result.fieldErrors, state.activeLocale);
+        if (focus.locale)
+          dispatch({ type: "SET_LOCALE", locale: focus.locale });
+        if (focus.reopenContent) reopen(STEP_OF.content);
       }
       dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
       return null;
@@ -229,12 +221,14 @@ export function CampaignForm({
     const id = await persist();
     if (!id) return;
     if (whatsapp) return handleWhatsAppTest();
+    const request = testRequest(state);
+    if (request.channel !== "email") return;
     try {
       // The version on screen, and only that one.
       const result = await sendTestCampaign(
         getAccessToken(),
-        state.content,
-        state.activeLocale,
+        request.content,
+        request.locale,
       );
       if (result.ok) {
         notifySuccess(tToasts("campaignTestSent", { email: result.to }));
@@ -248,13 +242,15 @@ export function CampaignForm({
 
   /** The test of a WhatsApp campaign: the template, to the admin's own phone. */
   async function handleWhatsAppTest() {
+    const request = testRequest(state);
+    if (request.channel !== "whatsapp") return;
     try {
       // The template of the language on screen, and only that one.
       const result = await sendTestWhatsAppCampaign(
         getAccessToken(),
-        contentOf(state),
-        state.audience,
-        state.activeLocale,
+        request.content,
+        request.audience,
+        request.locale,
       );
       if (result.ok) {
         notifySuccess(tToasts("campaignTestSentPhone", { phone: result.to }));
@@ -352,32 +348,27 @@ export function CampaignForm({
     complete(STEP_OF.audience);
   }
 
-  function confirmContent() {
-    const check = validateCampaign({
-      name: state.name,
-      channel: state.channel,
-      kind: state.kind,
-      trigger: state.trigger,
-      audience: state.audience,
-      content: contentOf(state),
-    });
-    if (!check.ok) {
-      dispatch({ type: "SET_ERRORS", errors: check.errors });
-      // The version with something missing comes on screen, and the toast
-      // names it: with two languages the error may be on the other one.
-      const locale = firstErroredLocale(check.errors, state.activeLocale);
-      if (locale) {
-        dispatch({ type: "SET_LOCALE", locale });
-        toast.error(errorText(incompleteError(check.errors)));
-        return;
-      }
-      // A WhatsApp campaign without its template stays on this step.
-      if (
-        Object.keys(check.errors).some((k) => k.startsWith("content.whatsapp"))
-      ) {
-        return;
-      }
+  /**
+   * `written` is what the email editor had not handed over yet: the content
+   * step writes it to the form and passes it here, because this render's
+   * `state` was read before it. It is judged with it, so the language is
+   * never switched (nor the step closed) on the form of a beat ago.
+   */
+  function confirmContent(written?: FormAction | null) {
+    const verdict = contentVerdict(
+      written ? formReducer(state, written) : state,
+    );
+    if (verdict.errors)
+      dispatch({ type: "SET_ERRORS", errors: verdict.errors });
+    // The version with something missing comes on screen, and the toast
+    // names it: with two languages the error may be on the other one.
+    if (verdict.kind === "show") {
+      dispatch({ type: "SET_LOCALE", locale: verdict.locale });
+      toast.error(errorText(verdict.toast));
+      return;
     }
+    // A WhatsApp campaign without its template stays on this step.
+    if (verdict.kind === "stay") return;
     complete(STEP_OF.content);
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type Dispatch } from "react";
+import { useEffect, useMemo, useState, type Dispatch } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import "@maily-to/core/style.css";
@@ -15,6 +15,7 @@ import type {
   CampaignLocaleContent,
   EmailDoc,
 } from "@/types/campaign";
+import { createDocFlusher } from "./editor-flush";
 import { EmailPreview } from "./email-preview";
 import {
   incompleteLocales,
@@ -57,8 +58,12 @@ export function ContentStep({
 }: {
   state: FormState;
   dispatch: Dispatch<FormAction>;
-  /** Validates the copy and opens the review step. */
-  onDone: () => void;
+  /**
+   * Validates the copy and opens the review step. It is handed what the
+   * editor had not passed on yet (written to the form a moment before), so
+   * it judges the words on screen and not the form as it was a beat ago.
+   */
+  onDone: (written: FormAction | null) => void;
 }) {
   const t = useTranslations("dashboard.campaigns.content");
   const fieldError = useFieldError();
@@ -78,35 +83,13 @@ export function ContentStep({
   const errorFor = (path: string) =>
     fieldError(fieldErrors[`content.${locale}.${path}`]);
 
-  // The editor owns its document while typing; the form is told about it a
-  // beat after the last keystroke, so a fast sentence is one state update.
-  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // What that beat would write, so it can be written at once instead: the
-  // editor is replaced when the language changes, and the last words typed in
-  // the old one must not be lost with it, nor land in the other language.
-  const unsaved = useRef<{ locale: CampaignLocale; read: () => EmailDoc }>(
-    null,
-  );
-  const flush = () => {
-    if (pending.current) clearTimeout(pending.current);
-    pending.current = null;
-    const last = unsaved.current;
-    unsaved.current = null;
-    if (last)
-      dispatch({ type: "SET_DOC", locale: last.locale, doc: last.read() });
-  };
-  // The step folding away is the same loss.
-  const flushRef = useRef(flush);
-  useEffect(() => {
-    flushRef.current = flush;
-  });
-  useEffect(() => () => flushRef.current(), []);
+  // The editor owns its document while typing and tells the form a beat
+  // later (`editor-flush.ts`). The language switch, the "confirm" and the
+  // step folding away each write the last words first, to their language.
+  const [flusher] = useState(() => createDocFlusher(dispatch));
+  useEffect(() => () => void flusher.flush(), [flusher]);
 
-  const switchTo = (next: CampaignLocale) => {
-    if (next === locale) return;
-    flush();
-    dispatch({ type: "SET_LOCALE", locale: next });
-  };
+  const switchTo = (next: CampaignLocale) => flusher.switchTo(locale, next);
   const initialDoc = useMemo(
     () => (block.doc as EmailDoc | null) ?? emptyDoc(),
     // Only when the language changes: a fresh editor for a fresh document.
@@ -226,19 +209,18 @@ export function ContentStep({
               immediatelyRender: false,
               contentClassName: "min-h-80",
             }}
-            onUpdate={(editor) => {
-              if (pending.current) clearTimeout(pending.current);
-              unsaved.current = {
-                locale,
-                read: () => editor.getJSON() as EmailDoc,
-              };
-              pending.current = setTimeout(flush, 300);
-            }}
+            onUpdate={(editor) =>
+              flusher.typed(locale, () => editor.getJSON() as EmailDoc)
+            }
           />
         </div>
 
         <div className="flex justify-end pt-6">
-          <Button size="md" disabled={submitting} onClick={onDone}>
+          <Button
+            size="md"
+            disabled={submitting}
+            onClick={() => onDone(flusher.flush())}
+          >
             {t("confirm")}
           </Button>
         </div>

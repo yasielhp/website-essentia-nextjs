@@ -149,18 +149,12 @@ describe("«Qué dice» for an audience that fixes a language", () => {
 });
 
 describe("changing the language does not lose what was being typed", () => {
-  test("the words the editor has not handed over yet are written, to their own language, before the switch", () => {
-    // The pending document is flushed with the locale it was typed in.
-    expect(source).toMatch(
-      /const switchTo = [\s\S]*?flush\(\);\s*dispatch\(\{ type: "SET_LOCALE", locale: next \}\);/,
-    );
-    expect(source).toMatch(/unsaved\.current = \{\s*locale,/);
-    expect(source).toContain(
-      'dispatch({ type: "SET_DOC", locale: last.locale, doc: last.read() })',
-    );
-  });
-
+  // The flush itself (to its own language, before the switch, and before the
+  // confirm judges the form) is `createDocFlusher`, run for real in
+  // editor-flush.test.ts and form-actions.test.ts.
   test("the editor is a new one for each language, opened on that language's document", () => {
+    // Static markup has no editor (it loads in the browser), so this one
+    // stays a reading of the source: the key is what replaces the editor.
     expect(source).toContain("key={locale}");
   });
 });

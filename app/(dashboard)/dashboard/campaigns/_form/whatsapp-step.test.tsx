@@ -1,6 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../messages/es/dashboard.json";
@@ -229,29 +227,10 @@ describe("a template for each language of the audience", () => {
 });
 
 describe("picking a template proposes the same one in the other language", () => {
-  const source = readFileSync(
-    join(import.meta.dir, "whatsapp-step.tsx"),
-    "utf8",
-  );
-
-  test("only for a language that has none yet, and it is said out loud", () => {
-    expect(source).toMatch(
-      /if \(other === locale \|\| blocks\[other\]\?\.templateId\) continue;/,
-    );
-    expect(source).toContain(
-      "const pair = counterpartTemplate(all, tpl, other, kind);",
-    );
-    expect(source).toContain(
-      "setProposed({ locale: other, name: pair.name });",
-    );
+  // Which writes a pick makes, and the proposal, are `pickTemplate`
+  // (form-actions.test.ts). Here: the line that says it out loud.
+  test("is said with the template's name and the language it was proposed for", () => {
     expect(es.campaigns.form.whatsapp.counterpart).toContain("{name}");
     expect(en.campaigns.form.whatsapp.counterpart).toContain("{language}");
-  });
-
-  test("every write names the language it is for", () => {
-    const writes = source.match(/type: "SET_WHATSAPP",\s*locale/g) ?? [];
-    expect(writes).toHaveLength(
-      (source.match(/type: "SET_WHATSAPP"/g) ?? []).length,
-    );
   });
 });

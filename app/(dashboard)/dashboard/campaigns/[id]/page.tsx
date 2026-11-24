@@ -40,6 +40,7 @@ import {
   type ReportTile,
 } from "@/lib/campaigns/report";
 import { RecipientTable } from "./recipient-table";
+import { refusalText as sayRefusal } from "../_form/form-actions";
 import { LoadFailed } from "@/components/dashboard/load-failed";
 
 type State =
@@ -139,14 +140,7 @@ export default function CampaignDetailPage() {
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
   /** A refusal in words; a template that cannot go out says in which language. */
   const refusalText = (failure: { error?: string; locale?: unknown }) =>
-    failure.error === "template_unavailable" &&
-    (failure.locale === "es" || failure.locale === "en")
-      ? t("errors.template_unavailable_in", {
-          language: t(
-            failure.locale === "es" ? "content.localeEs" : "content.localeEn",
-          ),
-        })
-      : errorText(failure.error ?? "generic");
+    sayRefusal(t, failure);
 
   async function act<R extends { ok: boolean; error?: string }>(
     name: string,
