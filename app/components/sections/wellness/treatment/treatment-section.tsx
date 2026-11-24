@@ -423,7 +423,18 @@ function BenefitsSection({ data }: { data: TreatmentData }) {
 
 // ─── Session ──────────────────────────────────────────────────
 
-function SessionSection({ data }: { data: TreatmentData }) {
+/**
+ * A step that names a treatment (`mentions`) says it only while that treatment
+ * is on the site: while its session type is switched off (`hidden`) the step
+ * reads the same text without it (`descriptionWithout`).
+ */
+function SessionSection({
+  data,
+  hidden,
+}: {
+  data: TreatmentData;
+  hidden: readonly string[];
+}) {
   const t = useTranslations(`wellness.treatments.${data.slug}`);
   return (
     <section className="bg-petroleum-700">
@@ -448,7 +459,11 @@ function SessionSection({ data }: { data: TreatmentData }) {
                     {t(`sessionDetails.${detail.number}.title`)}
                   </h3>
                   <p className="text-sand-500 mt-2 text-sm leading-relaxed">
-                    {t(`sessionDetails.${detail.number}.description`)}
+                    {t(
+                      detail.mentions?.some((id) => hidden.includes(id))
+                        ? `sessionDetails.${detail.number}.descriptionWithout`
+                        : `sessionDetails.${detail.number}.description`,
+                    )}
                   </p>
                 </div>
               ))}
@@ -494,7 +509,7 @@ export default function TreatmentSection({
         <IvProtocolsSection hidden={hiddenIds} />
       )}
       <BenefitsSection data={data} />
-      <SessionSection data={data} />
+      <SessionSection data={data} hidden={hiddenIds} />
     </>
   );
 }

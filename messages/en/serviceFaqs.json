@@ -69,7 +69,8 @@
   "manual-therapies": {
     "0": {
       "question": "What manual treatments does Essentia offer?",
-      "answer": "Our treatments are built around what different bodies need: integrative lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences."
+      "answer": "Our treatments are built around what different bodies need: integrative lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences.",
+      "answerWithout": "Our treatments are built around what different bodies need: integrative lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage and post-sun rituals."
     },
     "1": {
       "question": "Do I need to book in advance?",
@@ -107,11 +108,13 @@
   "facial-therapies": {
     "0": {
       "question": "What facials does Essentia offer?",
-      "answer": "We work with four rituals: Anesis, focused on hydration, radiance and relaxation; Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs."
+      "answer": "We work with four rituals: Anesis, focused on hydration, radiance and relaxation; Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs.",
+      "answerWithout": "We work with three rituals: Anesis, focused on hydration, radiance and relaxation; Aurum, focused on radiance, firmness and regeneration; and Eleva, aimed at definition, structure and a lifting effect. Each has its own purpose and adapts to what the face needs."
     },
     "1": {
       "question": "How do I know which one to choose?",
-      "answer": "If you are unsure, we will guide you before you book. Aurum works the skin and its radiance, Eleva the structure and the contour, and Kinéa Signature starts from an assessment to build a deeper plan when you are after ongoing support."
+      "answer": "If you are unsure, we will guide you before you book. Aurum works the skin and its radiance, Eleva the structure and the contour, and Kinéa Signature starts from an assessment to build a deeper plan when you are after ongoing support.",
+      "answerWithout": "If you are unsure, we will guide you before you book. Aurum works the skin and its radiance, and Eleva the structure and the contour."
     },
     "2": {
       "question": "Do I need to book in advance?",
@@ -119,7 +122,8 @@
     },
     "3": {
       "question": "How long is each session?",
-      "answer": "Aurum and Eleva run for 60 minutes. Kinéa Signature runs for 90, since it includes the first assessment alongside the session."
+      "answer": "Anesis runs for 50 minutes, Aurum and Eleva for 60, and Kinéa Signature for 90, since it includes the first assessment alongside the session.",
+      "answerWithout": "Anesis runs for 50 minutes; Aurum and Eleva for 60."
     },
     "4": {
       "question": "Is every session the same for everyone?",

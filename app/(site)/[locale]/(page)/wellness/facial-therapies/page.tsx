@@ -4,6 +4,7 @@ import TreatmentSection from "@components/sections/wellness/treatment/treatment-
 import { treatments } from "@components/sections/wellness/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
+import { shownFaqs } from "@/lib/treatments/faqs";
 import { bookableServices, facialTreatments } from "@/data/services-data";
 import {
   breadcrumbSchema,
@@ -64,7 +65,6 @@ export default async function FacialTherapiesPage({
   setRequestLocale(locale);
 
   const t = await getTranslations("wellness.pages");
-  const faqs = serviceFaqs["facial-therapies"];
   const service = bookableServices.find((s) => s.id === "facial-therapies");
   // Read here, on the server, so each card arrives with its price in the
   // HTML. Never throws: with no prices the cards show their duration alone.
@@ -72,6 +72,14 @@ export default async function FacialTherapiesPage({
   // The rituals whose session type is switched off get no card. The same
   // cached read; one that fails hides nothing.
   const hidden = await listHiddenTreatments("facial-therapies");
+  // The questions in the page's language, with no hidden treatment named:
+  // the list shown and the FAQPage schema are this one list.
+  const faqs = shownFaqs(
+    "facial-therapies",
+    serviceFaqs["facial-therapies"] ?? [],
+    hidden,
+    await getTranslations("serviceFaqs"),
+  );
   const lines = cardLines(
     facialTreatments.filter((t) => !hidden.includes(t.id)),
     prices,
@@ -103,7 +111,7 @@ export default async function FacialTherapiesPage({
         cardLines={lines}
         hiddenIds={hidden}
       />
-      <ServiceFaq faqs={faqs} serviceSlug="facial-therapies" />
+      <ServiceFaq faqs={faqs} />
     </>
   );
 }

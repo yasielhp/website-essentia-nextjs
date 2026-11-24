@@ -30,4 +30,10 @@ export type SessionDetail = {
   number: string;
   title: string;
   description: string;
+  /**
+   * The treatments (ids) this step names. While any of them is hidden (its
+   * session type switched off), the step shows `descriptionWithout` instead,
+   * the same text without them.
+   */
+  mentions?: readonly string[];
 };

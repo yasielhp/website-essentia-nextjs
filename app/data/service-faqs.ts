@@ -1,6 +1,18 @@
 import type { FaqItem } from "@/components/sections/service-faq";
 
-export const serviceFaqs: Record<string, FaqItem[]> = {
+/**
+ * One question of a service page. The page shows its translation
+ * (`messages/{es,en}/serviceFaqs.json`, by position); this English copy is kept equal
+ * to the English one.
+ *
+ * `mentions` are the treatments (ids) the answer names. While any of them is
+ * hidden from the site (its session type switched off), the page and its
+ * FAQPage schema show the answer written without them (`answerWithout` in the
+ * translations), never a treatment the site has no page for (`shownFaqs`).
+ */
+export type ServiceFaqEntry = FaqItem & { mentions?: readonly string[] };
+
+export const serviceFaqs: Record<string, ServiceFaqEntry[]> = {
   "contrast-therapy": [
     {
       question: "What is contrast therapy?",
@@ -90,6 +102,9 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
       question: "What manual treatments does Essentia offer?",
       answer:
         "Our treatments are built around what different bodies need: integrative lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences.",
+      // "Treatments for two" is Alure Duo; the premium body ritual is Essentia
+      // Signature.
+      mentions: ["alure-duo", "essentia-signature"],
     },
     {
       question: "Do I need to book in advance?",
@@ -138,11 +153,13 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
       question: "What facials does Essentia offer?",
       answer:
         "We work with four rituals: Anesis, focused on hydration, radiance and relaxation; Aurum, focused on radiance, firmness and regeneration; Eleva, aimed at definition, structure and a lifting effect; and Kinéa Signature, a full facial re-education that includes a first assessment. Each has its own purpose and adapts to what the face needs.",
+      mentions: ["kinea-signature"],
     },
     {
       question: "How do I know which one to choose?",
       answer:
         "If you are unsure, we will guide you before you book. Aurum works the skin and its radiance, Eleva the structure and the contour, and Kinéa Signature starts from an assessment to build a deeper plan when you are after ongoing support.",
+      mentions: ["kinea-signature"],
     },
     {
       question: "Do I need to book in advance?",
@@ -152,7 +169,8 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "How long is each session?",
       answer:
-        "Aurum and Eleva run for 60 minutes. Kinéa Signature runs for 90, since it includes the first assessment alongside the session.",
+        "Anesis runs for 50 minutes, Aurum and Eleva for 60, and Kinéa Signature for 90, since it includes the first assessment alongside the session.",
+      mentions: ["kinea-signature"],
     },
     {
       question: "Is every session the same for everyone?",

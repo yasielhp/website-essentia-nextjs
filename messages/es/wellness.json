@@ -861,7 +861,8 @@
         },
         "III": {
           "title": "Seguimiento",
-          "description": "Cuando el tratamiento lo requiere, como en Kinéa Signature, definimos un plan personalizado según la evolución del rostro y las necesidades de cada persona."
+          "description": "Cuando el tratamiento lo requiere, como en Kinéa Signature, definimos un plan personalizado según la evolución del rostro y las necesidades de cada persona.",
+          "descriptionWithout": "Cuando el tratamiento lo requiere, definimos un plan personalizado según la evolución del rostro y las necesidades de cada persona."
         }
       },
       "ctaHeading": "Restaura tu piel",
@@ -871,7 +872,7 @@
     "aromaNote": "Todas nuestras terapias se realizan con aceites y esencias premium, e incorporan aromaterapia cuidadosamente seleccionada para elevar la experiencia sensorial y acompañar el trabajo manual. En caso de alergias, sensibilidad o preferencia personal, la aromaterapia puede adaptarse o evitarse.",
     "viewTreatment": "Ver tratamiento",
     "facialsHeading": "Nuestros faciales",
-    "facialsSubtitle": "Cuatro rituales diseñados para cuidar la piel, mejorar la estructura facial y revelar una belleza más natural, luminosa y equilibrada.",
+    "facialsSubtitle": "Rituales diseñados para cuidar la piel, mejorar la estructura facial y revelar una belleza más natural, luminosa y equilibrada.",
     "facialCards": {
       "anesis": {
         "title": "Anesis",

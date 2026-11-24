@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getOgImage } from "@/constants/metadata";
 import { bookableServices } from "@/data/services-data";
 import { serviceFaqs } from "@/data/service-faqs";
+import { shownFaqs } from "@/lib/treatments/faqs";
 import { ServiceFaq } from "@components/sections/service-faq";
 import TreatmentSection from "@components/sections/wellness/treatment/treatment-section";
 import { treatments } from "@components/sections/wellness/treatment/data";
@@ -61,10 +62,17 @@ export default async function IvTherapyPage({
 
   const t = await getTranslations("medicine.pages");
 
-  const faqs = serviceFaqs["intravenous-therapy"];
   const service = bookableServices.find((s) => s.id === "intravenous-therapy");
   // Never throws, and a read that fails hides nothing.
   const hidden = await listHiddenTreatments("intravenous-therapy");
+  // The questions in the page's language, with no hidden treatment named:
+  // the list shown and the FAQPage schema are this one list.
+  const faqs = shownFaqs(
+    "intravenous-therapy",
+    serviceFaqs["intravenous-therapy"] ?? [],
+    hidden,
+    await getTranslations("serviceFaqs"),
+  );
 
   return (
     <>
@@ -91,7 +99,7 @@ export default async function IvTherapyPage({
         data={treatments["intravenous-therapy"]!}
         hiddenIds={hidden}
       />
-      <ServiceFaq faqs={faqs} serviceSlug="intravenous-therapy" />
+      <ServiceFaq faqs={faqs} />
     </>
   );
 }

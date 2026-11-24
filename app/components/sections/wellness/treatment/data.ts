@@ -353,6 +353,7 @@ export const treatments: Record<string, TreatmentData> = {
         title: "Follow-up",
         description:
           "When the treatment calls for it, as with Kinéa Signature, we set out a personalised plan based on how the face evolves and what each person needs.",
+        mentions: ["kinea-signature"],
       },
     ],
     ctaHeading: "Restore your skin",

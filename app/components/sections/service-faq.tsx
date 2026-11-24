@@ -5,13 +5,12 @@ import { useTranslations } from "next-intl";
 
 export type FaqItem = { question: string; answer: string };
 
-export function ServiceFaq({
-  faqs,
-  serviceSlug,
-}: {
-  faqs: FaqItem[];
-  serviceSlug: string;
-}) {
+/**
+ * The questions as the page resolved them on the server, in its language
+ * (`shownFaqs`): the same list its FAQPage schema is made from, so what is
+ * read and what is marked up cannot differ.
+ */
+export function ServiceFaq({ faqs }: { faqs: FaqItem[] }) {
   const t = useTranslations("serviceFaqs");
   const [open, setOpen] = useState<number | null>(null);
 
@@ -23,10 +22,8 @@ export function ServiceFaq({
         </h2>
 
         <div className="divide-sand-200 divide-y">
-          {faqs.map((_, i) => {
-            // The position is the translation key, so the resolved question is
-            // what identifies the row across renders.
-            const question = t(`${serviceSlug}.${i}.question`);
+          {faqs.map(({ question, answer }, i) => {
+            // The question identifies the row across renders.
             return (
               <div key={question} className="py-5">
                 <button
@@ -51,7 +48,7 @@ export function ServiceFaq({
 
                 {open === i && (
                   <p className="text-petroleum-500 mt-4 leading-relaxed">
-                    {t(`${serviceSlug}.${i}.answer`)}
+                    {answer}
                   </p>
                 )}
               </div>

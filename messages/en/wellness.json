@@ -861,7 +861,8 @@
         },
         "III": {
           "title": "Follow-up",
-          "description": "When the treatment calls for it, as with Kinéa Signature, we set out a personalised plan based on how the face evolves and what each person needs."
+          "description": "When the treatment calls for it, as with Kinéa Signature, we set out a personalised plan based on how the face evolves and what each person needs.",
+          "descriptionWithout": "When the treatment calls for it, we set out a personalised plan based on how the face evolves and what each person needs."
         }
       },
       "ctaHeading": "Restore your skin",
@@ -871,7 +872,7 @@
     "aromaNote": "All our therapies use premium oils and essences, with carefully chosen aromatherapy to lift the sensory experience and support the manual work. Where there are allergies, sensitivities or a personal preference, the aromatherapy can be adapted or left out.",
     "viewTreatment": "View treatment",
     "facialsHeading": "Our facials",
-    "facialsSubtitle": "Four rituals designed to look after the skin, support the facial structure and reveal a more natural, radiant and balanced beauty.",
+    "facialsSubtitle": "Rituals designed to look after the skin, support the facial structure and reveal a more natural, radiant and balanced beauty.",
     "facialCards": {
       "anesis": {
         "title": "Anesis",

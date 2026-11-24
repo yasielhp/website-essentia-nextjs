@@ -69,7 +69,8 @@
   "manual-therapies": {
     "0": {
       "question": "¿Qué tratamientos manuales ofrece Essentia?",
-      "answer": "En Essentia ofrecemos tratamientos diseñados para distintas necesidades del cuerpo: drenaje linfático integrativo, masajes descontracturantes, recuperación deportiva, relajación profunda, masaje prenatal, rituales post-solares, experiencias en pareja y tratamientos premium de bienestar corporal."
+      "answer": "En Essentia ofrecemos tratamientos diseñados para distintas necesidades del cuerpo: drenaje linfático integrativo, masajes descontracturantes, recuperación deportiva, relajación profunda, masaje prenatal, rituales post-solares, experiencias en pareja y tratamientos premium de bienestar corporal.",
+      "answerWithout": "En Essentia ofrecemos tratamientos diseñados para distintas necesidades del cuerpo: drenaje linfático integrativo, masajes descontracturantes, recuperación deportiva, relajación profunda, masaje prenatal y rituales post-solares."
     },
     "1": {
       "question": "¿Necesito reservar con antelación?",
@@ -107,11 +108,13 @@
   "facial-therapies": {
     "0": {
       "question": "¿Qué faciales ofrece Essentia?",
-      "answer": "Trabajamos con cuatro rituales: Anesis, centrado en hidratación, luminosidad y relajación; Aurum, centrado en luminosidad, firmeza y regeneración; Eleva, orientado a definición, estructura y efecto lifting; y Kinéa Signature, una reeducación facial integral que incluye una primera valoración. Cada uno tiene un propósito distinto y se adapta a lo que el rostro necesita."
+      "answer": "Trabajamos con cuatro rituales: Anesis, centrado en hidratación, luminosidad y relajación; Aurum, centrado en luminosidad, firmeza y regeneración; Eleva, orientado a definición, estructura y efecto lifting; y Kinéa Signature, una reeducación facial integral que incluye una primera valoración. Cada uno tiene un propósito distinto y se adapta a lo que el rostro necesita.",
+      "answerWithout": "Trabajamos con tres rituales: Anesis, centrado en hidratación, luminosidad y relajación; Aurum, centrado en luminosidad, firmeza y regeneración; y Eleva, orientado a definición, estructura y efecto lifting. Cada uno tiene un propósito distinto y se adapta a lo que el rostro necesita."
     },
     "1": {
       "question": "¿Cómo sé cuál elegir?",
-      "answer": "Si tienes dudas, te orientamos antes de reservar. Aurum trabaja la piel y su luminosidad, Eleva la estructura y el contorno, y Kinéa Signature parte de una valoración para diseñar un plan más profundo cuando buscas un acompañamiento continuado."
+      "answer": "Si tienes dudas, te orientamos antes de reservar. Aurum trabaja la piel y su luminosidad, Eleva la estructura y el contorno, y Kinéa Signature parte de una valoración para diseñar un plan más profundo cuando buscas un acompañamiento continuado.",
+      "answerWithout": "Si tienes dudas, te orientamos antes de reservar. Aurum trabaja la piel y su luminosidad, y Eleva la estructura y el contorno."
     },
     "2": {
       "question": "¿Necesito reservar con antelación?",
@@ -119,7 +122,8 @@
     },
     "3": {
       "question": "¿Cuánto dura cada sesión?",
-      "answer": "Aurum y Eleva duran 60 minutos. Kinéa Signature dura 90, porque incluye la primera valoración además de la sesión."
+      "answer": "Anesis dura 50 minutos, Aurum y Eleva 60, y Kinéa Signature 90, porque incluye la primera valoración además de la sesión.",
+      "answerWithout": "Anesis dura 50 minutos; Aurum y Eleva, 60."
     },
     "4": {
       "question": "¿Cada sesión es igual para todas las personas?",
