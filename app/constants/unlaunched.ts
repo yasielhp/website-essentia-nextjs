@@ -23,6 +23,9 @@ export const UNLAUNCHED_ROUTES = [
   "/experiences/running-club/register",
   "/experiences/education-programs",
   "/experiences/education-programs/register",
+  // Hidden by the owner on 2026-11-24: no plan or price is on sale. Its own
+  // sections (`components/sections/memberships/`) are kept for the launch.
+  "/experiences/memberships",
   "/shop",
 ] as const;
 

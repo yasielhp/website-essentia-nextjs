@@ -155,11 +155,6 @@ const PAGES: { label: string; path: string; note: string }[] = [
   },
   { label: "Wellness", path: "/wellness", note: "The wellness services." },
   { label: "Medicine", path: "/medicine", note: "The medicine services." },
-  {
-    label: "Memberships",
-    path: "/experiences/memberships",
-    note: "Membership plans. Conditions and current prices are on the page.",
-  },
   { label: "About", path: "/about", note: "The centre and its team." },
   { label: "Contact", path: "/contact", note: "Contact form and directions." },
   { label: "Blog", path: "/blog", note: "Articles." },
