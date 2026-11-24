@@ -21,7 +21,7 @@ import {
 import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
 import { settleBonusOnCancel } from "@/lib/bonuses/settle";
 import { isSlotTaken, SLOT_TAKEN } from "@/lib/bookings/slot-taken";
-import { bookingAccess } from "@/lib/bookings/booking-access";
+import { bookingAccess, partnerMayEdit } from "@/lib/bookings/booking-access";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -451,6 +451,9 @@ const REFUND_PAYMENT_CONFLICT = "refund_payment_conflict";
 /** The answer to a partner saving a booking that is not hers. */
 const PARTNER_NOT_OWN = "Insufficient permissions for this operation";
 
+/** The answer to a partner saving one of hers inside the last 24 hours. */
+const PARTNER_WINDOW = "partner_window";
+
 /**
  * Full booking edit from the dashboard. Staff only.
  *
@@ -481,7 +484,10 @@ export async function updateBookingByAdmin(
   // A partner edits her own bookings and nobody else's, as her screens show
   // her only those. With the browser's key that was the database's rule
   // (`partner_id = auth.uid()`); through the service key it has to be this one
-  // (`bookingAccess`).
+  // (`bookingAccess`). And only while the session is more than 23 hours and 59
+  // minutes away, on the Canary clock, judged on the booking as it stands
+  // before this save: her screen has always sent her back from the edit
+  // inside that window, and now the server says the same.
   const access = await bookingAccess(actor, bookingId);
   if (!access.ok) {
     return {
@@ -494,6 +500,12 @@ export async function updateBookingByAdmin(
               ? "invalid"
               : "failed",
     };
+  }
+  if (
+    actor.role === "partner" &&
+    !partnerMayEdit(access.booking.date, access.booking.time)
+  ) {
+    return { error: PARTNER_WINDOW };
   }
 
   // A save that cancels AND sets the payment back (to "Pendiente", or a lower

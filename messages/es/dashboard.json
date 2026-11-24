@@ -360,7 +360,8 @@
         "reservationRequired": "El número de reserva es obligatorio.",
         "saveFailed": "No se pudo guardar la reserva.",
         "refundPaymentConflict": "Esta reserva tiene un pago online: no cambies el pago al cancelarla. Cancélala dejando el pago como está y, cuando devuelvas el dinero, márcalo como reembolsado en la reserva.",
-        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional."
+        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional.",
+        "partnerWindow": "Solo puedes editar una reserva hasta 24 horas antes de la sesión. Para cambiarla ahora, escribe al centro."
       },
       "refund": {
         "inAdvance": "Se pagaron {amount} online y faltan 24 horas o más: al guardar quedará un reembolso pendiente de {amount} y el administrador recibirá un correo con el número de pedido de Redsys.",

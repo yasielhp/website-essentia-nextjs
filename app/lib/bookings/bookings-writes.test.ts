@@ -252,11 +252,13 @@ describe("the doors that write instead of the browser", () => {
       expect({ path, calls: found }).toEqual({ path, calls });
     }
     const edit = read("app/actions/booking-draft.ts");
-    expect(
-      read("app/actions/booking-draft.ts").includes(
+    expect({
+      // The partner's 24 hours, on the Canary clock, in the edit.
+      window: /actor\.role === "partner" &&\s*!partnerMayEdit\(/.test(edit),
+      deleteIsNotHers: edit.includes(
         'requireRole(accessToken, ["admin", "staff"])',
       ),
-    ).toBe(true);
+    }).toEqual({ window: true, deleteIsNotHers: true });
   });
 
   test("every write that can put a booking on a professional's hour says 'taken' in words", () => {
