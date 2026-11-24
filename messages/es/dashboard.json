@@ -497,6 +497,33 @@
         },
         "removeBonus": "Quitar bono",
         "useBonus": "Usar bono (quedan {n})"
+      },
+      "refund": {
+        "title": "Pago online",
+        "order": "Pedido Redsys",
+        "paidOnline": "Pagado online",
+        "owed": "Reembolso pendiente: {amount}",
+        "owedHelp": "Devuélvelo en el portal de Redsys con el número de pedido y, cuando esté hecho, márcalo aquí como reembolsado.",
+        "refunded": "Reembolsado: {amount}",
+        "mark": "Marcar como reembolsado",
+        "done": "Reembolso registrado",
+        "dialog": {
+          "title": "Marcar como reembolsado",
+          "body": "Confirma que ya has devuelto el dinero en el portal de Redsys (pedido {order}). Esto no hace la devolución: solo la registra en la reserva y deja de contarla como ingreso.",
+          "bodyNoOrder": "Confirma que ya has devuelto el dinero en el portal de Redsys. Esto no hace la devolución: solo la registra en la reserva y deja de contarla como ingreso.",
+          "amount": "Importe devuelto (€)",
+          "max": "Como máximo {max}. Si devuelves menos, el resto sigue contando como ingreso.",
+          "note": "Nota (opcional)",
+          "notePlaceholder": "Por ejemplo, devuelto el 25 de noviembre",
+          "confirm": "Sí, marcar como reembolsado",
+          "cancel": "Cancelar",
+          "errors": {
+            "invalid": "Escribe un importe válido.",
+            "exceeds": "El importe supera lo que queda por devolver ({max}).",
+            "changed": "La reserva ha cambiado mientras tanto: vuelve a cargarla.",
+            "generic": "No se ha podido registrar el reembolso."
+          }
+        }
       }
     },
     "paymentStatus": {

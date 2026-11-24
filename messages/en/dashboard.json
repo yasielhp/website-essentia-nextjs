@@ -497,6 +497,33 @@
         },
         "removeBonus": "Remove voucher",
         "useBonus": "Use voucher ({n} left)"
+      },
+      "refund": {
+        "title": "Online payment",
+        "order": "Redsys order",
+        "paidOnline": "Paid online",
+        "owed": "Refund pending: {amount}",
+        "owedHelp": "Return it in the Redsys portal with the order number and, once done, mark it here as refunded.",
+        "refunded": "Refunded: {amount}",
+        "mark": "Mark as refunded",
+        "done": "Refund recorded",
+        "dialog": {
+          "title": "Mark as refunded",
+          "body": "Confirm you have already returned the money in the Redsys portal (order {order}). This does not make the refund: it only records it on the booking and stops counting it as income.",
+          "bodyNoOrder": "Confirm you have already returned the money in the Redsys portal. This does not make the refund: it only records it on the booking and stops counting it as income.",
+          "amount": "Amount returned (€)",
+          "max": "At most {max}. If you return less, the rest still counts as income.",
+          "note": "Note (optional)",
+          "notePlaceholder": "For example, returned on 25 November",
+          "confirm": "Yes, mark as refunded",
+          "cancel": "Cancel",
+          "errors": {
+            "invalid": "Enter a valid amount.",
+            "exceeds": "The amount is more than is left to return ({max}).",
+            "changed": "The booking changed in the meantime: reload it.",
+            "generic": "The refund could not be recorded."
+          }
+        }
       }
     },
     "paymentStatus": {

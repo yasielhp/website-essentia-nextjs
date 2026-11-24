@@ -3,6 +3,8 @@
 import type { SupportedLocale } from "@/utils/format";
 import type { ContactBonus } from "@/types/bonus";
 import type { BookingEventRow } from "@/lib/booking-events/types";
+import type { BookingRefundView } from "@/lib/bookings/refund-rules";
+import { RefundCard } from "./refund-card";
 import type {
   BookingDetail,
   ClientContact,
@@ -38,6 +40,7 @@ export function BookingDetailBody({
   events,
   bonuses,
   staffPerson,
+  refund,
   locale,
   onPaymentRecorded,
 }: {
@@ -50,6 +53,8 @@ export function BookingDetailBody({
   bonuses: ContactBonus[];
   /** The professional assigned to it, if the booking has one. */
   staffPerson: StaffPerson | null;
+  /** The online payment and its refund; null for a partner or no access. */
+  refund: BookingRefundView | null;
   locale: SupportedLocale;
   /** Called after money is taken at the counter, so the screen reloads. */
   onPaymentRecorded: () => void;
@@ -66,6 +71,16 @@ export function BookingDetailBody({
       />
 
       <div className="space-y-6">
+        {/* First when money went through Redsys: a refund owed is the thing
+        on this booking somebody has to act on. */}
+        {refund && (refund.orderId || refund.onlineEur > 0) && (
+          <RefundCard
+            bookingId={booking.id}
+            view={refund}
+            locale={locale}
+            onRecorded={onPaymentRecorded}
+          />
+        )}
         <ServiceCard booking={booking} staffPerson={staffPerson} />
         {staffPerson && <StaffCard staffPerson={staffPerson} />}
         {booking.location && <LocationCard booking={booking} />}

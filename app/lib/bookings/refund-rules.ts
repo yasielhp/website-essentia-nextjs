@@ -58,6 +58,17 @@ export type BookingRefundView = OnlinePayment & {
   canMark: boolean;
 };
 
+/** Why marking a refund was refused (`markBookingRefunded`). */
+export type MarkRefundError =
+  | "unauthorized"
+  | "invalid"
+  | "not_found"
+  | "not_cancelled"
+  | "nothing_to_refund"
+  | "exceeds"
+  | "conflict"
+  | "failed";
+
 export type RefundReason =
   /** Nothing was paid online: there is nothing to return. */
   | "nothing_online"

@@ -9,6 +9,8 @@ import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
 import { fetchBookingEvents } from "@/actions/booking-events";
+import { fetchBookingRefund } from "@/actions/booking-refunds";
+import type { BookingRefundView } from "@/lib/bookings/refund-rules";
 import { fetchContactBonuses } from "@/actions/bonuses";
 import type { ContactBonus } from "@/types/bonus";
 import type { BookingEventRow } from "@/lib/booking-events/types";
@@ -115,6 +117,7 @@ export default function BookingDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [events, setEvents] = useState<BookingEventRow[]>([]);
   const [bonuses, setBonuses] = useState<ContactBonus[]>([]);
+  const [refund, setRefund] = useState<BookingRefundView | null>(null);
   // Bumped when something on this screen changes the booking (a payment taken
   // at the counter), so the strip and the history are read again.
   const [reloadKey, setReloadKey] = useState(0);
@@ -231,6 +234,18 @@ export default function BookingDetailPage() {
     };
   }, [id, reloadKey]);
 
+  // The Redsys order and the refund, for the people who answer for the money.
+  useEffect(() => {
+    if (role !== "admin" && role !== "staff") return;
+    let cancelled = false;
+    void fetchBookingRefund(getAccessToken(), id).then((view) => {
+      if (!cancelled) setRefund(view);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, reloadKey, role]);
+
   async function handleDelete() {
     setDeleting(true);
     await deleteBooking(getAccessToken(), id);
@@ -318,6 +333,7 @@ export default function BookingDetailPage() {
         events={events}
         bonuses={bonuses}
         staffPerson={staffPerson}
+        refund={refund}
         locale={locale}
         onPaymentRecorded={() => setReloadKey((k) => k + 1)}
       />
