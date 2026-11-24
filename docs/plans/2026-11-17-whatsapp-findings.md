@@ -62,8 +62,36 @@ Orden aproximado de importancia: del (v) al (iii) tocan privacidad o seguridad d
 
 1. Aplicar ya RLS sin políticas a las que solo lee la clave de servicio: `booking_events` (la `m`), `account_locks`, `auth_events`, `booking_calendar_mirrors`. Es una migración aditiva por tabla.
 2. `memberships`: pasar las tres páginas a Server Actions con rol de administradora y **después** activar RLS. Hoy tiene 0 filas, pero cuando haya datos serán nombres, correos y teléfonos legibles por cualquiera con la clave del navegador.
-3. Las tres de precios: política de solo lectura para `anon` (SELECT) y nada más; ninguna escritura sin rol.
+3. Las tres de precios: política de solo lectura para `anon` (SELECT) y nada más; ninguna escritura sin rol. Para `service_tiers` está preparado (ver abajo); `membership_plans` y `service_settings` siguen pendientes.
 4. Regla para tablas nuevas: `ENABLE ROW LEVEL SECURITY` sin políticas desde la migración que las crea (ya consta en `CLAUDE.md`).
+
+### `service_tiers`: además de legible, escribible (2026-11-24)
+
+**Qué pasa.** `service_tiers` no solo se lee con la clave del navegador: `anon` y `authenticated` tienen también `INSERT`, `UPDATE` y `DELETE` (comprobado en `information_schema.role_table_grants` el 2026-11-24; `relrowsecurity = false`, ninguna política). Cualquiera con esa clave, que va en el navegador de cada visitante, podía **cambiar un precio** (el que cobra la reserva, el que la web pinta en sus fichas y el que da el catálogo MCP), apagar un tipo de sesión o borrarlo, y con él sus asignaciones de personal y sus planes de bonos (claves foráneas en cascada). Hoy son 27 filas, 24 activas, y la clave pública las lee todas.
+
+**Hecho en el código** (rama `feat/whatsapp-campaigns`). El guardado de un tipo de sesión ya no sale del navegador: es una Server Action, `saveSessionType` (`app/actions/session-types.ts` sobre `app/lib/session-types/save.ts`), solo para administradoras, con la clave de servicio y un esquema Zod estricto de lo que tiene el formulario (duración, los tres precios en céntimos enteros, color, activo y el personal asignado); cualquier otra columna rechaza el guardado entero. La misma llamada invalida el tag `tier-prices`. Responde siempre dentro de un plazo y el modal tiene el suyo, así que no se queda en «Guardando…». Un test lee el código de toda la aplicación y falla si algo más escribe la tabla.
+
+**Pendiente: la migración `20261124_service_tiers_rls.sql`, escrita y SIN aplicar.** Activa RLS, deja leer a cualquiera los tipos de sesión **activos**, deja leer **todos** al equipo (admin, staff y partner), no da ninguna política de escritura y retira `INSERT`, `UPDATE` y `DELETE` a los dos roles del navegador. La clave de servicio se salta RLS y es la única que escribe.
+
+**Por qué el público solo ve los activos.** Es todo lo que lee: el formulario de reserva los lista con `active = true` (`duration-step.tsx`), las fichas y las herramientas de agente también (`listPublicTierPrices`), y el último paso relee el precio del que se está reservando por su id (`confirm-step.tsx`). El panel sí necesita los apagados: Ajustes los lista para volver a encenderlos y comprueba los colores de todos, y el calendario y la lista de reservas pintan el nombre y el color de una reserva cuyo tipo se apagó después.
+
+**Quién lee `service_tiers` con la clave del navegador** (sesión de la persona, o anónima):
+
+| Dónde                                                                                                                                              | Qué lee                                                    | Con la migración             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------- |
+| Formulario público: `components/sections/booking/steps/duration-step.tsx`                                                                          | Activos de un servicio                                     | Igual                        |
+| Formulario público: `components/sections/booking/steps/confirm-step.tsx`                                                                           | Precio de un tipo por id, sin filtrar por activo           | Igual, salvo un tipo apagado |
+| Fichas y agentes: `lib/treatments/public-prices.ts` (cliente anónimo, en el servidor) y `actions/treatment-prices.ts`                              | Activos de un servicio                                     | Igual                        |
+| Ajustes: `components/dashboard/settings/bookings-settings.tsx`, `tier-modal.tsx` (colores)                                                         | **Todos**, apagados incluidos                              | Igual (política del equipo)  |
+| Ajustes y campañas: `bonus-plans-settings.tsx`, `campaigns/_form/trigger-step.tsx`                                                                 | Activos                                                    | Igual                        |
+| Reservas del panel: `bookings/new/use-new-booking-data.ts`, `bookings/[id]/edit/use-booking-edit-data.ts`, `use-calendar-data.ts`                  | Activos (y el servicio de un tipo por id, al canjear bono) | Igual                        |
+| Calendario y listas del panel: `calendar-events.ts`, y el `service_tiers(label, color)` embebido en `bookings/page.tsx` y `bookings/[id]/page.tsx` | Nombre y color por id, **también de tipos apagados**       | Igual (política del equipo)  |
+
+Todo lo demás lee con la clave de servicio y no cambia: el cobro (`api/checkout/booking-session`, `bonus-session`), el borrador de la reserva, los bonos, el recordatorio, la sincronización del calendario, la audiencia de las campañas, los avisos de WhatsApp y las herramientas MCP. Ninguna función SQL, vista, trigger ni política menciona la tabla.
+
+**Orden de despliegue.** Primero el código, después la migración. El modal de Ajustes que hay en producción antes de este cambio escribe la tabla desde el navegador y **no mira la respuesta**: con la migración aplicada antes, su guardado se rechazaría y el modal diría «Tipo de sesión actualizado» sin haber guardado nada. Aplicada después del despliegue no rompe nada. Entre el despliegue y la migración todo funciona, pero la tabla sigue siendo escribible con la clave pública: conviene aplicarla enseguida. Si alguna vez se vuelve al código anterior con la migración ya aplicada, el guardado de tipos de sesión deja de funcionar en silencio.
+
+**Diferencia visible.** Si un tipo de sesión se apaga mientras una visitante está en el último paso de su reserva, ese paso ya no relee su precio y muestra el que traía del paso anterior. Lo que se cobra lo decide el servidor en cualquier caso.
 
 ---
 
