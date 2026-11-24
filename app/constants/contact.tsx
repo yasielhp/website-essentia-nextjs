@@ -1,4 +1,4 @@
-import { IconFacebook, IconInstagram } from "@/components/ui/icons";
+import { IconInstagram } from "@/components/ui/icons";
 /**
  * Reception hours, in 24-hour time. Kept next to the rest of the contact
  * details so the page copy and the `openingHoursSpecification` in the
@@ -14,16 +14,16 @@ export const contact = {
   phone: "+34 634 09 12 95",
   email: "info@essentiawellnessclub.com",
   domain: "www.essentiawellnessclub.com",
+  /**
+   * The centre's own profiles: the footer, the contact page, the schema.org
+   * `sameAs` and the files for assistants all list these. There is no Facebook
+   * page of the centre's (`facebook.com/essentia` is somebody else's).
+   */
   socialMedia: [
     {
       name: "Instagram",
       url: "https://www.instagram.com/essentiamassage",
       icon: IconInstagram,
-    },
-    {
-      name: "Facebook",
-      url: "https://www.facebook.com/essentia",
-      icon: IconFacebook,
     },
   ],
 };

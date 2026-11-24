@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { contact } from "@/constants/contact";
 import { UNLAUNCHED_ROUTES } from "@/constants/unlaunched";
 import {
   facialTreatments,
@@ -101,6 +102,14 @@ describe("/llms.txt and /llms-full.txt", () => {
         `${name}: false`,
       );
     }
+  });
+
+  test("link no Facebook page: facebook.com/essentia is not the centre's", () => {
+    for (const [name, text] of Object.entries(BOTH)) {
+      expect(`${name}: ${/facebook/i.test(text)}`).toBe(`${name}: false`);
+    }
+    // The footer, the contact page and the schema.org `sameAs` list the same.
+    expect(contact.socialMedia.map((s) => s.name)).toEqual(["Instagram"]);
   });
 
   test("give the centre's address as the site has it", () => {

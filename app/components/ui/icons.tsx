@@ -12,23 +12,6 @@ export const IconInstagram = () => (
   </svg>
 );
 
-export const IconFacebook = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-  >
-    <path
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1"
-      d="M6.5 10v4h3v7h4v-7h3l1-4h-4V8c0-.545.4-1 1-1h3V3h-3c-2.7 0-5 2.2-5 5v2z"
-    />
-  </svg>
-);
 export const IconWorld = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
