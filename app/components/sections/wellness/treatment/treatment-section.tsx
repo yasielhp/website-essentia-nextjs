@@ -93,16 +93,18 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
 
 // ─── Manual Therapies — treatment grid ───────────────────────
 
-function ManualTherapiesSection() {
+/**
+ * Each card's price is its session type's, the one the booking form shows and
+ * charges, not a figure kept in code: the centre changes its prices itself.
+ * The page reads them on the server and hands in each card's line as text
+ * (`cardLines`), so the price is in the HTML the card arrives with. A
+ * treatment whose session type is not on sale, or not in the length the card
+ * says, shows its length alone; so does every card when the read failed.
+ */
+function ManualTherapiesSection({ lines }: { lines: Record<string, string> }) {
   const t = useTranslations("wellness.treatments");
-  const locale = useLocale() === "es" ? "es" : "en";
 
   const manualServices = manualTherapyTreatments;
-  // Each card's price is its session type's, the one the booking form shows
-  // and charges, not a figure kept in code: the centre changes its prices
-  // itself. A treatment whose session type is not on sale, or not in the
-  // length the card says, shows none.
-  const prices = useTreatmentPrices("manual-therapies");
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -134,10 +136,10 @@ function ManualTherapiesSection() {
                     {t(`manualTherapiesCards.${service.id}.title`)}
                   </h3>
                   {/* Duration and price on one line, as the facial cards
-                      write theirs: "30 min · 70 €". Until the prices are
-                      read, and if they cannot be, it is the duration alone. */}
+                      write theirs: "30 min · 70 €". With no price to show it
+                      is the duration alone, as the card always was. */}
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
-                    {cardMeta(prices, service.title, service.durations, locale)}
+                    {lines[service.id] ?? service.durations.join(" · ")}
                   </span>
                 </div>
 
@@ -438,11 +440,24 @@ function SessionSection({ data }: { data: TreatmentData }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-export default function TreatmentSection({ data }: { data: TreatmentData }) {
+export default function TreatmentSection({
+  data,
+  cardLines = {},
+}: {
+  data: TreatmentData;
+  /**
+   * The line under each card's title (length and price), by treatment id, as
+   * the page made it on the server (`cardLines`). None for a page whose cards
+   * take no price from the database.
+   */
+  cardLines?: Record<string, string>;
+}) {
   return (
     <>
       <TreatmentHero data={data} />
-      {data.slug === "manual-therapies" && <ManualTherapiesSection />}
+      {data.slug === "manual-therapies" && (
+        <ManualTherapiesSection lines={cardLines} />
+      )}
       {data.slug === "facial-therapies" && <FacialTreatmentsSection />}
       {data.slug === "intravenous-therapy" && <IvProtocolsSection />}
       <BenefitsSection data={data} />

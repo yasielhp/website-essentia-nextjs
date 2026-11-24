@@ -139,6 +139,37 @@ export function cardMeta(
 }
 
 /**
+ * The line of every card of a page, by treatment id, made on the SERVER and
+ * handed to the cards as text.
+ *
+ * The cards are client components, rendered once on the server and again in
+ * the browser. A price formatted on both sides would have to come out letter
+ * for letter the same from two different engines (the space before the euro
+ * sign is the locale's, and engines have changed theirs before), or React
+ * throws the server's HTML away. Text made once cannot disagree with itself.
+ *
+ * Only the treatments that show a length get a line; one without (a ritual
+ * whose card prints a line of its own) is left out.
+ */
+export function cardLines(
+  treatments: readonly { id: string; title: string; durations?: string[] }[],
+  prices: readonly TierPrice[],
+  locale: SupportedLocale,
+): Record<string, string> {
+  const lines: Record<string, string> = {};
+  for (const treatment of treatments) {
+    if (!treatment.durations) continue;
+    lines[treatment.id] = cardMeta(
+      prices,
+      treatment.title,
+      treatment.durations,
+      locale,
+    );
+  }
+  return lines;
+}
+
+/**
  * What a treatment costs, in words, for a list an assistant reads: `€70`; with
  * several lengths, which price is whose (`60 min: €140, 90 min: €190`). Empty
  * when it has no price to tell, under the same rule as a card's (`priceOf`).

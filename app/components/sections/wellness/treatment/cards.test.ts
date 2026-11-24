@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import en from "../../../../../messages/en/wellness.json";
 import es from "../../../../../messages/es/wellness.json";
 import {
@@ -14,6 +16,9 @@ import { minutesOf } from "@/lib/treatments/prices";
  * prices itself, and a figure typed here goes on saying the old one. These pin
  * that, and that no text is left behind once a card stops using it.
  */
+
+/** The service pages whose cards take their price from the session types. */
+const PRICED_PAGES = ["manual-therapies"];
 
 type Card = Record<string, string>;
 const facialCards = (messages: typeof es) =>
@@ -87,4 +92,28 @@ describe("facial cards: the price is not written anywhere", () => {
       expect(JSON.stringify(facial)).not.toMatch(/€|\beur\b/i);
     }
   });
+});
+
+describe("the pages that print prices are rebuilt as often as a price is kept", () => {
+  // `revalidate` must be a literal in the page (Next reads it without running
+  // the module), so it cannot import the figure: this is what keeps the two
+  // from drifting apart. The figure itself is pinned in `public-prices.test.ts`.
+  const pages = join(
+    import.meta.dir,
+    "../../../../(site)/[locale]/(page)/wellness",
+  );
+  const KEPT_FOR = readFileSync(
+    join(import.meta.dir, "../../../../lib/treatments/public-prices.ts"),
+    "utf8",
+  ).match(/TIER_PRICES_REVALIDATE_SECONDS = (\d+);/)?.[1];
+
+  for (const page of PRICED_PAGES) {
+    test(`${page} reads the prices on the server and declares the same interval`, () => {
+      const source = readFileSync(join(pages, page, "page.tsx"), "utf8");
+      expect(KEPT_FOR).toBeDefined();
+      expect(source).toContain(`export const revalidate = ${KEPT_FOR};`);
+      expect(source).toContain(`await listPublicTierPrices("${page}")`);
+      expect(source).toMatch(/<TreatmentSection[^>]*cardLines=\{lines\}/);
+    });
+  }
 });

@@ -4,7 +4,10 @@ import TreatmentSection from "@components/sections/wellness/treatment/treatment-
 import { treatments } from "@components/sections/wellness/treatment/data";
 import { ServiceFaq } from "@/components/sections/service-faq";
 import { serviceFaqs } from "@/data/service-faqs";
-import { bookableServices } from "@/data/services-data";
+import {
+  bookableServices,
+  manualTherapyTreatments,
+} from "@/data/services-data";
 import {
   breadcrumbSchema,
   faqPageSchema,
@@ -12,6 +15,14 @@ import {
 } from "@/lib/seo";
 import { getOgImage } from "@/constants/metadata";
 import { JsonLd } from "@/components/json-ld";
+import { cardLines } from "@/lib/treatments/prices";
+import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+
+// The cards print the price of each session type, which the centre changes
+// from the dashboard: the page is rebuilt at most every five minutes so a new
+// price shows without a deploy. Same figure as
+// `TIER_PRICES_REVALIDATE_SECONDS`; Next needs it written here as a literal.
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -55,6 +66,14 @@ export default async function ManualTherapiesPage({
   const t = await getTranslations("wellness.pages");
   const faqs = serviceFaqs["manual-therapies"];
   const service = bookableServices.find((s) => s.id === "manual-therapies");
+  // Read here, on the server, so each card arrives with its price in the
+  // HTML. Never throws: with no prices the cards show their duration alone.
+  const prices = await listPublicTierPrices("manual-therapies");
+  const lines = cardLines(
+    manualTherapyTreatments,
+    prices,
+    locale === "es" ? "es" : "en",
+  );
   return (
     <>
       <JsonLd
@@ -76,7 +95,10 @@ export default async function ManualTherapiesPage({
           category: "wellness",
         })}
       />
-      <TreatmentSection data={treatments["manual-therapies"]} />
+      <TreatmentSection
+        data={treatments["manual-therapies"]}
+        cardLines={lines}
+      />
       <ServiceFaq faqs={faqs} serviceSlug="manual-therapies" />
     </>
   );

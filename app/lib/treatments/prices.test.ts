@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  cardLines,
   cardMeta,
   cardPrice,
   minutesOf,
@@ -236,5 +237,37 @@ describe("priceText: what a treatment costs, for a list read by an assistant", (
   test("a treatment with no length takes the one price its name has", () => {
     expect(priceText(PRICES, "Espira", [], "en")).toBe("€70");
     expect(priceText(PRICES, "Soma", [], "en")).toBe("");
+  });
+});
+
+describe("cardLines: the line of every card of a page, made on the server", () => {
+  const PRICES = [tier("Espira", 30, 70), tier("Anesis", 50, 70)];
+  const TREATMENTS = [
+    { id: "espira", title: "Espira", durations: ["30 min"] },
+    { id: "alure-duo", title: "Alure Duo", durations: ["50 min"] },
+    // A ritual with no length of its own prints the line written for it.
+    { id: "kinea-signature", title: "Kinéa Signature" },
+  ];
+  const lines = (prices = PRICES, locale: "es" | "en" = "es") =>
+    Object.fromEntries(
+      Object.entries(cardLines(TREATMENTS, prices, locale)).map(
+        ([id, line]) => [id, plain(line)],
+      ),
+    );
+
+  test("each card that shows a length gets its line, priced or not", () => {
+    expect(lines()).toEqual({ espira: "30 min · 70 €", "alure-duo": "50 min" });
+    expect(lines(PRICES, "en")).toEqual({
+      espira: "30 min · €70",
+      "alure-duo": "50 min",
+    });
+  });
+
+  test("with no prices every line is the length alone, as the cards always were", () => {
+    expect(lines([])).toEqual({ espira: "30 min", "alure-duo": "50 min" });
+  });
+
+  test("a card with no length is not given a line: it keeps its own", () => {
+    expect("kinea-signature" in lines()).toBe(false);
   });
 });
