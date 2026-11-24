@@ -12,7 +12,10 @@
 -- RLS with no policies closes both roles out entirely; `project_admin`, the
 -- role behind the service key, bypasses RLS and is unaffected. This is the
 -- shape `service_configs` already has. The webhook RPC loses EXECUTE for the
--- public roles the way `admin_set_user_password` did.
+-- public roles. (Corrected 2026-11-24: this said "the way
+-- `admin_set_user_password` did", and it had not; that function and two more
+-- were still executable by PUBLIC. See
+-- `20261124_revoke_admin_account_functions.sql`.)
 --
 -- Two indexes change while we are here. `contact_id` is nullable and NULLs
 -- are distinct in a unique index, so the old uniqueness on

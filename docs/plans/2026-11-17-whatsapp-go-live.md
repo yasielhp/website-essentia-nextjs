@@ -58,6 +58,7 @@ Se aplican a mano a la única base viva (producción). Estado comprobado el 2026
 | `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                                                                                                                   | **NO aplicada. Decisión del usuario**                                                 |
 | `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)                                                                                                | **NO aplicada. Decisión del usuario**                                                 |
 | `20261124_service_tiers_and_settings_rls.sql`        | RLS en `service_tiers` y `service_settings`: cualquiera lee las filas activas, el equipo todas, nadie escribe con la clave del navegador                                                         | **NO aplicada. Solo DESPUÉS de desplegar esta rama y recargar Ajustes**               |
+| `20261124_revoke_admin_account_functions.sql`        | Quita `EXECUTE` a PUBLIC, `anon` y `authenticated` sobre `admin_set_user_password`, `admin_update_user_email` y `admin_verify_email` (SECURITY DEFINER, sin comprobar quién llama)               | **NO aplicada. Aplicar YA: no depende de ningún despliegue**                          |
 | `20261124_bookings_close_browser_writes.sql`         | `bookings` sin escrituras del navegador: solo las tres políticas de lectura, sin `INSERT`/`UPDATE`/`DELETE` para `anon` ni `authenticated`, y sin `EXECUTE` sobre las funciones que la escribían | **NO aplicada. Solo DESPUÉS de desplegar esta rama y recargar `/booking` y el panel** |
 | `20261124_bookings_no_overlap.sql`                   | Restricción `bookings_no_overlap`: la base rechaza dos reservas que se solapan para la misma profesional (borradores y canceladas aparte)                                                        | **NO aplicada. Solo DESPUÉS de desplegar esta rama**                                  |
 
@@ -82,6 +83,9 @@ npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/202611
 # 20261124_service_tiers_and_settings_rls: solo DESPUÉS de desplegar esta rama y recargar las pestañas de Ajustes (ver más abajo)
 npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261124_service_tiers_and_settings_rls.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 
+# 20261124_revoke_admin_account_functions: YA, sin esperar a ningún despliegue (cualquiera con la clave pública puede cambiar la contraseña de cualquier cuenta)
+npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261124_revoke_admin_account_functions.sql | grep -v -E '^(BEGIN|COMMIT);$')"
+
 # 20261124_bookings_close_browser_writes: solo DESPUÉS de desplegar esta rama y recargar las pestañas de /booking y del panel (ver más abajo)
 npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261124_bookings_close_browser_writes.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 
@@ -105,6 +109,9 @@ npx -y @insforge/cli@latest db query "SELECT pg_get_functiondef('public.profiles
 npx -y @insforge/cli@latest db query "SELECT relname, relrowsecurity FROM pg_class WHERE oid IN ('public.service_tiers'::regclass, 'public.service_settings'::regclass) ORDER BY relname"
 npx -y @insforge/cli@latest db query "SELECT tablename, policyname, cmd, roles::text, qual FROM pg_policies WHERE schemaname = 'public' AND tablename IN ('service_tiers', 'service_settings') ORDER BY tablename, policyname"
 npx -y @insforge/cli@latest db query "SELECT table_name, grantee, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privs FROM information_schema.role_table_grants WHERE table_schema = 'public' AND table_name IN ('service_tiers', 'service_settings') AND grantee IN ('anon','authenticated') GROUP BY table_name, grantee ORDER BY table_name, grantee"
+
+# funciones de cuentas: false para anon y authenticated, true para project_admin, en las tres
+npx -y @insforge/cli@latest db query "SELECT p.proname, r.rolname, has_function_privilege(r.rolname, p.oid, 'EXECUTE') AS can_execute FROM pg_proc p CROSS JOIN (VALUES ('anon'), ('authenticated'), ('project_admin')) AS r(rolname) WHERE p.pronamespace = 'public'::regnamespace AND p.proname IN ('admin_set_user_password', 'admin_update_user_email', 'admin_verify_email') ORDER BY 1, 2"
 
 # bookings, escrituras: RLS true; exactamente tres políticas, todas SELECT para {authenticated}; solo SELECT para anon y authenticated; y false para anon y authenticated en las cuatro funciones (true para project_admin)
 npx -y @insforge/cli@latest db query "SELECT relrowsecurity FROM pg_class WHERE oid = 'public.bookings'::regclass"
