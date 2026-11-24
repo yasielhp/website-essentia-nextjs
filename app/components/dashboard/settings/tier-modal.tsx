@@ -9,7 +9,7 @@ import type { ModalState, SessionTypeSaveError } from "@/types/settings";
 import { IconX } from "@/components/ui/icons";
 import { TierFields } from "./tier-fields";
 import { discountFromPrices, formReducer } from "./tier-form-state";
-import { saveWithin, tierPayload } from "./tier-save";
+import { mayHaveSaved, saveWithin, tierPayload } from "./tier-save";
 
 // ─── Component ────────────────────────────────────────────────
 
@@ -17,10 +17,14 @@ export function TierModal({
   modal,
   onClose,
   onSaved,
+  onRefresh,
 }: {
   modal: ModalState;
   onClose: () => void;
+  /** The save went through: the list is read again and says so. */
   onSaved: (serviceId: string) => Promise<void>;
+  /** Reads the list again and says nothing: see `mayHaveSaved`. */
+  onRefresh: (serviceId: string) => Promise<void>;
 }) {
   const t = useTranslations("dashboard.settings.tiers");
   const tCommon = useTranslations("dashboard.common");
@@ -171,6 +175,11 @@ export function TierModal({
       // modal open with what was typed and says why.
       if (!result.ok) {
         setOps({ saving: false, error: result.error });
+        // The session type itself was saved, or may have been: the list
+        // behind shows what is stored now, without a word of success.
+        if (mayHaveSaved(result.error)) {
+          void onRefresh(modal.serviceId).catch(() => undefined);
+        }
         return;
       }
     }

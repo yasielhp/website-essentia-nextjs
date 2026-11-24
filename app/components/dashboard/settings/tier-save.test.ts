@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import type { SessionTypeSaveResult } from "@/types/settings";
 import type { FormState } from "./tier-form-state";
-import { TIER_SAVE_LIMIT_MS, saveWithin, tierPayload } from "./tier-save";
+import {
+  TIER_SAVE_LIMIT_MS,
+  mayHaveSaved,
+  saveWithin,
+  tierPayload,
+} from "./tier-save";
 
 /**
  * The saving side of the session-type modal: what it sends to
@@ -146,5 +151,28 @@ describe("saveWithin", () => {
     const { SESSION_TYPE_SAVE_DEADLINE_MS } =
       await import("@/lib/session-types/save");
     expect(TIER_SAVE_LIMIT_MS).toBeGreaterThan(SESSION_TYPE_SAVE_DEADLINE_MS);
+  });
+});
+
+describe("mayHaveSaved", () => {
+  test("the staff failed after the session type was written: it is in the database", () => {
+    expect(mayHaveSaved("staff")).toBe(true);
+  });
+
+  test("no answer in time: nobody knows, so the list is read again", () => {
+    expect(mayHaveSaved("timeout")).toBe(true);
+  });
+
+  test("a refusal wrote nothing: the list is as it was", () => {
+    for (const error of [
+      "unauthenticated",
+      "forbidden",
+      "invalid",
+      "notFound",
+      "colorTaken",
+      "failed",
+    ] as const) {
+      expect(mayHaveSaved(error)).toBe(false);
+    }
   });
 });

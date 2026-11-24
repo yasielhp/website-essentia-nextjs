@@ -156,21 +156,33 @@ export function BookingsSettings() {
 
   const [data, dispatch] = useReducer(dataReducer, initialDataState);
 
-  async function reloadServiceTiers(serviceId: string) {
-    const { data: rows } = await insforge.database
+  /**
+   * Reads the session types of one service again, and says nothing.
+   *
+   * A read that fails leaves the list as it is: emptying it showed a service
+   * with no session types, which is not what happened.
+   */
+  async function loadServiceTiers(serviceId: string) {
+    const { data: rows, error } = await insforge.database
       .from("service_tiers")
       .select(
         "id, label, duration_minutes, price_eur, price_center_eur, price_suite_eur, color, image_url, active, sort_order",
       )
       .eq("service_id", serviceId)
       .order("sort_order");
+    if (error || !rows) return;
     dispatch({
       type: "SET_SERVICE_TIERS",
       serviceTiers: {
         ...data.serviceTiers,
-        [serviceId]: (rows as TierRow[] | null) ?? [],
+        [serviceId]: rows as TierRow[],
       },
     });
+  }
+
+  /** After a save that went through: the list, and the word that it did. */
+  async function reloadServiceTiers(serviceId: string) {
+    await loadServiceTiers(serviceId);
     notifySuccess(tToasts("tierSaved"));
   }
 
@@ -240,6 +252,7 @@ export function BookingsSettings() {
           modal={data.modal}
           onClose={() => dispatch({ type: "SET_MODAL", modal: null })}
           onSaved={reloadServiceTiers}
+          onRefresh={loadServiceTiers}
         />
       )}
     </div>

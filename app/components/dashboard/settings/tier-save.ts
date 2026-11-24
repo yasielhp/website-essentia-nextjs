@@ -1,4 +1,8 @@
-import type { SessionTypeInput, SessionTypeSaveResult } from "@/types/settings";
+import type {
+  SessionTypeInput,
+  SessionTypeSaveError,
+  SessionTypeSaveResult,
+} from "@/types/settings";
 import type { FormState } from "./tier-form-state";
 
 /**
@@ -82,3 +86,14 @@ export function saveWithin(
       );
   });
 }
+
+/**
+ * Whether a save that did NOT end well may still have changed the session
+ * type: the staff could not be saved after the session type itself was
+ * (`staff`), or nobody answered in time and the write may have landed
+ * (`timeout`). The list behind the modal is read again then, so it shows what
+ * is stored and not what it showed before, while the modal stays open with its
+ * notice. Any other refusal wrote nothing.
+ */
+export const mayHaveSaved = (error: SessionTypeSaveError): boolean =>
+  error === "staff" || error === "timeout";
