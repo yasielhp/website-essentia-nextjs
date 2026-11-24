@@ -121,8 +121,20 @@ function browserSide(): Set<string> {
 }
 const browser = browserSide();
 
-/** `.rpc(` with a function of the database, by its name in quotes. */
-const calls = (fn: string) => new RegExp(`\\.rpc\\(\\s*["'\`]${fn}["'\`]`);
+/** `.rpc(`, `.rpc (` or `.rpc<T>(`: a call of a function of the database. */
+const RPC_CALL = /\.rpc\s*(<[^>]*>)?\s*\(/;
+/** The same call, with that function's name in quotes as its first argument. */
+const calls = (fn: string) =>
+  new RegExp(`\\.rpc\\s*(?:<[^>]*>)?\\s*\\(\\s*["'\`]${fn}["'\`]`);
+/**
+ * `rpc` reached another way, which the two above cannot see: taken out of the
+ * client (`const { rpc } = db`), by its name in brackets (`db["rpc"]`), or
+ * passed around without being called (`db.rpc.bind(db)`, `const f = db.rpc`).
+ */
+const RPC_ALIAS =
+  /\{[^}]*\brpc\b[^}]*\}\s*=|\[\s*["'`]rpc["'`]\s*\]|\.rpc\b(?!\s*(?:<[^>]*>)?\s*\()/;
+/** The test helpers that keep a list of the calls they were asked (`calls.rpc`). */
+const FAKES = ["app/lib/whatsapp/fake-contacts-db.ts"];
 
 /**
  * Every SECURITY DEFINER function of `public` that `anon` and `authenticated`
@@ -204,9 +216,47 @@ describe("the browser's side reaches no function of the database", () => {
   });
 
   test("no module on the browser's side calls a function of the database, of any name", () => {
-    expect([...browser].filter((path) => /\.rpc\(/.test(read(path)))).toEqual(
+    expect([...browser].filter((path) => RPC_CALL.test(read(path)))).toEqual(
       [],
     );
+  });
+
+  test("no module reaches `rpc` another way, so every call is one the checks can read", () => {
+    expect(
+      all.filter((path) => !FAKES.includes(path) && RPC_ALIAS.test(read(path))),
+    ).toEqual([]);
+    // The fakes are the tests' and nothing on the browser's side imports one.
+    for (const path of FAKES) expect(browser.has(path)).toBe(false);
+    // The checks themselves.
+    for (const code of [
+      "db.rpc(",
+      "db.rpc (",
+      "db.rpc<string>(",
+      "db\n  .rpc(",
+    ]) {
+      expect({ code, call: RPC_CALL.test(code) }).toEqual({ code, call: true });
+    }
+    for (const code of [
+      "const { rpc } = db;",
+      "const { from, rpc: call } = client.database;",
+      'db["rpc"]("upsert_contact")',
+      "const f = db.rpc;",
+      "db.rpc.bind(db)",
+    ]) {
+      expect({ code, alias: RPC_ALIAS.test(code) }).toEqual({
+        code,
+        alias: true,
+      });
+    }
+    for (const code of ["db.rpc(", "db.rpc<string>(", "db.from(x)"]) {
+      expect({ code, alias: RPC_ALIAS.test(code) }).toEqual({
+        code,
+        alias: false,
+      });
+    }
+    expect(
+      calls("upsert_contact").test('db.rpc<string>(\n  "upsert_contact",'),
+    ).toBe(true);
   });
 
   test("each of the functions is called only by the server modules named, each with the service key", () => {
@@ -229,16 +279,35 @@ describe("the browser's side reaches no function of the database", () => {
 });
 
 describe("the doors that call them instead of the browser", () => {
+  /** Every `export` that is not `export async function`, `export default` included. */
+  const NOT_ASYNC_EXPORT = /^\s*export\s+(?!async\s+function\b)/m;
   const door = (path: string) => {
     const source = read(path);
     return {
       server: directive(source, "server"),
       // A "use server" module may only export async functions.
-      onlyAsyncFunctions: !/export\s+(const|type|let|class|\{|\*)/.test(source),
+      onlyAsyncFunctions: !NOT_ASYNC_EXPORT.test(source),
     };
   };
 
   test("each is a server action that exports only async functions", () => {
+    // The check itself.
+    for (const code of [
+      "export function f() {}",
+      "export default async function f() {}",
+      "export default f;",
+      "export const f = async () => {};",
+      "export type T = string;",
+      "export { f };",
+      "export * from './x';",
+      "  export interface I {}",
+    ]) {
+      expect({ code, refused: NOT_ASYNC_EXPORT.test(code) }).toEqual({
+        code,
+        refused: true,
+      });
+    }
+    expect(NOT_ASYNC_EXPORT.test("export async function f() {}")).toBe(false);
     for (const path of [
       "app/actions/public-contact.ts",
       "app/actions/event-registration.ts",

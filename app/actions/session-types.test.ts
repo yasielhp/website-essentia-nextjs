@@ -682,8 +682,12 @@ describe("nothing else writes a session type", () => {
     "update_booking_returning_previous",
     "upsert_contact",
   ];
-  /** `.rpc(` and its first argument when it is a plain name in quotes. */
-  const RPC = /\.rpc\(\s*(?:["'`](\w+)["'`](?=\s*[,)]))?/g;
+  /**
+   * `.rpc(` (also `.rpc (` and `.rpc<T>(`) and its first argument when it is
+   * a plain name in quotes. An `rpc` taken out of the client or passed around
+   * uncalled is refused in `app/lib/public-definer-functions.test.ts`.
+   */
+  const RPC = /\.rpc\s*(?:<[^>]*>)?\s*\(\s*(?:["'`](\w+)["'`](?=\s*[,)]))?/g;
 
   test("every function of the database it calls has been read, and is named in the call", () => {
     const unread = new Set<string>();
@@ -706,6 +710,10 @@ describe("nothing else writes a session type", () => {
       "upsert_contact",
     ]);
     expect(names("db.rpc(FN, {})")).toEqual([null]);
+    expect(names('db.rpc<string>("upsert_contact", {})')).toEqual([
+      "upsert_contact",
+    ]);
+    expect(names("db.rpc <T>(FN)")).toEqual([null]);
     expect(names("db.rpc(`fn_${kind}`, {})")).toEqual([null]);
   });
 
