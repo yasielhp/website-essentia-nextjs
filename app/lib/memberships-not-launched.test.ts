@@ -67,3 +67,15 @@ describe("the closing calls of Wellness, Medicine and Experiences", () => {
     expect("ctaLearn" in enExperiences.hero).toBe(false);
   });
 });
+
+describe("the Experiences page", () => {
+  test("speaks of no members, no member dinners and no network that exists today", () => {
+    for (const messages of [esExperiences, enExperiences]) {
+      const values = JSON.stringify(messages.values);
+      expect(values).not.toMatch(
+        /miembro|\bmembers?\b|member dinners|red de personas|network of people/i,
+      );
+      expect(values).toMatch(/running/i);
+    }
+  });
+});
