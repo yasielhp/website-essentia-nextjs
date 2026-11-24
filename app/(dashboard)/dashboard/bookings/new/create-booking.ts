@@ -2,6 +2,7 @@ import { z } from "zod";
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { getSessionUser } from "@/actions/auth";
+import { createDeskBooking } from "@/actions/desk-booking";
 import {
   recordBookingCreated,
   recordBookingPaymentNote,
@@ -12,13 +13,8 @@ import { notifyStaffWhatsApp } from "@/actions/staff-whatsapp";
 import { pushBookingToCalendarsAction } from "@/actions/calendar-propagate";
 import { toStoredGender } from "@/constants/gender";
 import { localDateStr } from "@/utils/format";
-import { amountPaidOf, paymentModeFor } from "../_shared/payment-fields";
-import {
-  resolvePrice,
-  type FormState,
-  type Service,
-  type Tier,
-} from "./form-state";
+import { amountPaidOf } from "../_shared/payment-fields";
+import type { FormState, Service, Tier } from "./form-state";
 
 /**
  * Taking a booking at the desk: the checks, the write, and telling everyone.
@@ -148,73 +144,62 @@ export type CreateResult =
   | { ok: false; error: string };
 
 /**
- * Writes the booking.
+ * Writes the booking, through the server.
  *
- * The id is generated here so the insert does not need a RETURNING clause —
- * RETURNING would require a SELECT policy covering the new row.
+ * It used to be inserted from here, the browser, as the signed-in member of
+ * the team, through an INSERT policy that let anybody with the public key
+ * write a booking with any status, price or payment. The server action takes
+ * what the desk chose and decides the rest (the price from the session type,
+ * the status, who created it, a partner's own bookings): see
+ * `app/lib/bookings/desk-create.ts`.
  */
 export async function createBooking(
   draft: NewBookingDraft,
-  messages: { sessionExpired: string; createFailed: string },
+  messages: { sessionExpired: string; createFailed: string; slotTaken: string },
 ): Promise<CreateResult> {
-  // An expired token makes the SDK fall back to the anon key, which then fails
-  // the partner RLS policies. Check the session before writing anything.
-  //
-  // Asked on the server, which is the side that holds the cookie: the browser
-  // client keeps the access token but never a user object, so its own
-  // `getCurrentUser()` answers "nobody" after every page load — and moving into
-  // the dashboard is always a full page load.
+  // Before anything is written, the contact included: an expired session would
+  // leave a contact behind and then be refused by the server. Asked on the
+  // server, which holds the cookie (the browser client never has a user).
   const { user: sessionUser } = await getSessionUser();
   if (!sessionUser) return { ok: false, error: messages.sessionExpired };
-  const authUserId = sessionUser.id;
 
-  const bookingId = crypto.randomUUID();
   const contactId = await linkContact(draft);
   // A booking on a bonus takes no money at the counter.
   const paidEur = draft.bonusId ? 0 : amountPaidOf(draft.payment);
-  const paymentStatus = paidEur > 0 ? draft.payment.status : "pending";
 
-  const { error } = await insforge.database.from("bookings").insert([
-    {
-      id: bookingId,
-      service_id: draft.serviceId,
-      service_title: draft.service?.title ?? draft.serviceId,
-      tier_id: draft.tierId || null,
-      price_eur: draft.tier ? resolvePrice(draft.tier, draft.location) : null,
-      duration: durationOf(draft),
-      date: dateOf(draft),
-      time: draft.selectedTime || null,
-      location: draft.location || null,
-      location_address: addressOf(draft),
-      ...(draft.staffId ? { staff_id: draft.staffId } : {}),
-      ...(draft.notes.trim() ? { notes: draft.notes.trim() } : {}),
-      first_name: draft.firstName.trim(),
-      last_name: draft.lastName.trim(),
-      email: draft.email.trim(),
-      phone: draft.phone.trim() || null,
-      ...(contactId ? { contact_id: contactId } : {}),
-      status: "confirmed",
-      payment_status: paymentStatus,
-      payment_mode: paymentModeFor(paymentStatus),
-      amount_paid_eur: paidEur,
-      ...(paymentStatus === "paid" && draft.payment.method
-        ? {
-            balance_settled_at: new Date().toISOString(),
-            balance_settled_method: draft.payment.method,
-          }
-        : {}),
-      ...(draft.role === "partner" ? { partner_id: authUserId } : {}),
-      created_by_user_id: authUserId,
-      ...(draft.role ? { created_by_role: draft.role } : {}),
+  const result = await createDeskBooking(getAccessToken(), {
+    serviceId: draft.serviceId,
+    tierId: draft.tierId || null,
+    staffId: draft.staffId || null,
+    date: dateOf(draft),
+    time: draft.selectedTime || null,
+    location: draft.location || null,
+    locationAddress: addressOf(draft),
+    notes: draft.notes.trim() || null,
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    email: draft.email.trim(),
+    phone: draft.phone.trim() || null,
+    contactId,
+    payment: {
+      status: paidEur > 0 ? draft.payment.status : "pending",
+      amountPaidEur: paidEur,
+      method: draft.payment.method || null,
     },
-  ]);
+  });
 
-  if (error) {
+  if (!result.ok) {
     return {
       ok: false,
-      error: (error as { message?: string })?.message ?? messages.createFailed,
+      error:
+        result.error === "session"
+          ? messages.sessionExpired
+          : result.error === "slot_taken"
+            ? messages.slotTaken
+            : messages.createFailed,
     };
   }
+  const { bookingId } = result;
 
   // Here rather than in `announceNewBooking`, which also runs for the calendar
   // and the notifications: the history opens with the booking existing, and an

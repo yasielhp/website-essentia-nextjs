@@ -310,7 +310,8 @@
       },
       "errors": {
         "createFailed": "No se pudo crear la reserva.",
-        "reservationRequired": "El número de reserva es obligatorio."
+        "reservationRequired": "El número de reserva es obligatorio.",
+        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional."
       },
       "staff": {
         "placeholder": "Sin asignar"
@@ -358,7 +359,8 @@
       "errors": {
         "reservationRequired": "El número de reserva es obligatorio.",
         "saveFailed": "No se pudo guardar la reserva.",
-        "refundPaymentConflict": "Esta reserva tiene un pago online: no cambies el pago al cancelarla. Cancélala dejando el pago como está y, cuando devuelvas el dinero, márcalo como reembolsado en la reserva."
+        "refundPaymentConflict": "Esta reserva tiene un pago online: no cambies el pago al cancelarla. Cancélala dejando el pago como está y, cuando devuelvas el dinero, márcalo como reembolsado en la reserva.",
+        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional."
       },
       "refund": {
         "inAdvance": "Se pagaron {amount} online y faltan 24 horas o más: al guardar quedará un reembolso pendiente de {amount} y el administrador recibirá un correo con el número de pedido de Redsys.",

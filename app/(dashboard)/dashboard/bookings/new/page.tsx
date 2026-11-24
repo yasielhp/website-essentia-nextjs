@@ -187,6 +187,7 @@ function NewBookingPageInner() {
       sessionExpired:
         "Your session expired. Please sign in again and try once more.",
       createFailed: t("errors.createFailed"),
+      slotTaken: t("errors.slotTaken"),
     });
 
     dispatchAsync({ type: "SUBMIT_END" });

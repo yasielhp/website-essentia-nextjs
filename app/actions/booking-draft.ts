@@ -20,19 +20,17 @@ import {
 } from "@/lib/bookings/refunds";
 import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
 import { settleBonusOnCancel } from "@/lib/bonuses/settle";
+import { isSlotTaken, SLOT_TAKEN } from "@/lib/bookings/slot-taken";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
- * Booking mutations.
+ * Booking mutations of the dashboard. Each requires a role of the team via the
+ * caller's access token, and a partner reaches only her own bookings
+ * (`partner_id`), as she does on her screens.
  *
- * Two access models live here, and the distinction matters:
- *
- * - **Draft actions** run for anonymous visitors in the public booking flow, so
- *   they cannot require a role. Instead they are scoped to `status = 'draft'`,
- *   mirroring the `WHERE ... AND status = 'draft'` guard already present in the
- *   `update_booking_datetime` / `confirm_booking` SQL functions. Without it,
- *   knowing any booking id was enough to rewrite a confirmed booking.
- * - **Dashboard actions** require a staff role via the caller's access token.
+ * The public booking form's writes (its draft, the day and hour, the booking)
+ * are no longer here: they take strict input and decide price, status and
+ * account on the server, in `app/actions/public-booking.ts`.
  *
  * Every mutation here also writes its own line into the booking history, for
  * the same reason the notifications are sent from where the change happens: an
@@ -108,210 +106,6 @@ async function staffFirstNames(
     if (name) names.set(profile.id, name);
   }
   return names;
-}
-
-/** Attaches tier, price and notes to a booking that is still a draft. */
-// Anonymous by design and scoped to `status = 'draft'`, as the note at the
-// top of this file explains: the public booking flow has no session, and the
-// draft scope is what stops a known id from rewriting a confirmed booking.
-// react-doctor-disable-next-line react-doctor/server-auth-actions
-export async function updateDraftBookingMeta(
-  bookingId: string,
-  tierId: string | null,
-  /** Ignored for the amount: prices are read from the tier. Kept for callers. */
-  _tierPrice: number | null,
-  createdByUserId: string | null,
-  createdByRole: string,
-  notes: string | null,
-  staffId: string | null = null,
-  // A form built before 2026-11-24 also sends how it meant to pay ("deposit"
-  // or "full"). Not a parameter any more: online, the whole price is paid.
-): Promise<void> {
-  if (!bookingId) return;
-
-  const db = getAdminClient().database;
-
-  // Both prices come from the tier, so editing them in the dashboard is
-  // enough — and so a tampered request cannot lower what gets recorded.
-  let centrePrice: number | null = null;
-  let onlinePriceEur: number | null = null;
-  if (tierId) {
-    const { data } = await db
-      .from("service_tiers")
-      .select("price_eur, price_center_eur")
-      .eq("id", tierId)
-      .limit(1);
-    const tier = (
-      data as
-        { price_eur: number | null; price_center_eur: number | null }[] | null
-    )?.[0];
-    centrePrice = tier?.price_center_eur ?? tier?.price_eur ?? null;
-    onlinePriceEur = tier?.price_eur ?? centrePrice;
-  }
-
-  // The booking is worth the web price; the checkout lowers it when the
-  // settings give a discount for paying online.
-  const amountEur = onlinePriceEur;
-
-  // Staff need to know at a glance whether the money is still to be collected.
-  // Online there is one way to pay, the whole price at booking.
-  const paymentNote = "Pago: 100% online al reservar";
-  const composedNotes =
-    [paymentNote, notes].filter(Boolean).join("\n\n") || null;
-
-  await db
-    .from("bookings")
-    .update({
-      tier_id: tierId,
-      ...(staffId ? { staff_id: staffId } : {}),
-      price_eur: amountEur,
-      payment_mode: "full",
-      location: "centro",
-      ...(composedNotes ? { notes: composedNotes } : {}),
-      ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),
-      created_by_role: createdByRole,
-    })
-    .eq("id", bookingId)
-    .eq("status", "draft");
-}
-
-/**
- * Rewrites the details of a draft the visitor already started.
- *
- * The booking flow used to call `create_draft_booking` every time the details
- * step was submitted, so going back a step and forward again — or correcting a
- * typo in an email — left the previous draft behind. One visitor produced eight
- * rows for what was plainly one attempt.
- *
- * Everything the earlier steps can still change is included, because the
- * visitor may have gone back past the details step and chosen another service
- * before returning.
- */
-// Same reasoning: anonymous visitor, writes confined to their own draft.
-// react-doctor-disable-next-line react-doctor/server-auth-actions
-export async function updateDraftBookingDetails(
-  bookingId: string,
-  details: {
-    contactId: string | null;
-    userId: string | null;
-    serviceId: string;
-    serviceTitle: string;
-    duration: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  },
-): Promise<void> {
-  if (!bookingId) return;
-
-  await getAdminClient()
-    .database.from("bookings")
-    .update({
-      // Only overwrite the links when we have one, so a failed upsert_contact
-      // does not detach a draft that was already attached.
-      ...(details.contactId ? { contact_id: details.contactId } : {}),
-      ...(details.userId ? { user_id: details.userId } : {}),
-      service_id: details.serviceId,
-      service_title: details.serviceTitle,
-      duration: details.duration,
-      first_name: details.firstName,
-      last_name: details.lastName,
-      email: details.email,
-      phone: details.phone,
-    })
-    .eq("id", bookingId)
-    .eq("status", "draft");
-}
-
-/**
- * Promotes a draft booking to `pending`, and says whether THIS call did it.
- *
- * The public form opens the payment on the answer. A booking that was already
- * confirmed elsewhere (another tab, an earlier visit) must not have a payment
- * opened on it from a form that may show another day, hour or treatment, so
- * "nothing to do" is no longer silent: `not_draft` when the booking exists and
- * is past being a draft, `missing` when there is no such booking at all, and
- * `failed` when the database could not be read or written (nothing is known
- * about the booking then, and nothing must be concluded from it).
- */
-// Anonymous by design. The write is scoped to `status = 'draft'` and only the
-// actual draft → pending transition records anything, so a replay is a no-op.
-// react-doctor-disable-next-line react-doctor/server-auth-actions
-export async function confirmDraftBooking(
-  bookingId: string,
-  tierId: string | null,
-  /** Ignored: the price is set by `updateDraftBookingMeta` and the checkout. */
-  _tierPrice: number | null,
-  duration: string,
-  date: string,
-  time: string,
-): Promise<
-  | { promoted: true }
-  | { promoted: false; reason: "not_draft" | "missing" | "failed" }
-> {
-  if (!bookingId) return { promoted: false, reason: "missing" };
-
-  const db = getAdminClient().database;
-
-  // Read the state first, and leave if this booking is no longer a draft, so a
-  // replay of this public action records nothing a second time.
-  const { data: before, error: readError } = await db
-    .from("bookings")
-    .select("status, service_title")
-    .eq("id", bookingId)
-    .maybeSingle();
-  if (readError) return { promoted: false, reason: "failed" };
-
-  const row = before as {
-    status: string | null;
-    service_title: string | null;
-  } | null;
-  if (!row) return { promoted: false, reason: "missing" };
-  if (row.status !== "draft") return { promoted: false, reason: "not_draft" };
-
-  const { data: written, error: writeError } = await db
-    .from("bookings")
-    .update({
-      status: "pending",
-      tier_id: tierId,
-      duration,
-      location: "centro",
-      date,
-      time,
-    })
-    .eq("id", bookingId)
-    .eq("status", "draft")
-    .select("id");
-  if (writeError) return { promoted: false, reason: "failed" };
-
-  // Somebody else's call promoted it between the read and the write (a second
-  // tab, a double submit): theirs is the one that confirmed, and the one that
-  // records it.
-  if (((written ?? []) as unknown[]).length === 0) {
-    return { promoted: false, reason: "not_draft" };
-  }
-
-  // The visitor has no session, so nobody is named as the actor. `anonymous`
-  // rather than `system` because a person did this: it is the public booking
-  // form, not a job.
-  await recordBookingEvent({
-    bookingId,
-    channel: "system",
-    event: "created",
-    actorRole: "anonymous",
-    summary: bookingLine(
-      "Reserva solicitada desde la web",
-      row.service_title,
-      date,
-      time,
-    ),
-  });
-
-  // The professional is not told here. A web booking has not been paid yet,
-  // and one abandoned on the payment page is cancelled by the expiry cron; the
-  // WhatsApp goes out from `handleBookingPaid` once the money is in.
-  return { promoted: true };
 }
 
 /**
@@ -419,14 +213,18 @@ export async function recordBookingPaymentNote(
   });
 }
 
-/** Deletes a booking outright. Staff only. */
+/**
+ * Deletes a booking outright. Administrators and staff only: a partner's
+ * screen offers no delete, and with the browser's key nobody could ever
+ * delete a booking (there was never a DELETE policy).
+ */
 export async function deleteBooking(
   accessToken: string | null,
   bookingId: string,
 ): Promise<{ error: string | null }> {
   let actor: AuthContext;
   try {
-    actor = await requireRole(accessToken);
+    actor = await requireRole(accessToken, ["admin", "staff"]);
   } catch (err) {
     if (err instanceof AuthError) return { error: err.message };
     throw err;
@@ -645,6 +443,9 @@ async function recordBookingEdit(
 /** The answer to a save that cancels and also undoes an online payment. */
 const REFUND_PAYMENT_CONFLICT = "refund_payment_conflict";
 
+/** The answer to a partner saving a booking that is not hers. */
+const PARTNER_NOT_OWN = "Insufficient permissions for this operation";
+
 /**
  * Full booking edit from the dashboard. Staff only.
  *
@@ -671,6 +472,19 @@ export async function updateBookingByAdmin(
   }
 
   if (!bookingId) return { error: "Falta el identificador de la reserva." };
+
+  // A partner edits her own bookings and nobody else's, as her screens show
+  // her only those. With the browser's key that was the database's rule
+  // (`partner_id = auth.uid()`); through the service key it has to be this one.
+  if (actor.role === "partner") {
+    const { data: own } = await getAdminClient()
+      .database.from("bookings")
+      .select("id")
+      .eq("id", bookingId)
+      .eq("partner_id", actor.userId)
+      .maybeSingle();
+    if (!own) return { error: PARTNER_NOT_OWN };
+  }
 
   // A save that cancels AND sets the payment back (to "Pendiente", or a lower
   // amount) would wipe the online payment before the refund owed on it is
@@ -709,6 +523,10 @@ export async function updateBookingByAdmin(
   );
 
   if (error) {
+    // The professional already has another booking at that hour: the
+    // database refuses it (`bookings_no_overlap`), and the screen says so in
+    // words rather than with Postgres' message.
+    if (isSlotTaken(error)) return { error: SLOT_TAKEN };
     return { error: (error as { message?: string }).message ?? null };
   }
 

@@ -310,7 +310,8 @@
       },
       "errors": {
         "createFailed": "Failed to create booking.",
-        "reservationRequired": "Reservation number is required."
+        "reservationRequired": "Reservation number is required.",
+        "slotTaken": "This professional already has another booking at that time. Choose another time or professional."
       },
       "staff": {
         "placeholder": "Unassigned"
@@ -358,7 +359,8 @@
       "errors": {
         "reservationRequired": "Reservation number is required.",
         "saveFailed": "Failed to save booking.",
-        "refundPaymentConflict": "This booking was paid online: do not change the payment while cancelling it. Cancel it leaving the payment as it is and, once you return the money, mark it as refunded on the booking."
+        "refundPaymentConflict": "This booking was paid online: do not change the payment while cancelling it. Cancel it leaving the payment as it is and, once you return the money, mark it as refunded on the booking.",
+        "slotTaken": "This professional already has another booking at that time. Choose another time or professional."
       },
       "refund": {
         "inAdvance": "{amount} was paid online and the session is 24 hours or more away: saving records a pending refund of {amount} and emails the administrator the Redsys order number.",

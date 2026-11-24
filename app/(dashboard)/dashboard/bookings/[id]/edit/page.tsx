@@ -241,7 +241,9 @@ export default function EditBookingPage() {
         payload:
           saveError === "refund_payment_conflict"
             ? t("errors.refundPaymentConflict")
-            : saveError || t("errors.saveFailed"),
+            : saveError === "slot_taken"
+              ? t("errors.slotTaken")
+              : saveError || t("errors.saveFailed"),
       });
       return;
     }

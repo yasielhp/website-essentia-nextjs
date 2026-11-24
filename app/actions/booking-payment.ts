@@ -34,11 +34,13 @@ export async function recordCounterPayment(
   }
 
   const db = getAdminClient().database;
-  const { data } = await db
+  let read = db
     .from("bookings")
     .select("price_eur, amount_paid_eur, payment_status, payment_mode, status")
-    .eq("id", input.bookingId)
-    .maybeSingle();
+    .eq("id", input.bookingId);
+  // A partner takes money only on her own bookings, the ones her screens show.
+  if (actor.role === "partner") read = read.eq("partner_id", actor.userId);
+  const { data } = await read.maybeSingle();
   const row = data as {
     price_eur: number | string | null;
     amount_paid_eur: number | string | null;
