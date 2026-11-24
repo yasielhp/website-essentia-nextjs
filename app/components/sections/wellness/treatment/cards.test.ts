@@ -18,7 +18,7 @@ import { minutesOf } from "@/lib/treatments/prices";
  */
 
 /** The service pages whose cards take their price from the session types. */
-const PRICED_PAGES = ["manual-therapies"];
+const PRICED_PAGES = ["manual-therapies", "facial-therapies"];
 
 type Card = Record<string, string>;
 const facialCards = (messages: typeof es) =>

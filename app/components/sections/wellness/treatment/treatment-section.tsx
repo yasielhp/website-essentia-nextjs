@@ -3,11 +3,9 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
-import { cardMeta } from "@/lib/treatments/prices";
 import type { TreatmentData } from "./data";
-import { useTreatmentPrices } from "./use-treatment-prices";
 import {
   facialTreatments,
   ivProtocols,
@@ -275,13 +273,13 @@ function IvProtocolsSection() {
   );
 }
 
-function FacialTreatmentsSection() {
+/**
+ * As on the manual therapies: the price is the session type's, read by the
+ * page on the server, not a figure typed into a translation, which went on
+ * saying the old one after the centre changed it.
+ */
+function FacialTreatmentsSection({ lines }: { lines: Record<string, string> }) {
   const t = useTranslations("wellness.treatments");
-  const locale = useLocale() === "es" ? "es" : "en";
-  // As on the manual therapies: the price is the session type's, not a figure
-  // typed into a translation, which went on saying the old one after the
-  // centre changed it.
-  const prices = useTreatmentPrices("facial-therapies");
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -311,7 +309,7 @@ function FacialTreatmentsSection() {
                       it (see `FacialTreatment.durations`). */}
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
                     {facial.durations
-                      ? cardMeta(prices, facial.title, facial.durations, locale)
+                      ? (lines[facial.id] ?? facial.durations.join(" · "))
                       : t(`facialCards.${facial.id}.meta`)}
                   </span>
                 </div>
@@ -458,7 +456,9 @@ export default function TreatmentSection({
       {data.slug === "manual-therapies" && (
         <ManualTherapiesSection lines={cardLines} />
       )}
-      {data.slug === "facial-therapies" && <FacialTreatmentsSection />}
+      {data.slug === "facial-therapies" && (
+        <FacialTreatmentsSection lines={cardLines} />
+      )}
       {data.slug === "intravenous-therapy" && <IvProtocolsSection />}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
